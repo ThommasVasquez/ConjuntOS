@@ -39,6 +39,7 @@ function getPrismaClient(): PrismaClient {
 const db = new Proxy({} as PrismaClient, {
   get: (target, prop) => {
     const client = getPrismaClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (client as any)[prop];
   }
 });
