@@ -2,58 +2,56 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
 
-// Declaración global para evitar múltiples instancias en desarrollo
+// Forzamos que Prisma no use procesos de Node
+export const runtime = "edge";
+
+// Función interna para crear el cliente de forma dinámica
+function createDynamicClient() {
+  // EXTRA: Captura ultra-dinámica. No usamos constantes de scope superior 
+  // para evitar que se "queden pegadas" con valores vacíos.
+  const connectionString = (process.env.DATABASE_URL || "").trim();
+
+  if (!connectionString || connectionString.length < 10) {
+    console.warn("⚠️ Advertencia: Intentando conectar con DATABASE_URL vacía o incompleta.");
+    return new PrismaClient();
+  }
+
+  try {
+    const pool = new Pool({ 
+      connectionString,
+      connectionTimeoutMillis: 20000,
+    });
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const adapter = new PrismaNeon(pool as any);
+    return new PrismaClient({ adapter });
+  } catch (err) {
+    console.error("🔥 Error inicializando Neon/Prisma:", err);
+    return new PrismaClient();
+  }
+}
+
+// Singleton con persistencia en global para desarrollo, pero detección dinámica
 declare global {
   // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 
-// Función para obtener la instancia de la base de datos (Lazy Loading)
-function getPrismaClient(): PrismaClient {
-  if (globalThis.prisma) return globalThis.prisma;
-
-  const connectionString = process.env.DATABASE_URL;
-  
-  if (!connectionString || connectionString.trim() === "") {
-    console.error("❌ ERROR CRÍTICO: La DATABASE_URL es nula o vacía en el Runtime.");
-    throw new Error("Missing DATABASE_URL");
-  }
-
-  // Verificación de seguridad en logs (solo longitud y protocolo)
-  console.log(`🔌 Iniciando conexión Neon. Longitud URL: ${connectionString.length}. Protocolo: ${connectionString.split(':')[0]}`);
-  
-  try {
-    const pool = new Pool({ 
-      connectionString: connectionString,
-      connectionTimeoutMillis: 10000,
-    });
-    
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const adapter = new PrismaNeon(pool as any);
-    const client = new PrismaClient({ adapter });
-    
-    if (process.env.NODE_ENV !== "production") {
-      globalThis.prisma = client;
-    }
-    
-    return client;
-  } catch (err) {
-    console.error("🔥 Error al crear el cliente Prisma con Neon Adapter:", err);
-    throw err;
-  }
-}
-
-// Exportamos un proxy que inicializa el cliente solo cuando se usa una propiedad (ej: db.usuario)
+// El export principal es ahora un Proxy que decide qué instancia devolver
 const db = new Proxy({} as PrismaClient, {
   get: (target, prop) => {
-    // Si la propiedad es una de las funciones de Prisma, obtenemos el cliente
-    const client = getPrismaClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = (client as any)[prop];
+    // Si no hay instancia global, la creamos en caliente
+    if (!globalThis.prisma) {
+      globalThis.prisma = createDynamicClient();
+    }
     
-    // Si el resultado es una función (como count o findUnique), necesitamos bindearla al cliente
+    // Obtenemos la propiedad del cliente (usuario, unidad, etc.)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = (globalThis.prisma as any)[prop];
+    
+    // Bind obligatorio para mantener el contexto de Prisma
     if (typeof result === "function") {
-      return result.bind(client);
+      return result.bind(globalThis.prisma);
     }
     
     return result;
