@@ -1,8 +1,8 @@
 "use client";
 
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef, useCallback } from "react";
 import { gsap } from "gsap";
-import { Observer } from "gsap/Observer";
+import { Observer } from "gsap/dist/Observer";
 
 // Registrar el plugin Observer de GSAP
 if (typeof window !== "undefined") {
@@ -23,6 +23,18 @@ export default function BottomSheet({ isOpen, onClose, children, title }: Bottom
   
   // Guardamos la instancia de animación para revertirla/controlarla
   const animRef = useRef<gsap.core.Tween | null>(null);
+
+  const animateClose = useCallback(() => {
+    if (!sheetRef.current || !overlayRef.current) return;
+    
+    gsap.to(sheetRef.current, { y: "100%", duration: 0.3, ease: "power2.in" });
+    gsap.to(overlayRef.current, { 
+      opacity: 0, 
+      duration: 0.3, 
+      display: 'none',
+      onComplete: onClose 
+    });
+  }, [onClose]);
 
   useEffect(() => {
     if (!overlayRef.current || !sheetRef.current) return;
@@ -66,23 +78,13 @@ export default function BottomSheet({ isOpen, onClose, children, title }: Bottom
     } else {
        // Only if the component is just hiding (but usually we unmount or animate out)
        // This branch handles when isOpen goes false from outside prop change
-       if (gsap.getProperty(overlayRef.current, "opacity") !== 0) {
+       if (overlayRef.current && gsap.getProperty(overlayRef.current, "opacity") !== 0) {
          animateClose();
        }
     }
-  }, [isOpen]);
+  }, [isOpen, animateClose]);
 
-  const animateClose = () => {
-    if (!sheetRef.current || !overlayRef.current) return;
-    
-    gsap.to(sheetRef.current, { y: "100%", duration: 0.3, ease: "power2.in" });
-    gsap.to(overlayRef.current, { 
-      opacity: 0, 
-      duration: 0.3, 
-      display: 'none',
-      onComplete: onClose 
-    });
-  };
+
 
   // Esc keyboard support
   useEffect(() => {
@@ -91,7 +93,7 @@ export default function BottomSheet({ isOpen, onClose, children, title }: Bottom
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, animateClose]);
 
   if (!isOpen) return null;
 

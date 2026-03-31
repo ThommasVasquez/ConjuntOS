@@ -5,9 +5,20 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { gsap } from "gsap";
-import { Rol } from "@prisma/client";
 import { toast } from "sonner";
 import { useSearchParams, useRouter } from "next/navigation";
+
+// Define Rol locally to avoid importing Prisma in a Client Component
+enum Rol {
+  ARRENDATARIO = "ARRENDATARIO",
+  PROPIETARIO = "PROPIETARIO",
+  ADMINISTRADOR = "ADMINISTRADOR",
+  CONCEJO = "CONCEJO",
+  VIGILANTE = "VIGILANTE",
+  SUPERVISOR_VIGILANCIA = "SUPERVISOR_VIGILANCIA",
+  ENCARGADO_PARQUEADERO = "ENCARGADO_PARQUEADERO",
+  SUPER_ADMIN = "SUPER_ADMIN"
+}
 
 export default function PerfilPage() {
   return (
