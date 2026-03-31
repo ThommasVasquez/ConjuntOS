@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Plan {
+  BASICO
+  PRO
+  PREMIUM
+}
+
+enum Rol {
+  ARRENDATARIO
+  PROPIETARIO
+  ADMINISTRADOR
+  CONCEJO
+  VIGILANTE
+  SUPERVISOR_VIGILANCIA
+  ENCARGADO_PARQUEADERO
+  SUPER_ADMIN
+}
+
+enum TipoUnidad {
+  APARTAMENTO
+  CASA
+  LOCAL
+  PARQUEADERO
+}
+
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+enum TipoAnuncio {
+  GENERAL
+  URGENTE
+  MANTENIMIENTO
+  EVENTO
+}
+
+enum CatDoc {
+  CONVIVENCIA
+  MASCOTAS
+  PARQUEADERO
+  REGLAMENTO
+  OTRO
+}
+
+enum TipoJunta {
+  ORDINARIA
+  EXTRAORDINARIA
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+  VENCIDO
+  EN_DISPUTA
+}
+
+enum MetodoPago {
+  PSE
+  TARJETA
+  NEQUI
+  DAVIPLATA
+  EFECTIVO
+}
+
+enum CatGasto {
+  MANTENIMIENTO
+  NOMINA
+  SERVICIOS
+  ADMINISTRACION
+  OBRA
+  OTRO
+}
+
+enum CatLocal {
+  RESTAURANTE
+  TIENDA
+  LAVANDERIA
+  FARMACIA
+  OTRO
+}
+
+enum EstadoPedido {
+  RECIBIDO
+  EN_PREPARACION
+  EN_CAMINO
+  ENTREGADO
+}
+
+enum CatServicio {
+  PLOMERIA
+  ELECTRICIDAD
+  CARPINTERIA
+  PINTURA
+  CERRAJERIA
+  OTRO
+}
+
+enum EstadoSolicitud {
+  ABIERTA
+  ASIGNADA
+  EN_PROGRESO
+  COMPLETADA
+}
+
+model Conjunto {
+  id            String   @id @default(cuid())
+  nombre        String
+  nit           String?
+  subdominio    String   @unique
+  direccion     String
+  ciudad        String
+  logoUrl       String?
+  colorPrimario String   @default("#1E3A5F")
+  plan          Plan     @default(BASICO)
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+
+  usuarios        Usuario[]
+  unidades        Unidad[]
+  areasComunes    AreaComun[]
+  reservas        Reserva[]
+  anuncios        Anuncio[]
+  juntas          Junta[]
+  pagos           Pago[]
+  gastos          Gasto[]
+  locales         Local[]
+  solicitudesServ SolicitudServicio[]
+  recibosPublicos ReciboPublico[]
+  adSpaces        AdSpace[]
+  pedidos         Pedido[]
+}
+
+model Usuario {
+  id          String              @id @default(cuid())
+  conjuntoId  String
+  conjunto    Conjunto            @relation(fields: [conjuntoId], references: [id])
+  nombre      String
+  email       String
+  telefono    String?
+  rol         Rol
+  unidadId    String?
+  unidad      Unidad?             @relation(fields: [unidadId], references: [id])
+  avatar      String?
+  notifPush   String?
+  activo      Boolean             @default(true)
+  creadoEn    DateTime            @default(now())
+  reservas    Reserva[]
+  pagos       Pago[]
+  pedidos     Pedido[]
+  solicitudes SolicitudServicio[]
+}
+
+model Unidad {
+  id          String          @id @default(cuid())
+  conjuntoId  String
+  conjunto    Conjunto        @relation(fields: [conjuntoId], references: [id])
+  numero      String
+  torre       String?
+  piso        Int?
+  tipo        TipoUnidad
+  coeficiente Decimal
+  usuarios    Usuario[]
+  pagos       Pago[]
+  recibos     ReciboPublico[]
+}
+
+model AreaComun {
+  id               String    @id @default(cuid())
+  conjuntoId       String
+  conjunto         Conjunto  @relation(fields: [conjuntoId], references: [id])
+  nombre           String
+  descripcion      String?
+  capacidadMax     Int
+  imagenUrl        String?
+  requiereDeposito Boolean   @default(false)
+  depositoMonto    Decimal?
+  horaApertura     String
+  horaCierre       String
+  diasDisponibles  String
+  duracionSlot     Int
+  reservas         Reserva[]
+  activa           Boolean   @default(true)
+}
+
+model Reserva {
+  id          String        @id @default(cuid())
+  conjuntoId  String
+  conjunto    Conjunto      @relation(fields: [conjuntoId], references: [id])
+  usuarioId   String
+  usuario     Usuario       @relation(fields: [usuarioId], references: [id])
+  areaId      String
+  area        AreaComun     @relation(fields: [areaId], references: [id])
+  fechaInicio DateTime
+  fechaFin    DateTime
+  estado      EstadoReserva
+  notas       String?
+  pagoId      String?
+  creadoEn    DateTime      @default(now())
+}
+
+model Anuncio {
+  id          String      @id @default(cuid())
+  conjuntoId  String
+  conjunto    Conjunto    @relation(fields: [conjuntoId], references: [id])
+  titulo      String
+  contenido   String
+  tipo        TipoAnuncio
+  imagenUrl   String?
+  archivosUrl String
+  fijado      Boolean     @default(false)
+  publicadoEn DateTime    @default(now())
+  expiresEn   DateTime?
+  vistas      Int         @default(0)
+}
+
+model Documento {
+  id         String   @id @default(cuid())
+  conjuntoId String
+  nombre     String
+  categoria  CatDoc
+  url        String
+  version    String?
+  creadoEn   DateTime @default(now())
+}
+
+model Junta {
+  id            String    @id @default(cuid())
+  conjuntoId    String
+  conjunto      Conjunto  @relation(fields: [conjuntoId], references: [id])
+  tipo          TipoJunta
+  fecha         DateTime
+  titulo        String
+  descripcion   String?
+  transcripcion String?
+  audioUrl      String?
+  actaUrl       String?
+  publicada     Boolean   @default(false)
+}
+
+model Pago {
+  id               String      @id @default(cuid())
+  conjuntoId       String
+  conjunto         Conjunto    @relation(fields: [conjuntoId], references: [id])
+  unidadId         String
+  unidad           Unidad      @relation(fields: [unidadId], references: [id])
+  usuarioId        String
+  usuario          Usuario     @relation(fields: [usuarioId], references: [id])
+  concepto         String
+  monto            Decimal
+  estado           EstadoPago
+  metodo           MetodoPago?
+  wompiRef         String?
+  fechaVencimiento DateTime
+  fechaPago        DateTime?
+  comprobante      String?
+  creadoEn         DateTime    @default(now())
+}
+
+model Gasto {
+  id          String   @id @default(cuid())
+  conjuntoId  String
+  conjunto    Conjunto @relation(fields: [conjuntoId], references: [id])
+  categoria   CatGasto
+  descripcion String
+  monto       Decimal
+  proveedor   String?
+  soporteUrl  String?
+  fecha       DateTime
+  aprobadoPor String?
+  creadoEn    DateTime @default(now())
+}
+
+model Local {
+  id            String     @id @default(cuid())
+  conjuntoId    String
+  conjunto      Conjunto   @relation(fields: [conjuntoId], references: [id])
+  nombre        String
+  categoria     CatLocal
+  descripcion   String?
+  imagenUrl     String?
+  activo        Boolean    @default(true)
+  telefono      String?
+  whatsapp      String?
+  propietarioId String
+  productos     Producto[]
+  pedidos       Pedido[]
+}
+
+model Producto {
+  id          String  @id @default(cuid())
+  localId     String
+  local       Local   @relation(fields: [localId], references: [id])
+  nombre      String
+  descripcion String?
+  precio      Decimal
+  imagenUrl   String?
+}
+
+model Pedido {
+  id            String       @id @default(cuid())
+  conjuntoId    String
+  conjunto      Conjunto     @relation(fields: [conjuntoId], references: [id])
+  localId       String
+  local         Local        @relation(fields: [localId], references: [id])
+  usuarioId     String
+  usuario       Usuario      @relation(fields: [usuarioId], references: [id])
+  items         String
+  total         Decimal
+  estado        EstadoPedido
+  notas         String?
+  unidadEntrega String
+  creadoEn      DateTime     @default(now())
+}
+
+model SolicitudServicio {
+  id          String          @id @default(cuid())
+  conjuntoId  String
+  conjunto    Conjunto        @relation(fields: [conjuntoId], references: [id])
+  usuarioId   String
+  usuario     Usuario         @relation(fields: [usuarioId], references: [id])
+  categoria   CatServicio
+  descripcion String
+  urgente     Boolean         @default(false)
+  imagenes    String
+  estado      EstadoSolicitud
+  proveedorId String?
+  creadoEn    DateTime        @default(now())
+}
+
+model ReciboPublico {
+  id          String    @id @default(cuid())
+  conjuntoId  String
+  conjunto    Conjunto  @relation(fields: [conjuntoId], references: [id])
+  unidadId    String
+  unidad      Unidad    @relation(fields: [unidadId], references: [id])
+  servicio    String
+  empresa     String
+  periodo     String
+  monto       Decimal
+  vencimiento DateTime
+  urlRecibo   String?
+  pagado      Boolean   @default(false)
+  fechaPago   DateTime?
+  creadoEn    DateTime  @default(now())
+}
+
+model AdSpace {
+  id          String   @id @default(cuid())
+  conjuntoId  String
+  conjunto    Conjunto @relation(fields: [conjuntoId], references: [id])
+  nombre      String
+  posicion    String
+  imagenUrl   String?
+  linkUrl     String?
+  activo      Boolean  @default(true)
+  empresa     String?
+  inicioEn    DateTime
+  finEn       DateTime
+  impresiones Int      @default(0)
+  clics       Int      @default(0)
+}
