@@ -23,10 +23,10 @@ export async function GET() {
     const count = await db.usuario.count();
     diagnostics.database.status = "✅ CONECTADA";
     diagnostics.database.userCount = count;
-  } catch (err: any) {
+  } catch (error: unknown) {
     diagnostics.database.status = "❌ ERROR DE CONEXIÓN";
-    diagnostics.database.error = err.message || "Error desconocido";
-    console.error("🔥 Error en Diagnóstico DB:", err);
+    diagnostics.database.error = error instanceof Error ? error.message : "Error desconocido";
+    console.error("🔥 Error en Diagnóstico DB:", error);
   }
 
   return NextResponse.json(diagnostics);
