@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 enum Plan {
@@ -145,12 +145,14 @@ model Usuario {
   conjuntoId  String
   conjunto    Conjunto            @relation(fields: [conjuntoId], references: [id])
   nombre      String
-  email       String
+  email       String              @unique
+  password    String?
   telefono    String?
   rol         Rol
   unidadId    String?
   unidad      Unidad?             @relation(fields: [unidadId], references: [id])
   avatar      String?
+  genero      String?             @default("neutro")
   notifPush   String?
   activo      Boolean             @default(true)
   creadoEn    DateTime            @default(now())

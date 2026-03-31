@@ -15,6 +15,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { getUserProfile } from "@/app/actions/userActions";
 
 interface FeedItem {
   id: number;
@@ -50,17 +51,34 @@ export default function InicioDashboard() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [hasStory, setHasStory] = useState(false);
 
-  // Sync data from localStorage (same as PerfilPage)
+  // Sync data from Database & LocalStorage
   useEffect(() => {
-    const savedPic = localStorage.getItem("conjunto_app_profile_pic");
-    if (savedPic) setProfilePic(savedPic);
+    async function loadData() {
+      const res = await getUserProfile("current-user");
+      if (res.success && res.data) {
+        const u = res.data;
+        const mapped = {
+          name: u.nombre,
+          apto: u.unidad?.numero || "Apto 000",
+          gender: u.genero || "femenino"
+        };
+        setUserData(mapped);
+        if (u.avatar) setProfilePic(u.avatar);
+      } else {
+        // Fallback
+        const savedPic = localStorage.getItem("conjunto_app_profile_pic");
+        if (savedPic) setProfilePic(savedPic);
 
-    const savedData = localStorage.getItem("conjunto_app_profile_data");
-    if (savedData) {
-      setUserData(JSON.parse(savedData));
-    } else {
-      setUserData({ name: "Amélie Thommy", apto: "Apto 301", gender: "femenino" });
+        const savedData = localStorage.getItem("conjunto_app_profile_data");
+        if (savedData) {
+          setUserData(JSON.parse(savedData));
+        } else {
+          setUserData({ name: "Amélie Thommy", apto: "Apto 301", gender: "femenino" });
+        }
+      }
     }
+
+    loadData();
 
     // Story Logic
     const savedStory = localStorage.getItem("conjunto_app_active_story");
