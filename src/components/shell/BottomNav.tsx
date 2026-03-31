@@ -3,15 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, ListMusic, Heart, User } from "lucide-react";
-import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { Flip } from "gsap/all";
-
-gsap.registerPlugin(Flip);
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const containerRef = useRef<HTMLDivElement>(null);
   
   // Custom icons mapping based on the image (Home, Mix / Reservas, Heart / Anuncios, User / Perfil)
   const tabs = [
@@ -24,8 +18,7 @@ export default function BottomNav() {
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[380px]">
       <div 
-        ref={containerRef}
-        className="liquid-glass rounded-[32px] w-full flex justify-between items-center p-2 relative shadow-[0_15px_40px_rgba(255,255,255,0.05),_0_20px_30px_rgba(0,0,0,0.8)]"
+        className="liquid-glass rounded-[32px] w-full flex justify-between items-center p-2 relative shadow-[0_15px_40px_rgba(255,255,255,0.05),0_20px_30px_rgba(0,0,0,0.8)]"
       >
         {tabs.map((tab) => {
           const isActive = pathname.includes(tab.path);
@@ -36,7 +29,7 @@ export default function BottomNav() {
               key={tab.path} 
               href={tab.path}
               className={`relative flex items-center justify-center transition-all duration-300 rounded-full h-[52px]
-                ${isActive ? 'w-[120px] bg-gradient-to-r from-accent to-purple-600 shadow-[0_0_20px_rgba(217,70,239,0.5)] px-4' : 'w-[52px] liquid-glass hover:bg-white/10 mx-1'}
+                ${isActive ? 'w-[120px] bg-linear-to-r from-accent to-purple-600 shadow-[0_0_20px_rgba(217,70,239,0.5)] px-4' : 'w-[52px] liquid-glass hover:bg-white/10 mx-1'}
               `}
             >
               <div className="flex items-center gap-2 relative z-10 w-full justify-center">

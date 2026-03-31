@@ -7,7 +7,7 @@
 
 import { 
   ArrowRight, X, CreditCard, Lock, CheckCircle2, 
-  ChevronLeft, Sparkles, Clock, MapPin, Users, Info, QrCode, Download, Share2,
+  ChevronLeft, Sparkles, Clock, MapPin, Users, QrCode, Download, Share2,
   Bell, Search, SlidersHorizontal
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

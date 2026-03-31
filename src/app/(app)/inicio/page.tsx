@@ -60,7 +60,7 @@ export default function InicioDashboard() {
         const mapped = {
           name: u.nombre,
           apto: u.unidad?.numero || "Apto 000",
-          gender: u.genero || "femenino"
+          gender: (u as { genero?: string }).genero || "femenino"
         };
         setUserData(mapped);
         if (u.avatar) setProfilePic(u.avatar);

@@ -7,7 +7,7 @@
 
 import { 
   Megaphone, ShieldAlert, Wrench, Calendar, Info, 
-  ChevronLeft, Bell, Filter, Clock, 
+  ChevronLeft, Bell, Clock, 
   ArrowRight, X, Download, Share2, CheckCircle2
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

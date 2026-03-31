@@ -1,9 +1,8 @@
 "use client";
 
-import React, { ReactNode, useEffect, useRef } from "react";
+import React, { ReactNode, useRef } from "react";
 import TopBar from "./TopBar";
 import BottomNav from "./BottomNav";
-import { gsap } from "gsap";
 import { Toaster } from "sonner";
 
 export default function AppShell({ children }: { children: ReactNode }) {

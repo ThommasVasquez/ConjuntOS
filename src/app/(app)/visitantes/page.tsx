@@ -41,7 +41,7 @@ export default function VisitantesPage() {
     { id: 2, title: "Invitación Expirada", desc: "El QR de Rappi ha expirado.", time: "Hace 1h", icon: <XCircle size={16} />, color: "text-red-400" },
   ];
 
-  const [visitors, setVisitors] = useState<Visitor[]>([
+  const [visitors] = useState<Visitor[]>([
     { id: '1', name: "Carlos Mendoza", type: 'FRECUENTE', status: 'ACTIVO', entryTime: '10:45 AM' },
     { id: '2', name: "Rappi - Pedido #442", type: 'DELIVERY', status: 'ACTIVO', entryTime: '11:15 AM' },
     { id: '3', name: "Elena Rodríguez", type: 'OCASIONAL', status: 'PROGRAMADO', scheduledDate: 'Hoy, 4:00 PM' },
@@ -97,11 +97,7 @@ export default function VisitantesPage() {
     toast.success("¡Código QR generado con éxito!");
   };
 
-  const getGreeting = (gender: string) => {
-    if (gender === 'masculino') return 'Bienvenido';
-    if (gender === 'neutro') return 'Bienvenide';
-    return 'Bienvenida';
-  };
+
 
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-8">
@@ -222,7 +218,7 @@ export default function VisitantesPage() {
                   {['OCASIONAL', 'FRECUENTE', 'DELIVERY'].map((type) => (
                     <button 
                       key={type}
-                      onClick={() => setNewVisitForm({...newVisitForm, type: type as any})}
+                      onClick={() => setNewVisitForm({...newVisitForm, type: type as 'OCASIONAL' | 'FRECUENTE' | 'DELIVERY'})}
                       className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${newVisitForm.type === type ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'}`}
                     >
                       {type}

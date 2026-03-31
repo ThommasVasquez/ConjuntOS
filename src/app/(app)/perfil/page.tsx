@@ -39,7 +39,6 @@ function ProfileContent() {
   
   const defaultPlaceholder = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000";
   const [profilePic, setProfilePic] = useState<string>(defaultPlaceholder);
-  const [activeRole, setActiveRole] = useState<Rol>(Rol.PROPIETARIO);
   
   const [userData, setUserData] = useState({
     name: "Amélie Thommy",
@@ -58,10 +57,10 @@ function ProfileContent() {
         const u = res.data;
         const mapped = {
           name: u.nombre,
-          apto: (u as any).unidad?.numero || "S/N",
-          torre: (u as any).unidad?.torre || "S/T",
+          apto: (u as { unidad?: { numero: string; } }).unidad?.numero || "S/N",
+          torre: (u as { unidad?: { torre: string; } }).unidad?.torre || "S/T",
           phone: u.telefono || "",
-          gender: (u as any).genero || "neutro"
+          gender: (u as { genero?: string }).genero || "neutro"
         };
         setUserData(mapped);
         setEditForm(mapped);
@@ -92,7 +91,7 @@ function ProfileContent() {
       );
     }, containerRef);
     return () => ctx.revert();
-  }, [activeRole]);
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -155,7 +154,7 @@ function ProfileContent() {
     VIGILANTE: { label: "Vigilante", color: "from-orange-500 to-red-500" },
   };
 
-  const currRole = roleConfig[activeRole] || roleConfig.PROPIETARIO;
+  const currRole = roleConfig[Rol.PROPIETARIO];
 
   return (
     <div ref={containerRef} className="flex flex-col min-h-screen relative overflow-x-hidden pb-32">

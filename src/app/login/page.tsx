@@ -62,7 +62,7 @@ export default function LoginPage() {
         router.push("/inicio");
         router.refresh();
       }
-    } catch (error) {
+    } catch {
       toast.error("Ocurrió un error al iniciar sesión");
     } finally {
       setIsLoading(false);
