@@ -47,6 +47,7 @@ export default function LoginPage() {
     if (isLoading) return;
 
     setIsLoading(true);
+    console.log("🚀 Iniciando proceso de firma con Auth.js...");
     
     try {
       const result = await signIn("credentials", {
@@ -55,14 +56,19 @@ export default function LoginPage() {
         redirect: false,
       });
 
+      console.log("📥 Resultado de Auth.js:", result);
+
       if (result?.error) {
+        console.error("❌ Error devuelto por Auth.js:", result.error);
         toast.error("Credenciales incorrectas. Prueba con: thommy@example.com / 123456");
       } else {
+        console.log("🎉 Autenticación exitosa, redirigiendo...");
         toast.success("¡Bienvenido a ConjuntoApp!");
         router.push("/inicio");
         router.refresh();
       }
-    } catch {
+    } catch (err) {
+      console.error("🔥 Error catastrófico en el cliente:", err);
       toast.error("Ocurrió un error al iniciar sesión");
     } finally {
       setIsLoading(false);
