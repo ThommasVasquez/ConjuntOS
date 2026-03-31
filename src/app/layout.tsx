@@ -39,6 +39,9 @@ export const viewport: Viewport = {
   themeColor: "#1E3A5F",
 };
 
+import { Providers } from "@/components/Providers";
+import { Toaster } from "sonner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -47,7 +50,10 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}>
       <body className="antialiased selection:bg-primary/20 bg-[#E2E8F0] min-h-screen">
-        {children}
+        <Providers>
+          {children}
+          <Toaster position="top-center" theme="dark" richColors />
+        </Providers>
       </body>
     </html>
   );
