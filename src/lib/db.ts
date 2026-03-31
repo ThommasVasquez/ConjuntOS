@@ -1,18 +1,37 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 
 // Forzamos que Prisma no use procesos de Node
 export const runtime = "edge";
 
 // Función interna para crear el cliente de forma dinámica
 function createDynamicClient() {
-  // EXTRA: Captura ultra-dinámica. No usamos constantes de scope superior 
-  // para evitar que se "queden pegadas" con valores vacíos.
-  const connectionString = (process.env.DATABASE_URL || "").trim();
+  let connectionString = "";
+
+  // 1. Intentar obtenerlo del contexto oficial de Cloudflare (Secrets)
+  try {
+    const ctx = getRequestContext();
+    const cfEnv = ctx?.env as { DATABASE_URL?: string };
+    if (cfEnv?.DATABASE_URL) {
+      connectionString = cfEnv.DATABASE_URL.trim();
+      console.log("🏙️ DATABASE_URL obtenida vía getRequestContext (Cloudflare Context)");
+    }
+  } catch (e) {
+    // No estamos en Cloudflare o no hay contexto disponible aún
+  }
+
+  // 2. Fallback a process.env (Next.js polyfill)
+  if (!connectionString) {
+    connectionString = (process.env.DATABASE_URL || "").trim();
+    if (connectionString) {
+      console.log("⚙️ DATABASE_URL obtenida vía process.env (Next.js Polyfill)");
+    }
+  }
 
   if (!connectionString || connectionString.length < 10) {
-    console.warn("⚠️ Advertencia: Intentando conectar con DATABASE_URL vacía o incompleta.");
+    console.warn("⚠️ Advertencia: No se pudo localizar DATABASE_URL en ninguna capa.");
     return new PrismaClient();
   }
 
