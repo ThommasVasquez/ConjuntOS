@@ -16,9 +16,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
           if (parsedCredentials.success) {
             const { email, password } = parsedCredentials.data;
+            const normalizedEmail = email.toLowerCase().trim();
             
             // Log para telemetría en Cloudflare Dashboard
-            console.log("🔐 Intentando login para:", email);
+            console.log("🔐 Proceso de Login -> Intentando para:", normalizedEmail);
             
             const { default: db } = await import("@/lib/db");
             
@@ -29,11 +30,11 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
             // Buscar usuario
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            let user = await db.usuario.findUnique({ where: { email } as any });
+            let user = await db.usuario.findUnique({ where: { email: normalizedEmail } as any });
             
             // BOOTSTRAP: Si es el usuario maestro y no existe en la DB, lo creamos
-            if (!user && email === "thommy@example.com") {
-              console.log("🛠️ BOOTSTRAP: Creando usuario maestro thommy@example.com...");
+            if (!user && normalizedEmail === "thommy@example.com") {
+              console.log("🛠️ BOOTSTRAP: Master user no encontrado. Creando...");
               
               let conjunto = await db.conjunto.findFirst();
               if (!conjunto) {
@@ -61,23 +62,26 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             }
 
             if (!user) {
-              console.warn("⚠️ Login fallido: Usuario no encontrado:", email);
+              console.warn("⚠️ Login fallido: El usuario no existe en la DB:", normalizedEmail);
               return null;
             }
+
+            console.log("👤 Usuario encontrado:", user.nombre, "| Rol:", user.rol);
 
             // Validar password
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const userPadded = user as any;
-            if (userPadded.password && userPadded.password !== password) {
-              console.warn("⚠️ Login fallido: Password incorrecto para:", email);
-              return null;
-            }
-            if (!userPadded.password && password !== "123456") {
-              console.warn("⚠️ Login fallido: Password default 123456 requerido para:", email);
+            
+            const isPasswordMatch = userPadded.password 
+              ? userPadded.password === password 
+              : password === "123456";
+
+            if (!isPasswordMatch) {
+              console.warn("⚠️ Login fallido: Password incorrecto para:", normalizedEmail);
               return null;
             }
 
-            console.log("✅ Login exitoso para:", email);
+            console.log("✅ Login exitoso para:", normalizedEmail);
             return {
               id: user.id,
               name: user.nombre,
