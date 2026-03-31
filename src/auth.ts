@@ -1,13 +1,10 @@
 import NextAuth from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import db from "@/lib/db";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { z } from "zod";
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
   providers: [
     Credentials({
@@ -19,15 +16,20 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         if (parsedCredentials.success) {
           const { email, password } = parsedCredentials.data;
           
+          // Importación dinámica para evitar errores de bundle en Edge/Build time
+          const { default: db } = await import("@/lib/db");
+          
           // Buscar usuario en la base de datos
-          const user = await db.usuario.findUnique({ where: { email } });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const user = await db.usuario.findUnique({ where: { email } as any });
           
           if (!user) return null;
 
           // Si el usuario tiene password (creado por registro), comparamos.
-          // Si no tiene password (creado por sync inicial), permitimos entrar con 123456 por ahora.
-          if (user.password && user.password !== password) return null;
-          if (!user.password && password !== "123456") return null;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const userPadded = user as any;
+          if (userPadded.password && userPadded.password !== password) return null;
+          if (!userPadded.password && password !== "123456") return null;
 
           return {
             id: user.id,
