@@ -3,7 +3,6 @@
 import React, { ReactNode, useRef } from "react";
 import TopBar from "./TopBar";
 import BottomNav from "./BottomNav";
-import { Toaster } from "sonner";
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,7 +20,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </main>
 
       <BottomNav />
-      <Toaster position="top-center" theme="dark" richColors />
     </div>
   );
 }
