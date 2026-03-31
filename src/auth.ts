@@ -29,8 +29,37 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
             // Buscar usuario
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const user = await db.usuario.findUnique({ where: { email } as any });
+            let user = await db.usuario.findUnique({ where: { email } as any });
             
+            // BOOTSTRAP: Si es el usuario maestro y no existe en la DB, lo creamos
+            if (!user && email === "thommy@example.com") {
+              console.log("🛠️ BOOTSTRAP: Creando usuario maestro thommy@example.com...");
+              
+              let conjunto = await db.conjunto.findFirst();
+              if (!conjunto) {
+                conjunto = await db.conjunto.create({
+                  data: {
+                    nombre: "Conjunto Residencial Demo",
+                    subdominio: "demo",
+                    direccion: "Calle Digital 101",
+                    ciudad: "Nube"
+                  }
+                });
+              }
+
+              user = await db.usuario.create({
+                data: {
+                  nombre: "ThommyEnergy",
+                  email: "thommy@example.com",
+                  rol: "SUPER_ADMIN",
+                  password: "123456",
+                  conjuntoId: conjunto.id,
+                  genero: "femenino"
+                }
+              });
+              console.log("✅ BOOTSTRAP: Usuario maestro creado con éxito.");
+            }
+
             if (!user) {
               console.warn("⚠️ Login fallido: Usuario no encontrado:", email);
               return null;
