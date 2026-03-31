@@ -9,38 +9,61 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
-        const parsedCredentials = z
-          .object({ email: z.string().email(), password: z.string().min(6) })
-          .safeParse(credentials);
+        try {
+          const parsedCredentials = z
+            .object({ email: z.string().email(), password: z.string().min(6) })
+            .safeParse(credentials);
 
-        if (parsedCredentials.success) {
-          const { email, password } = parsedCredentials.data;
-          
-          // Importación dinámica para evitar errores de bundle en Edge/Build time
-          const { default: db } = await import("@/lib/db");
-          
-          // Buscar usuario en la base de datos
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const user = await db.usuario.findUnique({ where: { email } as any });
-          
-          if (!user) return null;
+          if (parsedCredentials.success) {
+            const { email, password } = parsedCredentials.data;
+            
+            // Log para telemetría en Cloudflare Dashboard
+            console.log("🔐 Intentando login para:", email);
+            
+            const { default: db } = await import("@/lib/db");
+            
+            if (!process.env.DATABASE_URL) {
+              console.error("❌ ERROR: DATABASE_URL no está configurada en Cloudflare.");
+              return null;
+            }
 
-          // Si el usuario tiene password (creado por registro), comparamos.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const userPadded = user as any;
-          if (userPadded.password && userPadded.password !== password) return null;
-          if (!userPadded.password && password !== "123456") return null;
+            // Buscar usuario
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const user = await db.usuario.findUnique({ where: { email } as any });
+            
+            if (!user) {
+              console.warn("⚠️ Login fallido: Usuario no encontrado:", email);
+              return null;
+            }
 
-          return {
-            id: user.id,
-            name: user.nombre,
-            email: user.email,
-            image: user.avatar,
-          };
+            // Validar password
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const userPadded = user as any;
+            if (userPadded.password && userPadded.password !== password) {
+              console.warn("⚠️ Login fallido: Password incorrecto para:", email);
+              return null;
+            }
+            if (!userPadded.password && password !== "123456") {
+              console.warn("⚠️ Login fallido: Password default 123456 requerido para:", email);
+              return null;
+            }
+
+            console.log("✅ Login exitoso para:", email);
+            return {
+              id: user.id,
+              name: user.nombre,
+              email: user.email,
+              image: user.avatar,
+            };
+          }
+          return null;
+        } catch (error) {
+          console.error("🔥 ERROR CRÍTICO EN AUTENTICACIÓN:", error);
+          return null;
         }
-
-        return null;
       },
     }),
   ],
+  // Log de eventos de Auth.js
+  debug: process.env.NODE_ENV === "development",
 });

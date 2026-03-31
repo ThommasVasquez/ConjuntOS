@@ -5,6 +5,14 @@ import { Pool } from "@neondatabase/serverless";
 const prismaClientSingleton = () => {
   // Configuración del Pool para entornos Edge (Cloudflare/Neon/Supabase)
   const connectionString = process.env.DATABASE_URL;
+  
+  if (!connectionString) {
+    console.error("❌ ERROR CRÍTICO: La variable DATABASE_URL está vacía o no existe en Cloudflare.");
+    return new PrismaClient(); // Fallback to avoid crash at init, but will fail queries
+  }
+
+  console.log("🔌 Inicializando Pool de Base de Datos para Cloudflare...");
+  
   const pool = new Pool({ connectionString });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adapter = new PrismaNeon(pool as any);
