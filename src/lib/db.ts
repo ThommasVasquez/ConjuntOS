@@ -1,7 +1,15 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { Pool } from "@neondatabase/serverless";
 
 const prismaClientSingleton = () => {
-  return new PrismaClient();
+  // Configuración del Pool para entornos Edge (Cloudflare/Neon/Supabase)
+  const connectionString = process.env.DATABASE_URL;
+  const pool = new Pool({ connectionString });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adapter = new PrismaNeon(pool as any);
+  
+  return new PrismaClient({ adapter });
 };
 
 declare global {
