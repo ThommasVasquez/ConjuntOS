@@ -13,7 +13,17 @@ interface DiagnosticResult {
   error?: string;
   message?: string;
   stack?: string;
-  diagnostics?: unknown;
+  diagnostics?: {
+    host: string;
+    port: string;
+    authAudit?: {
+      user_display: string;
+      pass_display: string;
+      pass_length: number;
+      has_special_chars: boolean;
+    };
+  };
+  prisma_singleton_error?: string;
 }
 
 /**
@@ -171,6 +181,12 @@ export async function GET(request: Request) {
         diagnostics.setup.logs.push(`Error en setup: ${errorMsg}`);
         diagnostics.error = errorMsg;
       }
+    }
+
+    // Reportar errores persistentes del Singleton de Prisma
+    const anyGlobal = globalThis as unknown as { __prismaError?: string };
+    if (anyGlobal.__prismaError) {
+      diagnostics.prisma_singleton_error = anyGlobal.__prismaError;
     }
 
     return NextResponse.json(diagnostics);
