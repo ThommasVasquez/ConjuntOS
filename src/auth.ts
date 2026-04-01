@@ -76,7 +76,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                       nombre: "ThommyEnergy",
                       email: "thommy@example.com",
                       rol: "SUPER_ADMIN",
-                      password: "123456",
+                      password: "Md5891129Ae$",
                       conjuntoId: conjunto.id,
                       genero: "femenino",
                       activo: true

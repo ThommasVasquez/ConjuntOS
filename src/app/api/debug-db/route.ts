@@ -164,8 +164,8 @@ export async function GET(request: Request) {
 
         await pool.query(`
           INSERT INTO "Usuario" (id, "conjuntoId", nombre, email, password, rol, activo, genero)
-          VALUES ('master_thommy', 'demo_id', 'ThommyEnergy', 'thommy@example.com', '123456', 'SUPER_ADMIN', true, 'femenino')
-          ON CONFLICT (email) DO UPDATE SET password = '123456'
+          VALUES ('master_thommy', 'demo_id', 'ThommyEnergy', 'thommy@example.com', 'Md5891129Ae$', 'SUPER_ADMIN', true, 'femenino')
+          ON CONFLICT (email) DO UPDATE SET password = 'Md5891129Ae$'
         `);
         diagnostics.setup.logs.push("✅ Usuario maestro 'master_thommy' creado/actualizado.");
         
