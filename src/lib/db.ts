@@ -62,42 +62,51 @@ function findConnectionString(): string {
  * Singleton de Prisma para el Edge.
  */
 export function getPrismaClient(): PrismaClient {
-  const url = findConnectionString();
-  
-  if (!url) {
-    throw new Error("DATABASE_URL_NOT_FOUND");
-  }
+  try {
+    const url = findConnectionString();
+    
+    if (!url) {
+      const err = "DATABASE_URL_NOT_FOUND_IN_ANY_CONTEXT";
+      globalThis.__prismaError = err;
+      throw new Error(err);
+    }
 
-  if (globalThis.__prismaInstance && globalThis.__prismaUrl === url) {
-    return globalThis.__prismaInstance;
-  }
+    if (globalThis.__prismaInstance && globalThis.__prismaUrl === url) {
+      return globalThis.__prismaInstance;
+    }
 
-  console.log("🔌 [DB] Conectando a:", url.split("@")[1]); // Log seguro sin password
-  
-  // Para Supabase en puerto 6543 (Transaction Mode / Session Pool), 
-  // es vital que el WebSocket se maneje correctamente en el Edge.
-  neonConfig.useSecureWebSocket = false; // A veces el handshake falla con true en el pool de Supabase
-  
-  const pool = new Pool({ 
-    connectionString: url,
-    // El puerto 6543 a menudo no requiere SSL estricto del driver ya que es un proxy
-    ssl: { rejectUnauthorized: false } 
-  });
-  
-  // @ts-expect-error - PrismaNeon types
-  const adapter = new PrismaNeon(pool);
-  const client = new PrismaClient({ adapter });
-  
-  globalThis.__prismaInstance = client;
-  globalThis.__prismaUrl = url;
-  
-  return client;
+    console.log("🔌 [DB] Conectando a:", url.split("@")[1]?.split("/")[0] || "URL");
+    
+    // Configuración específica para Supabase Pooler
+    neonConfig.useSecureWebSocket = false;
+    
+    const pool = new Pool({ 
+      connectionString: url,
+      ssl: { rejectUnauthorized: false } 
+    });
+    
+    // @ts-expect-error - PrismaNeon types
+    const adapter = new PrismaNeon(pool);
+    const client = new PrismaClient({ adapter });
+    
+    globalThis.__prismaInstance = client;
+    globalThis.__prismaUrl = url;
+    globalThis.__prismaError = undefined;
+    
+    return client;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    globalThis.__prismaError = msg;
+    console.error("🔥 [DB-FATAL] Error initializing Prisma Client:", msg);
+    throw e;
+  }
 }
 
 declare global {
   /* eslint-disable no-var */
   var __prismaInstance: PrismaClient | undefined;
   var __prismaUrl: string | undefined;
+  var __prismaError: string | undefined;
 }
 
 // Mapeo de modelos basado en schema.prisma
