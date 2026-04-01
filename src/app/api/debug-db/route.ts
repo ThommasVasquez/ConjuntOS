@@ -76,9 +76,24 @@ export async function GET(request: Request) {
     const sanitized = localSanitizeUrl(connectionString);
     neonConfig.useSecureWebSocket = false;
     
-    // Extraer host/port para diagnóstico visual (seguro)
+    // Extraer host/port y enmascarar credenciales para auditoría visual segura
     const urlObj = new URL(sanitized.replace("postgresql://", "http://").replace("postgres://", "http://"));
-    diagnostics.diagnostics = { host: urlObj.hostname, port: urlObj.port };
+    
+    // Auditoría de credenciales (enmascarada)
+    const [user, pass] = urlObj.username && urlObj.password 
+      ? [urlObj.username, urlObj.password] 
+      : sanitized.match(/:\/\/([^:]+):([^@]+)@/ )?.slice(1) || ["?", "?"];
+
+    diagnostics.diagnostics = { 
+      host: urlObj.hostname, 
+      port: urlObj.port || "5432",
+      authAudit: {
+        user_prefix: user.substring(0, 3) + "***",
+        pass_prefix: pass.substring(0, 3) + "***",
+        pass_length: pass.length,
+        has_special_chars: /[%$&+,:;=?@#|'<>.^*()%!-]/.test(pass)
+      }
+    };
 
     // Configuramos SSL flexible para resolver el Error 526
     pool = new Pool({ 
