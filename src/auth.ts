@@ -96,16 +96,19 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
               console.log("👤 [AUTH-DIAGNOSTIC] Verificando password para:", user.nombre);
 
-              // Validar password (plain text para el demo)
+              // Validar password (con limpieza de espacios)
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const userPadded = user as any;
+              const inputPassword = password.trim();
+              const dbPassword = (userPadded.password || "123456").trim();
               
-              const isPasswordMatch = userPadded.password 
-                ? userPadded.password === password 
-                : password === "123456";
+              console.log("🔍 [AUTH-DIAGNOSTIC] Longitud pass (entrada):", inputPassword.length);
+              console.log("🔍 [AUTH-DIAGNOSTIC] Longitud pass (DB):", dbPassword.length);
+
+              const isPasswordMatch = inputPassword === dbPassword;
 
               if (!isPasswordMatch) {
-                console.warn("⚠️ [AUTH-DIAGNOSTIC] Login fallido: Password incorrecto para:", normalizedEmail);
+                console.warn("⚠️ [AUTH-DIAGNOSTIC] Login fallido: Las contraseñas no coinciden para:", normalizedEmail);
                 return null;
               }
 
@@ -114,7 +117,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 id: user.id,
                 name: user.nombre,
                 email: user.email,
-                image: user.avatar,
+                role: user.rol, // Añadido para el JWT
               };
 
             } catch (dbError) {
