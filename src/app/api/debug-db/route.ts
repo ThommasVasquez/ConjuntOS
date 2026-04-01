@@ -5,6 +5,17 @@ import { neon } from "@neondatabase/serverless";
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
+interface DiagnosticResult {
+  state: string;
+  cloudflare: { context: string };
+  dbTest: { connection: string; write: string };
+  setup: { status: string; logs: string[] };
+  error?: string;
+  message?: string;
+  stack?: string;
+  diagnostics?: unknown; // Para el catch global
+}
+
 /**
  * INLINED Sanitizer to avoid module resolution errors
  */
@@ -22,7 +33,7 @@ function localSanitizeUrl(baseUrl: string): string {
 }
 
 export async function GET(request: Request) {
-  const diagnostics: any = {
+  const diagnostics: DiagnosticResult = {
     state: "Iniciando...",
     cloudflare: { context: "Pendiente" },
     dbTest: { connection: "Pendiente", write: "Pendiente" },
@@ -36,15 +47,15 @@ export async function GET(request: Request) {
     // 1. Contexto Cloudflare
     let connectionString = "";
     try {
-      const ctx = getRequestContext() as any;
+      const ctx = getRequestContext() as unknown as { env: { DATABASE_URL?: string } };
       if (ctx?.env?.DATABASE_URL) {
         connectionString = ctx.env.DATABASE_URL.trim();
         diagnostics.cloudflare.context = "✅ OK";
       } else {
         diagnostics.cloudflare.context = "❌ DATABASE_URL no encontrada en env";
       }
-    } catch (e: any) {
-      diagnostics.cloudflare.context = `❌ Error Contexto: ${e.message}`;
+    } catch (e: unknown) {
+      diagnostics.cloudflare.context = `❌ Error Contexto: ${e instanceof Error ? e.message : "Desconocido"}`;
     }
 
     if (!connectionString) {
@@ -59,8 +70,8 @@ export async function GET(request: Request) {
     try {
       await sql`SELECT 1`;
       diagnostics.dbTest.connection = "✅ OK";
-    } catch (e: any) {
-      diagnostics.dbTest.connection = `❌ Error: ${e.message}`;
+    } catch (e: unknown) {
+      diagnostics.dbTest.connection = `❌ Error: ${e instanceof Error ? e.message : "Desconocido"}`;
       return NextResponse.json(diagnostics);
     }
 
@@ -69,8 +80,8 @@ export async function GET(request: Request) {
       await sql`CREATE TEMP TABLE debug_test (id int)`;
       await sql`DROP TABLE debug_test`;
       diagnostics.dbTest.write = "✅ OK";
-    } catch (e: any) {
-      diagnostics.dbTest.write = `❌ Error Escritura: ${e.message}`;
+    } catch (e: unknown) {
+      diagnostics.dbTest.write = `❌ Error Escritura: ${e instanceof Error ? e.message : "Desconocido"}`;
     }
 
     // 5. Setup (Si aplica)
@@ -91,19 +102,20 @@ export async function GET(request: Request) {
           ON CONFLICT (email) DO UPDATE SET password = '123456'
         `;
         diagnostics.setup.status = "✅ ÉXITO";
-      } catch (e: any) {
+      } catch (e: unknown) {
         diagnostics.setup.status = "❌ FALLO";
-        diagnostics.setup.logs.push(`Error: ${e.message}`);
+        diagnostics.setup.logs.push(`Error: ${e instanceof Error ? e.message : "Desconocido"}`);
       }
     }
 
     return NextResponse.json(diagnostics);
 
-  } catch (globalError: any) {
+  } catch (globalError: unknown) {
+    const error = globalError as Error;
     return NextResponse.json({
       error: "CRASH GLOBAL EN HANDLER",
-      message: globalError.message,
-      stack: globalError.stack,
+      message: error.message,
+      stack: error.stack,
       diagnostics
     }, { status: 500 });
   }
