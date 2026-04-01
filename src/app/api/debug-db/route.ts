@@ -155,6 +155,15 @@ export async function GET(request: Request) {
         `);
         diagnostics.setup.logs.push("✅ Usuario maestro 'master_thommy' creado/actualizado.");
         
+        // Verificación final del usuario creado
+        const userRes = await pool.query('SELECT email, rol, password FROM "Usuario" WHERE email = $1', ['thommy@example.com']);
+        if (userRes.rows.length > 0) {
+          const u = userRes.rows[0];
+          diagnostics.setup.logs.push(`🔍 Verificación DB: Email=${u.email}, Rol=${u.rol}, PassLen=${u.password?.length}`);
+        } else {
+          diagnostics.setup.logs.push("❌ Error Crítico: El usuario maestro no se encuentra tras el INSERT.");
+        }
+        
         diagnostics.setup.status = "✅ ÉXITO";
       } catch (e: unknown) {
         diagnostics.setup.status = "❌ FALLO";
