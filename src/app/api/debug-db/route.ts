@@ -16,7 +16,7 @@ interface DiagnosticResult {
     error_name: string | null;
     error_message: string | null;
     error_stack: string | null;
-    data?: any;
+    data?: unknown;
   };
   database: {
     status: string;
