@@ -7,7 +7,6 @@ export const runtime = "edge";
 
 /**
  * Escapa el carácter '%' en la contraseña para que URL lo acepte.
- * Importante para contraseñas como "Md5891129Ae%ThommyEnergy%"
  */
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
@@ -15,7 +14,6 @@ export function sanitizeUrl(baseUrl: string): string {
     const parts = baseUrl.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
-      // Convertimos % en %25 (su valor escapado)
       const safePassword = password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
@@ -25,53 +23,66 @@ export function sanitizeUrl(baseUrl: string): string {
   }
 }
 
+/**
+ * Busca la cadena de conexión en todas las fuentes posibles del Edge.
+ */
 function findConnectionString(): string {
+  // 1. globalThis.DATABASE_URL (Inyectado por algunos entornos)
   const g = globalThis as unknown as { 
     DATABASE_URL?: string; 
     env?: { DATABASE_URL?: string } 
   };
-  
   if (g.DATABASE_URL) return sanitizeUrl(g.DATABASE_URL.trim());
   if (g.env?.DATABASE_URL) return sanitizeUrl(g.env.DATABASE_URL.trim());
 
+  // 2. Cloudflare Request Context (Recomendado para Pages/Workers)
   try {
     const ctx = getRequestContext();
-    const cfEnv = ctx?.env as { DATABASE_URL?: string };
-    if (cfEnv?.DATABASE_URL) {
-       console.log("📡 [DB-DIAGNOSTIC] DATABASE_URL encontrada en Cloudflare Context.");
-       return sanitizeUrl(cfEnv.DATABASE_URL.trim());
+    const env = ctx?.env as { DATABASE_URL?: string };
+    if (env?.DATABASE_URL) {
+       return sanitizeUrl(env.DATABASE_URL.trim());
     }
-  } catch { /* Contexto no listo */ }
+  } catch { /* No estamos en un contexto de petición */ }
 
+  // 3. process.env (Fallback para local u otros entornos Next.js)
   if (process.env.DATABASE_URL) {
-     console.log("📡 [DB-DIAGNOSTIC] DATABASE_URL encontrada en process.env.");
      return sanitizeUrl(process.env.DATABASE_URL.trim());
   }
   
-  console.warn("🚨 [DB-DIAGNOSTIC] No se encontró DATABASE_URL en ninguna fuente conocida.");
   return "";
 }
 
-function initPrisma(url: string): PrismaClient {
-  console.log("🔌 Inicializando Prisma con Neon Serverless (Edge Mode)");
-  try {
-    // Configuración para que el driver de Neon funcione con hosts externos como Supabase
-    // Desactivamos el proxy interno de Neon que causa el error 1016
-    neonConfig.useSecureWebSocket = true;
-    
-    const pool = new Pool({ 
-      connectionString: url,
-      // Desactivamos la validación estricta de SSL para el error 526
-      ssl: { rejectUnauthorized: false }
-    });
-    
-    // @ts-expect-error - El pool de Neon Serverless tiene una discrepancia interna de tipos con el adaptador de Prisma pero funciona correctamente
-    const adapter = new PrismaNeon(pool);
-    return new PrismaClient({ adapter });
-  } catch (error) {
-    console.error("🔥 Error crítico en initPrisma (Neon Edge):", error);
-    throw error;
+/**
+ * Singleton de Prisma para el Edge.
+ */
+export function getPrismaClient(): PrismaClient {
+  const url = findConnectionString();
+  
+  if (!url) {
+    throw new Error("DATABASE_URL_NOT_FOUND");
   }
+
+  if (globalThis.__prismaInstance && globalThis.__prismaUrl === url) {
+    return globalThis.__prismaInstance;
+  }
+
+  console.log("🔌 [DB] Inicializando nueva instancia de Prisma (Neon Serverless)");
+  
+  neonConfig.useSecureWebSocket = true;
+  
+  const pool = new Pool({ 
+    connectionString: url,
+    ssl: { rejectUnauthorized: false }
+  });
+  
+  // @ts-expect-error - Discrepancia de tipos entre Neon y Prisma (Edge)
+  const adapter = new PrismaNeon(pool);
+  const client = new PrismaClient({ adapter });
+  
+  globalThis.__prismaInstance = client;
+  globalThis.__prismaUrl = url;
+  
+  return client;
 }
 
 declare global {
@@ -80,32 +91,32 @@ declare global {
   var __prismaUrl: string | undefined;
 }
 
-const db = new Proxy({} as PrismaClient, {
-  get: (target, prop) => {
-    const currentUrl = findConnectionString();
-    
-    if (!globalThis.__prismaInstance || (currentUrl && globalThis.__prismaUrl !== currentUrl)) {
-      if (currentUrl && currentUrl.length > 10) {
-        globalThis.__prismaInstance = initPrisma(currentUrl);
-        globalThis.__prismaUrl = currentUrl;
-      }
-    }
-    
-    if (!globalThis.__prismaInstance) {
-      if (prop === "usuario" || prop === "conjunto") {
-        throw new Error("DB_NOT_READY_YET");
-      }
-      return (target as unknown as Record<string, unknown>)[prop as string];
-    }
-
-    const client = globalThis.__prismaInstance as unknown as Record<string, unknown>;
-    const result = client[prop as string];
-    
-    if (typeof result === "function") {
-      return result.bind(globalThis.__prismaInstance);
-    }
-    return result;
-  }
-});
+/**
+ * Exportamos un objeto que imita el cliente pero llama a getPrismaClient()
+ * Mapeado a los modelos reales definidos en schema.prisma
+ */
+const db = {
+  get conjunto() { return getPrismaClient().conjunto; },
+  get usuario() { return getPrismaClient().usuario; },
+  get unidad() { return getPrismaClient().unidad; },
+  get areaComun() { return getPrismaClient().areaComun; },
+  get reserva() { return getPrismaClient().reserva; },
+  get anuncio() { return getPrismaClient().anuncio; },
+  get documento() { return getPrismaClient().documento; },
+  get junta() { return getPrismaClient().junta; },
+  get pago() { return getPrismaClient().pago; },
+  get gasto() { return getPrismaClient().gasto; },
+  get local() { return getPrismaClient().local; },
+  get producto() { return getPrismaClient().producto; },
+  get pedido() { return getPrismaClient().pedido; },
+  get solicitudServicio() { return getPrismaClient().solicitudServicio; },
+  get reciboPublico() { return getPrismaClient().reciboPublico; },
+  get adSpace() { return getPrismaClient().adSpace; },
+  
+  $queryRaw: (query: unknown) => getPrismaClient().$queryRawUnsafe(query as string),
+  $executeRaw: (query: unknown) => getPrismaClient().$executeRawUnsafe(query as string),
+  $connect: () => getPrismaClient().$connect(),
+  $disconnect: () => getPrismaClient().$disconnect(),
+};
 
 export default db;

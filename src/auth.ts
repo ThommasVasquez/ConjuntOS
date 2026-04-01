@@ -140,5 +140,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     }),
   ],
   // Log de eventos de Auth.js
-  debug: process.env.NODE_ENV === "development",
+  debug: true, // Activamos depuración total en producción para este diagnóstico
+  logger: {
+    error: (code, ...args) => console.error(`❌ [AUTH-EVENT-ERROR] ${code}:`, ...args),
+    warn: (code, ...args) => console.warn(`⚠️ [AUTH-EVENT-WARN] ${code}:`, ...args),
+    debug: (code, ...args) => console.log(`🔍 [AUTH-EVENT-DEBUG] ${code}:`, ...args),
+  }
 });
