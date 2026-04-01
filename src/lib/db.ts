@@ -12,31 +12,18 @@ export const runtime = "edge";
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
-    let url = baseUrl;
-    // Forzamos puerto 6543 para Supabase en el Edge
-    if (url.includes("supabase.co") && url.includes(":5432")) {
-      url = url.replace(":5432", ":6543");
-    }
-
-    // Para el puerto 6543 en Supabase, el usuario DEBE ser postgres.ID_PROYECTO
-    if (url.includes("supabase.co") && url.includes(":6543")) {
-      const matchProject = url.match(/db\.([^.]+)\.supabase/);
-      if (matchProject) {
-        const projectId = matchProject[1];
-        if (url.includes("://postgres:") || url.includes("://postgres@")) {
-          url = url.replace("://postgres", `://postgres.${projectId}`);
-        }
-      }
-    }
+    const url = baseUrl;
 
     // Regex flexible para postgres:// o postgresql://
     const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
-      // Evitar doble codificación: solo codificamos % si no es ya parte de un %25
+      
+      // Evitar doble codificación de %
       const safePassword = password.includes("%25") 
         ? password 
         : password.replace(/%/g, "%25");
+        
       return `${protocol}${user}:${safePassword}${rest}`;
     }
     return url;
