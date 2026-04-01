@@ -10,7 +10,7 @@ export const runtime = "edge";
  * Muchos usuarios de Supabase tienen este problema porque sus contraseñas autogeneradas
  * rompen el estándar de URL de Node/Edge.
  */
-function sanitizeUrl(baseUrl: string): string {
+export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   
   try {

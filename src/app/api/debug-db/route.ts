@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { neon } from "@neondatabase/serverless";
+import { sanitizeUrl } from "@/lib/db";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -11,35 +12,28 @@ interface DiagnosticResult {
     env_db_len: number;
     protocol: string;
   };
+  setupStatus: string;
+  setupLogs: string[];
   http_test: {
     status: string;
-    error_name: string | null;
-    error_message: string | null;
-    error_stack: string | null;
-    data?: unknown;
-  };
-  database: {
-    status: string;
-    error: string | null;
+    error?: string;
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const setupMode = searchParams.get("setup") === "true";
+
   const diagnostics: DiagnosticResult = {
     cloudflare: {
       context: "❌ NO DISPONIBLE",
       env_db_len: 0,
       protocol: "N/A"
     },
+    setupStatus: "No intentado",
+    setupLogs: [],
     http_test: {
-      status: "No intentado",
-      error_name: null,
-      error_message: null,
-      error_stack: null
-    },
-    database: {
-      status: "Desconocido",
-      error: null
+      status: "No intentado"
     }
   };
 
@@ -47,34 +41,55 @@ export async function GET() {
 
   try {
     const ctx = getRequestContext() as unknown as { env: { DATABASE_URL?: string } };
-    if (ctx && ctx.env) {
-      if (ctx.env.DATABASE_URL) {
-        connectionString = ctx.env.DATABASE_URL.trim();
-        diagnostics.cloudflare.context = "✅ DISPONIBLE";
-        diagnostics.cloudflare.env_db_len = connectionString.length;
-        diagnostics.cloudflare.protocol = connectionString.split(":")[0];
-      } else {
-        diagnostics.cloudflare.context = "✅ DISPONIBLE (Pero DATABASE_URL vacía)";
-      }
+    if (ctx && ctx.env && ctx.env.DATABASE_URL) {
+      connectionString = ctx.env.DATABASE_URL.trim();
+      diagnostics.cloudflare.context = "✅ DISPONIBLE";
+      diagnostics.cloudflare.env_db_len = connectionString.length;
+      diagnostics.cloudflare.protocol = connectionString.split(":")[0];
     }
   } catch (err) {
     diagnostics.cloudflare.context = `❌ ERROR EXTRACCIÓN: ${err instanceof Error ? err.message : "Desconocido"}`;
   }
 
-  // PRUEBA HTTP (El método más robusto en Edge)
   if (connectionString) {
-    diagnostics.http_test.status = "Iniciando prueba HTTP cruda...";
+    const sanitized = sanitizeUrl(connectionString);
+    const sql = neon(sanitized);
+
+    // 1. Diagnóstico Simple
     try {
-      const sql = neon(connectionString);
-      const result = await sql`SELECT NOW()`;
-      diagnostics.http_test.status = "✅ ÉXITO TOTAL: HTTP conectó y ejecutó SQL";
-      diagnostics.http_test.data = result;
+      await sql`SELECT 1`;
+      diagnostics.http_test.status = "✅ CONEXIÓN HTTP OK";
     } catch (err) {
-      diagnostics.http_test.status = "❌ FALLO HTTP";
-      if (err instanceof Error) {
-        diagnostics.http_test.error_name = err.name;
-        diagnostics.http_test.error_message = err.message;
-        diagnostics.http_test.error_stack = err.stack || null;
+      diagnostics.http_test.status = "❌ FALLO CONEXIÓN";
+      diagnostics.http_test.error = err instanceof Error ? err.message : String(err);
+    }
+
+    // 2. Modo Setup (Inyección Directa)
+    if (setupMode) {
+      diagnostics.setupStatus = "Iniciando...";
+      try {
+        // A. Crear Conjunto Demo
+        const conjuntoId = "demo_conjunto_id";
+        diagnostics.setupLogs.push("Buscando/Creando conjunto...");
+        
+        await sql`
+          INSERT INTO "Conjunto" (id, nombre, subdominio, direccion, ciudad, "colorPrimario", plan, activo)
+          VALUES (${conjuntoId}, 'Residencial Horizonte', 'demo', 'Calle 123', 'Bogotá', '#1E3A5F', 'BASICO', true)
+          ON CONFLICT (subdominio) DO NOTHING
+        `;
+
+        // B. Crear Usuario Maestro
+        diagnostics.setupLogs.push("Buscando/Creando usuario maestro...");
+        await sql`
+          INSERT INTO "Usuario" (id, "conjuntoId", nombre, email, password, rol, activo, genero)
+          VALUES ('master_user_id', ${conjuntoId}, 'ThommyEnergy', 'thommy@example.com', '123456', 'SUPER_ADMIN', true, 'femenino')
+          ON CONFLICT (email) DO UPDATE SET password = '123456'
+        `;
+
+        diagnostics.setupStatus = "✅ TODO CREADO CON ÉXITO";
+      } catch (err) {
+        diagnostics.setupStatus = "❌ FALLO SETUP";
+        diagnostics.setupLogs.push(`ERROR: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   }
