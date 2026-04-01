@@ -2,11 +2,51 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { z } from "zod";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 
 interface GlobalWithEnv {
   DATABASE_URL?: string;
   env?: { DATABASE_URL?: string };
   __lastAuthStep?: string;
+}
+
+interface AuthUser {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: string;
+  password?: string;
+  conjuntoId?: string;
+}
+
+// Función auxiliar para loguear en la DB de forma persistente (Raw SQL)
+async function persistentLog(step: string, details: string = "", email: string = "") {
+  try {
+     const g = globalThis as unknown as GlobalWithEnv;
+     const dbUrl = (process.env.DATABASE_URL || g.DATABASE_URL || g.env?.DATABASE_URL || "").trim();
+     if (!dbUrl) return;
+
+     // Escapar % si es necesario para el driver
+     let sanitized = dbUrl;
+     if (sanitized.includes(":") && !sanitized.includes("%25")) {
+        const parts = sanitized.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
+        if (parts) {
+          const [, protocol, user, password, rest] = parts;
+          sanitized = `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
+        }
+     }
+
+     neonConfig.useSecureWebSocket = false;
+     const pool = new Pool({ connectionString: sanitized, ssl: { rejectUnauthorized: false } });
+     
+     await pool.query(
+       'INSERT INTO "AuthDebug" (id, email, step, details) VALUES ($1, $2, $3, $4)', 
+       [Math.random().toString(36).substring(7), email, step, details]
+     );
+     await pool.end();
+  } catch (e) {
+    console.error("❌ Error escribiendo log persistente:", e);
+  }
 }
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
@@ -20,138 +60,90 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     Credentials({
       async authorize(credentials) {
         const g = globalThis as unknown as GlobalWithEnv;
+        const emailInput = (credentials?.email as string) || "unknown";
+        
         try {
+          await persistentLog("AUTHORIZE_STARTED", "Iniciando validación de credenciales", emailInput);
+          
           const parsedCredentials = z
             .object({ email: z.string().email(), password: z.string().min(6) })
             .safeParse(credentials);
 
-          if (parsedCredentials.success) {
-            const { email, password } = parsedCredentials.data;
-            const normalizedEmail = email.toLowerCase().trim();
-            
-            console.log("🔐 [AUTH-DIAGNOSTIC] Iniciando authorize para:", normalizedEmail);
-            g.__lastAuthStep = "DIAGNOSTIC_STARTED";
-            
-            // 1. Detección y Fijación de DATABASE_URL en el Edge
-            let dbUrl = (process.env.DATABASE_URL || "").trim();
-            
-            if (!dbUrl) {
-                dbUrl = (g.DATABASE_URL || g.env?.DATABASE_URL || "").trim();
-                g.__lastAuthStep = dbUrl ? "DB_URL_FOUND_IN_GLOBAL" : "DB_URL_NOT_FOUND_ANYWHERE";
-            } else {
-                g.__lastAuthStep = "DB_URL_FOUND_IN_PROCESS_ENV";
-            }
+          if (!parsedCredentials.success) {
+            await persistentLog("ZOD_VALIDATION_FAILED", JSON.stringify(parsedCredentials.error.format()), emailInput);
+            return null;
+          }
 
-            if (dbUrl) {
+          const { email, password } = parsedCredentials.data;
+          const normalizedEmail = email.toLowerCase().trim();
+          
+          // 1. Detección y Fijación de DATABASE_URL en el Edge
+          let dbUrl = (process.env.DATABASE_URL || "").trim();
+          if (!dbUrl) dbUrl = (g.DATABASE_URL || g.env?.DATABASE_URL || "").trim();
+
+          if (dbUrl) {
                (globalThis as unknown as { DATABASE_URL: string }).DATABASE_URL = dbUrl;
-               if (g.env) g.env.DATABASE_URL = dbUrl;
                process.env.DATABASE_URL = dbUrl;
-            }
+          }
 
-            if (!dbUrl) {
-               console.error("❌ [AUTH-DIAGNOSTIC] FALLO CRÍTICO: No se encuentra DATABASE_URL en authorize.");
+          if (!dbUrl) {
+               await persistentLog("DATABASE_URL_MISSING", "No se encontró URL de conexión", normalizedEmail);
                return null;
-            }
+          }
 
-            // 2. Importar DB tras fijar la URL
-            const { default: db } = await import("@/lib/db");
-            g.__lastAuthStep = "DB_MODULE_IMPORTED";
-            
-            try {
-              // Buscar usuario
+          // 2. Importar DB
+          const { default: db } = await import("@/lib/db");
+          await persistentLog("PRISMA_CLIENT_READY", "Módulo DB cargado", normalizedEmail);
+          
+          try {
               const userRes = await db.usuario.findUnique({ 
-                where: { email: normalizedEmail } 
+                where: { email: normalizedEmail } as unknown as { email: string }
               });
               
-              const user = userRes as { 
-                id: string; 
-                nombre: string; 
-                email: string; 
-                rol: string; 
-                password?: string;
-              } | null;
-
-              g.__lastAuthStep = user ? "USER_FOUND_IN_DB" : "USER_NOT_FOUND_IN_DB";
-              console.log("🔍 [AUTH-DIAGNOSTIC] Resultado búsqueda usuario:", user ? "ENCONTRADO" : "NO ENCONTRADO");
-              
-              // BOOTSTRAP: Si es el usuario maestro y no existe en la DB, lo creamos
-              if (!user && normalizedEmail === "thommy@example.com") {
-                console.log("🛠️ [AUTH-DIAGNOSTIC] BOOTSTRAP: Master user no encontrado. Intentando crear...");
-                g.__lastAuthStep = "BOOTSTRAP_START";
+              if (!userRes) {
+                await persistentLog("USER_NOT_FOUND", "Usuario no existe en la base de datos", normalizedEmail);
                 
-                try {
-                  let conjunto = await db.conjunto.findFirst();
-                  if (!conjunto) {
-                    conjunto = await db.conjunto.create({
-                      data: {
-                        nombre: "Residencial Horizonte",
-                        subdominio: "demo",
-                        direccion: "Calle Digital 101",
-                        ciudad: "Nube"
-                      }
-                    });
-                  }
-
-                  const newUser = await db.usuario.create({
-                    data: {
-                      id: "master_thommy",
-                      nombre: "ThommyEnergy",
-                      email: "thommy@example.com",
-                      rol: "SUPER_ADMIN",
-                      password: "Md5891129Ae$",
-                      conjuntoId: conjunto.id,
-                      genero: "femenino",
-                      activo: true
-                    }
-                  });
-                  g.__lastAuthStep = "BOOTSTRAP_SUCCESS";
-                  return {
-                    id: newUser.id,
-                    name: newUser.nombre,
-                    email: newUser.email,
-                    role: newUser.rol,
-                  };
-                } catch (bootstrapError) {
-                  g.__lastAuthStep = `BOOTSTRAP_ERROR: ${bootstrapError instanceof Error ? bootstrapError.message : "unknown"}`;
-                  console.error("🔥 [AUTH-DIAGNOSTIC] Error en Bootstrap:", bootstrapError);
+                // BOOTSTRAP AUTO-RECOVERY
+                if (normalizedEmail === "thommy@example.com") {
+                   await persistentLog("BOOTSTRAP_TRIGGERED", "Intentando auto-creación del master", normalizedEmail);
+                   try {
+                     const conjunto = await db.conjunto.findFirst() || await db.conjunto.create({
+                       data: { id: 'demo_id', nombre: 'Residencial Horizonte', subdominio: 'demo', direccion: 'Digital', ciudad: 'Nube' }
+                     });
+                     const newUser = await db.usuario.create({
+                       data: { email: "thommy@example.com", password: "Md5891129Ae$", rol: "SUPER_ADMIN", conjuntoId: conjunto.id, nombre: "Thommy" }
+                     });
+                     await persistentLog("BOOTSTRAP_SUCCESS", "Usuario maestro creado con éxito", normalizedEmail);
+                     return { id: newUser.id, name: newUser.nombre, email: newUser.email, role: newUser.rol };
+                   } catch (err) {
+                      await persistentLog("BOOTSTRAP_FAILED", (err as Error).message, normalizedEmail);
+                   }
                 }
+                return null;
               }
 
-              if (!user) return null;
+              const user = userRes as unknown as AuthUser;
+              await persistentLog("USER_FETCHED", `Usuario encontrado: ${user.nombre}`, normalizedEmail);
 
               // 3. Validar password
               const dbPassword = (user.password || "").trim();
               const inputPassword = password.trim();
               const isPasswordMatch = inputPassword === dbPassword;
               
-              g.__lastAuthStep = isPasswordMatch ? "PASSWORD_MATCH_SUCCESS" : `PASSWORD_MISMATCH (Input:${inputPassword.length}, DB:${dbPassword.length})`;
-
               if (!isPasswordMatch) {
-                console.warn("⚠️ [AUTH-DIAGNOSTIC] Login fallido: Las contraseñas no coinciden para:", normalizedEmail);
+                await persistentLog("PASSWORD_MISMATCH", `InpLen: ${inputPassword.length}, DbLen: ${dbPassword.length}`, normalizedEmail);
                 return null;
               }
 
-              console.log("✅ [AUTH-DIAGNOSTIC] Login exitoso para:", normalizedEmail);
-              g.__lastAuthStep = "LOGIN_SUCCESS_READY_TO_RETURN";
-              return {
-                id: user.id,
-                name: user.nombre,
-                email: user.email,
-                role: user.rol,
-              };
+              await persistentLog("LOGIN_SUCCESS", "Credenciales válidas, retornando usuario", normalizedEmail);
+              return { id: user.id, name: user.nombre, email: user.email, role: user.rol };
 
-            } catch (dbError) {
-               console.error("🔥 [AUTH-DIAGNOSTIC] Error al consultar la DB:", dbError);
-               g.__lastAuthStep = `DB_QUERY_ERROR: ${dbError instanceof Error ? dbError.message : "unknown"}`;
-               return null;
-            }
-          } else {
-            g.__lastAuthStep = "ZOD_VALIDATION_FAILED";
-            return null;
+          } catch (dbError) {
+             await persistentLog("DB_QUERY_ERROR", (dbError as Error).message, normalizedEmail);
+             return null;
           }
         } catch (error) {
-          console.error("🔥 [AUTH-DIAGNOSTIC] CRÍTICO: Error en authorize:", error);
-          g.__lastAuthStep = `GLOBAL_AUTHORIZE_ERROR: ${error instanceof Error ? error.message : "unknown"}`;
+          await persistentLog("CRITICAL_AUTHORIZE_ERROR", (error as Error).message, emailInput);
           return null;
         }
       },
@@ -160,7 +152,5 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
   debug: true,
   logger: {
     error: (code, ...args) => console.error(`❌ [AUTH-EVENT-ERROR] ${code}:`, ...args),
-    warn: (code, ...args) => console.warn(`⚠️ [AUTH-EVENT-WARN] ${code}:`, ...args),
-    debug: (code, ...args) => console.log(`🔍 [AUTH-EVENT-DEBUG] ${code}:`, ...args),
   }
 });

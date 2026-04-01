@@ -28,6 +28,7 @@ interface DiagnosticResult {
     secret_status: string;
     timestamp: string;
   };
+  persistent_auth_logs?: unknown[];
   prisma_singleton_error?: string;
 }
 
@@ -96,9 +97,17 @@ export async function GET(request: Request) {
       await pool.query("SELECT 1");
       diagnostics.dbTest.connection = `✅ OK (Neon Serverless - ${Date.now() - dbStart}ms)`;
 
-      await pool.query('CREATE TEMP TABLE IF NOT EXISTS test_edge (id SERIAL PRIMARY KEY, val TEXT)');
-      await pool.query("INSERT INTO test_edge (val) VALUES ('test')");
-      diagnostics.dbTest.write = "✅ OK (Escritura temporal verificada)";
+      // CREAR TABLA DE LOGS PERSISTENTES SI NO EXISTE
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "AuthDebug" (
+          id TEXT PRIMARY KEY,
+          email TEXT,
+          step TEXT,
+          details TEXT,
+          "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      diagnostics.dbTest.write = "✅ OK (Tabla AuthDebug verificada)";
     } catch (dbError: unknown) {
       const err = dbError as Error;
       diagnostics.dbTest.connection = `❌ Error: ${err.message}`;
@@ -107,23 +116,21 @@ export async function GET(request: Request) {
 
     if (runSetup && diagnostics.dbTest.connection.startsWith("✅")) {
       try {
-        diagnostics.setup.logs.push("Iniciando prueba de escritura (TEMP TABLE)...");
-        diagnostics.setup.logs.push("Prueba de escritura completada con éxito.");
-        diagnostics.setup.logs.push("Verificando existencia de tablas...");
+        diagnostics.setup.logs.push("Asegurando datos maestros...");
 
         await pool.query(`
           INSERT INTO "Conjunto" (id, nombre, subdominio, direccion, ciudad)
           VALUES ('demo_id', 'Residencial Horizonte', 'demo', 'Calle Digital 101', 'Nube')
           ON CONFLICT (subdominio) DO UPDATE SET nombre = 'Residencial Horizonte'
         `);
-        diagnostics.setup.logs.push("✅ Conjunto 'demo_id' creado/actualizado.");
+        diagnostics.setup.logs.push("✅ Conjunto 'demo_id' verificado.");
 
         await pool.query(`
           INSERT INTO "Usuario" (id, "conjuntoId", nombre, email, password, rol, activo, genero)
           VALUES ('master_thommy', 'demo_id', 'ThommyEnergy', 'thommy@example.com', 'Md5891129Ae$', 'SUPER_ADMIN', true, 'femenino')
           ON CONFLICT (email) DO UPDATE SET password = 'Md5891129Ae$'
         `);
-        diagnostics.setup.logs.push("✅ Usuario maestro 'master_thommy' creado/actualizado.");
+        diagnostics.setup.logs.push("✅ Usuario maestro verificado.");
         
         const userRes = await pool.query('SELECT email, rol, password FROM "Usuario" WHERE email = $1', ['thommy@example.com']);
         if (userRes.rows.length > 0) {
@@ -137,6 +144,14 @@ export async function GET(request: Request) {
         diagnostics.setup.status = "❌ FALLO";
         diagnostics.setup.logs.push(`Error en setup: ${err.message}`);
       }
+    }
+
+    // LEER ÚLTIMOS LOGS PERSISTENTES
+    try {
+      const logs = await pool.query('SELECT step, details, email, "creadoEn" FROM "AuthDebug" ORDER BY "creadoEn" DESC LIMIT 10');
+      diagnostics.persistent_auth_logs = logs.rows as unknown[];
+    } catch {
+      diagnostics.persistent_auth_logs = [];
     }
 
     const anyGlobal = globalThis as unknown as { __prismaError?: string; __lastAuthStep?: string };
