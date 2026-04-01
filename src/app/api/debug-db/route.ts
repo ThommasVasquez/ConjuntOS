@@ -16,7 +16,7 @@ export async function GET() {
       const cfEnv = ctx.env as { DATABASE_URL?: string };
       cfEnvStatus = cfEnv.DATABASE_URL ? "✅ CONFIGURADA (Contexto)" : "❌ VACÍA en Contexto";
     }
-  } catch (_) {
+  } catch {
     cfContextStatus = "❌ ERROR: Fallo al obtener contexto";
   }
 

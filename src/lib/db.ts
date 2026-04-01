@@ -18,7 +18,7 @@ function createDynamicClient() {
       connectionString = cfEnv.DATABASE_URL.trim();
       console.log("🏙️ DATABASE_URL obtenida vía getRequestContext (Cloudflare Context)");
     }
-  } catch (_) {
+  } catch {
     // No estamos en Cloudflare o no hay contexto disponible aún
   }
 
