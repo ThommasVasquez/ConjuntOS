@@ -57,7 +57,8 @@ function initPrisma(url: string): PrismaClient {
       ssl: { rejectUnauthorized: false }
     });
     
-    const adapter = new PrismaNeon(pool);
+    // Cast necesario para resolver discrepancia de tipos entre @neondatabase/serverless y @prisma/adapter-neon
+    const adapter = new PrismaNeon(pool as unknown as any);
     return new PrismaClient({ adapter });
   } catch (error) {
     console.error("🔥 Error crítico en initPrisma (Neon Edge):", error);
@@ -86,7 +87,7 @@ const db = new Proxy({} as PrismaClient, {
       if (prop === "usuario" || prop === "conjunto") {
         throw new Error("DB_NOT_READY_YET");
       }
-      return (target as any)[prop];
+      return (target as unknown as Record<string, unknown>)[prop as string];
     }
 
     const client = globalThis.__prismaInstance as unknown as Record<string, unknown>;
