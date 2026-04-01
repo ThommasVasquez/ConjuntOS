@@ -23,12 +23,18 @@ interface DiagnosticResult {
 function localSanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
-    const parts = baseUrl.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
+    let url = baseUrl;
+    // Forzamos puerto 6543 para Supabase en el Edge
+    if (url.includes("supabase.co") && url.includes(":5432")) {
+      url = url.replace(":5432", ":6543");
+    }
+    const parts = url.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
       const safePassword = password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
+    return url;
   } catch { /* Falls back to original */ }
   return baseUrl;
 }
@@ -67,7 +73,7 @@ export async function GET(request: Request) {
 
     // 2. Conector Neon Serverless (Edge Natively Compatible)
     const sanitized = localSanitizeUrl(connectionString);
-    neonConfig.useSecureWebSocket = true;
+    neonConfig.useSecureWebSocket = false;
     
     // Configuramos SSL flexible para resolver el Error 526
     pool = new Pool({ 
