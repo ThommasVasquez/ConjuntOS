@@ -1,122 +1,110 @@
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { neon } from "@neondatabase/serverless";
-import { sanitizeUrl } from "@/lib/db";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
-interface DiagnosticResult {
-  cloudflare: {
-    context: string;
-    env_db_len: number;
-  };
-  setupStatus: string;
-  setupLogs: string[];
-  dbTest: {
-    connection: string;
-    writeTest: string;
-    error_details?: any;
-  };
+/**
+ * INLINED Sanitizer to avoid module resolution errors
+ */
+function localSanitizeUrl(baseUrl: string): string {
+  if (!baseUrl) return "";
+  try {
+    const parts = baseUrl.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
+    if (parts) {
+      const [, protocol, user, password, rest] = parts;
+      const safePassword = password.replace(/%/g, "%25");
+      return `${protocol}${user}:${safePassword}${rest}`;
+    }
+  } catch { /* Fallback */ }
+  return baseUrl;
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const setupMode = searchParams.get("setup") === "true";
-
-  const diagnostics: DiagnosticResult = {
-    cloudflare: {
-      context: "❌ NO DISPONIBLE",
-      env_db_len: 0
-    },
-    setupStatus: "No intentado",
-    setupLogs: [],
-    dbTest: {
-      connection: "Pendiente",
-      writeTest: "No intentada"
-    }
+  const diagnostics: any = {
+    state: "Iniciando...",
+    cloudflare: { context: "Pendiente" },
+    dbTest: { connection: "Pendiente", write: "Pendiente" },
+    setup: { status: "No ejecutado", logs: [] }
   };
 
-  let connectionString = "";
-
   try {
-    const ctx = getRequestContext() as unknown as { env: { DATABASE_URL?: string } };
-    if (ctx?.env?.DATABASE_URL) {
-      connectionString = ctx.env.DATABASE_URL.trim();
-      diagnostics.cloudflare.context = "✅ DISPONIBLE";
-      diagnostics.cloudflare.env_db_len = connectionString.length;
-    }
-  } catch (err) {
-    diagnostics.cloudflare.context = `❌ ERROR ENTORNO: ${err instanceof Error ? err.message : String(err)}`;
-  }
+    const { searchParams } = new URL(request.url);
+    const setupMode = searchParams.get("setup") === "true";
 
-  if (connectionString) {
-    const sanitized = sanitizeUrl(connectionString);
+    // 1. Contexto Cloudflare
+    let connectionString = "";
+    try {
+      const ctx = getRequestContext() as any;
+      if (ctx?.env?.DATABASE_URL) {
+        connectionString = ctx.env.DATABASE_URL.trim();
+        diagnostics.cloudflare.context = "✅ OK";
+      } else {
+        diagnostics.cloudflare.context = "❌ DATABASE_URL no encontrada en env";
+      }
+    } catch (e: any) {
+      diagnostics.cloudflare.context = `❌ Error Contexto: ${e.message}`;
+    }
+
+    if (!connectionString) {
+      return NextResponse.json({ ...diagnostics, error: "No hay connection string" });
+    }
+
+    // 2. Conector Neon (Sanitizado)
+    const sanitized = localSanitizeUrl(connectionString);
     const sql = neon(sanitized);
 
-    // 1. PRUEBA DE CONEXIÓN
+    // 3. Prueba Conexión
     try {
       await sql`SELECT 1`;
-      diagnostics.dbTest.connection = "✅ CONEXIÓN EXITOSA";
-    } catch (err: any) {
-      diagnostics.dbTest.connection = "❌ FALLO CONEXIÓN";
-      diagnostics.dbTest.error_details = {
-        message: err.message,
-        code: err.code,
-        detail: err.detail
-      };
+      diagnostics.dbTest.connection = "✅ OK";
+    } catch (e: any) {
+      diagnostics.dbTest.connection = `❌ Error: ${e.message}`;
       return NextResponse.json(diagnostics);
     }
 
-    // 2. PRUEBA DE ESCRITURA MÍNIMA
+    // 4. Prueba Escritura (Atómica)
     try {
-      diagnostics.dbTest.writeTest = "Iniciando...";
-      await sql`CREATE TEMP TABLE test_write (id int); DROP TABLE test_write;`;
-      diagnostics.dbTest.writeTest = "✅ ESCRITURA TEMPORAL EXITOSA";
-    } catch (err: any) {
-      diagnostics.dbTest.writeTest = "❌ FALLO ESCRITURA";
-      diagnostics.dbTest.error_details = {
-        message: err.message,
-        code: err.code,
-        detail: err.detail
-      };
+      await sql`CREATE TEMP TABLE debug_test (id int)`;
+      await sql`DROP TABLE debug_test`;
+      diagnostics.dbTest.write = "✅ OK";
+    } catch (e: any) {
+      diagnostics.dbTest.write = `❌ Error Escritura: ${e.message}`;
     }
 
-    // 3. MODO SETUP (INYECCIÓN REAL)
+    // 5. Setup (Si aplica)
     if (setupMode) {
-      diagnostics.setupStatus = "Ejecutando...";
+      diagnostics.setup.status = "Procesando...";
       try {
-        diagnostics.setupLogs.push("--- PASO 1: CONJUNTO ---");
-        const conjuntoRes = await sql`
+        diagnostics.setup.logs.push("Creando conjunto...");
+        await sql`
           INSERT INTO "Conjunto" (id, nombre, subdominio, direccion, ciudad, "colorPrimario", plan, activo)
-          VALUES ('admin_demo_id', 'Residencial Horizonte', 'horizonte', 'Calle 100', 'Bogotá', '#1E3A5F', 'BASICO', true)
+          VALUES ('demo_id', 'Residencial Horizonte', 'horizonte_demo', 'Calle 100', 'Bogotá', '#1E3A5F', 'BASICO', true)
           ON CONFLICT (subdominio) DO UPDATE SET nombre = 'Residencial Horizonte'
-          RETURNING id
         `;
-        const cid = conjuntoRes[0].id;
-        diagnostics.setupLogs.push(`✅ Conjunto ID: ${cid}`);
 
-        diagnostics.setupLogs.push("--- PASO 2: USUARIO ---");
+        diagnostics.setup.logs.push("Creando usuario maestro...");
         await sql`
           INSERT INTO "Usuario" (id, "conjuntoId", nombre, email, password, rol, activo, genero)
-          VALUES ('master_thommy', ${cid}, 'ThommyEnergy', 'thommy@example.com', '123456', 'SUPER_ADMIN', true, 'femenino')
+          VALUES ('master_thommy', 'demo_id', 'ThommyEnergy', 'thommy@example.com', '123456', 'SUPER_ADMIN', true, 'femenino')
           ON CONFLICT (email) DO UPDATE SET password = '123456'
         `;
-        diagnostics.setupLogs.push("✅ Usuario maestro inyectado.");
-
-        diagnostics.setupStatus = "✅ SETUP COMPLETADO EXITOSAMENTE";
-      } catch (err: any) {
-        diagnostics.setupStatus = "❌ FALLO SETUP";
-        diagnostics.setupLogs.push(`ERROR DETALLADO: ${err.message}`);
-        diagnostics.dbTest.error_details = {
-          code: err.code,
-          detail: err.detail,
-          hint: err.hint,
-          where: err.where
-        };
+        diagnostics.setup.status = "✅ ÉXITO";
+      } catch (e: any) {
+        diagnostics.setup.status = "❌ FALLO";
+        diagnostics.setup.logs.push(`Error: ${e.message}`);
       }
     }
-  }
 
-  return NextResponse.json(diagnostics);
+    return NextResponse.json(diagnostics);
+
+  } catch (globalError: any) {
+    return NextResponse.json({
+      error: "CRASH GLOBAL EN HANDLER",
+      message: globalError.message,
+      stack: globalError.stack,
+      diagnostics
+    }, { status: 500 });
+  }
 }
