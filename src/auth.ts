@@ -5,7 +5,11 @@ import { z } from "zod";
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
   ...authConfig,
-  session: { strategy: "jwt" },
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  session: { 
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 días
+  },
   providers: [
     Credentials({
       async authorize(credentials) {

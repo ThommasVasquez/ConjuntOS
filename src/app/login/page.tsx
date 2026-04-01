@@ -60,7 +60,11 @@ export default function LoginPage() {
 
       if (result?.error) {
         console.error("❌ Error devuelto por Auth.js:", result.error);
-        toast.error("Credenciales incorrectas. Prueba con: thommy@example.com / 123456");
+        if (result.error === "CredentialsSignin") {
+           toast.error("Error de credenciales. Verifica tu email y contraseña (123456)");
+        } else {
+           toast.error(`Fallo en el servidor: ${result.error || "Desconocido"}`);
+        }
       } else {
         console.log("🎉 Autenticación exitosa, redirigiendo...");
         toast.success("¡Bienvenido a ConjuntoApp!");
