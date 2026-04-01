@@ -10,7 +10,10 @@ export const runtime = "edge";
  */
 function getConnectionString(): string {
   // 1. Capa Global (Cloudflare Native)
-  const g = globalThis as any;
+  const g = globalThis as unknown as { 
+    DATABASE_URL?: string; 
+    env?: { DATABASE_URL?: string } 
+  };
   if (g.DATABASE_URL) return g.DATABASE_URL.trim();
   if (g.env?.DATABASE_URL) return g.env.DATABASE_URL.trim();
 
@@ -40,6 +43,7 @@ function createClient() {
   try {
     // Usamos Pool para compatibilidad con PrismaNeon
     const pool = new Pool({ connectionString: url });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const adapter = new PrismaNeon(pool as any);
     return new PrismaClient({ adapter });
   } catch (error) {
@@ -49,9 +53,11 @@ function createClient() {
 }
 
 // Singleton con persistencia en global para evitar múltiples conexiones en HMR
+/* eslint-disable no-var */
 declare global {
   var prisma: PrismaClient | undefined;
 }
+/* eslint-enable no-var */
 
 const db = new Proxy({} as PrismaClient, {
   get: (target, prop) => {
@@ -59,7 +65,9 @@ const db = new Proxy({} as PrismaClient, {
       globalThis.prisma = createClient();
     }
     
-    const result = (globalThis.prisma as any)[prop];
+    const client = globalThis.prisma as unknown as Record<string, unknown>;
+    const result = client[prop as string];
+    
     if (typeof result === "function") {
       return result.bind(globalThis.prisma);
     }
