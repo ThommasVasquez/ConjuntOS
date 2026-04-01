@@ -23,6 +23,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             const { default: db } = await import("@/lib/db");
             console.log("🔍 [AUTH-DIAGNOSTIC] db importado correctamente.");
 
+            if (!process.env.AUTH_SECRET && !process.env.NEXTAUTH_SECRET) {
+              console.error("❌ [AUTH-DIAGNOSTIC] ERROR: No hay AUTH_SECRET ni NEXTAUTH_SECRET en el entorno. La sesión fallará.");
+            }
+
             if (!process.env.DATABASE_URL) {
               console.warn("⚠️ [AUTH-DIAGNOSTIC] DATABASE_URL no está en process.env. Verificando otras fuentes...");
             }
