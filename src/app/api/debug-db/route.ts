@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import { Pool } from "pg";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,8 @@ interface DiagnosticResult {
 }
 
 /**
- * Standard PG Sanitizer (preserves port)
+ * Escapa el carácter '%' en la contraseña para que URL lo acepte.
+ * Crítico para contraseñas como "Md5891129Ae%ThommyEnergy%"
  */
 function localSanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
@@ -28,7 +29,7 @@ function localSanitizeUrl(baseUrl: string): string {
       const safePassword = password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
-  } catch { /* Fallback */ }
+  } catch { /* Falls back to original */ }
   return baseUrl;
 }
 
@@ -62,31 +63,40 @@ export async function GET(request: Request) {
       return NextResponse.json({ ...diagnostics, error: "No hay connection string" });
     }
 
-    // 2. Conector PG Estándar (TCP Directo + SSL Flexible)
+    // 2. Conector Neon Serverless (Edge Natively Compatible)
     const sanitized = localSanitizeUrl(connectionString);
+    neonConfig.useSecureWebSocket = true;
+    
+    // Configuramos SSL flexible para resolver el Error 526
     const pool = new Pool({ 
       connectionString: sanitized,
       ssl: { rejectUnauthorized: false }
     });
 
-    // 3. Prueba Conexión (vía TCP Directo)
+    // 3. Prueba Conexión (Túnel Neon)
     try {
-      const { rows } = await pool.query("SELECT 1 as test");
+      const client = await pool.connect();
+      const { rows } = await client.query("SELECT 1 as test");
+      client.release();
+      
       if (rows?.[0]?.test === 1) {
-        diagnostics.dbTest.connection = "✅ OK (Direct TCP)";
+        diagnostics.dbTest.connection = "✅ OK (Neon Serverless)";
       } else {
-        diagnostics.dbTest.connection = "❌ Respuesta inesperada del Pool PG";
+        diagnostics.dbTest.connection = "❌ Respuesta inesperada del Pool Neon";
       }
     } catch (e: unknown) {
       const error = e as Error;
-      diagnostics.dbTest.connection = `❌ Error TCP Directo: ${error.message}`;
+      diagnostics.dbTest.connection = `❌ Error Conexión: ${error.message}`;
+      if (error.message.includes("526")) {
+          diagnostics.dbTest.connection += " (SSL Handshake Failure - Intenta puerto 6543)";
+      }
       return NextResponse.json(diagnostics);
     }
 
     // 4. Prueba Escritura (Atómica)
     try {
-      await pool.query('CREATE TEMP TABLE pg_debug_test (id int)');
-      await pool.query('DROP TABLE pg_debug_test');
+      await pool.query('CREATE TEMP TABLE neon_debug_test (id int)');
+      await pool.query('DROP TABLE neon_debug_test');
       diagnostics.dbTest.write = "✅ OK";
     } catch (e: unknown) {
       diagnostics.dbTest.write = `❌ Error Escritura: ${e instanceof Error ? e.message : "Desconocido"}`;
@@ -116,7 +126,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // Cerrar el pool para liberar la conexión TCP
+    // Cerrar el pool para liberar la conexión del túnel
     await pool.end();
     return NextResponse.json(diagnostics);
 

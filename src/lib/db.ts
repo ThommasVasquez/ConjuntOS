@@ -1,12 +1,13 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = "edge";
 
 /**
- * Corrige URLs que contienen caracteres especiales (como %) en la contraseña.
+ * Escapa el carácter '%' en la contraseña para que URL lo acepte.
+ * Importante para contraseñas como "Md5891129Ae%ThommyEnergy%"
  */
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
@@ -14,6 +15,7 @@ export function sanitizeUrl(baseUrl: string): string {
     const parts = baseUrl.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
+      // Convertimos % en %25 (su valor escapado)
       const safePassword = password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
@@ -43,17 +45,22 @@ function findConnectionString(): string {
 }
 
 function initPrisma(url: string): PrismaClient {
-  console.log("🔌 Inicializando Prisma con Adaptador PG Directo y SSL Flexible");
+  console.log("🔌 Inicializando Prisma con Neon Serverless (Edge Mode)");
   try {
-    // Configuramos SSL flexible para evitar el Error 526 en Cloudflare/Supabase
+    // Configuración para que el driver de Neon funcione con hosts externos como Supabase
+    // Desactivamos el proxy interno de Neon que causa el error 1016
+    neonConfig.useSecureWebSocket = true;
+    
     const pool = new Pool({ 
       connectionString: url,
+      // Desactivamos la validación estricta de SSL para el error 526
       ssl: { rejectUnauthorized: false }
     });
-    const adapter = new PrismaPg(pool);
+    
+    const adapter = new PrismaNeon(pool);
     return new PrismaClient({ adapter });
   } catch (error) {
-    console.error("🔥 Error crítico en initPrisma (PG Adapter):", error);
+    console.error("🔥 Error crítico en initPrisma (Neon Edge):", error);
     throw error;
   }
 }
