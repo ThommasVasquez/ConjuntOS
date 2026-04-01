@@ -9,7 +9,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const isSetupMode = searchParams.get("setup") === "true";
 
-  const diagnostics: any = {
+  const diagnostics: Record<string, unknown> = {
+    setup_mode: isSetupMode ? "ACTIVADO" : "DESACTIVADO",
     env: {
       DATABASE_URL_PROCESS: process.env.DATABASE_URL ? `EXISTE (Len: ${process.env.DATABASE_URL.length})` : "❌ FALTANTE en process.env",
     },
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
     },
     direct_pool_test: {
       status: "No intentado",
-      error: null,
+      error: null as string | null,
     },
     database: {
       status: "Desconocido",
@@ -33,35 +34,40 @@ export async function GET(request: Request) {
 
   // 1. Extraer del contexto de Cloudflare
   try {
-    const ctx = getRequestContext();
-    if (ctx) {
-      diagnostics.cloudflare.context = "✅ DISPONIBLE";
-      const cfEnv = ctx.env as { DATABASE_URL?: string };
-      if (cfEnv?.DATABASE_URL) {
-        connectionString = cfEnv.DATABASE_URL.trim();
-        diagnostics.cloudflare.env_db = `✅ ENCONTRADA (Len: ${connectionString.length})`;
-        diagnostics.cloudflare.raw_db_prefix = connectionString.substring(0, 8);
+    const ctx = getRequestContext() as { env: { DATABASE_URL?: string } };
+    if (ctx && ctx.env) {
+      diagnostics.cloudflare = { ...diagnostics.cloudflare as object, context: "✅ DISPONIBLE" };
+      if (ctx.env.DATABASE_URL) {
+        connectionString = ctx.env.DATABASE_URL.trim();
+        diagnostics.cloudflare = { 
+          ...diagnostics.cloudflare as object, 
+          env_db: `✅ ENCONTRADA (Len: ${connectionString.length})`,
+          raw_db_prefix: connectionString.substring(0, 8)
+        };
       } else {
-        diagnostics.cloudflare.env_db = "❌ VACÍA en env";
+        diagnostics.cloudflare = { ...diagnostics.cloudflare as object, env_db: "❌ VACÍA en env" };
       }
     }
-  } catch (e: any) {
-    diagnostics.cloudflare.context = `❌ ERROR EXTRACCIÓN: ${e.message}`;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Desconocido";
+    diagnostics.cloudflare = { ...diagnostics.cloudflare as object, context: `❌ ERROR EXTRACCIÓN: ${msg}` };
   }
 
   // 2. Prueba de Pool DIRECTA (Sin Prisma)
   if (connectionString) {
-    diagnostics.direct_pool_test.status = "Iniciando prueba de Pool directa...";
+    const pool_info = diagnostics.direct_pool_test as Record<string, unknown>;
+    pool_info.status = "Iniciando prueba de Pool directa...";
     const pool = new Pool({ connectionString });
     try {
       const client = await pool.connect();
-      const result = await client.query('SELECT NOW()');
-      diagnostics.direct_pool_test.status = "✅ ÉXITO: Pool conectado y consulta SQL directa ok";
+      await client.query('SELECT NOW()');
+      pool_info.status = "✅ ÉXITO: Pool conectado y consulta SQL directa ok";
       client.release();
       await pool.end();
-    } catch (e: any) {
-      diagnostics.direct_pool_test.status = "❌ FALLO: El Pool no pudo conectar";
-      diagnostics.direct_pool_test.error = e.message;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Desconocido";
+      pool_info.status = "❌ FALLO: El Pool no pudo conectar";
+      pool_info.error = msg;
     }
   }
 
@@ -69,14 +75,17 @@ export async function GET(request: Request) {
   try {
     const { default: db } = await import("@/lib/db");
     const count = await db.usuario.count();
-    diagnostics.database.userCount = count;
-    diagnostics.database.status = "✅ PRISMA CONECTADO";
+    const db_info = diagnostics.database as Record<string, unknown>;
+    db_info.userCount = count;
+    db_info.status = "✅ PRISMA CONECTADO";
     
     const masterUser = await db.usuario.findFirst({ where: { email: "thommy@example.com" } });
-    diagnostics.database.masterUserExists = !!masterUser;
-  } catch (e: any) {
-    diagnostics.database.status = "❌ PRISMA FALLÓ";
-    diagnostics.database.error = e.message;
+    db_info.masterUserExists = !!masterUser;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Desconocido";
+    const db_info = diagnostics.database as Record<string, unknown>;
+    db_info.status = "❌ PRISMA FALLÓ";
+    db_info.error = msg;
   }
 
   return NextResponse.json(diagnostics);
