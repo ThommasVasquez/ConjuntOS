@@ -6,6 +6,7 @@ import { z } from "zod";
 interface GlobalWithEnv {
   DATABASE_URL?: string;
   env?: { DATABASE_URL?: string };
+  __lastAuthStep?: string;
 }
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
@@ -18,6 +19,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
+        const g = globalThis as unknown as GlobalWithEnv;
         try {
           const parsedCredentials = z
             .object({ email: z.string().email(), password: z.string().min(6) })
@@ -28,13 +30,16 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             const normalizedEmail = email.toLowerCase().trim();
             
             console.log("🔐 [AUTH-DIAGNOSTIC] Iniciando authorize para:", normalizedEmail);
+            g.__lastAuthStep = "DIAGNOSTIC_STARTED";
             
             // 1. Detección y Fijación de DATABASE_URL en el Edge
             let dbUrl = (process.env.DATABASE_URL || "").trim();
-            const g = globalThis as unknown as GlobalWithEnv;
             
             if (!dbUrl) {
                 dbUrl = (g.DATABASE_URL || g.env?.DATABASE_URL || "").trim();
+                g.__lastAuthStep = dbUrl ? "DB_URL_FOUND_IN_GLOBAL" : "DB_URL_NOT_FOUND_ANYWHERE";
+            } else {
+                g.__lastAuthStep = "DB_URL_FOUND_IN_PROCESS_ENV";
             }
 
             if (dbUrl) {
@@ -50,6 +55,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
             // 2. Importar DB tras fijar la URL
             const { default: db } = await import("@/lib/db");
+            g.__lastAuthStep = "DB_MODULE_IMPORTED";
             
             try {
               // Buscar usuario
@@ -63,19 +69,19 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 email: string; 
                 rol: string; 
                 password?: string;
-                conjuntoId: string;
               } | null;
 
+              g.__lastAuthStep = user ? "USER_FOUND_IN_DB" : "USER_NOT_FOUND_IN_DB";
               console.log("🔍 [AUTH-DIAGNOSTIC] Resultado búsqueda usuario:", user ? "ENCONTRADO" : "NO ENCONTRADO");
               
               // BOOTSTRAP: Si es el usuario maestro y no existe en la DB, lo creamos
               if (!user && normalizedEmail === "thommy@example.com") {
                 console.log("🛠️ [AUTH-DIAGNOSTIC] BOOTSTRAP: Master user no encontrado. Intentando crear...");
+                g.__lastAuthStep = "BOOTSTRAP_START";
                 
                 try {
                   let conjunto = await db.conjunto.findFirst();
                   if (!conjunto) {
-                    console.log("🛠️ [AUTH-DIAGNOSTIC] Creando conjunto inicial...");
                     conjunto = await db.conjunto.create({
                       data: {
                         nombre: "Residencial Horizonte",
@@ -98,7 +104,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                       activo: true
                     }
                   });
-                  console.log("✅ [AUTH-DIAGNOSTIC] BOOTSTRAP: Master user creado satisfactoriamente.");
+                  g.__lastAuthStep = "BOOTSTRAP_SUCCESS";
                   return {
                     id: newUser.id,
                     name: newUser.nombre,
@@ -106,23 +112,19 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     role: newUser.rol,
                   };
                 } catch (bootstrapError) {
+                  g.__lastAuthStep = `BOOTSTRAP_ERROR: ${bootstrapError instanceof Error ? bootstrapError.message : "unknown"}`;
                   console.error("🔥 [AUTH-DIAGNOSTIC] Error en Bootstrap:", bootstrapError);
                 }
               }
 
-              if (!user) {
-                console.warn("⚠️ [AUTH-DIAGNOSTIC] Login fallido: El usuario no existe en la DB:", normalizedEmail);
-                return null;
-              }
+              if (!user) return null;
 
               // 3. Validar password
               const dbPassword = (user.password || "").trim();
               const inputPassword = password.trim();
-              
               const isPasswordMatch = inputPassword === dbPassword;
               
-              console.log("🔍 [AUTH-DIAGNOSTIC] Verificando password para:", user.nombre);
-              console.log(`🔍 [AUTH-DIAGNOSTIC] DebuMatch: ${isPasswordMatch} | InpLen: ${inputPassword.length} | DbLen: ${dbPassword.length}`);
+              g.__lastAuthStep = isPasswordMatch ? "PASSWORD_MATCH_SUCCESS" : `PASSWORD_MISMATCH (Input:${inputPassword.length}, DB:${dbPassword.length})`;
 
               if (!isPasswordMatch) {
                 console.warn("⚠️ [AUTH-DIAGNOSTIC] Login fallido: Las contraseñas no coinciden para:", normalizedEmail);
@@ -130,6 +132,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
               }
 
               console.log("✅ [AUTH-DIAGNOSTIC] Login exitoso para:", normalizedEmail);
+              g.__lastAuthStep = "LOGIN_SUCCESS_READY_TO_RETURN";
               return {
                 id: user.id,
                 name: user.nombre,
@@ -139,14 +142,16 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
             } catch (dbError) {
                console.error("🔥 [AUTH-DIAGNOSTIC] Error al consultar la DB:", dbError);
+               g.__lastAuthStep = `DB_QUERY_ERROR: ${dbError instanceof Error ? dbError.message : "unknown"}`;
                return null;
             }
           } else {
-            console.warn("⚠️ [AUTH-DIAGNOSTIC] Zod validation failed for credentials:", parsedCredentials.error.format());
+            g.__lastAuthStep = "ZOD_VALIDATION_FAILED";
             return null;
           }
         } catch (error) {
           console.error("🔥 [AUTH-DIAGNOSTIC] CRÍTICO: Error en authorize:", error);
+          g.__lastAuthStep = `GLOBAL_AUTHORIZE_ERROR: ${error instanceof Error ? error.message : "unknown"}`;
           return null;
         }
       },

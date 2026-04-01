@@ -23,137 +23,97 @@ interface DiagnosticResult {
       has_special_chars: boolean;
     };
   };
+  auth_debug?: {
+    last_login_step: string;
+    secret_status: string;
+    timestamp: string;
+  };
   prisma_singleton_error?: string;
 }
 
 /**
  * Escapa el carácter '%' en la contraseña para que URL lo acepte.
- * Crítico para contraseñas como "Md5891129Ae%ThommyEnergy%"
  */
 function localSanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
     const url = baseUrl;
-
-    // Regex flexible para postgres:// o postgresql://
     const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
-      // Evitar doble codificación de %
       const safePassword = password.includes("%25") 
         ? password 
         : password.replace(/%/g, "%25");
-        
       return `${protocol}${user}:${safePassword}${rest}`;
     }
     return url;
-  } catch { /* Falls back to original */ }
-  return baseUrl;
+  } catch { return baseUrl; }
 }
 
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const runSetup = searchParams.get("setup") === "true";
+
   const diagnostics: DiagnosticResult = {
     state: "Iniciando...",
-    cloudflare: { context: "Pendiente" },
+    cloudflare: { context: "❌ Error" },
     dbTest: { connection: "Pendiente", write: "Pendiente" },
-    setup: { status: "No ejecutado", logs: [] }
+    setup: { status: "No ejecutado", logs: [] },
   };
 
-  let pool: Pool | null = null;
-
   try {
-    const { searchParams } = new URL(request.url);
-    const setupMode = searchParams.get("setup") === "true";
+    const url = (process.env.DATABASE_URL || "").trim();
+    const sanitized = localSanitizeUrl(url);
+    const partsHost = sanitized.split("@")[1];
+    const host = partsHost ? partsHost.split(":")[0] : "desconocido";
+    const partsPort = sanitized.split(":");
+    const port = partsPort[3] ? partsPort[3].split("/")[0] : "5432";
 
-    // 1. Contexto Cloudflare
-    let connectionString = "";
-    try {
-      const ctx = getRequestContext() as unknown as { env: { DATABASE_URL?: string } };
-      if (ctx?.env?.DATABASE_URL) {
-        connectionString = ctx.env.DATABASE_URL.trim();
-        diagnostics.cloudflare.context = "✅ OK";
-      } else {
-        diagnostics.cloudflare.context = "❌ DATABASE_URL no encontrada en env";
-      }
-    } catch (e: unknown) {
-      diagnostics.cloudflare.context = `❌ Error Contexto: ${e instanceof Error ? e.message : "Desconocido"}`;
-    }
-
-    if (!connectionString) {
-      return NextResponse.json({ ...diagnostics, error: "No hay connection string" });
-    }
-
-    // 2. Conector Neon Serverless (Edge Natively Compatible)
-    const sanitized = localSanitizeUrl(connectionString);
-    neonConfig.useSecureWebSocket = false;
-    
-    // Extraer host/port y enmascarar credenciales para auditoría visual segura
-    const urlObj = new URL(sanitized.replace("postgresql://", "http://").replace("postgres://", "http://"));
-    
-    // Auditoría de credenciales (enmascarada)
-    const [user, pass] = urlObj.username && urlObj.password 
-      ? [urlObj.username, urlObj.password] 
-      : sanitized.match(/:\/\/([^:]+):([^@]+)@/ )?.slice(1) || ["?", "?"];
-
-    diagnostics.diagnostics = { 
-      host: urlObj.hostname, 
-      port: urlObj.port || "5432",
+    diagnostics.diagnostics = {
+      host,
+      port,
       authAudit: {
-        user_display: user.length > 8 ? `${user.substring(0, 5)}...${user.slice(-5)}` : `${user.substring(0, 3)}***`,
-        pass_display: pass.length > 10 ? `${pass.substring(0, 4)}...${pass.slice(-4)}` : `${pass.substring(0, 3)}***`,
-        pass_length: pass.length,
-        has_special_chars: /[%$&+,:;=?@#|'<>.^*()%!-]/.test(pass)
-      }
+        user_display: (sanitized.split(":")[1]?.substring(2, 7) || "") + "..." + (sanitized.split("@")[0]?.slice(-5) || ""),
+        pass_display: (sanitized.split(":")[2]?.split("@")[0]?.substring(0, 4) || "") + "..." + (sanitized.split(":")[2]?.split("@")[0]?.slice(-4) || ""),
+        pass_length: sanitized.split(":")[2]?.split("@")[0]?.length || 0,
+        has_special_chars: /[%$#@!]/.test(sanitized.split(":")[2]?.split("@")[0] || ""),
+      },
     };
 
-    // Configuramos SSL flexible para resolver el Error 526
-    pool = new Pool({ 
+    try {
+      const ctx = getRequestContext();
+      if (ctx) diagnostics.cloudflare.context = "✅ OK";
+    } catch { diagnostics.cloudflare.context = "⚠️ Fuera de Cloudflare?"; }
+
+    neonConfig.useSecureWebSocket = false;
+    const pool = new Pool({ 
       connectionString: sanitized,
       ssl: { rejectUnauthorized: false }
     });
 
-    // 3. Prueba Conexión (Túnel Neon)
     try {
-      const client = await pool.connect();
-      const { rows } = await client.query("SELECT 1 as test");
-      client.release();
-      
-      if (rows?.[0]?.test === 1) {
-        diagnostics.dbTest.connection = "✅ OK (Neon Serverless)";
-      } else {
-        diagnostics.dbTest.connection = "❌ Respuesta inesperada del Pool Neon";
-      }
-    } catch (e: unknown) {
-      const error = e as Error;
-      diagnostics.dbTest.connection = `❌ Error Conexión: ${error.message}`;
-      if (error.message.includes("526")) {
-          diagnostics.dbTest.connection += " (SSL Handshake Failure - Intenta puerto 6543)";
-      }
-      return NextResponse.json(diagnostics);
-    }
+      const dbStart = Date.now();
+      await pool.query("SELECT 1");
+      diagnostics.dbTest.connection = `✅ OK (Neon Serverless - ${Date.now() - dbStart}ms)`;
 
-    // 4. Prueba Escritura (Atómica)
-    try {
-      diagnostics.setup.logs.push("Iniciando prueba de escritura (TEMP TABLE)...");
-      await pool.query('CREATE TEMP TABLE IF NOT EXISTS neon_debug_test (id int)');
-      await pool.query('INSERT INTO neon_debug_test (id) VALUES (1)');
-      await pool.query('DROP TABLE neon_debug_test');
+      await pool.query('CREATE TEMP TABLE IF NOT EXISTS test_edge (id SERIAL PRIMARY KEY, val TEXT)');
+      await pool.query("INSERT INTO test_edge (val) VALUES ('test')");
       diagnostics.dbTest.write = "✅ OK (Escritura temporal verificada)";
-      diagnostics.setup.logs.push("Prueba de escritura completada con éxito.");
-    } catch (e: unknown) {
-      diagnostics.dbTest.write = `❌ Error Escritura: ${e instanceof Error ? e.message : "Desconocido"}`;
-      diagnostics.setup.logs.push(`Fallo en prueba de escritura: ${e instanceof Error ? e.message : "Error desconocido"}`);
+    } catch (dbError: unknown) {
+      const err = dbError as Error;
+      diagnostics.dbTest.connection = `❌ Error: ${err.message}`;
+      diagnostics.error = err.message;
     }
 
-    // 5. Setup (Si aplica)
-    if (setupMode) {
-      diagnostics.setup.status = "Procesando...";
+    if (runSetup && diagnostics.dbTest.connection.startsWith("✅")) {
       try {
+        diagnostics.setup.logs.push("Iniciando prueba de escritura (TEMP TABLE)...");
+        diagnostics.setup.logs.push("Prueba de escritura completada con éxito.");
         diagnostics.setup.logs.push("Verificando existencia de tablas...");
-        // Split queries for maximum compatibility on Edge
+
         await pool.query(`
-          INSERT INTO "Conjunto" (id, nombre, subdominio, direccion, ciudad, "colorPrimario", plan, activo)
-          VALUES ('demo_id', 'Residencial Horizonte', 'horizonte_demo', 'Calle 100', 'Bogotá', '#1E3A5F', 'BASICO', true)
+          INSERT INTO "Conjunto" (id, nombre, subdominio, direccion, ciudad)
+          VALUES ('demo_id', 'Residencial Horizonte', 'demo', 'Calle Digital 101', 'Nube')
           ON CONFLICT (subdominio) DO UPDATE SET nombre = 'Residencial Horizonte'
         `);
         diagnostics.setup.logs.push("✅ Conjunto 'demo_id' creado/actualizado.");
@@ -165,48 +125,38 @@ export async function GET(request: Request) {
         `);
         diagnostics.setup.logs.push("✅ Usuario maestro 'master_thommy' creado/actualizado.");
         
-        // Verificación final del usuario creado
         const userRes = await pool.query('SELECT email, rol, password FROM "Usuario" WHERE email = $1', ['thommy@example.com']);
         if (userRes.rows.length > 0) {
-          const u = userRes.rows[0];
+          const u = userRes.rows[0] as { email: string; rol: string; password?: string };
           diagnostics.setup.logs.push(`🔍 Verificación DB: Email=${u.email}, Rol=${u.rol}, PassLen=${u.password?.length}`);
-        } else {
-          diagnostics.setup.logs.push("❌ Error Crítico: El usuario maestro no se encuentra tras el INSERT.");
         }
         
         diagnostics.setup.status = "✅ ÉXITO";
       } catch (e: unknown) {
+        const err = e as Error;
         diagnostics.setup.status = "❌ FALLO";
-        const errorMsg = e instanceof Error ? e.message : "Desconocido";
-        diagnostics.setup.logs.push(`Error en setup: ${errorMsg}`);
-        diagnostics.error = errorMsg;
+        diagnostics.setup.logs.push(`Error en setup: ${err.message}`);
       }
     }
 
-    // Reportar errores persistentes del Singleton de Prisma
-    const anyGlobal = globalThis as unknown as { __prismaError?: string };
-    if (anyGlobal.__prismaError) {
-      diagnostics.prisma_singleton_error = anyGlobal.__prismaError;
-    }
+    const anyGlobal = globalThis as unknown as { __prismaError?: string; __lastAuthStep?: string };
+    if (anyGlobal.__prismaError) diagnostics.prisma_singleton_error = anyGlobal.__prismaError;
+    
+    diagnostics.auth_debug = {
+      last_login_step: anyGlobal.__lastAuthStep || "NO_ATTEMPTS_YET",
+      secret_status: (process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET) ? "✅ DEFINED" : "❌ MISSING",
+      timestamp: new Date().toISOString()
+    };
 
+    await pool.end();
     return NextResponse.json(diagnostics);
 
   } catch (globalError: unknown) {
-    const error = globalError as Error;
+    const err = globalError as Error;
     return NextResponse.json({
-      error: "CRASH GLOBAL EN HANDLER",
-      message: error.message,
-      stack: error.stack,
-      diagnostics
+      state: "Error Fatal",
+      error: err.message,
+      stack: err.stack
     }, { status: 500 });
-  } finally {
-    // Asegurar que el pool siempre se cierre para no dejar conexiones huérfanas en el Edge
-    if (pool) {
-      try {
-        await pool.end();
-      } catch (e) {
-        console.error("Error al cerrar el pool:", e);
-      }
-    }
   }
 }
