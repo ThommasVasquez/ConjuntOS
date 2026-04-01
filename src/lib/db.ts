@@ -18,6 +18,17 @@ export function sanitizeUrl(baseUrl: string): string {
       url = url.replace(":5432", ":6543");
     }
 
+    // Para el puerto 6543 en Supabase, el usuario DEBE ser postgres.ID_PROYECTO
+    if (url.includes("supabase.co") && url.includes(":6543")) {
+      const matchProject = url.match(/db\.([^.]+)\.supabase/);
+      if (matchProject) {
+        const projectId = matchProject[1];
+        if (url.includes("://postgres:") || url.includes("://postgres@")) {
+          url = url.replace("://postgres", `://postgres.${projectId}`);
+        }
+      }
+    }
+
     // Regex flexible para postgres:// o postgresql://
     const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
