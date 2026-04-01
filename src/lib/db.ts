@@ -13,15 +13,13 @@ export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
     let url = baseUrl;
-    
-    // Si es Supabase y usa el puerto estándar 5432, lo cambiamos al 6543 (Session Pool)
-    // Esto es CRUCIAL para evitar el error SSL 526 en Cloudflare Edge.
+    // Forzamos puerto 6543 para Supabase en el Edge
     if (url.includes("supabase.co") && url.includes(":5432")) {
-      console.log("🔄 [DB] Corrigiendo puerto 5432 -> 6543 para Supabase Edge compatibility.");
       url = url.replace(":5432", ":6543");
     }
 
-    const parts = url.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
+    // Regex flexible para postgres:// o postgresql://
+    const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
       const safePassword = password.replace(/%/g, "%25");

@@ -28,7 +28,8 @@ function localSanitizeUrl(baseUrl: string): string {
     if (url.includes("supabase.co") && url.includes(":5432")) {
       url = url.replace(":5432", ":6543");
     }
-    const parts = url.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
+    // Regex flexible para postgres:// o postgresql://
+    const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
       const safePassword = password.replace(/%/g, "%25");
@@ -75,6 +76,10 @@ export async function GET(request: Request) {
     const sanitized = localSanitizeUrl(connectionString);
     neonConfig.useSecureWebSocket = false;
     
+    // Extraer host/port para diagnóstico visual (seguro)
+    const urlObj = new URL(sanitized.replace("postgresql://", "http://").replace("postgres://", "http://"));
+    diagnostics.diagnostics = { host: urlObj.hostname, port: urlObj.port };
+
     // Configuramos SSL flexible para resolver el Error 526
     pool = new Pool({ 
       connectionString: sanitized,
