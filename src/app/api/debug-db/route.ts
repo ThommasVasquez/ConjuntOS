@@ -44,7 +44,10 @@ function localSanitizeUrl(baseUrl: string): string {
     const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
-      const safePassword = password.replace(/%/g, "%25");
+      // Evitar doble codificación: solo codificamos % si no es ya parte de un %25
+      const safePassword = password.includes("%25") 
+        ? password 
+        : password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
     return url;
@@ -100,8 +103,8 @@ export async function GET(request: Request) {
       host: urlObj.hostname, 
       port: urlObj.port || "5432",
       authAudit: {
-        user_prefix: user.substring(0, 3) + "***",
-        pass_prefix: pass.substring(0, 3) + "***",
+        user_display: user.length > 8 ? `${user.substring(0, 5)}...${user.slice(-5)}` : `${user.substring(0, 3)}***`,
+        pass_display: pass.length > 10 ? `${pass.substring(0, 4)}...${pass.slice(-4)}` : `${pass.substring(0, 3)}***`,
         pass_length: pass.length,
         has_special_chars: /[%$&+,:;=?@#|'<>.^*()%!-]/.test(pass)
       }

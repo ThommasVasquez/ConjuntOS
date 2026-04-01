@@ -33,7 +33,10 @@ export function sanitizeUrl(baseUrl: string): string {
     const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
-      const safePassword = password.replace(/%/g, "%25");
+      // Evitar doble codificación: solo codificamos % si no es ya parte de un %25
+      const safePassword = password.includes("%25") 
+        ? password 
+        : password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
     return url;
