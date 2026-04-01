@@ -7,17 +7,27 @@ export const runtime = "edge";
 
 /**
  * Escapa el carácter '%' en la contraseña para que URL lo acepte.
+ * Además, fuerza el puerto de Pooling (6543) para Supabase en el Edge.
  */
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
-    const parts = baseUrl.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
+    let url = baseUrl;
+    
+    // Si es Supabase y usa el puerto estándar 5432, lo cambiamos al 6543 (Session Pool)
+    // Esto es CRUCIAL para evitar el error SSL 526 en Cloudflare Edge.
+    if (url.includes("supabase.co") && url.includes(":5432")) {
+      console.log("🔄 [DB] Corrigiendo puerto 5432 -> 6543 para Supabase Edge compatibility.");
+      url = url.replace(":5432", ":6543");
+    }
+
+    const parts = url.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
       const safePassword = password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
-    return baseUrl;
+    return url;
   } catch {
     return baseUrl;
   }
@@ -27,7 +37,6 @@ export function sanitizeUrl(baseUrl: string): string {
  * Busca la cadena de conexión en todas las fuentes posibles del Edge.
  */
 function findConnectionString(): string {
-  // 1. globalThis.DATABASE_URL (Inyectado por algunos entornos)
   const g = globalThis as unknown as { 
     DATABASE_URL?: string; 
     env?: { DATABASE_URL?: string } 
@@ -35,16 +44,14 @@ function findConnectionString(): string {
   if (g.DATABASE_URL) return sanitizeUrl(g.DATABASE_URL.trim());
   if (g.env?.DATABASE_URL) return sanitizeUrl(g.env.DATABASE_URL.trim());
 
-  // 2. Cloudflare Request Context (Recomendado para Pages/Workers)
   try {
     const ctx = getRequestContext();
     const env = ctx?.env as { DATABASE_URL?: string };
     if (env?.DATABASE_URL) {
        return sanitizeUrl(env.DATABASE_URL.trim());
     }
-  } catch { /* No estamos en un contexto de petición */ }
+  } catch { /* No Request Context */ }
 
-  // 3. process.env (Fallback para local u otros entornos Next.js)
   if (process.env.DATABASE_URL) {
      return sanitizeUrl(process.env.DATABASE_URL.trim());
   }
@@ -66,16 +73,19 @@ export function getPrismaClient(): PrismaClient {
     return globalThis.__prismaInstance;
   }
 
-  console.log("🔌 [DB] Inicializando nueva instancia de Prisma (Neon Serverless)");
+  console.log("🔌 [DB] Conectando a:", url.split("@")[1]); // Log seguro sin password
   
-  neonConfig.useSecureWebSocket = true;
+  // Para Supabase en puerto 6543 (Transaction Mode / Session Pool), 
+  // es vital que el WebSocket se maneje correctamente en el Edge.
+  neonConfig.useSecureWebSocket = false; // A veces el handshake falla con true en el pool de Supabase
   
   const pool = new Pool({ 
     connectionString: url,
-    ssl: { rejectUnauthorized: false }
+    // El puerto 6543 a menudo no requiere SSL estricto del driver ya que es un proxy
+    ssl: { rejectUnauthorized: false } 
   });
   
-  // @ts-expect-error - Discrepancia de tipos entre Neon y Prisma (Edge)
+  // @ts-expect-error - PrismaNeon types
   const adapter = new PrismaNeon(pool);
   const client = new PrismaClient({ adapter });
   
@@ -91,10 +101,7 @@ declare global {
   var __prismaUrl: string | undefined;
 }
 
-/**
- * Exportamos un objeto que imita el cliente pero llama a getPrismaClient()
- * Mapeado a los modelos reales definidos en schema.prisma
- */
+// Mapeo de modelos basado en schema.prisma
 const db = {
   get conjunto() { return getPrismaClient().conjunto; },
   get usuario() { return getPrismaClient().usuario; },
