@@ -41,6 +41,8 @@ function findConnectionString(): string {
   } catch { /* Contexto no listo */ }
 
   if (process.env.DATABASE_URL) return sanitizeUrl(process.env.DATABASE_URL.trim());
+  
+  console.warn("🚨 [DB-DIAGNOSTIC] No se encontró DATABASE_URL en ninguna fuente conocida.");
   return "";
 }
 
