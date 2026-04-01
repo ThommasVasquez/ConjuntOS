@@ -3,6 +3,11 @@ import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { z } from "zod";
 
+interface GlobalWithEnv {
+  DATABASE_URL?: string;
+  env?: { DATABASE_URL?: string };
+}
+
 export const { auth, signIn, signOut, handlers } = NextAuth({
   ...authConfig,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
@@ -24,31 +29,43 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             
             console.log("🔐 [AUTH-DIAGNOSTIC] Iniciando authorize para:", normalizedEmail);
             
-            const { default: db } = await import("@/lib/db");
-            console.log("🔍 [AUTH-DIAGNOSTIC] db importado correctamente.");
-
-            // Detección robusta de URL de base de datos para el Edge
-            let dbUrl = process.env.DATABASE_URL || "";
+            // 1. Detección y Fijación de DATABASE_URL en el Edge
+            let dbUrl = (process.env.DATABASE_URL || "").trim();
+            const g = globalThis as unknown as GlobalWithEnv;
+            
             if (!dbUrl) {
-               console.warn("⚠️ [AUTH-DIAGNOSTIC] DATABASE_URL no está en process.env. Verificando globalThis.env...");
-               const g = globalThis as unknown as { DATABASE_URL?: string, env?: { DATABASE_URL?: string } };
-               dbUrl = g.DATABASE_URL || g.env?.DATABASE_URL || "";
+                dbUrl = (g.DATABASE_URL || g.env?.DATABASE_URL || "").trim();
+            }
+
+            if (dbUrl) {
+               (globalThis as unknown as { DATABASE_URL: string }).DATABASE_URL = dbUrl;
+               if (g.env) g.env.DATABASE_URL = dbUrl;
+               process.env.DATABASE_URL = dbUrl;
             }
 
             if (!dbUrl) {
-               console.error("❌ [AUTH-DIAGNOSTIC] FALLO CRÍTICO: No se encuentra DATABASE_URL.");
+               console.error("❌ [AUTH-DIAGNOSTIC] FALLO CRÍTICO: No se encuentra DATABASE_URL en authorize.");
                return null;
             }
 
-            if (!process.env.AUTH_SECRET && !process.env.NEXTAUTH_SECRET) {
-              console.error("❌ [AUTH-DIAGNOSTIC] ERROR: No hay AUTH_SECRET ni NEXTAUTH_SECRET en el entorno. La sesión fallará.");
-            }
-
-            // Buscar usuario
-            console.log("🔍 [AUTH-DIAGNOSTIC] Buscando usuario en DB...");
+            // 2. Importar DB tras fijar la URL
+            const { default: db } = await import("@/lib/db");
+            
             try {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              let user = await db.usuario.findUnique({ where: { email: normalizedEmail } as any });
+              // Buscar usuario
+              const userRes = await db.usuario.findUnique({ 
+                where: { email: normalizedEmail } 
+              });
+              
+              const user = userRes as { 
+                id: string; 
+                nombre: string; 
+                email: string; 
+                rol: string; 
+                password?: string;
+                conjuntoId: string;
+              } | null;
+
               console.log("🔍 [AUTH-DIAGNOSTIC] Resultado búsqueda usuario:", user ? "ENCONTRADO" : "NO ENCONTRADO");
               
               // BOOTSTRAP: Si es el usuario maestro y no existe en la DB, lo creamos
@@ -68,9 +85,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                       }
                     });
                   }
-                  console.log("🛠️ [AUTH-DIAGNOSTIC] ID de conjunto para usuario:", conjunto.id);
 
-                  user = await db.usuario.create({
+                  const newUser = await db.usuario.create({
                     data: {
                       id: "master_thommy",
                       nombre: "ThommyEnergy",
@@ -83,9 +99,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     }
                   });
                   console.log("✅ [AUTH-DIAGNOSTIC] BOOTSTRAP: Master user creado satisfactoriamente.");
+                  return {
+                    id: newUser.id,
+                    name: newUser.nombre,
+                    email: newUser.email,
+                    role: newUser.rol,
+                  };
                 } catch (bootstrapError) {
                   console.error("🔥 [AUTH-DIAGNOSTIC] Error en Bootstrap:", bootstrapError);
-                  throw bootstrapError;
                 }
               }
 
@@ -94,18 +115,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 return null;
               }
 
-              console.log("👤 [AUTH-DIAGNOSTIC] Verificando password para:", user.nombre);
-
-              // Validar password (con limpieza de espacios)
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const userPadded = user as any;
+              // 3. Validar password
+              const dbPassword = (user.password || "").trim();
               const inputPassword = password.trim();
-              const dbPassword = (userPadded.password || "123456").trim();
               
-              console.log("🔍 [AUTH-DIAGNOSTIC] Longitud pass (entrada):", inputPassword.length);
-              console.log("🔍 [AUTH-DIAGNOSTIC] Longitud pass (DB):", dbPassword.length);
-
               const isPasswordMatch = inputPassword === dbPassword;
+              
+              console.log("🔍 [AUTH-DIAGNOSTIC] Verificando password para:", user.nombre);
+              console.log(`🔍 [AUTH-DIAGNOSTIC] DebuMatch: ${isPasswordMatch} | InpLen: ${inputPassword.length} | DbLen: ${dbPassword.length}`);
 
               if (!isPasswordMatch) {
                 console.warn("⚠️ [AUTH-DIAGNOSTIC] Login fallido: Las contraseñas no coinciden para:", normalizedEmail);
@@ -117,7 +134,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 id: user.id,
                 name: user.nombre,
                 email: user.email,
-                role: user.rol, // Añadido para el JWT
+                role: user.rol,
               };
 
             } catch (dbError) {
@@ -130,17 +147,12 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           }
         } catch (error) {
           console.error("🔥 [AUTH-DIAGNOSTIC] CRÍTICO: Error en authorize:", error);
-          if (error instanceof Error) {
-            console.error("🔥 [AUTH-DIAGNOSTIC] Mensaje:", error.message);
-            console.error("🔥 [AUTH-DIAGNOSTIC] Stack:", error.stack);
-          }
           return null;
         }
       },
     }),
   ],
-  // Log de eventos de Auth.js
-  debug: true, // Activamos depuración total en producción para este diagnóstico
+  debug: true,
   logger: {
     error: (code, ...args) => console.error(`❌ [AUTH-EVENT-ERROR] ${code}:`, ...args),
     warn: (code, ...args) => console.warn(`⚠️ [AUTH-EVENT-WARN] ${code}:`, ...args),
