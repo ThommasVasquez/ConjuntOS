@@ -1,23 +1,19 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
-import { Pool } from "@neondatabase/serverless";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = "edge";
 
 /**
  * Corrige URLs que contienen caracteres especiales (como %) en la contraseña.
- * Muchos usuarios de Supabase tienen este problema porque sus contraseñas autogeneradas
- * rompen el estándar de URL de Node/Edge.
  */
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
-  
   try {
     const parts = baseUrl.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
-      // Escapamos solo la contraseña (el % debe ser %25)
       const safePassword = password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
@@ -43,19 +39,18 @@ function findConnectionString(): string {
   } catch { /* Contexto no listo */ }
 
   if (process.env.DATABASE_URL) return sanitizeUrl(process.env.DATABASE_URL.trim());
-
   return "";
 }
 
 function initPrisma(url: string): PrismaClient {
-  console.log(`🔌 Inicializando Prisma con URL Sanitizada (Len: ${url.length})`);
+  console.log("🔌 Inicializando Prisma con Adaptador PG Directo (vía TCP/Native)");
   try {
+    // Usamos el Pool estándar de 'pg' que ahora es compatible con Cloudflare Edge
     const pool = new Pool({ connectionString: url });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const adapter = new PrismaNeon(pool as any);
+    const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter });
   } catch (error) {
-    console.error("🔥 Error crítico en initPrisma:", error);
+    console.error("🔥 Error crítico en initPrisma (PG Adapter):", error);
     throw error;
   }
 }
@@ -74,15 +69,14 @@ const db = new Proxy({} as PrismaClient, {
       if (currentUrl && currentUrl.length > 10) {
         globalThis.__prismaInstance = initPrisma(currentUrl);
         globalThis.__prismaUrl = currentUrl;
-      } else {
-        if (prop === "usuario" || prop === "conjunto") {
-          throw new Error("DATABASE_URL_NOT_AVAILABLE_YET");
-        }
       }
     }
     
     if (!globalThis.__prismaInstance) {
-      throw new Error("PRISMA_NOT_INITIALIZED");
+      if (prop === "usuario" || prop === "conjunto") {
+        throw new Error("DB_NOT_READY_YET");
+      }
+      return (target as any)[prop];
     }
 
     const client = globalThis.__prismaInstance as unknown as Record<string, unknown>;

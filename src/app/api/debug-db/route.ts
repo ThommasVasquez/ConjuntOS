@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import { Pool } from "@neondatabase/serverless";
+import { Pool } from "pg";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -17,8 +17,7 @@ interface DiagnosticResult {
 }
 
 /**
- * WebSocket-compatible Sanitizer
- * We preserve the port but escape the password
+ * Standard PG Sanitizer (preserves port)
  */
 function localSanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
@@ -63,29 +62,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ ...diagnostics, error: "No hay connection string" });
     }
 
-    // 2. Conector WebSocket (Pool)
-    // El Pool es el que realmente usa Prisma y es compatible con Supabase
+    // 2. Conector PG Estándar (TCP Directo vía Cloudflare connect())
     const sanitized = localSanitizeUrl(connectionString);
     const pool = new Pool({ connectionString: sanitized });
 
-    // 3. Prueba Conexión (vía WebSockets)
+    // 3. Prueba Conexión (vía TCP Directo)
     try {
       const { rows } = await pool.query("SELECT 1 as test");
       if (rows?.[0]?.test === 1) {
-        diagnostics.dbTest.connection = "✅ OK (WebSockets)";
+        diagnostics.dbTest.connection = "✅ OK (Direct TCP)";
       } else {
-        diagnostics.dbTest.connection = "❌ Respuesta inesperada del Pool";
+        diagnostics.dbTest.connection = "❌ Respuesta inesperada del Pool PG";
       }
     } catch (e: unknown) {
       const error = e as Error;
-      diagnostics.dbTest.connection = `❌ Error WebSocket: ${error.message}`;
+      diagnostics.dbTest.connection = `❌ Error TCP Directo: ${error.message}`;
       return NextResponse.json(diagnostics);
     }
 
     // 4. Prueba Escritura (Atómica)
     try {
-      await pool.query('CREATE TEMP TABLE debug_test (id int)');
-      await pool.query('DROP TABLE debug_test');
+      await pool.query('CREATE TEMP TABLE pg_debug_test (id int)');
+      await pool.query('DROP TABLE pg_debug_test');
       diagnostics.dbTest.write = "✅ OK";
     } catch (e: unknown) {
       diagnostics.dbTest.write = `❌ Error Escritura: ${e instanceof Error ? e.message : "Desconocido"}`;
@@ -115,7 +113,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // Cerrar el pool
+    // Cerrar el pool para liberar la conexión TCP
     await pool.end();
     return NextResponse.json(diagnostics);
 
