@@ -37,10 +37,16 @@ function findConnectionString(): string {
   try {
     const ctx = getRequestContext();
     const cfEnv = ctx?.env as { DATABASE_URL?: string };
-    if (cfEnv?.DATABASE_URL) return sanitizeUrl(cfEnv.DATABASE_URL.trim());
+    if (cfEnv?.DATABASE_URL) {
+       console.log("📡 [DB-DIAGNOSTIC] DATABASE_URL encontrada en Cloudflare Context.");
+       return sanitizeUrl(cfEnv.DATABASE_URL.trim());
+    }
   } catch { /* Contexto no listo */ }
 
-  if (process.env.DATABASE_URL) return sanitizeUrl(process.env.DATABASE_URL.trim());
+  if (process.env.DATABASE_URL) {
+     console.log("📡 [DB-DIAGNOSTIC] DATABASE_URL encontrada en process.env.");
+     return sanitizeUrl(process.env.DATABASE_URL.trim());
+  }
   
   console.warn("🚨 [DB-DIAGNOSTIC] No se encontró DATABASE_URL en ninguna fuente conocida.");
   return "";
