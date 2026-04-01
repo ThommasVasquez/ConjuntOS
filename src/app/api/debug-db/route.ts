@@ -34,14 +34,20 @@ export async function GET() {
       status: "Desconocido",
       error: null as string | null,
       userCount: 0,
+      masterUserExists: false,
     }
   };
 
   try {
     // Intento de conexión rápida
     const count = await db.usuario.count();
+    const masterUser = await db.usuario.findUnique({
+      where: { email: "thommy@example.com" }
+    });
+
     diagnostics.database.status = "✅ CONECTADA";
     diagnostics.database.userCount = count;
+    diagnostics.database.masterUserExists = !!masterUser;
   } catch (error: unknown) {
     diagnostics.database.status = "❌ ERROR DE CONEXIÓN";
     diagnostics.database.error = error instanceof Error ? error.message : "Error desconocido";
