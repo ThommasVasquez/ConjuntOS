@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import { neon } from "@neondatabase/serverless";
+import { Pool } from "@neondatabase/serverless";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -13,25 +13,22 @@ interface DiagnosticResult {
   error?: string;
   message?: string;
   stack?: string;
-  diagnostics?: unknown; // Para el catch global
+  diagnostics?: unknown;
 }
 
 /**
- * INLINED Sanitizer to avoid module resolution errors
+ * WebSocket-compatible Sanitizer
+ * We preserve the port but escape the password
  */
 function localSanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
-    // Paso 1: Eliminar el puerto :5432 (Error 1016 en Edge)
-    const url = baseUrl.replace(/:5432/, "");
-    
-    const parts = url.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
+    const parts = baseUrl.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
       const safePassword = password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
-    return url;
   } catch { /* Fallback */ }
   return baseUrl;
 }
@@ -66,23 +63,29 @@ export async function GET(request: Request) {
       return NextResponse.json({ ...diagnostics, error: "No hay connection string" });
     }
 
-    // 2. Conector Neon (Sanitizado)
+    // 2. Conector WebSocket (Pool)
+    // El Pool es el que realmente usa Prisma y es compatible con Supabase
     const sanitized = localSanitizeUrl(connectionString);
-    const sql = neon(sanitized);
+    const pool = new Pool({ connectionString: sanitized });
 
-    // 3. Prueba Conexión
+    // 3. Prueba Conexión (vía WebSockets)
     try {
-      await sql`SELECT 1`;
-      diagnostics.dbTest.connection = "✅ OK";
+      const { rows } = await pool.query("SELECT 1 as test");
+      if (rows?.[0]?.test === 1) {
+        diagnostics.dbTest.connection = "✅ OK (WebSockets)";
+      } else {
+        diagnostics.dbTest.connection = "❌ Respuesta inesperada del Pool";
+      }
     } catch (e: unknown) {
-      diagnostics.dbTest.connection = `❌ Error: ${e instanceof Error ? e.message : "Desconocido"}`;
+      const error = e as Error;
+      diagnostics.dbTest.connection = `❌ Error WebSocket: ${error.message}`;
       return NextResponse.json(diagnostics);
     }
 
     // 4. Prueba Escritura (Atómica)
     try {
-      await sql`CREATE TEMP TABLE debug_test (id int)`;
-      await sql`DROP TABLE debug_test`;
+      await pool.query('CREATE TEMP TABLE debug_test (id int)');
+      await pool.query('DROP TABLE debug_test');
       diagnostics.dbTest.write = "✅ OK";
     } catch (e: unknown) {
       diagnostics.dbTest.write = `❌ Error Escritura: ${e instanceof Error ? e.message : "Desconocido"}`;
@@ -93,18 +96,18 @@ export async function GET(request: Request) {
       diagnostics.setup.status = "Procesando...";
       try {
         diagnostics.setup.logs.push("Creando conjunto...");
-        await sql`
+        await pool.query(`
           INSERT INTO "Conjunto" (id, nombre, subdominio, direccion, ciudad, "colorPrimario", plan, activo)
           VALUES ('demo_id', 'Residencial Horizonte', 'horizonte_demo', 'Calle 100', 'Bogotá', '#1E3A5F', 'BASICO', true)
           ON CONFLICT (subdominio) DO UPDATE SET nombre = 'Residencial Horizonte'
-        `;
+        `);
 
         diagnostics.setup.logs.push("Creando usuario maestro...");
-        await sql`
+        await pool.query(`
           INSERT INTO "Usuario" (id, "conjuntoId", nombre, email, password, rol, activo, genero)
           VALUES ('master_thommy', 'demo_id', 'ThommyEnergy', 'thommy@example.com', '123456', 'SUPER_ADMIN', true, 'femenino')
           ON CONFLICT (email) DO UPDATE SET password = '123456'
-        `;
+        `);
         diagnostics.setup.status = "✅ ÉXITO";
       } catch (e: unknown) {
         diagnostics.setup.status = "❌ FALLO";
@@ -112,6 +115,8 @@ export async function GET(request: Request) {
       }
     }
 
+    // Cerrar el pool
+    await pool.end();
     return NextResponse.json(diagnostics);
 
   } catch (globalError: unknown) {
