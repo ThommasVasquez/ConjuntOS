@@ -13,21 +13,24 @@ export const runtime = "edge";
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   
+  // Paso 1: Eliminar el puerto :5432 si existe (Causa Error 1016 en Edge HTTP)
+  let url = baseUrl.replace(/:5432/, "");
+
   try {
-    // Intentamos parsear de forma normal primero
-    new URL(baseUrl);
-    return baseUrl;
+    // Intentamos parsear de forma normal
+    new URL(url);
+    return url;
   } catch {
-    // Si falla, es probable que haya un % sin escapar en la contraseña
-    // Formato: postgresql://user:password@host:port/db
-    const parts = baseUrl.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
+    // Paso 2: Si falla, es probable que haya un % sin escapar en la contraseña
+    // Formato: postgresql://user:password@host/db
+    const parts = url.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
       // Escapamos solo la contraseña (el % debe ser %25)
       const safePassword = password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
-    return baseUrl;
+    return url;
   }
 }
 

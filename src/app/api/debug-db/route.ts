@@ -22,12 +22,16 @@ interface DiagnosticResult {
 function localSanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
-    const parts = baseUrl.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
+    // Paso 1: Eliminar el puerto :5432 (Error 1016 en Edge)
+    let url = baseUrl.replace(/:5432/, "");
+    
+    const parts = url.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
       const safePassword = password.replace(/%/g, "%25");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
+    return url;
   } catch { /* Fallback */ }
   return baseUrl;
 }
