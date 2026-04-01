@@ -5,8 +5,27 @@ import { neon } from "@neondatabase/serverless";
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const diagnostics: Record<string, unknown> = {
+interface DiagnosticResult {
+  cloudflare: {
+    context: string;
+    env_db_len: number;
+    protocol: string;
+  };
+  http_test: {
+    status: string;
+    error_name: string | null;
+    error_message: string | null;
+    error_stack: string | null;
+    data?: any;
+  };
+  database: {
+    status: string;
+    error: string | null;
+  };
+}
+
+export async function GET() {
+  const diagnostics: DiagnosticResult = {
     cloudflare: {
       context: "❌ NO DISPONIBLE",
       env_db_len: 0,
@@ -14,29 +33,32 @@ export async function GET(request: Request) {
     },
     http_test: {
       status: "No intentado",
-      error_name: null as string | null,
-      error_message: null as string | null,
-      error_stack: null as string | null
+      error_name: null,
+      error_message: null,
+      error_stack: null
     },
     database: {
       status: "Desconocido",
-      error: null as string | null
+      error: null
     }
   };
 
   let connectionString = "";
 
   try {
-    const ctx = getRequestContext();
-    const cfEnv = ctx?.env as { DATABASE_URL?: string };
-    if (cfEnv?.DATABASE_URL) {
-      connectionString = cfEnv.DATABASE_URL.trim();
-      diagnostics.cloudflare.context = "✅ DISPONIBLE";
-      diagnostics.cloudflare.env_db_len = connectionString.length;
-      diagnostics.cloudflare.protocol = connectionString.split(":")[0];
+    const ctx = getRequestContext() as unknown as { env: { DATABASE_URL?: string } };
+    if (ctx && ctx.env) {
+      if (ctx.env.DATABASE_URL) {
+        connectionString = ctx.env.DATABASE_URL.trim();
+        diagnostics.cloudflare.context = "✅ DISPONIBLE";
+        diagnostics.cloudflare.env_db_len = connectionString.length;
+        diagnostics.cloudflare.protocol = connectionString.split(":")[0];
+      } else {
+        diagnostics.cloudflare.context = "✅ DISPONIBLE (Pero DATABASE_URL vacía)";
+      }
     }
-  } catch (e: any) {
-    diagnostics.cloudflare.context = `❌ ERROR EXTRACCIÓN: ${e.message}`;
+  } catch (err) {
+    diagnostics.cloudflare.context = `❌ ERROR EXTRACCIÓN: ${err instanceof Error ? err.message : "Desconocido"}`;
   }
 
   // PRUEBA HTTP (El método más robusto en Edge)
@@ -47,11 +69,13 @@ export async function GET(request: Request) {
       const result = await sql`SELECT NOW()`;
       diagnostics.http_test.status = "✅ ÉXITO TOTAL: HTTP conectó y ejecutó SQL";
       diagnostics.http_test.data = result;
-    } catch (e: any) {
+    } catch (err) {
       diagnostics.http_test.status = "❌ FALLO HTTP";
-      diagnostics.http_test.error_name = e.name;
-      diagnostics.http_test.error_message = e.message;
-      diagnostics.http_test.error_stack = e.stack;
+      if (err instanceof Error) {
+        diagnostics.http_test.error_name = err.name;
+        diagnostics.http_test.error_message = err.message;
+        diagnostics.http_test.error_stack = err.stack || null;
+      }
     }
   }
 
