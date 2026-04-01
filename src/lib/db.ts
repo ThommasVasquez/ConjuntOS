@@ -57,8 +57,8 @@ function initPrisma(url: string): PrismaClient {
       ssl: { rejectUnauthorized: false }
     });
     
-    // Cast necesario para resolver discrepancia de tipos entre @neondatabase/serverless y @prisma/adapter-neon
-    const adapter = new PrismaNeon(pool as unknown as any);
+    // @ts-expect-error - El pool de Neon Serverless tiene una discrepancia interna de tipos con el adaptador de Prisma pero funciona correctamente
+    const adapter = new PrismaNeon(pool);
     return new PrismaClient({ adapter });
   } catch (error) {
     console.error("🔥 Error crítico en initPrisma (Neon Edge):", error);

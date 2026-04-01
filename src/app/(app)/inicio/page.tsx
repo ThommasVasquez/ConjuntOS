@@ -12,6 +12,7 @@ import {
   User as UserIcon, MessageSquare, CreditCard, Package, CheckCircle2, AlertTriangle
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -251,7 +252,7 @@ export default function InicioDashboard() {
         <div className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform">
           <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5'}`}>
              <div className="w-full h-full rounded-full overflow-hidden relative shadow-xl backdrop-blur-xl">
-                <img src={profilePic} alt="User Avatar" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <Image src={profilePic} alt="User Avatar" width={56} height={56} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" unoptimized />
                 <div className="absolute inset-0 border border-white/10 rounded-full pointer-events-none" />
              </div>
              {hasStory && (
@@ -515,9 +516,10 @@ function PostCard({ post }: { post: FeedItem }) {
       {/* Post Image (Full bleed) */}
       {post.image && (
          <div className="relative h-56 w-full mx-0 mb-0 shadow-inner group overflow-hidden">
-            <img 
+            <Image 
               src={post.image} 
               alt={post.title} 
+              fill
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-60" />

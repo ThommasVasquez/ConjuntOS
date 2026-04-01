@@ -11,6 +11,7 @@ import {
   ArrowRight, X, Download, Share2, CheckCircle2
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { useRouter } from "next/navigation";
 
@@ -157,7 +158,7 @@ export default function CarteleraPage() {
         <div className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform" onClick={() => router.push('/perfil')}>
            <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5'}`}>
               <div className="w-full h-full rounded-full overflow-hidden border border-white/10 shadow-2xl relative z-10">
-                 <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                 <Image src={profilePic} alt="Profile" width={56} height={56} className="w-full h-full object-cover" unoptimized />
               </div>
               {hasStory && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[#0d041a] z-20 flex items-center justify-center">
@@ -237,7 +238,7 @@ export default function CarteleraPage() {
            >
               {notice.image && (
                 <div className="h-40 w-full overflow-hidden relative">
-                   <img src={notice.image} alt={notice.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                   <Image src={notice.image} alt={notice.title} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                    <div className="absolute inset-0 bg-linear-to-t from-[#140628] to-transparent opacity-60" />
                 </div>
               )}
@@ -284,7 +285,7 @@ export default function CarteleraPage() {
               <div className="max-h-[85vh] overflow-y-auto hide-scrollbar">
                  {selectedNotice.image && (
                    <div className="h-56 w-full relative">
-                      <img src={selectedNotice.image} alt="" className="w-full h-full object-cover" />
+                      <Image src={selectedNotice.image} alt="" fill className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-linear-to-t from-[#0d041a] to-transparent" />
                       <button 
                         onClick={() => setSelectedNotice(null)}

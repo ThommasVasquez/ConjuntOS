@@ -41,6 +41,8 @@ export async function GET(request: Request) {
     setup: { status: "No ejecutado", logs: [] }
   };
 
+  let pool: Pool | null = null;
+
   try {
     const { searchParams } = new URL(request.url);
     const setupMode = searchParams.get("setup") === "true";
@@ -68,7 +70,7 @@ export async function GET(request: Request) {
     neonConfig.useSecureWebSocket = true;
     
     // Configuramos SSL flexible para resolver el Error 526
-    const pool = new Pool({ 
+    pool = new Pool({ 
       connectionString: sanitized,
       ssl: { rejectUnauthorized: false }
     });
@@ -95,39 +97,46 @@ export async function GET(request: Request) {
 
     // 4. Prueba Escritura (Atómica)
     try {
-      await pool.query('CREATE TEMP TABLE neon_debug_test (id int)');
+      diagnostics.setup.logs.push("Iniciando prueba de escritura (TEMP TABLE)...");
+      await pool.query('CREATE TEMP TABLE IF NOT EXISTS neon_debug_test (id int)');
+      await pool.query('INSERT INTO neon_debug_test (id) VALUES (1)');
       await pool.query('DROP TABLE neon_debug_test');
-      diagnostics.dbTest.write = "✅ OK";
+      diagnostics.dbTest.write = "✅ OK (Escritura temporal verificada)";
+      diagnostics.setup.logs.push("Prueba de escritura completada con éxito.");
     } catch (e: unknown) {
       diagnostics.dbTest.write = `❌ Error Escritura: ${e instanceof Error ? e.message : "Desconocido"}`;
+      diagnostics.setup.logs.push(`Fallo en prueba de escritura: ${e instanceof Error ? e.message : "Error desconocido"}`);
     }
 
     // 5. Setup (Si aplica)
     if (setupMode) {
       diagnostics.setup.status = "Procesando...";
       try {
-        diagnostics.setup.logs.push("Creando conjunto...");
+        diagnostics.setup.logs.push("Verificando existencia de tablas...");
+        // Split queries for maximum compatibility on Edge
         await pool.query(`
           INSERT INTO "Conjunto" (id, nombre, subdominio, direccion, ciudad, "colorPrimario", plan, activo)
           VALUES ('demo_id', 'Residencial Horizonte', 'horizonte_demo', 'Calle 100', 'Bogotá', '#1E3A5F', 'BASICO', true)
           ON CONFLICT (subdominio) DO UPDATE SET nombre = 'Residencial Horizonte'
         `);
+        diagnostics.setup.logs.push("✅ Conjunto 'demo_id' creado/actualizado.");
 
-        diagnostics.setup.logs.push("Creando usuario maestro...");
         await pool.query(`
           INSERT INTO "Usuario" (id, "conjuntoId", nombre, email, password, rol, activo, genero)
           VALUES ('master_thommy', 'demo_id', 'ThommyEnergy', 'thommy@example.com', '123456', 'SUPER_ADMIN', true, 'femenino')
           ON CONFLICT (email) DO UPDATE SET password = '123456'
         `);
+        diagnostics.setup.logs.push("✅ Usuario maestro 'master_thommy' creado/actualizado.");
+        
         diagnostics.setup.status = "✅ ÉXITO";
       } catch (e: unknown) {
         diagnostics.setup.status = "❌ FALLO";
-        diagnostics.setup.logs.push(`Error: ${e instanceof Error ? e.message : "Desconocido"}`);
+        const errorMsg = e instanceof Error ? e.message : "Desconocido";
+        diagnostics.setup.logs.push(`Error en setup: ${errorMsg}`);
+        diagnostics.error = errorMsg;
       }
     }
 
-    // Cerrar el pool para liberar la conexión del túnel
-    await pool.end();
     return NextResponse.json(diagnostics);
 
   } catch (globalError: unknown) {
@@ -138,5 +147,14 @@ export async function GET(request: Request) {
       stack: error.stack,
       diagnostics
     }, { status: 500 });
+  } finally {
+    // Asegurar que el pool siempre se cierre para no dejar conexiones huérfanas en el Edge
+    if (pool) {
+      try {
+        await pool.end();
+      } catch (e) {
+        console.error("Error al cerrar el pool:", e);
+      }
+    }
   }
 }

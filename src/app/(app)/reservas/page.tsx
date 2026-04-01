@@ -11,6 +11,7 @@ import {
   Bell, Search, SlidersHorizontal
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -146,15 +147,15 @@ export default function ReservasPage() {
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-10">
       
       {/* BACKGROUND AMBIENT GLOW */}
-      <div className="fixed top-[-10%] right-[-10%] w-[100%] h-[50%] bg-[#4C1D95]/20 blur-[120px] rounded-full -z-10 pointer-events-none" />
-      <div className="fixed bottom-[-10%] left-[-10%] w-[100%] h-[50%] bg-[#BE185D]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
+      <div className="fixed top-[-10%] right-[-10%] w-full h-[50%] bg-[#4C1D95]/20 blur-[120px] rounded-full -z-10 pointer-events-none" />
+      <div className="fixed bottom-[-10%] left-[-10%] w-full h-[50%] bg-[#BE185D]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
 
       {/* 1. HEADER (ESTILO INICIO) */}
       <section className="fade-up flex justify-between items-center relative z-20">
         <div className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform" onClick={() => router.push('/perfil')}>
            <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5'}`}>
               <div className="w-full h-full rounded-full overflow-hidden border border-white/10 shadow-2xl relative z-10">
-                 <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                 <Image src={profilePic} alt="Profile" width={56} height={56} className="w-full h-full object-cover" unoptimized />
               </div>
               {hasStory && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[#0d041a] z-20 flex items-center justify-center">
@@ -250,7 +251,7 @@ export default function ReservasPage() {
                className="fade-up liquid-glass-card rounded-[32px] overflow-hidden group cursor-pointer active:scale-[0.98] transition-all border border-white/5 shadow-2xl relative"
              >
                 <div className="relative h-60 w-full">
-                   <img src={area.image} alt={area.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <Image src={area.image} alt={area.name} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                    <div className="absolute inset-0 bg-linear-to-t from-[#0d041a] via-transparent to-transparent opacity-80" />
                    
                    {/* Badge Precio */}
@@ -306,7 +307,7 @@ export default function ReservasPage() {
 
               <div className="flex gap-6 items-center mb-8 p-4 rounded-3xl bg-white/5 border border-white/5">
                  <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shrink-0">
-                    <img src={selectedArea.image} alt={selectedArea.name} className="w-full h-full object-cover" />
+                     <Image src={selectedArea.image} alt={selectedArea.name} fill className="w-full h-full object-cover" />
                  </div>
                  <div>
                     <h4 className="text-white font-bold text-lg mb-1">{selectedArea.name}</h4>
@@ -429,7 +430,7 @@ export default function ReservasPage() {
            {/* DIGITAL TICKET */}
            <div className="w-full max-w-[340px] liquid-glass rounded-[40px] overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.8)] border border-white/10 relative">
               <div className="absolute top-0 left-0 w-full h-32 overflow-hidden -z-10">
-                 <img src={selectedArea.image} alt="" className="w-full h-full object-cover blur-sm opacity-40 scale-125" />
+                 <Image src={selectedArea.image} alt="" fill className="w-full h-full object-cover blur-sm opacity-40 scale-125" />
                  <div className="absolute inset-0 bg-linear-to-b from-transparent to-[#1a0b2e]" />
               </div>
 

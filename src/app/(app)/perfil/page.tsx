@@ -5,6 +5,7 @@ import {
   LogOut, Settings
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -161,21 +162,26 @@ function ProfileContent() {
       
       <div className="absolute top-0 left-0 w-full h-[55vh] z-0 cursor-pointer group/hero" onClick={() => document.getElementById('profilePhotoInput')?.click()}>
         {profilePic && (
-          <img 
+          <Image 
             src={profilePic}
             alt=""
+            width={500}
+            height={300}
             className="absolute bottom-[-15%] left-0 w-full h-[40%] object-cover object-bottom scale-110 blur-[45px] opacity-90 saturate-150 transition-all duration-700 group-hover/hero:opacity-100" 
+            unoptimized
           />
         )}
         {profilePic && (
-          <img 
+          <Image 
             src={profilePic}
             alt="Foto de perfil"
+            fill
             className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover/hero:scale-[1.02]" 
             style={{ 
               WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)', 
               maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)' 
             }}
+            unoptimized
           />
         )}
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/hero:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
@@ -319,8 +325,8 @@ function ProfileContent() {
               <div className="flex flex-col items-center gap-4 py-2">
                 <div className="relative group/modal-avatar cursor-pointer" onClick={() => document.getElementById('profilePhotoInput')?.click()}>
                   <div className="w-24 h-24 rounded-full border-2 border-accent/30 p-1 group-hover/modal-avatar:border-accent transition-all">
-                    <div className="w-full h-full rounded-full overflow-hidden shadow-xl">
-                      <img src={profilePic} alt="Current" className="w-full h-full object-cover" />
+                    <div className="w-full h-full rounded-full overflow-hidden shadow-xl relative">
+                      <Image src={profilePic} alt="Current" width={96} height={96} className="w-full h-full object-cover" unoptimized />
                     </div>
                   </div>
                   <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover/modal-avatar:opacity-100 transition-opacity">

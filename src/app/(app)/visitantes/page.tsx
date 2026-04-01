@@ -10,6 +10,7 @@ import {
   ChevronLeft, Share2, MoreHorizontal, UserPlus, 
   ShieldCheck, XCircle, ArrowRight, Bell, Download, User
 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -103,15 +104,23 @@ export default function VisitantesPage() {
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-8">
       
       {/* BACKGROUND AMBIENT GLOW */}
-      <div className="fixed top-[-10%] right-[-10%] w-[100%] h-[50%] bg-[#4C1D95]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
-      <div className="fixed bottom-[-10%] left-[-10%] w-[100%] h-[50%] bg-[#BE185D]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
+      <div className="fixed top-[-10%] right-[-10%] w-full h-[50%] bg-[#4C1D95]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
+      <div className="fixed bottom-[-10%] left-[-10%] w-full h-[50%] bg-[#BE185D]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
 
       {/* 1. HEADER (ESTILO INICIO) */}
       <section className="fade-up flex justify-between items-center relative z-20">
         <div className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform" onClick={() => router.push('/perfil')}>
            <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5'}`}>
               <div className="w-full h-full rounded-full overflow-hidden border border-white/10 shadow-2xl relative z-10">
-                 <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                 <Image 
+                    src={profilePic} 
+                    alt="Profile" 
+                    width={56} 
+                    height={56} 
+                    className="w-full h-full object-cover" 
+                    priority
+                    unoptimized={profilePic.startsWith('data:')}
+                 />
               </div>
               {hasStory && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[#0d041a] z-20 flex items-center justify-center">
