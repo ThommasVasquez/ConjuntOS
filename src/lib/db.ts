@@ -14,7 +14,7 @@ export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   
   // Paso 1: Eliminar el puerto :5432 si existe (Causa Error 1016 en Edge HTTP)
-  let url = baseUrl.replace(/:5432/, "");
+  const url = baseUrl.replace(/:5432/, "");
 
   try {
     // Intentamos parsear de forma normal

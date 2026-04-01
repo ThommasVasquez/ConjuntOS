@@ -23,7 +23,7 @@ function localSanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
     // Paso 1: Eliminar el puerto :5432 (Error 1016 en Edge)
-    let url = baseUrl.replace(/:5432/, "");
+    const url = baseUrl.replace(/:5432/, "");
     
     const parts = url.match(/^(postgresql:\/\/)([^:]+):(.+)(@.+)$/);
     if (parts) {
