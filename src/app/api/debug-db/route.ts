@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import db from "@/lib/db";
+import { Pool } from "@neondatabase/serverless";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -9,92 +9,74 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const isSetupMode = searchParams.get("setup") === "true";
 
-  let cfContextStatus = "❌ NO DISPONIBLE";
-  let cfEnvStatus = "❌ NO DISPONIBLE";
-
-  try {
-    const ctx = getRequestContext();
-    if (ctx) {
-      cfContextStatus = "✅ DISPONIBLE";
-      const cfEnv = ctx.env as { DATABASE_URL?: string };
-      cfEnvStatus = cfEnv.DATABASE_URL ? "✅ CONFIGURADA (Contexto)" : "❌ VACÍA en Contexto";
-    }
-  } catch {
-    cfContextStatus = "❌ ERROR: Fallo al obtener contexto";
-  }
-
-  const diagnostics = {
+  const diagnostics: any = {
     env: {
-      DATABASE_URL: process.env.DATABASE_URL ? "✅ Configurada (Censurada)" : "❌ FALTANTE",
-      AUTH_SECRET: process.env.AUTH_SECRET ? "✅ Configurada" : "❌ FALTANTE",
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL || "No configurada (v5 no la requiere estrictamente)",
+      DATABASE_URL_PROCESS: process.env.DATABASE_URL ? `EXISTE (Len: ${process.env.DATABASE_URL.length})` : "❌ FALTANTE en process.env",
     },
     cloudflare: {
-      context: cfContextStatus,
-      env_db: cfEnvStatus
+      context: "❌ NO DISPONIBLE",
+      env_db: "❌ NO DISPONIBLE",
+      raw_db_prefix: "N/A",
+    },
+    direct_pool_test: {
+      status: "No intentado",
+      error: null,
     },
     database: {
       status: "Desconocido",
-      error: null as string | null,
       userCount: 0,
       masterUserExists: false,
-      setupSuccess: null as boolean | null,
-      setupLogs: [] as string[],
     }
   };
 
+  let connectionString = "";
+
+  // 1. Extraer del contexto de Cloudflare
   try {
-    // 1. Verificar conteo
-    diagnostics.database.userCount = await db.usuario.count();
-    
-    // 2. Verificar Master User
-    const masterUser = await db.usuario.findFirst({
-      where: { email: "thommy@example.com" }
-    });
-    diagnostics.database.masterUserExists = !!masterUser;
-    diagnostics.database.status = "✅ CONECTADA";
-
-    // 3. MODO SETUP FORZADO
-    if (isSetupMode && !masterUser) {
-      diagnostics.database.setupLogs.push("🛠️ Iniciando Setup Forzado...");
-      
-      // Asegurar Conjunto
-      let conjunto = await db.conjunto.findFirst();
-      if (!conjunto) {
-        diagnostics.database.setupLogs.push("🏢 Creando Conjunto Master...");
-        conjunto = await db.conjunto.create({
-          data: {
-            nombre: "Conjunto Demo",
-            subdominio: `demo-${Date.now()}`, // Único para evitar errores de duplicado
-            direccion: "Dirección Master",
-            ciudad: "Bogotá"
-          }
-        });
+    const ctx = getRequestContext();
+    if (ctx) {
+      diagnostics.cloudflare.context = "✅ DISPONIBLE";
+      const cfEnv = ctx.env as { DATABASE_URL?: string };
+      if (cfEnv?.DATABASE_URL) {
+        connectionString = cfEnv.DATABASE_URL.trim();
+        diagnostics.cloudflare.env_db = `✅ ENCONTRADA (Len: ${connectionString.length})`;
+        diagnostics.cloudflare.raw_db_prefix = connectionString.substring(0, 8);
+      } else {
+        diagnostics.cloudflare.env_db = "❌ VACÍA en env";
       }
-
-      // Crear Usuario
-      diagnostics.database.setupLogs.push("👤 Creando Usuario Thommy...");
-      await db.usuario.create({
-        data: {
-          nombre: "Thommy Administrator",
-          email: "thommy@example.com",
-          password: "123456",
-          rol: "SUPER_ADMIN",
-          conjuntoId: conjunto.id,
-          genero: "femenino"
-        }
-      });
-      
-      diagnostics.database.setupSuccess = true;
-      diagnostics.database.setupLogs.push("✅ Usuario maestro creado con éxito.");
-      diagnostics.database.masterUserExists = true;
-      diagnostics.database.userCount = await db.usuario.count();
     }
+  } catch (e: any) {
+    diagnostics.cloudflare.context = `❌ ERROR EXTRACCIÓN: ${e.message}`;
+  }
 
-  } catch (error: unknown) {
-    diagnostics.database.status = "❌ ERROR EN DB";
-    diagnostics.database.error = error instanceof Error ? error.message : "Error desconocido";
-    diagnostics.database.setupSuccess = false;
+  // 2. Prueba de Pool DIRECTA (Sin Prisma)
+  if (connectionString) {
+    diagnostics.direct_pool_test.status = "Iniciando prueba de Pool directa...";
+    const pool = new Pool({ connectionString });
+    try {
+      const client = await pool.connect();
+      const result = await client.query('SELECT NOW()');
+      diagnostics.direct_pool_test.status = "✅ ÉXITO: Pool conectado y consulta SQL directa ok";
+      client.release();
+      await pool.end();
+    } catch (e: any) {
+      diagnostics.direct_pool_test.status = "❌ FALLO: El Pool no pudo conectar";
+      diagnostics.direct_pool_test.error = e.message;
+    }
+  }
+
+  // 3. Prueba con el Cliente Global (Prisma)
+  try {
+    const { default: db } = await import("@/lib/db");
+    const count = await db.usuario.count();
+    diagnostics.database.userCount = count;
+    diagnostics.database.status = "✅ PRISMA CONECTADO";
+    
+    const masterUser = await db.usuario.findFirst({ where: { email: "thommy@example.com" } });
+    diagnostics.database.masterUserExists = !!masterUser;
+  } catch (e: any) {
+    diagnostics.database.status = "❌ PRISMA FALLÓ";
+    diagnostics.database.error = e.message;
   }
 
   return NextResponse.json(diagnostics);
