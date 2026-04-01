@@ -62,9 +62,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ ...diagnostics, error: "No hay connection string" });
     }
 
-    // 2. Conector PG Estándar (TCP Directo vía Cloudflare connect())
+    // 2. Conector PG Estándar (TCP Directo + SSL Flexible)
     const sanitized = localSanitizeUrl(connectionString);
-    const pool = new Pool({ connectionString: sanitized });
+    const pool = new Pool({ 
+      connectionString: sanitized,
+      ssl: { rejectUnauthorized: false }
+    });
 
     // 3. Prueba Conexión (vía TCP Directo)
     try {

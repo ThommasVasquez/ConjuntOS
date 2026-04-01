@@ -43,10 +43,13 @@ function findConnectionString(): string {
 }
 
 function initPrisma(url: string): PrismaClient {
-  console.log("🔌 Inicializando Prisma con Adaptador PG Directo (vía TCP/Native)");
+  console.log("🔌 Inicializando Prisma con Adaptador PG Directo y SSL Flexible");
   try {
-    // Usamos el Pool estándar de 'pg' que ahora es compatible con Cloudflare Edge
-    const pool = new Pool({ connectionString: url });
+    // Configuramos SSL flexible para evitar el Error 526 en Cloudflare/Supabase
+    const pool = new Pool({ 
+      connectionString: url,
+      ssl: { rejectUnauthorized: false }
+    });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter });
   } catch (error) {
