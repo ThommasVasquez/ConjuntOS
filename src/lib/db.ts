@@ -6,70 +6,78 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 export const runtime = "edge";
 
 /**
- * Busca la DATABASE_URL en todas las capas posibles de Cloudflare/Next.js
+ * Intenta recuperar la URL de cualquier rincón del runtime
  */
-function getConnectionString(): string {
-  // 1. Capa Global (Cloudflare Native)
+function findConnectionString(): string {
   const g = globalThis as unknown as { 
     DATABASE_URL?: string; 
     env?: { DATABASE_URL?: string } 
   };
+  
   if (g.DATABASE_URL) return g.DATABASE_URL.trim();
   if (g.env?.DATABASE_URL) return g.env.DATABASE_URL.trim();
 
-  // 2. Capa de Contexto (getRequestContext)
   try {
     const ctx = getRequestContext();
     const cfEnv = ctx?.env as { DATABASE_URL?: string };
     if (cfEnv?.DATABASE_URL) return cfEnv.DATABASE_URL.trim();
-  } catch { /* Ignorar si no hay contexto */ }
+  } catch { /* Contexto no listo */ }
 
-  // 3. Capa de Proceso (Next.js Polyfill)
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL.trim();
 
   return "";
 }
 
-function createClient() {
-  const url = getConnectionString();
-
-  if (!url || url.length < 10) {
-    // Si llegamos aquí, lanzamos un error explícito en lugar de devolver un cliente vacío
-    // Esto evita que Prisma intente conectar a localhost:5432
-    console.error("❌ CRITICAL: DATABASE_URL not found in any layer (Global, Env, Context)");
-    throw new Error("DATABASE_URL_MISSING_IN_EDGE_RUNTIME");
-  }
-
+/**
+ * Crea una instancia fresca de Prisma con el adaptador de Neon
+ */
+function initPrisma(url: string): PrismaClient {
+  console.log(`🔌 Inicializando Prisma con URL (Len: ${url.length})`);
   try {
-    // Usamos Pool para compatibilidad con PrismaNeon
     const pool = new Pool({ connectionString: url });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const adapter = new PrismaNeon(pool as any);
     return new PrismaClient({ adapter });
   } catch (error) {
-    console.error("🔥 Failed to initialize Prisma with Neon adapter:", error);
+    console.error("🔥 Error crítico en initPrisma:", error);
     throw error;
   }
 }
 
-// Singleton con persistencia en global para evitar múltiples conexiones en HMR
-/* eslint-disable no-var */
+// Singleton con gestión de estado
 declare global {
-  var prisma: PrismaClient | undefined;
+  /* eslint-disable no-var */
+  var __prismaInstance: PrismaClient | undefined;
+  var __prismaUrl: string | undefined;
 }
-/* eslint-enable no-var */
 
 const db = new Proxy({} as PrismaClient, {
   get: (target, prop) => {
-    if (!globalThis.prisma) {
-      globalThis.prisma = createClient();
+    const currentUrl = findConnectionString();
+    
+    // Si no hay instancia O la URL ha cambiado/aparecido por fin
+    if (!globalThis.__prismaInstance || (currentUrl && globalThis.__prismaUrl !== currentUrl)) {
+      if (currentUrl && currentUrl.length > 10) {
+        globalThis.__prismaInstance = initPrisma(currentUrl);
+        globalThis.__prismaUrl = currentUrl;
+      } else {
+        // Si aún no hay URL, no podemos crear el cliente real
+        // Devolvemos un error explícito si se intenta usar
+        if (prop === "usuario" || prop === "conjunto") {
+          throw new Error("DATABASE_URL_NOT_AVAILABLE_YET");
+        }
+      }
     }
     
-    const client = globalThis.prisma as unknown as Record<string, unknown>;
+    if (!globalThis.__prismaInstance) {
+      throw new Error("PRISMA_NOT_INITIALIZED");
+    }
+
+    const client = globalThis.__prismaInstance as unknown as Record<string, unknown>;
     const result = client[prop as string];
     
     if (typeof result === "function") {
-      return result.bind(globalThis.prisma);
+      return result.bind(globalThis.__prismaInstance);
     }
     return result;
   }
