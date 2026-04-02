@@ -120,20 +120,23 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           }
 
           const dbUrl = await findConnectionString();
-
+          
           if (dbUrl) {
                (globalThis as { DATABASE_URL?: string }).DATABASE_URL = dbUrl;
                process.env.DATABASE_URL = dbUrl;
+               
+               // Inyección directa en el singleton
+               const { setConnectionString } = await import("@/lib/db");
+               setConnectionString(dbUrl);
           } else {
-               await persistentLog("DATABASE_URL_MISSING", "No se encontró URL de conexión en ningún contexto", normalizedEmail);
+               await persistentLog("DATABASE_URL_MISSING", "No se encontró cadena de conexión en este worker", normalizedEmail);
                return null;
           }
-
-          // 2. Importar DB
-          const { default: db } = await import("@/lib/db");
+          
           await persistentLog("PRISMA_CLIENT_READY", "Módulo DB cargado", normalizedEmail);
           
           try {
+              const { default: db } = await import("@/lib/db");
               const userRes = await db.usuario.findUnique({ 
                 where: { email: normalizedEmail } as unknown as { email: string }
               });

@@ -23,19 +23,36 @@ export function sanitizeUrl(baseUrl: string): string {
   return raw;
 }
 
+let _connectionString: string | null = null;
+
+export function setConnectionString(url: string) {
+  if (url) {
+    _connectionString = sanitizeUrl(url);
+    // También popular globales para otros módulos
+    const g = globalThis as { DATABASE_URL?: string };
+    g.DATABASE_URL = _connectionString;
+    process.env.DATABASE_URL = _connectionString;
+  }
+}
+
 /**
  * Busca la cadena de conexión en todas las fuentes del Edge.
  */
 function findConnectionStringSync(): string {
+  if (_connectionString) return _connectionString;
+
   const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string } };
   const getUrl = (v: unknown) => (typeof v === 'string' ? v.trim() : "");
 
-  return sanitizeUrl(
+  const url = sanitizeUrl(
     getUrl(process.env.DATABASE_URL) || 
     getUrl(g.DATABASE_URL) || 
     getUrl(g.env?.DATABASE_URL) || 
     ""
   );
+
+  if (url) _connectionString = url;
+  return url;
 }
 
 /**
@@ -102,6 +119,7 @@ const db = {
   $executeRaw: (query: unknown) => getPrismaClient().$executeRawUnsafe(query as string),
   $connect: () => getPrismaClient().$connect(),
   $disconnect: () => getPrismaClient().$disconnect(),
+  setConnectionString,
 };
 
 export default db;
