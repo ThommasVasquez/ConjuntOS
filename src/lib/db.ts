@@ -20,7 +20,11 @@ export function sanitizeUrl(baseUrl: string): string {
     const parts = raw.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+?)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
-      return `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
+      // Escapamos % y $ para evitar errores de parseo o variables de entorno
+      const safePassword = password
+        .replace(/%/g, "%25")
+        .replace(/\$/g, "%24");
+      return `${protocol}${user}:${safePassword}${rest}`;
     }
   } catch { /* Fallback */ }
   return raw;

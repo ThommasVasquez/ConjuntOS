@@ -121,16 +121,16 @@ export async function GET(request: Request) {
         await pool.query(`
           INSERT INTO "Conjunto" (id, nombre, subdominio, direccion, ciudad)
           VALUES ('demo_id', 'Residencial Horizonte', 'demo', 'Calle Digital 101', 'Nube')
-          ON CONFLICT (subdominio) DO UPDATE SET nombre = 'Residencial Horizonte'
+          ON CONFLICT (id) DO UPDATE SET subdominio = 'demo'
         `);
-        diagnostics.setup.logs.push("✅ Conjunto 'demo_id' verificado.");
+        diagnostics.setup.logs.push("✅ Conjunto 'demo_id' verificado (ON CONFLICT ID).");
 
         await pool.query(`
           INSERT INTO "Usuario" (id, "conjuntoId", nombre, email, password, rol, activo, genero)
-          VALUES ('master_thommy', 'demo_id', 'ThommyEnergy', 'thommy@example.com', 'Md5891129Ae$', 'SUPER_ADMIN', true, 'femenino')
-          ON CONFLICT (email) DO UPDATE SET password = 'Md5891129Ae$'
+          VALUES ('master_milo', 'demo_id', 'Milo', 'milo@enconjunto.com', 'Md5891129Ae$', 'SUPER_ADMIN', true, 'masculino')
+          ON CONFLICT (email) DO UPDATE SET password = 'Md5891129Ae$', "conjuntoId" = 'demo_id'
         `);
-        diagnostics.setup.logs.push("✅ Usuario maestro verificado.");
+        diagnostics.setup.logs.push("✅ Usuario 'milo@enconjunto.com' verificado.");
         
         const userRes = await pool.query('SELECT email, rol, password FROM "Usuario" WHERE email = $1', ['thommy@example.com']);
         if (userRes.rows.length > 0) {
