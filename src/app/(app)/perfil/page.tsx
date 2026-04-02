@@ -10,7 +10,7 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { getUserProfile, updateUserProfile } from "@/app/actions/userActions";
+import { getUserProfile } from "@/app/actions/userActions";
 
 // Define Rol locally to avoid importing Prisma in a Client Component
 enum Rol {
