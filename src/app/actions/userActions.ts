@@ -1,7 +1,6 @@
 "use server";
 
 import db from "@/lib/db";
-import { revalidatePath } from "next/cache";
 import { auth } from "@/auth"; // Acceder a la sesión de forma segura
 
 export async function getUserProfile(userId: string = "current-user") {
