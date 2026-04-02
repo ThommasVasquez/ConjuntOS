@@ -1,9 +1,14 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeft, Bell, Search, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { signOut } from "next-auth/react";
+import { toast } from "sonner";
+import { 
+  ChevronLeft, Bell, Search, MoreHorizontal,
+  LogOut
+} from "lucide-react";
 
 export default function TopBar() {
   const pathname = usePathname();
@@ -96,8 +101,15 @@ export default function TopBar() {
                   <button onClick={() => setDropdownOpen(false)} className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors border-b border-white/5 flex items-center gap-2">
                     Privacidad
                   </button>
-                  <button onClick={() => setDropdownOpen(false)} className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-white/10 transition-colors flex items-center gap-2">
-                    Cerrar Sesión
+                  <button onClick={() => {
+                    setDropdownOpen(false);
+                    toast.promise(signOut({ callbackUrl: "/login" }), {
+                      loading: "Cerrando sesión...",
+                      success: "¡Hasta pronto!",
+                      error: "Error al cerrar sesión"
+                    });
+                  }} className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-white/10 transition-colors flex items-center gap-2">
+                    <LogOut size={14} /> Cerrar Sesión
                   </button>
                 </>
               ) : (
