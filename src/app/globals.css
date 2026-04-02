@@ -94,33 +94,31 @@ html, body {
 
 /* Sonner Overrides with ULTRALIQUID transparency */
 .liquid-glass-toast {
-  background: transparent !important; /* Transparencia 100% */
-  backdrop-filter: blur(200px) !important;
-  -webkit-backdrop-filter: blur(200px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important; /* Brillo compensado */
+  background: rgba(8, 8, 8, 0.65) !important; /* Contraste máximo para lectura */
+  backdrop-filter: blur(250px) saturate(180%) !important; /* Blur total cinematográfico */
+  -webkit-backdrop-filter: blur(250px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 32px !important;
   color: white !important;
-  box-shadow: none !important;
-  padding: 20px 24px !important;
+  font-weight: 600 !important;
+  padding: 22px 26px !important;
   font-family: inherit !important;
   display: flex !important;
   align-items: center !important;
   gap: 12px !important;
   min-width: 320px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  letter-spacing: -0.01em !important;
 }
 
 [data-type='success'].liquid-glass-toast {
-  background: rgba(16, 185, 129, 0.12) !important;
-  border-color: rgba(16, 185, 129, 0.4) !important;
-  color: #10b981 !important;
-  box-shadow: 0 0 60px rgba(16, 185, 129, 0.3) !important; /* Glow Verde Intensificado */
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 0 100px rgba(16, 185, 129, 0.4) !important; /* Glow máximo */
 }
 
 [data-type='error'].liquid-glass-toast {
-  background: rgba(239, 68, 68, 0.12) !important;
-  border-color: rgba(239, 68, 68, 0.4) !important;
-  color: #ef4444 !important;
-  box-shadow: 0 0 60px rgba(239, 68, 68, 0.3) !important; /* Glow Rojo Intensificado */
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  box-shadow: 0 0 100px rgba(239, 68, 68, 0.4) !important; /* Glow máximo */
 }
 
 [data-sonner-toast] [data-icon] {
