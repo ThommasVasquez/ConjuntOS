@@ -23,6 +23,7 @@ export async function GET() {
       });
 
       if (user) {
+        console.log(`✅ [API-PROFILE-GET]: Avatar status for ${userId}: ${user.avatar ? 'EXISTE (' + user.avatar.length + ' chars)' : 'VACÍO'}`);
         return NextResponse.json({ success: true, data: user });
       }
     } catch (prismaErr: unknown) {

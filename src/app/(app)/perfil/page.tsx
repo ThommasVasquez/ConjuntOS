@@ -58,7 +58,7 @@ function ProfileContent() {
   useEffect(() => {
     async function loadData() {
       try {
-        const fetchRes = await fetch("/api/user/profile");
+        const fetchRes = await fetch("/api/user/profile", { cache: 'no-store' });
         const res = await fetchRes.json();
 
         if (res.success && res.data) {
@@ -178,6 +178,7 @@ function ProfileContent() {
       const response = await fetch('/api/user/profile-save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({
           name: editForm.name,
           phone: editForm.phone,

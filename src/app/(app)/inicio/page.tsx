@@ -58,7 +58,7 @@ export default function InicioDashboard() {
   useEffect(() => {
     async function loadData() {
       try {
-        const fetchRes = await fetch("/api/user/profile");
+        const fetchRes = await fetch("/api/user/profile", { cache: 'no-store' });
         const res = await fetchRes.json();
         
         if (res.success && res.data) {

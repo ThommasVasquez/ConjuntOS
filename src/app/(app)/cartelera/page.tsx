@@ -56,7 +56,7 @@ export default function CarteleraPage() {
     async function initData() {
       try {
         // 1. Get fundamental user data via REST
-        const profileFetch = await fetch("/api/user/profile");
+        const profileFetch = await fetch("/api/user/profile", { cache: 'no-store' });
         const profileRes = await profileFetch.json();
         
         let cid = "";
@@ -104,7 +104,7 @@ export default function CarteleraPage() {
         }
 
         // 2. Load announcements from DB via REST
-        const anunciosFetch = await fetch("/api/user/anuncios");
+        const anunciosFetch = await fetch("/api/user/anuncios", { cache: 'no-store' });
         const anunciosRes = await anunciosFetch.json();
 
         if (anunciosRes.success && anunciosRes.data) {

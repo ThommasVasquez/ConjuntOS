@@ -77,14 +77,35 @@ export default function ReservasPage() {
   useEffect(() => {
     if (!userId) return;
 
-    // Load local storage data
-    const savedPic = localStorage.getItem(`conjunto_app_profile_pic_${userId}`);
-    if (savedPic) setProfilePic(savedPic);
+    async function loadData() {
+      try {
+        const fetchRes = await fetch("/api/user/profile", { cache: 'no-store' });
+        const res = await fetchRes.json();
+        if (res.success && res.data) {
+          const u = res.data;
+          setUserData({ 
+            name: u.nombre, 
+            unit: u.unidad?.numero || "Torre 1 - 101", 
+            gender: u.genero || "femenino" 
+          });
+          if (u.avatar) setProfilePic(u.avatar);
+          
+          // Persistence (Isolated)
+          localStorage.setItem(`conjunto_app_profile_pic_${userId}`, u.avatar || "");
+        }
+      } catch (_err) {
+        // Fallback to local storage if API fails
+        const savedPic = localStorage.getItem(`conjunto_app_profile_pic_${userId}`);
+        if (savedPic) setProfilePic(savedPic);
 
-    const savedData = localStorage.getItem(`conjunto_app_profile_data_${userId}`);
-    if (savedData) {
-      try { setUserData(JSON.parse(savedData)); } catch (e) { console.error(e); }
+        const savedData = localStorage.getItem(`conjunto_app_profile_data_${userId}`);
+        if (savedData) {
+          try { setUserData(JSON.parse(savedData)); } catch (e) { console.error(e); }
+        }
+      }
     }
+
+    loadData();
 
     // Story Logic
     const savedStory = localStorage.getItem(`conjunto_app_active_story_${userId}`);
