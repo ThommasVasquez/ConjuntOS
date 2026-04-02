@@ -7,14 +7,14 @@
 
 import { 
   Plus, QrCode, Clock, Calendar, CheckCircle2, 
-  ChevronLeft, Share2, MoreHorizontal, UserPlus, 
-  ShieldCheck, XCircle, ArrowRight, Bell, Download, User
+  Share2, MoreHorizontal, UserPlus, 
+  ShieldCheck, XCircle, ArrowRight, Download, User
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import ProfileHeader from "@/components/shell/ProfileHeader";
 
 interface Visitor {
   id: string;
@@ -27,20 +27,9 @@ interface Visitor {
 }
 
 export default function VisitantesPage() {
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [profilePic, setProfilePic] = useState("/images/avatar-placeholder.png");
-  const [userData, setUserData] = useState({ name: "Residente", gender: "femenino" });
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [newVisitForm, setNewVisitForm] = useState({ name: '', type: 'OCASIONAL' });
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const notificationsRef = useRef<HTMLDivElement>(null);
-  const [hasStory, setHasStory] = useState(false);
-
-  const notifications = [
-    { id: 1, title: "Nuevo Invitado", desc: "Carlos Mendoza ha ingresado al conjunto.", time: "Hace 5m", icon: <CheckCircle2 size={16} />, color: "text-green-400", isUnread: true },
-    { id: 2, title: "Invitación Expirada", desc: "El QR de Rappi ha expirado.", time: "Hace 1h", icon: <XCircle size={16} />, color: "text-red-400" },
-  ];
 
   const [visitors] = useState<Visitor[]>([
     { id: '1', name: "Carlos Mendoza", type: 'FRECUENTE', status: 'ACTIVO', entryTime: '10:45 AM' },
@@ -50,29 +39,6 @@ export default function VisitantesPage() {
   ]);
 
   useEffect(() => {
-    // Load local storage data
-    const savedPic = localStorage.getItem("conjunto_app_profile_pic");
-    if (savedPic) setProfilePic(savedPic);
-
-    const savedData = localStorage.getItem("conjunto_app_profile_data");
-    if (savedData) {
-      try { setUserData(JSON.parse(savedData)); } catch (e) { console.error(e); }
-    }
-
-    const savedStory = localStorage.getItem("conjunto_app_user_story");
-    if (savedStory) {
-       const storyData = JSON.parse(savedStory);
-       const now = new Date().getTime();
-       if (now < storyData.expiresAt) setHasStory(true);
-    }
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-        setIsNotificationsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up", 
         { opacity: 0, y: 30 },
@@ -98,84 +64,15 @@ export default function VisitantesPage() {
     toast.success("¡Código QR generado con éxito!");
   };
 
-
-
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-8">
       
+      {/* 0. HEADER ESTANDARIZADO */}
+      <ProfileHeader className="fade-up" />
+
       {/* BACKGROUND AMBIENT GLOW */}
       <div className="fixed top-[-10%] right-[-10%] w-full h-[50%] bg-[#4C1D95]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
       <div className="fixed bottom-[-10%] left-[-10%] w-full h-[50%] bg-[#BE185D]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
-
-      {/* 1. HEADER (ESTILO INICIO) */}
-      <section className="fade-up flex justify-between items-center relative z-20">
-        <div className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform" onClick={() => router.push('/perfil')}>
-           <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5'}`}>
-              <div className="w-full h-full rounded-full overflow-hidden border border-white/10 shadow-2xl relative z-10">
-                 <Image 
-                    src={profilePic} 
-                    alt="Profile" 
-                    width={56} 
-                    height={56} 
-                    className="w-full h-full object-cover" 
-                    priority
-                    unoptimized={profilePic.startsWith('data:')}
-                 />
-              </div>
-              {hasStory && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[#0d041a] z-20 flex items-center justify-center">
-                   <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                </div>
-              )}
-           </div>
-           <div className="flex flex-col">
-             <div className="flex items-center gap-1.5">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); router.back(); }}
-                  className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-white/20 mr-1"
-                >
-                   <ChevronLeft size={12} />
-                </button>
-                <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest">
-                  {userData.gender === 'masculino' ? 'Bienvenido' : userData.gender === 'neutro' ? 'Bienvenide' : 'Bienvenida'} 👋
-                </span>
-             </div>
-             <h1 className="text-white text-xl font-display font-bold tracking-tight text-glow">{userData.name || 'Residente'}</h1>
-           </div>
-        </div>
-
-        {/* NOTIFICATIONS TRIGGER */}
-        <div className="relative" ref={notificationsRef}>
-          <button 
-            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-white/10 active:scale-95 ${isNotificationsOpen ? 'bg-accent text-white border-accent/50' : 'liquid-glass text-white/80 hover:text-white'}`}
-          >
-             <Bell size={22} className={isNotificationsOpen ? 'animate-none' : 'group-hover:rotate-12 transition-transform'} />
-             <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-[#1a0b2e] shadow-[0_0_10px_rgba(217,70,239,0.8)]"></span>
-          </button>
-
-          {isNotificationsOpen && (
-            <div className="absolute top-14 right-0 w-[280px] liquid-glass backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden z-200 animate-in fade-in zoom-in-95 duration-200">
-               <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                  <span className="text-sm font-bold text-white tracking-wide">Notificaciones</span>
-               </div>
-               <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar">
-                  {notifications.map((notif) => (
-                    <div key={notif.id} className="w-full px-5 py-4 flex items-start gap-4 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 relative group">
-                       <div className="mt-0.5 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-accent">
-                          {notif.icon}
-                       </div>
-                       <div className="flex flex-col flex-1">
-                          <span className="text-xs font-bold text-white mb-0.5">{notif.title}</span>
-                          <p className="text-[10px] text-white/50 leading-snug">{notif.desc}</p>
-                       </div>
-                    </div>
-                  ))}
-               </div>
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* 2. SUMMARY CARDS */}
       <section className="grid grid-cols-2 gap-4 fade-up">
@@ -218,7 +115,7 @@ export default function VisitantesPage() {
                <input 
                  type="text" 
                  placeholder="Nombre del Invitado"
-                 className="w-full bg-[#1a1333]/50 border border-white/10 rounded-2xl py-4 px-5 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none"
+                 className="w-full bg-[#1a1333]/50 border border-white/10 rounded-2xl py-4 px-5 text-sm text-white focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none"
                  value={newVisitForm.name}
                  onChange={(e) => setNewVisitForm({...newVisitForm, name: e.target.value})}
                />
@@ -384,26 +281,6 @@ export default function VisitantesPage() {
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        @keyframes story-shimmer {
-          0% { border-color: #D946EF; box-shadow: 0 0 15px #D946EF, 0 0 30px rgba(217,70,239,0.5), inset 0 0 10px #D946EF; }
-          50% { border-color: #8B5CF6; box-shadow: 0 0 25px #8B5CF6, 0 0 50px rgba(139,92,246,0.6), inset 0 0 15px #8B5CF6; }
-          100% { border-color: #D946EF; box-shadow: 0 0 15px #D946EF, 0 0 30px rgba(217,70,239,0.5), inset 0 0 10px #D946EF; }
-        }
-
-        .liquid-story-ring {
-          position: relative;
-          background: linear-gradient(45deg, #D946EF, #8B5CF6, #D946EF);
-          background-size: 200% 200%;
-          animation: story-shimmer 3s infinite ease-in-out, shimmer-bg 5s infinite linear;
-          padding: 3px;
-        }
-
-        @keyframes shimmer-bg {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
       `}} />
 
     </div>
