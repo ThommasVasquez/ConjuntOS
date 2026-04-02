@@ -7,32 +7,54 @@ export const runtime = "edge";
 /**
  * Escapa el carácter '%' en la contraseña para que URL lo acepte.
  */
+/**
+ * Motor de sanitización universal (Maneja caracteres especiales en contraseñas)
+ */
 export function sanitizeUrl(baseUrl: string): string {
-  if (!baseUrl) return "";
+  if (!baseUrl || typeof baseUrl !== 'string') return "";
   const raw = baseUrl.trim();
-  if (!raw.includes(":") || raw.includes("%25")) return raw;
+  if (raw.includes("%25")) return raw; // Ya sanitizado
   
   try {
-    // Regex simple para extraer el password y escaparlo
-    const parts = raw.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
+    // Regex de alto impacto para extraer el password y escaparlo sin Greedy match
+    const parts = raw.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+?)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
       return `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
     }
-  } catch { /* fallback */ }
+  } catch { /* Fallback */ }
   return raw;
 }
 
-let _connectionString: string | null = null;
+/**
+ * Descubrimiento agresivo de DATABASE_URL en el Edge.
+ */
+export async function discoverUrl(): Promise<string> {
+  const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string }; __DATABASE_URL_CACHE__?: string };
+  
+  if (g.__DATABASE_URL_CACHE__) return g.__DATABASE_URL_CACHE__;
+
+  let url = "";
+
+  try {
+    const { getRequestContext } = await import("@cloudflare/next-on-pages");
+    const ctx = getRequestContext();
+    const env = ctx?.env as { DATABASE_URL?: string };
+    if (env?.DATABASE_URL) url = env.DATABASE_URL;
+  } catch { /* Ignorar si no está disponible */ }
+
+  // 2. Otras fuentes
+  if (!url) {
+    url = process.env.DATABASE_URL || g.DATABASE_URL || g.env?.DATABASE_URL || "";
+  }
+
+  const sanitized = sanitizeUrl(url);
+  if (sanitized) g.__DATABASE_URL_CACHE__ = sanitized;
+  return sanitized;
+}
 
 export function setConnectionString(url: string) {
-  if (url) {
-    _connectionString = sanitizeUrl(url);
-    // También popular globales para otros módulos
-    const g = globalThis as { DATABASE_URL?: string };
-    g.DATABASE_URL = _connectionString;
-    process.env.DATABASE_URL = _connectionString;
-  }
+  if (url) (globalThis as { __DATABASE_URL_CACHE__?: string }).__DATABASE_URL_CACHE__ = sanitizeUrl(url);
 }
 
 
@@ -40,39 +62,13 @@ export function setConnectionString(url: string) {
  * Singleton de Prisma para el Edge (Asíncrono y Robusto).
  */
 export async function getPrismaClient(): Promise<PrismaClient> {
-  let url = _connectionString || "";
-
-  if (!url) {
-    const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string } };
-    
-    // 1. Intentar el Contexto de Cloudflare (El más fiable en el Edge)
-    try {
-      const { getRequestContext } = await import("@cloudflare/next-on-pages");
-      const ctx = getRequestContext();
-      const env = ctx?.env as { DATABASE_URL?: string };
-      if (env?.DATABASE_URL) url = sanitizeUrl(env.DATABASE_URL);
-    } catch { /* Contexto no disponible */ }
-
-    // 2. Fallbacks
-    if (!url) {
-      const getUrl = (v: unknown) => (typeof v === 'string' ? v.trim() : "");
-      url = sanitizeUrl(
-        getUrl(process.env.DATABASE_URL) || 
-        getUrl(g.DATABASE_URL) || 
-        getUrl(g.env?.DATABASE_URL) || 
-        ""
-      );
-    }
-  }
+  const url = await discoverUrl();
   
   if (!url || url === "undefined") {
     const err = "CRITICAL: DATABASE_URL_NOT_FOUND_IN_EDGE_CONTEXT";
     globalThis.__prismaError = err;
     throw new Error(err);
   }
-
-  // Cachear para este worker
-  _connectionString = url;
 
   if (globalThis.__prismaInstance && globalThis.__prismaUrl === url) {
     return globalThis.__prismaInstance;

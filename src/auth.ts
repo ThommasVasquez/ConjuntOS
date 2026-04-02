@@ -4,42 +4,15 @@ import { authConfig } from "./auth.config";
 import { z } from "zod";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 
-interface GlobalWithEnv {
-  DATABASE_URL?: string;
-  env?: { DATABASE_URL?: string };
-  __lastAuthStep?: string;
-}
-
-interface AuthUser {
-  id: string;
-  nombre: string;
-  email: string;
-  rol: string;
-  password?: string;
-  conjuntoId?: string;
-}
-
 // Función auxiliar para loguear en la DB de forma persistente (Raw SQL)
 async function persistentLog(step: string, details: string = "", email: string = "") {
   try {
-     const g = globalThis as unknown as GlobalWithEnv;
-     const dbUrl = (process.env.DATABASE_URL || g.DATABASE_URL || g.env?.DATABASE_URL || "").trim();
+     const { discoverUrl } = await import("@/lib/db");
+     const dbUrl = await discoverUrl();
      if (!dbUrl) return;
 
-     // Escapar % si es necesario para el driver
-     let sanitized = dbUrl;
-     if (!dbUrl.includes(":") || dbUrl.includes("%25")) {
-        sanitized = dbUrl;
-     } else {
-        const parts = dbUrl.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
-        if (parts) {
-          const [, protocol, user, password, rest] = parts;
-          sanitized = `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
-        }
-     }
-
      neonConfig.useSecureWebSocket = false;
-     const pool = new Pool({ connectionString: sanitized, ssl: { rejectUnauthorized: false } });
+     const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
      
      await pool.query(
        'INSERT INTO "AuthDebug" (id, email, step, details) VALUES ($1, $2, $3, $4)', 
@@ -78,58 +51,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           const { email, password } = parsedCredentials.data;
           const normalizedEmail = email.toLowerCase().trim();
           
-          function sanitizeUrl(baseUrl: string): string {
-            if (!baseUrl) return "";
-            const raw = baseUrl.trim();
-            if (!raw.includes(":") || raw.includes("%25")) return raw;
-            
-            try {
-              const parts = raw.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
-              if (parts) {
-                const [, protocol, user, password, rest] = parts;
-                return `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
-              }
-            } catch { /* fallback */ }
-            return raw;
-          }
-
-          async function findConnectionString(): Promise<string> {
-            const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string } };
-            
-            // 1. Prioridad: Global seteado manualmente
-            if (g.DATABASE_URL) return sanitizeUrl(g.DATABASE_URL.trim());
-            
-            // 2. Prioridad: Contexto de Cloudflare (RequestContext)
-            try {
-              const { getRequestContext: getCtx } = await import("@cloudflare/next-on-pages");
-              const ctx = getCtx();
-              const env = ctx?.env as { DATABASE_URL?: string };
-              if (env?.DATABASE_URL) {
-                 return sanitizeUrl(env.DATABASE_URL.trim());
-              }
-            } catch { /* No Request Context / Context not available */ }
-
-            // 3. Prioridad: process.env (Variable de entorno estándar)
-            if (process.env.DATABASE_URL) {
-               return sanitizeUrl(process.env.DATABASE_URL.trim());
-            }
-            
-            if (g.env?.DATABASE_URL) return sanitizeUrl(g.env.DATABASE_URL.trim());
-            
-            return "";
-          }
-
-          const dbUrl = await findConnectionString();
+          // 1. Descubrimiento e inyección centralizada
+          const { discoverUrl, setConnectionString } = await import("@/lib/db");
+          const dbUrl = await discoverUrl();
           
           if (dbUrl) {
-               (globalThis as { DATABASE_URL?: string }).DATABASE_URL = dbUrl;
-               process.env.DATABASE_URL = dbUrl;
-               
-               // Inyección directa en el singleton
-               const { setConnectionString } = await import("@/lib/db");
                setConnectionString(dbUrl);
           } else {
-               await persistentLog("DATABASE_URL_MISSING", "No se encontró cadena de conexión en este worker", normalizedEmail);
+               await persistentLog("DATABASE_URL_MISSING", "No se encontró cadena de conexión", normalizedEmail);
                return null;
           }
           
