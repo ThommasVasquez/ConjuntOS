@@ -91,3 +91,32 @@ html, body {
 .accent-glow {
   text-shadow: 0 0 15px var(--color-accent);
 }
+
+/* Sonner Overrides for Liquid Glass */
+[data-sonner-toast] {
+  background: rgba(255, 255, 255, 0.07) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 20px !important;
+  color: white !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4) !important;
+  padding: 16px !important;
+  font-family: inherit !important;
+}
+
+[data-type='success'][data-sonner-toast] {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #34d399 !important;
+}
+
+[data-type='error'][data-sonner-toast] {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #f87171 !important;
+}
+
+[data-sonner-toast] [data-icon] {
+  color: inherit !important;
+}
