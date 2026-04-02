@@ -31,7 +31,7 @@ export default function ReservasPage() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
-  const [profilePic, setProfilePic] = useState("/images/avatar-placeholder.png");
+  const [profilePic, setProfilePic] = useState("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1000");
   const [userData, setUserData] = useState({ name: "Residente", unit: "Torre 1 - 101", gender: "femenino" });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [hasStory, setHasStory] = useState(false);
