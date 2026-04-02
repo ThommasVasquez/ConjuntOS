@@ -42,7 +42,7 @@ export default function InicioDashboard() {
     { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-amber-500 to-orange-400", path: "/inmobiliaria" },
     { title: "Visitantes", icon: <UserIcon size={20}/>, color: "from-purple-500 to-pink-500", path: "/visitantes" },
     { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-red-500 to-orange-500", path: "/cartelera" },
-    { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-orange-500 to-yellow-500", path: "/pqrs" },
+    { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-blue-500 to-indigo-600", path: "/pqrs" },
     { title: "Mercadito", icon: <Plus size={20}/>, color: "from-green-500 to-emerald-500", path: "/mercadito" },
   ];
 

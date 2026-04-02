@@ -112,6 +112,14 @@ enum EstadoSolicitud {
   COMPLETADA
 }
 
+enum TipoPQR {
+  PETICION
+  QUEJA
+  RECLAMO
+  SUGERENCIA
+  MANTENIMIENTO
+}
+
 model Conjunto {
   id            String   @id @default(cuid())
   nombre        String
@@ -333,12 +341,13 @@ model SolicitudServicio {
   usuarioId   String
   usuario     Usuario         @relation(fields: [usuarioId], references: [id])
   categoria   CatServicio
+  tipo        TipoPQR          @default(MANTENIMIENTO)
   descripcion String
-  urgente     Boolean         @default(false)
-  imagenes    String
-  estado      EstadoSolicitud
+  urgente     Boolean          @default(false)
+  imagenes    String           @default("[]")
+  estado      EstadoSolicitud  @default(ABIERTA)
   proveedorId String?
-  creadoEn    DateTime        @default(now())
+  creadoEn    DateTime         @default(now())
 }
 
 model ReciboPublico {

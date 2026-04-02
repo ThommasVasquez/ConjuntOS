@@ -4,6 +4,10 @@ import { auth } from "@/auth";
 
 export const runtime = 'edge';
 
+/**
+ * Generador de datos de ejemplo para el módulo de pagos.
+ */
+
 export async function GET() {
   try {
     const session = await auth();
@@ -37,7 +41,8 @@ export async function GET() {
 
     const results = [];
     for (const data of seedData) {
-      const p = await (pagoDelegate as any).create({
+      // Usamos un cast más seguro que 'any' para evitar errores de lint
+      const p = await (pagoDelegate as unknown as { create: (args: unknown) => Promise<{ id: string }> }).create({
         data: {
           conjuntoId: user.conjuntoId,
           unidadId: user.unidadId,
