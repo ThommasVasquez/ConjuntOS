@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, data: updated });
 
   } catch (error: unknown) {
-    const err = error as any;
+    const err = error as { code?: string; message?: string };
     console.error("❌ [API-PROFILE-SAVE-FATAL]:", err);
     
     // Captura de llaves de entorno para diagnóstico
