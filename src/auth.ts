@@ -69,18 +69,24 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           await persistentLog("PRISMA_CLIENT_READY", "Módulo DB cargado", normalizedEmail);
           
           try {
-              const { default: db } = await import("@/lib/db");
-              const userRes = await (await db.usuario).findUnique({ 
-                where: { email: normalizedEmail } as unknown as { email: string }
-              });
-              
-              if (!userRes) {
-                await persistentLog("USER_NOT_FOUND", "Usuario no existe en la base de datos", normalizedEmail);
+                // FALLBACK DE EMERGENCIA: Usar Pool directamente si Prisma falla
+                // Ya sabemos que Pool funciona porque persistentLog lo usa con éxito
+                neonConfig.useSecureWebSocket = false;
+                const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
                 
-                // BOOTSTRAP AUTO-RECOVERY
-                if (normalizedEmail === "thommy@example.com") {
-                   await persistentLog("BOOTSTRAP_TRIGGERED", "Intentando auto-creación del master", normalizedEmail);
+                const { rows } = await pool.query(
+                  'SELECT id, email, password, rol, nombre, "conjuntoId" FROM "Usuario" WHERE LOWER(email) = $1 LIMIT 1',
+                  [normalizedEmail]
+                );
+                await pool.end();
+                
+                const user = rows[0] as { id: string; email: string; password?: string; rol: string; nombre: string; conjuntoId?: string } | null;
+                
+                // 2. Si no existe y es el master, creamos/buscamos vía Prisma (o fallamos elegantemente)
+                if (!user && normalizedEmail === "thommy@example.com") {
+                   await persistentLog("BOOTSTRAP_TRIGGERED", "Usuario master no encontrado en Pool, intentando bootstrap vía Prisma", normalizedEmail);
                    try {
+                     const { default: db } = await import("@/lib/db");
                      const conjunto = await (await db.conjunto).findFirst() || await (await db.conjunto).create({
                        data: { id: 'demo_id', nombre: 'Residencial Horizonte', subdominio: 'demo', direccion: 'Digital', ciudad: 'Nube' }
                      });
@@ -93,11 +99,13 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                       await persistentLog("BOOTSTRAP_FAILED", (err as Error).message, normalizedEmail);
                    }
                 }
-                return null;
-              }
 
-              const user = userRes as unknown as { id: string; email: string; password?: string; rol: string; nombre: string; conjuntoId?: string };
-              await persistentLog("USER_FETCHED", `Usuario encontrado: ${user.nombre}`, normalizedEmail);
+                if (!user) {
+                  await persistentLog("USER_NOT_FOUND", "Usuario no existe en la base de datos", normalizedEmail);
+                  return null;
+                }
+
+                await persistentLog("USER_FETCHED", `Usuario encontrado: ${user.nombre}`, normalizedEmail);
               
               // 3. Validar password
               const dbPassword = (user.password || "").trim();
