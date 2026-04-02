@@ -11,6 +11,7 @@ async function persistentLog(step: string, details: string = "", email: string =
      const dbUrl = await discoverUrl();
      if (!dbUrl) return;
 
+     // Configuración de Neon Serverless
      neonConfig.useSecureWebSocket = false;
      const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
      
@@ -70,14 +71,25 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           
           try {
                 // FALLBACK DE EMERGENCIA: Usar Pool directamente si Prisma falla
-                // Ya sabemos que Pool funciona porque persistentLog lo usa con éxito
                 neonConfig.useSecureWebSocket = false;
                 const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
                 
-                const { rows } = await pool.query(
-                  'SELECT id, email, password, rol, nombre, "conjuntoId" FROM "Usuario" WHERE LOWER(email) = $1 LIMIT 1',
-                  [normalizedEmail]
-                );
+                let rows: Record<string, unknown>[] = [];
+                try {
+                  // Intento 1: PascalCase (Estándar Prisma)
+                  const res = await pool.query(
+                    'SELECT id, email, password, rol, nombre, "conjuntoId" FROM "Usuario" WHERE LOWER(email) = $1 LIMIT 1',
+                    [normalizedEmail]
+                  );
+                  rows = res.rows;
+                } catch {
+                  // Intento 2: lowercase (Estándar Postgres tradicional)
+                  const res = await pool.query(
+                    'SELECT id, email, password, rol, nombre, "conjuntoId" FROM usuario WHERE LOWER(email) = $1 LIMIT 1',
+                    [normalizedEmail]
+                  );
+                  rows = res.rows;
+                }
                 await pool.end();
                 
                 const user = rows[0] as { id: string; email: string; password?: string; rol: string; nombre: string; conjuntoId?: string } | null;
