@@ -117,10 +117,10 @@ export default function InmobiliariaPage() {
             </div>
 
             <div className="flex gap-2 p-1 rounded-xl bg-white/5 border border-white/5 w-fit">
-              {['TODOS', 'VENTA', 'ALQUILER'].map((type) => (
+              {(['TODOS', 'VENTA', 'ALQUILER'] as const).map((type) => (
                 <button
                   key={type}
-                  onClick={() => setFilterType(type as any)}
+                  onClick={() => setFilterType(type)}
                   className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                     filterType === type 
                       ? 'bg-accent text-primary shadow-lg shadow-accent/20 scale-105' 

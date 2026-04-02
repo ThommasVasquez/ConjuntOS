@@ -42,13 +42,13 @@ export async function GET(req: Request) {
 
     // 2. Obtener Inmuebles (Capa 1: Prisma)
     try {
-      const inmuebleDelegate = await db.inmueble;
+      const inmuebleDelegate = await db.inmueble as { findMany: (args: unknown) => Promise<unknown[]> };
       const where: Record<string, unknown> = { conjuntoId, estado: 'DISPONIBLE' };
       if (tipo) where.tipoNegocio = tipo;
       if (habitaciones) where.habitaciones = parseInt(habitaciones);
 
       const items = await inmuebleDelegate.findMany({
-        where: where as unknown as any,
+        where,
         orderBy: { creadoEn: 'desc' },
         include: { usuario: { select: { nombre: true, avatar: true, telefono: true } } }
       });
