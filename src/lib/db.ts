@@ -35,36 +35,44 @@ export function setConnectionString(url: string) {
   }
 }
 
-/**
- * Busca la cadena de conexión en todas las fuentes del Edge.
- */
-function findConnectionStringSync(): string {
-  if (_connectionString) return _connectionString;
-
-  const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string } };
-  const getUrl = (v: unknown) => (typeof v === 'string' ? v.trim() : "");
-
-  const url = sanitizeUrl(
-    getUrl(process.env.DATABASE_URL) || 
-    getUrl(g.DATABASE_URL) || 
-    getUrl(g.env?.DATABASE_URL) || 
-    ""
-  );
-
-  if (url) _connectionString = url;
-  return url;
-}
 
 /**
- * Singleton de Prisma para el Edge.
+ * Singleton de Prisma para el Edge (Asíncrono y Robusto).
  */
-export function getPrismaClient(): PrismaClient {
-  const url = findConnectionStringSync();
-  
+export async function getPrismaClient(): Promise<PrismaClient> {
+  let url = _connectionString || "";
+
   if (!url) {
-    globalThis.__prismaError = "MISSING_DATABASE_URL";
-    throw new Error("CRITICAL: DATABASE_URL is not defined.");
+    const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string } };
+    
+    // 1. Intentar el Contexto de Cloudflare (El más fiable en el Edge)
+    try {
+      const { getRequestContext } = await import("@cloudflare/next-on-pages");
+      const ctx = getRequestContext();
+      const env = ctx?.env as { DATABASE_URL?: string };
+      if (env?.DATABASE_URL) url = sanitizeUrl(env.DATABASE_URL);
+    } catch { /* Contexto no disponible */ }
+
+    // 2. Fallbacks
+    if (!url) {
+      const getUrl = (v: unknown) => (typeof v === 'string' ? v.trim() : "");
+      url = sanitizeUrl(
+        getUrl(process.env.DATABASE_URL) || 
+        getUrl(g.DATABASE_URL) || 
+        getUrl(g.env?.DATABASE_URL) || 
+        ""
+      );
+    }
   }
+  
+  if (!url || url === "undefined") {
+    const err = "CRITICAL: DATABASE_URL_NOT_FOUND_IN_EDGE_CONTEXT";
+    globalThis.__prismaError = err;
+    throw new Error(err);
+  }
+
+  // Cachear para este worker
+  _connectionString = url;
 
   if (globalThis.__prismaInstance && globalThis.__prismaUrl === url) {
     return globalThis.__prismaInstance;
@@ -80,7 +88,6 @@ export function getPrismaClient(): PrismaClient {
 
   // @ts-expect-error - PrismaNeon types
   const adapter = new PrismaNeon(pool);
-  
   const client = new PrismaClient({ adapter });
 
   globalThis.__prismaInstance = client;
@@ -96,29 +103,29 @@ declare global {
   var __prismaError: string | undefined;
 }
 
-// Mapeo de modelos basado en schema.prisma
+// Mapeo de modelos basado en schema.prisma (Vuelven a ser asíncronos para seguridad total)
 const db = {
-  get conjunto() { return getPrismaClient().conjunto; },
-  get usuario() { return getPrismaClient().usuario; },
-  get unidad() { return getPrismaClient().unidad; },
-  get areaComun() { return getPrismaClient().areaComun; },
-  get reserva() { return getPrismaClient().reserva; },
-  get anuncio() { return getPrismaClient().anuncio; },
-  get documento() { return getPrismaClient().documento; },
-  get junta() { return getPrismaClient().junta; },
-  get pago() { return getPrismaClient().pago; },
-  get gasto() { return getPrismaClient().gasto; },
-  get local() { return getPrismaClient().local; },
-  get producto() { return getPrismaClient().producto; },
-  get pedido() { return getPrismaClient().pedido; },
-  get solicitudServicio() { return getPrismaClient().solicitudServicio; },
-  get reciboPublico() { return getPrismaClient().reciboPublico; },
-  get adSpace() { return getPrismaClient().adSpace; },
+  get conjunto() { return getPrismaClient().then(c => c.conjunto); },
+  get usuario() { return getPrismaClient().then(c => c.usuario); },
+  get unidad() { return getPrismaClient().then(c => c.unidad); },
+  get areaComun() { return getPrismaClient().then(c => c.areaComun); },
+  get reserva() { return getPrismaClient().then(c => c.reserva); },
+  get anuncio() { return getPrismaClient().then(c => c.anuncio); },
+  get documento() { return getPrismaClient().then(c => c.documento); },
+  get junta() { return getPrismaClient().then(c => c.junta); },
+  get pago() { return getPrismaClient().then(c => c.pago); },
+  get gasto() { return getPrismaClient().then(c => c.gasto); },
+  get local() { return getPrismaClient().then(c => c.local); },
+  get producto() { return getPrismaClient().then(c => c.producto); },
+  get pedido() { return getPrismaClient().then(c => c.pedido); },
+  get solicitudServicio() { return getPrismaClient().then(c => c.solicitudServicio); },
+  get reciboPublico() { return getPrismaClient().then(c => c.reciboPublico); },
+  get adSpace() { return getPrismaClient().then(c => c.adSpace); },
   
-  $queryRaw: (query: unknown) => getPrismaClient().$queryRawUnsafe(query as string),
-  $executeRaw: (query: unknown) => getPrismaClient().$executeRawUnsafe(query as string),
-  $connect: () => getPrismaClient().$connect(),
-  $disconnect: () => getPrismaClient().$disconnect(),
+  $queryRaw: (query: unknown) => getPrismaClient().then(c => c.$queryRawUnsafe(query as string)),
+  $executeRaw: (query: unknown) => getPrismaClient().then(c => c.$executeRawUnsafe(query as string)),
+  $connect: () => getPrismaClient().then(c => c.$connect()),
+  $disconnect: () => getPrismaClient().then(c => c.$disconnect()),
   setConnectionString,
 };
 
