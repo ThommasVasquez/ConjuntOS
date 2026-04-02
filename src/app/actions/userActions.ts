@@ -73,6 +73,7 @@ export async function updateUserProfile(userId: string, data: {
   gender: string;
   avatar?: string;
 }) {
+  console.log("🚀 [SERVER-ACTION] updateUserProfile iniciada", { userId, dataLength: data?.avatar?.length });
   try {
     let finalId = userId;
     

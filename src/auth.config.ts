@@ -6,9 +6,15 @@ export const authConfig = {
   },
   secret: process.env.AUTH_SECRET,
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
+    authorized({ auth, request }) {
+      const { nextUrl, headers } = request;
       const isLoggedIn = !!auth?.user;
       const isOnLogin = nextUrl.pathname.startsWith('/login');
+      
+      // Permitir Server Actions sin redirección forzada del middleware 
+      // (la validación de sesión se hace dentro de la acción)
+      const isAction = headers.has("next-action");
+      if (isAction) return true;
 
       if (!isOnLogin && !isLoggedIn) {
         return false; // Redirect to login
