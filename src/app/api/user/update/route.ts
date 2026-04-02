@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     let data;
     try {
       data = await req.json();
-    } catch (e) {
+    } catch {
       return NextResponse.json({ success: false, error: "Cuerpo de petición inválido" }, { status: 400 });
     }
 
@@ -49,11 +49,13 @@ export async function POST(req: Request) {
 
       console.log("✨ [API-UPDATE] Perfil actualizado exitosamente.");
       return NextResponse.json({ success: true, data: updated });
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       console.error("❌ [API-UPDATE-DB-ERROR]:", dbError);
       
+      const error = dbError as { code?: string; message?: string };
+      
       // Error P2025: Record to update not found
-      if (dbError.code === 'P2025') {
+      if (error.code === 'P2025') {
         return NextResponse.json({ 
           success: false, 
           error: "Usuario no encontrado en la base de datos",
@@ -64,16 +66,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ 
         success: false, 
         error: "Error en la base de datos",
-        details: dbError.message || "Fallo desconocido en Prisma"
+        details: error.message || "Fallo desconocido en Prisma"
       }, { status: 500 });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ [API-UPDATE-FATAL]:", error);
+    const err = error as Error;
     return NextResponse.json({ 
       success: false, 
       error: "Error interno crítico",
-      details: error.message || "Error fatal en el runtime"
+      details: err.message || "Error fatal en el runtime"
     }, { status: 500 });
   }
 }
