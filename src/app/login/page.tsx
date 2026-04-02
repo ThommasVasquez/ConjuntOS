@@ -1,5 +1,8 @@
 "use client";
 
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
+
 import { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 // signIn removed; using Server Action login
