@@ -10,18 +10,20 @@ export const runtime = "edge";
  */
 export async function POST(req: NextRequest) {
   try {
-    // 1. Detección e inyección de DATABASE_URL desde el contexto de Cloudflare
-    // Esto es crucial para que Prisma encuentre la URL en el worker de Auth.js
+    let envUrl = "";
     try {
       const ctx = getRequestContext();
-      const env = ctx?.env as { DATABASE_URL?: string };
-      const envUrl = env?.DATABASE_URL;
+      envUrl = (ctx?.env as { DATABASE_URL?: string })?.DATABASE_URL || "";
       if (envUrl) {
         (globalThis as { DATABASE_URL?: string }).DATABASE_URL = envUrl;
         process.env.DATABASE_URL = envUrl;
       }
     } catch {
       console.warn("⚠️ No se pudo acceder al context de Cloudflare en /api/auth/login");
+    }
+
+    if (!envUrl) {
+      envUrl = (process.env.DATABASE_URL || "").trim();
     }
 
     const body = await req.json();
@@ -35,6 +37,7 @@ export async function POST(req: NextRequest) {
     await signIn("credentials", {
       email,
       password,
+      dbUrl: envUrl, // Pasamos la URL directamente para evitar aislamiento de hilos
       redirect: false,
     });
 

@@ -40,7 +40,11 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           await persistentLog("AUTHORIZE_STARTED", "Iniciando validación de credenciales", emailInput);
           
           const parsedCredentials = z
-            .object({ email: z.string().email(), password: z.string().min(6) })
+            .object({ 
+              email: z.string().email(), 
+              password: z.string().min(6),
+              dbUrl: z.string().optional() 
+            })
             .safeParse(credentials);
 
           if (!parsedCredentials.success) {
@@ -48,12 +52,12 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             return null;
           }
 
-          const { email, password } = parsedCredentials.data;
+          const { email, password, dbUrl: credDbUrl } = parsedCredentials.data;
           const normalizedEmail = email.toLowerCase().trim();
           
-          // 1. Descubrimiento e inyección centralizada
+          // 1. Descubrimiento e inyección centralizada (Prioridad total a la URL pasada en el objeto)
           const { discoverUrl, setConnectionString } = await import("@/lib/db");
-          const dbUrl = await discoverUrl();
+          const dbUrl = credDbUrl || await discoverUrl();
           
           if (dbUrl) {
                setConnectionString(dbUrl);
