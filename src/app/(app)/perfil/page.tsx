@@ -10,7 +10,7 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { getUserProfile, updateUserProfile } from "@/app/actions/userActions";
+import { getUserProfile } from "@/app/actions/userActions";
 
 // Define Rol locally to avoid importing Prisma in a Client Component
 enum Rol {
@@ -23,6 +23,9 @@ enum Rol {
   ENCARGADO_PARQUEADERO = "ENCARGADO_PARQUEADERO",
   SUPER_ADMIN = "SUPER_ADMIN"
 }
+
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 export default function PerfilPage() {
   return (
@@ -154,17 +157,22 @@ function ProfileContent() {
     setUserData(editForm);
 
     try {
-      const res = await updateUserProfile("current-user", {
-        name: editForm.name,
-        phone: editForm.phone,
-        gender: editForm.gender,
-        avatar: profilePic
+      const response = await fetch('/api/user/profile-save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editForm.name,
+          phone: editForm.phone,
+          gender: editForm.gender,
+          avatar: profilePic
+        })
       });
 
-      console.log("Server Action Response:", res);
+      const res = await response.json();
+      console.log("API Response:", res);
 
       if (res.success) {
-        toast.success("Perfil guardado en la nube");
+        toast.success("Perfil guardado con éxito");
         localStorage.setItem("conjunto_app_profile_data", JSON.stringify(editForm));
         localStorage.setItem("conjunto_app_profile_pic", profilePic);
         
@@ -175,7 +183,7 @@ function ProfileContent() {
         });
       }
     } catch (e) {
-      console.error("Error updating profile via Action:", e);
+      console.error("Error updating profile via REST API:", e);
       toast.error("Error de conexión al servidor");
     }
   };
@@ -393,7 +401,9 @@ function ProfileContent() {
                   ))}
                 </div>
               </div>
-              <button onClick={handleSaveProfile} className="w-full mt-4 bg-linear-to-r from-accent to-purple-600 rounded-2xl py-4 font-bold text-white shadow-xl">Guardar Cambios</button>
+              <button onClick={handleSaveProfile} className="w-full mt-4 bg-linear-to-r from-accent to-purple-600 rounded-2xl py-4 font-bold text-white shadow-xl active:scale-95 transition-transform">
+                Guardar Cambios
+              </button>
             </div>
           </div>
         </div>

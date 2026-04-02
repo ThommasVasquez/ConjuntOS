@@ -58,7 +58,7 @@ export default function RootLayout({
             toastOptions={{
               unstyled: true,
               classNames: {
-                toast: "liquid-glass-toast flex items-center gap-3 p-4 rounded-[20px] border border-white/20 backdrop-blur-3xl shadow-2xl min-w-[320px] text-white",
+                toast: "liquid-glass-toast",
                 success: "toast-success",
                 error: "toast-error",
               }

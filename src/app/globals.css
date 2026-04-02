@@ -92,28 +92,32 @@ html, body {
   text-shadow: 0 0 15px var(--color-accent);
 }
 
-/* Sonner Overrides with TOTAL transparency */
-[data-sonner-toast] {
-  background: transparent !important; /* Transparencia Total */
-  backdrop-filter: blur(100px) !important;
-  -webkit-backdrop-filter: blur(100px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 24px !important;
+/* Sonner Overrides with ABSOLUTE transparency */
+.liquid-glass-toast {
+  background: transparent !important; /* Transparencia 100% */
+  backdrop-filter: blur(120px) !important;
+  -webkit-backdrop-filter: blur(120px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important; 
+  border-radius: 32px !important;
   color: white !important;
-  box-shadow: 0 10px 80px rgba(0, 0, 0, 0.1) !important;
-  padding: 20px !important;
+  box-shadow: none !important;
+  padding: 20px 24px !important;
   font-family: inherit !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 320px !important;
 }
 
-[data-type='success'][data-sonner-toast] {
-  background: rgba(16, 185, 129, 0.02) !important; /* Tinte casi imperceptible */
-  border-color: rgba(16, 185, 129, 0.1) !important;
+[data-type='success'].liquid-glass-toast {
+  background: transparent !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
   color: #10b981 !important;
 }
 
-[data-type='error'][data-sonner-toast] {
-  background: rgba(239, 68, 68, 0.02) !important; /* Tinte casi imperceptible */
-  border-color: rgba(239, 68, 68, 0.1) !important;
+[data-type='error'].liquid-glass-toast {
+  background: transparent !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
   color: #ef4444 !important;
 }
 
