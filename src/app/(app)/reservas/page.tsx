@@ -93,7 +93,7 @@ export default function ReservasPage() {
           // Persistence (Isolated)
           localStorage.setItem(`conjunto_app_profile_pic_${userId}`, u.avatar || "");
         }
-      } catch (_err) {
+      } catch {
         // Fallback to local storage if API fails
         const savedPic = localStorage.getItem(`conjunto_app_profile_pic_${userId}`);
         if (savedPic) setProfilePic(savedPic);
