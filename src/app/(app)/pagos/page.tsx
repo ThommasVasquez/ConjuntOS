@@ -33,7 +33,11 @@ export default function PagosPage() {
   
   const [activeTab, setActiveTab] = useState<'PENDIENTES' | 'HISTORIAL'>('PENDIENTES');
   const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState<{ unidad: any, pagos: Transaction[], totalDebt: number }>({
+  const [data, setData] = useState<{ 
+    unidad: { torre: string; numero: string } | null, 
+    pagos: Transaction[], 
+    totalDebt: number 
+  }>({
     unidad: null,
     pagos: [],
     totalDebt: 0

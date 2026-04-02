@@ -6,7 +6,7 @@ export const runtime = 'edge';
 
 interface PagoRecord {
   id: string;
-  monto: any; // Decimal from Prisma
+  monto: string | number; 
   estado: string;
 }
 
