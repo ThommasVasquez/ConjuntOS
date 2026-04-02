@@ -1,23 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 
 export const runtime = "edge";
 
-export async function POST(req: Request) {
+export const POST = auth(async (req) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    if (!req.auth?.user?.id) {
       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
     }
 
+    // req.json() must be called on the req object
     const data = await req.json();
     const { name, phone, gender, avatar } = data;
 
-    console.log("🚀 [API-UPDATE] Iniciando actualización para user:", session.user.id);
+    const userId = req.auth.user.id;
+    console.log("🚀 [API-UPDATE] Iniciando actualización para user:", userId);
 
     const updated = await (await db.usuario).update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: {
         nombre: name,
         telefono: phone,
@@ -35,4 +36,4 @@ export async function POST(req: Request) {
       details: (error as Error).message 
     }, { status: 500 });
   }
-}
+});
