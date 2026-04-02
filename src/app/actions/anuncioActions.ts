@@ -33,7 +33,7 @@ export async function getAnuncios(conjuntoId: string, tipo?: TipoAnuncio) {
       ]
     });
 
-    return { success: true, data: anuncios as any };
+    return { success: true, data: anuncios };
   } catch (error) {
     console.error("❌ Error al obtener anuncios:", error);
     return { success: false, error: "No se pudieron cargar los anuncios de la cartelera." };

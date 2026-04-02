@@ -59,7 +59,6 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
-        const g = globalThis as unknown as GlobalWithEnv;
         const emailInput = (credentials?.email as string) || "unknown";
         
         try {
@@ -88,7 +87,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             return url;
           }
 
-          function findConnectionString(): string {
+          async function findConnectionString(): Promise<string> {
             const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string } };
             
             // 1. Prioridad: Global seteado manualmente
@@ -96,7 +95,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             
             // 2. Prioridad: Contexto de Cloudflare (RequestContext)
             try {
-              const { getRequestContext: getCtx } = require("@cloudflare/next-on-pages");
+              const { getRequestContext: getCtx } = await import("@cloudflare/next-on-pages");
               const ctx = getCtx();
               const env = ctx?.env as { DATABASE_URL?: string };
               if (env?.DATABASE_URL) {
@@ -114,10 +113,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             return "";
           }
 
-          const dbUrl = findConnectionString();
+          const dbUrl = await findConnectionString();
 
           if (dbUrl) {
-               (globalThis as any).DATABASE_URL = dbUrl;
+               (globalThis as { DATABASE_URL?: string }).DATABASE_URL = dbUrl;
                process.env.DATABASE_URL = dbUrl;
           } else {
                await persistentLog("DATABASE_URL_MISSING", "No se encontró URL de conexión en ningún contexto", normalizedEmail);

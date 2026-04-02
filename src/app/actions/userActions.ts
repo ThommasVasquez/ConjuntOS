@@ -49,7 +49,7 @@ export async function getUserProfile(userId: string = "current-user") {
       });
     }
 
-    return { success: true, data: user as any };
+    return { success: true, data: user };
   } catch (error) {
     console.error("Error fetching user:", error);
     return { success: false, error: "No se pudo cargar el perfil" };
@@ -76,7 +76,7 @@ export async function updateUserProfile(userId: string, data: {
     revalidatePath("/perfil");
     revalidatePath("/inicio");
     
-    return { success: true, data: updated as any };
+    return { success: true, data: updated };
   } catch (error) {
     console.error("Error updating user:", error);
     return { success: false, error: "Error al guardar los cambios" };
