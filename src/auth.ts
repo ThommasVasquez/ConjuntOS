@@ -92,9 +92,9 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 return null;
               }
 
-              const user = userRes as unknown as AuthUser;
+              const user = userRes as unknown as { id: string; email: string; password?: string; rol: string; nombre: string; conjuntoId?: string };
               await persistentLog("USER_FETCHED", `Usuario encontrado: ${user.nombre}`, normalizedEmail);
-
+              
               // 3. Validar password
               const dbPassword = (user.password || "").trim();
               const inputPassword = password.trim();
