@@ -5,6 +5,16 @@ export const authConfig = {
     signIn: "/login",
   },
   trustHost: true,
-  // No callbacks needed; login handled via Server Action.
+  callbacks: {
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isPublicPath = nextUrl.pathname.startsWith("/login");
+      
+      if (!isLoggedIn && !isPublicPath) {
+        return false; // Redirect to signIn
+      }
+      return true;
+    },
+  },
   providers: [], // Configured in auth.ts
 } satisfies NextAuthConfig;
