@@ -16,7 +16,6 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { getUserProfile } from "@/app/actions/userActions";
 
 interface FeedItem {
   id: number;
@@ -55,18 +54,29 @@ export default function InicioDashboard() {
   // Sync data from Database & LocalStorage
   useEffect(() => {
     async function loadData() {
-      const res = await getUserProfile("current-user");
-      if (res.success && res.data) {
-        const u = res.data;
-        const mapped = {
-          name: u.nombre,
-          apto: u.unidad?.numero || "Apto 000",
-          gender: (u as { genero?: string }).genero || "femenino"
-        };
-        setUserData(mapped);
-        if (u.avatar) setProfilePic(u.avatar);
-      } else {
-        // Fallback
+      try {
+        const fetchRes = await fetch("/api/user/profile");
+        const res = await fetchRes.json();
+        
+        if (res.success && res.data) {
+          const u = res.data;
+          const mapped = {
+            name: u.nombre,
+            apto: u.unidad?.numero || "Apto 000",
+            gender: u.genero || "femenino"
+          };
+          setUserData(mapped);
+          if (u.avatar) setProfilePic(u.avatar);
+          
+          // Persistence for faster reloads
+          localStorage.setItem("conjunto_app_profile_data", JSON.stringify(mapped));
+          if (u.avatar) localStorage.setItem("conjunto_app_profile_pic", u.avatar);
+        } else {
+          throw new Error("No success");
+        }
+      } catch (error) {
+        console.warn("⚠️ Fallback a LocalStorage:", error);
+        // Fallback robusto a localStorage
         const savedPic = localStorage.getItem("conjunto_app_profile_pic");
         if (savedPic) setProfilePic(savedPic);
 
@@ -74,6 +84,7 @@ export default function InicioDashboard() {
         if (savedData) {
           setUserData(JSON.parse(savedData));
         } else {
+          // Fallback final
           setUserData({ name: "Amélie Thommy", apto: "Apto 301", gender: "femenino" });
         }
       }
