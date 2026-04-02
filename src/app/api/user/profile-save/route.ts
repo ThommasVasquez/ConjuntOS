@@ -29,8 +29,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, data: updated });
 
   } catch (error: unknown) {
-    console.error("❌ [API-PROFILE-SAVE-ERROR]:", error);
-    const err = error as { message?: string };
+    const err = error as Error;
+    console.error("❌ [API-PROFILE-SAVE-FATAL]:", err);
+    
+    // Si es un error de Neon por falta de URL
+    if (err.message?.includes("connection string") || err.message?.includes("host")) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "CONFIG_ERROR: DATABASE_URL_MISSING",
+        details: "No se encontró la cadena de conexión a la base de datos en el entorno de Cloudflare Pages. Por favor, asegúrate de haber agregado DATABASE_URL en el panel de Cloudflare."
+      }, { status: 500 });
+    }
+
     return NextResponse.json({ 
       success: false, 
       error: "Error al guardar el perfil",

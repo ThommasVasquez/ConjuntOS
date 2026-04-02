@@ -36,20 +36,37 @@ export async function discoverUrl(): Promise<string> {
 
   let url = "";
 
+  // 1. Prioridad: Cloudflare Request Context (Variable real de producción)
   try {
     const { getRequestContext } = await import("@cloudflare/next-on-pages");
     const ctx = getRequestContext();
-    const env = ctx?.env as { DATABASE_URL?: string };
-    if (env?.DATABASE_URL) url = env.DATABASE_URL;
-  } catch { /* Ignorar si no está disponible */ }
+    const env = (ctx?.env || {}) as Record<string, string>;
+    
+    url = env.DATABASE_URL || env.NEXT_PUBLIC_DATABASE_URL || env.DATABASE_URL_UNPOOLED || "";
+    
+    if (!url) {
+      console.warn("⚠️ [DB-DISCOVER] DATABASE_URL no encontrada en ctx.env. Keys disponibles:", Object.keys(env));
+    }
+  } catch (e) {
+    console.warn("⚠️ [DB-DISCOVER] Error accediendo a getRequestContext:", e);
+  }
 
-  // 2. Otras fuentes
+  // 2. Fallbacks: Global, Process (Local/Vercel/Preview)
   if (!url) {
-    url = process.env.DATABASE_URL || g.DATABASE_URL || g.env?.DATABASE_URL || "";
+    url = (process.env.DATABASE_URL || 
+           process.env.NEXT_PUBLIC_DATABASE_URL || 
+           g.DATABASE_URL || 
+           g.env?.DATABASE_URL || "");
   }
 
   const sanitized = sanitizeUrl(url);
-  if (sanitized) g.__DATABASE_URL_CACHE__ = sanitized;
+  if (sanitized) {
+    console.log("✅ [DB-DISCOVER] DATABASE_URL recuperada con éxito.");
+    g.__DATABASE_URL_CACHE__ = sanitized;
+  } else {
+    console.error("❌ [DB-DISCOVER] No se pudo encontrar ninguna DATABASE_URL válida.");
+  }
+  
   return sanitized;
 }
 

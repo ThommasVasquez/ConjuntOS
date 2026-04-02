@@ -110,15 +110,17 @@ html, body {
 }
 
 [data-type='success'].liquid-glass-toast {
-  background: transparent !important;
-  border-color: rgba(16, 185, 129, 0.2) !important;
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
   color: #10b981 !important;
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.15) !important; /* Glow Verde */
 }
 
 [data-type='error'].liquid-glass-toast {
-  background: transparent !important;
-  border-color: rgba(239, 68, 68, 0.2) !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
   color: #ef4444 !important;
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.15) !important; /* Glow Rojo */
 }
 
 [data-sonner-toast] [data-icon] {
