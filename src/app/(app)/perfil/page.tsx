@@ -128,6 +128,7 @@ function ProfileContent() {
       const response = await fetch('/api/user/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: "include",
         body: JSON.stringify({
           name: editForm.name,
           phone: editForm.phone,
@@ -136,7 +137,9 @@ function ProfileContent() {
         })
       });
 
+      console.log("Response status:", response.status);
       const res = await response.json();
+      console.log("Response data:", res);
 
       if (res.success) {
         toast.success("Perfil guardado en la nube");
