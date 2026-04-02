@@ -41,13 +41,12 @@ export async function POST(req: Request) {
     
     // INTENTO DE SQL DIRECTO (Salvavidas máximo)
     try {
-      const { Pool } = await import("pg");
+      const { Pool } = await import("@neondatabase/serverless");
       const { discoverUrl } = await import("@/lib/db");
       const url = await discoverUrl();
       
       const pool = new Pool({ 
-        connectionString: url,
-        ssl: { rejectUnauthorized: false }
+        connectionString: url
       });
       
       await pool.query({
@@ -55,7 +54,6 @@ export async function POST(req: Request) {
         values: [name, gender, userId]
       });
       
-      await pool.end();
       return NextResponse.json({ success: true, method: "SQL_DIRECTO" });
     } catch (sqlError: unknown) {
       const sqlErr = sqlError as { message?: string; stack?: string };
