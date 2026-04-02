@@ -1,74 +1,61 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool, neonConfig } from "@neondatabase/serverless";
-import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = "edge";
 
 /**
  * Escapa el carácter '%' en la contraseña para que URL lo acepte.
- * Además, fuerza el puerto de Pooling (6543) para Supabase en el Edge.
  */
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
-    const url = baseUrl;
-
-    // Regex flexible para postgres:// o postgresql://
-    const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
-    if (parts) {
-      const [, protocol, user, password, rest] = parts;
-      
-      // Evitar doble codificación de %
-      const safePassword = password.includes("%25") 
-        ? password 
-        : password.replace(/%/g, "%25");
-        
-      return `${protocol}${user}:${safePassword}${rest}`;
+    const url = baseUrl.trim();
+    if (url.includes(":") && !url.includes("%25")) {
+      const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
+      if (parts) {
+        const [, protocol, user, password, rest] = parts;
+        return `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
+      }
     }
     return url;
-  } catch {
-    return baseUrl;
-  }
+  } catch { return baseUrl; }
 }
 
 /**
- * Busca la cadena de conexión en todas las fuentes posibles del Edge.
+ * Busca de forma agresiva la cadena de conexión en el Edge de Cloudflare.
+ * Se llama en cada inicialización de Pool para garantizar integridad en workers distribuidos.
  */
-function findConnectionString(): string {
+export async function findConnectionString(): Promise<string> {
   const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string } };
   
-  // 1. Prioridad: Global seteado manualmente (vía inyección en ruta o middleware)
-  if (g.DATABASE_URL) return sanitizeUrl(g.DATABASE_URL.trim());
-  
-  // 2. Prioridad: Contexto de Cloudflare (RequestContext)
+  // 1. Prioridad: Contexto nativo de Cloudflare (RequestContext)
   try {
-    const ctx = getRequestContext();
+    const { getRequestContext: getCtx } = await import("@cloudflare/next-on-pages");
+    const ctx = getCtx();
     const env = ctx?.env as { DATABASE_URL?: string };
-    if (env?.DATABASE_URL) {
-       return sanitizeUrl(env.DATABASE_URL.trim());
-    }
-  } catch { /* No Request Context */ }
+    if (env?.DATABASE_URL) return sanitizeUrl(env.DATABASE_URL);
+  } catch { /* Contexto no disponible */ }
 
-  // 3. Prioridad: process.env (Variable de entorno estándar)
-  if (process.env.DATABASE_URL) {
-     return sanitizeUrl(process.env.DATABASE_URL.trim());
-  }
+  // 2. Prioridad: process.env (Next.js suele popularlo en Cloudflare)
+  if (process.env.DATABASE_URL) return sanitizeUrl(process.env.DATABASE_URL);
   
-  if (g.env?.DATABASE_URL) return sanitizeUrl(g.env.DATABASE_URL.trim());
-  
+  // 3. Fallback: globalThis
+  if (g.DATABASE_URL) return sanitizeUrl(g.DATABASE_URL);
+  if (g.env?.DATABASE_URL) return sanitizeUrl(g.env.DATABASE_URL);
+
   return "";
 }
 
 /**
  * Singleton de Prisma para el Edge.
  */
-export function getPrismaClient(): PrismaClient {
+export async function getPrismaClient(): Promise<PrismaClient> {
   try {
-    const url = findConnectionString();
+    const url = await findConnectionString();
     
     if (!url) {
-      const err = "DATABASE_URL_NOT_FOUND_IN_ANY_CONTEXT";
+      const err = "CRITICAL: DATABASE_URL_NOT_FOUND_AT_RUNTIME";
       globalThis.__prismaError = err;
       throw new Error(err);
     }
@@ -76,30 +63,22 @@ export function getPrismaClient(): PrismaClient {
     if (globalThis.__prismaInstance && globalThis.__prismaUrl === url) {
       return globalThis.__prismaInstance;
     }
-
-    console.log("🔌 [DB] Conectando a:", url.split("@")[1]?.split("/")[0] || "URL");
     
-    // Configuración específica para Supabase Pooler
+    // Configuración específica para Neon Serverless en el Edge
     neonConfig.useSecureWebSocket = false;
     
-    const pool = new Pool({ 
-      connectionString: url,
-      ssl: { rejectUnauthorized: false } 
-    });
-    
-    // @ts-expect-error - PrismaNeon types
+    const pool = new Pool({ connectionString: url });
+    // @ts-expect-error - PrismaNeon types complexity
     const adapter = new PrismaNeon(pool);
     const client = new PrismaClient({ adapter });
     
     globalThis.__prismaInstance = client;
     globalThis.__prismaUrl = url;
-    globalThis.__prismaError = undefined;
     
     return client;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     globalThis.__prismaError = msg;
-    console.error("🔥 [DB-FATAL] Error initializing Prisma Client:", msg);
     throw e;
   }
 }
@@ -113,27 +92,27 @@ declare global {
 
 // Mapeo de modelos basado en schema.prisma
 const db = {
-  get conjunto() { return getPrismaClient().conjunto; },
-  get usuario() { return getPrismaClient().usuario; },
-  get unidad() { return getPrismaClient().unidad; },
-  get areaComun() { return getPrismaClient().areaComun; },
-  get reserva() { return getPrismaClient().reserva; },
-  get anuncio() { return getPrismaClient().anuncio; },
-  get documento() { return getPrismaClient().documento; },
-  get junta() { return getPrismaClient().junta; },
-  get pago() { return getPrismaClient().pago; },
-  get gasto() { return getPrismaClient().gasto; },
-  get local() { return getPrismaClient().local; },
-  get producto() { return getPrismaClient().producto; },
-  get pedido() { return getPrismaClient().pedido; },
-  get solicitudServicio() { return getPrismaClient().solicitudServicio; },
-  get reciboPublico() { return getPrismaClient().reciboPublico; },
-  get adSpace() { return getPrismaClient().adSpace; },
+  get conjunto() { return getPrismaClient().then(c => c.conjunto); },
+  get usuario() { return getPrismaClient().then(c => c.usuario); },
+  get unidad() { return getPrismaClient().then(c => c.unidad); },
+  get areaComun() { return getPrismaClient().then(c => c.areaComun); },
+  get reserva() { return getPrismaClient().then(c => c.reserva); },
+  get anuncio() { return getPrismaClient().then(c => c.anuncio); },
+  get documento() { return getPrismaClient().then(c => c.documento); },
+  get junta() { return getPrismaClient().then(c => c.junta); },
+  get pago() { return getPrismaClient().then(c => c.pago); },
+  get gasto() { return getPrismaClient().then(c => c.gasto); },
+  get local() { return getPrismaClient().then(c => c.local); },
+  get producto() { return getPrismaClient().then(c => c.producto); },
+  get pedido() { return getPrismaClient().then(c => c.pedido); },
+  get solicitudServicio() { return getPrismaClient().then(c => c.solicitudServicio); },
+  get reciboPublico() { return getPrismaClient().then(c => c.reciboPublico); },
+  get adSpace() { return getPrismaClient().then(c => c.adSpace); },
   
-  $queryRaw: (query: unknown) => getPrismaClient().$queryRawUnsafe(query as string),
-  $executeRaw: (query: unknown) => getPrismaClient().$executeRawUnsafe(query as string),
-  $connect: () => getPrismaClient().$connect(),
-  $disconnect: () => getPrismaClient().$disconnect(),
+  $queryRaw: (query: unknown) => getPrismaClient().then(c => c.$queryRawUnsafe(query as string)),
+  $executeRaw: (query: unknown) => getPrismaClient().then(c => c.$executeRawUnsafe(query as string)),
+  $connect: () => getPrismaClient().then(c => c.$connect()),
+  $disconnect: () => getPrismaClient().then(c => c.$disconnect()),
 };
 
 export default db;

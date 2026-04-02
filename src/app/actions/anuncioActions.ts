@@ -25,7 +25,7 @@ export async function getAnuncios(conjuntoId: string, tipo?: TipoAnuncio) {
       { expiresEn: { gte: now } }
     ];
     
-    const anuncios = await db.anuncio.findMany({
+    const anuncios = await (await db.anuncio).findMany({
       where: whereClause,
       orderBy: [
         { fijado: 'desc' },
@@ -33,7 +33,7 @@ export async function getAnuncios(conjuntoId: string, tipo?: TipoAnuncio) {
       ]
     });
 
-    return { success: true, data: anuncios };
+    return { success: true, data: anuncios as any };
   } catch (error) {
     console.error("❌ Error al obtener anuncios:", error);
     return { success: false, error: "No se pudieron cargar los anuncios de la cartelera." };
@@ -45,10 +45,10 @@ export async function getAnuncios(conjuntoId: string, tipo?: TipoAnuncio) {
  */
 export async function seedInitialAnuncios(conjuntoId: string) {
   try {
-    const count = await db.anuncio.count({ where: { conjuntoId } });
+    const count = await (await db.anuncio).count({ where: { conjuntoId } });
     if (count > 0) return { success: true, message: "Ya existen anuncios." };
 
-    await db.anuncio.create({
+    await (await db.anuncio).create({
       data: {
         conjuntoId,
         titulo: "¡Bienvenidos a la Nueva Cartelera!",

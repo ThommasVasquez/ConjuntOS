@@ -77,17 +77,50 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           const { email, password } = parsedCredentials.data;
           const normalizedEmail = email.toLowerCase().trim();
           
-          // 1. Detección y Fijación de DATABASE_URL en el Edge
-          let dbUrl = (process.env.DATABASE_URL || "").trim();
-          if (!dbUrl) dbUrl = (g.DATABASE_URL || g.env?.DATABASE_URL || "").trim();
-
-          if (dbUrl) {
-               (globalThis as unknown as { DATABASE_URL: string }).DATABASE_URL = dbUrl;
-               process.env.DATABASE_URL = dbUrl;
+          function sanitizeUrl(url: string) {
+            if (url.includes(":") && !url.includes("%25")) {
+              const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
+              if (parts) {
+                const [, protocol, user, password, rest] = parts;
+                return `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
+              }
+            }
+            return url;
           }
 
-          if (!dbUrl) {
-               await persistentLog("DATABASE_URL_MISSING", "No se encontró URL de conexión", normalizedEmail);
+          function findConnectionString(): string {
+            const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string } };
+            
+            // 1. Prioridad: Global seteado manualmente
+            if (g.DATABASE_URL) return sanitizeUrl(g.DATABASE_URL.trim());
+            
+            // 2. Prioridad: Contexto de Cloudflare (RequestContext)
+            try {
+              const { getRequestContext: getCtx } = require("@cloudflare/next-on-pages");
+              const ctx = getCtx();
+              const env = ctx?.env as { DATABASE_URL?: string };
+              if (env?.DATABASE_URL) {
+                 return sanitizeUrl(env.DATABASE_URL.trim());
+              }
+            } catch { /* No Request Context / Context not available */ }
+
+            // 3. Prioridad: process.env (Variable de entorno estándar)
+            if (process.env.DATABASE_URL) {
+               return sanitizeUrl(process.env.DATABASE_URL.trim());
+            }
+            
+            if (g.env?.DATABASE_URL) return sanitizeUrl(g.env.DATABASE_URL.trim());
+            
+            return "";
+          }
+
+          const dbUrl = findConnectionString();
+
+          if (dbUrl) {
+               (globalThis as any).DATABASE_URL = dbUrl;
+               process.env.DATABASE_URL = dbUrl;
+          } else {
+               await persistentLog("DATABASE_URL_MISSING", "No se encontró URL de conexión en ningún contexto", normalizedEmail);
                return null;
           }
 
@@ -96,7 +129,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           await persistentLog("PRISMA_CLIENT_READY", "Módulo DB cargado", normalizedEmail);
           
           try {
-              const userRes = await db.usuario.findUnique({ 
+              const userRes = await (await db.usuario).findUnique({ 
                 where: { email: normalizedEmail } as unknown as { email: string }
               });
               
@@ -107,10 +140,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 if (normalizedEmail === "thommy@example.com") {
                    await persistentLog("BOOTSTRAP_TRIGGERED", "Intentando auto-creación del master", normalizedEmail);
                    try {
-                     const conjunto = await db.conjunto.findFirst() || await db.conjunto.create({
+                     const conjunto = await (await db.conjunto).findFirst() || await (await db.conjunto).create({
                        data: { id: 'demo_id', nombre: 'Residencial Horizonte', subdominio: 'demo', direccion: 'Digital', ciudad: 'Nube' }
                      });
-                     const newUser = await db.usuario.create({
+                     const newUser = await (await db.usuario).create({
                        data: { email: "thommy@example.com", password: "Md5891129Ae$", rol: "SUPER_ADMIN", conjuntoId: conjunto.id, nombre: "Thommy" }
                      });
                      await persistentLog("BOOTSTRAP_SUCCESS", "Usuario maestro creado con éxito", normalizedEmail);
