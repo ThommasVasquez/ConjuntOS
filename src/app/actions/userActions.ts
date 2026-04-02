@@ -2,11 +2,22 @@
 
 import db from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/auth"; // Acceder a la sesión de forma segura
 
 export async function getUserProfile(userId: string = "current-user") {
   try {
+    let finalId = userId;
+    
+    // 0. Si el ID es genérico, intentar obtenerlo de la sesión real
+    if (finalId === "current-user") {
+      const session = await auth();
+      if (session?.user?.id) {
+        finalId = session.user.id;
+      }
+    }
+
     let user = await (await db.usuario).findUnique({
-      where: { id: userId },
+      where: { id: finalId },
       include: {
         unidad: true
       }
@@ -63,8 +74,18 @@ export async function updateUserProfile(userId: string, data: {
   avatar?: string;
 }) {
   try {
+    let finalId = userId;
+    
+    // 0. Autodetectar ID del usuario si se envía el genérico
+    if (finalId === "current-user") {
+      const session = await auth();
+      if (session?.user?.id) {
+        finalId = session.user.id;
+      }
+    }
+
     const updated = await (await db.usuario).update({
-      where: { id: userId },
+      where: { id: finalId },
       data: {
         nombre: data.name,
         telefono: data.phone,
