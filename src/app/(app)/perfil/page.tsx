@@ -159,10 +159,11 @@ function ProfileContent() {
         localStorage.setItem("conjunto_app_profile_data", JSON.stringify(editForm));
         localStorage.setItem("conjunto_app_profile_pic", profilePic);
         
-        // Limpiar URL y cerrar modal (redirigiendo a la ruta base)
         window.history.replaceState(null, '', '/perfil');
       } else {
-        toast.error("Error: " + (res.error || "No se pudo sincronizar"));
+        toast.error(`Error: ${res.error || "Falla desconocida"}`, {
+          description: res.details || "Consulta los logs del servidor para más información."
+        });
       }
     } catch (e) {
       console.error("Error updating profile via API:", e);

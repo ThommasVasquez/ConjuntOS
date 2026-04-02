@@ -38,9 +38,18 @@ export async function POST(req: Request) {
     const { name, phone, gender, avatar } = data;
     const userId = session.user.id;
 
-    console.log("✅ [API-UPDATE] Actualizando usuario:", userId);
+    console.log("✅ [API-UPDATE] Usuario identificado:", userId);
 
-    const updated = await (await db.usuario).update({
+    const usuarioDelegate = await db.usuario;
+    
+    // Verificar si el usuario existe para evitar el error P2025 de Prisma
+    const exists = await usuarioDelegate.findUnique({ where: { id: userId } });
+    if (!exists) {
+      console.error("❌ [API-UPDATE] Usuario no encontrado en la DB:", userId);
+      return NextResponse.json({ success: false, error: "Usuario no encontrado en la base de datos" }, { status: 404 });
+    }
+
+    const updated = await usuarioDelegate.update({
       where: { id: userId },
       data: {
         nombre: name,
@@ -50,13 +59,15 @@ export async function POST(req: Request) {
       }
     });
 
+    console.log("✨ [API-UPDATE] Perfil actualizado con éxito.");
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error("❌ [API-UPDATE-FATAL]:", error);
+    const err = error as Error;
+    console.error("❌ [API-UPDATE-FATAL]:", err.name, err.message);
     return NextResponse.json({ 
       success: false, 
-      error: "Internal Server Error",
-      details: (error as Error).message 
+      error: "Error interno del servidor",
+      details: `${err.name}: ${err.message}` 
     }, { status: 500 });
   }
 }
