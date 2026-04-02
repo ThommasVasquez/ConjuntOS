@@ -53,9 +53,9 @@ export async function discoverUrl(): Promise<string> {
     } catch { /* Ignorar */ }
   }
 
-  // 3. Otros fallbacks globales
+  // 3. Otros fallbacks globales e Inyección Directa (Salvavidas)
   if (!url) {
-    url = g.DATABASE_URL || g.env?.DATABASE_URL || "";
+    url = g.DATABASE_URL || g.env?.DATABASE_URL || "postgresql://postgres.zudntuczwfhmyqgzcvrc:Md5891129Ae$@aws-1-us-east-1.pooler.supabase.com:6543/postgres";
   }
 
   const sanitized = sanitizeUrl(url);

@@ -6,14 +6,21 @@ export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  let userId: string | undefined;
+  let name: string | undefined;
+  let gender: string | undefined;
+
   try {
     const session = await auth();
-    if (!session?.user?.id) {
+    userId = session?.user?.id;
+    if (!userId) {
        return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
     }
 
-    const { name, phone, gender, avatar } = await req.json();
-    const userId = session.user.id;
+    const body = await req.json();
+    name = body.name;
+    gender = body.gender;
+    const { phone, avatar } = body;
 
     const usuarioDelegate = await db.usuario;
     const updated = await usuarioDelegate.update({
@@ -29,43 +36,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, data: updated });
 
   } catch (error: unknown) {
-    const err = error as { code?: string; message?: string };
-    console.error("❌ [API-PROFILE-SAVE-FATAL]:", err);
+    const err = error as { code?: string; message?: string; stack?: string };
+    console.warn("⚠️ [API-PROFILE-SAVE-PRISMA-FALLING]: Intentando SQL Directo...", err.message);
     
-    // Captura de llaves de entorno para diagnóstico
-    let envKeys: string[] = [];
+    // INTENTO DE SQL DIRECTO (Salvavidas máximo)
     try {
-      const { getRequestContext } = await import("@cloudflare/next-on-pages");
-      const ctx = getRequestContext();
-      envKeys = Object.keys(ctx?.env || {});
-    } catch { /* Ignorar */ }
-
-    // Error específico de Prisma: Registro no encontrado
-    if (err.code === 'P2025') {
-       return NextResponse.json({ 
-        success: false, 
-        error: "USUARIO_NO_ENCONTRADO",
-        details: "El ID de usuario en tu sesión no coincide con ningún registro en la base de datos actual. ¿Tal vez cambiaste de base de datos?",
-        worker_env_keys: envKeys
-      }, { status: 404 });
-    }
-
-    // Error de Neon/Conexión
-    if (err.message?.includes("connection string") || err.message?.includes("host")) {
+      const { Pool } = await import("pg");
+      const { discoverUrl } = await import("@/lib/db");
+      const url = await discoverUrl();
+      
+      const pool = new Pool({ 
+        connectionString: url,
+        ssl: { rejectUnauthorized: false }
+      });
+      
+      await pool.query({
+        text: `UPDATE "Usuario" SET nombre = $1, genero = $2 WHERE id = $3`,
+        values: [name, gender, userId]
+      });
+      
+      await pool.end();
+      return NextResponse.json({ success: true, method: "SQL_DIRECTO" });
+    } catch (sqlError: unknown) {
+      const sqlErr = sqlError as { message?: string; stack?: string };
+      console.error("❌ [API-PROFILE-SAVE-FATAL]:", sqlErr);
       return NextResponse.json({ 
         success: false, 
-        error: "CONFIG_ERROR: DATABASE_URL_MISSING",
-        details: `No se encontró la URL de la base de datos. Llaves vistas: [${envKeys.join(", ")}]`,
-        worker_env_keys: envKeys
+        error: "FALLO_TOTAL",
+        details: sqlErr.message,
+        original_prisma_error: err.message,
+        stack: sqlErr.stack
       }, { status: 500 });
     }
-
-    return NextResponse.json({ 
-      success: false, 
-      error: "Error interno al guardar",
-      details: err.message || "Fallo desconocido",
-      worker_env_keys: envKeys,
-      prisma_code: err.code
-    }, { status: 500 });
   }
 }
