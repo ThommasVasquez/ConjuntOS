@@ -121,25 +121,36 @@ function ProfileContent() {
   };
 
   const handleSaveProfile = async () => {
-    // 🚀 FIX: Limpiar la URL antes del POST para evitar el 405 por parámetros de query
-    window.history.replaceState(null, '', '/perfil');
-    
     // Sincronizar el estado de la UI
     setUserData(editForm);
 
-    const res = await updateUserProfile("current-user", {
-      name: editForm.name,
-      phone: editForm.phone,
-      gender: editForm.gender,
-      avatar: profilePic
-    });
+    try {
+      const response = await fetch('/api/user/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editForm.name,
+          phone: editForm.phone,
+          gender: editForm.gender,
+          avatar: profilePic
+        })
+      });
 
-    if (res.success) {
-      toast.success("Perfil guardado en la nube");
-      localStorage.setItem("conjunto_app_profile_data", JSON.stringify(editForm));
-      localStorage.setItem("conjunto_app_profile_pic", profilePic);
-    } else {
-      toast.error("Error al sincronizar con la nube");
+      const res = await response.json();
+
+      if (res.success) {
+        toast.success("Perfil guardado en la nube");
+        localStorage.setItem("conjunto_app_profile_data", JSON.stringify(editForm));
+        localStorage.setItem("conjunto_app_profile_pic", profilePic);
+        
+        // Limpiar URL y cerrar modal (redirigiendo a la ruta base)
+        window.history.replaceState(null, '', '/perfil');
+      } else {
+        toast.error("Error: " + (res.error || "No se pudo sincronizar"));
+      }
+    } catch (e) {
+      console.error("Error updating profile via API:", e);
+      toast.error("Error de conexión al servidor");
     }
   };
 
