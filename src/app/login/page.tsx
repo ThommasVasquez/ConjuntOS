@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
-import { signIn } from "next-auth/react";
+// signIn removed; using Server Action login
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Shield, Mail, Lock, ArrowRight, Loader2, Star } from "lucide-react";
+
+import { loginAction } from "@/app/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,32 +49,18 @@ export default function LoginPage() {
     if (isLoading) return;
 
     setIsLoading(true);
-    console.log("🚀 Iniciando proceso de firma con Auth.js...");
-    
     try {
-      const result = await signIn("credentials", {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      });
+      const result = await loginAction(formData);
 
-      console.log("📥 Resultado de Auth.js:", result);
-
-      if (result?.error) {
-        console.error("❌ Error devuelto por Auth.js:", result.error);
-        if (result.error === "CredentialsSignin") {
-           toast.error("Error de credenciales. Verifica tu email y contraseña (123456)");
-        } else {
-           toast.error(`Fallo en el servidor: ${result.error || "Desconocido"}`);
-        }
-      } else {
-        console.log("🎉 Autenticación exitosa, redirigiendo...");
+      if (result.ok) {
         toast.success("¡Bienvenido a ConjuntoApp!");
         router.push("/inicio");
         router.refresh();
+      } else {
+        toast.error(result.error || "Error de credenciales");
       }
     } catch (err) {
-      console.error("🔥 Error catastrófico en el cliente:", err);
+      console.error("🔥 Error en el cliente:", err);
       toast.error("Ocurrió un error al iniciar sesión");
     } finally {
       setIsLoading(false);

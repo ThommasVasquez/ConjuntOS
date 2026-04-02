@@ -14,92 +14,99 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { useRouter } from "next/navigation";
+import { getAnuncios, seedInitialAnuncios } from "@/app/actions/anuncioActions";
+import { getUserProfile } from "@/app/actions/userActions";
+import { Loader2 } from "lucide-react";
+import { Anuncio } from "@prisma/client";
 
 interface Notice {
   id: string;
   title: string;
   content: string;
-  category: 'SEGURIDAD' | 'MANTENIMIENTO' | 'EVENTO' | 'CONVIVENCIA';
+  category: string;
   priority: 'ALTA' | 'MEDIA' | 'BAJA';
   date: string;
   author: string;
   image?: string;
+  fijado?: boolean;
 }
 
 export default function CarteleraPage() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [profilePic, setProfilePic] = useState("/images/avatar-placeholder.png");
-  const [userData, setUserData] = useState({ name: "Residente", gender: "femenino" });
+  const [userData, setUserData] = useState({ name: "Residente", gender: "femenino", conjuntoId: "" });
   const [selectedCategory, setSelectedCategory] = useState<string>('TODOS');
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const [hasStory, setHasStory] = useState(false);
+  
+  // Real dynamic notices
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [isLoadingNotices, setIsLoadingNotices] = useState(true);
 
   const notifications = [
     { id: 1, title: "Nuevo Aviso", desc: "Se ha publicado el acta de la asamblea.", time: "Hace 10m", icon: <CheckCircle2 size={16} />, color: "text-accent", isUnread: true },
     { id: 2, title: "Mantenimiento", desc: "Recordatorio: Corte de agua mañana.", time: "Hace 2h", icon: <Wrench size={16} />, color: "text-orange-400" },
   ];
 
-  const notices: Notice[] = [
-    {
-      id: '1',
-      title: "Corte de Agua Programado",
-      content: "Se informa a todos los residentes que el próximo jueves 2 de abril se realizará un mantenimiento preventivo en el tanque principal. El servicio será suspendido de 8:00 AM a 2:00 PM. Recomendamos tomar las precauciones necesarias.",
-      category: 'MANTENIMIENTO',
-      priority: 'ALTA',
-      date: "31 Mar, 2026",
-      author: "Administración",
-      image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=1000"
-    },
-    {
-      id: '2',
-      title: "Actualización de Protocolos de Seguridad",
-      content: "A partir del lunes, todos los visitantes deberán presentar su documento de identidad físico en portería, sin excepción. Esta medida busca reforzar la seguridad de nuestra comunidad.",
-      category: 'SEGURIDAD',
-      priority: 'MEDIA',
-      date: "30 Mar, 2026",
-      author: "Seguridad Privada"
-    },
-    {
-      id: '3',
-      title: "Gran Bazar de Verano",
-      content: "¡Ven y comparte con tus vecinos! Tendremos música en vivo, feria gastronómica y actividades para niños en la zona social de la Torre B. ¡No faltes!",
-      category: 'EVENTO',
-      priority: 'BAJA',
-      date: "28 Mar, 2026",
-      author: "Comité Social",
-      image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&q=80&w=1000"
-    },
-    {
-      id: '4',
-      title: "Recordatorio: Horarios de Basura",
-      content: "Recordamos que los horarios para depositar residuos en el shut son únicamente de 6:00 PM a 10:00 PM. Evite multas y mantengamos el conjunto limpio.",
-      category: 'CONVIVENCIA',
-      priority: 'BAJA',
-      date: "25 Mar, 2026",
-      author: "Administración"
-    }
-  ];
-
   useEffect(() => {
-    // Sync UI with local storage
-    const savedPic = localStorage.getItem("conjunto_app_profile_pic");
-    if (savedPic) setProfilePic(savedPic);
+    async function initData() {
+      // 1. Get fundamental user data
+      const userRes = await getUserProfile("current-user");
+      let cid = "";
+      
+      if (userRes.success && userRes.data) {
+        cid = userRes.data.conjuntoId;
+        setUserData({ 
+          name: userRes.data.nombre, 
+          gender: userRes.data.genero || "femenino",
+          conjuntoId: cid
+        });
+        if (userRes.data.avatar) setProfilePic(userRes.data.avatar);
+      } else {
+        const savedData = localStorage.getItem("conjunto_app_profile_data");
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          setUserData(prev => ({ ...prev, ...parsed }));
+        }
+      }
 
-    const savedData = localStorage.getItem("conjunto_app_profile_data");
-    if (savedData) {
-      try { setUserData(JSON.parse(savedData)); } catch (e) { console.error(e); }
+      const savedStory = localStorage.getItem("conjunto_app_user_story");
+      if (savedStory) {
+         const storyData = JSON.parse(savedStory);
+         const now = new Date().getTime();
+         if (now < storyData.expiresAt) setHasStory(true);
+      }
+
+      // 2. Load announcements from DB
+      if (cid) {
+        // Seed if empty (just for demo/thommy)
+        await seedInitialAnuncios(cid);
+        
+        const res = await getAnuncios(cid);
+        if (res.success && res.data) {
+          const mapped: Notice[] = res.data.map((a: Anuncio) => ({
+            id: a.id,
+            title: a.titulo,
+            content: a.contenido,
+            category: a.tipo,
+            priority: a.tipo === 'URGENTE' ? 'ALTA' : (a.tipo === 'MANTENIMIENTO' ? 'MEDIA' : 'BAJA'),
+            date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+            author: "Administración",
+            image: a.imagenUrl || undefined,
+            fijado: a.fijado
+          }));
+          setNotices(mapped);
+        }
+      }
+      setIsLoadingNotices(false);
     }
 
-    const savedStory = localStorage.getItem("conjunto_app_user_story");
-    if (savedStory) {
-       const storyData = JSON.parse(savedStory);
-       const now = new Date().getTime();
-       if (now < storyData.expiresAt) setHasStory(true);
-    }
-
+    initData();
+    
+    // Ambient UI logic
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
         setIsNotificationsOpen(false);
@@ -129,10 +136,9 @@ export default function CarteleraPage() {
 
   const getNoticeIcon = (cat: string) => {
     switch(cat) {
-      case 'SEGURIDAD': return <ShieldAlert size={18} />;
+      case 'URGENTE': return <ShieldAlert size={18} />;
       case 'MANTENIMIENTO': return <Wrench size={18} />;
       case 'EVENTO': return <Calendar size={18} />;
-      case 'CONVIVENCIA': return <Info size={18} />;
       default: return <Megaphone size={18} />;
     }
   };
@@ -230,7 +236,20 @@ export default function CarteleraPage() {
 
       {/* 3. NOTICES FEED */}
       <section className="flex flex-col gap-6">
-         {filteredNotices.map((notice) => (
+         {isLoadingNotices ? (
+           <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <Loader2 className="w-10 h-10 text-accent animate-spin" />
+              <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Sincronizando Cartelera...</p>
+           </div>
+         ) : filteredNotices.length === 0 ? (
+           <div className="flex flex-col items-center justify-center py-20 gap-4 liquid-glass-card rounded-[32px] border border-white/5 p-10">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/20 mb-2">
+                 <Megaphone size={32} />
+              </div>
+              <p className="text-white/60 text-sm font-bold">No hay avisos publicados</p>
+              <p className="text-white/30 text-[10px] text-center uppercase tracking-widest max-w-[200px]">La administración aún no ha compartido novedades.</p>
+           </div>
+         ) : filteredNotices.map((notice) => (
            <div 
              key={notice.id} 
              onClick={() => setSelectedNotice(notice)}
