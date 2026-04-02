@@ -9,8 +9,7 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useSearchParams, useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
-import { getUserProfile } from "@/app/actions/userActions";
+import { signOut, useSession } from "next-auth/react";
 
 // Define Rol locally to avoid importing Prisma in a Client Component
 enum Rol {
@@ -39,16 +38,18 @@ function ProfileContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const isEditing = searchParams.get('modal') === 'edit';
   
   const defaultPlaceholder = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000";
   const [profilePic, setProfilePic] = useState<string>(defaultPlaceholder);
   
   const [userData, setUserData] = useState({
-    name: "Amélie Thommy",
-    apto: "Apto 301",
-    torre: "Torre B",
-    phone: "+57 300 000 0000",
+    name: "Cargando...",
+    apto: "Apto 000",
+    torre: "Torre -",
+    phone: "",
     gender: "femenino"
   });
 
@@ -56,33 +57,50 @@ function ProfileContent() {
 
   useEffect(() => {
     async function loadData() {
-      const res = await getUserProfile("current-user");
-      if (res.success && res.data) {
-        const u = res.data;
-        const mapped = {
-          name: u.nombre,
-          apto: (u as { unidad?: { numero: string; } }).unidad?.numero || "S/N",
-          torre: (u as { unidad?: { torre: string; } }).unidad?.torre || "S/T",
-          phone: u.telefono || "",
-          gender: (u as { genero?: string }).genero || "neutro"
-        };
-        setUserData(mapped);
-        setEditForm(mapped);
-        if (u.avatar) setProfilePic(u.avatar);
-      } else {
-        const savedPic = localStorage.getItem("conjunto_app_profile_pic");
-        if (savedPic) setProfilePic(savedPic);
+      try {
+        const fetchRes = await fetch("/api/user/profile");
+        const res = await fetchRes.json();
 
-        const savedData = localStorage.getItem("conjunto_app_profile_data");
-        if (savedData) {
-          const parsed = JSON.parse(savedData);
-          setUserData(parsed);
-          setEditForm(parsed);
+        if (res.success && res.data) {
+          const u = res.data;
+          const mapped = {
+            name: u.nombre,
+            apto: u.unidad?.numero || "S/N",
+            torre: u.unidad?.torre || "S/T",
+            phone: u.telefono || "",
+            gender: u.genero || "neutro"
+          };
+          setUserData(mapped);
+          setEditForm(mapped);
+          if (u.avatar) setProfilePic(u.avatar);
+
+          // Persistence (Isolated)
+          if (userId) {
+            localStorage.setItem(`conjunto_app_profile_data_${userId}`, JSON.stringify(mapped));
+            if (u.avatar) localStorage.setItem(`conjunto_app_profile_pic_${userId}`, u.avatar);
+          }
+        } else {
+          throw new Error("No success");
+        }
+      } catch (error) {
+        console.warn("⚠️ Error cargando datos:", error);
+        if (userId) {
+          const savedPic = localStorage.getItem(`conjunto_app_profile_pic_${userId}`);
+          if (savedPic) setProfilePic(savedPic);
+
+          const savedData = localStorage.getItem(`conjunto_app_profile_data_${userId}`);
+          if (savedData) {
+            const parsed = JSON.parse(savedData);
+            setUserData(parsed);
+            setEditForm(parsed);
+          }
         }
       }
     }
     
-    loadData();
+    if (session) {
+      loadData();
+    }
 
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up", 
@@ -95,7 +113,7 @@ function ProfileContent() {
       );
     }, containerRef);
     return () => ctx.revert();
-  }, []);
+  }, [session, userId]);
 
   /**
    * 🖼️ Compresor de Imágenes del lado del cliente
@@ -173,8 +191,10 @@ function ProfileContent() {
 
       if (res.success) {
         toast.success("Perfil guardado con éxito");
-        localStorage.setItem("conjunto_app_profile_data", JSON.stringify(editForm));
-        localStorage.setItem("conjunto_app_profile_pic", profilePic);
+        if (userId) {
+          localStorage.setItem(`conjunto_app_profile_data_${userId}`, JSON.stringify(editForm));
+          localStorage.setItem(`conjunto_app_profile_pic_${userId}`, profilePic);
+        }
         
         window.history.replaceState(null, '', '/perfil');
       } else {

@@ -11,6 +11,7 @@ import {
   Bell, Search, SlidersHorizontal
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -29,6 +30,8 @@ interface Area {
 
 export default function ReservasPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const containerRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const [profilePic, setProfilePic] = useState("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1000");
@@ -72,23 +75,25 @@ export default function ReservasPage() {
   ];
 
   useEffect(() => {
+    if (!userId) return;
+
     // Load local storage data
-    const savedPic = localStorage.getItem("conjunto_app_profile_pic");
+    const savedPic = localStorage.getItem(`conjunto_app_profile_pic_${userId}`);
     if (savedPic) setProfilePic(savedPic);
 
-    const savedData = localStorage.getItem("conjunto_app_profile_data");
+    const savedData = localStorage.getItem(`conjunto_app_profile_data_${userId}`);
     if (savedData) {
       try { setUserData(JSON.parse(savedData)); } catch (e) { console.error(e); }
     }
 
     // Story Logic
-    const savedStory = localStorage.getItem("conjunto_app_active_story");
+    const savedStory = localStorage.getItem(`conjunto_app_active_story_${userId}`);
     if (savedStory) {
       const { createdAt } = JSON.parse(savedStory);
       if (Date.now() - createdAt < 24 * 60 * 60 * 1000) {
         setHasStory(true);
       } else {
-        localStorage.removeItem("conjunto_app_active_story");
+        localStorage.removeItem(`conjunto_app_active_story_${userId}`);
       }
     }
 
@@ -106,7 +111,7 @@ export default function ReservasPage() {
       );
     }, containerRef);
     return () => ctx.revert();
-  }, []);
+  }, [userId]);
 
   const notifications = [
     { id: 1, title: "Reserva Confirmada", desc: "Tu acceso al gimnasio está listo.", time: "Hace 2m", icon: <CheckCircle2 size={14}/>, color: "text-emerald-400", isUnread: true },

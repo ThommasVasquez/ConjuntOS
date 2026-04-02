@@ -12,6 +12,7 @@ import {
   User as UserIcon, MessageSquare, CreditCard, Package, CheckCircle2, AlertTriangle
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -42,6 +43,8 @@ interface Notification {
 
 export default function InicioDashboard() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const containerRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   
@@ -68,29 +71,36 @@ export default function InicioDashboard() {
           setUserData(mapped);
           if (u.avatar) setProfilePic(u.avatar);
           
-          // Persistence for faster reloads
-          localStorage.setItem("conjunto_app_profile_data", JSON.stringify(mapped));
-          if (u.avatar) localStorage.setItem("conjunto_app_profile_pic", u.avatar);
+          // Persistence for faster reloads (Isolated by User)
+          if (userId) {
+            localStorage.setItem(`conjunto_app_profile_data_${userId}`, JSON.stringify(mapped));
+            if (u.avatar) localStorage.setItem(`conjunto_app_profile_pic_${userId}`, u.avatar);
+          }
         } else {
           throw new Error("No success");
         }
       } catch (error) {
         console.warn("⚠️ Fallback a LocalStorage:", error);
-        // Fallback robusto a localStorage
-        const savedPic = localStorage.getItem("conjunto_app_profile_pic");
-        if (savedPic) setProfilePic(savedPic);
+        // Fallback robusto a localStorage (Isolated)
+        if (userId) {
+          const savedPic = localStorage.getItem(`conjunto_app_profile_pic_${userId}`);
+          if (savedPic) setProfilePic(savedPic);
 
-        const savedData = localStorage.getItem("conjunto_app_profile_data");
-        if (savedData) {
-          setUserData(JSON.parse(savedData));
-        } else {
-          // Fallback final
-          setUserData({ name: "Amélie Thommy", apto: "Apto 301", gender: "femenino" });
+          const savedData = localStorage.getItem(`conjunto_app_profile_data_${userId}`);
+          if (savedData) {
+            setUserData(JSON.parse(savedData));
+            return;
+          }
         }
+        
+        // Fallback final
+        setUserData({ name: "Amélie Thommy", apto: "Apto 301", gender: "femenino" });
       }
     }
 
-    loadData();
+    if (session) {
+      loadData();
+    }
 
     // Story Logic
     const savedStory = localStorage.getItem("conjunto_app_active_story");
@@ -111,7 +121,7 @@ export default function InicioDashboard() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [session, userId]);
 
   const categories = [
     { title: "Reservas", icon: <Calendar size={20}/>, color: "from-blue-500 to-cyan-400", path: "/reservas" },
