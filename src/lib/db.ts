@@ -56,19 +56,15 @@ export function getPrismaClient(): PrismaClient {
   // Configuración de Neon Serverless
   neonConfig.useSecureWebSocket = false;
   
-  const pool = new Pool({ connectionString: url });
+  const pool = new Pool({ 
+    connectionString: url,
+    ssl: { rejectUnauthorized: false }
+  });
 
   // @ts-expect-error - PrismaNeon types
   const adapter = new PrismaNeon(pool);
   
-  // Fuerza la URL en el datasource para evitar que Prisma la busque en el env
-  const client = new PrismaClient({ 
-    adapter,
-    // @ts-expect-error - Override necessary for Edge runtime stability
-    datasources: {
-      db: { url }
-    }
-  });
+  const client = new PrismaClient({ adapter });
 
   globalThis.__prismaInstance = client;
   globalThis.__prismaUrl = url;

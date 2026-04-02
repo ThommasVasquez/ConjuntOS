@@ -28,8 +28,10 @@ async function persistentLog(step: string, details: string = "", email: string =
 
      // Escapar % si es necesario para el driver
      let sanitized = dbUrl;
-     if (sanitized.includes(":") && !sanitized.includes("%25")) {
-        const parts = sanitized.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
+     if (!dbUrl.includes(":") || dbUrl.includes("%25")) {
+        sanitized = dbUrl;
+     } else {
+        const parts = dbUrl.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
         if (parts) {
           const [, protocol, user, password, rest] = parts;
           sanitized = `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
