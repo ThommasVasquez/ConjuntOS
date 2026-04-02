@@ -1,7 +1,7 @@
 "use server";
 
 import db from "@/lib/db";
-import { TipoAnuncio } from "@prisma/client";
+import { TipoAnuncio, Prisma } from "@prisma/client";
 
 /**
  * Obtiene los anuncios de un conjunto específico.
@@ -9,7 +9,7 @@ import { TipoAnuncio } from "@prisma/client";
  */
 export async function getAnuncios(conjuntoId: string, tipo?: TipoAnuncio) {
   try {
-    const whereClause: { conjuntoId: string; tipo?: TipoAnuncio; OR?: any[] } = {
+    const whereClause: Prisma.AnuncioWhereInput = {
       conjuntoId: conjuntoId,
     };
 
