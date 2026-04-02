@@ -92,28 +92,28 @@ html, body {
   text-shadow: 0 0 15px var(--color-accent);
 }
 
-/* Sonner Overrides with ULTIMATE transparency (80% more than 1%) */
+/* Sonner Overrides with BEYOND ULTIMATE transparency */
 [data-sonner-toast] {
-  background: rgba(255, 255, 255, 0.002) !important; /* Prácticamente invisible */
-  backdrop-filter: blur(50px) !important;
-  -webkit-backdrop-filter: blur(50px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.001) !important; /* 80% más transparente que 0.002 */
+  backdrop-filter: blur(60px) !important;
+  -webkit-backdrop-filter: blur(60px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.03) !important; /* Borde casi invisible */
   border-radius: 20px !important;
   color: white !important;
-  box-shadow: 0 10px 60px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 10px 60px rgba(0, 0, 0, 0.2) !important;
   padding: 18px !important;
   font-family: inherit !important;
 }
 
 [data-type='success'][data-sonner-toast] {
-  background: rgba(16, 185, 129, 0.02) !important;
-  border-color: rgba(16, 185, 129, 0.15) !important;
+  background: rgba(16, 185, 129, 0.01) !important; /* Tinte mínimo */
+  border-color: rgba(16, 185, 129, 0.1) !important;
   color: #10b981 !important;
 }
 
 [data-type='error'][data-sonner-toast] {
-  background: rgba(239, 68, 68, 0.02) !important;
-  border-color: rgba(239, 68, 68, 0.15) !important;
+  background: rgba(239, 68, 68, 0.01) !important; /* Tinte mínimo */
+  border-color: rgba(239, 68, 68, 0.1) !important;
   color: #ef4444 !important;
 }
 

@@ -120,7 +120,9 @@ function ProfileContent() {
     }
   };
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    
     // Sincronizar el estado de la UI
     setUserData(editForm);
 
@@ -138,6 +140,17 @@ function ProfileContent() {
       });
 
       console.log("Response status:", response.status);
+      
+      if (response.status === 401) {
+        toast.error("Sesión expirada o inválida. Por favor, cierra sesión y vuelve a entrar.");
+        return;
+      }
+
+      if (response.status === 405) {
+        toast.error("Error de configuración del servidor (Method Not Allowed).");
+        return;
+      }
+
       const res = await response.json();
       console.log("Response data:", res);
 
