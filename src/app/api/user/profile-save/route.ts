@@ -29,23 +29,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, data: updated });
 
   } catch (error: unknown) {
-    const err = error as Error;
+    const err = error as any;
     console.error("❌ [API-PROFILE-SAVE-FATAL]:", err);
     
-    // Diagnóstico agresivo
+    // Captura de llaves de entorno para diagnóstico
     let envKeys: string[] = [];
     try {
       const { getRequestContext } = await import("@cloudflare/next-on-pages");
       const ctx = getRequestContext();
       envKeys = Object.keys(ctx?.env || {});
-    } catch { /* Ignorar si no hay contexto */ }
+    } catch { /* Ignorar */ }
 
-    // Si es un error de Neon por falta de URL
+    // Error específico de Prisma: Registro no encontrado
+    if (err.code === 'P2025') {
+       return NextResponse.json({ 
+        success: false, 
+        error: "USUARIO_NO_ENCONTRADO",
+        details: "El ID de usuario en tu sesión no coincide con ningún registro en la base de datos actual. ¿Tal vez cambiaste de base de datos?",
+        worker_env_keys: envKeys
+      }, { status: 404 });
+    }
+
+    // Error de Neon/Conexión
     if (err.message?.includes("connection string") || err.message?.includes("host")) {
       return NextResponse.json({ 
         success: false, 
         error: "CONFIG_ERROR: DATABASE_URL_MISSING",
-        details: `No se encontró la DATABASE_URL. Keys disponibles en el worker: [${envKeys.join(", ")}]`,
+        details: `No se encontró la URL de la base de datos. Llaves vistas: [${envKeys.join(", ")}]`,
         worker_env_keys: envKeys
       }, { status: 500 });
     }
@@ -54,7 +64,8 @@ export async function POST(req: Request) {
       success: false, 
       error: "Error interno al guardar",
       details: err.message || "Fallo desconocido",
-      worker_env_keys: envKeys
+      worker_env_keys: envKeys,
+      prisma_code: err.code
     }, { status: 500 });
   }
 }
