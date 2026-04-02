@@ -37,14 +37,14 @@ export async function GET() {
 
     const results = [];
     for (const data of seedData) {
-      const p = await pagoDelegate.create({
+      const p = await (pagoDelegate as any).create({
         data: {
           conjuntoId: user.conjuntoId,
           unidadId: user.unidadId,
           usuarioId: userId,
           concepto: data.concepto,
           monto: data.monto,
-          estado: data.estado as any,
+          estado: data.estado,
           fechaVencimiento: data.fechaVencimiento,
           fechaPago: data.fechaPago || null,
         }
@@ -54,8 +54,9 @@ export async function GET() {
 
     return NextResponse.json({ success: true, count: results.length });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Error seeding payments:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
