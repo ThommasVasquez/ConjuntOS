@@ -94,25 +94,52 @@ function ProfileContent() {
     return () => ctx.revert();
   }, []);
 
+  /**
+   * 🖼️ Compresor de Imágenes del lado del cliente
+   * Asegura que el Base64 no supere un tamaño razonable para el Edge de Cloudflare
+   */
+  const compressImage = (base64: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new (window as any).Image();
+      img.src = base64;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 600;
+        const scale = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scale;
+
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Comprimir a JPEG con calidad 0.7 (balance perfecto peso/calidad)
+        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(compressed);
+      };
+    });
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 4 * 1024 * 1024) {
-        toast.error("La imagen es muy grande. Usa una menor a 4MB.");
+      if (file.size > 8 * 1024 * 1024) {
+        toast.error("La imagen es excesivamente grande. Usa una menor a 8MB.");
         return;
       }
       
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
+      const loadingToastId = toast.loading("Procesando foto...");
+      
+      reader.onloadend = async () => {
+        const rawBase64 = reader.result as string;
         try {
-          localStorage.setItem("conjunto_app_profile_pic", base64String);
-          setProfilePic(base64String);
-          toast.success("Foto actualizada con éxito");
+          const compressed = await compressImage(rawBase64);
+          localStorage.setItem("conjunto_app_profile_pic", compressed);
+          setProfilePic(compressed);
+          toast.success("Foto optimizada con éxito", { id: loadingToastId });
         } catch (error) {
-          console.error("LocalStorage quota exceeded", error);
-          toast.error("Error guardando. La foto es muy pesada para la memoria del navegador.");
-          setProfilePic(base64String);
+          console.error("Image processing error", error);
+          toast.error("Error optimizando la imagen", { id: loadingToastId });
         }
         e.target.value = "";
       };

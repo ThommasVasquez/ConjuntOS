@@ -6,68 +6,74 @@ export const runtime = "edge";
 
 export async function POST(req: Request) {
   try {
-    // Diagnóstico de cookies para depuración en el panel de Cloudflare
-    const cookieHeader = req.headers.get("cookie") || "";
-    const cookieNames = cookieHeader.split(';').map(c => c.split('=')[0].trim());
-    console.log("🍪 [API-UPDATE] Cookies en la petición:", cookieNames.join(', '));
-
-    // En NextAuth v5, auth() en API routes (Edge) debería detectar la sesión automáticamente
-    // si el secret y trustHost están correctamente configurados.
+    // 1. Validar Sesión
     const session = await auth();
 
-    // 🛡️ FALLBACK: Diagnóstico para fallos de sesión en Edge
     if (!session?.user?.id) {
        console.warn("⚠️ [API-UPDATE] No se detectó sesión activa.");
-       
-       const hasSecureToken = cookieNames.some(name => name.includes('__Secure-next-auth.session-token'));
-       const hasNormalToken = cookieNames.some(name => name.includes('next-auth.session-token'));
-       
        return NextResponse.json({ 
          success: false, 
-         error: "Unauthorized", 
-         debug: { 
-           message: "Session is null. Please re-login.",
-           cookieNames,
-           hasSecureToken,
-           hasNormalToken
-         } 
+         error: "Sesión no válida. Por favor, re-login.",
+         details: "Session is null or missing user.id"
        }, { status: 401 });
     }
 
-    const data = await req.json();
+    // 2. Parsear Body con seguridad
+    let data;
+    try {
+      data = await req.json();
+    } catch (e) {
+      return NextResponse.json({ success: false, error: "Cuerpo de petición inválido" }, { status: 400 });
+    }
+
     const { name, phone, gender, avatar } = data;
     const userId = session.user.id;
 
-    console.log("✅ [API-UPDATE] Usuario identificado:", userId);
+    console.log("✅ [API-UPDATE] Procesando actualización para:", userId);
 
+    // 3. Obtener delegado de Prisma (Singleton asíncrono)
     const usuarioDelegate = await db.usuario;
-    
-    // Verificar si el usuario existe para evitar el error P2025 de Prisma
-    const exists = await usuarioDelegate.findUnique({ where: { id: userId } });
-    if (!exists) {
-      console.error("❌ [API-UPDATE] Usuario no encontrado en la DB:", userId);
-      return NextResponse.json({ success: false, error: "Usuario no encontrado en la base de datos" }, { status: 404 });
+
+    // 4. Actualización con Upsert/Update seguro
+    // Usamos update pero capturamos errores específicos
+    try {
+      const updated = await usuarioDelegate.update({
+        where: { id: userId },
+        data: {
+          nombre: name,
+          telefono: phone ? String(phone) : undefined,
+          genero: gender,
+          avatar: avatar // Aquí podría estar el fallo si es muy grande
+        }
+      });
+
+      console.log("✨ [API-UPDATE] Perfil actualizado exitosamente.");
+      return NextResponse.json({ success: true, data: updated });
+    } catch (dbError: any) {
+      console.error("❌ [API-UPDATE-DB-ERROR]:", dbError);
+      
+      // Error P2025: Record to update not found
+      if (dbError.code === 'P2025') {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Usuario no encontrado en la base de datos",
+          details: "El ID de sesión no corresponde a ningún usuario registrado."
+        }, { status: 404 });
+      }
+
+      return NextResponse.json({ 
+        success: false, 
+        error: "Error en la base de datos",
+        details: dbError.message || "Fallo desconocido en Prisma"
+      }, { status: 500 });
     }
 
-    const updated = await usuarioDelegate.update({
-      where: { id: userId },
-      data: {
-        nombre: name,
-        telefono: phone,
-        genero: gender,
-        avatar: avatar
-      }
-    });
-
-    console.log("✨ [API-UPDATE] Perfil actualizado con éxito.");
-    return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
-    const err = error as Error;
-    console.error("❌ [API-UPDATE-FATAL]:", err.name, err.message);
+  } catch (error: any) {
+    console.error("❌ [API-UPDATE-FATAL]:", error);
     return NextResponse.json({ 
       success: false, 
-      error: "Error interno del servidor",
-      details: `${err.name}: ${err.message}` 
+      error: "Error interno crítico",
+      details: error.message || "Error fatal en el runtime"
     }, { status: 500 });
   }
 }
