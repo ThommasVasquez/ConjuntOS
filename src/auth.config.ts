@@ -4,14 +4,14 @@ export const authConfig = {
   pages: {
     signIn: "/login",
   },
-  trustHost: true,
+  secret: process.env.AUTH_SECRET,
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isPublicPath = nextUrl.pathname.startsWith("/login");
-      
-      if (!isLoggedIn && !isPublicPath) {
-        return false; // Redirect to signIn
+      const isOnLogin = nextUrl.pathname.startsWith('/login');
+
+      if (!isOnLogin && !isLoggedIn) {
+        return false; // Redirect to login
       }
       return true;
     },
