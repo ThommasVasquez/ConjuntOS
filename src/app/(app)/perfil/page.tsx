@@ -10,7 +10,7 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { getUserProfile } from "@/app/actions/userActions";
+import { getUserProfile, updateUserProfile } from "@/app/actions/userActions";
 
 // Define Rol locally to avoid importing Prisma in a Client Component
 enum Rol {
@@ -154,32 +154,14 @@ function ProfileContent() {
     setUserData(editForm);
 
     try {
-      const response = await fetch('/api/user/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: "include",
-        body: JSON.stringify({
-          name: editForm.name,
-          phone: editForm.phone,
-          gender: editForm.gender,
-          avatar: profilePic
-        })
+      const res = await updateUserProfile("current-user", {
+        name: editForm.name,
+        phone: editForm.phone,
+        gender: editForm.gender,
+        avatar: profilePic
       });
 
-      console.log("Response status:", response.status);
-      
-      if (response.status === 401) {
-        toast.error("Sesión expirada o inválida. Por favor, cierra sesión y vuelve a entrar.");
-        return;
-      }
-
-      if (response.status === 405) {
-        toast.error("Error de configuración del servidor (Method Not Allowed).");
-        return;
-      }
-
-      const res = await response.json();
-      console.log("Response data:", res);
+      console.log("Server Action Response:", res);
 
       if (res.success) {
         toast.success("Perfil guardado en la nube");
@@ -193,7 +175,7 @@ function ProfileContent() {
         });
       }
     } catch (e) {
-      console.error("Error updating profile via API:", e);
+      console.error("Error updating profile via Action:", e);
       toast.error("Error de conexión al servidor");
     }
   };

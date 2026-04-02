@@ -94,12 +94,15 @@ export async function updateUserProfile(userId: string, data: {
       }
     });
 
-    // revalidatePath("/perfil");
-    // revalidatePath("/inicio");
-    
+    console.log("✨ [SERVER-ACTION] Perfil actualizado con éxito para:", finalId);
     return { success: true, data: updated };
-  } catch (error) {
-    console.error("Error updating user:", error);
-    return { success: false, error: "Error al guardar los cambios" };
+  } catch (error: unknown) {
+    console.error("❌ [SERVER-ACTION-ERROR]:", error);
+    const err = error as { message?: string };
+    return { 
+      success: false, 
+      error: "Error al guardar los cambios",
+      details: err.message || "Error desconocido en el servidor"
+    };
   }
 }

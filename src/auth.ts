@@ -5,13 +5,14 @@ import { z } from "zod";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 
 // Función auxiliar para loguear en la DB de forma persistente (Raw SQL)
+// Desactivada temporalmente para reducir latencia en el Edge
 async function persistentLog(step: string, details: string = "", email: string = "") {
+  /*
   try {
      const { discoverUrl } = await import("@/lib/db");
      const dbUrl = await discoverUrl();
      if (!dbUrl) return;
 
-     // Configuración de Neon Serverless
      neonConfig.useSecureWebSocket = false;
      const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
      
@@ -23,6 +24,8 @@ async function persistentLog(step: string, details: string = "", email: string =
   } catch (e) {
     console.error("❌ Error escribiendo log persistente:", e);
   }
+  */
+  console.log(`[AUTH-LOG] ${step}: ${details} (${email})`);
 }
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
