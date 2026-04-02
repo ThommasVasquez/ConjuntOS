@@ -60,6 +60,8 @@ export async function POST(req: Request) {
       console.error("❌ [API-PROFILE-SAVE-FATAL]:", sqlErr);
       return NextResponse.json({ 
         success: false, 
+        version: "v5-NEON-SERVERLESS",
+        commit: process.env.CF_PAGES_COMMIT_SHA,
         error: "FALLO_TOTAL",
         details: sqlErr.message,
         original_prisma_error: err.message,
