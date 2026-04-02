@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { Bell, CheckCircle2, Package, AlertTriangle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface ProfileHeaderProps {
   className?: string;
@@ -12,6 +13,7 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ className = "", showWelcome = true }: ProfileHeaderProps) {
   const { data: session } = useSession();
+  const router = useRouter();
   const userId = session?.user?.id;
   const notificationsRef = useRef<HTMLDivElement>(null);
   
@@ -74,7 +76,10 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
 
   return (
     <header className={`flex justify-between items-center relative z-50 ${className}`}>
-      <div className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform">
+      <div 
+        onClick={() => router.push("/perfil")}
+        className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform"
+      >
         <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5'}`}>
           <div className="w-full h-full rounded-full overflow-hidden relative shadow-xl backdrop-blur-xl">
             <Image src={profilePic} alt="User Avatar" width={56} height={56} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" unoptimized />
