@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
     // Esto es crucial para que Prisma encuentre la URL en el worker de Auth.js
     try {
       const ctx = getRequestContext();
-      const envUrl = ctx?.env?.DATABASE_URL as string | undefined;
+      const env = ctx?.env as { DATABASE_URL?: string };
+      const envUrl = env?.DATABASE_URL;
       if (envUrl) {
         (globalThis as { DATABASE_URL?: string }).DATABASE_URL = envUrl;
         process.env.DATABASE_URL = envUrl;
