@@ -4,34 +4,48 @@ import db from "@/lib/db";
 
 export const runtime = "edge";
 
-export const POST = auth(async (req) => {
+export async function POST(req: Request) {
   try {
-    const cookies = req.headers.get("cookie") || "";
-    console.log("🍪 [API-UPDATE] Cookie fragment:", cookies.substring(0, 30));
+    // 🔍 ANALYTICS: Logueamos cookies para entender el fallo de sesión
+    const cookieHeader = req.headers.get("cookie") || "";
+    const cookieNames = cookieHeader.split(';').map(c => c.split('=')[0].trim());
+    console.log("🍪 [API-UPDATE] Cookies detectadas:", cookieNames.join(', '));
 
-    let session = req.auth;
-    if (!session) {
-      console.log("⚠️ [API-UPDATE] req.auth missing, trying auth()...");
-      session = await auth();
-    }
-
+    // Intento de sesión directo
+    const session = await auth();
+    
     if (!session?.user?.id) {
-      console.error("❌ [API-UPDATE] 401 Unauthorized");
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      console.error("❌ [API-UPDATE] No se detectó sesión. Cookies enviadas:", cookieNames);
+      return NextResponse.json({ 
+        success: false, 
+        error: "Unauthorized", 
+        debug: { cookiesPresentes: cookieNames } 
+      }, { status: 401 });
     }
 
     const data = await req.json();
     const { name, phone, gender, avatar } = data;
     const userId = session.user.id;
 
+    console.log("✅ [API-UPDATE] Actualizando usuario:", userId);
+
     const updated = await (await db.usuario).update({
       where: { id: userId },
-      data: { nombre: name, telefono: phone, genero: gender, avatar: avatar }
+      data: {
+        nombre: name,
+        telefono: phone,
+        genero: gender,
+        avatar: avatar
+      }
     });
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error("❌ [API-UPDATE-FATAL]:", error);
-    return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: "Internal Server Error",
+      details: (error as Error).message 
+    }, { status: 500 });
   }
-});
+}
