@@ -38,6 +38,7 @@ export default function InicioDashboard() {
   
   const categories = [
     { title: "Reservas", icon: <Calendar size={20}/>, color: "from-blue-500 to-cyan-400", path: "/reservas" },
+    { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-[#D946EF] to-[#9333EA]", path: "/pagos" },
     { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-amber-500 to-orange-400", path: "/inmobiliaria" },
     { title: "Visitantes", icon: <UserIcon size={20}/>, color: "from-purple-500 to-pink-500", path: "/visitantes" },
     { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-red-500 to-orange-500", path: "/cartelera" },
@@ -182,7 +183,12 @@ export default function InicioDashboard() {
               <h2 className="text-2xl font-display font-bold text-white tracking-tight">$ 250.000</h2>
               <p className="text-white/40 text-[10px] mt-0.5">Vence en 4 días • Abril 2026</p>
             </div>
-            <button className="bg-white text-primary text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all">Pagar Ahora</button>
+            <button 
+              onClick={() => router.push('/pagos')}
+              className="bg-white text-primary text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all"
+            >
+              Pagar Ahora
+            </button>
           </div>
         </div>
       </section>
