@@ -10,8 +10,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Shield, Mail, Lock, ArrowRight, Loader2, Star } from "lucide-react";
 
-import { loginAction } from "@/app/actions/auth";
-
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -50,21 +48,38 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
-
+    
     setIsLoading(true);
-    try {
-      const result = await loginAction(formData);
 
-      if (result.ok) {
-        toast.success("¡Bienvenido a ConjuntoApp!");
-        router.push("/inicio");
-        router.refresh();
-      } else {
-        toast.error(result.error || "Error de credenciales");
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      // Intentamos capturar el cuerpo como JSON
+      let result;
+      try {
+        result = await response.json();
+      } catch (e) {
+        console.error("❌ Respuesta no es JSON váildo:", e);
+        throw new Error("El servidor no respondió correctamente.");
       }
-    } catch (err) {
-      console.error("🔥 Error en el cliente:", err);
-      toast.error("Ocurrió un error al iniciar sesión");
+
+      if (result && result.ok) {
+        toast.success("¡Bienvenido! Sesión iniciada con éxito.");
+        setTimeout(() => {
+          router.push("/inicio");
+          router.refresh();
+        }, 1000);
+      } else {
+        toast.error(result?.error || "Error al iniciar sesión. Inténtalo de nuevo.");
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Error de red o del servidor. Por favor intenta más tarde.";
+      console.error("🔥 Error en handleSubmit:", msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
