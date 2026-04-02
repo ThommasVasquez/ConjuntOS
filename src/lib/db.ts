@@ -10,15 +10,24 @@ export const runtime = "edge";
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
   try {
-    const url = baseUrl.trim();
-    if (url.includes(":") && !url.includes("%25")) {
-      const parts = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
-      if (parts) {
-        const [, protocol, user, password, rest] = parts;
-        return `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
-      }
+    const raw = baseUrl.trim();
+    // Usamos un esquema soportado (http) para parsear sin errores
+    const asHttp = raw.replace(/^(postgres(?:ql)?):\/\//, "http://");
+    const parsed = new URL(asHttp);
+    
+    let password = parsed.password;
+    if (password && !password.includes("%25")) {
+      // Reemplazamos % literal por su versión codificada
+      password = password.replace(/%/g, "%25");
     }
-    return url;
+    
+    const protocol = raw.startsWith("postgresql") ? "postgresql://" : "postgres://";
+    const user = parsed.username;
+    const host = parsed.host;
+    const path = parsed.pathname;
+    const search = parsed.search;
+    
+    return `${protocol}${user}:${password}@${host}${path}${search}`;
   } catch { return baseUrl; }
 }
 
