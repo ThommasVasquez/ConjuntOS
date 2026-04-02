@@ -6,16 +6,23 @@ export const runtime = "edge";
 
 export async function POST(req: Request) {
   try {
-    // 🔍 ANALYTICS: Logueamos cookies para entender el fallo de sesión
     const cookieHeader = req.headers.get("cookie") || "";
     const cookieNames = cookieHeader.split(';').map(c => c.split('=')[0].trim());
     console.log("🍪 [API-UPDATE] Cookies detectadas:", cookieNames.join(', '));
 
     // Intento de sesión directo
-    const session = await auth();
+    let session = await auth();
+
+    // 🛡️ FALLBACK: Si auth() falla, mandamos logs extra para debug
+    if (!session?.user?.id) {
+       console.warn("⚠️ [API-UPDATE] auth() no detectó sesión. Buscando tokens en cookies...");
+       const hasToken = cookieNames.some(name => name.includes('session-token'));
+       if (hasToken) {
+          console.log("💡 [API-UPDATE] Se encontró cookie de sesión física, pero auth() falló al validarla.");
+       }
+    }
     
     if (!session?.user?.id) {
-      console.error("❌ [API-UPDATE] No se detectó sesión. Cookies enviadas:", cookieNames);
       return NextResponse.json({ 
         success: false, 
         error: "Unauthorized", 
