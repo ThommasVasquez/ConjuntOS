@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import db from "@/lib/db";
 import { auth } from "@/auth";
 
 export const runtime = 'edge';
@@ -19,8 +19,11 @@ export async function GET() {
 
     const userId = session.user.id;
 
+    // Obtener los delegados de Prisma asíncronos (Patrón del Proyecto)
+    const usuarioDelegate = await db.usuario;
+    
     // Obtener los pagos del usuario junto con la unidad
-    const user = await prisma.usuario.findUnique({
+    const user = await usuarioDelegate.findUnique({
       where: { id: userId },
       include: {
         unidad: {
