@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = "edge";
 
 /**
  * Endpoint de fallback para el inicio de sesión en Cloudflare Pages.
- * Las API Routes en /api/* son tratadas como Functions nativas, 
- * evitando el error 405 Method Not Allowed que a veces ocurre con Server Actions.
  */
 export async function POST(req: NextRequest) {
   try {
+    // 1. Detección e inyección de DATABASE_URL desde el contexto de Cloudflare
+    // Esto es crucial para que Prisma encuentre la URL en el worker de Auth.js
+    try {
+      const ctx = getRequestContext();
+      const envUrl = ctx?.env?.DATABASE_URL as string | undefined;
+      if (envUrl) {
+        (globalThis as { DATABASE_URL?: string }).DATABASE_URL = envUrl;
+        process.env.DATABASE_URL = envUrl;
+      }
+    } catch {
+      console.warn("⚠️ No se pudo acceder al context de Cloudflare en /api/auth/login");
+    }
+
     const body = await req.json();
     const { email, password } = body;
 
@@ -19,14 +31,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Llamamos al signIn de Auth.js (servidor)
-    // redirect: false es vital para capturar el resultado sin que lance un error de redirección
     await signIn("credentials", {
       email,
       password,
       redirect: false,
     });
 
-    // Si llegamos aquí sin que se lance un error, la sesión se ha creado (Cookies seteadas)
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -34,7 +44,7 @@ export async function POST(req: NextRequest) {
         case "CredentialsSignin":
           return NextResponse.json({ ok: false, error: "Email o contraseña incorrectos" }, { status: 401 });
         default:
-          return NextResponse.json({ ok: false, error: "Error de autenticación: " + error.message }, { status: 500 });
+          return NextResponse.json({ ok: false, error: "Error de autenticación: " + error.type }, { status: 500 });
       }
     }
 

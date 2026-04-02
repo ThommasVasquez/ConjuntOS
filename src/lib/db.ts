@@ -36,13 +36,12 @@ export function sanitizeUrl(baseUrl: string): string {
  * Busca la cadena de conexión en todas las fuentes posibles del Edge.
  */
 function findConnectionString(): string {
-  const g = globalThis as unknown as { 
-    DATABASE_URL?: string; 
-    env?: { DATABASE_URL?: string } 
-  };
+  const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string } };
+  
+  // 1. Prioridad: Global seteado manualmente (vía inyección en ruta o middleware)
   if (g.DATABASE_URL) return sanitizeUrl(g.DATABASE_URL.trim());
-  if (g.env?.DATABASE_URL) return sanitizeUrl(g.env.DATABASE_URL.trim());
-
+  
+  // 2. Prioridad: Contexto de Cloudflare (RequestContext)
   try {
     const ctx = getRequestContext();
     const env = ctx?.env as { DATABASE_URL?: string };
@@ -51,9 +50,12 @@ function findConnectionString(): string {
     }
   } catch { /* No Request Context */ }
 
+  // 3. Prioridad: process.env (Variable de entorno estándar)
   if (process.env.DATABASE_URL) {
      return sanitizeUrl(process.env.DATABASE_URL.trim());
   }
+  
+  if (g.env?.DATABASE_URL) return sanitizeUrl(g.env.DATABASE_URL.trim());
   
   return "";
 }
