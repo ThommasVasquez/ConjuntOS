@@ -9,26 +9,18 @@ export const runtime = "edge";
  */
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl) return "";
+  const raw = baseUrl.trim();
+  if (!raw.includes(":") || raw.includes("%25")) return raw;
+  
   try {
-    const raw = baseUrl.trim();
-    // Usamos un esquema soportado (http) para parsear sin errores
-    const asHttp = raw.replace(/^(postgres(?:ql)?):\/\//, "http://");
-    const parsed = new URL(asHttp);
-    
-    let password = parsed.password;
-    if (password && !password.includes("%25")) {
-      // Reemplazamos % literal por su versión codificada
-      password = password.replace(/%/g, "%25");
+    // Regex simple para extraer el password y escaparlo
+    const parts = raw.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)(@.+)$/);
+    if (parts) {
+      const [, protocol, user, password, rest] = parts;
+      return `${protocol}${user}:${password.replace(/%/g, "%25")}${rest}`;
     }
-    
-    const protocol = raw.startsWith("postgresql") ? "postgresql://" : "postgres://";
-    const user = parsed.username;
-    const host = parsed.host;
-    const path = parsed.pathname;
-    const search = parsed.search;
-    
-    return `${protocol}${user}:${password}@${host}${path}${search}`;
-  } catch { return baseUrl; }
+  } catch { /* fallback */ }
+  return raw;
 }
 
 /**
@@ -64,14 +56,19 @@ export function getPrismaClient(): PrismaClient {
   // Configuración de Neon Serverless
   neonConfig.useSecureWebSocket = false;
   
-  const pool = new Pool({ 
-    connectionString: url,
-    ssl: { rejectUnauthorized: false }
-  });
+  const pool = new Pool({ connectionString: url });
 
   // @ts-expect-error - PrismaNeon types
   const adapter = new PrismaNeon(pool);
-  const client = new PrismaClient({ adapter });
+  
+  // Fuerza la URL en el datasource para evitar que Prisma la busque en el env
+  const client = new PrismaClient({ 
+    adapter,
+    // @ts-expect-error - Override necessary for Edge runtime stability
+    datasources: {
+      db: { url }
+    }
+  });
 
   globalThis.__prismaInstance = client;
   globalThis.__prismaUrl = url;
