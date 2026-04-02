@@ -6,8 +6,8 @@
  */
 
 import { 
-  ArrowRight, X, CreditCard, Lock, CheckCircle2, 
-  Sparkles, Clock, Users, QrCode, Download, Share2,
+  ArrowRight, X, CreditCard, CheckCircle2, 
+  Sparkles, Clock, Users, QrCode, Download,
   Search, SlidersHorizontal
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
@@ -127,7 +127,7 @@ export default function ReservasPage() {
              <div key={area.id} onClick={() => handleSelectArea(area)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden group cursor-pointer active:scale-[0.98] transition-all border border-white/5 shadow-2xl relative">
                 <div className="relative h-60 w-full overflow-hidden">
                     <Image src={area.image} alt={area.name} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-                   <div className="absolute inset-0 bg-gradient-to-t from-[#0d041a] via-transparent to-transparent opacity-80" />
+                   <div className="absolute inset-0 bg-linear-to-t from-[#0d041a] via-transparent to-transparent opacity-80" />
                    <div className="absolute top-4 right-4 liquid-glass px-4 py-2 rounded-full border border-white/10">
                       <span className="text-white font-bold text-sm">{area.price === 0 ? 'Gratis' : `$${area.price.toLocaleString()}`}</span>
                    </div>

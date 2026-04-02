@@ -8,7 +8,7 @@
 import { 
   Plus, Search, SlidersHorizontal, 
   User as UserIcon, MessageSquare, CreditCard,
-  Building2, Calendar, Megaphone, PlusCircle, MinusCircle, Bookmark, Bell, Info, Code, XCircle, Clock, UserMinus, ShieldAlert, UserX, MoreHorizontal, ExternalLink, ChevronLeft
+  Building2, Calendar, Megaphone, PlusCircle, MinusCircle, Bookmark, Bell, Info, Code, XCircle, ShieldAlert, MoreHorizontal, ExternalLink, ChevronLeft
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -166,7 +166,7 @@ export default function InicioDashboard() {
 
       {/* WALLET HERO */}
       <section className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[120px] shadow-[0_15px_40px_rgba(0,0,0,0.6)] border border-white/10 group cursor-pointer active:scale-95 transition-all">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#4C1D95] via-[#331A4D] to-[#BE185D] opacity-90" />
+        <div className="absolute inset-0 bg-linear-to-br from-[#4C1D95] via-[#331A4D] to-[#BE185D] opacity-90" />
         <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ function PostCard({ post }: { post: FeedItem }) {
     <div className={`fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t border-white/20 transition-all active:scale-[0.98] relative ${isMenuOpen ? 'z-40' : 'z-10'}`}>
       <div className="p-5 flex justify-between items-center relative z-10">
          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center border border-white/10 font-bold text-xs text-white">
+            <div className="w-10 h-10 rounded-full bg-linear-to-tr from-primary to-accent flex items-center justify-center border border-white/10 font-bold text-xs text-white">
                {post.type === 'AD' ? 'AD' : (post.category?.[0] || 'A')}
             </div>
             <div>
@@ -247,7 +247,7 @@ function PostCard({ post }: { post: FeedItem }) {
              <div className="absolute top-10 right-0 w-[280px] liquid-glass rounded-3xl shadow-2xl border border-white/10 overflow-hidden z-100 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex flex-col py-2 max-h-[60vh] overflow-y-auto hide-scrollbar">
                    {menuOptions.map((opt, idx) => (
-                     <button key={idx} onClick={() => { setIsMENUOpen(false); toast.info(opt.label); }} className={`w-full px-5 py-3.5 flex items-start gap-4 hover:bg-white/10 transition-colors text-left group ${opt.border ? 'border-b border-white/10 mb-1 pb-2' : ''} ${opt.color || 'text-white'}`}>
+                     <button key={idx} onClick={() => { setIsMenuOpen(false); toast.info(opt.label); }} className={`w-full px-5 py-3.5 flex items-start gap-4 hover:bg-white/10 transition-colors text-left group ${opt.border ? 'border-b border-white/10 mb-1 pb-2' : ''} ${opt.color || 'text-white'}`}>
                         <div className={`mt-0.5 shrink-0 ${opt.color || 'text-white/70 group-hover:text-white'}`}>{opt.icon}</div>
                         <div className="flex flex-col">
                            <span className="text-sm font-semibold tracking-tight leading-tight">{opt.label}</span>
@@ -267,7 +267,7 @@ function PostCard({ post }: { post: FeedItem }) {
       {post.image && (
          <div className="relative h-56 w-full group overflow-hidden">
             <Image src={post.image} alt={post.title} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-60" />
             {post.type === 'AD' && (
                <div className="absolute bottom-4 right-4 flex gap-2">
                   <button className="bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs px-4 py-2.5 rounded-2xl flex items-center gap-2 hover:bg-white/20 transition-all font-bold">
