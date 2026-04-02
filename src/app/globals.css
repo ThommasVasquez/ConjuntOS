@@ -92,12 +92,12 @@ html, body {
   text-shadow: 0 0 15px var(--color-accent);
 }
 
-/* Sonner Overrides with ABSOLUTE transparency */
+/* Sonner Overrides with ULTRALIQUID transparency */
 .liquid-glass-toast {
   background: transparent !important; /* Transparencia 100% */
-  backdrop-filter: blur(120px) !important;
-  -webkit-backdrop-filter: blur(120px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important; 
+  backdrop-filter: blur(200px) !important;
+  -webkit-backdrop-filter: blur(200px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important; /* Brillo compensado */
   border-radius: 32px !important;
   color: white !important;
   box-shadow: none !important;
