@@ -5,10 +5,11 @@ export const authConfig = {
     signIn: "/login",
   },
   secret: process.env.AUTH_SECRET,
+  trustHost: true,
   callbacks: {
     authorized({ auth, request }) {
-      // 🚀 FIX CRÍTICO 405: Permitir todos los POSTs (Server Actions) 
-      // La seguridad real se valida dentro de la acción usando auth()
+      // Allow POST requests (Server Actions / API) to pass through the middleware
+      // real validation happens inside the handler via auth()
       if (request.method === "POST") return true;
 
       const { nextUrl } = request;
@@ -21,5 +22,5 @@ export const authConfig = {
       return true;
     },
   },
-  providers: [], // Configured in auth.ts
+  providers: [], 
 } satisfies NextAuthConfig;

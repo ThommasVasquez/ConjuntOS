@@ -6,25 +6,31 @@ export const runtime = "edge";
 
 export async function POST(req: Request) {
   try {
+    // Diagnóstico de cookies para depuración en el panel de Cloudflare
     const cookieHeader = req.headers.get("cookie") || "";
     const cookieNames = cookieHeader.split(';').map(c => c.split('=')[0].trim());
-    console.log("🍪 [API-UPDATE] Cookies detectadas:", cookieNames.join(', '));
+    console.log("🍪 [API-UPDATE] Cookies en la petición:", cookieNames.join(', '));
 
-    // Intento de sesión directo
+    // En NextAuth v5, auth() en API routes (Edge) debería detectar la sesión automáticamente
+    // si el secret y trustHost están correctamente configurados.
     const session = await auth();
 
     // 🛡️ FALLBACK: Diagnóstico para fallos de sesión en Edge
     if (!session?.user?.id) {
-       console.warn("⚠️ [API-UPDATE] auth() no detectó sesión. Buscando tokens en cookies...");
-       const hasToken = cookieNames.some(name => name.includes('session-token'));
-       if (hasToken) {
-          console.log("💡 [API-UPDATE] Se encontró cookie de sesión física, pero auth() no lo pudo validar en este nodo Edge.");
-       }
+       console.warn("⚠️ [API-UPDATE] No se detectó sesión activa.");
+       
+       const hasSecureToken = cookieNames.some(name => name.includes('__Secure-next-auth.session-token'));
+       const hasNormalToken = cookieNames.some(name => name.includes('next-auth.session-token'));
        
        return NextResponse.json({ 
          success: false, 
          error: "Unauthorized", 
-         debug: { cookiesPresentes: cookieNames } 
+         debug: { 
+           message: "Session is null. Please re-login.",
+           cookieNames,
+           hasSecureToken,
+           hasNormalToken
+         } 
        }, { status: 401 });
     }
 

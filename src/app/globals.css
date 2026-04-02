@@ -92,29 +92,29 @@ html, body {
   text-shadow: 0 0 15px var(--color-accent);
 }
 
-/* Sonner Overrides for Liquid Glass - HIGH TRANSPARENCY version */
+/* Sonner Overrides with ULTIMATE transparency (80% more than 1%) */
 [data-sonner-toast] {
-  background: rgba(255, 255, 255, 0.04) !important;
-  backdrop-filter: blur(22px) !important;
-  -webkit-backdrop-filter: blur(22px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.002) !important; /* Prácticamente invisible */
+  backdrop-filter: blur(50px) !important;
+  -webkit-backdrop-filter: blur(50px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 20px !important;
   color: white !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-  padding: 16px !important;
+  box-shadow: 0 10px 60px rgba(0, 0, 0, 0.3) !important;
+  padding: 18px !important;
   font-family: inherit !important;
 }
 
 [data-type='success'][data-sonner-toast] {
-  background: rgba(16, 185, 129, 0.08) !important;
-  border-color: rgba(16, 185, 129, 0.25) !important;
-  color: #34d399 !important;
+  background: rgba(16, 185, 129, 0.02) !important;
+  border-color: rgba(16, 185, 129, 0.15) !important;
+  color: #10b981 !important;
 }
 
 [data-type='error'][data-sonner-toast] {
-  background: rgba(239, 68, 68, 0.08) !important;
-  border-color: rgba(239, 68, 68, 0.25) !important;
-  color: #f87171 !important;
+  background: rgba(239, 68, 68, 0.02) !important;
+  border-color: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
 }
 
 [data-sonner-toast] [data-icon] {
