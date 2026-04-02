@@ -35,6 +35,8 @@ interface Inmueble {
   creadoEn: string;
 }
 
+import ProfileHeader from "@/components/shell/ProfileHeader";
+
 export default function InmobiliariaPage() {
   const [inmuebles, setInmuebles] = useState<Inmueble[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,8 +89,10 @@ export default function InmobiliariaPage() {
 
   return (
     <div ref={containerRef} className="min-h-screen pb-32">
-      {/* Header Premium */}
-      <div className="pt-20 pb-10 px-6 relative overflow-hidden bg-linear-to-b from-accent/10 to-transparent">
+      <ProfileHeader className="pt-16 px-6" />
+
+      {/* Header Premium (Adjusted padding) */}
+      <div className="pt-8 pb-10 px-6 relative overflow-hidden bg-linear-to-b from-accent/10 to-transparent">
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="flex items-center gap-3 mb-2 opacity-70">
             <Building2 size={18} className="text-accent" />

@@ -10,6 +10,7 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import ProfileHeader from "@/components/shell/ProfileHeader";
 
 // Define Rol locally to avoid importing Prisma in a Client Component
 enum Rol {
@@ -236,6 +237,7 @@ function ProfileContent() {
 
   return (
     <div ref={containerRef} className="flex flex-col min-h-screen relative overflow-x-hidden pb-32">
+      <ProfileHeader className="pt-16 px-6 relative z-50" showWelcome={false} />
       
       <div className="absolute top-0 left-0 w-full h-[55vh] z-0 cursor-pointer group/hero" onClick={() => document.getElementById('profilePhotoInput')?.click()}>
         {profilePic && (

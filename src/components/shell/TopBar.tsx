@@ -50,7 +50,7 @@ export default function TopBar() {
   }, [pathname]);
 
   const isHome = pathname === "/inicio" || pathname === "/";
-  const isHideTopBar = isHome || pathname === "/reservas" || pathname === "/visitantes" || pathname === "/cartelera";
+  const isHideTopBar = isHome || pathname === "/reservas" || pathname === "/visitantes" || pathname === "/cartelera" || pathname === "/inmobiliaria" || pathname === "/perfil";
 
   return (
     <header className={`fixed top-0 w-full max-w-[430px] z-100 flex items-start justify-between px-6 pt-10 pb-4 bg-gradient-to-b from-[#1a0b2e]/90 to-transparent transition-all duration-500 ${isHideTopBar ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
