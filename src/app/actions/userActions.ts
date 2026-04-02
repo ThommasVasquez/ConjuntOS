@@ -95,8 +95,8 @@ export async function updateUserProfile(userId: string, data: {
       }
     });
 
-    revalidatePath("/perfil");
-    revalidatePath("/inicio");
+    // revalidatePath("/perfil");
+    // revalidatePath("/inicio");
     
     return { success: true, data: updated };
   } catch (error) {
