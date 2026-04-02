@@ -8,9 +8,8 @@
 import { 
   Plus, QrCode, Clock, Calendar, CheckCircle2, 
   Share2, MoreHorizontal, UserPlus, 
-  ShieldCheck, XCircle, ArrowRight, Download, User
+  ShieldCheck, ArrowRight, Download, User
 } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
