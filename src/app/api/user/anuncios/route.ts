@@ -63,8 +63,9 @@ export async function GET() {
       }
 
       return NextResponse.json({ success: true, data: anuncios });
-    } catch (prismaErr) {
-      console.warn("⚠️ [API-ANUNCIOS]: Prisma falló, intentando SQL Directo...", prismaErr);
+    } catch (prismaErr: unknown) {
+      const pErr = prismaErr as { message?: string };
+      console.warn("⚠️ [API-ANUNCIOS]: Prisma falló, intentando SQL Directo...", pErr.message);
     }
 
     // 3. SQL DIRECTO (Salvavidas - Capa 2)

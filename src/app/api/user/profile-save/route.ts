@@ -30,8 +30,9 @@ export async function POST(req: Request) {
         }
       });
       return NextResponse.json({ success: true, data: updated });
-    } catch (prismaErr: any) {
-      console.warn("⚠️ [API-PROFILE-SAVE-PRISMA-FALLING]: Intentando SQL Directo...", prismaErr.message);
+    } catch (prismaErr: unknown) {
+      const pErr = prismaErr as { message?: string };
+      console.warn("⚠️ [API-PROFILE-SAVE-PRISMA-FALLING]: Intentando SQL Directo...", pErr.message);
       
       const { Pool } = await import("@neondatabase/serverless");
       const { discoverUrl } = await import("@/lib/db");
@@ -46,12 +47,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, method: "SQL_DIRECTO" });
     }
 
-  } catch (error: any) {
-    console.error("❌ [API-PROFILE-SAVE-FATAL]:", error);
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    console.error("❌ [API-PROFILE-SAVE-FATAL]:", err);
     return NextResponse.json({ 
       success: false, 
       error: "FALLO_TOTAL",
-      details: error.message 
+      details: err.message 
     }, { status: 500 });
   }
 }

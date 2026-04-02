@@ -25,8 +25,9 @@ export async function GET() {
       if (user) {
         return NextResponse.json({ success: true, data: user });
       }
-    } catch (prismaErr) {
-      console.warn("⚠️ [API-PROFILE-GET]: Prisma falló, intentando SQL Directo...", prismaErr);
+    } catch (prismaErr: unknown) {
+      const pErr = prismaErr as { message?: string };
+      console.warn("⚠️ [API-PROFILE-GET]: Prisma falló, intentando SQL Directo...", pErr.message);
     }
 
     // INTENTO DE SQL DIRECTO (Salvavidas máximo - Capa 2)
