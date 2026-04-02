@@ -44,7 +44,7 @@ export default function ReservasPage() {
       name: "Piscina Infinity",
       desc: "Disfruta de una tarde relajante con vista panorámica y agua climatizada.",
       price: 15000,
-      image: "/images/pool.png",
+      image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=1000",
       icon: <Sparkles size={18} />,
       capacity: 10,
       tags: ["Climatizada", "Vistas"]
@@ -54,7 +54,7 @@ export default function ReservasPage() {
       name: "Gym Premium",
       desc: "Equipamiento de última generación para tu rutina diaria de entrenamiento.",
       price: 0,
-      image: "/images/gym.png",
+      image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=1000",
       icon: <Users size={18} />,
       capacity: 15,
       tags: ["24/7", "Máquinas Pro"]
@@ -64,7 +64,7 @@ export default function ReservasPage() {
       name: "Salón Comunal Deluxe",
       desc: "El lugar perfecto para tus eventos especiales y reuniones importantes.",
       price: 80000,
-      image: "/images/hall.png",
+      image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=1000",
       icon: <MapPin size={18} />,
       capacity: 50,
       tags: ["Audio Pro", "Cocina"]
@@ -250,8 +250,8 @@ export default function ReservasPage() {
                onClick={() => handleSelectArea(area)}
                className="fade-up liquid-glass-card rounded-[32px] overflow-hidden group cursor-pointer active:scale-[0.98] transition-all border border-white/5 shadow-2xl relative"
              >
-                <div className="relative h-60 w-full">
-                    <Image src={area.image} alt={area.name} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <div className="relative h-60 w-full overflow-hidden">
+                    <Image src={area.image} alt={area.name} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
                    <div className="absolute inset-0 bg-linear-to-t from-[#0d041a] via-transparent to-transparent opacity-80" />
                    
                    {/* Badge Precio */}
@@ -295,9 +295,9 @@ export default function ReservasPage() {
 
       {/* MODAL BOOKING (Simulated inside same page for fluidity) */}
       {step === 'BOOKING' && selectedArea && (
-        <section className="fade-up fixed inset-0 z-[200] flex flex-col justify-end">
-           <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setStep('GRID')} />
-           <div className="liquid-glass rounded-t-[40px] p-8 pb-32 w-full max-w-[430px] mx-auto relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] border-t border-white/20 animate-in slide-in-from-bottom-full duration-500 overflow-y-auto max-h-[90vh] hide-scrollbar">
+        <section className="fade-up fixed inset-0 z-[1000] flex flex-col justify-end">
+           <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setStep('GRID')} />
+           <div className="liquid-glass rounded-t-[40px] p-8 pb-40 w-full max-w-[430px] mx-auto relative z-10 shadow-[0_-20px_60px_rgba(0,0,0,0.8)] border-t border-white/20 animate-in slide-in-from-bottom-full duration-500 overflow-y-auto max-h-[95vh] hide-scrollbar">
               <div className="flex justify-between items-center mb-8">
                  <h3 className="text-2xl font-display font-medium text-white tracking-tight">Tu Reserva</h3>
                  <button onClick={() => setStep('GRID')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all">
@@ -306,8 +306,8 @@ export default function ReservasPage() {
               </div>
 
               <div className="flex gap-6 items-center mb-8 p-4 rounded-3xl bg-white/5 border border-white/5">
-                 <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shrink-0">
-                     <Image src={selectedArea.image} alt={selectedArea.name} fill className="w-full h-full object-cover" />
+                 <div className="relative w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shrink-0">
+                     <Image src={selectedArea.image} alt={selectedArea.name} fill className="w-full h-full object-cover" unoptimized />
                  </div>
                  <div>
                     <h4 className="text-white font-bold text-lg mb-1">{selectedArea.name}</h4>
