@@ -11,11 +11,10 @@ import {
   ArrowRight, X, Download, Share2, CheckCircle2
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { useRouter } from "next/navigation";
-import { getAnuncios, seedInitialAnuncios } from "@/app/actions/anuncioActions";
-import { getUserProfile } from "@/app/actions/userActions";
 import { Loader2 } from "lucide-react";
 import { Anuncio } from "@prisma/client";
 
@@ -33,9 +32,11 @@ interface Notice {
 
 export default function CarteleraPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [profilePic, setProfilePic] = useState("/images/avatar-placeholder.png");
-  const [userData, setUserData] = useState({ name: "Residente", gender: "femenino", conjuntoId: "" });
+  const [profilePic, setProfilePic] = useState<string>("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000");
+  const [userData, setUserData] = useState({ name: "Cargando...", gender: "femenino", conjuntoId: "" });
   const [selectedCategory, setSelectedCategory] = useState<string>('TODOS');
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -53,41 +54,61 @@ export default function CarteleraPage() {
 
   useEffect(() => {
     async function initData() {
-      // 1. Get fundamental user data
-      const userRes = await getUserProfile("current-user");
-      let cid = "";
-      
-      if (userRes.success && userRes.data) {
-        cid = userRes.data.conjuntoId;
-        setUserData({ 
-          name: userRes.data.nombre, 
-          gender: userRes.data.genero || "femenino",
-          conjuntoId: cid
-        });
-        if (userRes.data.avatar) setProfilePic(userRes.data.avatar);
-      } else {
-        const savedData = localStorage.getItem("conjunto_app_profile_data");
-        if (savedData) {
-          const parsed = JSON.parse(savedData);
-          setUserData(prev => ({ ...prev, ...parsed }));
-        }
-      }
-
-      const savedStory = localStorage.getItem("conjunto_app_user_story");
-      if (savedStory) {
-         const storyData = JSON.parse(savedStory);
-         const now = new Date().getTime();
-         if (now < storyData.expiresAt) setHasStory(true);
-      }
-
-      // 2. Load announcements from DB
-      if (cid) {
-        // Seed if empty (just for demo/thommy)
-        await seedInitialAnuncios(cid);
+      try {
+        // 1. Get fundamental user data via REST
+        const profileFetch = await fetch("/api/user/profile");
+        const profileRes = await profileFetch.json();
         
-        const res = await getAnuncios(cid);
-        if (res.success && res.data) {
-          const mapped: Notice[] = res.data.map((a: Anuncio) => ({
+        let cid = "";
+        
+        if (profileRes.success && profileRes.data) {
+          const u = profileRes.data;
+          cid = u.conjuntoId;
+          const mappedUser = { 
+            name: u.nombre, 
+            gender: u.genero || "femenino",
+            conjuntoId: cid
+          };
+          setUserData(mappedUser);
+          if (u.avatar) setProfilePic(u.avatar);
+
+          // Persistence (Isolated)
+          if (userId) {
+            localStorage.setItem(`conjunto_app_profile_data_${userId}`, JSON.stringify(mappedUser));
+            if (u.avatar) localStorage.setItem(`conjunto_app_profile_pic_${userId}`, u.avatar);
+          }
+        } else {
+          // Fallback (Isolated)
+          if (userId) {
+            const savedData = localStorage.getItem(`conjunto_app_profile_data_${userId}`);
+            if (savedData) {
+              const parsed = JSON.parse(savedData);
+              setUserData(prev => ({ ...prev, ...parsed }));
+            }
+            const savedPic = localStorage.getItem(`conjunto_app_profile_pic_${userId}`);
+            if (savedPic) setProfilePic(savedPic);
+          }
+        }
+
+        // Story Logic
+        if (userId) {
+          const savedStory = localStorage.getItem(`conjunto_app_active_story_${userId}`);
+          if (savedStory) {
+            const { createdAt } = JSON.parse(savedStory);
+            if (Date.now() - createdAt < 24 * 60 * 60 * 1000) {
+              setHasStory(true);
+            } else {
+              localStorage.removeItem(`conjunto_app_active_story_${userId}`);
+            }
+          }
+        }
+
+        // 2. Load announcements from DB via REST
+        const anunciosFetch = await fetch("/api/user/anuncios");
+        const anunciosRes = await anunciosFetch.json();
+
+        if (anunciosRes.success && anunciosRes.data) {
+          const mapped: Notice[] = anunciosRes.data.map((a: Anuncio) => ({
             id: a.id,
             title: a.titulo,
             content: a.contenido,
@@ -100,11 +121,16 @@ export default function CarteleraPage() {
           }));
           setNotices(mapped);
         }
+      } catch (error) {
+        console.error("❌ Error initializing Cartelera:", error);
+      } finally {
+        setIsLoadingNotices(false);
       }
-      setIsLoadingNotices(false);
     }
 
-    initData();
+    if (session) {
+      initData();
+    }
     
     // Ambient UI logic
     const handleClickOutside = (event: MouseEvent) => {
@@ -127,8 +153,11 @@ export default function CarteleraPage() {
       );
     }, containerRef);
 
-    return () => ctx.revert();
-  }, []);
+    return () => {
+      ctx.revert();
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [session, userId]);
 
   const filteredNotices = selectedCategory === 'TODOS' 
     ? notices 
@@ -164,7 +193,15 @@ export default function CarteleraPage() {
         <div className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform" onClick={() => router.push('/perfil')}>
            <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5'}`}>
               <div className="w-full h-full rounded-full overflow-hidden border border-white/10 shadow-2xl relative z-10">
-                 <Image src={profilePic} alt="Profile" width={56} height={56} className="w-full h-full object-cover" unoptimized />
+                 <Image 
+                   key={profilePic}
+                   src={profilePic} 
+                   alt="Profile" 
+                   width={56} 
+                   height={56} 
+                   className="w-full h-full object-cover" 
+                   unoptimized 
+                 />
               </div>
               {hasStory && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[#0d041a] z-20 flex items-center justify-center">
