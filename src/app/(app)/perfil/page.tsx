@@ -121,7 +121,12 @@ function ProfileContent() {
   };
 
   const handleSaveProfile = async () => {
+    // 🚀 FIX: Limpiar la URL antes del POST para evitar el 405 por parámetros de query
+    window.history.replaceState(null, '', '/perfil');
+    
+    // Sincronizar el estado de la UI
     setUserData(editForm);
+
     const res = await updateUserProfile("current-user", {
       name: editForm.name,
       phone: editForm.phone,
@@ -136,8 +141,6 @@ function ProfileContent() {
     } else {
       toast.error("Error al sincronizar con la nube");
     }
-    
-    router.push('/perfil');
   };
 
   const handleLogout = async () => {

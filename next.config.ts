@@ -4,7 +4,8 @@ const nextConfig: NextConfig = {
   transpilePackages: ["gsap"],
   experimental: {
     serverActions: {
-      allowedOrigins: ["en-conjunto.pages.dev", "localhost:3000"],
+      allowedOrigins: ["https://en-conjunto.pages.dev", "en-conjunto.pages.dev", "localhost:3000"],
+      bodySizeLimit: "10mb",
     },
   },
 };
