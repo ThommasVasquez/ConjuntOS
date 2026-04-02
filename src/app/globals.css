@@ -110,17 +110,17 @@ html, body {
 }
 
 [data-type='success'].liquid-glass-toast {
-  background: rgba(16, 185, 129, 0.08) !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
   color: #10b981 !important;
-  box-shadow: 0 0 40px rgba(16, 185, 129, 0.15) !important; /* Glow Verde */
+  box-shadow: 0 0 60px rgba(16, 185, 129, 0.3) !important; /* Glow Verde Intensificado */
 }
 
 [data-type='error'].liquid-glass-toast {
-  background: rgba(239, 68, 68, 0.08) !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
   color: #ef4444 !important;
-  box-shadow: 0 0 40px rgba(239, 68, 68, 0.15) !important; /* Glow Rojo */
+  box-shadow: 0 0 60px rgba(239, 68, 68, 0.3) !important; /* Glow Rojo Intensificado */
 }
 
 [data-sonner-toast] [data-icon] {

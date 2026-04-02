@@ -178,9 +178,17 @@ function ProfileContent() {
         
         window.history.replaceState(null, '', '/perfil');
       } else {
-        toast.error(`Error: ${res.error || "Falla desconocida"}`, {
-          description: res.details || "Consulta los logs del servidor para más información."
-        });
+        // Manejo específico del error de configuración en Cloudflare
+        if (res.error === "CONFIG_ERROR: DATABASE_URL_MISSING") {
+          toast.error("⚠️ Error de Configuración", {
+            description: "No se encontró DATABASE_URL en Cloudflare. Por favor, agrégala en el panel de Cloudflare Pages (Settings > Environment variables).",
+            duration: 10000
+          });
+        } else {
+          toast.error(`Error: ${res.error || "Falla desconocida"}`, {
+            description: res.details || "Consulta los logs del servidor para más información."
+          });
+        }
       }
     } catch (e) {
       console.error("Error updating profile via REST API:", e);
