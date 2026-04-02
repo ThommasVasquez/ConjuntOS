@@ -28,7 +28,7 @@ export async function GET() {
 
     // SI EL USUARIO NO TIENE UNIDAD, LE ASIGNAMOS UNA (CAPA DE ROBUSTEZ)
     let unitId = user.unidadId;
-    let conjuntoId = user.conjuntoId;
+    const conjuntoId = user.conjuntoId;
 
     if (!unitId) {
        console.log("⚠️ Usuario sin unidad. Buscando unidad disponible...");
