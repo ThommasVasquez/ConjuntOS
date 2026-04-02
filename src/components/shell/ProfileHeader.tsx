@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { Bell, CheckCircle2, Package, AlertTriangle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface ProfileHeaderProps {
   className?: string;
@@ -14,6 +14,8 @@ interface ProfileHeaderProps {
 export default function ProfileHeader({ className = "", showWelcome = true }: ProfileHeaderProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+  const isProfilePage = pathname === "/perfil";
   const userId = session?.user?.id;
   const notificationsRef = useRef<HTMLDivElement>(null);
   
@@ -77,8 +79,8 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   return (
     <header className={`flex justify-between items-center relative z-50 ${className}`}>
       <div 
-        onClick={() => router.push("/perfil")}
-        className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform"
+        onClick={() => !isProfilePage && router.push("/perfil")}
+        className={`flex items-center gap-4 transition-transform ${isProfilePage ? 'cursor-default transition-none' : 'group cursor-pointer active:scale-95'}`}
       >
         <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5'}`}>
           <div className="w-full h-full rounded-full overflow-hidden relative shadow-xl backdrop-blur-xl">
