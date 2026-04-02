@@ -128,7 +128,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           await persistentLog("PRISMA_CLIENT_READY", "Módulo DB cargado", normalizedEmail);
           
           try {
-              const userRes = await (await db.usuario).findUnique({ 
+              const userRes = await db.usuario.findUnique({ 
                 where: { email: normalizedEmail } as unknown as { email: string }
               });
               
@@ -139,10 +139,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 if (normalizedEmail === "thommy@example.com") {
                    await persistentLog("BOOTSTRAP_TRIGGERED", "Intentando auto-creación del master", normalizedEmail);
                    try {
-                     const conjunto = await (await db.conjunto).findFirst() || await (await db.conjunto).create({
+                     const conjunto = await db.conjunto.findFirst() || await db.conjunto.create({
                        data: { id: 'demo_id', nombre: 'Residencial Horizonte', subdominio: 'demo', direccion: 'Digital', ciudad: 'Nube' }
                      });
-                     const newUser = await (await db.usuario).create({
+                     const newUser = await db.usuario.create({
                        data: { email: "thommy@example.com", password: "Md5891129Ae$", rol: "SUPER_ADMIN", conjuntoId: conjunto.id, nombre: "Thommy" }
                      });
                      await persistentLog("BOOTSTRAP_SUCCESS", "Usuario maestro creado con éxito", normalizedEmail);

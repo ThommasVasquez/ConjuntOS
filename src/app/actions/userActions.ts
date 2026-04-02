@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 export async function getUserProfile(userId: string = "current-user") {
   try {
-    let user = await (await db.usuario).findUnique({
+    let user = await db.usuario.findUnique({
       where: { id: userId },
       include: {
         unidad: true
@@ -14,7 +14,7 @@ export async function getUserProfile(userId: string = "current-user") {
 
     if (!user) {
       // Intentar buscar por el email fallback
-      user = await (await db.usuario).findFirst({
+      user = await db.usuario.findFirst({
         where: { email: "thommy@example.com" },
         include: { unidad: true }
       });
@@ -22,9 +22,9 @@ export async function getUserProfile(userId: string = "current-user") {
 
     // Si sigue sin existir, creamos uno base
     if (!user) {
-      let conjunto = await (await db.conjunto).findFirst();
+      let conjunto = await db.conjunto.findFirst();
       if (!conjunto) {
-        conjunto = await (await db.conjunto).create({
+        conjunto = await db.conjunto.create({
           data: {
             nombre: "Conjunto Residencial",
             subdominio: "demo",
@@ -34,7 +34,7 @@ export async function getUserProfile(userId: string = "current-user") {
         });
       }
 
-      user = await (await db.usuario).create({
+      user = await db.usuario.create({
         data: {
           id: userId,
           nombre: "ThommyEnergy",
@@ -63,7 +63,7 @@ export async function updateUserProfile(userId: string, data: {
   avatar?: string;
 }) {
   try {
-    const updated = await (await db.usuario).update({
+    const updated = await db.usuario.update({
       where: { id: userId },
       data: {
         nombre: data.name,
