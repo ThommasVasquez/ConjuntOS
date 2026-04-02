@@ -32,6 +32,7 @@ export default function TopBar() {
     if (path.includes("reservas")) return "Reservas";
     if (path.includes("pagos")) return "Pagos";
     if (path.includes("cartelera")) return "Cartelera";
+    if (path.includes("inmobiliaria")) return "Inmobiliaria";
     if (path.includes("perfil")) return "Mi Perfil";
     return "Bienvenido";
   };

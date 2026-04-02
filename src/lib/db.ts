@@ -130,6 +130,7 @@ const db = {
   get solicitudServicio() { return getPrismaClient().then(c => c.solicitudServicio); },
   get reciboPublico() { return getPrismaClient().then(c => c.reciboPublico); },
   get adSpace() { return getPrismaClient().then(c => c.adSpace); },
+  get inmueble() { return getPrismaClient().then(c => (c as any).inmueble); },
   
   $queryRaw: (query: unknown) => getPrismaClient().then(c => c.$queryRawUnsafe(query as string)),
   $executeRaw: (query: unknown) => getPrismaClient().then(c => c.$executeRawUnsafe(query as string)),

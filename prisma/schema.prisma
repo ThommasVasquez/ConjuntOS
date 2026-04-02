@@ -138,6 +138,7 @@ model Conjunto {
   recibosPublicos ReciboPublico[]
   adSpaces        AdSpace[]
   pedidos         Pedido[]
+  inmuebles       Inmueble[]
 }
 
 model Usuario {
@@ -160,6 +161,7 @@ model Usuario {
   pagos       Pago[]
   pedidos     Pedido[]
   solicitudes SolicitudServicio[]
+  inmuebles   Inmueble[]
 }
 
 model Unidad {
@@ -370,4 +372,37 @@ model AdSpace {
   finEn       DateTime
   impresiones Int      @default(0)
   clics       Int      @default(0)
+}
+enum TipoNegocio {
+  VENTA
+  ALQUILER
+}
+
+enum EstadoInmueble {
+  DISPONIBLE
+  VENDIDO
+  ALQUILADO
+  OCULTO
+}
+
+model Inmueble {
+  id            String         @id @default(cuid())
+  conjuntoId    String
+  conjunto      Conjunto       @relation(fields: [conjuntoId], references: [id])
+  usuarioId     String
+  usuario       Usuario        @relation(fields: [usuarioId], references: [id])
+  titulo        String
+  descripcion   String
+  precio        Decimal
+  tipoNegocio   TipoNegocio
+  tipoUnidad    TipoUnidad
+  habitaciones  Int            @default(0)
+  banos         Int            @default(0)
+  area          Decimal?
+  imagenes      String         @default("[]")
+  caracteristicas String?      @default("[]")
+  estado        EstadoInmueble @default(DISPONIBLE)
+  destacado     Boolean        @default(false)
+  creadoEn      DateTime       @default(now())
+  actualizadoEn DateTime       @updatedAt
 }

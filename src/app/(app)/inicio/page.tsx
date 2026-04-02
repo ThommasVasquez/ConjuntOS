@@ -9,7 +9,8 @@ import {
   Plus, Search, MoreHorizontal, ChevronLeft, Bell, ExternalLink, Calendar, 
   Megaphone, PlusCircle, MinusCircle, Bookmark, Info, Code, XCircle, 
   Clock, UserMinus, ShieldAlert, UserX, SlidersHorizontal, 
-  User as UserIcon, MessageSquare, CreditCard, Package, CheckCircle2, AlertTriangle
+  User as UserIcon, MessageSquare, CreditCard, Package, CheckCircle2, AlertTriangle,
+  Building2
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
@@ -125,11 +126,11 @@ export default function InicioDashboard() {
 
   const categories = [
     { title: "Reservas", icon: <Calendar size={20}/>, color: "from-blue-500 to-cyan-400", path: "/reservas" },
+    { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-amber-500 to-orange-400", path: "/inmobiliaria" },
     { title: "Visitantes", icon: <UserIcon size={20}/>, color: "from-purple-500 to-pink-500", path: "/visitantes" },
     { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-red-500 to-orange-500", path: "/cartelera" },
     { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-orange-500 to-yellow-500", path: "/pqrs" },
     { title: "Mercadito", icon: <Plus size={20}/>, color: "from-green-500 to-emerald-500", path: "/mercadito" },
-    { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-indigo-500 to-purple-500", path: "/perfil" },
   ];
 
   const notifications: Notification[] = [
