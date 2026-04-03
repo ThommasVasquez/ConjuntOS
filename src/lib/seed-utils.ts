@@ -50,6 +50,7 @@ export async function autoSeedUserPagos(userId: string) {
     ];
 
     for (const data of seedData) {
+      console.log(`📝 Creando pago: ${data.concepto}...`);
       await (pagoDelegate as unknown as { create: (args: { data: unknown }) => Promise<unknown> }).create({
         data: {
           conjuntoId: user.conjuntoId,
@@ -60,9 +61,10 @@ export async function autoSeedUserPagos(userId: string) {
       });
     }
 
+    console.log("🏁 Auto-seeding finalizado con éxito.");
     return true;
-  } catch (error) {
-    console.error("❌ Error in autoSeedUserPagos:", error);
+  } catch (error: any) {
+    console.error("❌ ERROR CRÍTICO en autoSeedUserPagos:", error.message || error);
     return false;
   }
 }
