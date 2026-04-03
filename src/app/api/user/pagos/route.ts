@@ -44,39 +44,6 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // AUTO-SEED: Si no tiene pagos, sembramos historial de ejemplo automáticamente
-    if (user.pagos.length === 0) {
-      console.log(`✨ Inicia Auto-seeding para usuario: ${userId}`);
-      const seedResult = await autoSeedUserPagos(userId);
-      console.log(`📡 Resultado Auto-seeding: ${seedResult ? 'EXITO' : 'FALLO'}`);
-      
-      if (!seedResult) {
-        console.warn("⚠️ No se pudo sembrar el historial. Procediendo con datos vacíos.");
-      }
-
-      // Volver a obtener el usuario actualizado con la unidad y los nuevos pagos
-      const updatedUser = await usuarioDelegate.findUnique({
-        where: { id: userId },
-        include: { unidad: true, pagos: { orderBy: { creadoEn: 'desc' } } }
-      });
-      
-      if (updatedUser) {
-        console.log(`✅ Usuario actualizado obtenido. Pagos: ${updatedUser.pagos.length}`);
-        const updatedDebt = (updatedUser.pagos as unknown as PagoRecord[])
-          .filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
-          .reduce((acc, p) => acc + Number(p.monto), 0);
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            unidad: updatedUser.unidad,
-            pagos: updatedUser.pagos,
-            totalDebt: updatedDebt
-          }
-        });
-      }
-    }
-
     const debt = (user.pagos as unknown as PagoRecord[])
       .filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
       .reduce((acc, p) => acc + Number(p.monto), 0);
