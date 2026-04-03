@@ -1,13 +1,22 @@
 import { Pool } from "@neondatabase/serverless";
+import { config } from "dotenv";
+import { resolve } from "path";
 
-const connectionString = "postgresql://postgres.zudntuczwfhmyqgzcvrc:Md5891129Ae%23%241129@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
+// Cargar .env desde la raíz
+config({ path: resolve(process.cwd(), ".env") });
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  console.error("❌ ERROR: DATABASE_URL no encontrada en el .env");
+  process.exit(1);
+}
 
 async function run() {
+  console.log("🔗 Conectando a:", connectionString.split("@")[1]); // No mostrar pass
   const pool = new Pool({ connectionString });
   
   try {
-    console.log("🔗 Conectando...");
-    
     // 1. Buscar al usuario Thommy
     const userRes = await pool.query('SELECT id, "conjuntoId" FROM "Usuario" WHERE nombre ILIKE \'%Thommy%\' LIMIT 1');
     const user = userRes.rows[0];
@@ -39,7 +48,6 @@ async function run() {
     // 4. Limpiar y sembrar pagos
     await pool.query('DELETE FROM "Pago" WHERE "usuarioId" = $1', [user.id]);
     
-    const basePayment = { conjuntoId: user.conjuntoId, unidadId: unit.id, usuarioId: user.id };
     const payments = [
       ["Administración Marzo 2026", 250000, "PENDIENTE", "2026-03-31 23:59:59"],
       ["Energía Eléctrica Feb 2026", 88500, "PAGADO", "2026-02-15 23:59:59"],
@@ -54,7 +62,7 @@ async function run() {
     for (const [concepto, monto, estado, fecha] of payments) {
       await pool.query(
         'INSERT INTO "Pago" (id, "conjuntoId", "unidadId", "usuarioId", concepto, monto, estado, "fechaVencimiento", "creadoEn") VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, NOW())',
-        [basePayment.conjuntoId, basePayment.unidadId, basePayment.usuarioId, concepto, monto, estado, fecha]
+        [user.conjuntoId, unit.id, user.id, concepto, monto, estado, fecha]
       );
     }
 

@@ -53,14 +53,17 @@ export async function discoverUrl(): Promise<string> {
     } catch { /* Ignorar */ }
   }
 
-  // 3. Otros fallbacks globales e Inyección Directa (Salvavidas)
-  if (!url) {
-    url = g.DATABASE_URL || g.env?.DATABASE_URL || "postgresql://postgres.zudntuczwfhmyqgzcvrc:Md5891129Ae$@aws-1-us-east-1.pooler.supabase.com:6543/postgres";
+  // 3. Otros fallbacks globales e Inyección Directa (Salvavidas Final)
+  if (!url || url === "undefined") {
+    console.warn("⚠️ DATABASE_URL no detectada en entorno. Usando fallback de emergencia.");
+    url = g.DATABASE_URL || g.env?.DATABASE_URL || "postgresql://postgres.zudntuczwfhmyqgzcvrc:Md5891129Ae%23%241129@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
   }
 
   const sanitized = sanitizeUrl(url);
   if (sanitized) {
     g.__DATABASE_URL_CACHE__ = sanitized;
+    const masked = sanitized.replace(/:([^@]+)@/, ":****@");
+    console.log(`📡 DB_URL Configurada: ${masked.substring(0, 50)}...`);
   }
   
   return sanitized;
