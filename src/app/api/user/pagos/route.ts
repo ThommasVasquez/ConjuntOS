@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { auth } from "@/auth";
+import { autoSeedUserPagos } from "@/lib/seed-utils";
 
 export const runtime = 'edge';
 
@@ -41,6 +42,33 @@ export async function GET() {
 
     if (!user) {
       return NextResponse.json({ success: false, error: "Usuario no encontrado" }, { status: 404 });
+    }
+
+    // AUTO-SEED: Si no tiene pagos, sembramos historial de ejemplo automáticamente
+    if (user.pagos.length === 0) {
+      console.log(`✨ Auto-seeding pagos for user: ${userId}`);
+      await autoSeedUserPagos(userId);
+      
+      // Volver a obtener el usuario actualizado con la unidad y los nuevos pagos
+      const updatedUser = await usuarioDelegate.findUnique({
+        where: { id: userId },
+        include: { unidad: true, pagos: { orderBy: { creadoEn: 'desc' } } }
+      });
+      
+      if (updatedUser) {
+        const updatedDebt = (updatedUser.pagos as unknown as PagoRecord[])
+          .filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
+          .reduce((acc, p) => acc + Number(p.monto), 0);
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            unidad: updatedUser.unidad,
+            pagos: updatedUser.pagos,
+            totalDebt: updatedDebt
+          }
+        });
+      }
     }
 
     const debt = (user.pagos as unknown as PagoRecord[])
