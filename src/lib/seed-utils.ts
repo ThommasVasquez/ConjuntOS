@@ -50,7 +50,7 @@ export async function autoSeedUserPagos(userId: string) {
     ];
 
     for (const data of seedData) {
-      await (pagoDelegate as any).create({
+      await (pagoDelegate as unknown as { create: (args: { data: unknown }) => Promise<unknown> }).create({
         data: {
           conjuntoId: user.conjuntoId,
           unidadId: unitId,
