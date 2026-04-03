@@ -78,71 +78,34 @@ export function setConnectionString(url: string) {
 
 
 /**
- * Singleton de Prisma para el Edge (Asíncrono y Robusto).
+ * Singleton de Prisma para el Edge.
  */
-export async function getPrismaClient(): Promise<PrismaClient> {
+let prisma: PrismaClient | null = null;
+
+export async function getPrisma() {
+  if (prisma) return prisma;
+
   const url = await discoverUrl();
-  
-  if (!url || url === "undefined") {
-    const err = "CRITICAL: DATABASE_URL_NOT_FOUND_IN_EDGE_CONTEXT";
-    globalThis.__prismaError = err;
-    throw new Error(err);
-  }
+  if (!url) throw new Error("DATABASE_URL_NOT_FOUND");
 
-  if (globalThis.__prismaInstance && globalThis.__prismaUrl === url) {
-    return globalThis.__prismaInstance;
-  }
-
-  // Configuración de Neon Serverless (SSL y WebSocket Seguro para Producción)
   neonConfig.useSecureWebSocket = true;
-  
-  const pool = new Pool({ 
-    connectionString: url,
-    ssl: { rejectUnauthorized: false }
-  });
-
-  // @ts-expect-error - PrismaNeon types
+  const pool = new Pool({ connectionString: url });
+  // @ts-expect-error - Incompatibilidad de tipos entre versiones de Neon Serverless y PrismaNeon
   const adapter = new PrismaNeon(pool);
-  const client = new PrismaClient({ adapter });
-
-  globalThis.__prismaInstance = client;
-  globalThis.__prismaUrl = url;
-
-  return client;
-}
-
-declare global {
-  /* eslint-disable no-var */
-  var __prismaInstance: PrismaClient | undefined;
-  var __prismaUrl: string | undefined;
-  var __prismaError: string | undefined;
-}
-
-// Mapeo de modelos basado en schema.prisma (Vuelven a ser asíncronos para seguridad total)
-const db = {
-  get conjunto() { return getPrismaClient().then(c => c.conjunto); },
-  get usuario() { return getPrismaClient().then(c => c.usuario); },
-  get unidad() { return getPrismaClient().then(c => c.unidad); },
-  get areaComun() { return getPrismaClient().then(c => c.areaComun); },
-  get reserva() { return getPrismaClient().then(c => c.reserva); },
-  get anuncio() { return getPrismaClient().then(c => c.anuncio); },
-  get documento() { return getPrismaClient().then(c => c.documento); },
-  get junta() { return getPrismaClient().then(c => c.junta); },
-  get pago() { return getPrismaClient().then(c => c.pago); },
-  get gasto() { return getPrismaClient().then(c => c.gasto); },
-  get local() { return getPrismaClient().then(c => c.local); },
-  get producto() { return getPrismaClient().then(c => c.producto); },
-  get pedido() { return getPrismaClient().then(c => c.pedido); },
-  get solicitudServicio() { return getPrismaClient().then(c => c.solicitudServicio); },
-  get reciboPublico() { return getPrismaClient().then(c => c.reciboPublico); },
-  get adSpace() { return getPrismaClient().then(c => c.adSpace); },
-  get inmueble() { return getPrismaClient().then(c => (c as unknown as { inmueble: unknown }).inmueble); },
+  prisma = new PrismaClient({ adapter });
   
-  $queryRaw: (query: unknown) => getPrismaClient().then(c => c.$queryRawUnsafe(query as string)),
-  $executeRaw: (query: unknown) => getPrismaClient().then(c => c.$executeRawUnsafe(query as string)),
-  $connect: () => getPrismaClient().then(c => c.$connect()),
-  $disconnect: () => getPrismaClient().then(c => c.$disconnect()),
-  setConnectionString,
+  return prisma;
+}
+
+// Exportamos un objeto que resuelve los modelos de forma asíncrona
+const db = {
+  get usuario() { return getPrisma().then(p => p.usuario); },
+  get pago() { return getPrisma().then(p => p.pago); },
+  get conjunto() { return getPrisma().then(p => p.conjunto); },
+  get unidad() { return getPrisma().then(p => p.unidad); },
+  get pqrs() { return getPrisma().then(p => (p as unknown as { pQRS: unknown }).pQRS); },
+  $connect: () => getPrisma().then(p => p.$connect()),
+  $disconnect: () => getPrisma().then(p => p.$disconnect()),
 };
 
 export default db;
