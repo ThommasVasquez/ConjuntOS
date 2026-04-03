@@ -97,15 +97,31 @@ export async function getPrisma() {
   return prisma;
 }
 
-// Exportamos un objeto que resuelve los modelos de forma asíncrona
+// Exportamos un objeto que resuelve los modelos de forma asíncrona (Singleton de acceso)
 const db = {
   get usuario() { return getPrisma().then(p => p.usuario); },
   get pago() { return getPrisma().then(p => p.pago); },
   get conjunto() { return getPrisma().then(p => p.conjunto); },
   get unidad() { return getPrisma().then(p => p.unidad); },
+  get anuncio() { return getPrisma().then(p => p.anuncio); },
+  get areaComun() { return getPrisma().then(p => p.areaComun); },
+  get reserva() { return getPrisma().then(p => p.reserva); },
+  get documento() { return getPrisma().then(p => p.documento); },
+  get junta() { return getPrisma().then(p => p.junta); },
+  get gasto() { return getPrisma().then(p => p.gasto); },
+  get local() { return getPrisma().then(p => p.local); },
+  get producto() { return getPrisma().then(p => p.producto); },
+  get pedido() { return getPrisma().then(p => p.pedido); },
+  get solicitudServicio() { return getPrisma().then(p => p.solicitudServicio); },
+  get reciboPublico() { return getPrisma().then(p => p.reciboPublico); },
+  get adSpace() { return getPrisma().then(p => p.adSpace); },
+  get inmueble() { return getPrisma().then(p => p.inmueble); },
   get pqrs() { return getPrisma().then(p => (p as unknown as { pQRS: unknown }).pQRS); },
+  
   $connect: () => getPrisma().then(p => p.$connect()),
   $disconnect: () => getPrisma().then(p => p.$disconnect()),
+  $queryRaw: (q: unknown) => getPrisma().then(p => p.$queryRawUnsafe(q as string)),
+  $executeRaw: (q: unknown) => getPrisma().then(p => p.$executeRawUnsafe(q as string)),
 };
 
 export default db;
