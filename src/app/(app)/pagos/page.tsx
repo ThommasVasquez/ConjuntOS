@@ -9,7 +9,7 @@ import {
   CreditCard, CheckCircle2, 
   ArrowRight, Info, Loader2,
   DollarSign, AlertCircle, ChevronRight,
-  Sparkles, SearchX
+  SearchX
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
@@ -181,27 +181,7 @@ export default function PagosPage() {
                  <SearchX size={32} />
               </div>
               <p className="text-white/50 text-sm font-bold">No hay movimientos en esta sección</p>
-              
-              <button 
-                onClick={async () => {
-                  const loadingId = toast.loading("Generando historial de ejemplo...");
-                  try {
-                    const res = await fetch('/api/debug/seed-pagos');
-                    const json = await res.json();
-                    if (json.success) {
-                      toast.success("¡Historial generado!", { id: loadingId });
-                      window.location.reload();
-                    } else {
-                      toast.error(json.error || "Error al generar", { id: loadingId });
-                    }
-                  } catch {
-                    toast.error("Error de conexión", { id: loadingId });
-                  }
-                }}
-                className="mt-6 bg-accent border border-accent text-white px-6 py-3 rounded-full font-bold text-xs shadow-xl active:scale-95 transition-all flex items-center gap-2"
-              >
-                Generar historial de ejemplo <Sparkles size={14} />
-              </button>
+              <p className="text-white/20 text-[10px] font-bold uppercase tracking-widest mt-2 italic">Sincronizando con administración...</p>
            </div>
          ) : (
            filteredPagos.map((p) => (
