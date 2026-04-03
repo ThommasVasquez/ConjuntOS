@@ -109,6 +109,10 @@ const db = {
   get adSpace() { return getPrisma().then(p => p.adSpace); },
   get inmueble() { return getPrisma().then(p => p.inmueble); },
   get pqrs() { return getPrisma().then(p => (p as unknown as { pQRS: unknown }).pQRS); },
+  // @ts-expect-error - Models added to schema but client not yet regenerated
+  get visita() { return getPrisma().then(p => p.visita); },
+  // @ts-expect-error - Models added to schema but client not yet regenerated
+  get paquete() { return getPrisma().then(p => p.paquete); },
   
   $connect: () => getPrisma().then(p => p.$connect()),
   $disconnect: () => getPrisma().then(p => p.$disconnect()),

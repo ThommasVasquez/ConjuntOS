@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MessageSquareQuote, ListMusic, Heart, User } from "lucide-react";
+import { Home, ListMusic, Heart, User, Phone } from "lucide-react";
 
 export default function BottomNav() {
   const pathname = usePathname();
   
-  // Custom icons mapping based on the image (Home, Mix / Reservas, Building / Inmobiliaria, Heart / Anuncios, User / Perfil)
+  // Custom icons mapping based on the image
   const tabs = [
     { name: "Home", path: "/inicio", icon: Home },
-    { name: "PQRS", path: "/pqrs", icon: MessageSquareQuote }, 
+    { name: "Citofonía", path: "/citofonia", icon: Phone }, 
     { name: "Reservas", path: "/reservas", icon: ListMusic },
     { name: "Cartelera", path: "/cartelera", icon: Heart },
     { name: "Perfil", path: "/perfil", icon: User },

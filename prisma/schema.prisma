@@ -170,6 +170,33 @@ model Usuario {
   pedidos     Pedido[]
   solicitudes SolicitudServicio[]
   inmuebles   Inmueble[]
+  visitas     Visita[]
+  paquetes    Paquete[]
+}
+
+model Visita {
+  id            String   @id @default(cuid())
+  usuarioId     String
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
+  nombre        String
+  tipo          String   // "PEATONAL", "VEHICULAR"
+  vehiculoTipo  String?  // "CARRO", "MOTO", "NINGUNO"
+  placa         String?
+  fecha         DateTime
+  tieneParqueadero Boolean @default(false)
+  observacion   String?
+  creadoEn      DateTime @default(now())
+}
+
+model Paquete {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  descripcion String
+  remitente   String
+  estado      String   // "EN_PORTERIA", "ENTREGADO"
+  fechaLlegada DateTime @default(now())
+  entregadoEn  DateTime?
 }
 
 model Unidad {
