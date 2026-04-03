@@ -63,8 +63,9 @@ export async function autoSeedUserPagos(userId: string) {
 
     console.log("🏁 Auto-seeding finalizado con éxito.");
     return true;
-  } catch (error: any) {
-    console.error("❌ ERROR CRÍTICO en autoSeedUserPagos:", error.message || error);
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("❌ ERROR CRÍTICO en autoSeedUserPagos:", errorMsg);
     return false;
   }
 }
