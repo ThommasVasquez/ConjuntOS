@@ -93,7 +93,24 @@ export async function GET() {
 
   } catch (error: unknown) {
     console.error("❌ Error seeding payments:", error);
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    let message = "Error desconocido";
+    let type = "UNKNOWN_ERROR";
+
+    if (error instanceof Error) {
+      message = error.message;
+      type = error.name;
+    }
+
+    // Diagnóstico especial para errores de conexión comunes
+    if (message.includes("database host") || message.includes("connection string")) {
+       type = "DB_CONNECTION_ERROR";
+    }
+
+    return NextResponse.json({ 
+      success: false, 
+      error: message, 
+      errorType: type,
+      hint: "Verifica que el DATABASE_URL en el panel de Cloudflare sea el correcto y esté escapado."
+    }, { status: 500 });
   }
 }

@@ -13,17 +13,20 @@ export const runtime = "edge";
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl || typeof baseUrl !== 'string') return "";
   const raw = baseUrl.trim();
-  if (raw.includes("%25")) return raw; // Ya sanitizado
+  
+  // Si ya tiene caracteres escapados como %23 (#) o %24 ($), NO volver a escapar el símbolo %
+  if (raw.includes("%23") || raw.includes("%24") || raw.includes("%25")) {
+    return raw;
+  }
   
   try {
-    // Regex de alto impacto para extraer el password y escaparlo sin Greedy match
     const parts = raw.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+?)(@.+)$/);
     if (parts) {
       const [, protocol, user, password, rest] = parts;
-      // Escapamos % y $ para evitar errores de parseo o variables de entorno
       const safePassword = password
         .replace(/%/g, "%25")
-        .replace(/\$/g, "%24");
+        .replace(/\$/g, "%24")
+        .replace(/#/g, "%23");
       return `${protocol}${user}:${safePassword}${rest}`;
     }
   } catch { /* Fallback */ }
@@ -90,8 +93,8 @@ export async function getPrismaClient(): Promise<PrismaClient> {
     return globalThis.__prismaInstance;
   }
 
-  // Configuración de Neon Serverless
-  neonConfig.useSecureWebSocket = false;
+  // Configuración de Neon Serverless (SSL y WebSocket Seguro para Producción)
+  neonConfig.useSecureWebSocket = true;
   
   const pool = new Pool({ 
     connectionString: url,
