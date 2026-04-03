@@ -41,41 +41,28 @@ export async function discoverUrl(): Promise<string> {
   
   if (g.__DATABASE_URL_CACHE__) return g.__DATABASE_URL_CACHE__;
 
-  let url = "";
+  // 1. Prioridad: process.env (Suele ser inyectado por Vercel/Local)
+  let url = process.env.DATABASE_URL || process.env.NEXT_PUBLIC_DATABASE_URL || "";
 
-  // 1. Prioridad: process.env (Vemos que esto SI funciona en otras rutas de este proyecto)
-  url = process.env.DATABASE_URL || process.env.NEXT_PUBLIC_DATABASE_URL || "";
-
-  // 2. Fallback: Cloudflare Request Context
+  // 2. Fallback: Cloudflare Request Context (Vital para Pages/Workers)
   if (!url) {
     try {
       const { getRequestContext } = await import("@cloudflare/next-on-pages");
       const ctx = getRequestContext();
-      const env = (ctx?.env || {}) as Record<string, string>;
-      url = env.DATABASE_URL || env.NEXT_PUBLIC_DATABASE_URL || "";
+      url = (ctx as { env?: { DATABASE_URL?: string } })?.env?.DATABASE_URL || "";
     } catch { /* Ignorar */ }
   }
 
-  // 3. Otros fallbacks globales e Inyección Directa (Salvavidas Final)
+  // 3. Fallback de emergencia (MD5...)
   if (!url || url === "undefined") {
-    console.warn("⚠️ DATABASE_URL no detectada en entorno. Usando fallback de emergencia.");
-    url = g.DATABASE_URL || g.env?.DATABASE_URL || "postgresql://postgres.zudntuczwfhmyqgzcvrc:Md5891129Ae%23%241129@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
+    url = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
   }
 
   const sanitized = sanitizeUrl(url);
-  if (sanitized) {
-    g.__DATABASE_URL_CACHE__ = sanitized;
-    const masked = sanitized.replace(/:([^@]+)@/, ":****@");
-    console.log(`📡 DB_URL Configurada: ${masked.substring(0, 50)}...`);
-  }
+  if (sanitized) g.__DATABASE_URL_CACHE__ = sanitized;
   
   return sanitized;
 }
-
-export function setConnectionString(url: string) {
-  if (url) (globalThis as { __DATABASE_URL_CACHE__?: string }).__DATABASE_URL_CACHE__ = sanitizeUrl(url);
-}
-
 
 /**
  * Singleton de Prisma para el Edge.
@@ -84,20 +71,25 @@ let prisma: PrismaClient | null = null;
 
 export async function getPrisma() {
   if (prisma) return prisma;
-
   const url = await discoverUrl();
-  if (!url) throw new Error("DATABASE_URL_NOT_FOUND");
-
-  neonConfig.useSecureWebSocket = true;
-  const pool = new Pool({ connectionString: url });
-  // @ts-expect-error - Incompatibilidad de tipos entre versiones de Neon Serverless y PrismaNeon
-  const adapter = new PrismaNeon(pool);
-  prisma = new PrismaClient({ adapter });
-  
-  return prisma;
+  try {
+    neonConfig.useSecureWebSocket = true;
+    const pool = new Pool({ connectionString: url });
+    // @ts-expect-error - Incompatibilidad de tipos Neon/Prisma
+    const adapter = new PrismaNeon(pool);
+    prisma = new PrismaClient({ adapter });
+    return prisma;
+  } catch (error) {
+    console.error("❌ Prisma Edge Boot Error:", error);
+    throw error;
+  }
 }
 
-// Exportamos un objeto que resuelve los modelos de forma asíncrona (Singleton de acceso)
+export function setConnectionString(url: string) {
+  if (url) (globalThis as { __DATABASE_URL_CACHE__?: string }).__DATABASE_URL_CACHE__ = sanitizeUrl(url);
+}
+
+// Singleton de acceso a modelos
 const db = {
   get usuario() { return getPrisma().then(p => p.usuario); },
   get pago() { return getPrisma().then(p => p.pago); },
