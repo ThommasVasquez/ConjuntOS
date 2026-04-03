@@ -47,10 +47,23 @@ export default function PagosPage() {
   const [selectedPayment, setSelectedPayment] = useState<Transaction | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const fetchLock = useRef(false);
+  const [errorCount, setErrorCount] = useState(0);
+
   useEffect(() => {
     async function fetchPagos() {
+      if (fetchLock.current || errorCount > 3) return;
+      fetchLock.current = true;
+      
       try {
         const res = await fetch("/api/user/pagos", { cache: 'no-store' });
+        
+        // Si no es JSON, capturar el error antes de que falle el .json()
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error(`Server returned non-JSON: ${res.status}`);
+        }
+
         const json = await res.json();
         if (json.success) {
           setData({
@@ -58,21 +71,31 @@ export default function PagosPage() {
             pagos: json.data.pagos,
             totalDebt: json.data.totalDebt
           });
+          setErrorCount(0);
+        } else {
+          throw new Error(json.error || "Error in response");
         }
       } catch (error) {
         console.error("❌ Error loading pagos:", error);
+        setErrorCount(prev => prev + 1);
+        if (errorCount >= 2) {
+          toast.error("Error de conexión persistente. Por favor, recarga la página.");
+        }
       } finally {
         setIsLoading(false);
+        fetchLock.current = false;
       }
     }
 
-    if (session) fetchPagos();
+    if (session && userId) {
+      fetchPagos();
+    }
 
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.1 });
     }, containerRef);
     return () => ctx.revert();
-  }, [session, userId]);
+  }, [session, userId, errorCount]);
 
   const handleSimulatePayment = () => {
     if (!selectedPayment) return;

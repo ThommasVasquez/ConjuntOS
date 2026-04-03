@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { auth } from "@/auth";
-import { autoSeedUserPagos } from "@/lib/seed-utils";
 
 export const runtime = 'edge';
 
@@ -19,46 +18,56 @@ export async function GET() {
     }
 
     const userId = session.user.id;
+    console.log(`🔍 Buscando pagos para el usuario: ${userId}`);
 
-    // Obtener los delegados de Prisma asíncronos (Patrón del Proyecto)
-    const usuarioDelegate = await db.usuario;
-    
-    // Obtener los pagos del usuario junto con la unidad
-    const user = await usuarioDelegate.findUnique({
-      where: { id: userId },
-      include: {
-        unidad: {
-          select: {
-            numero: true,
-            torre: true,
-            coeficiente: true,
+    // Abrir un bloque try-catch interno específicamente para la DB
+    try {
+      const usuarioDelegate = await db.usuario;
+      const user = await usuarioDelegate.findUnique({
+        where: { id: userId },
+        include: {
+          unidad: {
+            select: {
+              numero: true,
+              torre: true,
+              coeficiente: true,
+            }
+          },
+          pagos: {
+            orderBy: { creadoEn: 'desc' },
           }
-        },
-        pagos: {
-          orderBy: { creadoEn: 'desc' },
         }
-      }
-    });
+      });
 
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Usuario no encontrado" }, { status: 404 });
+      if (!user) {
+        return NextResponse.json({ success: false, error: "Usuario no encontrado" }, { status: 404 });
+      }
+
+      const debt = (user.pagos as unknown as PagoRecord[])
+        .filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
+        .reduce((acc, p) => acc + Number(p.monto), 0);
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          unidad: user.unidad,
+          pagos: user.pagos,
+          totalDebt: debt
+        }
+      });
+    } catch (dbError: unknown) {
+      const msg = dbError instanceof Error ? dbError.message : String(dbError);
+      console.error("❌ DB_ERROR en API Pagos:", msg);
+      return NextResponse.json({ 
+        success: false, 
+        error: "Error de conexión a base de datos",
+        details: msg 
+      }, { status: 503 }); // Service Unavailable
     }
 
-    const debt = (user.pagos as unknown as PagoRecord[])
-      .filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
-      .reduce((acc, p) => acc + Number(p.monto), 0);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        unidad: user.unidad,
-        pagos: user.pagos,
-        totalDebt: debt
-      }
-    });
-
-  } catch (error) {
-    console.error("❌ Error fetching payments:", error);
-    return NextResponse.json({ success: false, error: "Error en el servidor" }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("❌ SYSTEM_ERROR en API Pagos:", msg);
+    return NextResponse.json({ success: false, error: "Error sistémico del servidor", details: msg }, { status: 500 });
   }
 }
