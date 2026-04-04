@@ -6,9 +6,10 @@
  */
 
 import { 
-  Plus, Search, SlidersHorizontal, 
+  Search, SlidersHorizontal, 
   User as UserIcon, MessageSquare, CreditCard,
-  Building2, Calendar, Megaphone, PlusCircle, MinusCircle, Bookmark, Bell, Info, Code, XCircle, ShieldAlert, MoreHorizontal, ExternalLink, ChevronLeft
+  Building2, Calendar, Megaphone, PlusCircle, MinusCircle, Bookmark, Bell, Info, Code, XCircle, ShieldAlert, MoreHorizontal, ExternalLink, ChevronLeft,
+  Car
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -39,11 +40,11 @@ export default function InicioDashboard() {
   const categories = [
     { title: "Citofonía", icon: <UserIcon size={20}/>, color: "from-purple-500 to-pink-500", path: "/citofonia" },
     { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-[#D946EF] to-[#9333EA]", path: "/pagos" },
+    { title: "Parqueo", icon: <Car size={20}/>, color: "from-emerald-500 to-emerald-700", path: "/parqueadero" },
     { title: "Reservas", icon: <Calendar size={20}/>, color: "from-blue-500 to-cyan-400", path: "/reservas" },
     { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-red-500 to-orange-500", path: "/cartelera" },
     { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-blue-500 to-indigo-600", path: "/pqrs" },
     { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-amber-500 to-orange-400", path: "/inmobiliaria" },
-    { title: "Mercadito", icon: <Plus size={20}/>, color: "from-green-500 to-emerald-500", path: "/mercadito" },
   ];
 
   const feedItems: FeedItem[] = [

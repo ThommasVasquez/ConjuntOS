@@ -113,6 +113,8 @@ const db = {
   // Models successfully generated in Prisma Client
   get visita() { return getPrisma().then(p => p.visita); },
   get paquete() { return getPrisma().then(p => p.paquete); },
+  get vehiculo() { return getPrisma().then(p => p.vehiculo); },
+  get parqueadero() { return getPrisma().then(p => p.parqueadero); },
   
   $connect: () => getPrisma().then(p => p.$connect()),
   $disconnect: () => getPrisma().then(p => p.$disconnect()),

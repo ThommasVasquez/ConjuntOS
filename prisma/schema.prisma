@@ -147,6 +147,7 @@ model Conjunto {
   adSpaces        AdSpace[]
   pedidos         Pedido[]
   inmuebles       Inmueble[]
+  parqueaderos    Parqueadero[]
 }
 
 model Usuario {
@@ -172,6 +173,8 @@ model Usuario {
   inmuebles   Inmueble[]
   visitas     Visita[]
   paquetes    Paquete[]
+  vehiculos   Vehiculo[]
+  parqueaderos Parqueadero[]
 }
 
 model Visita {
@@ -197,6 +200,31 @@ model Paquete {
   estado      String   // "EN_PORTERIA", "ENTREGADO"
   fechaLlegada DateTime @default(now())
   entregadoEn  DateTime?
+}
+
+model Vehiculo {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  placa       String   @unique
+  marca       String?
+  modelo      String?
+  color       String?
+  tipo        String   // "CARRO", "MOTO"
+  creadoEn    DateTime @default(now())
+}
+
+model Parqueadero {
+  id          String   @id @default(cuid())
+  conjuntoId  String
+  conjunto    Conjunto @relation(fields: [conjuntoId], references: [id])
+  numero      String
+  torre       String?
+  tipo        String   // "RESIDENTE", "VISITANTE", "DISCAPACITADO"
+  estado      String   @default("DISPONIBLE") // "DISPONIBLE", "OCUPADO", "RESERVADO"
+  usuarioId   String?  // Asignación permanente (opcional)
+  usuario     Usuario? @relation(fields: [usuarioId], references: [id])
+  creadoEn    DateTime @default(now())
 }
 
 model Unidad {
