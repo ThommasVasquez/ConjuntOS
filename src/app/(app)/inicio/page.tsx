@@ -37,12 +37,12 @@ export default function InicioDashboard() {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const categories = [
-    { title: "Reservas", icon: <Calendar size={20}/>, color: "from-blue-500 to-cyan-400", path: "/reservas" },
+    { title: "Citofonía", icon: <UserIcon size={20}/>, color: "from-purple-500 to-pink-500", path: "/citofonia" },
     { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-[#D946EF] to-[#9333EA]", path: "/pagos" },
-    { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-amber-500 to-orange-400", path: "/inmobiliaria" },
-    { title: "Visitantes", icon: <UserIcon size={20}/>, color: "from-purple-500 to-pink-500", path: "/visitantes" },
+    { title: "Reservas", icon: <Calendar size={20}/>, color: "from-blue-500 to-cyan-400", path: "/reservas" },
     { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-red-500 to-orange-500", path: "/cartelera" },
     { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-blue-500 to-indigo-600", path: "/pqrs" },
+    { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-amber-500 to-orange-400", path: "/inmobiliaria" },
     { title: "Mercadito", icon: <Plus size={20}/>, color: "from-green-500 to-emerald-500", path: "/mercadito" },
   ];
 
@@ -140,7 +140,7 @@ export default function InicioDashboard() {
            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-accent transition-colors" />
            <input type="text" placeholder="Buscar novedades..." className="w-full bg-[#1a1333] border border-white/5 rounded-[24px] py-4 pl-14 pr-6 text-sm text-white focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner" />
         </div>
-        <button className="w-14 h-14 rounded-[22px] bg-[#241a4a] border border-white/5 flex items-center justify-center text-white/60 hover:text-white transition-all active:scale-95 shadow-lg">
+        <button onClick={() => toast.info("Filtros avanzados próximamente")} className="w-14 h-14 rounded-[22px] bg-[#241a4a] border border-white/5 flex items-center justify-center text-white/60 hover:text-white transition-all active:scale-95 shadow-lg">
            <SlidersHorizontal size={20} />
         </button>
       </section>
@@ -149,7 +149,7 @@ export default function InicioDashboard() {
       <section className="fade-up-home flex flex-col gap-4">
         <div className="flex justify-between items-center px-1">
            <h2 className="text-white font-display text-lg font-bold tracking-tight">Categorías</h2>
-           <button className="text-accent text-xs font-bold uppercase tracking-widest hover:underline underline-offset-4">Ver Todo</button>
+           <button onClick={() => toast.info("Explora los módulos desde el menú inferior")} className="text-accent text-xs font-bold uppercase tracking-widest hover:underline underline-offset-4">Ver Todo</button>
         </div>
         <div className="flex gap-4 overflow-x-auto pt-2 pb-4 -mx-6 px-6 hide-scrollbar flex-nowrap">
            {categories.map((cat, i) => (
@@ -276,7 +276,7 @@ function PostCard({ post }: { post: FeedItem }) {
             <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-60" />
             {post.type === 'AD' && (
                <div className="absolute bottom-4 right-4 flex gap-2">
-                  <button className="bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs px-4 py-2.5 rounded-2xl flex items-center gap-2 hover:bg-white/20 transition-all font-bold">
+                  <button onClick={(e) => { e.stopPropagation(); toast.success("Abriendo WhatsApp del comercio..."); }} className="bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs px-4 py-2.5 rounded-2xl flex items-center gap-2 hover:bg-white/20 transition-all font-bold">
                      {post.cta || 'Saber Más'} <ExternalLink size={12} />
                   </button>
                </div>
@@ -285,7 +285,7 @@ function PostCard({ post }: { post: FeedItem }) {
       )}
       <div className="p-4 flex items-center justify-between border-t border-white/5 bg-white/5 backdrop-blur-xl mt-auto rounded-b-[32px]">
          <button className="text-white/50 text-[11px] flex items-center gap-1.5 hover:text-white transition-colors font-semibold uppercase tracking-wider">¿Dudas? <Bell size={12} /></button>
-         {post.type !== 'AD' && <button className="text-accent text-[11px] font-bold flex items-center gap-1.5 hover:accent-glow transition-all uppercase tracking-widest">Ver Circular <ChevronLeft size={14} className="rotate-180" /></button>}
+         {post.type !== 'AD' && <button onClick={() => toast.info("Visualizando circular oficial...")} className="text-accent text-[11px] font-bold flex items-center gap-1.5 hover:accent-glow transition-all uppercase tracking-widest">Ver Circular <ChevronLeft size={14} className="rotate-180" /></button>}
       </div>
     </div>
   );

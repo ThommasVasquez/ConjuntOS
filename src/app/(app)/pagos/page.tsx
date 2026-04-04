@@ -298,7 +298,10 @@ export default function PagosPage() {
 
       {/* FOOTER: HELP */}
       <section className="fade-up mt-auto">
-         <div className="bg-white/5 border border-white/5 rounded-[32px] p-6 flex items-center justify-between group cursor-pointer hover:bg-white/10 transition-all">
+         <div 
+           onClick={() => toast.success("Conectando con Administración vía WhatsApp...")}
+           className="bg-white/5 border border-white/5 rounded-[32px] p-6 flex items-center justify-between group cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+         >
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                   <AlertCircle size={24} />

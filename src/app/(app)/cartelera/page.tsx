@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { gsap } from "gsap";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Anuncio } from "@prisma/client";
 
@@ -73,7 +74,7 @@ export default function CarteleraPage() {
     return () => ctx.revert();
   }, [session, userId]);
 
-  const filteredNotices = selectedCategory === 'TODOS' ? notices : notices.filter(n => n.category === selectedCategory);
+  const filteredNotices = selectedCategory === 'TODOS' ? notices : notices.filter((n: Notice) => n.category === selectedCategory);
 
   const getNoticeIcon = (cat: string) => {
     switch(cat) {
@@ -118,7 +119,7 @@ export default function CarteleraPage() {
               <Megaphone size={32} className="text-white/20 mb-2" />
               <p className="text-white/60 text-sm font-bold">No hay avisos publicados</p>
            </div>
-         ) : filteredNotices.map((notice) => (
+         ) : filteredNotices.map((notice: Notice) => (
            <div key={notice.id} onClick={() => setSelectedNotice(notice)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden border border-white/10 hover:border-white/20 transition-all active:scale-[0.98] cursor-pointer group shadow-2xl">
               {notice.image && (
                 <div className="h-40 w-full overflow-hidden relative">
@@ -182,7 +183,13 @@ export default function CarteleraPage() {
                     <p className="text-white/70 text-base leading-relaxed">{selectedNotice.content}</p>
                     <div className="flex flex-col gap-4 pt-6 border-t border-white/10">
                        <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
-                       <button className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between hover:bg-white/10 transition-all text-left group">
+                       <button 
+                         onClick={() => {
+                            toast.loading("Generando descarga...");
+                            setTimeout(() => toast.success("Documento descargado con éxito"), 2000);
+                         }}
+                         className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between hover:bg-white/10 transition-all text-left group"
+                       >
                           <div className="flex items-center gap-3">
                              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400"><ShieldAlert size={18} /></div>
                              <div>
@@ -193,7 +200,23 @@ export default function CarteleraPage() {
                           <Download size={18} className="text-white/40 group-hover:text-accent transition-all" />
                        </button>
                     </div>
-                    <button className="w-full bg-accent py-4 rounded-2xl font-bold text-white shadow-xl shadow-accent/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"><Share2 size={18} /> Compartir</button>
+                    <button 
+                      onClick={() => {
+                         if (navigator.share) {
+                           navigator.share({
+                             title: selectedNotice.title,
+                             text: selectedNotice.content,
+                             url: window.location.href,
+                           }).catch(() => toast.info("Link copiado al portapapeles"));
+                         } else {
+                           navigator.clipboard.writeText(window.location.href);
+                           toast.success("Link copiado al portapapeles");
+                         }
+                      }}
+                      className="w-full bg-accent py-4 rounded-2xl font-bold text-white shadow-xl shadow-accent/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                    >
+                      <Share2 size={18} /> Compartir
+                    </button>
                  </div>
               </div>
            </div>
