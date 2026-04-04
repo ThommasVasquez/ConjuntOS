@@ -25,7 +25,16 @@ export async function GET() {
       const usuarioDelegate = await db.usuario;
       const user = await usuarioDelegate.findUnique({
         where: { id: userId },
-        include: { unidad: true }
+        include: { 
+          unidad: true,
+          vehiculos: true,
+          mascotas: true,
+          visitas: {
+            where: { fecha: { gte: new Date() } },
+            orderBy: { fecha: 'asc' },
+            take: 5
+          }
+        }
       });
 
       if (user) {
@@ -37,6 +46,8 @@ export async function GET() {
     }
 
     // CAPA 2: Acceso vía SQL directo (Pool)
+    // NOTE: For SQL Direct, we would need multiple queries, but realistically Prisma should work.
+    // If we fall back to SQL we will just provide basic user info to prevent crashing.
     try {
       const { Pool } = await import("@neondatabase/serverless");
       const { discoverUrl } = await import("@/lib/db");
@@ -51,6 +62,9 @@ export async function GET() {
       
       if (res.rows.length > 0) {
         const u = res.rows[0];
+        u.vehiculos = [];
+        u.mascotas = [];
+        u.visitas = [];
         return NextResponse.json({ success: true, data: u });
       }
     } catch (sqlErr: unknown) {
@@ -70,9 +84,13 @@ export async function GET() {
         rol: "PROPIETARIO",
         genero: "neutro",
         avatar: null,
-        unidad: { numero: "101", torre: "A" }
+        unidad: { numero: "101", torre: "A" },
+        vehiculos: [{ id: "v1", placa: "XYZ-789", marca: "Mock", tipo: "CARRO" }],
+        mascotas: [{ id: "m1", nombre: "Firulais", tipo: "PERRO" }],
+        visitas: []
       }
     });
+
 
   } catch (fatalError: unknown) {
     const err = fatalError as Error;

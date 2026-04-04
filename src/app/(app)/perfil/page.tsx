@@ -2,7 +2,8 @@
 
 import { 
   Camera, CheckCircle2, X, ChevronLeft, ArrowRight,
-  LogOut, Settings
+  LogOut, Settings, Car, Calendar,
+  Zap, ChevronRight, PenLine
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
@@ -50,10 +51,16 @@ function ProfileContent() {
     apto: "Apto 000",
     torre: "Torre -",
     phone: "",
-    gender: "femenino"
+    gender: "neutro"
   });
 
   const [editForm, setEditForm] = useState(userData);
+
+  const [vehiculos, setVehiculos] = useState<Record<string, unknown>[]>([]);
+  const [mascotas, setMascotas] = useState<Record<string, unknown>[]>([]);
+  const [visitas, setVisitas] = useState<Record<string, unknown>[]>([]);
+  const [viewMode, setViewMode] = useState<"profile" | "sugerencias">("profile");
+  const [suggestionText, setSuggestionText] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -72,6 +79,10 @@ function ProfileContent() {
           };
           setUserData(mapped);
           setEditForm(mapped);
+          setVehiculos(u.vehiculos || []);
+          setMascotas(u.mascotas || []);
+          setVisitas(u.visitas || []);
+
           if (u.avatar) setProfilePic(u.avatar);
 
           // Persistence (Isolated)
@@ -302,9 +313,9 @@ function ProfileContent() {
         <div className="fade-up grid grid-cols-4 gap-3 w-full mb-8">
           {[
             { label: 'Deuda', val: '$0', color: 'bg-linear-to-br from-yellow-300 to-yellow-500 text-black' },
-            { label: 'Visitas', val: '12', color: 'bg-[#2a1a4a]' },
-            { label: 'Mascotas', val: '2', color: 'bg-purple-900/50' },
-            { label: 'Tokens', val: '150', color: 'bg-white/20' }
+            { label: 'Visitas', val: visitas.length.toString(), color: 'bg-[#2a1a4a]' },
+            { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-purple-900/50' },
+            { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-white/20' }
           ].map((stat, i) => (
             <div key={i} className="flex flex-col items-center gap-1.5 cursor-pointer group">
               <span className="text-[10px] text-white/50 uppercase tracking-widest group-hover:text-white/80 transition-colors">{stat.label}</span>
@@ -347,6 +358,68 @@ function ProfileContent() {
              ))}
           </div>
         </div>
+
+        {/* MI ENTORNO */}
+        <section className="fade-up flex flex-col gap-3 mb-8">
+           <h3 className="text-white font-display font-medium text-lg tracking-wide px-2">Mi Entorno</h3>
+           
+           <div className="flex flex-col gap-2">
+             <button onClick={() => router.push('/parqueadero')} className="w-full p-4 liquid-glass rounded-[24px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-lg active:scale-95">
+                <div className="flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                      <Car size={18} />
+                   </div>
+                   <div className="flex flex-col text-left">
+                     <span className="text-sm font-bold text-white">Mis Vehículos ({vehiculos.length})</span>
+                     <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Gestionar parqueadero</span>
+                   </div>
+                </div>
+                <ChevronRight size={18} className="text-white/20 group-hover:text-white transition-colors" />
+             </button>
+
+             <button onClick={() => toast.info('Módulo de mascotas se activará pronto')} className="w-full p-4 liquid-glass rounded-[24px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-lg active:scale-95">
+                <div className="flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform">
+                      <span className="text-lg">🐾</span>
+                   </div>
+                   <div className="flex flex-col text-left">
+                     <span className="text-sm font-bold text-white">Mis Mascotas ({mascotas.length})</span>
+                     <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Mi familia peluda</span>
+                   </div>
+                </div>
+                <ChevronRight size={18} className="text-white/20 group-hover:text-white transition-colors" />
+             </button>
+
+             <button onClick={() => router.push('/citofonia')} className="w-full p-4 liquid-glass rounded-[24px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-lg active:scale-95">
+                <div className="flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
+                      <Calendar size={18} />
+                   </div>
+                   <div className="flex flex-col text-left">
+                     <span className="text-sm font-bold text-white">Visitas Programadas</span>
+                     <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">{visitas.length} en espera</span>
+                   </div>
+                </div>
+                <ChevronRight size={18} className="text-white/20 group-hover:text-white transition-colors" />
+             </button>
+           </div>
+        </section>
+
+        {/* FEEDBACK BUTTON */}
+        <section className="fade-up mb-8">
+           <button onClick={() => setViewMode('sugerencias')} className="w-full bg-gradient-to-r from-blue-600/40 to-indigo-600/40 border border-white/10 p-4 rounded-[24px] flex items-center justify-between group hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all active:scale-95">
+              <div className="flex items-center gap-4">
+                 <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                    <Zap size={18} className="animate-pulse" />
+                 </div>
+                 <div className="flex flex-col text-left">
+                    <span className="text-sm font-bold text-white">Buzón de Sugerencias</span>
+                    <span className="text-[10px] text-white/60 mt-0.5">Ideas para mejorar ConjuntoApp</span>
+                 </div>
+              </div>
+              <PenLine size={16} className="text-white/40 group-hover:text-white transition-colors" />
+           </button>
+        </section>
 
         {/* SETTINGS & LOGOUT */}
         <section className="fade-up flex flex-col gap-3">
@@ -432,6 +505,45 @@ function ProfileContent() {
               </div>
               <button onClick={handleSaveProfile} className="w-full mt-4 bg-linear-to-r from-accent to-purple-600 rounded-2xl py-4 font-bold text-white shadow-xl active:scale-95 transition-transform">
                 Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'sugerencias' && (
+        <div className="fixed inset-0 z-100 flex items-end justify-center px-0 sm:items-center sm:px-4 pb-0 sm:pb-20 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewMode('profile')} />
+          <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-6 pb-12 sm:pb-6 relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-300">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                 <Zap className="text-blue-400" size={20} />
+                 <h3 className="text-xl font-display font-semibold text-white tracking-wide">Sugerencias</h3>
+              </div>
+              <button onClick={() => setViewMode('profile')} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-all">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-white/70 font-light leading-relaxed">
+                ¿Tienes alguna idea o función que te gustaría ver en ConjuntoApp? ¡Te escuchamos!
+              </p>
+              <textarea 
+                value={suggestionText}
+                onChange={(e) => setSuggestionText(e.target.value)}
+                placeholder="Ej. Me gustaría poder apartar el BBQ desde el celular..."
+                className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-white resize-none outline-none focus:border-blue-500/50 focus:bg-white/5 transition-all"
+              />
+              <button 
+                onClick={() => {
+                  toast.success("¡Gracias por tu idea! La revisaremos pronto.");
+                  setSuggestionText("");
+                  setViewMode('profile');
+                }}
+                disabled={suggestionText.trim().length === 0}
+                className="w-full mt-2 bg-blue-600 rounded-2xl py-4 font-bold text-white shadow-[0_10px_20px_rgba(37,99,235,0.3)] disabled:opacity-50 disabled:shadow-none active:scale-95 transition-all"
+              >
+                Enviar Sugerencia
               </button>
             </div>
           </div>

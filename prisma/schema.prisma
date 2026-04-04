@@ -175,6 +175,7 @@ model Usuario {
   paquetes    Paquete[]
   vehiculos   Vehiculo[]
   parqueaderos Parqueadero[]
+  mascotas    Mascota[]
 }
 
 model Visita {
@@ -211,6 +212,17 @@ model Vehiculo {
   modelo      String?
   color       String?
   tipo        String   // "CARRO", "MOTO"
+  creadoEn    DateTime @default(now())
+}
+
+model Mascota {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  nombre      String
+  tipo        String   // "PERRO", "GATO", "AVE", "OTRO"
+  raza        String?
+  fotoUrl     String?
   creadoEn    DateTime @default(now())
 }
 
