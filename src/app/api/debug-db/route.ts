@@ -131,11 +131,22 @@ export async function GET(request: Request) {
           ON CONFLICT (email) DO UPDATE SET password = 'Md5891129Ae$', "conjuntoId" = 'demo_id'
         `);
         diagnostics.setup.logs.push("✅ Usuario 'milo@enconjunto.com' verificado.");
-        
-        const userRes = await pool.query('SELECT email, rol, password FROM "Usuario" WHERE email = $1', ['thommy@example.com']);
-        if (userRes.rows.length > 0) {
-          const u = userRes.rows[0] as { email: string; rol: string; password?: string };
-          diagnostics.setup.logs.push(`🔍 Verificación DB: Email=${u.email}, Rol=${u.rol}, PassLen=${u.password?.length}`);
+
+        // SEEDING THOMMY ROLES
+        const thommyRoles = [
+          { id: 't_admin', name: 'Thommy Admin', email: 'thommyadmin@example.com', role: 'ADMINISTRADOR' },
+          { id: 't_vig', name: 'Thommy Vigilante', email: 'thommyvigilante@example.com', role: 'VIGILANTE' },
+          { id: 't_park', name: 'Thommy Parqueadero', email: 'thommyestacionamientos@example.com', role: 'ENCARGADO_PARQUEADERO' },
+          { id: 't_res', name: 'Thommy Residente', email: 'thommyresidente@example.com', role: 'PROPIETARIO' }
+        ];
+
+        for (const t of thommyRoles) {
+          await pool.query(`
+            INSERT INTO "Usuario" (id, "conjuntoId", nombre, email, password, rol, activo)
+            VALUES ($1, 'demo_id', $2, $3, 'Md5891129Ae$', $4, true)
+            ON CONFLICT (email) DO UPDATE SET password = 'Md5891129Ae$', rol = $4
+          `, [t.id, t.name, t.email, t.role]);
+          diagnostics.setup.logs.push(`✅ Usuario '${t.email}' verificado (${t.role}).`);
         }
         
         diagnostics.setup.status = "✅ ÉXITO";
