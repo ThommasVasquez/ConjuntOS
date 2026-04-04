@@ -32,7 +32,7 @@ interface FeedItem {
   cta?: string;
 }
 
-export default function InicioDashboard() {
+function HomeResidente() {
   const router = useRouter();
   const { data: session } = useSession();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -290,4 +290,157 @@ function PostCard({ post }: { post: FeedItem }) {
       </div>
     </div>
   );
+}
+
+function HomeVigilante() {
+  const [stats, setStats] = useState({ visitasHoy: 0, paquetesPendientes: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/vigilancia/stats');
+        const data = await res.json();
+        if (data.success) {
+           setStats(data.data);
+        }
+      } catch (e) {
+        console.error("Error loading stats", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStats();
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <ProfileHeader />
+      <div className="liquid-glass rounded-3xl p-6 border border-white/10 shadow-2xl">
+        <h2 className="text-2xl font-bold text-white mb-2">Central de Guardia</h2>
+        <p className="text-white/50 text-sm mb-6">Módulo de control de acceso y paquetería.</p>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center gap-2">
+            {loading ? <div className="w-6 h-6 border-2 border-white/20 border-t-accent rounded-full animate-spin"></div> :
+             <span className="text-4xl font-black text-accent text-glow">{stats.visitasHoy}</span>}
+            <span className="text-xs uppercase font-bold text-white/40 tracking-widest text-center">Visitas Hoy</span>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center gap-2">
+            {loading ? <div className="w-6 h-6 border-2 border-white/20 border-t-emerald-400 rounded-full animate-spin"></div> :
+             <span className="text-4xl font-black text-emerald-400 text-glow">{stats.paquetesPendientes}</span>}
+            <span className="text-xs uppercase font-bold text-white/40 tracking-widest text-center">Paquetes P.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeParqueadero() {
+  const [stats, setStats] = useState({ ocupacion: 0, libres: 0, ocupados: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/parqueadero/stats');
+        const data = await res.json();
+        if (data.success) {
+           setStats(data.data);
+        }
+      } catch (e) {
+        console.error("Error loading stats", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStats();
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <ProfileHeader />
+      <div className="liquid-glass rounded-3xl p-6 border border-white/10 shadow-2xl">
+        <h2 className="text-xl font-bold text-white mb-2">Control de Parqueadero</h2>
+        <p className="text-white/50 text-sm mb-6">Módulo de capacidad en tiempo real.</p>
+        
+        <div className="w-full max-w-[200px] mx-auto relative aspect-square rounded-full border-10 border-white/5 flex items-center justify-center bg-black/20">
+           {/* Static visual representation for aesthetics */}
+           <div className="absolute inset-0 rounded-full border-10 border-accent" style={{clipPath: `polygon(0 0, 100% 0, 100% ${stats.ocupacion}%, 0 ${stats.ocupacion}%)`}} />
+           <div className="flex flex-col items-center text-center">
+              {loading ? <div className="w-8 h-8 border-2 border-white/20 border-t-accent rounded-full animate-spin"></div> :
+               <span className="text-5xl font-black text-white text-glow">{stats.ocupacion}%</span>}
+              <span className="text-[10px] uppercase font-bold text-white/40 tracking-widest mt-1">Ocupación</span>
+           </div>
+        </div>
+        <div className="flex justify-between mt-8">
+           <div className="text-center"><p className="text-white font-bold">{stats.libres}</p><p className="text-[10px] text-white/40 uppercase">Libres</p></div>
+           <div className="text-center"><p className="text-accent font-bold">{stats.ocupados}</p><p className="text-[10px] text-accent/40 uppercase">Ocupados</p></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeAdmin() {
+  const [stats, setStats] = useState({ recaudado: 0, novedadesPendientes: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats');
+        const data = await res.json();
+        if (data.success) {
+           setStats(data.data);
+        }
+      } catch (e) {
+        console.error("Error loading stats", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStats();
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <ProfileHeader />
+      <div className="liquid-glass rounded-3xl p-6 border border-white/10 shadow-2xl">
+        <h2 className="text-2xl font-bold text-white mb-2">Panel Administrativo</h2>
+        <p className="text-white/50 text-sm mb-6">Resumen financiero y operario.</p>
+        
+        <div className="bg-gradient-to-r from-emerald-600/30 to-emerald-900/30 border border-emerald-500/30 rounded-2xl p-6 relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
+           <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10">Recaudo Mensual Mto.</p>
+           {loading ? <div className="w-8 h-8 border-2 border-white/20 border-t-emerald-400 rounded-full animate-spin mt-2"></div> :
+            <p className="text-4xl font-display font-medium text-white relative z-10 text-glow">
+              ${stats.recaudado.toLocaleString()}
+            </p>}
+        </div>
+
+        <div className="mt-4 bg-white/5 border border-white/10 rounded-2xl p-4 flex justify-between items-center">
+            <div>
+               <p className="text-white font-bold">Novedades y Aprobaciones</p>
+               <p className="text-white/40 text-xs">Peticiones de residentes pendientes</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 text-accent flex items-center justify-center font-black">
+               {loading ? "..." : stats.novedadesPendientes}
+            </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function InicioDashboard() {
+  const { data: session } = useSession();
+  const role = (session?.user as { role?: string })?.role;
+
+  if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') return <HomeVigilante />;
+  if (role === 'ENCARGADO_PARQUEADERO') return <HomeParqueadero />;
+  if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN' || role === 'CONCEJO') return <HomeAdmin />;
+  
+  return <HomeResidente />;
 }

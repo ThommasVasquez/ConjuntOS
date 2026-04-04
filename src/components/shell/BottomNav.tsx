@@ -2,19 +2,47 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListMusic, Heart, User, Phone } from "lucide-react";
+import { Home, ListMusic, Heart, User, Phone, Users, Package, Map, DollarSign } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const role = (session?.user as { role?: string })?.role;
   
-  // Custom icons mapping based on the image
-  const tabs = [
-    { name: "Home", path: "/inicio", icon: Home },
-    { name: "Citofonía", path: "/citofonia", icon: Phone }, 
-    { name: "Reservas", path: "/reservas", icon: ListMusic },
-    { name: "Cartelera", path: "/cartelera", icon: Heart },
-    { name: "Perfil", path: "/perfil", icon: User },
-  ];
+  // Custom icons mapping based on the role
+  let tabs = [];
+  
+  if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') {
+    tabs = [
+      { name: "Caseta", path: "/inicio", icon: Home },
+      { name: "Visitas", path: "/control-visitas", icon: Users },
+      { name: "Paquetes", path: "/paqueteria", icon: Package },
+      { name: "Perfil", path: "/perfil", icon: User },
+    ];
+  } else if (role === 'ENCARGADO_PARQUEADERO') {
+    tabs = [
+      { name: "Control", path: "/inicio", icon: Home },
+      { name: "Mapa", path: "/mapa-parqueadero", icon: Map },
+      { name: "Perfil", path: "/perfil", icon: User },
+    ];
+  } else if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN' || role === 'CONCEJO') {
+    tabs = [
+      { name: "Panel", path: "/inicio", icon: Home },
+      { name: "Aprobaciones", path: "/admin-novedades", icon: Heart },
+      { name: "Finanzas", path: "/admin-finanzas", icon: DollarSign },
+      { name: "Perfil", path: "/perfil", icon: User },
+    ];
+  } else {
+    // RESIDENTES por defecto
+    tabs = [
+      { name: "Inicio", path: "/inicio", icon: Home },
+      { name: "Citofonía", path: "/citofonia", icon: Phone }, 
+      { name: "Reservas", path: "/reservas", icon: ListMusic },
+      { name: "Cartelera", path: "/cartelera", icon: Heart },
+      { name: "Perfil", path: "/perfil", icon: User },
+    ];
+  }
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[380px]">

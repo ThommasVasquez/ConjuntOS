@@ -98,18 +98,43 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 
                 const user = rows[0] as { id: string; email: string; password?: string; rol: string; nombre: string; conjuntoId?: string } | null;
                 
-                // 2. Si no existe y es el master, creamos/buscamos vía Prisma (o fallamos elegantemente)
-                if (!user && normalizedEmail === "thommy@example.com") {
-                   await persistentLog("BOOTSTRAP_TRIGGERED", "Usuario master no encontrado en Pool, intentando bootstrap vía Prisma", normalizedEmail);
+                // 2. Si no existe y es uno de los usuarios DEMO, creamos/buscamos vía Prisma
+                const demoUsers: Record<string, {rol: string, nombre: string}> = {
+                  "thommy@example.com": { rol: "SUPER_ADMIN", nombre: "Thommy Master" },
+                  "vigilante@example.com": { rol: "VIGILANTE", nombre: "Carlos Guardia" },
+                  "parqueadero@example.com": { rol: "ENCARGADO_PARQUEADERO", nombre: "Luis Parking" },
+                  "admin@example.com": { rol: "ADMINISTRADOR", nombre: "Marta Admin" },
+                  "residente@example.com": { rol: "PROPIETARIO", nombre: "Jorge Residente" }
+                };
+
+                if (!user && demoUsers[normalizedEmail]) {
+                   await persistentLog("BOOTSTRAP_TRIGGERED", "Usuario demo no encontrado en Pool, intentando bootstrap vía Prisma", normalizedEmail);
                    try {
                      const { default: db } = await import("@/lib/db");
                      const conjunto = await (await db.conjunto).findFirst() || await (await db.conjunto).create({
                        data: { id: 'demo_id', nombre: 'Residencial Horizonte', subdominio: 'demo', direccion: 'Digital', ciudad: 'Nube' }
                      });
-                     const newUser = await (await db.usuario).create({
-                       data: { email: "thommy@example.com", password: "Md5891129Ae$", rol: "SUPER_ADMIN", conjuntoId: conjunto.id, nombre: "Thommy" }
-                     });
-                     await persistentLog("BOOTSTRAP_SUCCESS", "Usuario maestro creado con éxito", normalizedEmail);
+                     
+                     // Upsert avoid creation crashes if it somehow existed
+                     let newUser = await (await db.usuario).findUnique({ where: { email: normalizedEmail } });
+                     if (!newUser) {
+                        newUser = await (await db.usuario).create({
+                          data: { 
+                            email: normalizedEmail, 
+                            password: password.trim(), // Asignamos la contraseña que acaban de escribir! (Magia para demos)
+                            rol: demoUsers[normalizedEmail].rol as import("@prisma/client").Rol, 
+                            conjuntoId: conjunto.id, 
+                            nombre: demoUsers[normalizedEmail].nombre 
+                          }
+                        });
+                     } else if (newUser.password !== password.trim()) {
+                        // Update password to match demo usage if it differed
+                         newUser = await (await db.usuario).update({
+                           where: { email: normalizedEmail }, data: { password: password.trim() }
+                         });
+                     }
+
+                     await persistentLog("BOOTSTRAP_SUCCESS", "Usuario demo preparado con éxito", normalizedEmail);
                      return { id: newUser.id, name: newUser.nombre, email: newUser.email, role: newUser.rol };
                    } catch (err) {
                       await persistentLog("BOOTSTRAP_FAILED", (err as Error).message, normalizedEmail);
