@@ -81,6 +81,7 @@ export async function getPrisma() {
     return prisma;
   } catch (error) {
     console.error("❌ Prisma Edge Boot Error:", error);
+    prisma = null; // Reiniciar para permitir reintento
     throw error;
   }
 }
@@ -104,11 +105,11 @@ const db = {
   get local() { return getPrisma().then(p => p.local); },
   get producto() { return getPrisma().then(p => p.producto); },
   get pedido() { return getPrisma().then(p => p.pedido); },
-  get solicitudServicio() { return getPrisma().then(p => p.solicitudServicio); },
   get reciboPublico() { return getPrisma().then(p => p.reciboPublico); },
   get adSpace() { return getPrisma().then(p => p.adSpace); },
   get inmueble() { return getPrisma().then(p => p.inmueble); },
-  get pqrs() { return getPrisma().then(p => (p as unknown as { pQRS: unknown }).pQRS); },
+  get pqrs() { return getPrisma().then(p => p.solicitudServicio); },
+  get solicitudServicio() { return getPrisma().then(p => p.solicitudServicio); },
   // Models successfully generated in Prisma Client
   get visita() { return getPrisma().then(p => p.visita); },
   get paquete() { return getPrisma().then(p => p.paquete); },

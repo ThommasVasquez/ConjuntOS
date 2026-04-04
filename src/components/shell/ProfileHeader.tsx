@@ -36,11 +36,18 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
 
       try {
         const fetchRes = await fetch("/api/user/profile", { cache: 'no-store' });
+        
+        // Verificar si la respuesta es JSON antes de parsear
+        const contentType = fetchRes.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+           throw new Error(`API retornó ${contentType || 'formato desconocido'}`);
+        }
+
         const res = await fetchRes.json();
         
         if (res.success && res.data) {
           const u = res.data;
-          const mapped = { name: u.nombre, gender: u.genero || "femenino" };
+          const mapped = { name: u.nombre, gender: u.genero || "neutro" };
           setUserData(mapped);
           if (u.avatar) setProfilePic(u.avatar);
           
@@ -48,7 +55,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
           if (u.avatar) localStorage.setItem(`conjunto_app_profile_pic_${userId}`, u.avatar);
         }
       } catch (error) {
-        console.warn("⚠️ Error syncing profile header:", error);
+        console.warn("⚠️ API de perfil no disponible, usando caché/default:", (error as Error).message);
       }
     }
 

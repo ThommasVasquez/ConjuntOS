@@ -3,7 +3,12 @@ import db from "@/lib/db";
 import { auth } from "@/auth";
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
+/**
+ * API: COMUNICACIONES GET
+ * Resiliente a fallos con Mock Fallback automático.
+ */
 export async function GET() {
   try {
     const session = await auth();
@@ -40,31 +45,39 @@ export async function GET() {
           }
         }
       });
-    } catch {
-      // MOCK FALLBACK
+    } catch (dbErr: unknown) {
+      const err = dbErr as Error;
+      console.warn("⚠️ [API-COMUNICACIONES]: Fallo de DB, activando Mock...", err.message);
+      
+      // MOCK FALLBACK (Salvavidas para la UI)
       return NextResponse.json({
         success: true,
         isMock: true,
         data: {
           visitas: [
-            { id: "v1", nombre: "Juan Perez", tipo: "PEATONAL", fecha: new Date().toISOString(), tieneParqueadero: false },
-            { id: "v2", nombre: "Maria Lopez", tipo: "VEHICULAR", vehiculoTipo: "CARRO", placa: "ABC-123", fecha: new Date(Date.now() + 86400000).toISOString(), tieneParqueadero: true }
+            { id: "v1", nombre: "Invitado Demo", tipo: "PEATONAL", fecha: new Date().toISOString(), tieneParqueadero: false },
+            { id: "v2", nombre: "Vehículo Demo", tipo: "VEHICULAR", vehiculoTipo: "CARRO", placa: "TST-000", fecha: new Date(Date.now() + 86400000).toISOString(), tieneParqueadero: true }
           ],
           paquetes: [
-            { id: "p1", descripcion: "Sobre de Servientrega", remitente: "Banco ABC", fechaLlegada: new Date().toISOString(), estado: "EN_PORTERIA" }
+            { id: "p1", descripcion: "Paquete de Prueba", remitente: "Logística Nacional", fechaLlegada: new Date().toISOString(), estado: "EN_PORTERIA" }
           ],
           parqueadero: {
-            carrosDisponibles: 4,
-            motosDisponibles: 2
+            carrosDisponibles: 12,
+            motosDisponibles: 8
           }
         }
       });
     }
-  } catch {
-    return NextResponse.json({ success: false, error: "Error de servidor" }, { status: 500 });
+  } catch (fatalErr: unknown) {
+    const err = fatalErr as Error;
+    console.error("❌ [API-COMUNICACIONES-FATAL]:", err.message);
+    return NextResponse.json({ success: false, error: "Error interno", details: err.message }, { status: 500 });
   }
 }
 
+/**
+ * API: COMUNICACIONES POST (Agendar Visita)
+ */
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -89,7 +102,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ success: true, data: nuevaVisita });
     } catch (dbError) {
-      console.error("❌ Error guardando visita:", dbError);
+      console.error("❌ [API-COMUNICACIONES-POST]: Error guardando visita real:", dbError);
       // Simular éxito en Mock mode para que la UI no se rompa
       return NextResponse.json({ 
         success: true, 
@@ -97,7 +110,8 @@ export async function POST(req: Request) {
         data: { id: "mock_" + Date.now(), nombre, fecha } 
       });
     }
-  } catch {
-    return NextResponse.json({ success: false, error: "Error procesando solicitud" }, { status: 500 });
+  } catch (fatalErr: unknown) {
+    const err = fatalErr as Error;
+    return NextResponse.json({ success: false, error: "Error procesando solicitud", details: err.message }, { status: 500 });
   }
 }
