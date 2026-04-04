@@ -115,11 +115,11 @@ export default function LoginPage() {
             <div className="relative group">
               <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-accent transition-colors" size={20} />
               <input 
-                type="email" 
+                type="text" 
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
-                placeholder="ej: thommy@example.com" 
+                placeholder="ej: thommyadmin" 
                 className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-6 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white/10"
               />
             </div>

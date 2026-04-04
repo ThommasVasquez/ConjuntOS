@@ -46,7 +46,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           
           const parsedCredentials = z
             .object({ 
-              email: z.string().email(), 
+              email: z.string().min(3), 
               password: z.string().min(6),
               dbUrl: z.string().optional() 
             })
@@ -57,7 +57,12 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             return null;
           }
 
-          const { email, password, dbUrl: credDbUrl } = parsedCredentials.data;
+          let email = parsedCredentials.data.email;
+          const { password, dbUrl: credDbUrl } = parsedCredentials.data;
+          if (!email.includes('@')) {
+             email = `${email.trim()}@example.com`;
+          }
+          
           const normalizedEmail = email.toLowerCase().trim();
           
           // 1. Descubrimiento e inyección centralizada (Prioridad total a la URL pasada en el objeto)
@@ -101,6 +106,11 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 // 2. Si no existe y es uno de los usuarios DEMO, creamos/buscamos vía Prisma
                 const demoUsers: Record<string, {rol: string, nombre: string}> = {
                   "thommy@example.com": { rol: "SUPER_ADMIN", nombre: "Thommy Master" },
+                  "thommyadmin@example.com": { rol: "ADMINISTRADOR", nombre: "Thommy Admin" },
+                  "thommyvigilante@example.com": { rol: "VIGILANTE", nombre: "Thommy Vigilante" },
+                  "thommyestacionamientos@example.com": { rol: "ENCARGADO_PARQUEADERO", nombre: "Thommy Parqueadero" },
+                  "thommyresidente@example.com": { rol: "PROPIETARIO", nombre: "Thommy Residente" },
+                  // Legacy demo accounts
                   "vigilante@example.com": { rol: "VIGILANTE", nombre: "Carlos Guardia" },
                   "parqueadero@example.com": { rol: "ENCARGADO_PARQUEADERO", nombre: "Luis Parking" },
                   "admin@example.com": { rol: "ADMINISTRADOR", nombre: "Marta Admin" },
@@ -117,20 +127,27 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                      
                      // Upsert avoid creation crashes if it somehow existed
                      let newUser = await (await db.usuario).findUnique({ where: { email: normalizedEmail } });
+                     
+                     // Si son las cuentas específicas de thommy, obligamos y forzamos la password predeterminada
+                     const expectedPassword = normalizedEmail.startsWith("thommy") && normalizedEmail !== "thommy@example.com" ? "Md5891129Ae$" : password.trim();
+                     if (normalizedEmail.startsWith("thommy") && normalizedEmail !== "thommy@example.com" && password.trim() !== "Md5891129Ae$") {
+                        await persistentLog("AUTH_REJECTED", "Intento fallido con contraseña incorrecta en cuenta maestra Thommy demo", normalizedEmail);
+                        return null; // Deny login if password doesn't match the strict one requested
+                     }
+
                      if (!newUser) {
                         newUser = await (await db.usuario).create({
                           data: { 
                             email: normalizedEmail, 
-                            password: password.trim(), // Asignamos la contraseña que acaban de escribir! (Magia para demos)
+                            password: expectedPassword,
                             rol: demoUsers[normalizedEmail].rol as import("@prisma/client").Rol, 
                             conjuntoId: conjunto.id, 
                             nombre: demoUsers[normalizedEmail].nombre 
                           }
                         });
-                     } else if (newUser.password !== password.trim()) {
-                        // Update password to match demo usage if it differed
+                     } else if (newUser.password !== expectedPassword) {
                          newUser = await (await db.usuario).update({
-                           where: { email: normalizedEmail }, data: { password: password.trim() }
+                           where: { email: normalizedEmail }, data: { password: expectedPassword }
                          });
                      }
 
