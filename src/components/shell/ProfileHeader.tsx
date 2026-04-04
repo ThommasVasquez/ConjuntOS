@@ -154,7 +154,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-        .text-glow { text-shadow: 0 0 20px rgba(217,70,239,0.5); }
+        .text-glow { text-shadow: 0 0 12px rgba(217,70,239,0.3); }
       `}</style>
     </header>
   );
