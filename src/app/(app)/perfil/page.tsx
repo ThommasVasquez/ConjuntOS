@@ -90,8 +90,6 @@ function ProfileContent() {
             localStorage.setItem(`conjunto_app_profile_data_${userId}`, JSON.stringify(mapped));
             if (u.avatar) localStorage.setItem(`conjunto_app_profile_pic_${userId}`, u.avatar);
           }
-        } else {
-          throw new Error("No success");
         }
       } catch (error) {
         console.warn("⚠️ Error cargando datos:", error);
@@ -128,7 +126,6 @@ function ProfileContent() {
 
   /**
    * 🖼️ Compresor de Imágenes del lado del cliente
-   * Asegura que el Base64 no supere un tamaño razonable para el Edge de Cloudflare
    */
   const compressImage = (base64: string): Promise<string> => {
     return new Promise((resolve) => {
@@ -143,8 +140,6 @@ function ProfileContent() {
 
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // Comprimir a JPEG con calidad 0.7 (balance perfecto peso/calidad)
         const compressed = canvas.toDataURL('image/jpeg', 0.7);
         resolve(compressed);
       };
@@ -169,8 +164,7 @@ function ProfileContent() {
           localStorage.setItem("conjunto_app_profile_pic", compressed);
           setProfilePic(compressed);
           toast.success("Foto optimizada con éxito", { id: loadingToastId });
-        } catch (error) {
-          console.error("Image processing error", error);
+        } catch {
           toast.error("Error optimizando la imagen", { id: loadingToastId });
         }
         e.target.value = "";
@@ -181,8 +175,6 @@ function ProfileContent() {
 
   const handleSaveProfile = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
-    
-    // Sincronizar el estado de la UI
     setUserData(editForm);
 
     try {
@@ -199,31 +191,17 @@ function ProfileContent() {
       });
 
       const res = await response.json();
-      console.log("API Response:", res);
-
       if (res.success) {
         toast.success("Perfil guardado con éxito");
         if (userId) {
           localStorage.setItem(`conjunto_app_profile_data_${userId}`, JSON.stringify(editForm));
           localStorage.setItem(`conjunto_app_profile_pic_${userId}`, profilePic);
         }
-        
         window.history.replaceState(null, '', '/perfil');
       } else {
-        // Manejo específico del error de configuración en Cloudflare
-        if (res.error === "CONFIG_ERROR: DATABASE_URL_MISSING") {
-          toast.error("⚠️ Error de Configuración", {
-            description: "No se encontró DATABASE_URL en Cloudflare. Por favor, agrégala en el panel de Cloudflare Pages (Settings > Environment variables).",
-            duration: 10000
-          });
-        } else {
-          toast.error(`Error: ${res.error || "Falla desconocida"}`, {
-            description: res.details || "Consulta los logs del servidor para más información."
-          });
-        }
+        toast.error(`Error: ${res.error || "Falla desconocida"}`);
       }
-    } catch (e) {
-      console.error("Error updating profile via REST API:", e);
+    } catch {
       toast.error("Error de conexión al servidor");
     }
   };
@@ -236,14 +214,15 @@ function ProfileContent() {
     });
   };
 
+  // Roles to display locally
   const roleConfig: Record<string, { label: string, color: string }> = {
-    ARRENDATARIO: { label: "Residente", color: "from-blue-500 to-cyan-500" },
-    PROPIETARIO: { label: "Propietario", color: "from-yellow-400 to-amber-600" },
-    ADMINISTRADOR: { label: "Administrador", color: "from-fuchsia-500 to-purple-600" },
-    VIGILANTE: { label: "Vigilante", color: "from-orange-500 to-red-500" },
+    ARRENDATARIO: { label: "Residente", color: "from-blue-500/20 to-transparent" },
+    PROPIETARIO: { label: "Propietario", color: "from-yellow-500/20 to-transparent" },
+    ADMINISTRADOR: { label: "Administrador", color: "from-fuchsia-500/20 to-transparent" },
+    VIGILANTE: { label: "Vigilante", color: "from-orange-500/20 to-transparent" },
   };
 
-  const currRole = roleConfig[Rol.PROPIETARIO];
+  const currRole = roleConfig[(session?.user as any)?.role || "PROPIETARIO"];
 
   return (
     <div ref={containerRef} className="flex flex-col min-h-screen relative overflow-x-hidden pb-32">
@@ -288,7 +267,7 @@ function ProfileContent() {
 
         <div className="fade-up text-center mb-6">
           <h1 className="text-4xl font-display font-medium tracking-tight text-white text-glow mb-1">{userData.name}</h1>
-          <p className="text-lg text-white/80 font-light">{currRole.label}</p>
+          <p className="text-lg text-white/80 font-light">{currRole?.label || "Sin Rol"}</p>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
@@ -407,7 +386,7 @@ function ProfileContent() {
 
         {/* FEEDBACK BUTTON */}
         <section className="fade-up mb-8">
-           <button onClick={() => setViewMode('sugerencias')} className="w-full bg-gradient-to-r from-blue-600/40 to-indigo-600/40 border border-white/10 p-4 rounded-[24px] flex items-center justify-between group hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all active:scale-95">
+           <button onClick={() => setViewMode('sugerencias')} className="w-full bg-linear-to-r from-blue-600/40 to-indigo-600/40 border border-white/10 p-4 rounded-[24px] flex items-center justify-between group hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all active:scale-95">
               <div className="flex items-center gap-4">
                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
                     <Zap size={18} className="animate-pulse" />
@@ -549,6 +528,7 @@ function ProfileContent() {
           </div>
         </div>
       )}
+
       <style dangerouslySetInnerHTML={{__html: `.text-glow { text-shadow: 0 0 20px rgba(217,70,239,0.5); }`}} />
     </div>
   );

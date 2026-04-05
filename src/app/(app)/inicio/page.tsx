@@ -9,7 +9,7 @@ import {
   Search, SlidersHorizontal, 
   User as UserIcon, MessageSquare, CreditCard,
   Building2, Calendar, Megaphone, PlusCircle, MinusCircle, Bookmark, Bell, Info, Code, XCircle, ShieldAlert, MoreHorizontal, ExternalLink, ChevronLeft,
-  Car
+  Car, ArrowRight
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -293,6 +293,7 @@ function PostCard({ post }: { post: FeedItem }) {
 }
 
 function HomeVigilante() {
+  const router = useRouter();
   const [stats, setStats] = useState({ visitasHoy: 0, paquetesPendientes: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -333,11 +334,43 @@ function HomeVigilante() {
           </div>
         </div>
       </div>
+
+      {/* VIGILANTE ACTIONS */}
+      <section className="flex flex-col gap-3">
+        <h3 className="text-white font-display font-medium text-lg tracking-wide px-2 mb-1">Operaciones</h3>
+        
+        <button onClick={() => router.push('/control-visitas')} className="w-full p-5 liquid-glass rounded-[28px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-xl active:scale-95">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
+                 <ShieldAlert size={22} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-bold text-white">Registrar Visita</span>
+                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Control vehicular y peatonal</span>
+              </div>
+           </div>
+           <ArrowRight size={20} className="text-white/20 group-hover:text-white transition-colors" />
+        </button>
+
+        <button onClick={() => router.push('/paqueteria')} className="w-full p-5 liquid-glass rounded-[28px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-xl active:scale-95">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                 <Bookmark size={22} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-bold text-white">Gestión de Paquetes</span>
+                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Entrega y recepción</span>
+              </div>
+           </div>
+           <ArrowRight size={20} className="text-white/20 group-hover:text-white transition-colors" />
+        </button>
+      </section>
     </div>
   );
 }
 
 function HomeParqueadero() {
+  const router = useRouter();
   const [stats, setStats] = useState({ ocupacion: 0, libres: 0, ocupados: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -379,11 +412,29 @@ function HomeParqueadero() {
            <div className="text-center"><p className="text-accent font-bold">{stats.ocupados}</p><p className="text-[10px] text-accent/40 uppercase">Ocupados</p></div>
         </div>
       </div>
+
+      <section className="flex flex-col gap-3">
+        <h3 className="text-white font-display font-medium text-lg tracking-wide px-2 mb-1">Operaciones</h3>
+        
+        <button onClick={() => router.push('/mapa-parqueadero')} className="w-full p-5 liquid-glass rounded-[28px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-xl active:scale-95">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                 <Building2 size={22} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-bold text-white">Mapa de Celdas</span>
+                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Estado en tiempo real</span>
+              </div>
+           </div>
+           <ArrowRight size={20} className="text-white/20 group-hover:text-white transition-colors" />
+        </button>
+      </section>
     </div>
   );
 }
 
 function HomeAdmin() {
+  const router = useRouter();
   const [stats, setStats] = useState({ recaudado: 0, novedadesPendientes: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -411,7 +462,7 @@ function HomeAdmin() {
         <h2 className="text-2xl font-bold text-white mb-2">Panel Administrativo</h2>
         <p className="text-white/50 text-sm mb-6">Resumen financiero y operario.</p>
         
-        <div className="bg-gradient-to-r from-emerald-600/30 to-emerald-900/30 border border-emerald-500/30 rounded-2xl p-6 relative overflow-hidden">
+        <div className="bg-linear-to-r from-emerald-600/30 to-emerald-900/30 border border-emerald-500/30 rounded-2xl p-6 relative overflow-hidden">
            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
            <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10">Recaudo Mensual Mto.</p>
            {loading ? <div className="w-8 h-8 border-2 border-white/20 border-t-emerald-400 rounded-full animate-spin mt-2"></div> :
@@ -430,6 +481,36 @@ function HomeAdmin() {
             </div>
         </div>
       </div>
+
+      <section className="flex flex-col gap-3">
+        <h3 className="text-white font-display font-medium text-lg tracking-wide px-2 mb-1">Gestión Central</h3>
+        
+        <button onClick={() => router.push('/admin-finanzas')} className="w-full p-5 liquid-glass rounded-[28px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-xl active:scale-95">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                 <CreditCard size={22} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-bold text-white">Reportes Financieros</span>
+                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Recaudo y Cartera</span>
+              </div>
+           </div>
+           <ArrowRight size={20} className="text-white/20 group-hover:text-white transition-colors" />
+        </button>
+
+        <button onClick={() => router.push('/admin-novedades')} className="w-full p-5 liquid-glass rounded-[28px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-xl active:scale-95">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                 <Info size={22} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-bold text-white">Novedades de Unidad</span>
+                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Gestión de residentes</span>
+              </div>
+           </div>
+           <ArrowRight size={20} className="text-white/20 group-hover:text-white transition-colors" />
+        </button>
+      </section>
     </div>
   );
 }
