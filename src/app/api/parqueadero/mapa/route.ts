@@ -28,14 +28,16 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   const session = await auth();
+  const userId = session?.user?.id;
   const role = (session?.user as { role?: string })?.role;
-  if (!session || role !== 'ENCARGADO_PARQUEADERO') {
+  
+  if (!session || !userId || role !== 'ENCARGADO_PARQUEADERO') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
   try {
     const body = await req.json();
-    const { parqueaderoId, estado } = body;
+    const { parqueaderoId, estado, placa, observacion } = body;
 
     if (!parqueaderoId || !estado) {
        return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
@@ -44,13 +46,26 @@ export async function PUT(req: Request) {
     const { default: db } = await import('@/lib/db');
     const prisma = db as any;
 
-    await prisma.parqueadero.update({
+    // Update cell status
+    const updated = await prisma.parqueadero.update({
       where: { id: parqueaderoId },
       data: { estado }
     });
 
-    return NextResponse.json({ success: true });
+    // Create Audit Log
+    await prisma.registroParqueadero.create({
+      data: {
+        parqueaderoId,
+        usuarioId: userId,
+        tipo: estado === 'OCUPADO' ? 'INGRESO' : 'SALIDA',
+        placa,
+        observacion
+      }
+    });
+
+    return NextResponse.json({ success: true, data: updated });
   } catch (error) {
+    console.error("PUT Error:", error);
     return NextResponse.json({ success: false, error: 'DB Error' }, { status: 500 });
   }
 }

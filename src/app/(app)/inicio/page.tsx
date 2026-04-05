@@ -422,8 +422,8 @@ function HomeParqueadero() {
                  <Building2 size={22} />
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-sm font-bold text-white">Mapa de Celdas</span>
-                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Estado en tiempo real</span>
+                <span className="text-sm font-bold text-white">Mapa e Historial</span>
+                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Gestión y Rondas Diarias</span>
               </div>
            </div>
            <ArrowRight size={20} className="text-white/20 group-hover:text-white transition-colors" />
@@ -506,6 +506,19 @@ function HomeAdmin() {
               <div className="flex flex-col text-left">
                 <span className="text-sm font-bold text-white">Novedades de Unidad</span>
                 <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Gestión de residentes</span>
+              </div>
+           </div>
+           <ArrowRight size={20} className="text-white/20 group-hover:text-white transition-colors" />
+        </button>
+
+        <button onClick={() => router.push('/admin-parqueadero')} className="w-full p-5 liquid-glass rounded-[28px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-xl active:scale-95">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                 <ShieldAlert size={22} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-bold text-white">Auditoría de Parqueo</span>
+                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Historial de vigilantes</span>
               </div>
            </div>
            <ArrowRight size={20} className="text-white/20 group-hover:text-white transition-colors" />

@@ -176,6 +176,8 @@ model Usuario {
   vehiculos   Vehiculo[]
   parqueaderos Parqueadero[]
   mascotas    Mascota[]
+  registrosParqueadero RegistroParqueadero[]
+  rondasParqueadero    RondaParqueadero[]
 }
 
 model Visita {
@@ -237,6 +239,29 @@ model Parqueadero {
   usuarioId   String?  // Asignación permanente (opcional)
   usuario     Usuario? @relation(fields: [usuarioId], references: [id])
   creadoEn    DateTime @default(now())
+
+  registros   RegistroParqueadero[]
+}
+
+model RegistroParqueadero {
+  id            String      @id @default(cuid())
+  parqueaderoId String
+  parqueadero   Parqueadero @relation(fields: [parqueaderoId], references: [id])
+  usuarioId     String      // El funcionario que hace el registro
+  usuario       Usuario     @relation(fields: [usuarioId], references: [id])
+  tipo          String      // "INGRESO", "SALIDA", "VERIFICACION"
+  placa         String?
+  observacion   String?
+  fecha         DateTime    @default(now())
+}
+
+model RondaParqueadero {
+  id            String      @id @default(cuid())
+  usuarioId     String      // El funcionario que hace la ronda
+  usuario       Usuario     @relation(fields: [usuarioId], references: [id])
+  fecha         DateTime    @default(now())
+  hallazgos     String?     // Notas sobre irregularidades (json string)
+  completada    Boolean     @default(false)
 }
 
 model Unidad {
