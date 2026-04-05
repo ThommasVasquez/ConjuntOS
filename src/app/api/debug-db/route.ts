@@ -92,50 +92,66 @@ export async function GET(request: Request) {
       ssl: { rejectUnauthorized: false }
     });
 
-    try {
-      const dbStart = Date.now();
-      await pool.query("SELECT 1");
-      diagnostics.dbTest.connection = `✅ OK (Neon Serverless - ${Date.now() - dbStart}ms)`;
+      try {
+        const dbStart = Date.now();
+        await pool.query("SELECT 1");
+        diagnostics.dbTest.connection = `✅ OK (Neon Serverless - ${Date.now() - dbStart}ms)`;
 
-      // CREAR TABLA DE LOGS PERSISTENTES SI NO EXISTE
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS "AuthDebug" (
-          id TEXT PRIMARY KEY,
-          email TEXT,
-          step TEXT,
-          details TEXT,
-          "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+        // LISTAR TABLAS EXISTENTES
+        const tablesRes = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+        const tables = tablesRes.rows.map((r: any) => r.table_name);
+        diagnostics.setup.logs.push(`Tablas encontradas: ${tables.join(", ")}`);
 
-      // CREAR TABLAS DE PARQUEADERO SI NO EXISTEN
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS "RegistroParqueadero" (
-          id TEXT PRIMARY KEY,
-          "parqueaderoId" TEXT NOT NULL,
-          "usuarioId" TEXT NOT NULL,
-          tipo TEXT NOT NULL,
-          placa TEXT,
-          observacion TEXT,
-          fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          CONSTRAINT "RegistroParqueadero_parqueaderoId_fkey" FOREIGN KEY ("parqueaderoId") REFERENCES "Parqueadero"(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-          CONSTRAINT "RegistroParqueadero_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"(id) ON DELETE RESTRICT ON UPDATE CASCADE
-        )
-      `);
+        // CREAR TABLA DE LOGS PERSISTENTES SI NO EXISTE
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS "AuthDebug" (
+            id TEXT PRIMARY KEY,
+            email TEXT,
+            step TEXT,
+            details TEXT,
+            "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
 
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS "RondaParqueadero" (
-          id TEXT PRIMARY KEY,
-          "usuarioId" TEXT NOT NULL,
-          fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          hallazgos TEXT,
-          completada BOOLEAN DEFAULT false,
-          CONSTRAINT "RondaParqueadero_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"(id) ON DELETE RESTRICT ON UPDATE CASCADE
-        )
-      `);
+        // CREAR TABLAS MAESTRAS SI NO EXISTEN (Mínimo para que el app no muera)
+        if (!tables.includes("Conjunto")) {
+          await pool.query(`CREATE TABLE IF NOT EXISTS "Conjunto" (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, subdominio TEXT UNIQUE NOT NULL, direccion TEXT, ciudad TEXT, "logoUrl" TEXT, "colorPrimario" TEXT DEFAULT '#1E3A5F', activo BOOLEAN DEFAULT true, "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP)`);
+        }
+        if (!tables.includes("Usuario")) {
+          await pool.query(`CREATE TABLE IF NOT EXISTS "Usuario" (id TEXT PRIMARY KEY, "conjuntoId" TEXT REFERENCES "Conjunto"(id), nombre TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT, telefono TEXT, rol TEXT NOT NULL, "unidadId" TEXT, avatar TEXT, genero TEXT DEFAULT 'neutro', "notifPush" TEXT, activo BOOLEAN DEFAULT true, "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP)`);
+        }
+        if (!tables.includes("Parqueadero")) {
+          await pool.query(`CREATE TABLE IF NOT EXISTS "Parqueadero" (id TEXT PRIMARY KEY, "conjuntoId" TEXT NOT NULL REFERENCES "Conjunto"(id), numero TEXT NOT NULL, torre TEXT, tipo TEXT NOT NULL, estado TEXT DEFAULT 'DISPONIBLE', "usuarioId" TEXT REFERENCES "Usuario"(id), "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP)`);
+        }
 
-      diagnostics.dbTest.write = "✅ OK (Tablas de Auditoría verificadas)";
-    } catch (dbError: unknown) {
+        // CREAR TABLAS DE PARQUEADERO SI NO EXISTEN
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS "RegistroParqueadero" (
+            id TEXT PRIMARY KEY,
+            "parqueaderoId" TEXT NOT NULL,
+            "usuarioId" TEXT NOT NULL,
+            tipo TEXT NOT NULL,
+            placa TEXT,
+            observacion TEXT,
+            fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "RegistroParqueadero_parqueaderoId_fkey" FOREIGN KEY ("parqueaderoId") REFERENCES "Parqueadero"(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+            CONSTRAINT "RegistroParqueadero_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+          )
+        `);
+
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS "RondaParqueadero" (
+            id TEXT PRIMARY KEY,
+            "usuarioId" TEXT NOT NULL,
+            fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            hallazgos TEXT,
+            completada BOOLEAN DEFAULT false,
+            CONSTRAINT "RondaParqueadero_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+          )
+        `);
+
+        diagnostics.dbTest.write = "✅ OK (Tablas de Auditoría y Maestras verificadas)";
+      } catch (dbError: unknown) {
       const err = dbError as Error;
       diagnostics.dbTest.connection = `❌ Error: ${err.message}`;
       diagnostics.error = err.message;
