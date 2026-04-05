@@ -107,7 +107,34 @@ export async function GET(request: Request) {
           "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      diagnostics.dbTest.write = "✅ OK (Tabla AuthDebug verificada)";
+
+      // CREAR TABLAS DE PARQUEADERO SI NO EXISTEN
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "RegistroParqueadero" (
+          id TEXT PRIMARY KEY,
+          "parqueaderoId" TEXT NOT NULL,
+          "usuarioId" TEXT NOT NULL,
+          tipo TEXT NOT NULL,
+          placa TEXT,
+          observacion TEXT,
+          fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "RegistroParqueadero_parqueaderoId_fkey" FOREIGN KEY ("parqueaderoId") REFERENCES "Parqueadero"(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+          CONSTRAINT "RegistroParqueadero_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+        )
+      `);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "RondaParqueadero" (
+          id TEXT PRIMARY KEY,
+          "usuarioId" TEXT NOT NULL,
+          fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          hallazgos TEXT,
+          completada BOOLEAN DEFAULT false,
+          CONSTRAINT "RondaParqueadero_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+        )
+      `);
+
+      diagnostics.dbTest.write = "✅ OK (Tablas de Auditoría verificadas)";
     } catch (dbError: unknown) {
       const err = dbError as Error;
       diagnostics.dbTest.connection = `❌ Error: ${err.message}`;
