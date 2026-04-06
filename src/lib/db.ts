@@ -4,8 +4,12 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 
 export const runtime = "edge";
 
+// CONFIGURACIÓN GLOBAL DE NEON (Debe estar en el nivel superior para el Edge)
+neonConfig.useSecureWebSocket = true;
+neonConfig.fetchConnectionCache = true;
+
 /**
- * Escapa el carácter '%' en la contraseña para que URL lo acepte.
+ * Motor de sanitización universal (Maneja caracteres especiales en contraseñas)
  */
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl || typeof baseUrl !== 'string') return "";
@@ -35,14 +39,14 @@ export function sanitizeUrl(baseUrl: string): string {
 export async function discoverUrl(): Promise<string> {
   const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string }; __DATABASE_URL_CACHE__?: string };
   
-  if (g.__DATABASE_URL_CACHE__ && g.__DATABASE_URL_CACHE__ !== "undefined" && g.__DATABASE_URL_CACHE__.length > 10) {
+  if (g.__DATABASE_URL_CACHE__ && g.__DATABASE_URL_CACHE__.length > 10) {
     return g.__DATABASE_URL_CACHE__;
   }
 
   // 1. Prioridad: process.env (Suele ser inyectado por Vercel/Local)
   let url = process.env.DATABASE_URL || process.env.NEXT_PUBLIC_DATABASE_URL || "";
 
-  // 2. Fallback: Cloudflare Request Context (Vital para Pages/Workers)
+  // 2. Fallback: Cloudflare Request Context
   if (!url || url === "undefined" || url === "null") {
     try {
       const { getRequestContext } = await import("@cloudflare/next-on-pages");
@@ -51,14 +55,13 @@ export async function discoverUrl(): Promise<string> {
     } catch { /* Ignorar */ }
   }
 
-  // 3. Fallback Extremadamente Agresivo: Atributos directos de globalThis o process
+  // 3. Fallback Extremadamente Agresivo
   if (!url || url === "undefined" || url === "null") {
       url = (process.env as any).DATABASE_URL || (globalThis as any).DATABASE_URL || "";
   }
 
   // 4. Fallback de emergencia final (Garantía de Host para Neon)
   if (!url || url === "undefined" || url === "null" || url.length < 10) {
-    console.warn("⚠️ Utilizando DATABASE_URL de emergencia por falta de variable de entorno en Edge.");
     url = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
   }
 
@@ -79,17 +82,16 @@ export async function getPrisma() {
   if (prisma) return prisma;
   const url = await discoverUrl();
   try {
-    neonConfig.useSecureWebSocket = true;
-    neonConfig.fetchConnectionCache = true;
     const pool = new Pool({ connectionString: url });
     // @ts-expect-error - Incompatibilidad de tipos Neon/Prisma
     const adapter = new PrismaNeon(pool);
     prisma = new PrismaClient({ adapter });
     return prisma;
-  } catch (error) {
-    console.error("❌ Prisma Edge Boot Error:", error);
+  } catch (error: any) {
+    const masked = url ? `${url.substring(0, 15)}...${url.substring(url.length - 10)}` : "VACÍA";
+    console.error(`❌ Prisma Edge Error [URL: ${masked}]:`, error);
     prisma = null;
-    throw error;
+    throw new Error(`${error.message} [Used URL: ${masked}]`);
   }
 }
 

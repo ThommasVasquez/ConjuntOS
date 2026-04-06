@@ -115,11 +115,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, data: nuevoTramite });
   } catch (error: any) {
     console.error("Error en POST /api/tramites:", error);
-    // Devolvemos el error detallado para depuración en el dashboard
+    
+    // Diagnóstico extra para el error 500
+    const { discoverUrl } = await import("@/lib/db");
+    const rawUrl = await discoverUrl();
+    const maskedUrl = rawUrl ? `${rawUrl.substring(0, 15)}...${rawUrl.substring(rawUrl.length - 10)}` : "VACÍA";
+
     return NextResponse.json({ 
         success: false, 
         error: error.message || "Error desconocido",
-        details: error.code || "No code"
+        details: error.code || "No code",
+        diagnostics: { url: maskedUrl }
     }, { status: 500 });
   }
 }
