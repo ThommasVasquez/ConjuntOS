@@ -1,64 +1,38 @@
-import { neonConfig, neon } from "@neondatabase/serverless";
+import { neon } from "@neondatabase/serverless";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaClient } from "@prisma/client";
 
 export const runtime = "edge";
 
-// CONFIGURACIÓN DE RED NEON
-neonConfig.useSecureWebSocket = true;
-
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
-/**
- * --- EL HACK FINAL: SHADOW PROXY ---
- * Interceptamos TODA llamada a process.env para forzar DATABASE_URL en el Edge.
- * Esto engaña incluso a motores compilados en WASM.
- */
-const g = globalThis as any;
-if (!g.process) g.process = { env: {} };
-
-const originalEnv = g.process.env || {};
-g.process.env = new Proxy(originalEnv, {
-  get(target, prop) {
-    if (prop === 'DATABASE_URL' || prop === 'NEXT_PUBLIC_DATABASE_URL') {
-      return NEON_URL;
-    }
-    return target[prop as string];
-  },
-  // Aseguramos que 'hasOwnProperty' y otros métodos sigan funcionando
-  has(target, prop) {
-    if (prop === 'DATABASE_URL' || prop === 'NEXT_PUBLIC_DATABASE_URL') return true;
-    return prop in target;
-  }
-});
-
-// Forzamos también el valor directo por si acaso no están usando el Proxy correctamente
-g.process.env.DATABASE_URL = NEON_URL;
-
-// -----------------------------------
-
+// Singleton para el cliente de Prisma
 let prismaInstance: any = null;
 
 export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
   try {
-    // Importación dinámica para asegurar que el Proxy ya esté activo
-    const [{ PrismaClient }, { PrismaNeon }] = await Promise.all([
-        import("@prisma/client/edge"),
-        import("@prisma/adapter-neon")
-    ]);
-
-    // Usar Neon Fetch Driver
+    // Usar Neon Fetch Driver (el más estable en Edge)
     const sql = neon(NEON_URL);
     
     // @ts-expect-error - Prisma Neon adapter type mismatch
     const adapter = new PrismaNeon(sql);
     
-    // Inicialización limpia: El Proxy se encargará de que Prisma vea la URL correcta
-    prismaInstance = new PrismaClient({ adapter });
+    /**
+     * PATRÓN MODERNO PRISMA 7.X:
+     * 1. Usamos '@prisma/client' unificado (sin /edge).
+     * 2. Pasamos el adaptador de Neon.
+     * 3. Pasamos 'datasourceUrl' en la raíz para sobreescribir cualquier variable de entorno.
+     */
+    prismaInstance = new PrismaClient({ 
+        adapter,
+        datasourceUrl: NEON_URL
+    });
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR EN EL SHADOW PROXY DE PRISMA:", error.message);
+    console.error("❌ ERROR EN EL CLIENTE UNIFICADO DE PRISMA:", error.message);
     throw error;
   }
 }

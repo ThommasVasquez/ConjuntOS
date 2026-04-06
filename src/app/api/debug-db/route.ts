@@ -58,8 +58,7 @@ export async function GET(request: Request) {
   const diagnostics: DiagnosticResult = {
     state: "Iniciando...",
     cloudflare: { context: "❌ Error" },
-    version: "8.0-shadow-proxy",
-    proxy_check: (typeof process !== 'undefined' && process.env.DATABASE_URL?.substring(0, 15)) || "❌ Error de Proxy",
+    version: "9.0-unified-client",
     dbTest: { connection: "Pendiente", write: "Pendiente" },
     setup: { status: "No ejecutado", logs: [] },
   };
