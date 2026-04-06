@@ -58,7 +58,7 @@ export async function GET(request: Request) {
   const diagnostics: DiagnosticResult = {
     state: "Iniciando...",
     cloudflare: { context: "❌ Error" },
-    version: "10.0-pure-env",
+    version: "11.0-god-mode-shim",
     dbTest: { connection: "Pendiente", write: "Pendiente" },
     setup: { status: "No ejecutado", logs: [] },
   };
