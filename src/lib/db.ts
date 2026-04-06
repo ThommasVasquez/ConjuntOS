@@ -3,13 +3,13 @@ import { PrismaClient } from "@prisma/client";
 
 export const runtime = "edge";
 
-// CONFIGURACIÓN DE RED
-neonConfig.useSecureWebSocket = false;
+// CONFIGURACIÓN DE RED (v26.0)
+// Forzamos WebSocket seguro para evitar error 522 en Cloudflare Pages.
+neonConfig.useSecureWebSocket = true;
 
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
-// ESTRATEGIA DE CONEXIÓN (v25.0)
-// Forzamos Neon si DATABASE_URL es de Supabase o está vacío.
+// ESTRATEGIA DE CONEXIÓN
 const getStableUrl = () => {
   const envUrl = (process.env.DATABASE_URL || "").trim();
   if (!envUrl || envUrl.includes("supabase.com") || !envUrl.includes("neon.tech")) {
@@ -36,16 +36,17 @@ declare global {
 
 const logError = (table: string, method: string, e: any, query: string, params: any) => {
   const errorObj = {
-    table, method, error: e.message, code: e.code, query, params, host: url.split('@')[1]?.split(':')[0] || 'unknown',
+    table, method, error: e.message, JSON: JSON.stringify(e), query, params, 
+    host: url.split('@')[1]?.split(':')[0] || 'unknown',
     at: new Date().toISOString()
   };
   globalThis.__DB_LAST_ERROR__ = errorObj;
-  console.error(`❌ DB_TRACE [${table}.${method}]:`, JSON.stringify(errorObj));
+  console.error(`❌ DB_TRACE [${table}.${method}]:`, errorObj.error);
 };
 
 /**
- * SHADOW PRISMA CLIENT (v25.0)
- * Forced Neon Fix: Bypass de Supabase y validación de host estable.
+ * SHADOW PRISMA CLIENT (v26.0)
+ * Protocol & Collection Fix: Secure WebSocket Handshake y Hidratación 1:N (Plurales).
  */
 class ModelProxy {
   constructor(private tableName: string) {}
@@ -157,31 +158,68 @@ class ModelProxy {
     } catch (e: any) { logError(this.tableName, "aggregate", e, query, params); throw e; }
   }
 
+  /**
+   * HIDRATACIÓN 1:1 y 1:N (Plurales)
+   */
   private async hydrate(item: any, include: any) {
     const newItem = { ...item };
     const tableMap: Record<string, string> = {
       usuario: "Usuario", aprobadoPor: "Usuario", propietario: "Usuario", solicitante: "Usuario",
       conjunto: "Conjunto", unidad: "Unidad", parqueadero: "Parqueadero", vehiculo: "Vehiculo",
-      reserva: "Reserva", mascota: "Mascota"
+      reserva: "Reserva", mascota: "Mascota", tramite: "Tramite",
+      // Colecciones (Plurales)
+      vehiculos: "Vehiculo", mascotas: "Mascota", visitas: "Visita", tramites: "Tramite", notificaciones: "Notificacion"
     };
+
     for (const relation of Object.keys(include)) {
       const targetTable = tableMap[relation];
       if (!targetTable) continue;
-      const foreignKey = `${relation}Id`;
-      const idToFetch = newItem[foreignKey] || (relation === 'usuario' ? newItem['usuarioId'] : (relation === 'conjunto' ? newItem['conjuntoId'] : null));
-      if (idToFetch) {
+
+      // Determinamos si es 1:1 (singular) o 1:N (plural)
+      const isPlural = relation.endsWith('s');
+      
+      if (isPlural) {
+        // Lógica 1:N: Buscar en targetTable donde sourceTableId = item.id
+        const foreignKeyInTarget = `${this.tableName.toLowerCase()}Id`;
+        const nestedArgs = typeof include[relation] === 'object' ? include[relation] : {};
+        
+        let q = `SELECT * FROM "${targetTable}" WHERE "${foreignKeyInTarget}" = $1`;
+        if (nestedArgs.where) {
+           const subWhere = this.buildWhere(nestedArgs.where);
+           q += subWhere.sql.replace(" WHERE ", " AND ").replace("$1", "$2"); // Shift placeholders
+        }
+        if (nestedArgs.orderBy) {
+           const k = Object.keys(nestedArgs.orderBy)[0];
+           const d = typeof nestedArgs.orderBy[k] === 'string' ? nestedArgs.orderBy[k].toUpperCase() : 'DESC';
+           q += ` ORDER BY "${k}" ${d}`;
+        }
+        if (nestedArgs.take) q += ` LIMIT ${nestedArgs.take}`;
+        else q += ` LIMIT 100`;
+
         try {
-          const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
-          let relatedItem = res.rows[0] || null;
-          if (relatedItem && typeof include[relation] === 'object' && include[relation].select) {
-             const selectedFields = include[relation].select;
-             const filtered: any = {};
-             Object.keys(selectedFields).forEach(f => { if (selectedFields[f]) filtered[f] = relatedItem[f]; });
-             relatedItem = filtered;
-          }
-          newItem[relation] = relatedItem;
-        } catch (e) { newItem[relation] = null; }
-      } else { newItem[relation] = null; }
+          const res = await pool.query(q, [newItem.id, ...Object.values(nestedArgs.where || {})]);
+          newItem[relation] = res.rows;
+        } catch (e) { newItem[relation] = []; }
+
+      } else {
+        // Lógica 1:1: Buscar en targetTable por id
+        const foreignKeyInSource = `${relation}Id`;
+        const idToFetch = newItem[foreignKeyInSource] || (relation === 'usuario' ? newItem['usuarioId'] : (relation === 'conjunto' ? newItem['conjuntoId'] : null));
+        
+        if (idToFetch) {
+          try {
+            const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
+            let relatedItem = res.rows[0] || null;
+            if (relatedItem && typeof include[relation] === 'object' && include[relation].select) {
+               const selectedFields = include[relation].select;
+               const filtered: any = {};
+               Object.keys(selectedFields).forEach(f => { if (selectedFields[f]) filtered[f] = relatedItem[f]; });
+               relatedItem = filtered;
+            }
+            newItem[relation] = relatedItem;
+          } catch (e) { newItem[relation] = null; }
+        } else { newItem[relation] = null; }
+      }
     }
     return newItem;
   }

@@ -61,7 +61,7 @@ export async function GET(request: Request) {
   const diagnostics: DiagnosticResult = {
     state: "Iniciando...",
     cloudflare: { context: "❌ Error" },
-    version: "25.0-neon-forced",
+    version: "26.0-protocol-fix",
     dbTest: { connection: "Pendiente", write: "Pendiente" },
     lastDbError: (db as any).getLastError ? (db as any).getLastError() : null,
     setup: { status: "No ejecutado", logs: [] },
