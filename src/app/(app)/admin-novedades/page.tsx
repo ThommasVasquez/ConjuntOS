@@ -5,10 +5,8 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
 export default function AdminNovedadesPage() {
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [tramites, setTramites] = useState<any[]>([]);
@@ -18,6 +16,8 @@ export default function AdminNovedadesPage() {
   const [selectedTramite, setSelectedTramite] = useState<any>(null);
   const [obs, setObs] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [availableCells, setAvailableCells] = useState<any[]>([]);
+  const [selectedCellId, setSelectedCellId] = useState("");
 
   const fetchTramites = async () => {
     setLoading(true);
@@ -26,7 +26,6 @@ export default function AdminNovedadesPage() {
       const res = await fetch(`/api/tramites${qs}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
-        // Si el tab es historial filtrar aprobados/rechazados (el backend puede optimizarse, pero lo hacemos acá para demo)
         const items = data.data;
         if (tab === 'HISTORIAL') {
              setTramites(items.filter((t: any) => t.estado !== 'PENDIENTE'));
@@ -41,8 +40,19 @@ export default function AdminNovedadesPage() {
     }
   };
 
+  const fetchCells = async () => {
+      try {
+          const res = await fetch('/api/parqueadero/mapa');
+          const data = await res.json();
+          if (data.success) {
+              setAvailableCells(data.data.filter((c: any) => c.estado === 'DISPONIBLE'));
+          }
+      } catch (e) { console.error("Error fetching cells", e); }
+  };
+
   useEffect(() => {
     fetchTramites();
+    if (tab === 'PENDIENTE') fetchCells();
   }, [tab]);
 
   useEffect(() => {
@@ -79,13 +89,19 @@ export default function AdminNovedadesPage() {
           const res = await fetch('/api/tramites/aprobar', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tramiteId: selectedTramite.id, accion, observacionAdmin: obs })
+              body: JSON.stringify({ 
+                  tramiteId: selectedTramite.id, 
+                  accion, 
+                  observacionAdmin: obs,
+                  parqueaderoId: accion === 'APROBAR' && selectedTramite.tipo === 'VEHICULO' ? selectedCellId : undefined
+              })
           });
           const data = await res.json();
           if (data.success) {
               toast.success(`Trámite ${accion === 'APROBAR' ? 'aprobado' : 'rechazado'} con éxito.`);
               setSelectedTramite(null);
               setObs("");
+              setSelectedCellId("");
               fetchTramites();
           } else {
               toast.error(data.error || 'Error al procesar.');
@@ -139,7 +155,7 @@ export default function AdminNovedadesPage() {
                    const u = t.usuario;
                    const desc = parseDesc(t.descripcion);
                    return (
-                     <div key={t.id} onClick={() => setTab('PENDIENTE') ? setSelectedTramite(t) : null} className="fade-up liquid-glass rounded-[24px] p-5 border border-white/10 flex flex-col gap-3 group hover:border-white/20 transition-all cursor-pointer">
+                     <div key={t.id} onClick={() => tab === 'PENDIENTE' ? setSelectedTramite(t) : null} className="fade-up liquid-glass rounded-[24px] p-5 border border-white/10 flex flex-col gap-3 group hover:border-white/20 transition-all cursor-pointer">
                          <div className="flex justify-between items-start">
                              <div className="flex items-center gap-2">
                                 <span className="p-2 rounded-full bg-white/5 border border-white/10 text-xl">{getTipoIcon(t.tipo)}</span>
@@ -162,9 +178,9 @@ export default function AdminNovedadesPage() {
                          
                          {/* Desc Preview */}
                          <div className="text-xs text-white/60 line-clamp-2 italic">
-                            "{t.tipo === 'VEHICULO' ? `${desc.marca} - Placa: ${desc.placa}` : 
+                            &quot;{t.tipo === 'VEHICULO' ? `${desc.marca} - Placa: ${desc.placa}` : 
                               t.tipo === 'MASCOTA' ? `Mascota: ${desc.nombre} (${desc.tipo})` : 
-                              t.tipo === 'MUDANZA' ? `Fecha Mudanza: ${desc.fecha}` : 'Solicitud pendiente...'}"
+                              t.tipo === 'MUDANZA' ? `Fecha Mudanza: ${desc.fecha}` : 'Solicitud pendiente...'}&quot;
                          </div>
 
                          {tab === 'HISTORIAL' && t.aprobadoPor && (
@@ -188,12 +204,31 @@ export default function AdminNovedadesPage() {
                       <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Solicitante</span>
                       <span className="text-sm text-white">{selectedTramite.usuario.nombre}</span>
                   </div>
+                  
                   <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-white/5 border border-white/10">
-                      <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Tipo: {selectedTramite.tipo}</span>
-                      <pre className="text-xs text-white/80 whitespace-pre-wrap font-mono mt-1">
-                          {JSON.stringify(parseDesc(selectedTramite.descripcion), null, 2)}
-                      </pre>
-                  </div>
+                       <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Tipo: {selectedTramite.tipo}</span>
+                       <div className="text-[10px] text-white/80 p-2 bg-black/20 rounded-lg mt-1 font-mono overflow-auto max-h-32">
+                           {Object.entries(parseDesc(selectedTramite.descripcion)).map(([k, v]: any) => (
+                               <div key={k}>{k}: {String(v)}</div>
+                           ))}
+                       </div>
+                   </div>
+
+                   {selectedTramite.tipo === 'VEHICULO' && (
+                       <div className="flex flex-col gap-2 p-3 rounded-xl bg-accent/5 border border-accent/20">
+                           <label className="text-[10px] text-accent uppercase tracking-widest font-bold">Asignar Celda (Opcional)</label>
+                           <select 
+                             value={selectedCellId}
+                             onChange={(e) => setSelectedCellId(e.target.value)}
+                             className="w-full bg-[#1a1333] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-accent/40"
+                           >
+                               <option value="">No asignar puesto...</option>
+                               {availableCells.map((c) => (
+                                   <option key={c.id} value={c.id}>Celda {c.numero} ({c.torre || 'N/A'})</option>
+                               ))}
+                           </select>
+                       </div>
+                   )}
 
                   <div className="flex flex-col gap-2 mt-2">
                       <label className="text-xs text-white/40 uppercase tracking-widest font-bold">Observaciones (Opcional si aprueba)</label>

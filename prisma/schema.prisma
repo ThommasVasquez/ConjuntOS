@@ -195,6 +195,18 @@ model Usuario {
   rondasParqueadero    RondaParqueadero[]
   tramitesSolicitados  Tramite[] @relation("UsuarioSolicitante")
   tramitesAprobados    Tramite[] @relation("UsuarioAprobador")
+  notificaciones       Notificacion[]
+}
+
+model Notificacion {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  tipo        String   // "APROBACION", "SISTEMA", "INFO"
+  titulo      String
+  mensaje     String
+  leida       Boolean  @default(false)
+  creadoEn    DateTime @default(now())
 }
 
 model Visita {

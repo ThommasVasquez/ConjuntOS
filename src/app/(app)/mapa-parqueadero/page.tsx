@@ -63,15 +63,12 @@ export default function MapaParqueaderoPage() {
       setPlaca("");
       setObs("");
     } else {
-      // Direct toggle to available (departure)
       processToggle(cell.id, 'DISPONIBLE');
     }
   };
 
   const processToggle = async (id: string, newEstado: string, plate?: string, notes?: string) => {
     setIsSubmitting(true);
-    
-    // Optimistic UI update
     setParqueaderos(prev => prev.map(p => p.id === id ? { ...p, estado: newEstado } : p));
     
     try {
@@ -88,11 +85,11 @@ export default function MapaParqueaderoPage() {
       const data = await res.json();
       if (data.success) {
         toast.success(newEstado === 'OCUPADO' ? `Ingreso registrado en celda ${selectedCell?.numero || ""}` : "Celda liberada");
-        loadExtra(); // Refresh logs
+        loadExtra();
       }
     } catch {
       toast.error("Error de red");
-      loadData(); // revert
+      loadData();
     } finally {
       setIsSubmitting(false);
       setSelectedCell(null);
@@ -128,7 +125,6 @@ export default function MapaParqueaderoPage() {
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
        <ProfileHeader />
        
-       {/* SECCION RONDAS */}
        <section className="fade-up liquid-glass rounded-3xl p-5 border border-white/10 shadow-xl flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors ${lastRound ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-orange-500/10 border-orange-500/30 text-orange-400 animate-pulse'}`}>
@@ -175,6 +171,8 @@ export default function MapaParqueaderoPage() {
              {parqueaderos.map((p) => {
                 const isLibre = p.estado === 'DISPONIBLE';
                 const isResident = p.tipo === 'RESIDENTE';
+                const assignedPlate = p.usuario?.vehiculos?.[0]?.placa;
+                const residentName = p.usuario?.nombre;
 
                 return (
                   <button 
@@ -186,7 +184,18 @@ export default function MapaParqueaderoPage() {
                   >
                      {isResident ? <ShieldCheck size={20} className={isLibre ? 'text-white/20' : 'text-accent/60'} /> : <HelpCircle size={20} className={isLibre ? 'text-blue-400/40' : 'text-blue-400'}/>}
                      <span className="font-display font-bold text-xl">{p.numero}</span>
-                     {!isLibre && <Car size={16} className="text-accent absolute top-2 right-2 animate-bounce-subtle" />}
+                     
+                     {!isLibre && (
+                       <div className="absolute top-2 right-2 flex flex-col items-end">
+                           <Car size={14} className="text-accent animate-bounce-subtle" />
+                           {assignedPlate && <span className="text-[8px] font-black bg-accent text-primary px-1 rounded-sm mt-1">{assignedPlate}</span>}
+                       </div>
+                     )}
+
+                     {residentName && !isLibre && (
+                         <span className="text-[7px] uppercase font-bold text-white/40 absolute top-2 left-2 max-w-[50px] truncate">{residentName}</span>
+                     )}
+
                      <span className="text-[9px] uppercase font-bold tracking-widest absolute bottom-2 opacity-50">
                         {p.tipo}
                      </span>
@@ -196,7 +205,6 @@ export default function MapaParqueaderoPage() {
           </div>
        </div>
 
-       {/* HISTORIAL DE ACTIVIDAD */}
        <section className="fade-up flex flex-col gap-4 mt-2">
           <div className="flex justify-between items-center px-2">
              <h3 className="text-white font-display font-medium text-lg tracking-wide flex items-center gap-2"><History size={18} className="text-white/40"/> Mi Actividad</h3>
@@ -236,7 +244,6 @@ export default function MapaParqueaderoPage() {
           </div>
        </section>
 
-       {/* MODAL REGISTRO */}
        {selectedCell && (
           <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
              <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSelectedCell(null)} />

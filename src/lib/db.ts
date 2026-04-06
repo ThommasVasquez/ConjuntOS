@@ -119,6 +119,7 @@ const db = {
   get rondaParqueadero() { return getPrisma().then(p => p.rondaParqueadero); },
   get mascota() { return getPrisma().then(p => p.mascota); },
   get tramite() { return getPrisma().then(p => p.tramite); },
+  get notificacion() { return getPrisma().then(p => p.notificacion); },
   
   $connect: () => getPrisma().then(p => p.$connect()),
   $disconnect: () => getPrisma().then(p => p.$disconnect()),

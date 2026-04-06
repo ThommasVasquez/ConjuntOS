@@ -36,6 +36,8 @@ function HomeResidente() {
   const router = useRouter();
   const { data: session } = useSession();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [notificaciones, setNotificaciones] = useState<any[]>([]);
+
   
   const categories = [
     { title: "Citofonía", icon: <UserIcon size={20}/>, color: "from-purple-500 to-pink-500", path: "/citofonia" },
@@ -121,15 +123,34 @@ function HomeResidente() {
     return () => observer.disconnect();
   }, [loadMoreItems, isLoadingMore]);
 
+  const fetchNotificaciones = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notificaciones');
+      const data = await res.json();
+      if (data.success) setNotificaciones(data.data.filter((n: any) => !n.leida));
+    } catch (e) { console.error("Error fetching notifications", e); }
+  }, []);
+
+  const markAsRead = async (id: string) => {
+      try {
+          await fetch('/api/notificaciones', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id, leida: true })
+          });
+          setNotificaciones(prev => prev.filter(n => n.id !== id));
+      } catch (e) { console.error("Error marking as read", e); }
+  };
+
   useEffect(() => {
     if (session) {
-      // Logic for session if needed
+      fetchNotificaciones();
     }
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up-home", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 });
     }, containerRef);
     return () => ctx.revert();
-  }, [session]);
+  }, [session, fetchNotificaciones]);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-16 pb-32">
@@ -166,7 +187,36 @@ function HomeResidente() {
         </div>
       </section>
 
+      {/* NOTIFICATIONS BANNER (SI HAY PENDIENTES) */}
+      {notificaciones.length > 0 && (
+          <section className="fade-up-home flex flex-col gap-3">
+              <div className="flex justify-between items-center px-1">
+                  <h2 className="text-white font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                      <Bell size={14} className="text-accent animate-pulse" /> Avisos Recientes
+                  </h2>
+                  <span className="text-accent text-[10px] font-bold">{notificaciones.length} nuevos</span>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
+                  {notificaciones.map((n) => (
+                      <div 
+                        key={n.id} 
+                        onClick={() => markAsRead(n.id)}
+                        className="min-w-[280px] bg-linear-to-r from-accent/20 to-purple-500/10 border border-accent/30 rounded-[22px] p-4 flex flex-col gap-2 cursor-pointer hover:bg-white/5 transition-all shadow-lg shadow-accent/5 group"
+                      >
+                          <div className="flex justify-between items-start">
+                              <span className="text-[10px] font-black text-accent uppercase tracking-tighter">{n.tipo}</span>
+                              <div className="w-2 h-2 rounded-full bg-accent group-hover:scale-150 transition-transform shadow-[0_0_8px_var(--color-accent)]" />
+                          </div>
+                          <h3 className="text-white text-sm font-bold truncate">{n.titulo}</h3>
+                          <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">{n.mensaje}</p>
+                      </div>
+                  ))}
+              </div>
+          </section>
+      )}
+
       {/* WALLET HERO */}
+
       <section className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[120px] shadow-[0_15px_40px_rgba(0,0,0,0.6)] border border-white/10 group cursor-pointer active:scale-95 transition-all">
         <div className="absolute inset-0 bg-linear-to-br from-[#4C1D95] via-[#331A4D] to-[#BE185D] opacity-90" />
         <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">

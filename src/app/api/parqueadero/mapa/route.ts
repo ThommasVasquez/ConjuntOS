@@ -16,7 +16,12 @@ export async function GET() {
     const parqueaderos = await prisma.parqueadero.findMany({
       orderBy: { numero: 'asc' },
       include: {
-        usuario: { select: { nombre: true } }
+        usuario: { 
+          select: { 
+            nombre: true,
+            vehiculos: true 
+          } 
+        }
       }
     });
 

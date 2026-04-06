@@ -169,6 +169,20 @@ export async function GET(request: Request) {
             CONSTRAINT "Tramite_aprobadoPorId_fkey" FOREIGN KEY ("aprobadoPorId") REFERENCES "Usuario"(id) ON DELETE SET NULL ON UPDATE CASCADE
           )
         `);
+        
+        // CREAR TABLA DE NOTIFICACIONES
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS "Notificacion" (
+            id TEXT PRIMARY KEY,
+            "usuarioId" TEXT NOT NULL,
+            tipo TEXT NOT NULL,
+            titulo TEXT NOT NULL,
+            mensaje TEXT NOT NULL,
+            leida BOOLEAN DEFAULT false,
+            "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "Notificacion_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+          )
+        `);
 
         diagnostics.dbTest.write = "✅ OK (Tablas de Auditoría, Maestras y Trámites verificadas)";
       } catch (dbError: unknown) {

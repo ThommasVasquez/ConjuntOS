@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import db from "@/lib/db";
-import { randomBytes } from "crypto";
-import { hash } from "bcryptjs"; // Though we use Md5891129Ae$ as a default password in demo
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -17,14 +15,14 @@ export async function PUT(request: Request) {
     const usuarioDelegate = await db.usuario;
     const dbAdmin = await usuarioDelegate.findUnique({
       where: { id: session.user.id },
-      select: { rol: true, conjuntoId: true, nombre: true }
+      select: { id: true, rol: true, conjuntoId: true, nombre: true }
     });
 
     if (!dbAdmin || !['ADMINISTRADOR', 'SUPER_ADMIN'].includes(dbAdmin.rol)) {
       return NextResponse.json({ success: false, error: "Permisos insuficientes" }, { status: 403 });
     }
 
-    const { tramiteId, accion, observacionAdmin } = await request.json();
+    const { tramiteId, accion, observacionAdmin, parqueaderoId } = await request.json();
 
     if (!tramiteId || !['APROBAR', 'RECHAZAR'].includes(accion)) {
       return NextResponse.json({ success: false, error: "Datos de acción inválidos" }, { status: 400 });
@@ -32,7 +30,8 @@ export async function PUT(request: Request) {
 
     const tramiteDelegate = await db.tramite;
     const tramite = await tramiteDelegate.findUnique({
-      where: { id: tramiteId }
+      where: { id: tramiteId },
+      include: { usuario: { select: { nombre: true } } }
     });
 
     if (!tramite) {
@@ -65,6 +64,18 @@ export async function PUT(request: Request) {
             tipo: data.tipo
           }
         });
+
+        // Asignación de Parqueadero si viene el ID
+        if (parqueaderoId) {
+            const parqueaderoDelegate = await db.parqueadero;
+            await parqueaderoDelegate.update({
+                where: { id: parqueaderoId },
+                data: {
+                    usuarioId: tramite.usuarioId,
+                    estado: 'OCUPADO'
+                }
+            });
+        }
       } 
       else if (tramite.tipo === 'MASCOTA') {
         const mascotaDelegate = await db.mascota;
@@ -78,10 +89,9 @@ export async function PUT(request: Request) {
         });
       }
       else if (tramite.tipo === 'MUDANZA') {
-        // En MUDANZA, viene un array de 'nuevosInquilinos' en el JSON. Opcionalmente crearles cuenta.
+        // ... (existing mudanza logic)
         if (data.crearCuentas && data.nuevosInquilinos && data.nuevosInquilinos.length > 0) {
             for (const inq of data.nuevosInquilinos) {
-                // Crear usuario (evitando conflicto de email si ya existe)
                 await usuarioDelegate.upsert({
                     where: { email: inq.email },
                     update: { 
@@ -96,16 +106,36 @@ export async function PUT(request: Request) {
                         nombre: inq.nombre,
                         telefono: inq.telefono,
                         rol: 'ARRENDATARIO',
-                        password: 'Md5891129Ae$', // Default para la demo
+                        password: 'Md5891129Ae$',
                         activo: true
                     }
                 });
             }
         }
       }
-    }
 
-    // TODO: Si es rechazado, enviaríamos email.
+      // CREAR NOTIFICACIÓN DE APROBACIÓN
+      const notifDelegate = await db.notificacion;
+      await notifDelegate.create({
+          data: {
+              usuarioId: tramite.usuarioId,
+              tipo: 'APROBACION',
+              titulo: `Trámite Aprobado: ${tramite.tipo}`,
+              mensaje: `Tu solicitud de ${tramite.tipo.toLowerCase()} ha sido aprobada${parqueaderoId ? '. Se te ha asignado un espacio de parqueo.' : '.'}`
+          }
+      });
+    } else {
+        // NOTIFICACIÓN DE RECHAZO
+        const notifDelegate = await db.notificacion;
+        await notifDelegate.create({
+            data: {
+                usuarioId: tramite.usuarioId,
+                tipo: 'SISTEMA',
+                titulo: `Trámite Rechazado: ${tramite.tipo}`,
+                mensaje: `Tu solicitud ha sido rechazada. Motivo: ${observacionAdmin || 'No especificado'}`
+            }
+        });
+    }
 
     // Actualizar el estado del Trámite
     const tramiteResuelto = await tramiteDelegate.update({
