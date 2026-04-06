@@ -8,8 +8,17 @@ neonConfig.useSecureWebSocket = false;
 
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
-// Obtenemos la URL con flags de pgbouncer
-const rawUrl = process.env.DATABASE_URL || NEON_URL;
+// ESTRATEGIA DE CONEXIÓN (v25.0)
+// Forzamos Neon si DATABASE_URL es de Supabase o está vacío.
+const getStableUrl = () => {
+  const envUrl = (process.env.DATABASE_URL || "").trim();
+  if (!envUrl || envUrl.includes("supabase.com") || !envUrl.includes("neon.tech")) {
+    return NEON_URL;
+  }
+  return envUrl;
+};
+
+const rawUrl = getStableUrl();
 const url = rawUrl.includes('?') 
   ? `${rawUrl}&pgbouncer=true&connection_limit=1` 
   : `${rawUrl}?pgbouncer=true&connection_limit=1`;
@@ -20,14 +29,14 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// GLOBAL ERROR TRACKER (v23)
+// GLOBAL ERROR TRACKER
 declare global {
   var __DB_LAST_ERROR__: any;
 }
 
 const logError = (table: string, method: string, e: any, query: string, params: any) => {
   const errorObj = {
-    table, method, error: e.message, code: e.code, query, params, 
+    table, method, error: e.message, code: e.code, query, params, host: url.split('@')[1]?.split(':')[0] || 'unknown',
     at: new Date().toISOString()
   };
   globalThis.__DB_LAST_ERROR__ = errorObj;
@@ -35,8 +44,8 @@ const logError = (table: string, method: string, e: any, query: string, params: 
 };
 
 /**
- * SHADOW PRISMA CLIENT (v23.0)
- * Traceable Fix: Captura de errores avanzada y reporte global.
+ * SHADOW PRISMA CLIENT (v25.0)
+ * Forced Neon Fix: Bypass de Supabase y validación de host estable.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
@@ -48,27 +57,22 @@ class ModelProxy {
     const params: any[] = [];
     const clauses = keys.map((k) => {
       const val = where[k];
-      
       if (val !== null && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
         const op = Object.keys(val)[0];
         const opMap: any = { gte: '>=', lte: '<=', gt: '>', lt: '<', not: '!=', equals: '=' };
-        
         if (op === 'in') {
           const inList = val[op] as any[];
           const placeholders = inList.map((_, idx) => `$${params.length + idx + 1}`).join(", ");
           params.push(...inList);
           return `"${k}" IN (${placeholders})`;
         }
-        
         params.push(val[op]);
         return `"${k}" ${opMap[op] || '='} $${params.length}`;
       }
-      
       params.push(val);
       if (val === null) return `"${k}" IS NULL`;
       return `"${k}" = $${params.length}`;
     });
-
     return { sql: ` WHERE ` + clauses.join(" AND "), params };
   }
 
@@ -85,10 +89,7 @@ class ModelProxy {
          return filtered;
       }
       return item;
-    } catch (e: any) {
-      logError(this.tableName, "findUnique", e, query, params);
-      throw e;
-    }
+    } catch (e: any) { logError(this.tableName, "findUnique", e, query, params); throw e; }
   }
 
   async findFirst(args: any = {}) {
@@ -104,10 +105,7 @@ class ModelProxy {
          return filtered;
       }
       return item;
-    } catch (e: any) {
-      logError(this.tableName, "findFirst", e, query, params);
-      throw e;
-    }
+    } catch (e: any) { logError(this.tableName, "findFirst", e, query, params); throw e; }
   }
 
   async findMany(args: any = {}) {
@@ -132,10 +130,7 @@ class ModelProxy {
          });
       }
       return items;
-    } catch (e: any) {
-      logError(this.tableName, "findMany", e, query, params);
-      throw e;
-    }
+    } catch (e: any) { logError(this.tableName, "findMany", e, query, params); throw e; }
   }
 
   async upsert(args: any) {
@@ -159,10 +154,7 @@ class ModelProxy {
       const response: any = { _sum: {} };
       Object.keys(sum).forEach(k => { response._sum[k] = parseFloat(result[k]) || 0; });
       return response;
-    } catch (e: any) {
-      logError(this.tableName, "aggregate", e, query, params);
-      throw e;
-    }
+    } catch (e: any) { logError(this.tableName, "aggregate", e, query, params); throw e; }
   }
 
   private async hydrate(item: any, include: any) {
@@ -172,7 +164,6 @@ class ModelProxy {
       conjunto: "Conjunto", unidad: "Unidad", parqueadero: "Parqueadero", vehiculo: "Vehiculo",
       reserva: "Reserva", mascota: "Mascota"
     };
-
     for (const relation of Object.keys(include)) {
       const targetTable = tableMap[relation];
       if (!targetTable) continue;
@@ -206,10 +197,7 @@ class ModelProxy {
     try {
       const res = await pool.query(`INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`, values);
       return res.rows[0];
-    } catch (e: any) {
-      logError(this.tableName, "create", e, `INSERT INTO "${this.tableName}"`, values);
-      throw e;
-    }
+    } catch (e: any) { logError(this.tableName, "create", e, `INSERT INTO "${this.tableName}"`, values); throw e; }
   }
 
   async update(args: any) {
@@ -223,10 +211,7 @@ class ModelProxy {
     try {
       const res = await pool.query(query, values);
       return res.rows[0];
-    } catch (e: any) {
-      logError(this.tableName, "update", e, query, values);
-      throw e;
-    }
+    } catch (e: any) { logError(this.tableName, "update", e, query, values); throw e; }
   }
 
   async count(args: any = {}) {
@@ -235,10 +220,7 @@ class ModelProxy {
     try {
       const res = await pool.query(query, params);
       return parseInt(res.rows[0].count);
-    } catch (e: any) {
-      logError(this.tableName, "count", e, query, params);
-      throw e;
-    }
+    } catch (e: any) { logError(this.tableName, "count", e, query, params); throw e; }
   }
 }
 
@@ -256,16 +238,12 @@ const db: any = {
   rondaParqueadero: new ModelProxy("RondaParqueadero"),
   $connect: async () => {},
   $disconnect: async () => {},
-  // Diagnóstico
   getLastError: () => globalThis.__DB_LAST_ERROR__,
   $queryRawUnsafe: async (sql: string, ...values: any[]) => {
     try {
       const res = await pool.query(sql, values);
       return res.rows;
-    } catch (e: any) {
-      logError("RAW", "queryRaw", e, sql, values);
-      throw e;
-    }
+    } catch (e: any) { logError("RAW", "queryRaw", e, sql, values); throw e; }
   }
 };
 
