@@ -1,17 +1,25 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
+import { neon } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 
 export const runtime = "edge";
 
-// CONFIGURACIÓN DE RED (Soporta WebSocket para PG sobre HTTP/WS)
-neonConfig.useSecureWebSocket = true;
+const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
 /**
- * URL DE NEON (HARDCODED) - Siempre como respaldo o fuente principal.
- * Agregamos '?pgbouncer=true&connection_limit=1' para compatibilidad con el motor de Prisma en el Edge.
+ * --- ZERO-CONSTRUCTOR SHIM (v15) ---
+ * Inyectamos la URL directamente en el entorno global ANTES de inicializar Prisma.
+ * Agregamos '?pgbouncer=true&connection_limit=1' para compatibilidad total en Edge.
  */
-const BASE_NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
+const urlWithFlags = (process.env.DATABASE_URL || NEON_URL).includes('?')
+  ? `${(process.env.DATABASE_URL || NEON_URL)}&pgbouncer=true&connection_limit=1`
+  : `${(process.env.DATABASE_URL || NEON_URL)}?pgbouncer=true&connection_limit=1`;
+
+// SHIM GLOBAL ABSOLUTO
+const g = globalThis as any;
+if (!g.process) g.process = { env: {} };
+if (!g.process.env) g.process.env = {};
+g.process.env.DATABASE_URL = urlWithFlags;
 
 // Singleton cliente
 let prismaInstance: any = null;
@@ -19,43 +27,23 @@ let prismaInstance: any = null;
 export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
-  // Lógica de descubrimiento de URL con inyección de flags de compatibilidad
-  let rawUrl = process.env.DATABASE_URL || BASE_NEON_URL;
-  
-  // Limpieza básica y aseguramiento de parámetros pgbouncer para el Edge
-  let url = rawUrl.includes('?') 
-    ? `${rawUrl}&pgbouncer=true&connection_limit=1` 
-    : `${rawUrl}?pgbouncer=true&connection_limit=1`;
-
-  // --- SHIM DE PROCESO (Última línea de defensa) ---
-  const g = globalThis as any;
-  if (!g.process) g.process = { env: {} };
-  if (!g.process.env) g.process.env = {};
-  g.process.env.DATABASE_URL = url;
-
   try {
-    const pool = new Pool({ 
-        connectionString: url,
-        ssl: { rejectUnauthorized: false }
-    });
-
+    // Usar Neon (Fetch Driver)
+    const sql = neon(urlWithFlags);
+    
     // @ts-expect-error - Prisma Neon adapter type mismatch
-    const adapter = new PrismaNeon(pool);
+    const adapter = new PrismaNeon(sql);
     
     /**
-     * PRISMA 7.6.0 + CLOUDFLARE EDGE:
-     * El 'adapter' maneja la query, pero el Query Engine WASM necesita la 'datasourceUrl'
-     * con los flags de pgbouncer para inicializar correctamente los tipos y el esquema.
+     * CONSTRUCTOR MINIMALISTA:
+     * Al no pasar 'datasourceUrl' evitamos que el motor WASM rechace la configuración.
+     * Al haber inyectado 'DATABASE_URL' arriba, el motor leerá los metadatos del entorno global.
      */
-    // @ts-ignore
-    prismaInstance = new PrismaClient({ 
-        adapter,
-        datasourceUrl: url
-    });
+    prismaInstance = new PrismaClient({ adapter });
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR EN LA CONEXIÓN DE COMPATIBILIDAD (v14):", error.message);
+    console.error("❌ ERROR EN ZERO-CONSTRUCTOR PRISMA 7:", error.message);
     throw error;
   }
 }
@@ -94,4 +82,4 @@ const db: any = {
 };
 
 export default db;
-export const discoverUrl = async () => (process.env.DATABASE_URL || BASE_NEON_URL);
+export const discoverUrl = async () => urlWithFlags;
