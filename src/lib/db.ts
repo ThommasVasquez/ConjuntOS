@@ -82,7 +82,10 @@ export async function getPrisma() {
   if (prisma) return prisma;
   const url = await discoverUrl();
   try {
-    const pool = new Pool({ connectionString: url });
+    const pool = new Pool({ 
+        connectionString: url,
+        ssl: { rejectUnauthorized: false }
+    });
     // @ts-expect-error - Incompatibilidad de tipos Neon/Prisma
     const adapter = new PrismaNeon(pool);
     prisma = new PrismaClient({ adapter });

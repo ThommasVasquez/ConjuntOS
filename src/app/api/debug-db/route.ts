@@ -201,7 +201,7 @@ export async function GET(request: Request) {
           )
         `);
 
-        diagnostics.dbTest.write = "✅ OK (Tablas de Auditoría, Maestras y Trámites verificadas)";
+        diagnostics.setup.logs.push(`Tablas verificadas: ${tables.length}`);
       } catch (dbError: unknown) {
       const err = dbError as Error;
       diagnostics.dbTest.connection = `❌ Error: ${err.message}`;
