@@ -150,7 +150,27 @@ export async function GET(request: Request) {
           )
         `);
 
-        diagnostics.dbTest.write = "✅ OK (Tablas de Auditoría y Maestras verificadas)";
+        // CREAR TABLA DE TRAMITES
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS "Tramite" (
+            id TEXT PRIMARY KEY,
+            "conjuntoId" TEXT NOT NULL,
+            "usuarioId" TEXT NOT NULL,
+            tipo TEXT NOT NULL,
+            estado TEXT DEFAULT 'PENDIENTE',
+            descripcion TEXT NOT NULL,
+            "observacionAdmin" TEXT,
+            "aprobadoPorId" TEXT,
+            "fechaRespuesta" TIMESTAMP WITH TIME ZONE,
+            "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            "actualizadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "Tramite_conjuntoId_fkey" FOREIGN KEY ("conjuntoId") REFERENCES "Conjunto"(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+            CONSTRAINT "Tramite_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+            CONSTRAINT "Tramite_aprobadoPorId_fkey" FOREIGN KEY ("aprobadoPorId") REFERENCES "Usuario"(id) ON DELETE SET NULL ON UPDATE CASCADE
+          )
+        `);
+
+        diagnostics.dbTest.write = "✅ OK (Tablas de Auditoría, Maestras y Trámites verificadas)";
       } catch (dbError: unknown) {
       const err = dbError as Error;
       diagnostics.dbTest.connection = `❌ Error: ${err.message}`;

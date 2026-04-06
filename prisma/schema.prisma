@@ -57,6 +57,20 @@ enum TipoJunta {
   EXTRAORDINARIA
 }
 
+enum TipoTramite {
+  MASCOTA
+  VEHICULO
+  ARRENDAMIENTO
+  MUDANZA
+  OTRO
+}
+
+enum EstadoTramite {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
 enum EstadoPago {
   PENDIENTE
   PAGADO
@@ -139,6 +153,7 @@ model Conjunto {
   reservas        Reserva[]
   anuncios        Anuncio[]
   juntas          Junta[]
+  tramites        Tramite[]
   pagos           Pago[]
   gastos          Gasto[]
   locales         Local[]
@@ -178,6 +193,8 @@ model Usuario {
   mascotas    Mascota[]
   registrosParqueadero RegistroParqueadero[]
   rondasParqueadero    RondaParqueadero[]
+  tramitesSolicitados  Tramite[] @relation("UsuarioSolicitante")
+  tramitesAprobados    Tramite[] @relation("UsuarioAprobador")
 }
 
 model Visita {
@@ -262,6 +279,25 @@ model RondaParqueadero {
   fecha         DateTime    @default(now())
   hallazgos     String?     // Notas sobre irregularidades (json string)
   completada    Boolean     @default(false)
+}
+
+model Tramite {
+  id              String        @id @default(cuid())
+  conjuntoId      String
+  conjunto        Conjunto      @relation(fields: [conjuntoId], references: [id])
+  usuarioId       String
+  usuario         Usuario       @relation("UsuarioSolicitante", fields: [usuarioId], references: [id])
+  tipo            TipoTramite
+  estado          EstadoTramite @default(PENDIENTE)
+  descripcion     String        // JSON payload the resident submitted
+  observacionAdmin String?      // Observations by the administrator when approving/rejecting
+  
+  aprobadoPorId   String?
+  aprobadoPor     Usuario?      @relation("UsuarioAprobador", fields: [aprobadoPorId], references: [id])
+  fechaRespuesta  DateTime?
+  
+  creadoEn        DateTime      @default(now())
+  actualizadoEn   DateTime      @updatedAt
 }
 
 model Unidad {
