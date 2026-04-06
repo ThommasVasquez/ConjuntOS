@@ -1,38 +1,45 @@
-import { neon } from "@neondatabase/serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client/edge";
 
 export const runtime = "edge";
 
-const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
+// CONFIGURACIÓN DE RED (Soporta Supabase Pooler a través del driver Neon)
+neonConfig.useSecureWebSocket = true;
 
-// Singleton para el cliente de Prisma
+// Singleton cliente
 let prismaInstance: any = null;
 
 export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
+  // RESTRICCIÓN: Usamos ÚNICAMENTE la variable de entorno ya configurada en el sistema.
+  // Se ha verificado en fases previas que está saludable.
+  const url = process.env.DATABASE_URL || "";
+
+  if (!url) {
+    throw new Error("❌ DATABASE_URL_MISSING_IN_ENVIRONMENT");
+  }
+
   try {
-    // Usar Neon Fetch Driver (el más estable en Edge)
-    const sql = neon(NEON_URL);
-    
+    const pool = new Pool({ 
+        connectionString: url,
+        ssl: { rejectUnauthorized: false }
+    });
+
+    // Adaptador de Prisma (Neon es compatible con Supabase Postgres sobre WS)
     // @ts-expect-error - Prisma Neon adapter type mismatch
-    const adapter = new PrismaNeon(sql);
+    const adapter = new PrismaNeon(pool);
     
     /**
-     * PATRÓN MODERNO PRISMA 7.X:
-     * 1. Usamos '@prisma/client' unificado (sin /edge).
-     * 2. Pasamos el adaptador de Neon.
-     * 3. Pasamos 'datasourceUrl' en la raíz para sobreescribir cualquier variable de entorno.
+     * MÁXIMA SIMPLICIDAD: No pasamos 'datasourceUrl' ni 'datasources' al constructor.
+     * Al pasar el 'adapter', Prisma 7.x delega la gestión de la conexión.
      */
-    prismaInstance = new PrismaClient({ 
-        adapter,
-        datasourceUrl: NEON_URL
-    });
+    prismaInstance = new PrismaClient({ adapter });
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR EN EL CLIENTE UNIFICADO DE PRISMA:", error.message);
+    console.error("❌ ERROR EN LA CONEXIÓN DE ENTORNO PURO:", error.message);
     throw error;
   }
 }
@@ -71,4 +78,4 @@ const db: any = {
 };
 
 export default db;
-export const discoverUrl = async () => NEON_URL;
+export const discoverUrl = async () => process.env.DATABASE_URL;
