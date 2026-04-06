@@ -97,6 +97,12 @@ export async function GET(request: Request) {
         await pool.query("SELECT 1");
         diagnostics.dbTest.connection = `✅ OK (Neon Serverless - ${Date.now() - dbStart}ms)`;
 
+        // DIAGNÓSTICO DE URL
+        const { discoverUrl } = await import("@/lib/db");
+        const rawUrl = await discoverUrl();
+        const maskedUrl = rawUrl ? `${rawUrl.substring(0, 15)}...${rawUrl.substring(rawUrl.length - 10)}` : "VACÍA";
+        diagnostics.setup.logs.push(`URL Detectada: ${maskedUrl}`);
+
         // LISTAR TABLAS EXISTENTES
         const tablesRes = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
         const tables = tablesRes.rows.map((r: any) => r.table_name);

@@ -7,14 +7,10 @@ export const runtime = "edge";
 /**
  * Escapa el carácter '%' en la contraseña para que URL lo acepte.
  */
-/**
- * Motor de sanitización universal (Maneja caracteres especiales en contraseñas)
- */
 export function sanitizeUrl(baseUrl: string): string {
   if (!baseUrl || typeof baseUrl !== 'string') return "";
   const raw = baseUrl.trim();
   
-  // Si ya tiene caracteres escapados como %23 (#) o %24 ($), NO volver a escapar el símbolo %
   if (raw.includes("%23") || raw.includes("%24") || raw.includes("%25")) {
     return raw;
   }
@@ -39,27 +35,37 @@ export function sanitizeUrl(baseUrl: string): string {
 export async function discoverUrl(): Promise<string> {
   const g = globalThis as { DATABASE_URL?: string; env?: { DATABASE_URL?: string }; __DATABASE_URL_CACHE__?: string };
   
-  if (g.__DATABASE_URL_CACHE__) return g.__DATABASE_URL_CACHE__;
+  if (g.__DATABASE_URL_CACHE__ && g.__DATABASE_URL_CACHE__ !== "undefined" && g.__DATABASE_URL_CACHE__.length > 10) {
+    return g.__DATABASE_URL_CACHE__;
+  }
 
   // 1. Prioridad: process.env (Suele ser inyectado por Vercel/Local)
   let url = process.env.DATABASE_URL || process.env.NEXT_PUBLIC_DATABASE_URL || "";
 
   // 2. Fallback: Cloudflare Request Context (Vital para Pages/Workers)
-  if (!url) {
+  if (!url || url === "undefined" || url === "null") {
     try {
       const { getRequestContext } = await import("@cloudflare/next-on-pages");
       const ctx = getRequestContext();
-      url = (ctx as { env?: { DATABASE_URL?: string } })?.env?.DATABASE_URL || "";
+      url = (ctx as any)?.env?.DATABASE_URL || "";
     } catch { /* Ignorar */ }
   }
 
-  // 3. Fallback de emergencia (MD5...)
-  if (!url || url === "undefined") {
+  // 3. Fallback Extremadamente Agresivo: Atributos directos de globalThis o process
+  if (!url || url === "undefined" || url === "null") {
+      url = (process.env as any).DATABASE_URL || (globalThis as any).DATABASE_URL || "";
+  }
+
+  // 4. Fallback de emergencia final (Garantía de Host para Neon)
+  if (!url || url === "undefined" || url === "null" || url.length < 10) {
+    console.warn("⚠️ Utilizando DATABASE_URL de emergencia por falta de variable de entorno en Edge.");
     url = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
   }
 
   const sanitized = sanitizeUrl(url);
-  if (sanitized) g.__DATABASE_URL_CACHE__ = sanitized;
+  if (sanitized && sanitized.length > 10) {
+      g.__DATABASE_URL_CACHE__ = sanitized;
+  }
   
   return sanitized;
 }
@@ -74,6 +80,7 @@ export async function getPrisma() {
   const url = await discoverUrl();
   try {
     neonConfig.useSecureWebSocket = true;
+    neonConfig.fetchConnectionCache = true;
     const pool = new Pool({ connectionString: url });
     // @ts-expect-error - Incompatibilidad de tipos Neon/Prisma
     const adapter = new PrismaNeon(pool);
@@ -81,7 +88,7 @@ export async function getPrisma() {
     return prisma;
   } catch (error) {
     console.error("❌ Prisma Edge Boot Error:", error);
-    prisma = null; // Reiniciar para permitir reintento
+    prisma = null;
     throw error;
   }
 }
