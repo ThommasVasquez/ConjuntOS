@@ -21,72 +21,96 @@ const pool = new Pool({
 });
 
 /**
- * SHADOW PRISMA CLIENT (v21.0)
- * Full Mock Support: Implementado 'aggregate' (_sum), 'count' con filtros y expansión total de modelos.
+ * SHADOW PRISMA CLIENT (v22.0)
+ * Unified Where Logic: Soporte consistente para gte, lte, in, equals en todos los métodos.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
 
+  /**
+   * BUILDER DE SQL WHERE (v22):
+   * Convierte objetos de Prisma en fragmentos SQL y parámetros.
+   */
+  private buildWhere(where: any = {}) {
+    const keys = Object.keys(where);
+    if (keys.length === 0) return { sql: "", params: [] };
+
+    const params: any[] = [];
+    const clauses = keys.map((k, i) => {
+      const val = where[k];
+      
+      // Caso 1: Operadores complejos { gte: val, in: [...] }
+      if (val !== null && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+        const op = Object.keys(val)[0];
+        const opMap: any = { gte: '>=', lte: '<=', gt: '>', lt: '<', not: '!=', equals: '=' };
+        
+        if (op === 'in') {
+          const inList = val[op] as any[];
+          const placeholders = inList.map((_, idx) => `$${params.length + idx + 1}`).join(", ");
+          params.push(...inList);
+          return `"${k}" IN (${placeholders})`;
+        }
+        
+        params.push(val[op]);
+        return `"${k}" ${opMap[op] || '='} $${params.length}`;
+      }
+      
+      // Caso 2: Igualdad directa o nula
+      params.push(val);
+      if (val === null) return `"${k}" IS NULL`;
+      return `"${k}" = $${params.length}`;
+    });
+
+    return { 
+      sql: ` WHERE ` + clauses.join(" AND "), 
+      params 
+    };
+  }
+
   async findUnique(args: any) {
-    const where = args.where;
-    const key = Object.keys(where)[0];
-    const value = where[key];
-    const query = `SELECT * FROM "${this.tableName}" WHERE "${key}" = $1 LIMIT 1`;
-    const res = await pool.query(query, [value]);
-    let item = res.rows[0] || null;
-    
-    if (item && args.include) {
-      item = await this.hydrate(item, args.include);
+    const { sql, params } = this.buildWhere(args.where);
+    const query = `SELECT * FROM "${this.tableName}"${sql} LIMIT 1`;
+    try {
+      const res = await pool.query(query, params);
+      let item = res.rows[0] || null;
+      if (item && args.include) item = await this.hydrate(item, args.include);
+      if (item && args.select) {
+         const filtered: any = {};
+         Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
+         return filtered;
+      }
+      return item;
+    } catch (e) {
+      console.error(`❌ DB Error en findUnique(${this.tableName}):`, e, query, params);
+      throw e;
     }
-    
-    // Aplicar select si existe (incluso tras hidratación)
-    if (item && args.select) {
-       const filtered: any = {};
-       Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
-       return filtered;
-    }
-    return item;
   }
 
   async findFirst(args: any = {}) {
-    const where = args.where || {};
-    let query = `SELECT * FROM "${this.tableName}"`;
-    const keys = Object.keys(where);
-    const values = Object.values(where);
-    
-    if (keys.length > 0) {
-      query += ` WHERE ` + keys.map((k, i) => `"${k}" = $${i + 1}`).join(" AND ");
+    const { sql, params } = this.buildWhere(args.where);
+    const query = `SELECT * FROM "${this.tableName}"${sql} LIMIT 1`;
+    try {
+      const res = await pool.query(query, params);
+      let item = res.rows[0] || null;
+      if (item && args.include) item = await this.hydrate(item, args.include);
+      if (item && args.select) {
+         const filtered: any = {};
+         Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
+         return filtered;
+      }
+      return item;
+    } catch (e) {
+      console.error(`❌ DB Error en findFirst(${this.tableName}):`, e, query, params);
+      throw e;
     }
-    
-    query += ` LIMIT 1`;
-    const res = await pool.query(query, values);
-    let item = res.rows[0] || null;
-
-    if (item && args.include) {
-      item = await this.hydrate(item, args.include);
-    }
-    
-    if (item && args.select) {
-       const filtered: any = {};
-       Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
-       return filtered;
-    }
-    return item;
   }
 
   async findMany(args: any = {}) {
-    const where = args.where || {};
-    let query = `SELECT * FROM "${this.tableName}"`;
-    const keys = Object.keys(where);
-    const values = Object.values(where);
-    
-    if (keys.length > 0) {
-      query += ` WHERE ` + keys.map((k, i) => `"${k}" = $${i + 1}`).join(" AND ");
-    }
+    const { sql, params } = this.buildWhere(args.where);
+    let query = `SELECT * FROM "${this.tableName}"${sql}`;
     
     if (args.orderBy) {
       const orderKey = Object.keys(args.orderBy)[0];
-      // Manejar orderBy objeto (asc/desc)
       const orderVal = args.orderBy[orderKey];
       const orderDir = typeof orderVal === 'string' ? orderVal.toUpperCase() : 'DESC';
       query += ` ORDER BY "${orderKey}" ${orderDir}`;
@@ -94,24 +118,26 @@ class ModelProxy {
       query += ` ORDER BY id DESC`; 
     }
     
-    if (args.take) query += ` LIMIT ${args.take}`;
-    else query += ` LIMIT 200`;
+    const limit = args.take || 200;
+    query += ` LIMIT ${limit}`;
+    if (args.skip) query += ` OFFSET ${args.skip}`;
     
-    const res = await pool.query(query, values);
-    let items = res.rows;
-
-    if (items.length > 0 && args.include) {
-      items = await Promise.all(items.map(item => this.hydrate(item, args.include)));
+    try {
+      const res = await pool.query(query, params);
+      let items = res.rows;
+      if (items.length > 0 && args.include) items = await Promise.all(items.map(item => this.hydrate(item, args.include)));
+      if (items.length > 0 && args.select) {
+         items = items.map(item => {
+           const filtered: any = {};
+           Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
+           return filtered;
+         });
+      }
+      return items;
+    } catch (e) {
+      console.error(`❌ DB Error en findMany(${this.tableName}):`, e, query, params);
+      throw e;
     }
-
-    if (items.length > 0 && args.select) {
-       items = items.map(item => {
-         const filtered: any = {};
-         Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
-         return filtered;
-       });
-    }
-    return items;
   }
 
   async upsert(args: any) {
@@ -123,56 +149,32 @@ class ModelProxy {
     else return await this.create({ data: create });
   }
 
-  /**
-   * MÉTODO AGGREGATE (v21):
-   * Soporta _sum para sumas financieras (Recaudo, Gastos)
-   */
   async aggregate(args: any) {
-    const where = args.where || {};
+    const { sql, params } = this.buildWhere(args.where);
     const sum = args._sum || {};
-    const keys = Object.keys(where);
-    const values = Object.values(where);
     
     let sumClauses = Object.keys(sum).map(k => `SUM("${k}") as "${k}"`).join(", ");
     if (!sumClauses) sumClauses = "COUNT(*) as count";
 
-    let query = `SELECT ${sumClauses} FROM "${this.tableName}"`;
-    if (keys.length > 0) {
-      // Manejar gte/lte básicos en 'where' para fechas
-      query += ` WHERE ` + keys.map((k, i) => {
-         if (typeof where[k] === 'object') {
-            const op = Object.keys(where[k])[0];
-            const opMap: any = { gte: '>=', lte: '<=', gt: '>', lt: '<' };
-            values[i] = where[k][op];
-            return `"${k}" ${opMap[op] || '='} $${i + 1}`;
-         }
-         return `"${k}" = $${i + 1}`;
-      }).join(" AND ");
+    const query = `SELECT ${sumClauses} FROM "${this.tableName}"${sql}`;
+    try {
+      const res = await pool.query(query, params);
+      const result = res.rows[0];
+      const response: any = { _sum: {} };
+      Object.keys(sum).forEach(k => { response._sum[k] = parseFloat(result[k]) || 0; });
+      return response;
+    } catch (e) {
+      console.error(`❌ DB Error en aggregate(${this.tableName}):`, e, query, params);
+      throw e;
     }
-    
-    const res = await pool.query(query, values);
-    const result = res.rows[0];
-    
-    const response: any = { _sum: {} };
-    Object.keys(sum).forEach(k => {
-       response._sum[k] = parseFloat(result[k]) || 0;
-    });
-    return response;
   }
 
   private async hydrate(item: any, include: any) {
     const newItem = { ...item };
     const tableMap: Record<string, string> = {
-      usuario: "Usuario",
-      aprobadoPor: "Usuario",
-      propietario: "Usuario",
-      solicitante: "Usuario",
-      conjunto: "Conjunto",
-      unidad: "Unidad",
-      parqueadero: "Parqueadero",
-      vehiculo: "Vehiculo",
-      reserva: "Reserva",
-      mascota: "Mascota"
+      usuario: "Usuario", aprobadoPor: "Usuario", propietario: "Usuario", solicitante: "Usuario",
+      conjunto: "Conjunto", unidad: "Unidad", parqueadero: "Parqueadero", vehiculo: "Vehiculo",
+      reserva: "Reserva", mascota: "Mascota"
     };
 
     for (const relation of Object.keys(include)) {
@@ -180,7 +182,6 @@ class ModelProxy {
       if (!targetTable) continue;
       const foreignKey = `${relation}Id`;
       const idToFetch = newItem[foreignKey] || (relation === 'usuario' ? newItem['usuarioId'] : (relation === 'conjunto' ? newItem['conjuntoId'] : null));
-      
       if (idToFetch) {
         try {
           const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
@@ -221,48 +222,32 @@ class ModelProxy {
     return res.rows[0];
   }
 
-  /**
-   * COUNT FILTRADO (v21):
-   * Soporta 'where' básico.
-   */
   async count(args: any = {}) {
-    const where = args.where || {};
-    const keys = Object.keys(where);
-    const values = Object.values(where);
-    let query = `SELECT COUNT(*) FROM "${this.tableName}"`;
-    if (keys.length > 0) {
-       query += ` WHERE ` + keys.map((k, i) => `"${k}" = $${i + 1}`).join(" AND ");
+    const { sql, params } = this.buildWhere(args.where);
+    const query = `SELECT COUNT(*) FROM "${this.tableName}"${sql}`;
+    try {
+      const res = await pool.query(query, params);
+      return parseInt(res.rows[0].count);
+    } catch (e) {
+      console.error(`❌ DB Error en count(${this.tableName}):`, e, query, params);
+      throw e;
     }
-    const res = await pool.query(query, values);
-    return parseInt(res.rows[0].count);
   }
 }
 
 // Interfaz DB compatible con Prisma
 const db: any = {
-  usuario: new ModelProxy("Usuario"),
-  tramite: new ModelProxy("Tramite"),
-  notificacion: new ModelProxy("Notificacion"),
-  conjunto: new ModelProxy("Conjunto"),
-  unidad: new ModelProxy("Unidad"),
-  vehiculo: new ModelProxy("Vehiculo"),
-  parqueadero: new ModelProxy("Parqueadero"),
-  mascota: new ModelProxy("Mascota"),
-  registroParqueadero: new ModelProxy("RegistroParqueadero"),
-  anuncio: new ModelProxy("Anuncio"),
-  areaComun: new ModelProxy("AreaComun"),
-  reserva: new ModelProxy("Reserva"),
-  solicitudServicio: new ModelProxy("SolicitudServicio"),
-  // Modelos nuevos v21
-  pago: new ModelProxy("Pago"),
-  gasto: new ModelProxy("Gasto"),
-  local: new ModelProxy("Local"),
-  inmueble: new ModelProxy("Inmueble"),
-  junta: new ModelProxy("JuntaDirectiva"),
-  visita: new ModelProxy("Visita"),
-  paquete: new ModelProxy("Paquete"),
+  usuario: new ModelProxy("Usuario"), tramite: new ModelProxy("Tramite"),
+  notificacion: new ModelProxy("Notificacion"), conjunto: new ModelProxy("Conjunto"),
+  unidad: new ModelProxy("Unidad"), vehiculo: new ModelProxy("Vehiculo"),
+  parqueadero: new ModelProxy("Parqueadero"), mascota: new ModelProxy("Mascota"),
+  registroParqueadero: new ModelProxy("RegistroParqueadero"), anuncio: new ModelProxy("Anuncio"),
+  areaComun: new ModelProxy("AreaComun"), reserva: new ModelProxy("Reserva"),
+  solicitudServicio: new ModelProxy("SolicitudServicio"), pago: new ModelProxy("Pago"),
+  gasto: new ModelProxy("Gasto"), local: new ModelProxy("Local"),
+  inmueble: new ModelProxy("Inmueble"), junta: new ModelProxy("Junta"), // Fix mapping
+  visita: new ModelProxy("Visita"), paquete: new ModelProxy("Paquete"),
   rondaParqueadero: new ModelProxy("RondaParqueadero"),
-  
   $connect: async () => {},
   $disconnect: async () => {},
   $queryRawUnsafe: async (sql: string, ...values: any[]) => {
