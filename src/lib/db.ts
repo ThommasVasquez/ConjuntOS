@@ -72,7 +72,7 @@ class ModelProxy {
     const { sql: whereSql, params } = this.buildWhere(args.where);
     const query = `SELECT * FROM "${this.tableName}"${whereSql} LIMIT 1`;
     try {
-      const rows = await (sql as any)(query, params);
+      const rows = await sql.query(query, params);
       let item = rows[0] || null;
       if (item && args.include) item = await this.hydrate(item, args.include);
       if (item && args.select) {
@@ -88,7 +88,7 @@ class ModelProxy {
     const { sql: whereSql, params } = this.buildWhere(args.where);
     const query = `SELECT * FROM "${this.tableName}"${whereSql} LIMIT 1`;
     try {
-      const rows = await (sql as any)(query, params);
+      const rows = await sql.query(query, params);
       let item = rows[0] || null;
       if (item && args.include) item = await this.hydrate(item, args.include);
       if (item && args.select) {
@@ -112,7 +112,7 @@ class ModelProxy {
     else query += ` LIMIT 200`;
     if (args.skip) query += ` OFFSET ${args.skip}`;
     try {
-      const items = await (sql as any)(query, params);
+      const items = await sql.query(query, params);
       let rows = [...items];
       if (rows.length > 0 && args.include) rows = await Promise.all(rows.map(item => this.hydrate(item, args.include)));
       if (rows.length > 0 && args.select) {
@@ -142,7 +142,7 @@ class ModelProxy {
     if (!sumClauses) sumClauses = "COUNT(*) as count";
     const query = `SELECT ${sumClauses} FROM "${this.tableName}"${whereSql}`;
     try {
-      const rows = await (sql as any)(query, params);
+      const rows = await sql.query(query, params);
       const result: any = rows[0] || {};
       const response: any = { _sum: {} };
       Object.keys(sum).forEach(k => { response._sum[k] = parseFloat(result[k]) || 0; });
@@ -182,7 +182,7 @@ class ModelProxy {
         }
         q += ` LIMIT ${nestedArgs.take || 100}`;
         try {
-          const res = await (sql as any)(q, subParams);
+          const res = await sql.query(q, subParams);
           newItem[relation] = res;
         } catch (e) { newItem[relation] = []; }
       } else {
@@ -190,7 +190,7 @@ class ModelProxy {
         const idToFetch = newItem[foreignKeyInSource] || (relation === 'usuario' ? newItem['usuarioId'] : (relation === 'conjunto' ? newItem['conjuntoId'] : null));
         if (idToFetch) {
           try {
-            const rows = await (sql as any)(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
+            const rows = await sql.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
             let relatedItem = rows[0] || null;
             if (relatedItem && typeof include[relation] === 'object' && include[relation].select) {
                const selectedFields = include[relation].select;
@@ -216,7 +216,7 @@ class ModelProxy {
     const values = Object.values(data);
     const q = `INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`;
     try {
-      const rows = await (sql as any)(q, values);
+      const rows = await sql.query(q, values);
       return rows[0];
     } catch (e: any) { logError(this.tableName, "create", e, q, values); throw e; }
   }
@@ -230,7 +230,7 @@ class ModelProxy {
     const values = [whereValue, ...Object.values(data)];
     const q = `UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`;
     try {
-      const rows = await (sql as any)(q, values);
+      const rows = await sql.query(q, values);
       return rows[0];
     } catch (e: any) { logError(this.tableName, "update", e, q, values); throw e; }
   }
@@ -239,7 +239,7 @@ class ModelProxy {
     const { sql: whereSql, params } = this.buildWhere(args.where);
     const query = `SELECT COUNT(*) FROM "${this.tableName}"${whereSql}`;
     try {
-      const rows = await (sql as any)(query, params);
+      const rows = await sql.query(query, params);
       return parseInt((rows[0] as any).count);
     } catch (e: any) { logError(this.tableName, "count", e, query, params); throw e; }
   }
@@ -261,7 +261,7 @@ const db: any = {
   $disconnect: async () => {},
   getLastError: () => globalThis.__DB_LAST_ERROR__,
   $queryRawUnsafe: async (qStr: string, ...vals: any[]) => {
-    try { return await (sql as any)(qStr, vals); }
+    try { return await sql.query(qStr, vals); }
     catch (e: any) { logError("RAW", "queryRaw", e, qStr, vals); throw e; }
   }
 };
