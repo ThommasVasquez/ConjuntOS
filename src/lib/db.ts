@@ -4,28 +4,18 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 
 export const runtime = "edge";
 
-// CONFIGURACIÓN ESTÁTICA DE ALTO NIVEL
+// CONFIGURACIÓN DE RED NEON
 neonConfig.useSecureWebSocket = true;
 
-/**
- * CONFIGURACIÓN DE PRECISIÓN: Descomponemos la URL para evitar errores de parseo en el Edge.
- */
-const DB_CONFIG = {
-    host: 'ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech',
-    user: 'neondb_owner',
-    password: 'Md5891129Ae#$1129',
-    database: 'neondb',
-    port: 5432,
-};
+const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
-const NEON_URL = `postgresql://${DB_CONFIG.user}:${encodeURIComponent(DB_CONFIG.password)}@${DB_CONFIG.host}/${DB_CONFIG.database}?sslmode=require`;
-
-// INYECCIÓN MANUAL (Para que el motor interno de Prisma no busque en el vacío)
-// @ts-ignore
-if (typeof process !== 'undefined') {
-    // @ts-ignore
-    process.env.DATABASE_URL = NEON_URL;
-}
+// --- SHIM GLOBAL: El "Truco Maestro" para Cloudflare Edge ---
+// Forzamos la variable de entorno en el objeto global para que el motor de Prisma la vea.
+const g = globalThis as any;
+if (!g.process) g.process = { env: {} };
+if (!g.process.env) g.process.env = {};
+g.process.env.DATABASE_URL = NEON_URL;
+// -------------------------------------------------------------
 
 let prismaInstance: PrismaClient | null = null;
 
@@ -33,26 +23,21 @@ export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
   try {
-    // IMPORTANTE: Pasamos los campos de conexión uno por uno. 
-    // Esto es mucho más robusto que pasar una URL larga en entornos aislados como Cloudflare.
     const pool = new Pool({ 
-        host: DB_CONFIG.host,
-        user: DB_CONFIG.user,
-        password: DB_CONFIG.password,
-        database: DB_CONFIG.database,
-        port: DB_CONFIG.port,
+        connectionString: NEON_URL,
         ssl: { rejectUnauthorized: false }
     });
 
     // @ts-expect-error - Prisma Neon adapter type mismatch
     const adapter = new PrismaNeon(pool);
     
-    // Inicialización limpia: El adaptador ya tiene los datos masticados
+    // Inicialización limpia: Al haber inyectado DATABASE_URL arriba,
+    // Prisma Client ya no se quejará de la falta de host ni caerá en localhost.
     prismaInstance = new PrismaClient({ adapter });
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR CRÍTICO EN CONEXIÓN DE PRECISIÓN:", error.message);
+    console.error("❌ ERROR EN EL SHIM GLOBAL DE PRISMA:", error.message);
     throw error;
   }
 }
