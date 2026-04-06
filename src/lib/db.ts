@@ -5,19 +5,23 @@ export const runtime = "edge";
 
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
-// ESTRATEGIA DE CONEXIÓN (v28.0)
-// Usamos HTTP Fetch (neon) para evitar errores de handshake 101/522 en Cloudflare Pages.
+// ESTRATEGIA DE CONEXIÓN (v30.0)
+// Forzamos Neon Edge vía HTTP Fetch para evitar errores DNS de Supabase y Handshakes WebSocket.
 const getStableUrl = () => {
   const envUrl = (process.env.DATABASE_URL || "").trim();
-  const baseUrl = (!envUrl || envUrl.includes("supabase.com") || !envUrl.includes("neon.tech"))
+  // Bypass Nuclear: Si detectamos Supabase o falta de URL, forzamos Neon.
+  const isSupabase = envUrl.includes("supabase.com") || envUrl.includes("pooler");
+  const baseUrl = (!envUrl || isSupabase || !envUrl.includes("neon.tech"))
     ? NEON_URL
     : envUrl;
+  
+  // Limpieza de parámetros para asegurar compatibilidad con HTTP driver
   return baseUrl.split('?')[0] + "?sslmode=require";
 };
 
 const url = getStableUrl();
 
-// Cliente HTTP Fetch (Sin WebSockets, sin Handshake 101)
+// Cliente HTTP Fetch (Estable en Cloudflare)
 const sql = neon(url);
 
 // GLOBAL ERROR TRACKER
@@ -29,15 +33,16 @@ const logError = (table: string, method: string, e: any, query: string, params: 
   const errorObj = {
     table, method, error: e.message, 
     driver: "neon-http-fetch",
-    query, params, at: new Date().toISOString()
+    host: url.split('@')[1]?.split('?')[0] || "unknown",
+    at: new Date().toISOString()
   };
   globalThis.__DB_LAST_ERROR__ = errorObj;
   console.error(`❌ DB_TRACE [${table}.${method}]:`, errorObj.error);
 };
 
 /**
- * SHADOW PRISMA CLIENT (v28.0)
- * HTTP Fetch Transition: Eliminación de WebSockets para estabilidad total en el Edge.
+ * SHADOW PRISMA CLIENT (v30.0)
+ * Nuclear Bypass Sync: Unificación de lógica de conexión para estabilidad total.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
@@ -112,17 +117,17 @@ class ModelProxy {
     else query += ` LIMIT 200`;
     if (args.skip) query += ` OFFSET ${args.skip}`;
     try {
-      const items = await sql.query(query, params);
-      let rows = [...items];
-      if (rows.length > 0 && args.include) rows = await Promise.all(rows.map(item => this.hydrate(item, args.include)));
-      if (rows.length > 0 && args.select) {
-         rows = rows.map(item => {
+      const rows = await sql.query(query, params);
+      let items = [...rows];
+      if (items.length > 0 && args.include) items = await Promise.all(items.map(item => this.hydrate(item, args.include)));
+      if (items.length > 0 && args.select) {
+         items = items.map(item => {
            const filtered: any = {};
            Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
            return filtered;
          });
       }
-      return rows;
+      return items;
     } catch (e: any) { logError(this.tableName, "findMany", e, query, params); throw e; }
   }
 
