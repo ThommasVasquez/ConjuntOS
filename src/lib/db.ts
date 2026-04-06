@@ -7,38 +7,58 @@ neonConfig.useSecureWebSocket = true;
 
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
+/**
+ * --- EL HACK FINAL: SHADOW PROXY ---
+ * Interceptamos TODA llamada a process.env para forzar DATABASE_URL en el Edge.
+ * Esto engaña incluso a motores compilados en WASM.
+ */
+const g = globalThis as any;
+if (!g.process) g.process = { env: {} };
+
+const originalEnv = g.process.env || {};
+g.process.env = new Proxy(originalEnv, {
+  get(target, prop) {
+    if (prop === 'DATABASE_URL' || prop === 'NEXT_PUBLIC_DATABASE_URL') {
+      return NEON_URL;
+    }
+    return target[prop as string];
+  },
+  // Aseguramos que 'hasOwnProperty' y otros métodos sigan funcionando
+  has(target, prop) {
+    if (prop === 'DATABASE_URL' || prop === 'NEXT_PUBLIC_DATABASE_URL') return true;
+    return prop in target;
+  }
+});
+
+// Forzamos también el valor directo por si acaso no están usando el Proxy correctamente
+g.process.env.DATABASE_URL = NEON_URL;
+
+// -----------------------------------
+
 let prismaInstance: any = null;
 
 export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
   try {
-    // --- SHIM GLOBAL: El "Truco Maestro" para Cloudflare Edge ---
-    // Forzamos la variable de entorno en el objeto global para que el motor de Prisma la vea.
-    const g = globalThis as any;
-    if (!g.process) g.process = { env: {} };
-    if (!g.process.env) g.process.env = {};
-    g.process.env.DATABASE_URL = NEON_URL;
-    // -------------------------------------------------------------
-
-    // IMPORTACIÓN DINÁMICA: Si importamos Prisma AFTER el shim, el motor verá la URL!
+    // Importación dinámica para asegurar que el Proxy ya esté activo
     const [{ PrismaClient }, { PrismaNeon }] = await Promise.all([
         import("@prisma/client/edge"),
         import("@prisma/adapter-neon")
     ]);
 
-    // Usar NEON (Fetch Driver) para máxima compatibilidad con el Edge de Cloudflare
+    // Usar Neon Fetch Driver
     const sql = neon(NEON_URL);
     
     // @ts-expect-error - Prisma Neon adapter type mismatch
     const adapter = new PrismaNeon(sql);
     
-    // Inicialización limpia
+    // Inicialización limpia: El Proxy se encargará de que Prisma vea la URL correcta
     prismaInstance = new PrismaClient({ adapter });
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR EN LA IMPORTACIÓN NUCLEAR DE PRISMA:", error.message);
+    console.error("❌ ERROR EN EL SHADOW PROXY DE PRISMA:", error.message);
     throw error;
   }
 }
