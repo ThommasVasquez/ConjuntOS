@@ -1,43 +1,10 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
+import { neon } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { PrismaClient } from "@prisma/client/edge";
+import { PrismaClient } from "@prisma/client";
 
 export const runtime = "edge";
 
-// CONFIGURACIÓN DE RED NEON
-neonConfig.useSecureWebSocket = true;
-
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
-
-/**
- * --- EL HACK FINAL: GOD MODE SHIM ---
- * Usamos 'Object.defineProperty' sobre el objeto global 'process.env'.
- * Este es el método más agresivo para sobreescribir la base de datos en el Edge de Cloudflare
- * y engañar plenamente al motor interno de Prisma para que por fin vea la URL correcta.
- */
-try {
-  const g = globalThis as any;
-  if (!g.process) g.process = { env: {} };
-  if (!g.process.env) g.process.env = {};
-
-  Object.defineProperty(g.process.env, 'DATABASE_URL', {
-    value: NEON_URL,
-    writable: true,
-    configurable: true,
-    enumerable: true
-  });
-  
-  // También para la versión pública
-  Object.defineProperty(g.process.env, 'NEXT_PUBLIC_DATABASE_URL', {
-    value: NEON_URL,
-    writable: true,
-    configurable: true,
-    enumerable: true
-  });
-} catch (e) {
-  // Fallback silencioso si el objeto está sellado, pero usualmente esto funciona
-  console.warn("⚠️ Fallo parcial al aplicar God Mode Shim");
-}
 
 // Singleton cliente
 let prismaInstance: any = null;
@@ -46,21 +13,28 @@ export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
   try {
-    const pool = new Pool({ 
-        connectionString: NEON_URL,
-        ssl: { rejectUnauthorized: false }
-    });
-
-    // Adaptador de Prisma Neon
-    // @ts-expect-error - Prisma Neon adapter type mismatch
-    const adapter = new PrismaNeon(pool);
+    // Usar Neon (Fetch Driver) - Especialmente estable en Cloudflare Edge
+    const sql = neon(NEON_URL);
     
-    // Inicialización limpia
-    prismaInstance = new PrismaClient({ adapter });
+    // @ts-expect-error - Prisma Neon adapter type mismatch
+    const adapter = new PrismaNeon(sql);
+    
+    /**
+     * PATRÓN CORRECTO PRISMA 7.6.0:
+     * 1. Usamos '@prisma/client' unificado (sin /edge).
+     * 2. Pasamos el 'adapter' para la conexión.
+     * 3. Pasamos 'datasourceUrl' en la raíz. Esto es CRÍTICO para que el Query Engine
+     *    pueda inicializar metadatos sin depender de variables de entorno del sistema.
+     */
+    // @ts-ignore
+    prismaInstance = new PrismaClient({ 
+        adapter,
+        datasourceUrl: NEON_URL 
+    });
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR CRÍTICO EN GOD MODE PRISMA:", error.message);
+    console.error("❌ ERROR EN EL CLIENTE UNIFICADO PRISMA 7:", error.message);
     throw error;
   }
 }
