@@ -58,9 +58,11 @@ export default function ParqueaderoPage() {
            setShowVehiculoModal(false);
            setVehiculoForm({ placa: '', marca: '', modelo: '', color: '', tipo: 'AUTOMOVIL' });
        } else {
+           console.error("DEBUG_TRAMITE_ERROR", data);
            toast.error(data.error || "No se pudo enviar");
        }
-     } catch {
+     } catch (err) {
+       console.error("CONN_ERROR", err);
        toast.error("Error de conexión");
      } finally {
        setIsSubmitting(false);

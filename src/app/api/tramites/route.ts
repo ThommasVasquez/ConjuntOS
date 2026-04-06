@@ -93,7 +93,14 @@ export async function POST(request: Request) {
     }
 
     const tramiteDelegate = await db.tramite;
+    if (!tramiteDelegate) {
+        throw new Error("Delegate 'tramite' no encontrado en Prisma Client.");
+    }
     
+    if (!dbUser.conjuntoId) {
+        return NextResponse.json({ success: false, error: "El usuario no tiene un conjunto asignado en su perfil." }, { status: 400 });
+    }
+
     // Crear el registro
     const nuevoTramite = await tramiteDelegate.create({
       data: {
@@ -108,6 +115,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, data: nuevoTramite });
   } catch (error: any) {
     console.error("Error en POST /api/tramites:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    // Devolvemos el error detallado para depuración en el dashboard
+    return NextResponse.json({ 
+        success: false, 
+        error: error.message || "Error desconocido",
+        details: error.code || "No code"
+    }, { status: 500 });
   }
 }
