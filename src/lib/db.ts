@@ -21,8 +21,8 @@ const pool = new Pool({
 });
 
 /**
- * SHADOW PRISMA CLIENT (v20.0)
- * Approvals Module Support: Implementado 'upsert' y modelos faltantes (mascota, registroParqueadero).
+ * SHADOW PRISMA CLIENT (v21.0)
+ * Full Mock Support: Implementado 'aggregate' (_sum), 'count' con filtros y expansión total de modelos.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
@@ -33,12 +33,13 @@ class ModelProxy {
     const value = where[key];
     const query = `SELECT * FROM "${this.tableName}" WHERE "${key}" = $1 LIMIT 1`;
     const res = await pool.query(query, [value]);
-    const item = res.rows[0] || null;
+    let item = res.rows[0] || null;
     
     if (item && args.include) {
-      return await this.hydrate(item, args.include);
+      item = await this.hydrate(item, args.include);
     }
-    // Simple filter if select is present
+    
+    // Aplicar select si existe (incluso tras hidratación)
     if (item && args.select) {
        const filtered: any = {};
        Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
@@ -50,7 +51,7 @@ class ModelProxy {
   async findFirst(args: any = {}) {
     const where = args.where || {};
     let query = `SELECT * FROM "${this.tableName}"`;
-    const keys = Object.keys(where).filter(k => k !== 'LOWER'); // Basic lower support check
+    const keys = Object.keys(where);
     const values = Object.values(where);
     
     if (keys.length > 0) {
@@ -59,10 +60,16 @@ class ModelProxy {
     
     query += ` LIMIT 1`;
     const res = await pool.query(query, values);
-    const item = res.rows[0] || null;
+    let item = res.rows[0] || null;
 
     if (item && args.include) {
-      return await this.hydrate(item, args.include);
+      item = await this.hydrate(item, args.include);
+    }
+    
+    if (item && args.select) {
+       const filtered: any = {};
+       Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
+       return filtered;
     }
     return item;
   }
@@ -79,14 +86,16 @@ class ModelProxy {
     
     if (args.orderBy) {
       const orderKey = Object.keys(args.orderBy)[0];
-      const orderDir = args.orderBy[orderKey].toUpperCase();
+      // Manejar orderBy objeto (asc/desc)
+      const orderVal = args.orderBy[orderKey];
+      const orderDir = typeof orderVal === 'string' ? orderVal.toUpperCase() : 'DESC';
       query += ` ORDER BY "${orderKey}" ${orderDir}`;
     } else {
-      // Intentar ordenar por creadoEn si existe
       query += ` ORDER BY id DESC`; 
     }
     
-    query += ` LIMIT 200`;
+    if (args.take) query += ` LIMIT ${args.take}`;
+    else query += ` LIMIT 200`;
     
     const res = await pool.query(query, values);
     let items = res.rows;
@@ -94,28 +103,61 @@ class ModelProxy {
     if (items.length > 0 && args.include) {
       items = await Promise.all(items.map(item => this.hydrate(item, args.include)));
     }
+
+    if (items.length > 0 && args.select) {
+       items = items.map(item => {
+         const filtered: any = {};
+         Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
+         return filtered;
+       });
+    }
     return items;
   }
 
-  /**
-   * MÉTODO UPSERT (v20):
-   * Útil para mudanzas y creación/actualización de inquilinos.
-   */
   async upsert(args: any) {
     const { where, update, create } = args;
     const key = Object.keys(where)[0];
     const value = where[key];
-    
-    // 1. Intentar buscar
     const existing = await this.findUnique({ where: { [key]: value } });
+    if (existing) return await this.update({ where: { [key]: value }, data: update });
+    else return await this.create({ data: create });
+  }
+
+  /**
+   * MÉTODO AGGREGATE (v21):
+   * Soporta _sum para sumas financieras (Recaudo, Gastos)
+   */
+  async aggregate(args: any) {
+    const where = args.where || {};
+    const sum = args._sum || {};
+    const keys = Object.keys(where);
+    const values = Object.values(where);
     
-    if (existing) {
-      // 2. Actualizar
-      return await this.update({ where: { [key]: value }, data: update });
-    } else {
-      // 3. Crear
-      return await this.create({ data: create });
+    let sumClauses = Object.keys(sum).map(k => `SUM("${k}") as "${k}"`).join(", ");
+    if (!sumClauses) sumClauses = "COUNT(*) as count";
+
+    let query = `SELECT ${sumClauses} FROM "${this.tableName}"`;
+    if (keys.length > 0) {
+      // Manejar gte/lte básicos en 'where' para fechas
+      query += ` WHERE ` + keys.map((k, i) => {
+         if (typeof where[k] === 'object') {
+            const op = Object.keys(where[k])[0];
+            const opMap: any = { gte: '>=', lte: '<=', gt: '>', lt: '<' };
+            values[i] = where[k][op];
+            return `"${k}" ${opMap[op] || '='} $${i + 1}`;
+         }
+         return `"${k}" = $${i + 1}`;
+      }).join(" AND ");
     }
+    
+    const res = await pool.query(query, values);
+    const result = res.rows[0];
+    
+    const response: any = { _sum: {} };
+    Object.keys(sum).forEach(k => {
+       response._sum[k] = parseFloat(result[k]) || 0;
+    });
+    return response;
   }
 
   private async hydrate(item: any, include: any) {
@@ -136,21 +178,17 @@ class ModelProxy {
     for (const relation of Object.keys(include)) {
       const targetTable = tableMap[relation];
       if (!targetTable) continue;
-
       const foreignKey = `${relation}Id`;
-      const idToFetch = newItem[foreignKey] || (relation === 'usuario' ? newItem['usuarioId'] : null);
+      const idToFetch = newItem[foreignKey] || (relation === 'usuario' ? newItem['usuarioId'] : (relation === 'conjunto' ? newItem['conjuntoId'] : null));
       
       if (idToFetch) {
         try {
           const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
           let relatedItem = res.rows[0] || null;
-          
           if (relatedItem && typeof include[relation] === 'object' && include[relation].select) {
              const selectedFields = include[relation].select;
              const filtered: any = {};
-             Object.keys(selectedFields).forEach(f => {
-               if (selectedFields[f]) filtered[f] = relatedItem[f];
-             });
+             Object.keys(selectedFields).forEach(f => { if (selectedFields[f]) filtered[f] = relatedItem[f]; });
              relatedItem = filtered;
           }
           newItem[relation] = relatedItem;
@@ -165,7 +203,6 @@ class ModelProxy {
     if (!data.id) data.id = `${this.tableName.toLowerCase().substring(0, 2)}_${Math.random().toString(36).substring(2, 11)}`;
     if (!data.creadoEn) data.creadoEn = new Date();
     if (!data.actualizadoEn) data.actualizadoEn = new Date();
-
     const columns = Object.keys(data).map(c => `"${c}"`).join(", ");
     const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(", ");
     const values = Object.values(data);
@@ -184,8 +221,19 @@ class ModelProxy {
     return res.rows[0];
   }
 
-  async count() {
-    const res = await pool.query(`SELECT COUNT(*) FROM "${this.tableName}"`);
+  /**
+   * COUNT FILTRADO (v21):
+   * Soporta 'where' básico.
+   */
+  async count(args: any = {}) {
+    const where = args.where || {};
+    const keys = Object.keys(where);
+    const values = Object.values(where);
+    let query = `SELECT COUNT(*) FROM "${this.tableName}"`;
+    if (keys.length > 0) {
+       query += ` WHERE ` + keys.map((k, i) => `"${k}" = $${i + 1}`).join(" AND ");
+    }
+    const res = await pool.query(query, values);
     return parseInt(res.rows[0].count);
   }
 }
@@ -205,6 +253,16 @@ const db: any = {
   areaComun: new ModelProxy("AreaComun"),
   reserva: new ModelProxy("Reserva"),
   solicitudServicio: new ModelProxy("SolicitudServicio"),
+  // Modelos nuevos v21
+  pago: new ModelProxy("Pago"),
+  gasto: new ModelProxy("Gasto"),
+  local: new ModelProxy("Local"),
+  inmueble: new ModelProxy("Inmueble"),
+  junta: new ModelProxy("JuntaDirectiva"),
+  visita: new ModelProxy("Visita"),
+  paquete: new ModelProxy("Paquete"),
+  rondaParqueadero: new ModelProxy("RondaParqueadero"),
+  
   $connect: async () => {},
   $disconnect: async () => {},
   $queryRawUnsafe: async (sql: string, ...values: any[]) => {
