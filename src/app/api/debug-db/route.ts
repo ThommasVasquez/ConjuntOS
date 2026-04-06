@@ -108,6 +108,17 @@ export async function GET(request: Request) {
         const tables = tablesRes.rows.map((r: any) => r.table_name);
         diagnostics.setup.logs.push(`Tablas encontradas: ${tables.join(", ")}`);
 
+        // PRUEBA DE PRISMA (MISMO MOTOR QUE TRAMITES)
+        try {
+            const { default: db_test } = await import("@/lib/db");
+            const usuarioTest = await db_test.usuario;
+            const count = await usuarioTest.count();
+            diagnostics.dbTest.write = `✅ PRISMA OK (${count} usuarios encontrados)`;
+        } catch (perr: any) {
+            diagnostics.dbTest.write = `❌ PRISMA FALLÓ: ${perr.message}`;
+            diagnostics.setup.logs.push(`Error Prisma: ${perr.stack}`);
+        }
+
         // CREAR TABLA DE LOGS PERSISTENTES SI NO EXISTE
         await pool.query(`
           CREATE TABLE IF NOT EXISTS "AuthDebug" (
