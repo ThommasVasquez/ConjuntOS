@@ -116,7 +116,10 @@ export async function GET(request: Request) {
             diagnostics.dbTest.write = `✅ PRISMA OK (${count} usuarios encontrados)`;
         } catch (perr: any) {
             diagnostics.dbTest.write = `❌ PRISMA FALLÓ: ${perr.message}`;
-            diagnostics.setup.logs.push(`Error Prisma: ${perr.stack}`);
+            // @ts-ignore
+            diagnostics.setup.logs.push(`Error Prisma Msg: ${perr.message}`);
+            // @ts-ignore
+            diagnostics.setup.logs.push(`Error Prisma Stack: ${perr.stack || "No stack"}`);
         }
 
         // CREAR TABLA DE LOGS PERSISTENTES SI NO EXISTE
