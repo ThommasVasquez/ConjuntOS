@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { Pool, neonConfig } from "@neondatabase/serverless";
+import db from "@/lib/db";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -8,7 +9,9 @@ export const dynamic = "force-dynamic";
 interface DiagnosticResult {
   state: string;
   cloudflare: { context: string };
+  version: string;
   dbTest: { connection: string; write: string };
+  lastDbError: any;
   setup: { status: string; logs: string[] };
   error?: string;
   message?: string;
@@ -58,7 +61,7 @@ export async function GET(request: Request) {
   const diagnostics: DiagnosticResult = {
     state: "Iniciando...",
     cloudflare: { context: "❌ Error" },
-    version: "23.0-traceable-fix",
+    version: "24.0-diagnostic-recovery",
     dbTest: { connection: "Pendiente", write: "Pendiente" },
     lastDbError: (db as any).getLastError ? (db as any).getLastError() : null,
     setup: { status: "No ejecutado", logs: [] },
