@@ -17,15 +17,9 @@ let prismaInstance: PrismaClient | null = null;
 export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
-  // PRIORIDAD MÁXIMA: Usar la URL de Neon que ya sabemos que funciona.
-  // Ignoramos DATABASE_URL de Supabase que está inyectada en el entorno por ahora.
-  let url = NEON_URL;
+  // Prioridad: Usamos el hardcoded Neon para asegurar estabilidad en el Edge.
+  const url = NEON_URL;
   
-  // Solo si por algún motivo la URL de Neon está vacía, usamos el entorno (Fallback inverso)
-  if (!url) {
-      url = process.env.DATABASE_URL || "";
-  }
-
   try {
     const pool = new Pool({ 
         connectionString: url,
@@ -34,11 +28,17 @@ export async function getPrisma() {
 
     // @ts-expect-error - Prisma Neon adapter type mismatch
     const adapter = new PrismaNeon(pool);
-    prismaInstance = new PrismaClient({ adapter });
+    
+    // IMPORTANTE: En el Edge, Prisma necesita el datasourceUrl de manera explícita
+    // o intentará conectar a 'localhost' por defecto si el entorno está vacío/aislado.
+    prismaInstance = new PrismaClient({ 
+        adapter,
+        datasourceUrl: url 
+    });
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR CRÍTICO DE PRISMA NEON:", error.message);
+    console.error("❌ ERROR CRÍTICO DE PRISMA NEON [ADAPTER]:", error.message);
     throw error;
   }
 }
