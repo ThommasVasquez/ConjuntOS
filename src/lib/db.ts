@@ -20,26 +20,35 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// GLOBAL ERROR TRACKER (v23)
+declare global {
+  var __DB_LAST_ERROR__: any;
+}
+
+const logError = (table: string, method: string, e: any, query: string, params: any) => {
+  const errorObj = {
+    table, method, error: e.message, code: e.code, query, params, 
+    at: new Date().toISOString()
+  };
+  globalThis.__DB_LAST_ERROR__ = errorObj;
+  console.error(`❌ DB_TRACE [${table}.${method}]:`, JSON.stringify(errorObj));
+};
+
 /**
- * SHADOW PRISMA CLIENT (v22.0)
- * Unified Where Logic: Soporte consistente para gte, lte, in, equals en todos los métodos.
+ * SHADOW PRISMA CLIENT (v23.0)
+ * Traceable Fix: Captura de errores avanzada y reporte global.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
 
-  /**
-   * BUILDER DE SQL WHERE (v22):
-   * Convierte objetos de Prisma en fragmentos SQL y parámetros.
-   */
   private buildWhere(where: any = {}) {
     const keys = Object.keys(where);
     if (keys.length === 0) return { sql: "", params: [] };
 
     const params: any[] = [];
-    const clauses = keys.map((k, i) => {
+    const clauses = keys.map((k) => {
       const val = where[k];
       
-      // Caso 1: Operadores complejos { gte: val, in: [...] }
       if (val !== null && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
         const op = Object.keys(val)[0];
         const opMap: any = { gte: '>=', lte: '<=', gt: '>', lt: '<', not: '!=', equals: '=' };
@@ -55,16 +64,12 @@ class ModelProxy {
         return `"${k}" ${opMap[op] || '='} $${params.length}`;
       }
       
-      // Caso 2: Igualdad directa o nula
       params.push(val);
       if (val === null) return `"${k}" IS NULL`;
       return `"${k}" = $${params.length}`;
     });
 
-    return { 
-      sql: ` WHERE ` + clauses.join(" AND "), 
-      params 
-    };
+    return { sql: ` WHERE ` + clauses.join(" AND "), params };
   }
 
   async findUnique(args: any) {
@@ -80,8 +85,8 @@ class ModelProxy {
          return filtered;
       }
       return item;
-    } catch (e) {
-      console.error(`❌ DB Error en findUnique(${this.tableName}):`, e, query, params);
+    } catch (e: any) {
+      logError(this.tableName, "findUnique", e, query, params);
       throw e;
     }
   }
@@ -99,8 +104,8 @@ class ModelProxy {
          return filtered;
       }
       return item;
-    } catch (e) {
-      console.error(`❌ DB Error en findFirst(${this.tableName}):`, e, query, params);
+    } catch (e: any) {
+      logError(this.tableName, "findFirst", e, query, params);
       throw e;
     }
   }
@@ -108,20 +113,13 @@ class ModelProxy {
   async findMany(args: any = {}) {
     const { sql, params } = this.buildWhere(args.where);
     let query = `SELECT * FROM "${this.tableName}"${sql}`;
-    
     if (args.orderBy) {
-      const orderKey = Object.keys(args.orderBy)[0];
-      const orderVal = args.orderBy[orderKey];
-      const orderDir = typeof orderVal === 'string' ? orderVal.toUpperCase() : 'DESC';
-      query += ` ORDER BY "${orderKey}" ${orderDir}`;
-    } else {
-      query += ` ORDER BY id DESC`; 
-    }
-    
-    const limit = args.take || 200;
-    query += ` LIMIT ${limit}`;
+      const k = Object.keys(args.orderBy)[0];
+      const dir = typeof args.orderBy[k] === 'string' ? args.orderBy[k].toUpperCase() : 'DESC';
+      query += ` ORDER BY "${k}" ${dir}`;
+    } else { query += ` ORDER BY id DESC`; }
+    query += ` LIMIT ${args.take || 200}`;
     if (args.skip) query += ` OFFSET ${args.skip}`;
-    
     try {
       const res = await pool.query(query, params);
       let items = res.rows;
@@ -134,8 +132,8 @@ class ModelProxy {
          });
       }
       return items;
-    } catch (e) {
-      console.error(`❌ DB Error en findMany(${this.tableName}):`, e, query, params);
+    } catch (e: any) {
+      logError(this.tableName, "findMany", e, query, params);
       throw e;
     }
   }
@@ -152,19 +150,17 @@ class ModelProxy {
   async aggregate(args: any) {
     const { sql, params } = this.buildWhere(args.where);
     const sum = args._sum || {};
-    
     let sumClauses = Object.keys(sum).map(k => `SUM("${k}") as "${k}"`).join(", ");
     if (!sumClauses) sumClauses = "COUNT(*) as count";
-
     const query = `SELECT ${sumClauses} FROM "${this.tableName}"${sql}`;
     try {
       const res = await pool.query(query, params);
-      const result = res.rows[0];
+      const result = res.rows[0] || {};
       const response: any = { _sum: {} };
       Object.keys(sum).forEach(k => { response._sum[k] = parseFloat(result[k]) || 0; });
       return response;
-    } catch (e) {
-      console.error(`❌ DB Error en aggregate(${this.tableName}):`, e, query, params);
+    } catch (e: any) {
+      logError(this.tableName, "aggregate", e, query, params);
       throw e;
     }
   }
@@ -207,8 +203,13 @@ class ModelProxy {
     const columns = Object.keys(data).map(c => `"${c}"`).join(", ");
     const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(", ");
     const values = Object.values(data);
-    const res = await pool.query(`INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`, values);
-    return res.rows[0];
+    try {
+      const res = await pool.query(`INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`, values);
+      return res.rows[0];
+    } catch (e: any) {
+      logError(this.tableName, "create", e, `INSERT INTO "${this.tableName}"`, values);
+      throw e;
+    }
   }
 
   async update(args: any) {
@@ -218,8 +219,14 @@ class ModelProxy {
     data.actualizadoEn = new Date();
     const setClause = Object.keys(data).map((c, i) => `"${c}" = $${i + 2}`).join(", ");
     const values = [whereValue, ...Object.values(data)];
-    const res = await pool.query(`UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`, values);
-    return res.rows[0];
+    const query = `UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`;
+    try {
+      const res = await pool.query(query, values);
+      return res.rows[0];
+    } catch (e: any) {
+      logError(this.tableName, "update", e, query, values);
+      throw e;
+    }
   }
 
   async count(args: any = {}) {
@@ -228,14 +235,13 @@ class ModelProxy {
     try {
       const res = await pool.query(query, params);
       return parseInt(res.rows[0].count);
-    } catch (e) {
-      console.error(`❌ DB Error en count(${this.tableName}):`, e, query, params);
+    } catch (e: any) {
+      logError(this.tableName, "count", e, query, params);
       throw e;
     }
   }
 }
 
-// Interfaz DB compatible con Prisma
 const db: any = {
   usuario: new ModelProxy("Usuario"), tramite: new ModelProxy("Tramite"),
   notificacion: new ModelProxy("Notificacion"), conjunto: new ModelProxy("Conjunto"),
@@ -245,14 +251,21 @@ const db: any = {
   areaComun: new ModelProxy("AreaComun"), reserva: new ModelProxy("Reserva"),
   solicitudServicio: new ModelProxy("SolicitudServicio"), pago: new ModelProxy("Pago"),
   gasto: new ModelProxy("Gasto"), local: new ModelProxy("Local"),
-  inmueble: new ModelProxy("Inmueble"), junta: new ModelProxy("Junta"), // Fix mapping
+  inmueble: new ModelProxy("Inmueble"), junta: new ModelProxy("Junta"),
   visita: new ModelProxy("Visita"), paquete: new ModelProxy("Paquete"),
   rondaParqueadero: new ModelProxy("RondaParqueadero"),
   $connect: async () => {},
   $disconnect: async () => {},
+  // Diagnóstico
+  getLastError: () => globalThis.__DB_LAST_ERROR__,
   $queryRawUnsafe: async (sql: string, ...values: any[]) => {
-    const res = await pool.query(sql, values);
-    return res.rows;
+    try {
+      const res = await pool.query(sql, values);
+      return res.rows;
+    } catch (e: any) {
+      logError("RAW", "queryRaw", e, sql, values);
+      throw e;
+    }
   }
 };
 

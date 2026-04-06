@@ -58,8 +58,9 @@ export async function GET(request: Request) {
   const diagnostics: DiagnosticResult = {
     state: "Iniciando...",
     cloudflare: { context: "❌ Error" },
-    version: "22.0-unified-where",
+    version: "23.0-traceable-fix",
     dbTest: { connection: "Pendiente", write: "Pendiente" },
+    lastDbError: (db as any).getLastError ? (db as any).getLastError() : null,
     setup: { status: "No ejecutado", logs: [] },
   };
 
