@@ -2,7 +2,7 @@
 
 import { 
   Camera, CheckCircle2, X, ChevronLeft, ArrowRight,
-  LogOut, Settings
+  LogOut, Settings, Car, ChevronRight, Zap
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
@@ -55,6 +55,15 @@ function ProfileContent() {
 
   const [editForm, setEditForm] = useState(userData);
 
+  const [vehiculos, setVehiculos] = useState<Record<string, unknown>[]>([]);
+  const [mascotas, setMascotas] = useState<Record<string, unknown>[]>([]);
+  const [tramites, setTramites] = useState<any[]>([]);
+
+  // Vistas y Modales
+  const [viewMode, setViewMode] = useState<"profile" | "tramite_mascota" | "tramite_mudanza" | "tramite_arrendamiento">("profile");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tramiteForm, setTramiteForm] = useState<any>({});
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -72,6 +81,9 @@ function ProfileContent() {
           };
           setUserData(mapped);
           setEditForm(mapped);
+          setVehiculos(u.vehiculos || []);
+          setMascotas(u.mascotas || []);
+          setTramites(u.tramitesSolicitados || []);
 
           if (u.avatar) setProfilePic(u.avatar);
 
@@ -204,6 +216,39 @@ function ProfileContent() {
     });
   };
 
+  const submitTramite = async () => {
+    setIsSubmitting(true);
+    let payload = { ...tramiteForm };
+
+    const currView = viewMode as string;
+    let tipo = 'OTRO';
+    if (currView === 'tramite_mascota') tipo = 'MASCOTA';
+    if (currView === 'tramite_arrendamiento') tipo = 'ARRENDAMIENTO';
+    if (currView === 'tramite_mudanza') tipo = 'MUDANZA';
+
+    try {
+       const res = await fetch('/api/tramites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tipo, descripcion: payload })
+       });
+       const data = await res.json();
+       if (data.success) {
+           toast.success("Trámite enviado a administración");
+           setViewMode('profile');
+           setTramiteForm({});
+           // Optimistic update
+           setTramites([{ id: data.data.id, tipo, estado: 'PENDIENTE', creadoEn: new Date() }, ...tramites]);
+       } else {
+           toast.error(data.error || "No se pudo enviar el trámite");
+       }
+    } catch {
+       toast.error("Error de conexión");
+    } finally {
+       setIsSubmitting(false);
+    }
+  };
+
   const roleConfig: Record<string, { label: string, color: string }> = {
     ARRENDATARIO: { label: "Residente", color: "from-blue-500 to-cyan-500" },
     PROPIETARIO: { label: "Propietario", color: "from-yellow-400 to-amber-600" },
@@ -281,9 +326,9 @@ function ProfileContent() {
         <div className="fade-up grid grid-cols-4 gap-3 w-full mb-8">
           {[
             { label: 'Deuda', val: '$0', color: 'bg-linear-to-br from-yellow-300 to-yellow-500 text-black' },
-            { label: 'Visitas', val: '0', color: 'bg-[#2a1a4a]' },
-            { label: 'Mascotas', val: '0', color: 'bg-purple-900/50' },
-            { label: 'Vehículos', val: '0', color: 'bg-white/20' }
+            { label: 'Trámites', val: tramites.length.toString(), color: 'bg-[#2a1a4a]' },
+            { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-purple-900/50' },
+            { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-white/20' }
           ].map((stat, i) => (
             <div key={i} className="flex flex-col items-center gap-1.5 cursor-pointer group">
               <span className="text-[10px] text-white/50 uppercase tracking-widest group-hover:text-white/80 transition-colors">{stat.label}</span>
@@ -326,6 +371,88 @@ function ProfileContent() {
              ))}
           </div>
         </div>
+
+        {/* MI ENTORNO */}
+        <section className="fade-up flex flex-col gap-3 mb-8 mt-6">
+           <h3 className="text-white font-display font-medium text-lg tracking-wide px-2">Mi Entorno</h3>
+           
+           <div className="flex flex-col gap-2">
+             <button onClick={() => router.push('/parqueadero')} className="w-full p-4 liquid-glass rounded-[24px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-lg active:scale-95">
+                <div className="flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                      <Car size={18} />
+                   </div>
+                   <div className="flex flex-col text-left">
+                     <span className="text-sm font-bold text-white">Mis Vehículos ({vehiculos.length})</span>
+                     <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Gestionar parqueadero</span>
+                   </div>
+                </div>
+                <ChevronRight size={18} className="text-white/20 group-hover:text-white transition-colors" />
+             </button>
+
+             <button onClick={() => setViewMode('tramite_mascota')} className="w-full p-4 liquid-glass rounded-[24px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-lg active:scale-95">
+                <div className="flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform">
+                      <span className="text-lg">🐾</span>
+                   </div>
+                   <div className="flex flex-col text-left">
+                     <span className="text-sm font-bold text-white">Mis Mascotas ({mascotas.length})</span>
+                     <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Añadir nueva mascota</span>
+                   </div>
+                </div>
+                <ChevronRight size={18} className="text-white/20 group-hover:text-white transition-colors" />
+             </button>
+
+             {currRole?.label === 'Propietario' && (
+                 <>
+                 <button onClick={() => setViewMode('tramite_arrendamiento')} className="w-full p-4 liquid-glass rounded-[24px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-lg active:scale-95">
+                    <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                          <CheckCircle2 size={18} />
+                       </div>
+                       <div className="flex flex-col text-left">
+                         <span className="text-sm font-bold text-white">Aprobar Arrendamiento</span>
+                         <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Solicitar permiso de renta</span>
+                       </div>
+                    </div>
+                    <ChevronRight size={18} className="text-white/20 group-hover:text-white transition-colors" />
+                 </button>
+                 <button onClick={() => setViewMode('tramite_mudanza')} className="w-full p-4 liquid-glass rounded-[24px] flex items-center justify-between group border border-white/5 hover:border-white/20 transition-all shadow-lg active:scale-95">
+                    <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                          <Zap size={18} />
+                       </div>
+                       <div className="flex flex-col text-left">
+                         <span className="text-sm font-bold text-white">Radicar Mudanza</span>
+                         <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Ingreso de inquilinos</span>
+                       </div>
+                    </div>
+                    <ChevronRight size={18} className="text-white/20 group-hover:text-white transition-colors" />
+                 </button>
+                 </>
+             )}
+           </div>
+        </section>
+
+        {/* MIS TRAMITES */}
+        {tramites.length > 0 && (
+            <section className="fade-up flex flex-col gap-3 mb-8">
+               <h3 className="text-white font-display font-medium text-lg tracking-wide px-2">Mis Trámites y Solicitudes</h3>
+               <div className="flex flex-col gap-3">
+                   {tramites.map((t) => (
+                       <div key={t.id} className="liquid-glass rounded-2xl p-4 border border-white/5 flex items-center justify-between">
+                           <div className="flex flex-col">
+                               <span className="text-sm font-bold text-white uppercase">{t.tipo}</span>
+                               <span className="text-[10px] text-white/50">{new Date(t.creadoEn).toLocaleDateString()}</span>
+                           </div>
+                           <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full border ${t.estado === 'PENDIENTE' ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30' : t.estado === 'APROBADO' ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30' : 'bg-red-500/20 text-red-500 border-red-500/30'}`}>
+                               {t.estado}
+                           </span>
+                       </div>
+                   ))}
+               </div>
+            </section>
+        )}
 
         {/* SETTINGS & LOGOUT */}
         <section className="fade-up flex flex-col gap-3">
@@ -414,6 +541,80 @@ function ProfileContent() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {viewMode === 'tramite_mascota' && (
+        <div className="fixed inset-0 z-100 flex items-end justify-center px-0 sm:items-center sm:px-4 pb-0 sm:pb-20 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewMode('profile')} />
+          <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-6 pb-12 sm:pb-6 relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-300">
+            <h3 className="text-xl font-display font-semibold text-white tracking-wide mb-4">Añadir Mascota</h3>
+            <div className="flex flex-col gap-4">
+                <input type="text" placeholder="Nombre (ej. Firulais)" onChange={(e) => setTramiteForm({...tramiteForm, nombre: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none" />
+                <select onChange={(e) => setTramiteForm({...tramiteForm, tipo: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none">
+                    <option value="">Tipo de animal...</option>
+                    <option value="PERRO">Perro</option>
+                    <option value="GATO">Gato</option>
+                    <option value="OTRO">Otro</option>
+                </select>
+                <input type="text" placeholder="Raza" onChange={(e) => setTramiteForm({...tramiteForm, raza: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none" />
+                
+                <button disabled={isSubmitting} onClick={submitTramite} className="w-full mt-2 bg-linear-to-r from-accent to-purple-600 rounded-2xl py-4 font-bold text-white shadow-xl active:scale-95 transition-transform disabled:opacity-50">
+                    {isSubmitting ? 'Enviando...' : 'Pedir Aprobación'}
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'tramite_arrendamiento' && (
+        <div className="fixed inset-0 z-100 flex items-end justify-center px-0 sm:items-center sm:px-4 pb-0 sm:pb-20 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewMode('profile')} />
+          <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-6 pb-12 sm:pb-6 relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-300">
+            <h3 className="text-xl font-display font-semibold text-white tracking-wide mb-2">Aprobación de Contrato</h3>
+            <p className="text-xs text-white/50 mb-4 pb-4 border-b border-white/10">Para ingresar inquilinos, la administración debe aprobar el arrendamiento de este inmueble.</p>
+            <div className="flex flex-col gap-4">
+                <input type="text" placeholder="Inmobiliaria / Nro. Contrato" onChange={(e) => setTramiteForm({...tramiteForm, contratoInfo: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none" />
+                <input type="number" placeholder="Duración en meses" onChange={(e) => setTramiteForm({...tramiteForm, duracionMeses: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none" />
+                <button disabled={isSubmitting} onClick={submitTramite} className="w-full mt-2 bg-linear-to-r from-blue-500 to-indigo-600 rounded-2xl py-4 font-bold text-white shadow-xl active:scale-95 transition-transform disabled:opacity-50">
+                    Enviar a Administración
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'tramite_mudanza' && (
+        <div className="fixed inset-0 z-100 flex items-end justify-center px-0 sm:items-center sm:px-4 pb-0 sm:pb-20 animate-in fade-in duration-300">
+           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewMode('profile')} />
+           <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-6 pb-12 sm:pb-6 relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] max-h-[80vh] overflow-y-auto">
+             <h3 className="text-xl font-display font-semibold text-white tracking-wide mb-2">Mudanza de Inquilinos</h3>
+             <p className="text-xs text-white/50 mb-4 pb-4 border-b border-white/10">Programa la mudanza y añade a los nuevos residentes que usarán la app.</p>
+             <div className="flex flex-col gap-4">
+                <input type="date" onChange={(e) => setTramiteForm({...tramiteForm, fecha: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none" />
+                <input type="time" onChange={(e) => setTramiteForm({...tramiteForm, hora: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none" />
+                
+                <h4 className="font-bold text-white text-sm mt-2">Crear inquilino principal</h4>
+                <input type="text" placeholder="Nombre completo" onChange={(e) => setTramiteForm({...tramiteForm, inquilinoNombre: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none" />
+                <input type="email" placeholder="Correo electrónico" onChange={(e) => setTramiteForm({...tramiteForm, inquilinoEmail: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none" />
+                
+                <div className="flex items-start gap-2 mt-2">
+                    <input type="checkbox" id="chkCuentas" onChange={(e) => setTramiteForm({...tramiteForm, crearCuentas: e.target.checked})} className="mt-1" />
+                    <label htmlFor="chkCuentas" className="text-[10px] text-white/50">Solicitar a la administración que cree una cuenta de acceso para este usuario y le asigne el rol de ARRENDATARIO (contraseña por defecto será habilitada).</label>
+                </div>
+
+                <button disabled={isSubmitting} onClick={() => {
+                     // Transformar los datos de inquilino al array mapeado por el API
+                     setTramiteForm((prev: any) => ({
+                         ...prev,
+                         nuevosInquilinos: prev.inquilinoEmail ? [{ nombre: prev.inquilinoNombre, email: prev.inquilinoEmail }] : []
+                     }));
+                     submitTramite();
+                }} className="w-full mt-2 bg-linear-to-r from-emerald-500 to-teal-500 rounded-2xl py-4 font-bold text-white shadow-xl active:scale-95 transition-transform disabled:opacity-50">
+                    Programar Mudanza
+                </button>
+             </div>
+           </div>
         </div>
       )}
 

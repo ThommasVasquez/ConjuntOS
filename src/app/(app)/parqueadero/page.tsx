@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { 
   Car, Bike, Plus, Info, ChevronRight, 
   MapPin, ShieldCheck, Clock, ArrowRight,
-  Settings
+  Settings, X
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
@@ -35,6 +35,37 @@ export default function ParqueaderoPage() {
   const [misCeldas, setMisCeldas] = useState<Celda[]>([]);
   const [disponibilidad, setDisponibilidad] = useState({ total: 0, libres: 0, ocupadas: 0 });
   const [isLoading, setIsLoading] = useState(true);
+
+  // Modal y Forms
+  const [showVehiculoModal, setShowVehiculoModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [vehiculoForm, setVehiculoForm] = useState({ placa: '', marca: '', modelo: '', color: '', tipo: 'AUTOMOVIL' });
+
+  const submitVehiculo = async () => {
+     if(!vehiculoForm.placa || !vehiculoForm.marca) {
+         return toast.error("Llena placa y marca al menos");
+     }
+     setIsSubmitting(true);
+     try {
+       const res = await fetch('/api/tramites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tipo: 'VEHICULO', descripcion: vehiculoForm })
+       });
+       const data = await res.json();
+       if(data.success){
+           toast.success("Solicitud enviada. Pendiente de aprobación.");
+           setShowVehiculoModal(false);
+           setVehiculoForm({ placa: '', marca: '', modelo: '', color: '', tipo: 'AUTOMOVIL' });
+       } else {
+           toast.error(data.error || "No se pudo enviar");
+       }
+     } catch {
+       toast.error("Error de conexión");
+     } finally {
+       setIsSubmitting(false);
+     }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -149,8 +180,21 @@ export default function ParqueaderoPage() {
         <h2 className="text-lg font-display font-bold text-white px-1 tracking-tight">Acciones Rápidas</h2>
         
         <div className="flex flex-col gap-3">
+          <button 
+            onClick={() => setShowVehiculoModal(true)}
+            className="w-full liquid-glass-card rounded-3xl p-4 border border-white/5 flex items-center gap-4 hover:bg-white/10 transition-all active:scale-[0.99] group overflow-hidden"
+          >
+            <div className={`p-3 rounded-2xl bg-white/5 border border-white/10 text-emerald-400 group-hover:scale-110 transition-transform`}>
+              <ShieldCheck size={20} />
+            </div>
+            <div className="flex-1 text-left">
+              <h4 className="text-sm font-bold text-white leading-none mb-1.5">Registrar Nuevo Vehículo</h4>
+              <p className="text-[11px] text-white/40">Notificar a portería</p>
+            </div>
+            <ChevronRight size={16} className="text-white/20 group-hover:text-white transition-colors" />
+          </button>
+
           {[
-            { icon: ShieldCheck, title: "Reportar Cambio", sub: "Notificar nuevo vehículo a portería", color: "text-emerald-400" },
             { icon: Clock, title: "Historial de Accesos", sub: "Ver registros de entrada y salida", color: "text-blue-400" },
             { icon: Settings, title: "Configuración", sub: "Preferencias de notificaciones y tags", color: "text-purple-400" }
           ].map((item, idx) => (
@@ -206,6 +250,41 @@ export default function ParqueaderoPage() {
           Pedir Parqueo para Visita <ArrowRight size={18} />
         </button>
       </section>
+
+      {/* MODAL NUEVO VEHICULO */}
+      {showVehiculoModal && (
+        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center px-0 sm:px-4 pb-0 sm:pb-20 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowVehiculoModal(false)} />
+          <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-6 pb-12 sm:pb-6 relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-300">
+            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+               <div>
+                   <h3 className="text-xl font-display font-semibold text-white tracking-wide">Añadir Vehículo</h3>
+                   <p className="text-xs text-white/50 mt-1">Registrar para acceso vehicular</p>
+               </div>
+               <button onClick={() => setShowVehiculoModal(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-all">
+                  <X size={16} />
+               </button>
+            </div>
+            
+            <div className="flex flex-col gap-4">
+                <input type="text" placeholder="Placa (ej. XYZ-123)" value={vehiculoForm.placa} onChange={(e) => setVehiculoForm({...vehiculoForm, placa: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none focus:border-accent uppercase" />
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="text" placeholder="Marca (BMW)" value={vehiculoForm.marca} onChange={(e) => setVehiculoForm({...vehiculoForm, marca: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none focus:border-accent" />
+                  <input type="text" placeholder="Gris Claro" value={vehiculoForm.color} onChange={(e) => setVehiculoForm({...vehiculoForm, color: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none focus:border-accent" />
+                </div>
+                <select value={vehiculoForm.tipo} onChange={(e) => setVehiculoForm({...vehiculoForm, tipo: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none focus:border-accent">
+                    <option value="AUTOMOVIL">Automóvil</option>
+                    <option value="MOTO">Motocicleta</option>
+                    <option value="BICICLETA">Bicicleta / Patineta</option>
+                </select>
+                
+                <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-linear-to-r from-emerald-500 to-teal-500 rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white shadow-xl active:scale-95 transition-transform disabled:opacity-50">
+                    <ShieldCheck size={20} /> {isSubmitting ? 'Enviando...' : 'Pedir Aprobación'}
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

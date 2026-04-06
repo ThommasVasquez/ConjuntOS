@@ -504,8 +504,8 @@ function HomeAdmin() {
                  <Info size={22} />
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-sm font-bold text-white">Novedades de Unidad</span>
-                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Gestión de residentes</span>
+                <span className="text-sm font-bold text-white">Novedades y Trámites</span>
+                <span className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Aprobar residentes y mascotas</span>
               </div>
            </div>
            <ArrowRight size={20} className="text-white/20 group-hover:text-white transition-colors" />
