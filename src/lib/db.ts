@@ -1,85 +1,138 @@
-import { neon } from "@neondatabase/serverless";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 import { PrismaClient } from "@prisma/client";
 
 export const runtime = "edge";
 
+// CONFIGURACIÓN DE RED
+neonConfig.useSecureWebSocket = false;
+
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
+// Obtenemos la URL con flags de pgbouncer
+const rawUrl = process.env.DATABASE_URL || NEON_URL;
+const url = rawUrl.includes('?') 
+  ? `${rawUrl}&pgbouncer=true&connection_limit=1` 
+  : `${rawUrl}?pgbouncer=true&connection_limit=1`;
+
+// Pool compartido
+const pool = new Pool({ 
+  connectionString: url,
+  ssl: { rejectUnauthorized: false }
+});
+
 /**
- * --- ZERO-CONSTRUCTOR SHIM (v15) ---
- * Inyectamos la URL directamente en el entorno global ANTES de inicializar Prisma.
- * Agregamos '?pgbouncer=true&connection_limit=1' para compatibilidad total en Edge.
+ * SHADOW PRISMA CLIENT (v17.1)
+ * Implementación robusta de los métodos de Prisma vía Raw SQL para el Edge.
  */
-const urlWithFlags = (process.env.DATABASE_URL || NEON_URL).includes('?')
-  ? `${(process.env.DATABASE_URL || NEON_URL)}&pgbouncer=true&connection_limit=1`
-  : `${(process.env.DATABASE_URL || NEON_URL)}?pgbouncer=true&connection_limit=1`;
+class ModelProxy {
+  constructor(private tableName: string) {}
 
-// SHIM GLOBAL ABSOLUTO
-const g = globalThis as any;
-if (!g.process) g.process = { env: {} };
-if (!g.process.env) g.process.env = {};
-g.process.env.DATABASE_URL = urlWithFlags;
+  async findUnique(args: any) {
+    const where = args.where;
+    const key = Object.keys(where)[0];
+    const value = where[key];
+    const query = `SELECT * FROM "${this.tableName}" WHERE "${key}" = $1 LIMIT 1`;
+    const res = await pool.query(query, [value]);
+    return res.rows[0] || null;
+  }
 
-// Singleton cliente
-let prismaInstance: any = null;
-
-export async function getPrisma() {
-  if (prismaInstance) return prismaInstance;
-
-  try {
-    // Usar Neon (Fetch Driver)
-    const sql = neon(urlWithFlags);
+  async findFirst(args: any = {}) {
+    const where = args.where || {};
+    let query = `SELECT * FROM "${this.tableName}"`;
+    const keys = Object.keys(where);
+    const values = Object.values(where);
     
-    // @ts-expect-error - Prisma Neon adapter type mismatch
-    const adapter = new PrismaNeon(sql);
+    if (keys.length > 0) {
+      query += ` WHERE ` + keys.map((k, i) => `"${k}" = $${i + 1}`).join(" AND ");
+    }
     
-    /**
-     * CONSTRUCTOR MINIMALISTA:
-     * Al no pasar 'datasourceUrl' evitamos que el motor WASM rechace la configuración.
-     * Al haber inyectado 'DATABASE_URL' arriba, el motor leerá los metadatos del entorno global.
-     */
-    prismaInstance = new PrismaClient({ adapter });
+    query += ` LIMIT 1`;
+    const res = await pool.query(query, values);
+    return res.rows[0] || null;
+  }
+
+  async findMany(args: any = {}) {
+    const where = args.where || {};
+    let query = `SELECT * FROM "${this.tableName}"`;
+    const keys = Object.keys(where);
+    const values = Object.values(where);
     
-    return prismaInstance;
-  } catch (error: any) {
-    console.error("❌ ERROR EN ZERO-CONSTRUCTOR PRISMA 7:", error.message);
-    throw error;
+    if (keys.length > 0) {
+      query += ` WHERE ` + keys.map((k, i) => `"${k}" = $${i + 1}`).join(" AND ");
+    }
+    
+    query += ` ORDER BY "creadoEn" DESC` || "";
+    query += ` LIMIT 100`;
+    
+    const res = await pool.query(query, values);
+    return res.rows;
+  }
+
+  async create(args: any) {
+    const data = { ...args.data };
+    
+    // Generación de ID si falta (Comportamiento similar a @default(cuid()))
+    if (!data.id) {
+       data.id = `${this.tableName.toLowerCase().substring(0, 2)}_${Math.random().toString(36).substring(2, 11)}`;
+    }
+    
+    // Fechas automáticas
+    if (!data.creadoEn) data.creadoEn = new Date();
+    if (!data.actualizadoEn) data.actualizadoEn = new Date();
+
+    const columns = Object.keys(data).map(c => `"${c}"`).join(", ");
+    const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(", ");
+    const values = Object.values(data);
+    
+    const query = `INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`;
+    const res = await pool.query(query, values);
+    return res.rows[0];
+  }
+
+  async update(args: any) {
+    const { where, data } = args;
+    const whereKey = Object.keys(where)[0];
+    const whereValue = where[whereKey];
+    
+    data.actualizadoEn = new Date();
+    
+    const setClause = Object.keys(data).map((c, i) => `"${c}" = $${i + 2}`).join(", ");
+    const values = [whereValue, ...Object.values(data)];
+    const query = `UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`;
+    const res = await pool.query(query, values);
+    return res.rows[0];
+  }
+
+  async count() {
+    const res = await pool.query(`SELECT COUNT(*) FROM "${this.tableName}"`);
+    return parseInt(res.rows[0].count);
   }
 }
 
-// Singleton de acceso directo
+// Interfaz DB compatible con Prisma
 const db: any = {
-  get usuario() { return getPrisma().then(p => p.usuario); },
-  get tramite() { return getPrisma().then(p => p.tramite); },
-  get notificacion() { return getPrisma().then(p => p.notificacion); },
-  get parqueadero() { return getPrisma().then(p => p.parqueadero); },
-  get vehiculo() { return getPrisma().then(p => p.vehiculo); },
-  get visita() { return getPrisma().then(p => p.visita); },
-  get paquete() { return getPrisma().then(p => p.paquete); },
-  get mascota() { return getPrisma().then(p => p.mascota); },
-  get conjunto() { return getPrisma().then(p => p.conjunto); },
-  get unidad() { return getPrisma().then(p => p.unidad); },
-  get anuncio() { return getPrisma().then(p => p.anuncio); },
-  get areaComun() { return getPrisma().then(p => p.areaComun); },
-  get reserva() { return getPrisma().then(p => p.reserva); },
-  get documento() { return getPrisma().then(p => p.documento); },
-  get junta() { return getPrisma().then(p => p.junta); },
-  get gasto() { return getPrisma().then(p => p.gasto); },
-  get local() { return getPrisma().then(p => p.local); },
-  get producto() { return getPrisma().then(p => p.producto); },
-  get pedido() { return getPrisma().then(p => p.pedido); },
-  get reciboPublico() { return getPrisma().then(p => p.reciboPublico); },
-  get adSpace() { return getPrisma().then(p => p.adSpace); },
-  get inmueble() { return getPrisma().then(p => p.inmueble); },
-  get solicitudServicio() { return getPrisma().then(p => p.solicitudServicio); },
-  get pqrs() { return getPrisma().then(p => p.solicitudServicio); },
-  get registroParqueadero() { return getPrisma().then(p => p.registroParqueadero); },
-  get rondaParqueadero() { return getPrisma().then(p => p.rondaParqueadero); },
+  usuario: new ModelProxy("Usuario"),
+  tramite: new ModelProxy("Tramite"),
+  notificacion: new ModelProxy("Notificacion"),
+  conjunto: new ModelProxy("Conjunto"),
+  unidad: new ModelProxy("Unidad"),
+  vehiculo: new ModelProxy("Vehiculo"),
+  parqueadero: new ModelProxy("Parqueadero"),
+  anuncio: new ModelProxy("Anuncio"),
+  areaComun: new ModelProxy("AreaComun"),
+  reserva: new ModelProxy("Reserva"),
+  solicitudServicio: new ModelProxy("SolicitudServicio"),
   
-  $connect: () => getPrisma().then(p => p.$connect()),
-  $queryRaw: (q: any) => getPrisma().then(p => p.$queryRawUnsafe(q)),
+  $connect: async () => {},
+  $disconnect: async () => {},
+  $queryRawUnsafe: async (sql: string, ...values: any[]) => {
+    const res = await pool.query(sql, values);
+    return res.rows;
+  }
 };
 
 export default db;
-export const discoverUrl = async () => urlWithFlags;
+export const discoverUrl = async () => url;
+
+// Exportamos PrismaClient por si algún archivo lo necesita para tipos
+export { PrismaClient };
