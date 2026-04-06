@@ -12,12 +12,20 @@ neonConfig.useSecureWebSocket = true;
  */
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
+// INYECCIÓN MANUAL EN EL PROCESO (Crítico para que Prisma lo vea desde sus entrañas)
+// @ts-ignore
+if (typeof process !== 'undefined') {
+    // @ts-ignore
+    process.env.DATABASE_URL = NEON_URL;
+    // @ts-ignore
+    process.env.NEXT_PUBLIC_DATABASE_URL = NEON_URL;
+}
+
 let prismaInstance: PrismaClient | null = null;
 
 export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
-  // Prioridad: Usamos el hardcoded Neon para asegurar estabilidad en el Edge.
   const url = NEON_URL;
   
   try {
@@ -29,16 +37,18 @@ export async function getPrisma() {
     // @ts-expect-error - Prisma Neon adapter type mismatch
     const adapter = new PrismaNeon(pool);
     
-    // IMPORTANTE: En el Edge, Prisma necesita el datasourceUrl de manera explícita
-    // o intentará conectar a 'localhost' por defecto si el entorno está vacío/aislado.
+    // IMPORTANTE: Usamos 'datasources' en lugar de 'datasourceUrl' para máxima compatibilidad
     prismaInstance = new PrismaClient({ 
         adapter,
-        datasourceUrl: url 
+        // @ts-ignore
+        datasources: {
+            db: { url }
+        }
     });
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR CRÍTICO DE PRISMA NEON [ADAPTER]:", error.message);
+    console.error("❌ ERROR CRÍTICO DE PRISMA NEON:", error.message);
     throw error;
   }
 }
