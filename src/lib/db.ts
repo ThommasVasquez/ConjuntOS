@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client/edge";
-import { PrismaNeon } from "@prisma/adapter-neon";
-import { Pool, neonConfig } from "@neondatabase/serverless";
+import { neonConfig, neon } from "@neondatabase/serverless";
 
 export const runtime = "edge";
 
@@ -9,41 +7,44 @@ neonConfig.useSecureWebSocket = true;
 
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
-// --- SHIM GLOBAL: El "Truco Maestro" para Cloudflare Edge ---
-// Forzamos la variable de entorno en el objeto global para que el motor de Prisma la vea.
-const g = globalThis as any;
-if (!g.process) g.process = { env: {} };
-if (!g.process.env) g.process.env = {};
-g.process.env.DATABASE_URL = NEON_URL;
-// -------------------------------------------------------------
-
-let prismaInstance: PrismaClient | null = null;
+let prismaInstance: any = null;
 
 export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
   try {
-    const pool = new Pool({ 
-        connectionString: NEON_URL,
-        ssl: { rejectUnauthorized: false }
-    });
+    // --- SHIM GLOBAL: El "Truco Maestro" para Cloudflare Edge ---
+    // Forzamos la variable de entorno en el objeto global para que el motor de Prisma la vea.
+    const g = globalThis as any;
+    if (!g.process) g.process = { env: {} };
+    if (!g.process.env) g.process.env = {};
+    g.process.env.DATABASE_URL = NEON_URL;
+    // -------------------------------------------------------------
 
-    // @ts-expect-error - Prisma Neon adapter type mismatch
-    const adapter = new PrismaNeon(pool);
+    // IMPORTACIÓN DINÁMICA: Si importamos Prisma AFTER el shim, el motor verá la URL!
+    const [{ PrismaClient }, { PrismaNeon }] = await Promise.all([
+        import("@prisma/client/edge"),
+        import("@prisma/adapter-neon")
+    ]);
+
+    // Usar NEON (Fetch Driver) para máxima compatibilidad con el Edge de Cloudflare
+    const sql = neon(NEON_URL);
     
-    // Inicialización limpia: Al haber inyectado DATABASE_URL arriba,
-    // Prisma Client ya no se quejará de la falta de host ni caerá en localhost.
+    // @ts-expect-error - Prisma Neon adapter type mismatch
+    const adapter = new PrismaNeon(sql);
+    
+    // Inicialización limpia
     prismaInstance = new PrismaClient({ adapter });
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR EN EL SHIM GLOBAL DE PRISMA:", error.message);
+    console.error("❌ ERROR EN LA IMPORTACIÓN NUCLEAR DE PRISMA:", error.message);
     throw error;
   }
 }
 
 // Singleton de acceso directo
-const db = {
+const db: any = {
   get usuario() { return getPrisma().then(p => p.usuario); },
   get tramite() { return getPrisma().then(p => p.tramite); },
   get notificacion() { return getPrisma().then(p => p.notificacion); },
