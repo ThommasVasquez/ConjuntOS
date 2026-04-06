@@ -3,25 +3,25 @@ import { PrismaClient } from "@prisma/client";
 
 export const runtime = "edge";
 
-// CONFIGURACIÓN DE RED (v26.0)
-// Forzamos WebSocket seguro para evitar error 522 en Cloudflare Pages.
+// CONFIGURACIÓN DE RED
 neonConfig.useSecureWebSocket = true;
 
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
-// ESTRATEGIA DE CONEXIÓN
+// ESTRATEGIA DE CONEXIÓN (v27.0)
+// Forzamos Neon y eliminamos parámetros de pooling que causan fallos de handshake en el Edge.
 const getStableUrl = () => {
   const envUrl = (process.env.DATABASE_URL || "").trim();
-  if (!envUrl || envUrl.includes("supabase.com") || !envUrl.includes("neon.tech")) {
-    return NEON_URL;
-  }
-  return envUrl;
+  // Validamos si es Neon para evitar fallos con Supabase
+  const baseUrl = (!envUrl || envUrl.includes("supabase.com") || !envUrl.includes("neon.tech"))
+    ? NEON_URL
+    : envUrl;
+  
+  // Limpiamos parámetros de pooling conflictivos para el driver serverless
+  return baseUrl.split('?')[0] + "?sslmode=require";
 };
 
-const rawUrl = getStableUrl();
-const url = rawUrl.includes('?') 
-  ? `${rawUrl}&pgbouncer=true&connection_limit=1` 
-  : `${rawUrl}?pgbouncer=true&connection_limit=1`;
+const url = getStableUrl();
 
 // Pool compartido
 const pool = new Pool({ 
@@ -36,17 +36,16 @@ declare global {
 
 const logError = (table: string, method: string, e: any, query: string, params: any) => {
   const errorObj = {
-    table, method, error: e.message, JSON: JSON.stringify(e), query, params, 
-    host: url.split('@')[1]?.split(':')[0] || 'unknown',
-    at: new Date().toISOString()
+    table, method, error: e.message, url: url.replace(/:[^:@/]+@/, ':***@'), // sanitize
+    query, params, at: new Date().toISOString()
   };
   globalThis.__DB_LAST_ERROR__ = errorObj;
   console.error(`❌ DB_TRACE [${table}.${method}]:`, errorObj.error);
 };
 
 /**
- * SHADOW PRISMA CLIENT (v26.0)
- * Protocol & Collection Fix: Secure WebSocket Handshake y Hidratación 1:N (Plurales).
+ * SHADOW PRISMA CLIENT (v27.0)
+ * Pure Unpooled Fix: Eliminación de flags de pooling para estabilizar WebSocket Handshake (522).
  */
 class ModelProxy {
   constructor(private tableName: string) {}
@@ -158,54 +157,40 @@ class ModelProxy {
     } catch (e: any) { logError(this.tableName, "aggregate", e, query, params); throw e; }
   }
 
-  /**
-   * HIDRATACIÓN 1:1 y 1:N (Plurales)
-   */
   private async hydrate(item: any, include: any) {
     const newItem = { ...item };
     const tableMap: Record<string, string> = {
       usuario: "Usuario", aprobadoPor: "Usuario", propietario: "Usuario", solicitante: "Usuario",
       conjunto: "Conjunto", unidad: "Unidad", parqueadero: "Parqueadero", vehiculo: "Vehiculo",
       reserva: "Reserva", mascota: "Mascota", tramite: "Tramite",
-      // Colecciones (Plurales)
       vehiculos: "Vehiculo", mascotas: "Mascota", visitas: "Visita", tramites: "Tramite", notificaciones: "Notificacion"
     };
 
     for (const relation of Object.keys(include)) {
       const targetTable = tableMap[relation];
       if (!targetTable) continue;
-
-      // Determinamos si es 1:1 (singular) o 1:N (plural)
       const isPlural = relation.endsWith('s');
-      
       if (isPlural) {
-        // Lógica 1:N: Buscar en targetTable donde sourceTableId = item.id
         const foreignKeyInTarget = `${this.tableName.toLowerCase()}Id`;
         const nestedArgs = typeof include[relation] === 'object' ? include[relation] : {};
-        
         let q = `SELECT * FROM "${targetTable}" WHERE "${foreignKeyInTarget}" = $1`;
         if (nestedArgs.where) {
            const subWhere = this.buildWhere(nestedArgs.where);
-           q += subWhere.sql.replace(" WHERE ", " AND ").replace("$1", "$2"); // Shift placeholders
+           q += subWhere.sql.replace(" WHERE ", " AND ").replace("$1", "$2");
         }
         if (nestedArgs.orderBy) {
            const k = Object.keys(nestedArgs.orderBy)[0];
            const d = typeof nestedArgs.orderBy[k] === 'string' ? nestedArgs.orderBy[k].toUpperCase() : 'DESC';
            q += ` ORDER BY "${k}" ${d}`;
         }
-        if (nestedArgs.take) q += ` LIMIT ${nestedArgs.take}`;
-        else q += ` LIMIT 100`;
-
+        q += ` LIMIT ${nestedArgs.take || 100}`;
         try {
           const res = await pool.query(q, [newItem.id, ...Object.values(nestedArgs.where || {})]);
           newItem[relation] = res.rows;
         } catch (e) { newItem[relation] = []; }
-
       } else {
-        // Lógica 1:1: Buscar en targetTable por id
         const foreignKeyInSource = `${relation}Id`;
         const idToFetch = newItem[foreignKeyInSource] || (relation === 'usuario' ? newItem['usuarioId'] : (relation === 'conjunto' ? newItem['conjuntoId'] : null));
-        
         if (idToFetch) {
           try {
             const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
@@ -245,11 +230,11 @@ class ModelProxy {
     data.actualizadoEn = new Date();
     const setClause = Object.keys(data).map((c, i) => `"${c}" = $${i + 2}`).join(", ");
     const values = [whereValue, ...Object.values(data)];
-    const query = `UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`;
+    const q = `UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`;
     try {
-      const res = await pool.query(query, values);
+      const res = await pool.query(q, values);
       return res.rows[0];
-    } catch (e: any) { logError(this.tableName, "update", e, query, values); throw e; }
+    } catch (e: any) { logError(this.tableName, "update", e, q, values); throw e; }
   }
 
   async count(args: any = {}) {
@@ -278,10 +263,8 @@ const db: any = {
   $disconnect: async () => {},
   getLastError: () => globalThis.__DB_LAST_ERROR__,
   $queryRawUnsafe: async (sql: string, ...values: any[]) => {
-    try {
-      const res = await pool.query(sql, values);
-      return res.rows;
-    } catch (e: any) { logError("RAW", "queryRaw", e, sql, values); throw e; }
+    try { const res = await pool.query(sql, values); return res.rows; }
+    catch (e: any) { logError("RAW", "queryRaw", e, sql, values); throw e; }
   }
 };
 
