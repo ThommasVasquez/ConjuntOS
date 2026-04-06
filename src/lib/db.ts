@@ -1,33 +1,24 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
+import { neon } from "@neondatabase/serverless";
 import { PrismaClient } from "@prisma/client";
 
 export const runtime = "edge";
 
-// CONFIGURACIÓN DE RED
-neonConfig.useSecureWebSocket = true;
-
 const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
-// ESTRATEGIA DE CONEXIÓN (v27.0)
-// Forzamos Neon y eliminamos parámetros de pooling que causan fallos de handshake en el Edge.
+// ESTRATEGIA DE CONEXIÓN (v28.0)
+// Usamos HTTP Fetch (neon) para evitar errores de handshake 101/522 en Cloudflare Pages.
 const getStableUrl = () => {
   const envUrl = (process.env.DATABASE_URL || "").trim();
-  // Validamos si es Neon para evitar fallos con Supabase
   const baseUrl = (!envUrl || envUrl.includes("supabase.com") || !envUrl.includes("neon.tech"))
     ? NEON_URL
     : envUrl;
-  
-  // Limpiamos parámetros de pooling conflictivos para el driver serverless
   return baseUrl.split('?')[0] + "?sslmode=require";
 };
 
 const url = getStableUrl();
 
-// Pool compartido
-const pool = new Pool({ 
-  connectionString: url,
-  ssl: { rejectUnauthorized: false }
-});
+// Cliente HTTP Fetch (Sin WebSockets, sin Handshake 101)
+const sql = neon(url);
 
 // GLOBAL ERROR TRACKER
 declare global {
@@ -36,7 +27,8 @@ declare global {
 
 const logError = (table: string, method: string, e: any, query: string, params: any) => {
   const errorObj = {
-    table, method, error: e.message, url: url.replace(/:[^:@/]+@/, ':***@'), // sanitize
+    table, method, error: e.message, 
+    driver: "neon-http-fetch",
     query, params, at: new Date().toISOString()
   };
   globalThis.__DB_LAST_ERROR__ = errorObj;
@@ -44,8 +36,8 @@ const logError = (table: string, method: string, e: any, query: string, params: 
 };
 
 /**
- * SHADOW PRISMA CLIENT (v27.0)
- * Pure Unpooled Fix: Eliminación de flags de pooling para estabilizar WebSocket Handshake (522).
+ * SHADOW PRISMA CLIENT (v28.0)
+ * HTTP Fetch Transition: Eliminación de WebSockets para estabilidad total en el Edge.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
@@ -77,11 +69,11 @@ class ModelProxy {
   }
 
   async findUnique(args: any) {
-    const { sql, params } = this.buildWhere(args.where);
-    const query = `SELECT * FROM "${this.tableName}"${sql} LIMIT 1`;
+    const { sql: whereSql, params } = this.buildWhere(args.where);
+    const query = `SELECT * FROM "${this.tableName}"${whereSql} LIMIT 1`;
     try {
-      const res = await pool.query(query, params);
-      let item = res.rows[0] || null;
+      const rows = await (sql as any)(query, params);
+      let item = rows[0] || null;
       if (item && args.include) item = await this.hydrate(item, args.include);
       if (item && args.select) {
          const filtered: any = {};
@@ -93,11 +85,11 @@ class ModelProxy {
   }
 
   async findFirst(args: any = {}) {
-    const { sql, params } = this.buildWhere(args.where);
-    const query = `SELECT * FROM "${this.tableName}"${sql} LIMIT 1`;
+    const { sql: whereSql, params } = this.buildWhere(args.where);
+    const query = `SELECT * FROM "${this.tableName}"${whereSql} LIMIT 1`;
     try {
-      const res = await pool.query(query, params);
-      let item = res.rows[0] || null;
+      const rows = await (sql as any)(query, params);
+      let item = rows[0] || null;
       if (item && args.include) item = await this.hydrate(item, args.include);
       if (item && args.select) {
          const filtered: any = {};
@@ -109,27 +101,28 @@ class ModelProxy {
   }
 
   async findMany(args: any = {}) {
-    const { sql, params } = this.buildWhere(args.where);
-    let query = `SELECT * FROM "${this.tableName}"${sql}`;
+    const { sql: whereSql, params } = this.buildWhere(args.where);
+    let query = `SELECT * FROM "${this.tableName}"${whereSql}`;
     if (args.orderBy) {
       const k = Object.keys(args.orderBy)[0];
       const dir = typeof args.orderBy[k] === 'string' ? args.orderBy[k].toUpperCase() : 'DESC';
       query += ` ORDER BY "${k}" ${dir}`;
     } else { query += ` ORDER BY id DESC`; }
-    query += ` LIMIT ${args.take || 200}`;
+    if (args.take) query += ` LIMIT ${args.take}`;
+    else query += ` LIMIT 200`;
     if (args.skip) query += ` OFFSET ${args.skip}`;
     try {
-      const res = await pool.query(query, params);
-      let items = res.rows;
-      if (items.length > 0 && args.include) items = await Promise.all(items.map(item => this.hydrate(item, args.include)));
-      if (items.length > 0 && args.select) {
-         items = items.map(item => {
+      const items = await (sql as any)(query, params);
+      let rows = [...items];
+      if (rows.length > 0 && args.include) rows = await Promise.all(rows.map(item => this.hydrate(item, args.include)));
+      if (rows.length > 0 && args.select) {
+         rows = rows.map(item => {
            const filtered: any = {};
            Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
            return filtered;
          });
       }
-      return items;
+      return rows;
     } catch (e: any) { logError(this.tableName, "findMany", e, query, params); throw e; }
   }
 
@@ -143,14 +136,14 @@ class ModelProxy {
   }
 
   async aggregate(args: any) {
-    const { sql, params } = this.buildWhere(args.where);
+    const { sql: whereSql, params } = this.buildWhere(args.where);
     const sum = args._sum || {};
     let sumClauses = Object.keys(sum).map(k => `SUM("${k}") as "${k}"`).join(", ");
     if (!sumClauses) sumClauses = "COUNT(*) as count";
-    const query = `SELECT ${sumClauses} FROM "${this.tableName}"${sql}`;
+    const query = `SELECT ${sumClauses} FROM "${this.tableName}"${whereSql}`;
     try {
-      const res = await pool.query(query, params);
-      const result = res.rows[0] || {};
+      const rows = await (sql as any)(query, params);
+      const result: any = rows[0] || {};
       const response: any = { _sum: {} };
       Object.keys(sum).forEach(k => { response._sum[k] = parseFloat(result[k]) || 0; });
       return response;
@@ -169,14 +162,18 @@ class ModelProxy {
     for (const relation of Object.keys(include)) {
       const targetTable = tableMap[relation];
       if (!targetTable) continue;
-      const isPlural = relation.endsWith('s');
+      const isPlural = relation.endsWith('s') || ['mascotas', 'vehiculos', 'visitas', 'tramites', 'notificaciones'].includes(relation);
+      
       if (isPlural) {
         const foreignKeyInTarget = `${this.tableName.toLowerCase()}Id`;
         const nestedArgs = typeof include[relation] === 'object' ? include[relation] : {};
         let q = `SELECT * FROM "${targetTable}" WHERE "${foreignKeyInTarget}" = $1`;
+        const subParams = [newItem.id];
+        
         if (nestedArgs.where) {
            const subWhere = this.buildWhere(nestedArgs.where);
-           q += subWhere.sql.replace(" WHERE ", " AND ").replace("$1", "$2");
+           q += subWhere.sql.replace(" WHERE ", " AND ").split('$').map((s, i) => i === 0 ? s : (parseInt(s) + 1).toString()).join('$');
+           subParams.push(...Object.values(nestedArgs.where));
         }
         if (nestedArgs.orderBy) {
            const k = Object.keys(nestedArgs.orderBy)[0];
@@ -185,16 +182,16 @@ class ModelProxy {
         }
         q += ` LIMIT ${nestedArgs.take || 100}`;
         try {
-          const res = await pool.query(q, [newItem.id, ...Object.values(nestedArgs.where || {})]);
-          newItem[relation] = res.rows;
+          const res = await (sql as any)(q, subParams);
+          newItem[relation] = res;
         } catch (e) { newItem[relation] = []; }
       } else {
         const foreignKeyInSource = `${relation}Id`;
         const idToFetch = newItem[foreignKeyInSource] || (relation === 'usuario' ? newItem['usuarioId'] : (relation === 'conjunto' ? newItem['conjuntoId'] : null));
         if (idToFetch) {
           try {
-            const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
-            let relatedItem = res.rows[0] || null;
+            const rows = await (sql as any)(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
+            let relatedItem = rows[0] || null;
             if (relatedItem && typeof include[relation] === 'object' && include[relation].select) {
                const selectedFields = include[relation].select;
                const filtered: any = {};
@@ -212,15 +209,16 @@ class ModelProxy {
   async create(args: any) {
     const data = { ...args.data };
     if (!data.id) data.id = `${this.tableName.toLowerCase().substring(0, 2)}_${Math.random().toString(36).substring(2, 11)}`;
-    if (!data.creadoEn) data.creadoEn = new Date();
-    if (!data.actualizadoEn) data.actualizadoEn = new Date();
+    data.creadoEn = data.creadoEn || new Date();
+    data.actualizadoEn = new Date();
     const columns = Object.keys(data).map(c => `"${c}"`).join(", ");
     const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(", ");
     const values = Object.values(data);
+    const q = `INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`;
     try {
-      const res = await pool.query(`INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`, values);
-      return res.rows[0];
-    } catch (e: any) { logError(this.tableName, "create", e, `INSERT INTO "${this.tableName}"`, values); throw e; }
+      const rows = await (sql as any)(q, values);
+      return rows[0];
+    } catch (e: any) { logError(this.tableName, "create", e, q, values); throw e; }
   }
 
   async update(args: any) {
@@ -232,17 +230,17 @@ class ModelProxy {
     const values = [whereValue, ...Object.values(data)];
     const q = `UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`;
     try {
-      const res = await pool.query(q, values);
-      return res.rows[0];
+      const rows = await (sql as any)(q, values);
+      return rows[0];
     } catch (e: any) { logError(this.tableName, "update", e, q, values); throw e; }
   }
 
   async count(args: any = {}) {
-    const { sql, params } = this.buildWhere(args.where);
-    const query = `SELECT COUNT(*) FROM "${this.tableName}"${sql}`;
+    const { sql: whereSql, params } = this.buildWhere(args.where);
+    const query = `SELECT COUNT(*) FROM "${this.tableName}"${whereSql}`;
     try {
-      const res = await pool.query(query, params);
-      return parseInt(res.rows[0].count);
+      const rows = await (sql as any)(query, params);
+      return parseInt((rows[0] as any).count);
     } catch (e: any) { logError(this.tableName, "count", e, query, params); throw e; }
   }
 }
@@ -262,9 +260,9 @@ const db: any = {
   $connect: async () => {},
   $disconnect: async () => {},
   getLastError: () => globalThis.__DB_LAST_ERROR__,
-  $queryRawUnsafe: async (sql: string, ...values: any[]) => {
-    try { const res = await pool.query(sql, values); return res.rows; }
-    catch (e: any) { logError("RAW", "queryRaw", e, sql, values); throw e; }
+  $queryRawUnsafe: async (qStr: string, ...vals: any[]) => {
+    try { return await (sql as any)(qStr, vals); }
+    catch (e: any) { logError("RAW", "queryRaw", e, qStr, vals); throw e; }
   }
 };
 
