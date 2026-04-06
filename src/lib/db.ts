@@ -21,8 +21,8 @@ const pool = new Pool({
 });
 
 /**
- * SHADOW PRISMA CLIENT (v18.0)
- * Soporte para 'include' (hidratación de relaciones) y 'orderBy' vía Raw SQL.
+ * SHADOW PRISMA CLIENT (v19.0)
+ * Safe Hydration: Restricted relationship lookup to prevent 500 errors on missing tables.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
@@ -71,7 +71,6 @@ class ModelProxy {
       query += ` WHERE ` + keys.map((k, i) => `"${k}" = $${i + 1}`).join(" AND ");
     }
     
-    // Soporte para orderBy
     if (args.orderBy) {
       const orderKey = Object.keys(args.orderBy)[0];
       const orderDir = args.orderBy[orderKey].toUpperCase();
@@ -92,41 +91,54 @@ class ModelProxy {
   }
 
   /**
-   * MÉTODO DE HIDRATACIÓN (v18):
-   * Soporta relaciones básicas (usuarioid -> usuario, conjuntoid -> conjunto)
+   * MÉTODO DE HIDRATACIÓN SEGURA (v19):
+   * Solo intenta hidratar relaciones explícitamente mapeadas.
    */
   private async hydrate(item: any, include: any) {
     const newItem = { ...item };
     
+    // Lista Blanca de Relaciones para evitar errores 500 por tablas inexistentes
+    const tableMap: Record<string, string> = {
+      usuario: "Usuario",
+      aprobadoPor: "Usuario",
+      propietario: "Usuario",
+      solicitante: "Usuario",
+      conjunto: "Conjunto",
+      unidad: "Unidad",
+      parqueadero: "Parqueadero",
+      vehiculo: "Vehiculo",
+      reserva: "Reserva"
+    };
+
     for (const relation of Object.keys(include)) {
+      const targetTable = tableMap[relation];
+      if (!targetTable) continue; // Si no está mapeado, ignoramos para seguridad
+
       const foreignKey = `${relation}Id`;
-      if (newItem[foreignKey]) {
-        // Mapeo manual de tablas (PascalCase)
-        const tableMap: Record<string, string> = {
-          usuario: "Usuario",
-          conjunto: "Conjunto",
-          unidad: "Unidad",
-          parqueadero: "Parqueadero"
-        };
-        const targetTable = tableMap[relation] || relation.charAt(0).toUpperCase() + relation.slice(1);
-        
+      // Caso especial para relaciones con nombres distintos a la FK (ej: aprobadoPor -> aprobadoPorId)
+      // Pero si no existe 'aprobadoPorId', intentamos buscar por 'usuarioId' si es relevante
+      const idToFetch = newItem[foreignKey] || (relation === 'usuario' ? newItem['usuarioId'] : null);
+      
+      if (idToFetch) {
         try {
-          const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [newItem[foreignKey]]);
+          const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
           newItem[relation] = res.rows[0] || null;
           
-          // Soporte para selecciones anidadas
           if (newItem[relation] && typeof include[relation] === 'object' && include[relation].select) {
              const selectedFields = include[relation].select;
              const filtered: any = {};
              Object.keys(selectedFields).forEach(f => {
                if (selectedFields[f]) filtered[f] = newItem[relation][f];
              });
+             // Aseguramos que 'nombre' siempre exista si es posible
              newItem[relation] = filtered;
           }
         } catch (e) {
-          console.warn(`⚠️ Hidratación falló para ${relation}:`, e);
+          console.warn(`⚠️ Safe Hydration falló para ${relation}:`, e);
           newItem[relation] = null;
         }
+      } else {
+         newItem[relation] = null;
       }
     }
     return newItem;
@@ -143,7 +155,6 @@ class ModelProxy {
     const columns = Object.keys(data).map(c => `"${c}"`).join(", ");
     const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(", ");
     const values = Object.values(data);
-    
     const query = `INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`;
     const res = await pool.query(query, values);
     return res.rows[0];
@@ -180,7 +191,6 @@ const db: any = {
   areaComun: new ModelProxy("AreaComun"),
   reserva: new ModelProxy("Reserva"),
   solicitudServicio: new ModelProxy("SolicitudServicio"),
-  
   $connect: async () => {},
   $disconnect: async () => {},
   $queryRawUnsafe: async (sql: string, ...values: any[]) => {
