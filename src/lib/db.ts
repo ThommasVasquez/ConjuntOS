@@ -21,8 +21,8 @@ const pool = new Pool({
 });
 
 /**
- * SHADOW PRISMA CLIENT (v17.1)
- * Implementación robusta de los métodos de Prisma vía Raw SQL para el Edge.
+ * SHADOW PRISMA CLIENT (v18.0)
+ * Soporte para 'include' (hidratación de relaciones) y 'orderBy' vía Raw SQL.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
@@ -33,7 +33,12 @@ class ModelProxy {
     const value = where[key];
     const query = `SELECT * FROM "${this.tableName}" WHERE "${key}" = $1 LIMIT 1`;
     const res = await pool.query(query, [value]);
-    return res.rows[0] || null;
+    const item = res.rows[0] || null;
+    
+    if (item && args.include) {
+      return await this.hydrate(item, args.include);
+    }
+    return item;
   }
 
   async findFirst(args: any = {}) {
@@ -48,7 +53,12 @@ class ModelProxy {
     
     query += ` LIMIT 1`;
     const res = await pool.query(query, values);
-    return res.rows[0] || null;
+    const item = res.rows[0] || null;
+
+    if (item && args.include) {
+      return await this.hydrate(item, args.include);
+    }
+    return item;
   }
 
   async findMany(args: any = {}) {
@@ -61,22 +71,72 @@ class ModelProxy {
       query += ` WHERE ` + keys.map((k, i) => `"${k}" = $${i + 1}`).join(" AND ");
     }
     
-    query += ` ORDER BY "creadoEn" DESC` || "";
-    query += ` LIMIT 100`;
+    // Soporte para orderBy
+    if (args.orderBy) {
+      const orderKey = Object.keys(args.orderBy)[0];
+      const orderDir = args.orderBy[orderKey].toUpperCase();
+      query += ` ORDER BY "${orderKey}" ${orderDir}`;
+    } else {
+      query += ` ORDER BY "creadoEn" DESC` || "";
+    }
+    
+    query += ` LIMIT 200`;
     
     const res = await pool.query(query, values);
-    return res.rows;
+    let items = res.rows;
+
+    if (items.length > 0 && args.include) {
+      items = await Promise.all(items.map(item => this.hydrate(item, args.include)));
+    }
+    return items;
+  }
+
+  /**
+   * MÉTODO DE HIDRATACIÓN (v18):
+   * Soporta relaciones básicas (usuarioid -> usuario, conjuntoid -> conjunto)
+   */
+  private async hydrate(item: any, include: any) {
+    const newItem = { ...item };
+    
+    for (const relation of Object.keys(include)) {
+      const foreignKey = `${relation}Id`;
+      if (newItem[foreignKey]) {
+        // Mapeo manual de tablas (PascalCase)
+        const tableMap: Record<string, string> = {
+          usuario: "Usuario",
+          conjunto: "Conjunto",
+          unidad: "Unidad",
+          parqueadero: "Parqueadero"
+        };
+        const targetTable = tableMap[relation] || relation.charAt(0).toUpperCase() + relation.slice(1);
+        
+        try {
+          const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [newItem[foreignKey]]);
+          newItem[relation] = res.rows[0] || null;
+          
+          // Soporte para selecciones anidadas
+          if (newItem[relation] && typeof include[relation] === 'object' && include[relation].select) {
+             const selectedFields = include[relation].select;
+             const filtered: any = {};
+             Object.keys(selectedFields).forEach(f => {
+               if (selectedFields[f]) filtered[f] = newItem[relation][f];
+             });
+             newItem[relation] = filtered;
+          }
+        } catch (e) {
+          console.warn(`⚠️ Hidratación falló para ${relation}:`, e);
+          newItem[relation] = null;
+        }
+      }
+    }
+    return newItem;
   }
 
   async create(args: any) {
     const data = { ...args.data };
-    
-    // Generación de ID si falta (Comportamiento similar a @default(cuid()))
     if (!data.id) {
        data.id = `${this.tableName.toLowerCase().substring(0, 2)}_${Math.random().toString(36).substring(2, 11)}`;
     }
-    
-    // Fechas automáticas
     if (!data.creadoEn) data.creadoEn = new Date();
     if (!data.actualizadoEn) data.actualizadoEn = new Date();
 
@@ -93,9 +153,7 @@ class ModelProxy {
     const { where, data } = args;
     const whereKey = Object.keys(where)[0];
     const whereValue = where[whereKey];
-    
     data.actualizadoEn = new Date();
-    
     const setClause = Object.keys(data).map((c, i) => `"${c}" = $${i + 2}`).join(", ");
     const values = [whereValue, ...Object.values(data)];
     const query = `UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`;
@@ -133,6 +191,4 @@ const db: any = {
 
 export default db;
 export const discoverUrl = async () => url;
-
-// Exportamos PrismaClient por si algún archivo lo necesita para tipos
 export { PrismaClient };
