@@ -21,8 +21,8 @@ const pool = new Pool({
 });
 
 /**
- * SHADOW PRISMA CLIENT (v19.0)
- * Safe Hydration: Restricted relationship lookup to prevent 500 errors on missing tables.
+ * SHADOW PRISMA CLIENT (v20.0)
+ * Approvals Module Support: Implementado 'upsert' y modelos faltantes (mascota, registroParqueadero).
  */
 class ModelProxy {
   constructor(private tableName: string) {}
@@ -38,13 +38,19 @@ class ModelProxy {
     if (item && args.include) {
       return await this.hydrate(item, args.include);
     }
+    // Simple filter if select is present
+    if (item && args.select) {
+       const filtered: any = {};
+       Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
+       return filtered;
+    }
     return item;
   }
 
   async findFirst(args: any = {}) {
     const where = args.where || {};
     let query = `SELECT * FROM "${this.tableName}"`;
-    const keys = Object.keys(where);
+    const keys = Object.keys(where).filter(k => k !== 'LOWER'); // Basic lower support check
     const values = Object.values(where);
     
     if (keys.length > 0) {
@@ -76,7 +82,8 @@ class ModelProxy {
       const orderDir = args.orderBy[orderKey].toUpperCase();
       query += ` ORDER BY "${orderKey}" ${orderDir}`;
     } else {
-      query += ` ORDER BY "creadoEn" DESC` || "";
+      // Intentar ordenar por creadoEn si existe
+      query += ` ORDER BY id DESC`; 
     }
     
     query += ` LIMIT 200`;
@@ -91,13 +98,28 @@ class ModelProxy {
   }
 
   /**
-   * MÉTODO DE HIDRATACIÓN SEGURA (v19):
-   * Solo intenta hidratar relaciones explícitamente mapeadas.
+   * MÉTODO UPSERT (v20):
+   * Útil para mudanzas y creación/actualización de inquilinos.
    */
+  async upsert(args: any) {
+    const { where, update, create } = args;
+    const key = Object.keys(where)[0];
+    const value = where[key];
+    
+    // 1. Intentar buscar
+    const existing = await this.findUnique({ where: { [key]: value } });
+    
+    if (existing) {
+      // 2. Actualizar
+      return await this.update({ where: { [key]: value }, data: update });
+    } else {
+      // 3. Crear
+      return await this.create({ data: create });
+    }
+  }
+
   private async hydrate(item: any, include: any) {
     const newItem = { ...item };
-    
-    // Lista Blanca de Relaciones para evitar errores 500 por tablas inexistentes
     const tableMap: Record<string, string> = {
       usuario: "Usuario",
       aprobadoPor: "Usuario",
@@ -107,56 +129,47 @@ class ModelProxy {
       unidad: "Unidad",
       parqueadero: "Parqueadero",
       vehiculo: "Vehiculo",
-      reserva: "Reserva"
+      reserva: "Reserva",
+      mascota: "Mascota"
     };
 
     for (const relation of Object.keys(include)) {
       const targetTable = tableMap[relation];
-      if (!targetTable) continue; // Si no está mapeado, ignoramos para seguridad
+      if (!targetTable) continue;
 
       const foreignKey = `${relation}Id`;
-      // Caso especial para relaciones con nombres distintos a la FK (ej: aprobadoPor -> aprobadoPorId)
-      // Pero si no existe 'aprobadoPorId', intentamos buscar por 'usuarioId' si es relevante
       const idToFetch = newItem[foreignKey] || (relation === 'usuario' ? newItem['usuarioId'] : null);
       
       if (idToFetch) {
         try {
           const res = await pool.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
-          newItem[relation] = res.rows[0] || null;
+          let relatedItem = res.rows[0] || null;
           
-          if (newItem[relation] && typeof include[relation] === 'object' && include[relation].select) {
+          if (relatedItem && typeof include[relation] === 'object' && include[relation].select) {
              const selectedFields = include[relation].select;
              const filtered: any = {};
              Object.keys(selectedFields).forEach(f => {
-               if (selectedFields[f]) filtered[f] = newItem[relation][f];
+               if (selectedFields[f]) filtered[f] = relatedItem[f];
              });
-             // Aseguramos que 'nombre' siempre exista si es posible
-             newItem[relation] = filtered;
+             relatedItem = filtered;
           }
-        } catch (e) {
-          console.warn(`⚠️ Safe Hydration falló para ${relation}:`, e);
-          newItem[relation] = null;
-        }
-      } else {
-         newItem[relation] = null;
-      }
+          newItem[relation] = relatedItem;
+        } catch (e) { newItem[relation] = null; }
+      } else { newItem[relation] = null; }
     }
     return newItem;
   }
 
   async create(args: any) {
     const data = { ...args.data };
-    if (!data.id) {
-       data.id = `${this.tableName.toLowerCase().substring(0, 2)}_${Math.random().toString(36).substring(2, 11)}`;
-    }
+    if (!data.id) data.id = `${this.tableName.toLowerCase().substring(0, 2)}_${Math.random().toString(36).substring(2, 11)}`;
     if (!data.creadoEn) data.creadoEn = new Date();
     if (!data.actualizadoEn) data.actualizadoEn = new Date();
 
     const columns = Object.keys(data).map(c => `"${c}"`).join(", ");
     const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(", ");
     const values = Object.values(data);
-    const query = `INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`;
-    const res = await pool.query(query, values);
+    const res = await pool.query(`INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`, values);
     return res.rows[0];
   }
 
@@ -167,8 +180,7 @@ class ModelProxy {
     data.actualizadoEn = new Date();
     const setClause = Object.keys(data).map((c, i) => `"${c}" = $${i + 2}`).join(", ");
     const values = [whereValue, ...Object.values(data)];
-    const query = `UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`;
-    const res = await pool.query(query, values);
+    const res = await pool.query(`UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`, values);
     return res.rows[0];
   }
 
@@ -187,6 +199,8 @@ const db: any = {
   unidad: new ModelProxy("Unidad"),
   vehiculo: new ModelProxy("Vehiculo"),
   parqueadero: new ModelProxy("Parqueadero"),
+  mascota: new ModelProxy("Mascota"),
+  registroParqueadero: new ModelProxy("RegistroParqueadero"),
   anuncio: new ModelProxy("Anuncio"),
   areaComun: new ModelProxy("AreaComun"),
   reserva: new ModelProxy("Reserva"),
