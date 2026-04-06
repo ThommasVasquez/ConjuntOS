@@ -41,8 +41,8 @@ const logError = (table: string, method: string, e: any, query: string, params: 
 };
 
 /**
- * SHADOW PRISMA CLIENT (v30.0)
- * Nuclear Bypass Sync: Unificación de lógica de conexión para estabilidad total.
+ * SHADOW PRISMA CLIENT (v31.0)
+ * Auth Probe: Sonda técnica para identificar variancia de contraseña en Neon.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
