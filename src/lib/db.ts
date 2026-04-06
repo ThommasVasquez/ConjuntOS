@@ -8,26 +8,25 @@ export const runtime = "edge";
 neonConfig.useSecureWebSocket = true;
 
 /**
- * REFORMA RADICAL: Bypasseamos el descubrimiento dinámico para asegurar estabilidad.
+ * REFORMA RADICAL: Forzar Neon para evitar variables de entorno "envenenadas" del Edge.
  */
-const DEFAULT_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
+const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
 let prismaInstance: PrismaClient | null = null;
 
 export async function getPrisma() {
   if (prismaInstance) return prismaInstance;
 
-  // Prioridad 1: Entorno de Cloudflare o Vercel
-  let url = process.env.DATABASE_URL || process.env.NEXT_PUBLIC_DATABASE_URL || "";
+  // PRIORIDAD MÁXIMA: Usar la URL de Neon que ya sabemos que funciona.
+  // Ignoramos DATABASE_URL de Supabase que está inyectada en el entorno por ahora.
+  let url = NEON_URL;
   
-  // Fallback si la URL del entorno está vacía o es inválida
-  if (!url || url.length < 10 || url === "undefined") {
-      url = DEFAULT_URL;
+  // Solo si por algún motivo la URL de Neon está vacía, usamos el entorno (Fallback inverso)
+  if (!url) {
+      url = process.env.DATABASE_URL || "";
   }
 
   try {
-    // Para depuración, vamos a parsear la URL manualmente y pasar los campos al Pool
-    // Esto evita errores de parseo interno en el driver de Neon en el Edge
     const pool = new Pool({ 
         connectionString: url,
         ssl: { rejectUnauthorized: false }
@@ -39,12 +38,12 @@ export async function getPrisma() {
     
     return prismaInstance;
   } catch (error: any) {
-    console.error("❌ ERROR CRÍTICO DE PRISMA:", error.message);
+    console.error("❌ ERROR CRÍTICO DE PRISMA NEON:", error.message);
     throw error;
   }
 }
 
-// Singleton de acceso directo (Bypass Getters complejos)
+// Singleton de acceso directo
 const db = {
   get usuario() { return getPrisma().then(p => p.usuario); },
   get tramite() { return getPrisma().then(p => p.tramite); },
@@ -78,4 +77,4 @@ const db = {
 };
 
 export default db;
-export const discoverUrl = async () => DEFAULT_URL; // Mock para compatibilidad
+export const discoverUrl = async () => NEON_URL;
