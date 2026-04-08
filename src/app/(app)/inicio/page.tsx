@@ -8,7 +8,7 @@
 import { 
   Building2, Calendar, Megaphone, Bell, 
   Car, ArrowRight, CreditCard, User as UserIcon, MessageSquare,
-  MoreHorizontal, ChevronLeft, Search, SlidersHorizontal
+  MoreHorizontal, ChevronLeft, Search, SlidersHorizontal, ShoppingBag
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import CelebrationModal from "@/components/modals/CelebrationModal";
