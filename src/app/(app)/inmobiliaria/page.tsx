@@ -41,6 +41,7 @@ export default function InmobiliariaPage() {
   const [inmuebles, setInmuebles] = useState<Inmueble[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState<'VENTA' | 'ALQUILER' | 'TODOS'>('TODOS');
+  const [filterUnidad, setFilterUnidad] = useState<'TODOS' | 'APARTAMENTO' | 'PARQUEADERO' | 'LOCAL'>('TODOS');
   const [isPosting, setIsPosting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -51,6 +52,7 @@ export default function InmobiliariaPage() {
       try {
         const url = new URL("/api/user/inmuebles", window.location.origin);
         if (filterType !== 'TODOS') url.searchParams.set("tipo", filterType);
+        if (filterUnidad !== 'TODOS') url.searchParams.set("tipoUnidad", filterUnidad);
         
         const res = await fetch(url, { cache: 'no-store' });
         const data = await res.json();
@@ -64,7 +66,7 @@ export default function InmobiliariaPage() {
       }
     }
     loadInmuebles();
-  }, [filterType]);
+  }, [filterType, filterUnidad]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -131,7 +133,29 @@ export default function InmobiliariaPage() {
                       : 'text-white/60 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  {type.charAt(0) + type.slice(1).toLowerCase()}
+                  {type === 'TODOS' ? 'Todos' : type === 'VENTA' ? 'En Venta' : 'En Arriendo'}
+                </button>
+              ))}
+            </div>
+
+            {/* Unit type filter pills */}
+            <div className="flex gap-2 flex-wrap">
+              {([
+                { key: 'TODOS', label: '🏘️ Todo' },
+                { key: 'APARTAMENTO', label: '🏠 Apartamentos' },
+                { key: 'PARQUEADERO', label: '🅿️ Parqueaderos' },
+                { key: 'LOCAL', label: '🛏️ Habitaciones' },
+              ] as const).map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setFilterUnidad(key)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 border ${
+                    filterUnidad === key
+                      ? 'bg-white text-primary border-white shadow-lg'
+                      : 'border-white/10 text-white/50 hover:text-white hover:border-white/30'
+                  }`}
+                >
+                  {label}
                 </button>
               ))}
             </div>
@@ -187,13 +211,23 @@ export default function InmobiliariaPage() {
 function PropertyCard({ item }: { item: Inmueble }) {
   const [isLiked, setIsLiked] = useState(false);
   const imagenes = JSON.parse(item.imagenes || "[]");
-  const mainImage = imagenes[0] || `https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1000`; // Default mansion
+  const mainImage = imagenes[0] || `https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1000`;
 
   const formattedPrice = new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0
   }).format(item.precio);
+
+  const unitTypeLabel: Record<string, string> = {
+    APARTAMENTO: '🏠 Apartamento',
+    PARQUEADERO: '🅿️ Parqueadero',
+    LOCAL: '🛏️ Habitación',
+    CASA: '🏡 Casa',
+  };
+
+  const isParking = item.tipoUnidad === 'PARQUEADERO';
+  const isRoom = item.tipoUnidad === 'LOCAL';
 
   return (
     <div className="property-card group cursor-pointer bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-white/20 hover:bg-white/10 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/5 flex flex-col">
@@ -207,8 +241,13 @@ function PropertyCard({ item }: { item: Inmueble }) {
           unoptimized
         />
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-           <div className="px-3 py-1.5 rounded-full bg-primary/80 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase tracking-wider text-accent">
-              {item.tipoNegocio === 'VENTA' ? 'En Venta' : 'En Arriendo'}
+           <div className="flex flex-col gap-1.5">
+             <div className="px-3 py-1.5 rounded-full bg-primary/80 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase tracking-wider text-accent">
+               {item.tipoNegocio === 'VENTA' ? 'En Venta' : 'En Arriendo'}
+             </div>
+             <div className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-semibold text-white/80">
+               {unitTypeLabel[item.tipoUnidad] || item.tipoUnidad}
+             </div>
            </div>
            <button 
             onClick={(e) => { e.stopPropagation(); setIsLiked(!isLiked); }}
@@ -219,7 +258,7 @@ function PropertyCard({ item }: { item: Inmueble }) {
         </div>
         <div className="absolute bottom-4 left-4">
            <div className="bg-primary/60 backdrop-blur-xl border border-white/10 rounded-2xl p-3 pr-6">
-              <p className="text-[10px] text-white/60 mb-0.5">Precio</p>
+              <p className="text-[10px] text-white/60 mb-0.5">{item.tipoNegocio === 'VENTA' ? 'Precio' : 'Valor / mes'}</p>
               <p className="text-xl font-bold text-accent">{formattedPrice}</p>
            </div>
         </div>
@@ -229,19 +268,50 @@ function PropertyCard({ item }: { item: Inmueble }) {
       <div className="p-6 pt-2 flex-1 flex flex-col">
         <h3 className="text-xl font-semibold mb-2 line-clamp-1">{item.titulo}</h3>
         
+        {/* Smart stats by type */}
         <div className="flex gap-4 mb-4 text-white/50 text-sm">
-           <div className="flex items-center gap-1.5">
-              <Bed size={16} className="text-accent/70" />
-              <span>{item.habitaciones} Hab.</span>
-           </div>
-           <div className="flex items-center gap-1.5">
-              <Bath size={16} className="text-accent/70" />
-              <span>{item.banos} Baños</span>
-           </div>
-           <div className="flex items-center gap-1.5">
-              <Maximize2 size={16} className="text-accent/70" />
-              <span>{item.area}m²</span>
-           </div>
+          {isParking ? (
+            <>
+              <div className="flex items-center gap-1.5">
+                <Maximize2 size={16} className="text-accent/70" />
+                <span>{item.area}m²</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-accent/70">🚗</span>
+                <span>Cupo cubierto</span>
+              </div>
+            </>
+          ) : isRoom ? (
+            <>
+              <div className="flex items-center gap-1.5">
+                <Bed size={16} className="text-accent/70" />
+                <span>Habitación privada</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Bath size={16} className="text-accent/70" />
+                <span>{item.banos === 1 ? 'Baño propio' : 'Baño compartido'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Maximize2 size={16} className="text-accent/70" />
+                <span>{item.area}m²</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5">
+                <Bed size={16} className="text-accent/70" />
+                <span>{item.habitaciones} Hab.</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Bath size={16} className="text-accent/70" />
+                <span>{item.banos} Baños</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Maximize2 size={16} className="text-accent/70" />
+                <span>{item.area}m²</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Perfil del Publicador */}
@@ -249,7 +319,7 @@ function PropertyCard({ item }: { item: Inmueble }) {
            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5">
                  <Image 
-                   src={item.usuario_avatar || "/placeholder-avatar.png"} 
+                   src={item.usuario_avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"} 
                    alt={item.usuario_nombre} 
                    width={40} 
                    height={40} 
@@ -259,7 +329,7 @@ function PropertyCard({ item }: { item: Inmueble }) {
               </div>
               <div>
                  <p className="text-xs font-bold">{item.usuario_nombre}</p>
-                 <p className="text-[10px] text-white/40">Residente Verificado</p>
+                 <p className="text-[10px] text-white/40">Residente Verificado ✓</p>
               </div>
            </div>
            <div className="flex gap-2">
@@ -270,7 +340,7 @@ function PropertyCard({ item }: { item: Inmueble }) {
                  <Phone size={16} />
               </button>
               <button 
-                onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${item.usuario_telefono}`, '_blank'); }}
+                onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/57${item.usuario_telefono}`, '_blank'); }}
                 className="w-9 h-9 rounded-xl bg-[#25D366] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
               >
                  <MessageSquare size={16} />
