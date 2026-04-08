@@ -515,8 +515,10 @@ function ProfileContent() {
 
       {/* HERO IMAGE */}
       <div className="absolute top-0 left-0 w-full h-[60vh] z-0 overflow-hidden">
-        <Image src={profilePic} alt="" fill className="absolute inset-0 w-full h-full object-cover object-top scale-105" 
-               style={{ WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)' }} unoptimized />
+        <Image src={profilePic} alt="" fill className="absolute inset-0 w-full h-full object-cover object-top scale-105" unoptimized />
+        {/* Bottom fade overlay */}
+        <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-[#0d041a]" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#0d041a] to-transparent" />
       </div>
 
       <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
