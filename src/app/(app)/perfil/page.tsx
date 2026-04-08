@@ -953,19 +953,22 @@ function ProfileContent() {
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                  {/* AVATAR SELECTOR (Funcional) */}
                  <div className="flex justify-center mb-8">
-                    <div className="relative group">
-                       <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-accent/40 p-1 bg-accent/5 shadow-[0_0_30px_rgba(217,70,239,0.2)]">
-                          <Image src={profilePic} alt="" width={96} height={96} className="w-full h-full object-cover rounded-full" />
-                       </div>
-                       <button 
-                         type="button"
-                         onClick={() => fileInputRef.current?.click()}
-                         className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-accent text-primary flex items-center justify-center shadow-lg border-2 border-[#1a0b2e] active:scale-90 transition-all hover:scale-110"
-                       >
-                          <Camera size={18} />
-                       </button>
-                    </div>
-                 </div>
+                     <div className="relative group">
+                        <div className="w-24 h-24 rounded-full p-[3px] liquid-status-halo relative">
+                           <div className="w-full h-full rounded-full overflow-hidden shadow-xl z-20 relative">
+                              <Image src={profilePic} alt="" width={96} height={96} className="w-full h-full object-cover rounded-full" />
+                              <div className="absolute inset-0 border border-white/10 rounded-full pointer-events-none" />
+                           </div>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-accent text-primary flex items-center justify-center shadow-lg border-2 border-[#1a0b2e] active:scale-90 transition-all hover:scale-110 z-30"
+                        >
+                           <Camera size={18} />
+                        </button>
+                     </div>
+                  </div>
 
                  <input 
                     type="file" 

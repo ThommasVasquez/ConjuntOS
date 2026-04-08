@@ -23,7 +23,6 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   const [userData, setUserData] = useState({ name: "Cargando...", gender: "femenino" });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [hasStory, setHasStory] = useState(false);
-  const [hasActiveStatus, setHasActiveStatus] = useState(false);
 
   useEffect(() => {
     const MAX_RETRIES = 2;
@@ -66,7 +65,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         if (notifRes.ok) {
           const nData = await notifRes.json();
           if (nData.success) {
-            pendingCount = nData.data.filter((n: any) => !n.leida).length;
+            pendingCount = nData.data.filter((n: { leida: boolean }) => !n.leida).length;
           }
         }
 
@@ -75,7 +74,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
           const rData = await reservaRes.json();
           if (rData.success) {
             const now = new Date();
-            activeReserva = rData.data.some((r: any) => {
+            activeReserva = rData.data.some((r: { fechaInicio: string; fechaFin: string; estado: string }) => {
               const start = new Date(r.fechaInicio);
               const end = new Date(r.fechaFin);
               return now >= start && now <= end && r.estado !== "CANCELADA";
@@ -83,7 +82,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
           }
         }
 
-        setHasActiveStatus(pendingCount > 0 || activeReserva);
+        setHasStory(pendingCount > 0 || activeReserva);
 
       } catch (error) {
         console.warn("⚠️ API de perfil/estatus no disponible:", (error as Error).message);
@@ -126,9 +125,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         onClick={() => !isProfilePage && router.push("/perfil")}
         className={`flex items-center gap-4 transition-transform ${isProfilePage ? 'cursor-default transition-none' : 'group cursor-pointer active:scale-95'}`}
       >
-        <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${
-          hasActiveStatus ? 'liquid-status-halo' : (hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5')
-        }`}>
+        <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative liquid-status-halo`}>
           <div className="w-full h-full rounded-full overflow-hidden relative shadow-xl backdrop-blur-xl z-20">
             <Image src={profilePic} alt="User Avatar" width={56} height={56} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" unoptimized />
             <div className="absolute inset-0 border border-white/10 rounded-full pointer-events-none" />
