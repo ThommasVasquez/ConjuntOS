@@ -43,6 +43,7 @@ export default function InmobiliariaPage() {
   const [filterType, setFilterType] = useState<'VENTA' | 'ALQUILER' | 'TODOS'>('TODOS');
   const [filterUnidad, setFilterUnidad] = useState<'TODOS' | 'APARTAMENTO' | 'PARQUEADERO' | 'LOCAL'>('TODOS');
   const [isPosting, setIsPosting] = useState(false);
+  const [selectedInmueble, setSelectedInmueble] = useState<Inmueble | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   
   const containerRef = useRef(null);
@@ -175,7 +176,7 @@ export default function InmobiliariaPage() {
         ) : filteredInmuebles.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {filteredInmuebles.map((inv) => (
-              <PropertyCard key={inv.id} item={inv} />
+              <PropertyCard key={inv.id} item={inv} onClick={() => setSelectedInmueble(inv)} />
             ))}
           </div>
         ) : (
@@ -189,13 +190,21 @@ export default function InmobiliariaPage() {
         )}
       </div>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button - Adjusted to stay within content area on desktop */}
       <button 
         onClick={() => setIsPosting(true)}
-        className="fixed bottom-24 right-6 w-16 h-16 rounded-full bg-accent text-primary shadow-2xl shadow-accent/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group"
+        className="fixed bottom-32 right-6 md:right-[calc(50%-180px)] w-16 h-16 rounded-full bg-accent text-primary shadow-2xl shadow-accent/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group"
       >
         <Plus size={32} className="group-hover:rotate-90 transition-transform duration-500" />
       </button>
+
+      {/* Detail Simulation Modal */}
+      {selectedInmueble && (
+        <PropertyDetailSimulation 
+          item={selectedInmueble} 
+          onClose={() => setSelectedInmueble(null)} 
+        />
+      )}
 
       {/* BottomSheet: Nueva Publicación */}
       <BottomSheet isOpen={isPosting} onClose={() => setIsPosting(false)} title="Publicar Inmueble">
@@ -205,7 +214,7 @@ export default function InmobiliariaPage() {
   );
 }
 
-function PropertyCard({ item }: { item: Inmueble }) {
+function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }) {
   const [isLiked, setIsLiked] = useState(false);
   const imagenes = JSON.parse(item.imagenes || "[]");
   const mainImage = imagenes[0] || `https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800`;
@@ -225,7 +234,10 @@ function PropertyCard({ item }: { item: Inmueble }) {
     : 'bg-accent/90 text-primary';
 
   return (
-    <div className="property-card group cursor-pointer bg-white/5 border border-white/8 rounded-[28px] overflow-hidden hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300 active:scale-[0.98] flex flex-col">
+    <div 
+      onClick={onClick}
+      className="property-card group cursor-pointer bg-linear-to-b from-white/10 to-white/5 border border-white/8 rounded-[28px] overflow-hidden hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300 active:scale-[0.98] flex flex-col"
+    >
 
       {/* — Image — */}
       <div className="relative h-44 overflow-hidden">
@@ -237,7 +249,7 @@ function PropertyCard({ item }: { item: Inmueble }) {
           unoptimized
         />
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-black/10" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-black/20" />
 
         {/* Top badges */}
         <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
@@ -338,6 +350,190 @@ function PropertyCard({ item }: { item: Inmueble }) {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SIMULATION COMPONENTS ──────────────────────────────────────────────────
+
+import { X, ArrowRight, Plane as Share, MapPin, ShieldCheck, Zap } from "lucide-react";
+
+function PropertyDetailSimulation({ item, onClose }: { item: Inmueble, onClose: () => void }) {
+  const [step, setStep] = useState<'DETAILS' | 'CONTACTING' | 'SUCCESS'>('DETAILS');
+  const imagenes = JSON.parse(item.imagenes || "[]");
+  const mainImage = imagenes[0] || `https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800`;
+
+  const formattedPrice = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0
+  }).format(item.precio);
+
+  useEffect(() => {
+    // Disable body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = 'auto'; };
+  }, []);
+
+  const handleInterpreting = () => {
+    setStep('CONTACTING');
+    setTimeout(() => {
+      setStep('SUCCESS');
+    }, 2500);
+  };
+
+  return (
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
+      <div className="absolute inset-0 bg-[#0d041a]/95 backdrop-blur-xl" onClick={onClose} />
+      
+      <div className="relative w-full h-full max-w-xl bg-primary overflow-hidden md:rounded-[40px] border border-white/10 flex flex-col shadow-2xl">
+        
+        {/* Header Actions */}
+        <div className="absolute top-6 left-6 z-50">
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="absolute top-6 right-6 z-50 flex gap-2">
+          <button className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white border border-white/10 transition-all active:scale-95">
+            <Share size={18} />
+          </button>
+          <button className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white border border-white/10 transition-all active:scale-95">
+            <Heart size={18} />
+          </button>
+        </div>
+
+        {step === 'DETAILS' && (
+          <>
+            <div className="flex-1 overflow-y-auto hide-scrollbar">
+              {/* Cover */}
+              <div className="relative h-[45vh] w-full">
+                <Image src={mainImage} alt={item.titulo} fill className="object-cover" unoptimized />
+                <div className="absolute inset-0 bg-linear-to-t from-primary via-transparent to-transparent" />
+                <div className="absolute bottom-6 left-6">
+                   <span className="px-3 py-1 rounded-full bg-accent text-primary text-[10px] font-black uppercase tracking-tighter mb-2 inline-block">
+                     {item.tipoNegocio}
+                   </span>
+                   <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-md">{item.titulo}</h1>
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="p-6 space-y-8">
+                <div className="flex items-center justify-between pb-6 border-b border-white/5">
+                   <div>
+                     <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Precio solicitado</p>
+                     <p className="text-3xl font-black text-accent">{formattedPrice} <span className="text-sm font-medium text-white/30">{item.tipoNegocio === 'ALQUILER' ? '/mes' : ''}</span></p>
+                   </div>
+                   <div className="flex flex-col items-end">
+                      <div className="flex items-center gap-1.5 text-accent/80 text-xs font-bold">
+                         <ShieldCheck size={14} />
+                         <span>Publicación Verificada</span>
+                      </div>
+                      <p className="text-white/30 text-[10px]">Hace {Math.floor(Math.random() * 5) + 1} días</p>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                   <div className="p-4 rounded-3xl bg-white/5 border border-white/10 flex flex-col items-center text-center gap-2">
+                      <Bed size={22} className="text-accent" />
+                      <div>
+                        <p className="text-lg font-bold text-white leading-none">{item.habitaciones}</p>
+                        <p className="text-[10px] text-white/40 font-bold uppercase">Hab.</p>
+                      </div>
+                   </div>
+                   <div className="p-4 rounded-3xl bg-white/5 border border-white/10 flex flex-col items-center text-center gap-2">
+                      <Bath size={22} className="text-accent" />
+                      <div>
+                        <p className="text-lg font-bold text-white leading-none">{item.banos}</p>
+                        <p className="text-[10px] text-white/40 font-bold uppercase">Baños</p>
+                      </div>
+                   </div>
+                   <div className="p-4 rounded-3xl bg-white/5 border border-white/10 flex flex-col items-center text-center gap-2">
+                      <Maximize2 size={22} className="text-accent" />
+                      <div>
+                        <p className="text-lg font-bold text-white leading-none">{item.area}</p>
+                        <p className="text-[10px] text-white/40 font-bold uppercase">m²</p>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="space-y-4">
+                   <div className="flex items-center gap-2">
+                      <MapPin size={18} className="text-accent" />
+                      <span className="text-sm font-bold text-white/80">Ubicación: Torre 4, Interior 201</span>
+                   </div>
+                   <div className="p-5 rounded-3xl bg-white/3 border border-dashed border-white/10">
+                      <h4 className="text-xs font-bold text-white/40 uppercase mb-3">Descripción</h4>
+                      <p className="text-white/70 text-sm leading-relaxed">{item.descripcion}</p>
+                   </div>
+                </div>
+
+                {/* Advertiser */}
+                <div className="p-4 rounded-[32px] bg-accent/5 border border-accent/20 flex items-center justify-between">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full border-2 border-accent overflow-hidden">
+                        <Image src={item.usuario_avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200"} alt="" width={48} height={48} unoptimized />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-white">{item.usuario_nombre}</p>
+                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-tight">Propietario • Residente desde 2022</p>
+                      </div>
+                   </div>
+                   <Zap size={20} className="text-accent animate-pulse" />
+                </div>
+              </div>
+            </div>
+
+            {/* Sticky Action */}
+            <div className="p-6 bg-primary border-t border-white/5">
+               <button 
+                onClick={handleInterpreting}
+                className="w-full h-16 rounded-2xl bg-accent text-primary font-black shadow-xl shadow-accent/20 flex items-center justify-center gap-3 active:scale-95 transition-all text-lg"
+               >
+                 <span>Me interesa este Inmueble</span>
+                 <ArrowRight size={20} />
+               </button>
+            </div>
+          </>
+        )}
+
+        {step === 'CONTACTING' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-8 animate-in zoom-in duration-500">
+             <div className="relative">
+                <div className="w-32 h-32 rounded-full border-4 border-accent/20 border-t-accent animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <Zap size={40} className="text-accent animate-pulse" />
+                </div>
+             </div>
+             <div className="space-y-3">
+                <h2 className="text-2xl font-bold text-white">Contactando al Propietario...</h2>
+                <p className="text-white/50 leading-relaxed">Estamos notificando a {item.usuario_nombre} que estás interesado en su publicación.</p>
+             </div>
+          </div>
+        )}
+
+        {step === 'SUCCESS' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-10 animate-in zoom-in duration-500">
+             <div className="w-32 h-32 rounded-full bg-emerald-500 flex items-center justify-center shadow-2xl shadow-emerald-500/40">
+                <CheckCircle2 size={64} className="text-white" />
+             </div>
+             <div className="space-y-4">
+                <h2 className="text-3xl font-black text-white">¡Grito de interés enviado!</h2>
+                <p className="text-lg text-white/60 leading-relaxed">
+                  Tu interés se ha registrado con éxito. <b>{item.usuario_nombre}</b> recibirá tu información y te contactará a través de la citofonía interna o chat.
+                </p>
+             </div>
+             <button 
+              onClick={onClose}
+              className="w-full h-14 rounded-2xl bg-white/10 text-white font-bold border border-white/10 hover:bg-white/20 transition-all active:scale-95"
+             >
+                Regresar a la Inmobiliaria
+             </button>
+          </div>
+        )}
+
       </div>
     </div>
   );
