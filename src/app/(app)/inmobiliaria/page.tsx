@@ -173,7 +173,7 @@ export default function InmobiliariaPage() {
             ))}
           </div>
         ) : filteredInmuebles.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {filteredInmuebles.map((inv) => (
               <PropertyCard key={inv.id} item={inv} />
             ))}
@@ -208,141 +208,135 @@ export default function InmobiliariaPage() {
 function PropertyCard({ item }: { item: Inmueble }) {
   const [isLiked, setIsLiked] = useState(false);
   const imagenes = JSON.parse(item.imagenes || "[]");
-  const mainImage = imagenes[0] || `https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1000`;
+  const mainImage = imagenes[0] || `https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800`;
 
   const formattedPrice = new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
-    maximumFractionDigits: 0
-  }).format(item.precio);
-
-  const unitTypeLabel: Record<string, string> = {
-    APARTAMENTO: '🏠 Apartamento',
-    PARQUEADERO: '🅿️ Parqueadero',
-    LOCAL: '🛏️ Habitación',
-    CASA: '🏡 Casa',
-  };
+    maximumFractionDigits: 0,
+    notation: item.precio >= 1000000 ? 'compact' : 'standard'
+  } as Intl.NumberFormatOptions).format(item.precio);
 
   const isParking = item.tipoUnidad === 'PARQUEADERO';
   const isRoom = item.tipoUnidad === 'LOCAL';
 
+  const negocioColor = item.tipoNegocio === 'VENTA'
+    ? 'bg-emerald-500/90 text-white'
+    : 'bg-accent/90 text-primary';
+
   return (
-    <div className="property-card group cursor-pointer bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-white/20 hover:bg-white/10 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/5 flex flex-col">
-      {/* Portada */}
-      <div className="relative aspect-4/3 overflow-hidden m-2 rounded-4xl">
-        <Image 
-          src={mainImage} 
-          alt={item.titulo} 
-          fill 
-          className="object-cover group-hover:scale-110 transition-transform duration-700" 
+    <div className="property-card group cursor-pointer bg-white/5 border border-white/8 rounded-[28px] overflow-hidden hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300 active:scale-[0.98] flex flex-col">
+
+      {/* — Image — */}
+      <div className="relative h-44 overflow-hidden">
+        <Image
+          src={mainImage}
+          alt={item.titulo}
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-700"
           unoptimized
         />
-        <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-           <div className="flex flex-col gap-1.5">
-             <div className="px-3 py-1.5 rounded-full bg-primary/80 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase tracking-wider text-accent">
-               {item.tipoNegocio === 'VENTA' ? 'En Venta' : 'En Arriendo'}
-             </div>
-             <div className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-semibold text-white/80">
-               {unitTypeLabel[item.tipoUnidad] || item.tipoUnidad}
-             </div>
-           </div>
-           <button 
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-black/10" />
+
+        {/* Top badges */}
+        <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${negocioColor}`}>
+            {item.tipoNegocio === 'VENTA' ? 'En Venta' : 'Arriendo'}
+          </span>
+          <button
             onClick={(e) => { e.stopPropagation(); setIsLiked(!isLiked); }}
-            className={`w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${isLiked ? 'bg-red-500 border-red-500 text-white' : 'bg-primary/40 border-white/20 text-white'}`}
-           >
-             <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
-           </button>
+            className={`w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${isLiked ? 'bg-red-500 border-red-500' : 'bg-black/30 border-white/20'}`}
+          >
+            <Heart size={14} className="text-white" fill={isLiked ? "white" : "none"} />
+          </button>
         </div>
-        <div className="absolute bottom-4 left-4">
-           <div className="bg-primary/60 backdrop-blur-xl border border-white/10 rounded-2xl p-3 pr-6">
-              <p className="text-[10px] text-white/60 mb-0.5">{item.tipoNegocio === 'VENTA' ? 'Precio' : 'Valor / mes'}</p>
-              <p className="text-xl font-bold text-accent">{formattedPrice}</p>
-           </div>
+
+        {/* Price bottom */}
+        <div className="absolute bottom-3 left-3">
+          <p className="text-[9px] text-white/60 mb-0.5 uppercase tracking-widest font-bold">{item.tipoNegocio === 'VENTA' ? 'Precio' : '/mes'}</p>
+          <p className="text-lg font-black text-white drop-shadow-lg">{formattedPrice}</p>
         </div>
       </div>
 
-      {/* Contenido */}
-      <div className="p-6 pt-2 flex-1 flex flex-col">
-        <h3 className="text-xl font-semibold mb-2 line-clamp-1">{item.titulo}</h3>
-        
-        {/* Smart stats by type */}
-        <div className="flex gap-4 mb-4 text-white/50 text-sm">
+      {/* — Content — */}
+      <div className="p-4 flex-1 flex flex-col gap-3">
+
+        {/* Title */}
+        <h3 className="text-sm font-bold text-white leading-snug line-clamp-2">
+          {item.titulo}
+        </h3>
+
+        {/* Stats pills */}
+        <div className="flex flex-wrap gap-1.5">
           {isParking ? (
             <>
-              <div className="flex items-center gap-1.5">
-                <Maximize2 size={16} className="text-accent/70" />
-                <span>{item.area}m²</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-accent/70">🚗</span>
-                <span>Cupo cubierto</span>
-              </div>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 text-white/60 text-[10px] font-semibold">
+                <Maximize2 size={11} className="text-accent/70" />{item.area}m²
+              </span>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 text-white/60 text-[10px] font-semibold">
+                🚗 Cubierto
+              </span>
             </>
           ) : isRoom ? (
             <>
-              <div className="flex items-center gap-1.5">
-                <Bed size={16} className="text-accent/70" />
-                <span>Habitación privada</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Bath size={16} className="text-accent/70" />
-                <span>{item.banos === 1 ? 'Baño propio' : 'Baño compartido'}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Maximize2 size={16} className="text-accent/70" />
-                <span>{item.area}m²</span>
-              </div>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 text-white/60 text-[10px] font-semibold">
+                <Bed size={11} className="text-accent/70" /> Privada
+              </span>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 text-white/60 text-[10px] font-semibold">
+                <Bath size={11} className="text-accent/70" /> {item.banos === 1 ? 'Propio' : 'Compartido'}
+              </span>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 text-white/60 text-[10px] font-semibold">
+                <Maximize2 size={11} className="text-accent/70" />{item.area}m²
+              </span>
             </>
           ) : (
             <>
-              <div className="flex items-center gap-1.5">
-                <Bed size={16} className="text-accent/70" />
-                <span>{item.habitaciones} Hab.</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Bath size={16} className="text-accent/70" />
-                <span>{item.banos} Baños</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Maximize2 size={16} className="text-accent/70" />
-                <span>{item.area}m²</span>
-              </div>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 text-white/60 text-[10px] font-semibold">
+                <Bed size={11} className="text-accent/70" />{item.habitaciones} hab.
+              </span>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 text-white/60 text-[10px] font-semibold">
+                <Bath size={11} className="text-accent/70" />{item.banos} baños
+              </span>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 text-white/60 text-[10px] font-semibold">
+                <Maximize2 size={11} className="text-accent/70" />{item.area}m²
+              </span>
             </>
           )}
         </div>
 
-        {/* Perfil del Publicador */}
-        <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between gap-4">
-           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5">
-                 <Image 
-                   src={item.usuario_avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"} 
-                   alt={item.usuario_nombre} 
-                   width={40} 
-                   height={40} 
-                   className="w-full h-full object-cover"
-                   unoptimized
-                 />
-              </div>
-              <div>
-                 <p className="text-xs font-bold">{item.usuario_nombre}</p>
-                 <p className="text-[10px] text-white/40">Residente Verificado ✓</p>
-              </div>
-           </div>
-           <div className="flex gap-2">
-              <button 
-                onClick={(e) => { e.stopPropagation(); window.open(`tel:${item.usuario_telefono}`, '_blank'); }}
-                className="w-9 h-9 rounded-xl bg-accent text-primary flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-              >
-                 <Phone size={16} />
-              </button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/57${item.usuario_telefono}`, '_blank'); }}
-                className="w-9 h-9 rounded-xl bg-[#25D366] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-              >
-                 <MessageSquare size={16} />
-              </button>
-           </div>
+        {/* Publisher */}
+        <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-full border border-white/10 overflow-hidden bg-white/5 flex-shrink-0">
+              <Image
+                src={item.usuario_avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"}
+                alt={item.usuario_nombre}
+                width={28}
+                height={28}
+                className="w-full h-full object-cover"
+                unoptimized
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-white truncate">{item.usuario_nombre}</p>
+              <p className="text-[9px] text-white/30">Verificado ✓</p>
+            </div>
+          </div>
+          <div className="flex gap-1.5 flex-shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); window.open(`tel:${item.usuario_telefono}`, '_blank'); }}
+              className="w-8 h-8 rounded-xl bg-accent text-primary flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+            >
+              <Phone size={14} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/57${item.usuario_telefono}`, '_blank'); }}
+              className="w-8 h-8 rounded-xl bg-[#25D366] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+            >
+              <MessageSquare size={14} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
