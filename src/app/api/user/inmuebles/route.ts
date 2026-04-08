@@ -1,3 +1,9 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
+
 // ── Rich Mock Listings (always shown when DB is empty) ───────────────────────
 const MOCK_INMUEBLES = [
   {
