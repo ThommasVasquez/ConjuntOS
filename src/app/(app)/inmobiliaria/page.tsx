@@ -69,18 +69,15 @@ export default function InmobiliariaPage() {
   }, [filterType, filterUnidad]);
 
   useEffect(() => {
-    if (!isLoading) {
-      gsap.fromTo(".property-card", 
-        { opacity: 0, y: 30, scale: 0.95 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          scale: 1, 
-          duration: 0.8, 
-          stagger: 0.1, 
-          ease: "back.out(1.2)" 
-        }
-      );
+    if (!isLoading && inmuebles.length > 0) {
+      // Small delay to ensure cards are rendered in the DOM
+      const t = setTimeout(() => {
+        gsap.fromTo(".property-card",
+          { opacity: 0, y: 30, scale: 0.95 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.6, stagger: 0.08, ease: "back.out(1.2)" }
+        );
+      }, 50);
+      return () => clearTimeout(t);
     }
   }, [isLoading, inmuebles]);
 

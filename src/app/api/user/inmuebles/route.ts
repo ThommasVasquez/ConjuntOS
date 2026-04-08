@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
-// ── Rich Mock Listings (always shown when DB is empty) ───────────────────────
+// ── Rich Mock Listings — static strings only (Edge-safe) ─────────────────────
 const MOCK_INMUEBLES = [
   {
     id: "mock_1",
@@ -16,13 +16,13 @@ const MOCK_INMUEBLES = [
     habitaciones: 3,
     banos: 2,
     area: 78,
-    imagenes: JSON.stringify(["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=1000"]),
+    imagenes: "[\"https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=1000\"]",
     estado: "DISPONIBLE",
     destacado: true,
     usuario_nombre: "Familia Rodríguez",
     usuario_avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200",
     usuario_telefono: "3001234567",
-    creadoEn: new Date().toISOString()
+    creadoEn: "2026-04-01T10:00:00.000Z"
   },
   {
     id: "mock_2",
@@ -34,13 +34,13 @@ const MOCK_INMUEBLES = [
     habitaciones: 2,
     banos: 2,
     area: 62,
-    imagenes: JSON.stringify(["https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=1000"]),
+    imagenes: "[\"https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=1000\"]",
     estado: "DISPONIBLE",
     destacado: false,
     usuario_nombre: "Carlos Medina",
     usuario_avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
     usuario_telefono: "3109876543",
-    creadoEn: new Date().toISOString()
+    creadoEn: "2026-04-02T10:00:00.000Z"
   },
   {
     id: "mock_3",
@@ -52,13 +52,13 @@ const MOCK_INMUEBLES = [
     habitaciones: 0,
     banos: 0,
     area: 12,
-    imagenes: JSON.stringify(["https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&q=80&w=1000"]),
+    imagenes: "[\"https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&q=80&w=1000\"]",
     estado: "DISPONIBLE",
     destacado: false,
     usuario_nombre: "Martha Jiménez",
     usuario_avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
     usuario_telefono: "3205554433",
-    creadoEn: new Date().toISOString()
+    creadoEn: "2026-04-03T10:00:00.000Z"
   },
   {
     id: "mock_4",
@@ -70,13 +70,13 @@ const MOCK_INMUEBLES = [
     habitaciones: 1,
     banos: 1,
     area: 18,
-    imagenes: JSON.stringify(["https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&q=80&w=1000"]),
+    imagenes: "[\"https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&q=80&w=1000\"]",
     estado: "DISPONIBLE",
     destacado: false,
     usuario_nombre: "Diana López",
     usuario_avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
     usuario_telefono: "3152223344",
-    creadoEn: new Date().toISOString()
+    creadoEn: "2026-04-04T10:00:00.000Z"
   },
   {
     id: "mock_5",
@@ -88,13 +88,13 @@ const MOCK_INMUEBLES = [
     habitaciones: 3,
     banos: 2,
     area: 95,
-    imagenes: JSON.stringify(["https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1000"]),
+    imagenes: "[\"https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1000\"]",
     estado: "DISPONIBLE",
     destacado: true,
     usuario_nombre: "Roberto Salcedo",
     usuario_avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200",
     usuario_telefono: "3001112233",
-    creadoEn: new Date().toISOString()
+    creadoEn: "2026-04-05T10:00:00.000Z"
   },
   {
     id: "mock_6",
@@ -106,13 +106,13 @@ const MOCK_INMUEBLES = [
     habitaciones: 1,
     banos: 1,
     area: 38,
-    imagenes: JSON.stringify(["https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&q=80&w=1000"]),
+    imagenes: "[\"https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&q=80&w=1000\"]",
     estado: "DISPONIBLE",
     destacado: false,
     usuario_nombre: "Valentina Torres",
     usuario_avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200",
     usuario_telefono: "3189990011",
-    creadoEn: new Date().toISOString()
+    creadoEn: "2026-04-06T10:00:00.000Z"
   },
   {
     id: "mock_7",
@@ -124,13 +124,13 @@ const MOCK_INMUEBLES = [
     habitaciones: 0,
     banos: 0,
     area: 25,
-    imagenes: JSON.stringify(["https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=1000"]),
+    imagenes: "[\"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=1000\"]",
     estado: "DISPONIBLE",
     destacado: false,
     usuario_nombre: "Inversiones Mora",
     usuario_avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200",
     usuario_telefono: "3044445566",
-    creadoEn: new Date().toISOString()
+    creadoEn: "2026-04-07T10:00:00.000Z"
   },
   {
     id: "mock_8",
@@ -142,13 +142,13 @@ const MOCK_INMUEBLES = [
     habitaciones: 1,
     banos: 1,
     area: 22,
-    imagenes: JSON.stringify(["https://images.unsplash.com/photo-1560185007-cde436f6a4d0?auto=format&fit=crop&q=80&w=1000"]),
+    imagenes: "[\"https://images.unsplash.com/photo-1560185007-cde436f6a4d0?auto=format&fit=crop&q=80&w=1000\"]",
     estado: "DISPONIBLE",
     destacado: false,
     usuario_nombre: "Ana Gómez",
     usuario_avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&q=80&w=200",
     usuario_telefono: "3167778899",
-    creadoEn: new Date().toISOString()
+    creadoEn: "2026-04-08T10:00:00.000Z"
   }
 ];
 
@@ -156,19 +156,19 @@ export async function GET(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
-    const tipo = searchParams.get("tipo"); // VENTA, ALQUILER
-    const tipoUnidad = searchParams.get("tipoUnidad"); // APARTAMENTO, PARQUEADERO, LOCAL
+    const tipo = searchParams.get("tipo");
+    const tipoUnidad = searchParams.get("tipoUnidad");
     const habitaciones = searchParams.get("habs");
 
+    // Try real DB first
     try {
       const { supabase } = await import("@/lib/db");
       const userId = session.user.id;
 
-      // Get conjuntoId
       const { data: user } = await supabase
         .from("Usuario")
         .select("conjuntoId")
@@ -178,7 +178,7 @@ export async function GET(req: Request) {
       if (user?.conjuntoId) {
         let query = supabase
           .from("Inmueble")
-          .select(`*, usuario:Usuario(nombre, avatar, telefono)`)
+          .select("*, usuario:Usuario(nombre, avatar, telefono)")
           .eq("conjuntoId", user.conjuntoId)
           .eq("estado", "DISPONIBLE")
           .order("creadoEn", { ascending: false });
@@ -188,26 +188,25 @@ export async function GET(req: Request) {
         if (habitaciones) query = query.eq("habitaciones", parseInt(habitaciones));
 
         const { data } = await query;
-
-        // If we have real data, return it; otherwise fall through to mock
         if (data && data.length > 0) {
           return NextResponse.json({ success: true, data, source: "db" });
         }
       }
     } catch (err) {
-      console.warn("⚠️ [API-INMUEBLES]: DB error, using mock data.", err instanceof Error ? err.message : err);
+      console.warn("⚠️ [INMUEBLES]: DB unavailable, using mock.", err instanceof Error ? err.message : err);
     }
 
-    // ── Mock Fallback: filter and return rich sample listings ──
-    let mockResult = [...MOCK_INMUEBLES];
-    if (tipo) mockResult = mockResult.filter(i => i.tipoNegocio === tipo);
-    if (tipoUnidad) mockResult = mockResult.filter(i => i.tipoUnidad === tipoUnidad);
-    if (habitaciones) mockResult = mockResult.filter(i => i.habitaciones === parseInt(habitaciones));
+    // Mock fallback with filtering
+    let result = [...MOCK_INMUEBLES];
+    if (tipo) result = result.filter(i => i.tipoNegocio === tipo);
+    if (tipoUnidad) result = result.filter(i => i.tipoUnidad === tipoUnidad);
+    if (habitaciones) result = result.filter(i => i.habitaciones === parseInt(habitaciones));
 
-    return NextResponse.json({ success: true, data: mockResult, source: "mock" });
+    return NextResponse.json({ success: true, data: result, source: "mock" });
 
   } catch (error: unknown) {
     const err = error as { message?: string };
+    console.error("❌ [INMUEBLES-FATAL]:", err.message);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
@@ -216,55 +215,46 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
     }
 
     const body = await req.json();
     const userId = session.user.id;
     const { titulo, descripcion, precio, tipoNegocio, tipoUnidad, habitaciones, banos, area, imagenes } = body;
 
-    // Obtener conjuntoId
-    let conjuntoId = "";
-    const { Pool } = await import("@neondatabase/serverless");
-    const { discoverUrl } = await import("@/lib/db");
-    const url = await discoverUrl();
-    const pool = new Pool({ connectionString: url });
-    
-    const uRes = await pool.query('SELECT "conjuntoId" FROM "Usuario" WHERE id = $1', [userId]);
-    if (uRes.rows.length > 0) conjuntoId = uRes.rows[0].conjuntoId;
+    const { supabase } = await import("@/lib/db");
 
-    if (!conjuntoId) return NextResponse.json({ success: false, error: "Conjunto no encontrado" }, { status: 404 });
+    const { data: user } = await supabase
+      .from("Usuario")
+      .select("conjuntoId")
+      .eq("id", userId)
+      .single();
 
-    // Inserción vía SQL (Más robusto en el Edge para modelos nuevos)
-    try {
-      const res = await pool.query(`
-        INSERT INTO "Inmueble" (
-          id, "conjuntoId", "usuarioId", titulo, descripcion, precio, 
-          "tipoNegocio", "tipoUnidad", habitaciones, banos, area, 
-          imagenes, "actualizadoEn"
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
-        RETURNING *
-      `, [
-        `prop_${Math.random().toString(36).substring(7)}`,
-        conjuntoId,
-        userId,
-        titulo,
-        descripcion,
-        parseFloat(precio),
-        tipoNegocio,
-        tipoUnidad,
-        parseInt(habitaciones),
-        parseInt(banos),
-        parseFloat(area || 0),
-        JSON.stringify(imagenes || [])
-      ]);
-      await pool.end();
-      return NextResponse.json({ success: true, data: res.rows[0] });
-    } catch (err: unknown) {
-      await pool.end();
-      throw err;
+    if (!user?.conjuntoId) {
+      return NextResponse.json({ success: false, error: "Conjunto no encontrado" }, { status: 404 });
     }
+
+    const id = `prop_${Math.random().toString(36).substring(7)}`;
+    const { data, error } = await supabase.from("Inmueble").insert({
+      id,
+      conjuntoId: user.conjuntoId,
+      usuarioId: userId,
+      titulo,
+      descripcion,
+      precio: parseFloat(precio),
+      tipoNegocio,
+      tipoUnidad,
+      habitaciones: parseInt(habitaciones),
+      banos: parseInt(banos),
+      area: parseFloat(area || 0),
+      imagenes: JSON.stringify(imagenes || []),
+      estado: "DISPONIBLE",
+      destacado: false,
+    }).select().single();
+
+    if (error) throw new Error(error.message);
+    return NextResponse.json({ success: true, data });
+
   } catch (error: unknown) {
     const err = error as { message?: string };
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
