@@ -12,7 +12,7 @@ interface ProfileHeaderProps {
 }
 
 export default function ProfileHeader({ className = "", showWelcome = true }: ProfileHeaderProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const isProfilePage = pathname === "/perfil";
@@ -23,49 +23,86 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   const [userData, setUserData] = useState({ name: "Cargando...", gender: "femenino" });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [hasStory, setHasStory] = useState(false);
+  const [hasActiveStatus, setHasActiveStatus] = useState(false);
 
   useEffect(() => {
+    const MAX_RETRIES = 2;
+    let currentRetry = 0;
+
     async function loadData() {
       if (!userId) return;
       
-      // Intentar cargar de LocalStorage primero para velocidad instantánea
-      const savedPic = localStorage.getItem(`conjunto_app_profile_pic_${userId}`);
-      const savedData = localStorage.getItem(`conjunto_app_profile_data_${userId}`);
+      const savedPic = localStorage.getItem(`conjuntos_profile_pic_${userId}`);
+      const savedData = localStorage.getItem(`conjuntos_profile_data_${userId}`);
       if (savedPic) setProfilePic(savedPic);
       if (savedData) setUserData(JSON.parse(savedData));
 
       try {
-        const fetchRes = await fetch("/api/user/profile", { cache: 'no-store' });
+        const [profileRes, notifRes, reservaRes] = await Promise.all([
+          fetch("/api/user/profile", { cache: 'no-store' }),
+          fetch("/api/notificaciones", { cache: 'no-store' }),
+          fetch("/api/user/reservas", { cache: 'no-store' })
+        ]);
         
-        // Verificar si la respuesta es JSON antes de parsear
-        const contentType = fetchRes.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-           throw new Error(`API retornó ${contentType || 'formato desconocido'}`);
+        if (profileRes.status === 401 && currentRetry < MAX_RETRIES) {
+          currentRetry++;
+          setTimeout(loadData, 1000);
+          return;
         }
 
-        const res = await fetchRes.json();
-        
-        if (res.success && res.data) {
-          const u = res.data;
-          const mapped = { name: u.nombre, gender: u.genero || "neutro" };
-          setUserData(mapped);
-          if (u.avatar) setProfilePic(u.avatar);
-          
-          localStorage.setItem(`conjunto_app_profile_data_${userId}`, JSON.stringify(mapped));
-          if (u.avatar) localStorage.setItem(`conjunto_app_profile_pic_${userId}`, u.avatar);
+        if (profileRes.ok) {
+          const res = await profileRes.json();
+          if (res.success && res.data) {
+            const u = res.data;
+            const mapped = { name: u.nombre || "Residente", gender: u.genero || "neutro" };
+            setUserData(mapped);
+            if (u.avatar) setProfilePic(u.avatar);
+            localStorage.setItem(`conjuntos_profile_data_${userId}`, JSON.stringify(mapped));
+            if (u.avatar) localStorage.setItem(`conjuntos_profile_pic_${userId}`, u.avatar);
+          }
         }
+
+        let pendingCount = 0;
+        if (notifRes.ok) {
+          const nData = await notifRes.json();
+          if (nData.success) {
+            pendingCount = nData.data.filter((n: any) => !n.leida).length;
+          }
+        }
+
+        let activeReserva = false;
+        if (reservaRes.ok) {
+          const rData = await reservaRes.json();
+          if (rData.success) {
+            const now = new Date();
+            activeReserva = rData.data.some((r: any) => {
+              const start = new Date(r.fechaInicio);
+              const end = new Date(r.fechaFin);
+              return now >= start && now <= end && r.estado !== "CANCELADA";
+            });
+          }
+        }
+
+        setHasActiveStatus(pendingCount > 0 || activeReserva);
+
       } catch (error) {
-        console.warn("⚠️ API de perfil no disponible, usando caché/default:", (error as Error).message);
+        console.warn("⚠️ API de perfil/estatus no disponible:", (error as Error).message);
       }
     }
 
-    if (session) loadData();
+    if (status === "authenticated" && userId) {
+      loadData();
+    }
 
     // Lógica de Story (Cartelera activa)
     const savedStory = localStorage.getItem("conjunto_app_active_story");
     if (savedStory) {
-      const { createdAt } = JSON.parse(savedStory);
-      if (Date.now() - createdAt < 24 * 60 * 60 * 1000) setHasStory(true);
+      try {
+        const { createdAt } = JSON.parse(savedStory);
+        if (Date.now() - createdAt < 24 * 60 * 60 * 1000) setHasStory(true);
+      } catch (e) {
+        console.warn("Error parsing story data", e);
+      }
     }
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -75,9 +112,9 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [session, userId]);
+  }, [status, userId]);
 
-  const notifications = [
+  const notificationsList = [
     { id: 1, title: "Pago Recibido", desc: "Administración Abril 2026 procesada.", time: "Hace 5m", icon: <CheckCircle2 size={14} />, color: "text-emerald-400", isUnread: true },
     { id: 2, title: "Paquete en Portería", desc: "Tienes un envío esperando.", time: "Hace 1h", icon: <Package size={14} />, color: "text-amber-400", isUnread: true },
     { id: 3, title: "Mantenimiento", desc: "Lavado de tanques mañana.", time: "Hace 2h", icon: <AlertTriangle size={14} />, color: "text-primary", isUnread: false },
@@ -89,13 +126,15 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         onClick={() => !isProfilePage && router.push("/perfil")}
         className={`flex items-center gap-4 transition-transform ${isProfilePage ? 'cursor-default transition-none' : 'group cursor-pointer active:scale-95'}`}
       >
-        <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5'}`}>
-          <div className="w-full h-full rounded-full overflow-hidden relative shadow-xl backdrop-blur-xl">
+        <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative ${
+          hasActiveStatus ? 'liquid-status-halo' : (hasStory ? 'liquid-story-ring' : 'border border-white/20 bg-white/5')
+        }`}>
+          <div className="w-full h-full rounded-full overflow-hidden relative shadow-xl backdrop-blur-xl z-20">
             <Image src={profilePic} alt="User Avatar" width={56} height={56} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" unoptimized />
             <div className="absolute inset-0 border border-white/10 rounded-full pointer-events-none" />
           </div>
           {hasStory && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[#0d041a] z-20 flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[#0d041a] z-30 flex items-center justify-center">
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
             </div>
           )}
@@ -122,13 +161,13 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         </button>
 
         {isNotificationsOpen && (
-          <div className="absolute top-14 right-0 w-[280px] liquid-glass backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden z-100 animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute top-14 right-0 w-[280px] liquid-glass backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
              <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
                 <span className="text-sm font-bold text-white tracking-wide">Notificaciones</span>
                 <button className="text-[10px] text-accent font-bold uppercase hover:underline">Limpiar</button>
              </div>
              <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar">
-                {notifications.map((notif) => (
+                {notificationsList.map((notif) => (
                   <div key={notif.id} className="w-full px-5 py-3.5 flex items-start gap-4 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 relative">
                      {notif.isUnread && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent"></span>}
                      <div className={`mt-0.5 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center ${notif.color}`}>
@@ -156,6 +195,45 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
           animation: story-bg 5s infinite linear;
           padding: 3px;
         }
+        
+        .liquid-status-halo {
+          position: relative;
+          background: transparent;
+          padding: 3px;
+        }
+        
+        .liquid-status-halo::before {
+          content: "";
+          position: absolute;
+          inset: -4px;
+          border-radius: 9999px;
+          background: conic-gradient(from 0deg, transparent, #D946EF, #06b6d4, transparent);
+          animation: rotate-halo 3s linear infinite;
+          opacity: 0.6;
+          filter: blur(8px);
+        }
+        
+        .liquid-status-halo::after {
+          content: "";
+          position: absolute;
+          inset: 0px;
+          border-radius: 9999px;
+          background: #D946EF;
+          opacity: 0.4;
+          animation: breathe-halo 2s ease-in-out infinite;
+          filter: blur(4px);
+        }
+
+        @keyframes rotate-halo {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        @keyframes breathe-halo {
+          0%, 100% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.1); opacity: 0.6; }
+        }
+
         @keyframes story-bg {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }

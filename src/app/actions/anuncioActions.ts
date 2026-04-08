@@ -52,7 +52,7 @@ export async function seedInitialAnuncios(conjuntoId: string) {
       data: {
         conjuntoId,
         titulo: "¡Bienvenidos a la Nueva Cartelera!",
-        contenido: "Esta es la primera publicación oficial en tiempo real desde la base de datos de ConjuntoApp. Aquí encontrarás noticias, mantenimientos y eventos importantes.",
+        contenido: "Esta es la primera publicación oficial en tiempo real desde la base de datos de ConjuntOS. Aquí encontrarás noticias, mantenimientos y eventos importantes.",
         tipo: 'GENERAL',
         archivosUrl: "",
         fijado: true

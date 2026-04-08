@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 export const runtime = "edge";
 
 /**
- * API DE SOLICITUDES / PQRS - CONJUNTOAPP
+ * API DE SOLICITUDES / PQRS - CONJUNTOSAPP
  * Gestión centralizada de peticiones, quejas y mantenimiento.
  */
 

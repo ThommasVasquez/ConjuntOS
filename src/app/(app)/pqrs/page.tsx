@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * PQRS - CONJUNTOAPP
+ * PQRS - CONJUNTOSAPP
  * Peticiones, Quejas, Reclamos y Soporte Técnico.
  * Gestión centralizada de solicitudes para residentes.
  */

@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  serverExternalPackages: ["@prisma/client"],
   experimental: {
-    serverComponentsExternalPackages: ["@prisma/client"],
     serverActions: {
       allowedOrigins: ["https://en-conjunto.pages.dev", "en-conjunto.pages.dev", "localhost:3000"],
       bodySizeLimit: "10mb",

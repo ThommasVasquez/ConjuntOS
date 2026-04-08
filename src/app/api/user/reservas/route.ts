@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const reservas = await reservaDelegate.findMany({
       where: {
         usuarioId: session.user.id,
-        ...(filter === 'future' ? { fechaInicio: { gte: limitDate } } : {})
+        ...(filter === 'future' ? { fechaInicio: { gte: limitDate.toISOString() } } : {})
       },
       include: {
         area: {
@@ -54,6 +54,11 @@ export async function POST(request: Request) {
        return NextResponse.json({ success: false, error: "Datos incompletos" }, { status: 400 });
     }
 
+    // SAFETY: Prevent crashing Supabase with mock IDs (Stage 56)
+    if (areaId.startsWith("mock_")) {
+      return NextResponse.json({ success: false, error: "Esta zona está en proceso de activación. Por favor recarga la página." }, { status: 400 });
+    }
+
     const start = new Date(fechaInicio);
     const end = new Date(fechaFin);
 
@@ -68,11 +73,8 @@ export async function POST(request: Request) {
        where: {
          areaId,
          estado: { not: "CANCELADA" },
-         OR: [
-           { fechaInicio: { lte: start }, fechaFin: { gt: start } }, // Empieza durante otra
-           { fechaInicio: { lt: end }, fechaFin: { gte: end } },     // Termina durante otra
-           { fechaInicio: { gte: start }, fechaFin: { lte: end } }   // Envuelve a otra
-         ]
+         fechaInicio: { lt: end.toISOString() },
+         fechaFin: { gt: start.toISOString() }
        }
     });
 
@@ -95,9 +97,9 @@ export async function POST(request: Request) {
         conjuntoId: user.conjuntoId,
         usuarioId: session.user.id,
         areaId,
-        fechaInicio: start,
-        fechaFin: end,
-        estado: estadoInicial as import("@prisma/client").EstadoReserva,
+        fechaInicio: start.toISOString(),
+        fechaFin: end.toISOString(),
+        estado: estadoInicial as any,
         notas: notas || null
       }
     });
@@ -106,7 +108,13 @@ export async function POST(request: Request) {
 
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("❌ [API-RESERVAS-POST]:", errorMsg);
-    return NextResponse.json({ success: false, error: "Error procesando reserva", details: errorMsg }, { status: 500 });
+    const dbLastError = (db as any).getLastError?.();
+    console.error("❌ [API-RESERVAS-POST]:", errorMsg, dbLastError);
+    return NextResponse.json({ 
+      success: false, 
+      error: "Error procesando reserva", 
+      details: errorMsg,
+      dbErrorInfo: dbLastError 
+    }, { status: 500 });
   }
 }

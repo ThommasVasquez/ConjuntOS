@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * PAGOS / WALLET - CONJUNTOAPP
+ * PAGOS / WALLET - CONJUNTOSAPP
  * Gestión financiera del residente, historial de pagos y pasarela simulada.
  */
 

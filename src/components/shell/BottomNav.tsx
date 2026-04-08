@@ -45,9 +45,9 @@ export default function BottomNav() {
   }
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[380px]">
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div 
-        className="liquid-glass rounded-[32px] w-full flex justify-between items-center p-2 relative shadow-[0_15px_40px_rgba(255,255,255,0.05),0_20px_30px_rgba(0,0,0,0.8)]"
+        className="liquid-glass rounded-[35px] w-full flex justify-between items-center p-2.5 relative shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl bg-white/5"
       >
         {tabs.map((tab) => {
           const isActive = pathname.includes(tab.path);

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * RÉSERVAS - CONJUNTOAPP
+ * RÉSERVAS - CONJUNTOSAPP
  * Módulo de reserva de zonas comunes integrado al backend real.
  */
 
@@ -334,13 +334,13 @@ export default function ReservasPage() {
               </div>
               
               <button 
-                 disabled={selectedSlotIndex === null || isProcessing}
-                 onClick={proceedToBook} 
-                 className="w-full py-5 bg-gradient-to-r from-accent to-purple-600 rounded-[24px] font-bold text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100"
-              >
-                 {isProcessing ? 'Procesando...' : selectedArea.requiereDeposito ? 'Pagar Depósito' : 'Confirmar Reserva'} 
-                 <ArrowRight size={18} />
-              </button>
+                  disabled={selectedSlotIndex === null || isProcessing}
+                  onClick={proceedToBook} 
+                  className="w-full py-5 bg-gradient-to-r from-accent to-purple-600 rounded-[24px] font-bold text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100"
+               >
+                  {isProcessing ? 'Procesando...' : selectedArea.requiereDeposito ? 'Pagar Depósito' : 'Confirmar Reserva'} 
+                  <ArrowRight size={18} />
+               </button>
            </div>
         </section>
       )}

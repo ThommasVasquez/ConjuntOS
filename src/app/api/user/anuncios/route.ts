@@ -17,7 +17,7 @@ export async function GET() {
     // 1. Obtener el conjuntoId del usuario
     let conjuntoId = "";
     try {
-      const usuarioDelegate = await db.usuario;
+      const usuarioDelegate = db.usuario;
       const user = await usuarioDelegate.findUnique({
         where: { id: userId },
         select: { conjuntoId: true }
@@ -40,7 +40,7 @@ export async function GET() {
 
     // 2. Obtener anuncios (Capa 1: Prisma)
     try {
-      const anuncioDelegate = await db.anuncio;
+      const anuncioDelegate = db.anuncio;
       const anuncios = await anuncioDelegate.findMany({
         where: { conjuntoId },
         orderBy: [{ fijado: "desc" }, { publicadoEn: "desc" }]
@@ -52,7 +52,7 @@ export async function GET() {
           data: {
             conjuntoId,
             titulo: "¡Bienvenidos a la Nueva Cartelera!",
-            contenido: "Esta es la primera publicación oficial en tiempo real desde la base de datos de ConjuntoApp. Aquí encontrarás noticias, mantenimientos y eventos importantes.",
+            contenido: "Esta es la primera publicación oficial en tiempo real desde la base de datos de ConjuntOS. Aquí encontrarás noticias, mantenimientos y eventos importantes.",
             tipo: 'GENERAL',
             fijado: true,
             archivosUrl: ""

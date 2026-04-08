@@ -1,134 +1,228 @@
-import { neon } from "@neondatabase/serverless";
-import { PrismaClient } from "@prisma/client";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 export const runtime = "edge";
 
-const NEON_URL = "postgresql://neondb_owner:Md5891129Ae%23%241129@ep-small-night-a5qgq9x4.us-east-2.aws.neon.tech/neondb?sslmode=require";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://zudntuczwfhmyqgzcvrc.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "sb_secret_lzaYy86aeMAavECzFrBXww_RNjdfv2b";
 
-// ESTRATEGIA DE CONEXIÓN (v30.0)
-// Forzamos Neon Edge vía HTTP Fetch para evitar errores DNS de Supabase y Handshakes WebSocket.
-const getStableUrl = () => {
-  const envUrl = (process.env.DATABASE_URL || "").trim();
-  // Bypass Nuclear: Si detectamos Supabase o falta de URL, forzamos Neon.
-  const isSupabase = envUrl.includes("supabase.com") || envUrl.includes("pooler");
-  const baseUrl = (!envUrl || isSupabase || !envUrl.includes("neon.tech"))
-    ? NEON_URL
-    : envUrl;
-  
-  // Limpieza de parámetros para asegurar compatibilidad con HTTP driver
-  return baseUrl.split('?')[0] + "?sslmode=require";
-};
-
-const url = getStableUrl();
-
-// Cliente HTTP Fetch (Estable en Cloudflare)
-const sql = neon(url);
+// CLIENTE SUPABASE (Estable en Cloudflare Edge)
+const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false }
+});
 
 // GLOBAL ERROR TRACKER
 declare global {
   var __DB_LAST_ERROR__: any;
 }
 
-const logError = (table: string, method: string, e: any, query: string, params: any) => {
+const logError = (table: string, method: string, e: any) => {
   const errorObj = {
-    table, method, error: e.message, 
-    driver: "neon-http-fetch",
-    host: url.split('@')[1]?.split('?')[0] || "unknown",
+    table, method, 
+    error: e?.message || String(e),
+    details: e?.details || null,
+    hint: e?.hint || null,
+    code: e?.code || "UNKNOWN",
+    driver: "supabase-js",
     at: new Date().toISOString()
   };
   globalThis.__DB_LAST_ERROR__ = errorObj;
-  console.error(`❌ DB_TRACE [${table}.${method}]:`, errorObj.error);
+  console.error(`❌ DB_TRACE [${table}.${method}]:`, errorObj.error, errorObj.details, errorObj.hint);
 };
 
 /**
- * SHADOW PRISMA CLIENT (v31.0)
- * Auth Probe: Sonda técnica para identificar variancia de contraseña en Neon.
+ * SHADOW PRISMA CLIENT (v32.0 - Supabase Native)
+ * Simula la interfaz de Prisma pero usa Supabase JS Client internamente.
  */
 class ModelProxy {
   constructor(private tableName: string) {}
 
-  private buildWhere(where: any = {}) {
-    const keys = Object.keys(where);
-    if (keys.length === 0) return { sql: "", params: [] };
+  private async hydrate(item: any, include: any) {
+    if (!item) return null;
+    const newItem = { ...item };
+    const tableMap: Record<string, string> = {
+      usuario: "Usuario", a_usuario: "Usuario", aprobadoPor: "Usuario", propietario: "Usuario", solicitante: "Usuario",
+      conjunto: "Conjunto", unidad: "Unidad", parqueadero: "Parqueadero", vehiculo: "Vehiculo",
+      reserva: "Reserva", mascota: "Mascota", tramite: "Tramite", pago: "Pago", reciboPublico: "ReciboPublico",
+      area: "AreaComun", areaComun: "AreaComun",
+      vehiculos: "Vehiculo", mascotas: "Mascota", visitas: "Visita", tramites: "Tramite", notificaciones: "Notificacion", pagos: "Pago", recibos: "ReciboPublico"
+    };
 
-    const params: any[] = [];
-    const clauses = keys.map((k) => {
-      const val = where[k];
-      if (val !== null && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
-        const op = Object.keys(val)[0];
-        const opMap: any = { gte: '>=', lte: '<=', gt: '>', lt: '<', not: '!=', equals: '=' };
-        if (op === 'in') {
-          const inList = val[op] as any[];
-          const placeholders = inList.map((_, idx) => `$${params.length + idx + 1}`).join(", ");
-          params.push(...inList);
-          return `"${k}" IN (${placeholders})`;
-        }
-        params.push(val[op]);
-        return `"${k}" ${opMap[op] || '='} $${params.length}`;
+    for (const relation of Object.keys(include)) {
+      const targetTable = tableMap[relation];
+      if (!targetTable) {
+        console.warn(`[DB-PROXY]: Skipping unknown relation '${relation}'`);
+        continue;
       }
-      params.push(val);
-      if (val === null) return `"${k}" IS NULL`;
-      return `"${k}" = $${params.length}`;
+      
+      const isPlural = relation.endsWith('s') || ['mascotas', 'vehiculos', 'visitas', 'tramites', 'notificaciones'].includes(relation);
+      
+      try {
+        if (isPlural) {
+          const foreignKeyInTarget = `${this.tableName.toLowerCase()}Id`;
+          const nestedArgs = typeof include[relation] === 'object' ? include[relation] : {};
+          
+          let query = supabase.from(targetTable).select("*").eq(foreignKeyInTarget, newItem.id);
+          
+          if (nestedArgs.where) {
+            Object.keys(nestedArgs.where).forEach(key => {
+              const val = nestedArgs.where[key];
+              if (val !== undefined) query = query.eq(key, val);
+            });
+          }
+          
+          if (nestedArgs.orderBy) {
+            const k = Object.keys(nestedArgs.orderBy)[0];
+            const desc = nestedArgs.orderBy[k] === 'desc';
+            query = query.order(k, { ascending: !desc });
+          }
+          
+          const { data, error } = await query.limit(nestedArgs.take || 100);
+          newItem[relation] = error ? [] : data;
+        } else {
+          const foreignKeyInSource = `${relation}Id`;
+          const idToFetch = newItem[foreignKeyInSource] || 
+                           (relation === 'usuario' ? newItem['usuarioId'] : 
+                           (relation === 'conjunto' ? newItem['conjuntoId'] : null));
+                           
+          if (idToFetch) {
+            const { data, error } = await supabase.from(targetTable).select("*").eq("id", idToFetch).maybeSingle();
+            let relatedItem = data;
+            
+            if (relatedItem && typeof include[relation] === 'object' && include[relation].select) {
+               const selectFields = include[relation].select;
+               const filtered: any = {};
+               Object.keys(selectFields).forEach(f => { if (selectFields[f]) filtered[f] = relatedItem[f]; });
+               relatedItem = filtered;
+            }
+            newItem[relation] = relatedItem;
+          } else { 
+            newItem[relation] = null; 
+          }
+        }
+      } catch (e) {
+        console.warn(`⚠️ Hydration failure on ${targetTable} for ${relation}:`, e);
+        newItem[relation] = isPlural ? [] : null;
+      }
+    }
+    return newItem;
+  }
+
+  private applyFilters(query: any, where: any) {
+    if (!where) return query;
+    
+    let currentQuery = query;
+    Object.keys(where).forEach(key => {
+      const val = where[key];
+      if (val === undefined) return;
+
+      if (key === 'OR' && Array.isArray(val)) {
+        // Simple OR implementation for Supabase: .or('col1.eq.val1,col2.eq.val2')
+        const orConditions = val.map(cond => {
+          const k = Object.keys(cond)[0];
+          const v = cond[k];
+          if (typeof v === 'object') {
+            const op = Object.keys(v)[0];
+            const innerVal = v[op];
+            return `${k}.${op}.${innerVal}`;
+          }
+          return `${k}.eq.${v}`;
+        }).join(',');
+        currentQuery = currentQuery.or(orConditions);
+      } else if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+        Object.keys(val).forEach(op => {
+          const innerVal = val[op];
+          if (op === 'gte') currentQuery = currentQuery.gte(key, innerVal);
+          else if (op === 'lte') currentQuery = currentQuery.lte(key, innerVal);
+          else if (op === 'gt') currentQuery = currentQuery.gt(key, innerVal);
+          else if (op === 'lt') currentQuery = currentQuery.lt(key, innerVal);
+          else if (op === 'not') currentQuery = currentQuery.neq(key, innerVal);
+          else if (op === 'in') currentQuery = currentQuery.in(key, Array.isArray(innerVal) ? innerVal : [innerVal]);
+        });
+      } else {
+        currentQuery = currentQuery.eq(key, val);
+      }
     });
-    return { sql: ` WHERE ` + clauses.join(" AND "), params };
+    return currentQuery;
   }
 
   async findUnique(args: any) {
-    const { sql: whereSql, params } = this.buildWhere(args.where);
-    const query = `SELECT * FROM "${this.tableName}"${whereSql} LIMIT 1`;
     try {
-      const rows = await sql.query(query, params);
-      let item = rows[0] || null;
+      let query = supabase.from(this.tableName).select("*");
+      query = this.applyFilters(query, args.where);
+      const { data, error } = await query.maybeSingle();
+
+      if (error) throw error;
+      let item = data;
       if (item && args.include) item = await this.hydrate(item, args.include);
       if (item && args.select) {
-         const filtered: any = {};
-         Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
-         return filtered;
+        const filtered: any = {};
+        Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
+        return filtered;
       }
       return item;
-    } catch (e: any) { logError(this.tableName, "findUnique", e, query, params); throw e; }
+    } catch (e: any) { logError(this.tableName, "findUnique", e); throw e; }
   }
 
   async findFirst(args: any = {}) {
-    const { sql: whereSql, params } = this.buildWhere(args.where);
-    const query = `SELECT * FROM "${this.tableName}"${whereSql} LIMIT 1`;
     try {
-      const rows = await sql.query(query, params);
-      let item = rows[0] || null;
+      let query = supabase.from(this.tableName).select("*");
+      query = this.applyFilters(query, args.where);
+      const { data, error } = await query.limit(1).maybeSingle();
+
+      if (error) throw error;
+      let item = data;
       if (item && args.include) item = await this.hydrate(item, args.include);
       if (item && args.select) {
-         const filtered: any = {};
-         Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
-         return filtered;
+        const filtered: any = {};
+        Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
+        return filtered;
       }
       return item;
-    } catch (e: any) { logError(this.tableName, "findFirst", e, query, params); throw e; }
+    } catch (e: any) { logError(this.tableName, "findFirst", e); throw e; }
   }
 
   async findMany(args: any = {}) {
-    const { sql: whereSql, params } = this.buildWhere(args.where);
-    let query = `SELECT * FROM "${this.tableName}"${whereSql}`;
-    if (args.orderBy) {
-      const k = Object.keys(args.orderBy)[0];
-      const dir = typeof args.orderBy[k] === 'string' ? args.orderBy[k].toUpperCase() : 'DESC';
-      query += ` ORDER BY "${k}" ${dir}`;
-    } else { query += ` ORDER BY id DESC`; }
-    if (args.take) query += ` LIMIT ${args.take}`;
-    else query += ` LIMIT 200`;
-    if (args.skip) query += ` OFFSET ${args.skip}`;
     try {
-      const rows = await sql.query(query, params);
-      let items = [...rows];
-      if (items.length > 0 && args.include) items = await Promise.all(items.map(item => this.hydrate(item, args.include)));
+      let query = supabase.from(this.tableName).select("*");
+      
+      if (args.where) {
+        query = this.applyFilters(query, args.where);
+      }
+
+      if (args.orderBy) {
+        const k = Object.keys(args.orderBy)[0];
+        const desc = args.orderBy[k] === 'desc';
+        query = query.order(k, { ascending: !desc });
+      } else {
+        query = query.order('id', { ascending: false });
+      }
+
+      if (args.take) query = query.limit(args.take);
+      else query = query.limit(200);
+
+      if (args.skip) {
+        // Supabase uses range for skip/take
+        const from = args.skip;
+        const to = from + (args.take || 200) - 1;
+        query = query.range(from, to);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let items = data || [];
+      if (items.length > 0 && args.include) {
+        items = await Promise.all(items.map(item => this.hydrate(item, args.include)));
+      }
       if (items.length > 0 && args.select) {
-         items = items.map(item => {
-           const filtered: any = {};
-           Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
-           return filtered;
-         });
+        items = items.map(item => {
+          const filtered: any = {};
+          Object.keys(args.select).forEach(f => { if (args.select[f]) filtered[f] = item[f]; });
+          return filtered;
+        });
       }
       return items;
-    } catch (e: any) { logError(this.tableName, "findMany", e, query, params); throw e; }
+    } catch (e: any) { logError(this.tableName, "findMany", e); throw e; }
   }
 
   async upsert(args: any) {
@@ -140,137 +234,153 @@ class ModelProxy {
     else return await this.create({ data: create });
   }
 
-  async aggregate(args: any) {
-    const { sql: whereSql, params } = this.buildWhere(args.where);
-    const sum = args._sum || {};
-    let sumClauses = Object.keys(sum).map(k => `SUM("${k}") as "${k}"`).join(", ");
-    if (!sumClauses) sumClauses = "COUNT(*) as count";
-    const query = `SELECT ${sumClauses} FROM "${this.tableName}"${whereSql}`;
+  async count(args: any = {}) {
     try {
-      const rows = await sql.query(query, params);
-      const result: any = rows[0] || {};
-      const response: any = { _sum: {} };
-      Object.keys(sum).forEach(k => { response._sum[k] = parseFloat(result[k]) || 0; });
-      return response;
-    } catch (e: any) { logError(this.tableName, "aggregate", e, query, params); throw e; }
-  }
-
-  private async hydrate(item: any, include: any) {
-    const newItem = { ...item };
-    const tableMap: Record<string, string> = {
-      usuario: "Usuario", aprobadoPor: "Usuario", propietario: "Usuario", solicitante: "Usuario",
-      conjunto: "Conjunto", unidad: "Unidad", parqueadero: "Parqueadero", vehiculo: "Vehiculo",
-      reserva: "Reserva", mascota: "Mascota", tramite: "Tramite",
-      vehiculos: "Vehiculo", mascotas: "Mascota", visitas: "Visita", tramites: "Tramite", notificaciones: "Notificacion"
-    };
-
-    for (const relation of Object.keys(include)) {
-      const targetTable = tableMap[relation];
-      if (!targetTable) continue;
-      const isPlural = relation.endsWith('s') || ['mascotas', 'vehiculos', 'visitas', 'tramites', 'notificaciones'].includes(relation);
-      
-      if (isPlural) {
-        const foreignKeyInTarget = `${this.tableName.toLowerCase()}Id`;
-        const nestedArgs = typeof include[relation] === 'object' ? include[relation] : {};
-        let q = `SELECT * FROM "${targetTable}" WHERE "${foreignKeyInTarget}" = $1`;
-        const subParams = [newItem.id];
-        
-        if (nestedArgs.where) {
-           const subWhere = this.buildWhere(nestedArgs.where);
-           q += subWhere.sql.replace(" WHERE ", " AND ").split('$').map((s, i) => i === 0 ? s : (parseInt(s) + 1).toString()).join('$');
-           subParams.push(...Object.values(nestedArgs.where));
-        }
-        if (nestedArgs.orderBy) {
-           const k = Object.keys(nestedArgs.orderBy)[0];
-           const d = typeof nestedArgs.orderBy[k] === 'string' ? nestedArgs.orderBy[k].toUpperCase() : 'DESC';
-           q += ` ORDER BY "${k}" ${d}`;
-        }
-        q += ` LIMIT ${nestedArgs.take || 100}`;
-        try {
-          const res = await sql.query(q, subParams);
-          newItem[relation] = res;
-        } catch (e) { newItem[relation] = []; }
-      } else {
-        const foreignKeyInSource = `${relation}Id`;
-        const idToFetch = newItem[foreignKeyInSource] || (relation === 'usuario' ? newItem['usuarioId'] : (relation === 'conjunto' ? newItem['conjuntoId'] : null));
-        if (idToFetch) {
-          try {
-            const rows = await sql.query(`SELECT * FROM "${targetTable}" WHERE id = $1`, [idToFetch]);
-            let relatedItem = rows[0] || null;
-            if (relatedItem && typeof include[relation] === 'object' && include[relation].select) {
-               const selectedFields = include[relation].select;
-               const filtered: any = {};
-               Object.keys(selectedFields).forEach(f => { if (selectedFields[f]) filtered[f] = relatedItem[f]; });
-               relatedItem = filtered;
-            }
-            newItem[relation] = relatedItem;
-          } catch (e) { newItem[relation] = null; }
-        } else { newItem[relation] = null; }
-      }
-    }
-    return newItem;
+      let query = supabase.from(this.tableName).select('*', { count: 'exact', head: true });
+      if (args.where) query = this.applyFilters(query, args.where);
+      const { count, error } = await query;
+      if (error) throw error;
+      return count || 0;
+    } catch (e: any) { logError(this.tableName, "count", e); throw e; }
   }
 
   async create(args: any) {
-    const data = { ...args.data };
-    if (!data.id) data.id = `${this.tableName.toLowerCase().substring(0, 2)}_${Math.random().toString(36).substring(2, 11)}`;
-    data.creadoEn = data.creadoEn || new Date();
-    data.actualizadoEn = new Date();
-    const columns = Object.keys(data).map(c => `"${c}"`).join(", ");
-    const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(", ");
-    const values = Object.values(data);
-    const q = `INSERT INTO "${this.tableName}" (${columns}) VALUES (${placeholders}) RETURNING *`;
     try {
-      const rows = await sql.query(q, values);
-      return rows[0];
-    } catch (e: any) { logError(this.tableName, "create", e, q, values); throw e; }
+      const data = { ...args.data };
+      // Unified ID generation (matching cuid-like patterns used previously)
+      if (!data.id) {
+        data.id = `cl${Math.random().toString(36).substring(2, 11)}`;
+      }
+      
+      // Only add timestamps if the table supports them according to schema.prisma
+      const tablesWithTimestamps = ["Reserva", "Tramite", "Inmueble", "Conjunto", "Usuario", "Notificacion", "Visita", "Vehiculo", "Mascota", "Parqueadero"];
+      const tablesWithUpdated = ["Tramite", "Inmueble"];
+
+      if (tablesWithTimestamps.includes(this.tableName)) {
+        data.creadoEn = data.creadoEn || new Date().toISOString();
+      }
+      
+      if (tablesWithUpdated.includes(this.tableName)) {
+        data.actualizadoEn = new Date().toISOString();
+      }
+
+      const { data: created, error } = await supabase
+        .from(this.tableName)
+        .insert(data)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return created;
+    } catch (e: any) { logError(this.tableName, "create", e); throw e; }
   }
 
   async update(args: any) {
-    const { where, data } = args;
-    const whereKey = Object.keys(where)[0];
-    const whereValue = where[whereKey];
-    data.actualizadoEn = new Date();
-    const setClause = Object.keys(data).map((c, i) => `"${c}" = $${i + 2}`).join(", ");
-    const values = [whereValue, ...Object.values(data)];
-    const q = `UPDATE "${this.tableName}" SET ${setClause} WHERE "${whereKey}" = $1 RETURNING *`;
     try {
-      const rows = await sql.query(q, values);
-      return rows[0];
-    } catch (e: any) { logError(this.tableName, "update", e, q, values); throw e; }
+      const data = { ...args.data };
+      
+      // Only update 'actualizadoEn' for tables that support it
+      const tablesWithUpdated = ["Tramite", "Inmueble"];
+      if (tablesWithUpdated.includes(this.tableName)) {
+        data.actualizadoEn = new Date().toISOString();
+      }
+
+      const { data: updated, error } = await supabase
+        .from(this.tableName)
+        .update(data)
+        .match(args.where)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return updated;
+    } catch (e: any) { logError(this.tableName, "update", e); throw e; }
   }
 
-  async count(args: any = {}) {
-    const { sql: whereSql, params } = this.buildWhere(args.where);
-    const query = `SELECT COUNT(*) FROM "${this.tableName}"${whereSql}`;
+  async createMany(args: any) {
     try {
-      const rows = await sql.query(query, params);
-      return parseInt((rows[0] as any).count);
-    } catch (e: any) { logError(this.tableName, "count", e, query, params); throw e; }
+      const dataArr = Array.isArray(args.data) ? args.data : [args.data];
+      const items = dataArr.map((item: any) => {
+        const data = { ...item };
+        if (!data.id) data.id = `cl${Math.random().toString(36).substring(2, 11)}`;
+        return data;
+      });
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .insert(items)
+        .select();
+
+      if (error) throw error;
+      return { count: data?.length || 0 };
+    } catch (e: any) { logError(this.tableName, "createMany", e); throw e; }
+  }
+
+  async aggregate(args: any) {
+    // Basic implementation for sum/count
+    try {
+      if (args._sum) {
+        const fieldStr = Object.keys(args._sum)[0];
+        const { data, error } = await supabase.from(this.tableName).select(fieldStr).match(args.where || {});
+        if (error) throw error;
+        const total = (data || []).reduce((acc: number, curr: any) => acc + (parseFloat(curr[fieldStr]) || 0), 0);
+        return { _sum: { [fieldStr]: total } };
+      }
+      return { _sum: {} };
+    } catch (e: any) { logError(this.tableName, "aggregate", e); throw e; }
+  }
+
+  async deleteMany(args: any = {}) {
+    try {
+      let query = supabase.from(this.tableName).delete();
+      if (args.where) {
+        // Handle 'in' operator for Concepto or IDs
+        for (const key of Object.keys(args.where)) {
+          const val = args.where[key];
+          if (typeof val === 'object' && val.in) {
+            query = query.in(key, val.in);
+          } else {
+            query = query.eq(key, val);
+          }
+        }
+      }
+      const { data, error } = await query.select();
+      if (error) throw error;
+      return { count: data?.length || 0 };
+    } catch (e: any) { logError(this.tableName, "deleteMany", e); throw e; }
   }
 }
 
+// Singleton cache for model proxies to save CPU/Memory on Cloudflare Edge
+const proxyCache: Record<string, ModelProxy> = {};
+
+const getModel = (name: string) => {
+  if (!proxyCache[name]) proxyCache[name] = new ModelProxy(name);
+  return proxyCache[name];
+};
+
 const db: any = {
-  usuario: new ModelProxy("Usuario"), tramite: new ModelProxy("Tramite"),
-  notificacion: new ModelProxy("Notificacion"), conjunto: new ModelProxy("Conjunto"),
-  unidad: new ModelProxy("Unidad"), vehiculo: new ModelProxy("Vehiculo"),
-  parqueadero: new ModelProxy("Parqueadero"), mascota: new ModelProxy("Mascota"),
-  registroParqueadero: new ModelProxy("RegistroParqueadero"), anuncio: new ModelProxy("Anuncio"),
-  areaComun: new ModelProxy("AreaComun"), reserva: new ModelProxy("Reserva"),
-  solicitudServicio: new ModelProxy("SolicitudServicio"), pago: new ModelProxy("Pago"),
-  gasto: new ModelProxy("Gasto"), local: new ModelProxy("Local"),
-  inmueble: new ModelProxy("Inmueble"), junta: new ModelProxy("Junta"),
-  visita: new ModelProxy("Visita"), paquete: new ModelProxy("Paquete"),
-  rondaParqueadero: new ModelProxy("RondaParqueadero"),
-  $connect: async () => {},
-  $disconnect: async () => {},
+  usuario: getModel("Usuario"),
+  tramite: getModel("Tramite"),
+  notificacion: getModel("Notificacion"),
+  conjunto: getModel("Conjunto"),
+  unidad: getModel("Unidad"),
+  vehiculo: getModel("Vehiculo"),
+  parqueadero: getModel("Parqueadero"),
+  mascota: getModel("Mascota"),
+  registroParqueadero: getModel("RegistroParqueadero"),
+  anuncio: getModel("Anuncio"),
+  perfil: getModel("Perfil"),
+  visitante: getModel("Visitante"),
+  visita: getModel("Visita"),
+  paquete: getModel("Paquete"),
+  areaComun: getModel("AreaComun"),
+  reserva: getModel("Reserva"),
+  pago: getModel("Pago"),
+  reciboPublico: getModel("ReciboPublico"),
   getLastError: () => globalThis.__DB_LAST_ERROR__,
-  $queryRawUnsafe: async (qStr: string, ...vals: any[]) => {
-    try { return await sql.query(qStr, vals); }
-    catch (e: any) { logError("RAW", "queryRaw", e, qStr, vals); throw e; }
-  }
 };
 
 export default db;
-export const discoverUrl = async () => url;
-export { PrismaClient };
+export const discoverUrl = async () => SUPABASE_URL;
+export { supabase };

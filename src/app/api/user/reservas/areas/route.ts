@@ -81,17 +81,7 @@ export async function GET() {
               areas = await areaComunDelegate.findMany({ where: { conjuntoId: user.conjuntoId, activa: true } });
             } catch (err) {
               console.error("Error creating demo areas", err);
-              // Fallback en memoria si falla la BD
-               return NextResponse.json({
-                 success: true,
-                 data: [
-                   {
-                     id: "mock_piscina", conjuntoId: user.conjuntoId, nombre: "Piscina Infinity Mock", 
-                     descripcion: "Demo Local", capacidadMax: 10, imagenUrl: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=1000",
-                     requiereDeposito: false, horaApertura: "08:00", horaCierre: "18:00", diasDisponibles: "0,1,2,3,4,5,6", duracionSlot: 60, activa: true
-                   }
-                 ]
-               });
+              throw new Error("No se pudieron inicializar las áreas comunes. Intenta de nuevo.");
             }
        }
     }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 
@@ -66,7 +66,29 @@ export default function AdminNovedadesPage() {
   }, [tramites, tab]);
 
   const parseDesc = (str: string) => {
-      try { return JSON.parse(str); } catch { return {}; }
+      try { 
+        const parsed = JSON.parse(str);
+        // Manejar estructura de Stage 36: { metadatos, documentos }
+        if (parsed.metadatos) return parsed;
+        // Si no, intentar aplanar si es objeto directo
+        return { metadatos: parsed, documentos: [] };
+      } catch { 
+        return { metadatos: { nota: str }, documentos: [] }; 
+      }
+  };
+
+  const downloadFile = (base64: string, filename: string) => {
+      try {
+          const link = document.createElement('a');
+          link.href = base64;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success(`Descargando ${filename}`);
+      } catch (e) {
+          toast.error("Error al descargar archivo");
+      }
   };
 
   const getTipoIcon = (tipo: string) => {
@@ -172,15 +194,20 @@ export default function AdminNovedadesPage() {
                          <div className="flex bg-black/20 rounded-xl p-3 items-center gap-3">
                             <User size={16} className="text-white/30" />
                             <div className="flex flex-col">
-                                <span className="text-sm font-medium text-white/90">{u.nombre} <span className="text-xs text-white/40">({u.unidad?.numero || 'N/A'} - {u.rol})</span></span>
+                                <span className="text-sm font-medium text-white/90">
+                                   {u.nombre} 
+                                   <span className="ml-2 text-[10px] bg-accent/20 text-accent px-2 py-0.5 rounded-md font-black uppercase">
+                                      T{u.unidad?.torre || '?'} - A{u.unidad?.numero || '?'}
+                                   </span>
+                                </span>
                             </div>
                          </div>
                          
                          {/* Desc Preview */}
                          <div className="text-xs text-white/60 line-clamp-2 italic">
-                            &quot;{t.tipo === 'VEHICULO' ? `${desc.marca} - Placa: ${desc.placa}` : 
-                              t.tipo === 'MASCOTA' ? `Mascota: ${desc.nombre} (${desc.tipo})` : 
-                              t.tipo === 'MUDANZA' ? `Fecha Mudanza: ${desc.fecha}` : 'Solicitud pendiente...'}&quot;
+                            &quot;{t.tipo === 'VEHICULO' ? `${desc.metadatos?.marca || 'Vehículo'} - Placa: ${desc.metadatos?.placa || '?'}` : 
+                              t.tipo === 'MASCOTA' ? `Mascota: ${desc.metadatos?.nombre || 'Pet'} (${desc.metadatos?.tipo || '?'})` : 
+                              t.tipo === 'MUDANZA' ? `Fecha Mudanza: ${desc.metadatos?.fecha || '?'}` : 'Solicitud pendiente...'}&quot;
                          </div>
 
                          {tab === 'HISTORIAL' && t.aprobadoPor && (
@@ -205,14 +232,43 @@ export default function AdminNovedadesPage() {
                       <span className="text-sm text-white">{selectedTramite.usuario.nombre}</span>
                   </div>
                   
-                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-white/5 border border-white/10">
-                       <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Tipo: {selectedTramite.tipo}</span>
-                       <div className="text-[10px] text-white/80 p-2 bg-black/20 rounded-lg mt-1 font-mono overflow-auto max-h-32">
-                           {Object.entries(parseDesc(selectedTramite.descripcion)).map(([k, v]: any) => (
-                               <div key={k}>{k}: {String(v)}</div>
-                           ))}
-                       </div>
-                   </div>
+                  <div className="flex flex-col gap-3">
+                      {/* Metadatos - Stage 39 Grid Fix */}
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                         <span className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black mb-3 block">Detalles del Activo</span>
+                         <div className="grid grid-cols-2 gap-3">
+                            {Object.entries(parseDesc(selectedTramite.descripcion).metadatos || {}).map(([k, v]: any) => (
+                                <div key={k} className="flex flex-col">
+                                   <span className="text-[9px] text-white/20 uppercase font-bold">{k}</span>
+                                   <span className="text-xs text-white/90 font-mono">{String(v)}</span>
+                                </div>
+                            ))}
+                         </div>
+                      </div>
+
+                      {/* Documentación - Stage 39 Document Viewer */}
+                      {parseDesc(selectedTramite.descripcion).documentos?.length > 0 && (
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                           <span className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black mb-3 block">Documentación Adjunta</span>
+                           <div className="flex flex-col gap-2">
+                              {parseDesc(selectedTramite.descripcion).documentos.map((doc: any, i: number) => (
+                                 <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-black/20 group">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                       <FileText size={14} className={doc.type === 'pdf' ? 'text-red-400' : 'text-blue-400'} />
+                                       <span className="text-[10px] text-white/60 truncate">{doc.nombre}</span>
+                                    </div>
+                                    <button 
+                                      onClick={() => downloadFile(doc.base64, doc.nombre)}
+                                      className="text-[10px] font-black text-accent uppercase tracking-widest hover:text-white transition-colors"
+                                    >
+                                       Descargar
+                                    </button>
+                                 </div>
+                              ))}
+                           </div>
+                        </div>
+                      )}
+                    </div>
 
                    {selectedTramite.tipo === 'VEHICULO' && (
                        <div className="flex flex-col gap-2 p-3 rounded-xl bg-accent/5 border border-accent/20">

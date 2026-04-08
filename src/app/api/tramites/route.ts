@@ -15,9 +15,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const estado = searchParams.get("estado");
     
-    // Obtener los datos del rol directamente desde el proxy
-    const usuarioDelegate = await db.usuario;
-    const dbUser = await usuarioDelegate.findUnique({
+    // Obtener los datos del usuario para validar permisos
+    const dbUser = await db.usuario.findUnique({
       where: { id: session.user.id },
       select: { rol: true, conjuntoId: true }
     });
@@ -26,13 +25,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    const tramiteDelegate = await db.tramite;
-    let tramites;
-
-    // Si es admin/supervisor/concejo, ve todos los del conjunto.
-    // Si es residente, ve solo los suyos.
+    // Lógica de filtrado por rol
     const isGestor = ['ADMINISTRADOR', 'SUPER_ADMIN'].includes(dbUser.rol);
-
     const whereClause: any = {
       conjuntoId: dbUser.conjuntoId
     };
@@ -45,11 +39,18 @@ export async function GET(request: Request) {
       whereClause.estado = estado;
     }
 
-    tramites = await tramiteDelegate.findMany({
+    const tramites = await db.tramite.findMany({
       where: whereClause,
       include: {
         usuario: {
-          select: { nombre: true, email: true, rol: true, unidad: { select: { numero: true, torre: true } } }
+          select: { 
+            nombre: true, 
+            email: true, 
+            rol: true,
+            unidad: {
+              select: { numero: true, torre: true }
+            }
+          }
         },
         aprobadoPor: {
           select: { nombre: true, rol: true }
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: tramites });
   } catch (error: any) {
-    console.error("Error en GET /api/tramites:", error);
+    console.error("❌ [API-TRAMITES] GET error:", error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
@@ -79,30 +80,19 @@ export async function POST(request: Request) {
        return NextResponse.json({ success: false, error: "Datos incompletos" }, { status: 400 });
     }
 
-    // Convertir a string JSON si viene como objeto
     const descString = typeof descripcion === "string" ? descripcion : JSON.stringify(descripcion);
 
-    const usuarioDelegate = await db.usuario;
-    const dbUser = await usuarioDelegate.findUnique({
+    const dbUser = await db.usuario.findUnique({
       where: { id: session.user.id },
       select: { conjuntoId: true }
     });
 
-    if (!dbUser) {
-      return NextResponse.json({ success: false, error: "Usuario no encontrado" }, { status: 404 });
+    if (!dbUser?.conjuntoId) {
+      return NextResponse.json({ success: false, error: "Conjunto no asignado" }, { status: 400 });
     }
 
-    const tramiteDelegate = await db.tramite;
-    if (!tramiteDelegate) {
-        throw new Error("Delegate 'tramite' no encontrado en Prisma Client.");
-    }
-    
-    if (!dbUser.conjuntoId) {
-        return NextResponse.json({ success: false, error: "El usuario no tiene un conjunto asignado en su perfil." }, { status: 400 });
-    }
-
-    // Crear el registro
-    const nuevoTramite = await tramiteDelegate.create({
+    // Crear el registro vía proxy unificado
+    const nuevoTramite = await db.tramite.create({
       data: {
         conjuntoId: dbUser.conjuntoId,
         usuarioId: session.user.id,
@@ -114,18 +104,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: nuevoTramite });
   } catch (error: any) {
-    console.error("Error en POST /api/tramites:", error);
-    
-    // Diagnóstico extra para el error 500
-    const { discoverUrl } = await import("@/lib/db");
-    const rawUrl = await discoverUrl();
-    const maskedUrl = rawUrl ? `${rawUrl.substring(0, 15)}...${rawUrl.substring(rawUrl.length - 10)}` : "VACÍA";
-
+    console.error("❌ [API-TRAMITES] POST error:", error.message);
     return NextResponse.json({ 
         success: false, 
         error: error.message || "Error desconocido",
-        details: error.code || "No code",
-        diagnostics: { url: maskedUrl }
+        details: error.code || "No code"
     }, { status: 500 });
   }
 }

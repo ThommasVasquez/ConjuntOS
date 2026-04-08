@@ -2,20 +2,19 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { z } from "zod";
-import { Pool, neonConfig } from "@neondatabase/serverless";
 
-// Función auxiliar para loguear en la DB de forma persistente (Raw SQL)
-async function persistentLog(step: string, details: string = "", email: string = "") {
-  console.log(`[AUTH-LOG] ${step}: ${details} (${email})`);
-}
+// Helper for consistent auth logging
+const authLog = (step: string, details: string = "", email: string = "") => {
+  console.log(`🔑 [AUTH-LOG] ${step}: ${details} (${email})`);
+};
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
   ...authConfig,
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "sb_secret_lzaYy86aeMAavECzFrBXww_RNjdfv2b_fallback",
   trustHost: true,
   session: { 
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 días
+    maxAge: 30 * 24 * 60 * 60,
   },
   providers: [
     Credentials({
@@ -23,127 +22,95 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         const emailInput = (credentials?.email as string) || "unknown";
         
         try {
-          await persistentLog("AUTHORIZE_STARTED", "Iniciando validación de credenciales", emailInput);
+          authLog("AUTHORIZE_STARTED", "Validation init", emailInput);
           
           const parsedCredentials = z
             .object({ 
               email: z.string().min(3), 
-              password: z.string().min(6),
-              dbUrl: z.string().optional() 
+              password: z.string().min(6)
             })
             .safeParse(credentials);
 
           if (!parsedCredentials.success) {
-            await persistentLog("ZOD_VALIDATION_FAILED", JSON.stringify(parsedCredentials.error.format()), emailInput);
+            authLog("ZOD_VALIDATION_FAILED", "Invalid format", emailInput);
             return null;
           }
 
           let email = parsedCredentials.data.email;
-          const { password, dbUrl: credDbUrl } = parsedCredentials.data;
+          const { password } = parsedCredentials.data;
           if (!email.includes('@')) {
              email = `${email.trim()}@example.com`;
           }
-          
           const normalizedEmail = email.toLowerCase().trim();
           
-          // 1. Descubrimiento e inyección centralizada (Prioridad total a la URL pasada en el objeto)
-          const { discoverUrl } = await import("@/lib/db");
-          const dbUrl = credDbUrl || await discoverUrl();
+          // Import DB layer (Next.js Edge dynamic import)
+          const db = (await import("@/lib/db")).default;
           
-          if (!dbUrl) {
-               await persistentLog("DATABASE_URL_MISSING", "No se encontró cadena de conexión", normalizedEmail);
-               return null;
+          let finalUser = await db.usuario.findFirst({
+            where: { email: normalizedEmail }
+          });
+
+          // Bootstrap Demo Users if missing
+          const demoUsers: Record<string, {rol: string, nombre: string}> = {
+            "thommy@example.com": { rol: "SUPER_ADMIN", nombre: "Thommy Master" },
+            "milo@enconjunto.com": { rol: "ADMINISTRADOR", nombre: "Milo Admin" },
+            "admin@example.com": { rol: "ADMINISTRADOR", nombre: "Marta Admin" }
+          };
+
+          if (!finalUser && demoUsers[normalizedEmail]) {
+             authLog("BOOTSTRAP_TRIGGERED", "Creating demo user", normalizedEmail);
+             try {
+               await db.conjunto.upsert({
+                 where: { id: "demo_id" },
+                 create: {
+                   id: "demo_id",
+                   nombre: "Residencial Horizonte",
+                   subdominio: "demo",
+                   direccion: "Digital",
+                   ciudad: "Nube",
+                   nit: "800123456-1"
+                 },
+                 update: {}
+               });
+               
+               finalUser = await db.usuario.upsert({
+                 where: { email: normalizedEmail },
+                 create: {
+                   email: normalizedEmail,
+                   password: password.trim(),
+                   rol: demoUsers[normalizedEmail].rol,
+                   nombre: demoUsers[normalizedEmail].nombre,
+                   conjuntoId: "demo_id",
+                   activo: true
+                 },
+                 update: { password: password.trim() }
+               });
+             } catch (err: any) {
+                authLog("BOOTSTRAP_FAILED", err.message, normalizedEmail);
+             }
           }
-          
-          await persistentLog("DB_ACCESS_INIT", "Usando Pool para validación primaria", normalizedEmail);
-          
-          try {
-                // MÉTODO ROBUSTO: Usar Pool directamente para evitar problemas de Prisma en el Edge
-                neonConfig.useSecureWebSocket = false;
-                const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
-                
-                let rows: any[] = [];
-                try {
-                  const res = await pool.query(
-                    'SELECT id, email, password, rol, nombre, "conjuntoId" FROM "Usuario" WHERE LOWER(email) = $1 LIMIT 1',
-                    [normalizedEmail]
-                  );
-                  rows = res.rows;
-                } catch {
-                  const res = await pool.query(
-                    'SELECT id, email, password, rol, nombre, "conjuntoId" FROM usuario WHERE LOWER(email) = $1 LIMIT 1',
-                    [normalizedEmail]
-                  );
-                  rows = res.rows;
-                }
-                
-                let user = rows[0];
 
-                // 2. Si no existe y es uno de los usuarios DEMO, creamos/buscamos vía RAW SQL
-                const demoUsers: Record<string, {rol: string, nombre: string}> = {
-                  "thommy@example.com": { rol: "SUPER_ADMIN", nombre: "Thommy Master" },
-                  "milo@enconjunto.com": { rol: "ADMINISTRADOR", nombre: "Milo Admin" },
-                  "thommyadmin@example.com": { rol: "ADMINISTRADOR", nombre: "Thommy Admin" },
-                  "thommyvigilante@example.com": { rol: "VIGILANTE", nombre: "Thommy Vigilante" },
-                  "thommyestacionamientos@example.com": { rol: "ENCARGADO_PARQUEADERO", nombre: "Thommy Parqueadero" },
-                  "thommyresidente@example.com": { rol: "PROPIETARIO", nombre: "Thommy Residente" },
-                  "vigilante@example.com": { rol: "VIGILANTE", nombre: "Carlos Guardia" },
-                  "parqueadero@example.com": { rol: "ENCARGADO_PARQUEADERO", nombre: "Luis Parking" },
-                  "admin@example.com": { rol: "ADMINISTRADOR", nombre: "Marta Admin" },
-                  "residente@example.com": { rol: "PROPIETARIO", nombre: "Jorge Residente" }
-                };
-
-                if (!user && demoUsers[normalizedEmail]) {
-                   await persistentLog("BOOTSTRAP_TRIGGERED", "Usuario demo no encontrado, creando vía Raw SQL", normalizedEmail);
-                   try {
-                     // Asegurar conjunto demo_id
-                     await pool.query(
-                       `INSERT INTO "Conjunto" (id, nombre, subdominio, direccion, ciudad, nit) 
-                        VALUES ('demo_id', 'Residencial Horizonte', 'demo', 'Digital', 'Nube', '800123456-1') 
-                        ON CONFLICT (id) DO NOTHING`
-                     );
-                     
-                     const expectedPassword = normalizedEmail.startsWith("thommy") && normalizedEmail !== "thommy@example.com" ? "Md5891129Ae$" : password.trim();
-                     const userId = `u_${Math.random().toString(36).substring(7)}`;
-                     
-                     await pool.query(
-                       `INSERT INTO "Usuario" (id, email, password, rol, "conjuntoId", nombre, activo, "creadoEn") 
-                        VALUES ($1, $2, $3, $4, 'demo_id', $5, true, NOW()) 
-                        ON CONFLICT (email) DO UPDATE SET password = $3`,
-                       [userId, normalizedEmail, expectedPassword, demoUsers[normalizedEmail].rol, demoUsers[normalizedEmail].nombre]
-                     );
-                     
-                     const finalRes = await pool.query('SELECT id, email, rol, nombre FROM "Usuario" WHERE email = $1', [normalizedEmail]);
-                     user = finalRes.rows[0];
-                   } catch (err) {
-                      await persistentLog("BOOTSTRAP_FAILED", (err as Error).message, normalizedEmail);
-                   }
-                }
-
-                await pool.end();
-
-                if (!user) {
-                  await persistentLog("USER_NOT_FOUND", "Usuario no existe", normalizedEmail);
-                  return null;
-                }
-
-                // 3. Validar password
-                const dbPassword = (user.password || "").trim();
-                const inputPassword = password.trim();
-                if (inputPassword !== dbPassword) {
-                  await persistentLog("PASSWORD_MISMATCH", "Contraseña incorrecta", normalizedEmail);
-                  return null;
-                }
-
-                await persistentLog("LOGIN_SUCCESS", "Retornando usuario", normalizedEmail);
-                return { id: user.id, name: user.nombre, email: user.email, role: user.rol };
-
-          } catch (dbError) {
-             await persistentLog("DB_QUERY_ERROR", (dbError as Error).message, normalizedEmail);
-             return null;
+          if (!finalUser) {
+            authLog("USER_NOT_FOUND", "Account missing", normalizedEmail);
+            return null;
           }
-        } catch (error) {
-          await persistentLog("CRITICAL_ERROR", (error as Error).message, emailInput);
+
+          const dbPassword = (finalUser.password || "").trim();
+          if (password.trim() !== dbPassword) {
+            authLog("PASSWORD_MISMATCH", "Incorrect creds", normalizedEmail);
+            return null;
+          }
+
+          authLog("LOGIN_SUCCESS", "Success", normalizedEmail);
+          return { 
+             id: finalUser.id, 
+             name: finalUser.nombre, 
+             email: finalUser.email, 
+             role: finalUser.rol 
+          } as any;
+
+        } catch (error: any) {
+          authLog("CRITICAL_ERROR", error.message, emailInput);
           return null;
         }
       },
@@ -153,14 +120,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as { role?: string }).role;
+        token.role = (user as any).role;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
-        (session.user as { id?: string }).id = token.id as string;
-        (session.user as { role?: string }).role = token.role as string;
+        (session.user as any).id = token.id;
+        (session.user as any).role = token.role;
       }
       return session;
     },

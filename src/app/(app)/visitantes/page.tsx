@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * VISITANTES - CONJUNTOAPP
+ * VISITANTES - CONJUNTOSAPP
  * Gestión de ingresos, generación de códigos QR y control de acceso.
  */
 

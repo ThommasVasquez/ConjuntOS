@@ -1,5 +1,5 @@
 {
-  "name": "conjunto-app",
+  "name": "conjuntos",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
+    "@google/generative-ai": "^0.24.1",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/adapter-neon": "^7.6.0",
     "@prisma/client": "^7.6.0",
+    "@supabase/supabase-js": "^2.101.1",
     "gsap": "^3.14.2",
     "lucide-react": "^0.469.0",
     "next": "15.1.0",

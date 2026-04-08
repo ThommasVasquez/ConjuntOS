@@ -169,7 +169,7 @@ export default function AdminParqueaderoPage() {
 
        <footer>
           <div className="py-10 text-center opacity-10 pointer-events-none">
-             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">ConjuntoApp Audit Suite • Floor 0</p>
+             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">ConjuntOS Audit Suite • Floor 0</p>
           </div>
        </footer>
 

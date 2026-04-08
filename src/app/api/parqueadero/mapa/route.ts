@@ -1,21 +1,21 @@
-export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import db from '@/lib/db';
+
+export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const session = await auth();
-  const role = (session?.user as { role?: string })?.role;
-  const allowedRoles = ['ENCARGADO_PARQUEADERO', 'ADMINISTRADOR', 'SUPER_ADMIN'];
-  
-  if (!session || !role || !allowedRoles.includes(role)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
-
   try {
-    const { default: db } = await import('@/lib/db');
-    const prisma = db as any;
+    const session = await auth();
+    const role = (session?.user as { role?: string })?.role;
+    const allowedRoles = ['ENCARGADO_PARQUEADERO', 'ADMINISTRADOR', 'SUPER_ADMIN'];
+    
+    if (!session || !role || !allowedRoles.includes(role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
-    const parqueaderos = await prisma.parqueadero.findMany({
+    const parqueaderos = await db.parqueadero.findMany({
       orderBy: { numero: 'asc' },
       include: {
         usuario: { 
@@ -28,21 +28,22 @@ export async function GET() {
     });
 
     return NextResponse.json({ success: true, data: parqueaderos });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("❌ [API-MAPA] GET error:", error.message);
     return NextResponse.json({ success: false, error: 'DB Error' }, { status: 500 });
   }
 }
 
 export async function PUT(req: Request) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  const role = (session?.user as { role?: string })?.role;
-  
-  if (!session || !userId || role !== 'ENCARGADO_PARQUEADERO') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
-
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    const role = (session?.user as { role?: string })?.role;
+    
+    if (!session || !userId || role !== 'ENCARGADO_PARQUEADERO') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { parqueaderoId, estado, placa, observacion } = body;
 
@@ -50,17 +51,14 @@ export async function PUT(req: Request) {
        return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
-    const { default: db } = await import('@/lib/db');
-    const prisma = db as any;
-
-    // Update cell status
-    const updated = await prisma.parqueadero.update({
+    // Update cell status via unified proxy
+    const updated = await db.parqueadero.update({
       where: { id: parqueaderoId },
       data: { estado }
     });
 
-    // Create Audit Log
-    await prisma.registroParqueadero.create({
+    // Create Audit Log via unified proxy
+    await db.registroParqueadero.create({
       data: {
         parqueaderoId,
         usuarioId: userId,
@@ -71,8 +69,8 @@ export async function PUT(req: Request) {
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
-    console.error("PUT Error:", error);
+  } catch (error: any) {
+    console.error("❌ [API-MAPA] PUT error:", error.message);
     return NextResponse.json({ success: false, error: 'DB Error' }, { status: 500 });
   }
 }

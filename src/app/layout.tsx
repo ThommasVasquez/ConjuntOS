@@ -18,13 +18,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ConjuntoApp",
-  description: "Plataforma de gestión de conjuntos residenciales",
+  title: "ConjuntOS - Tu comunidad sincronizada",
+  description: "Plataforma de gestión residencial inteligente para copropiedades modernas.",
   // manifest: "/manifest.webmanifest", // Temporalmente desactivado hasta que configuremos PWA
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ConjuntoApp",
+    title: "ConjuntOS",
   },
   formatDetection: {
     telephone: false,

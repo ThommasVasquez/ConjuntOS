@@ -1,157 +1,192 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import db from "@/lib/db";
+import { safeJsonStringify } from "@/lib/safe-json";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
+/**
+ * PROCESAMIENTO DE TRÁMITES (APROBAR/RECHAZAR)
+ * Versión estabilizada para Cloudflare Edge.
+ */
 export async function PUT(request: Request) {
+  const t0 = Date.now();
+  let step = "BOOT";
+  const APP_VERSION = "1.2.0-STABLE";
+  
+  const createRes = (data: any, status: number = 200, currentStep: string = "COMPLETED") => {
+    return new Response(safeJsonStringify({ ...data, version: APP_VERSION, step: currentStep }), {
+      status,
+      headers: { 
+          "Content-Type": "application/json",
+          "X-App-Version": APP_VERSION,
+          "X-Execution-Step": currentStep,
+          "X-Response-Time": `${Date.now() - t0}ms`
+      }
+    });
+  };
+
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
+    // 1. Carga de módulos bajo demanda (Optimización para Edge)
+    step = "IMPORT_MODULES";
+    const { auth } = await import("@/auth");
+    const db = (await import("@/lib/db")).default;
+
+    step = "READ_BODY";
+    const rawText = await request.text();
+    if (!rawText || rawText.trim() === "") {
+        return createRes({ success: false, error: "Cuerpo de solicitud vacío" }, 400, step);
     }
 
-    const usuarioDelegate = await db.usuario;
-    const dbAdmin = await usuarioDelegate.findUnique({
-      where: { id: session.user.id },
-      select: { id: true, rol: true, conjuntoId: true, nombre: true }
-    });
-
-    if (!dbAdmin || !['ADMINISTRADOR', 'SUPER_ADMIN'].includes(dbAdmin.rol)) {
-      return NextResponse.json({ success: false, error: "Permisos insuficientes" }, { status: 403 });
+    step = "PARSE_JSON";
+    let body: any;
+    try {
+        body = JSON.parse(rawText);
+    } catch (e: any) {
+        return createRes({ success: false, error: "JSON malformado", msg: e.message }, 400, step);
     }
 
-    const { tramiteId, accion, observacionAdmin, parqueaderoId } = await request.json();
-
-    if (!tramiteId || !['APROBAR', 'RECHAZAR'].includes(accion)) {
-      return NextResponse.json({ success: false, error: "Datos de acción inválidos" }, { status: 400 });
-    }
-
-    const tramiteDelegate = await db.tramite;
-    const tramite = await tramiteDelegate.findUnique({
-      where: { id: tramiteId },
-      include: { usuario: { select: { nombre: true } } }
-    });
-
-    if (!tramite) {
-      return NextResponse.json({ success: false, error: "Trámite no encontrado" }, { status: 404 });
+    // Bypass de diagnóstico (mantenido para salud del sistema)
+    if (body.test_only) {
+        return createRes({ success: true, msg: "API is healthy" }, 200, "HEALTH_CHECK");
     }
     
-    if (tramite.estado !== 'PENDIENTE') {
-      return NextResponse.json({ success: false, error: `El trámite ya fue procesado: ${tramite.estado}` }, { status: 400 });
+    const { tramiteId, accion, observacionAdmin, parqueaderoId } = body;
+    
+    if (!tramiteId || !accion) {
+      return createRes({ success: false, error: "ID de trámite y acción son obligatorios" }, 400, step);
     }
+
+    // 2. Seguridad y Sesión
+    step = "AUTH_VALIDATION";
+    const session = await auth();
+    if (!session?.user?.id) {
+      return createRes({ success: false, error: "Sesión no válida o expirada" }, 401, step);
+    }
+
+    // 3. Verificación de permisos Administrativos
+    step = "ROLE_CHECK";
+    const userId = (session.user as any)?.id;
+    const userRole = (session.user as any)?.role;
+
+    const allowedRoles = ['ADMINISTRADOR', 'SUPER_ADMIN', 'CONCEJO'];
+    if (!allowedRoles.includes(userRole)) {
+      const dbUser = await db.usuario.findUnique({
+        where: { id: userId },
+        select: { rol: true }
+      });
+      if (!dbUser || !allowedRoles.includes(dbUser.rol)) {
+        return createRes({ success: false, error: "No tienes permisos para realizar esta acción" }, 403, step);
+      }
+    }
+
+    // 4. Recuperación del Trámite
+    step = "FETCH_TRAMITE";
+    const tramite = await db.tramite.findUnique({
+      where: { id: tramiteId }
+    });
+
+    if (!tramite) return createRes({ success: false, error: "El trámite solicitado no existe" }, 404, step);
+    if (tramite.estado !== 'PENDIENTE') return createRes({ success: false, error: "Este trámite ya ha sido procesado anteriormente" }, 400, step);
 
     const nuevoEstado = accion === 'APROBAR' ? 'APROBADO' : 'RECHAZADO';
-    let data;
+    
+    // 5. Procesamiento de Payload
+    step = "PREPARE_PAYLOAD";
+    let payload: any = {};
     try {
-      data = JSON.parse(tramite.descripcion);
-    } catch {
-      data = {};
+      const rawDesc = tramite.descripcion || "{}";
+      payload = typeof rawDesc === 'string' ? JSON.parse(rawDesc.trim() || "{}") : rawDesc;
+    } catch (e) { 
+      payload = {};
     }
 
-    // --- ACCIONES MÁGICAS ---
+    // 6. Lógica de Negocio según el tipo de trámite
     if (accion === 'APROBAR') {
+      step = "PROCESS_APPROVAL";
       if (tramite.tipo === 'VEHICULO') {
-        const vehiculoDelegate = await db.vehiculo;
-        await vehiculoDelegate.create({
+        const meta = payload.metadatos || payload; // Fallback if no metadatos
+        await db.vehiculo.create({
           data: {
             usuarioId: tramite.usuarioId,
-            placa: data.placa,
-            marca: data.marca,
-            modelo: data.modelo,
-            color: data.color,
-            tipo: data.tipo
+            placa: String(meta.placa || "SIN_PLACA").toUpperCase(),
+            marca: meta.marca || "No especificada",
+            modelo: meta.modelo || "N/A",
+            color: meta.color || "N/A",
+            tipo: meta.tipoVehiculo || meta.tipo || "CARRO"
           }
         });
 
-        // Asignación de Parqueadero si viene el ID
         if (parqueaderoId) {
-            const parqueaderoDelegate = await db.parqueadero;
-            await parqueaderoDelegate.update({
+            step = "DB_ASSIGN_PARKING";
+            await db.parqueadero.update({
                 where: { id: parqueaderoId },
-                data: {
-                    usuarioId: tramite.usuarioId,
-                    estado: 'OCUPADO'
-                }
+                data: { usuarioId: tramite.usuarioId, estado: 'OCUPADO' }
             });
         }
-      } 
-      else if (tramite.tipo === 'MASCOTA') {
-        const mascotaDelegate = await db.mascota;
-        await mascotaDelegate.create({
+      } else if (tramite.tipo === 'MASCOTA') {
+        const meta = payload.metadatos || payload;
+        await db.mascota.create({
           data: {
             usuarioId: tramite.usuarioId,
-            nombre: data.nombre,
-            tipo: data.tipo,
-            raza: data.raza
+            nombre: meta.nombre || "Mascota",
+            tipo: meta.tipo || "OTRO",
+            raza: meta.raza || "N/A"
           }
         });
       }
-      else if (tramite.tipo === 'MUDANZA') {
-        // ... (existing mudanza logic)
-        if (data.crearCuentas && data.nuevosInquilinos && data.nuevosInquilinos.length > 0) {
-            for (const inq of data.nuevosInquilinos) {
-                await usuarioDelegate.upsert({
-                    where: { email: inq.email },
-                    update: { 
-                        conjuntoId: tramite.conjuntoId, 
-                        rol: 'ARRENDATARIO',
-                        nombre: inq.nombre,
-                        telefono: inq.telefono
-                    },
-                    create: {
-                        conjuntoId: tramite.conjuntoId,
-                        email: inq.email,
-                        nombre: inq.nombre,
-                        telefono: inq.telefono,
-                        rol: 'ARRENDATARIO',
-                        password: 'Md5891129Ae$',
-                        activo: true
-                    }
-                });
-            }
-        }
-      }
 
-      // CREAR NOTIFICACIÓN DE APROBACIÓN
-      const notifDelegate = await db.notificacion;
-      await notifDelegate.create({
+      step = "NOTIFY_SUCCESS";
+      await db.notificacion.create({
           data: {
               usuarioId: tramite.usuarioId,
               tipo: 'APROBACION',
-              titulo: `Trámite Aprobado: ${tramite.tipo}`,
-              mensaje: `Tu solicitud de ${tramite.tipo.toLowerCase()} ha sido aprobada${parqueaderoId ? '. Se te ha asignado un espacio de parqueo.' : '.'}`
+              titulo: "Tu solicitud ha sido aprobada",
+              mensaje: `Felicidades, tu trámite de ${tramite.tipo} ha sido procesado exitosamente.`
           }
       });
     } else {
-        // NOTIFICACIÓN DE RECHAZO
-        const notifDelegate = await db.notificacion;
-        await notifDelegate.create({
+        step = "NOTIFY_REJECTION";
+        await db.notificacion.create({
             data: {
                 usuarioId: tramite.usuarioId,
                 tipo: 'SISTEMA',
-                titulo: `Trámite Rechazado: ${tramite.tipo}`,
-                mensaje: `Tu solicitud ha sido rechazada. Motivo: ${observacionAdmin || 'No especificado'}`
+                titulo: "Trámite rechazado",
+                mensaje: `Importante: Tu solicitud ha sido negada por la administración. Motivo: ${observacionAdmin || 'Ver detalles con portería'}`
             }
         });
     }
 
-    // Actualizar el estado del Trámite
-    const tramiteResuelto = await tramiteDelegate.update({
+    // 7. Cierre de Trámite en DB
+    step = "FINAL_DB_SYNC";
+    const res = await db.tramite.update({
       where: { id: tramiteId },
       data: {
         estado: nuevoEstado,
-        aprobadoPorId: dbAdmin.id,
+        aprobadoPorId: userId,
         observacionAdmin: observacionAdmin || null,
-        fechaRespuesta: new Date()
+        fechaRespuesta: new Date().toISOString()
       }
     });
 
-    return NextResponse.json({ success: true, data: tramiteResuelto, autoAction: accion === 'APROBAR' });
+    console.log(`✨ [SUCCESS] Trámite ${tramiteId} finalizado correctamente.`);
+    return createRes({ success: true, data: { id: res.id, estado: res.estado } }, 200, "COMPLETED");
 
-  } catch (error: any) {
-    console.error("Error resolviendo trámite:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (err: any) {
+    console.error(`🔥 [API-ERROR] Failure at ${step}:`, err.message);
+    
+    // Respuesta de emergencia robusta
+    const finalError = err.message || "Internal Server Error";
+    return new Response(safeJsonStringify({ 
+        success: false, 
+        error: finalError,
+        step,
+        diag: "CRITICAL_FAILURE"
+    }), { 
+        status: 500, 
+        headers: { 
+            "Content-Type": "application/json",
+            "X-Execution-Step": step,
+            "X-Detailed-Error": finalError.substring(0, 50)
+        } 
+    });
   }
 }

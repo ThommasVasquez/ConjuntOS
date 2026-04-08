@@ -23,6 +23,11 @@ export async function GET(request: Request) {
     // Parse bounds for the given day
     const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
     const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
+    
+    // SAFETY: If areaId is mock, return empty slots instead of crashing Supabase (Stage 56)
+    if (areaId.startsWith("mock_")) {
+      return NextResponse.json({ success: true, data: [] });
+    }
 
     const reservaDelegate = await db.reserva;
     const reservasEnDia = await reservaDelegate.findMany({
@@ -30,8 +35,8 @@ export async function GET(request: Request) {
         areaId,
         estado: { not: "CANCELADA" },
         fechaInicio: {
-          gte: startOfDay,
-          lte: endOfDay
+          gte: startOfDay.toISOString(),
+          lte: endOfDay.toISOString()
         }
       },
       select: {
@@ -44,7 +49,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: true, data: reservasEnDia });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("❌ [API-SLOTS]:", errorMsg);
-    return NextResponse.json({ success: false, error: "Error recuperando disponibilidad", details: errorMsg }, { status: 500 });
+    const dbLastError = (db as any).getLastError?.();
+    console.error("❌ [API-SLOTS]:", errorMsg, dbLastError);
+    return NextResponse.json({ 
+      success: false, 
+      error: "Error recuperando disponibilidad", 
+      details: errorMsg,
+      dbErrorInfo: dbLastError 
+    }, { status: 500 });
   }
 }

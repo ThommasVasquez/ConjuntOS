@@ -177,6 +177,8 @@ model Usuario {
   unidadId    String?
   unidad      Unidad?             @relation(fields: [unidadId], references: [id])
   avatar      String?
+  torre       String?
+  apto        String?
   genero      String?             @default("neutro")
   notifPush   String?
   activo      Boolean             @default(true)

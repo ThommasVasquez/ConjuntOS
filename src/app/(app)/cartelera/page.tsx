@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * CARTELERA - CONJUNTOAPP
+ * CARTELERA - CONJUNTOSAPP
  * Tablón de anuncios oficiales de la administración.
  */
 

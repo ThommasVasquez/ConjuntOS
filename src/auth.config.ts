@@ -4,7 +4,7 @@ export const authConfig = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.AUTH_SECRET || "sb_secret_lzaYy86aeMAavECzFrBXww_RNjdfv2b_fallback",
   trustHost: true,
   callbacks: {
     authorized({ auth, request }) {

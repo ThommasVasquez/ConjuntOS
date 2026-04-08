@@ -10,11 +10,20 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    // Match all request paths except for the ones starting with:
+    // api, _next/static, _next/image, favicon.ico (and common static assets)
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*$).*)'
   ],
 }
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // BYPASS BRANDING ASSETS - Stage 29
+  if (pathname.endsWith('.svg') || pathname === '/energysoftmedia.svg') {
+    return NextResponse.next();
+  }
+
   // const url = request.nextUrl
   
   // Get hostname (e.g. 'conjunto1.conjuntoapp.co' or 'localhost:3000')
