@@ -124,3 +124,63 @@ html, body {
 [data-sonner-toast] [data-icon] {
   color: inherit !important;
 }
+
+/* —————————————————————————————————————————————————————————————————─────────
+   ANIMATIONS & EFFECTS
+   —————————————————————————————————————————————————————————————————————————— */
+
+.liquid-story-ring {
+  position: relative;
+  background: linear-gradient(45deg, #D946EF, #8B5CF6, #D946EF);
+  background-size: 200% 200%;
+  animation: story-bg 5s infinite linear;
+  padding: 3px;
+}
+
+.liquid-status-halo {
+  position: relative;
+  background: transparent;
+  padding: 3px;
+}
+
+.liquid-status-halo::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, transparent, #D946EF, #06b6d4, transparent);
+  animation: rotate-halo 3s linear infinite;
+  opacity: 0.6;
+  filter: blur(8px);
+}
+
+.liquid-status-halo::after {
+  content: "";
+  position: absolute;
+  inset: 0px;
+  border-radius: 9999px;
+  background: #D946EF;
+  opacity: 0.4;
+  animation: breathe-halo 2s ease-in-out infinite;
+  filter: blur(4px);
+}
+
+@keyframes rotate-halo {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes breathe-halo {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.1); opacity: 0.6; }
+}
+
+@keyframes story-bg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.text-glow {
+  text-shadow: 0 0 12px rgba(217,70,239,0.3);
+}

@@ -6,9 +6,9 @@
  */
 
 import { 
-  Building2, Calendar, Megaphone, Bell, 
-  Car, ArrowRight, CreditCard, User as UserIcon, MessageSquare,
-  MoreHorizontal, ChevronLeft, Search, SlidersHorizontal, ShoppingBag
+  ArrowRight, Bell, Building2, Calendar, Car, CreditCard, 
+  Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, 
+  Search, SlidersHorizontal, ShoppingBag, User as UserIcon
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import CelebrationModal from "@/components/modals/CelebrationModal";
@@ -169,7 +169,7 @@ function HomeResidente() {
       const nextPage = currentPage + 1;
       const nextBatch = allFeedItems.slice(0, nextPage * 5);
       setVisibleItems(nextBatch);
-      setCurrentPage(nextPage);
+      setCurrentPage(nextBatch.length / 5); // Correct page calculation
       setIsLoadingMore(false);
     }, 1200);
   }, [isLoadingMore, visibleItems.length, allFeedItems.length, currentPage]);
@@ -196,7 +196,7 @@ function HomeResidente() {
   }, []);
 
   const triggerMockDelivery = useCallback((itemName: string) => {
-     // 1. Guardar Notificación en el estado y LocalStorage (Stage 68.13)
+     // 1. Guardar Notificación en el estado y LocalStorage
      const mockNotif = {
         id: `mock_${Date.now()}`,
         tipo: 'SISTEMA',
@@ -207,7 +207,7 @@ function HomeResidente() {
      };
      setNotificaciones(prev => [mockNotif, ...prev]);
 
-     // 2. Guardar el PAQUETE en LocalStorage para persistencia (Stage 68.13)
+     // 2. Guardar el PAQUETE en LocalStorage para persistencia
      const mockPackage = {
         id: `pkg_${Date.now()}`,
         origen: itemName.includes("Pizza") ? "Pizza Now" : "Comercio Local",
@@ -276,7 +276,7 @@ function HomeResidente() {
       fetchFinance();
       fetchUserData();
 
-      // SIMULACIÓN ALEATORIA: Paquete de Cali (Stage 68.13)
+      // SIMULACIÓN ALEATORIA: Paquete de Cali
       const timer = setTimeout(() => {
         const alreadyHappened = sessionStorage.getItem('sim_servi_done');
         if (!alreadyHappened) {
@@ -321,26 +321,29 @@ function HomeResidente() {
         />
       )}
 
-      <ProfileHeader className="fade-up-home" />
-
-      {/* SEARCH BAR */}
-      <section className="fade-up-home flex gap-3 -mt-2">
-        <button
-          onClick={() => setIsSearchOpen(true)}
-          className="relative flex-1 group text-left"
-        >
-          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-hover:text-accent transition-colors" />
-          <div className="w-full bg-[#1a1333] border border-white/5 rounded-[24px] py-4 pl-14 pr-6 text-sm text-white/30 hover:border-accent/30 hover:bg-[#1f1640] transition-all shadow-inner cursor-pointer select-none">
-            Buscar o preguntar algo...
-          </div>
-        </button>
-        <button
-          onClick={() => setIsSearchOpen(true)}
-          className="w-14 h-14 rounded-[22px] bg-[#241a4a] border border-white/5 flex items-center justify-center text-white/60 hover:text-accent hover:border-accent/30 transition-all active:scale-95 shadow-lg"
-        >
-          <SlidersHorizontal size={20} />
-        </button>
-      </section>
+      {/* 🏛️ UNIFIED HEADER GROUP */}
+      <header className="fade-up-home flex flex-col gap-6">
+        <ProfileHeader />
+        
+        {/* SEARCH BAR */}
+        <div className="flex gap-3">
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="relative flex-1 group text-left"
+          >
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-hover:text-accent transition-colors" />
+            <div className="w-full bg-[#1a1333] border border-white/5 rounded-[24px] py-4 pl-14 pr-6 text-sm text-white/30 hover:border-accent/30 hover:bg-[#1f1640] transition-all shadow-inner cursor-pointer select-none">
+              Buscar o preguntar algo...
+            </div>
+          </button>
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="w-14 h-14 rounded-[22px] bg-[#241a4a] border border-white/5 flex items-center justify-center text-white/60 hover:text-accent hover:border-accent/30 transition-all active:scale-95 shadow-lg"
+          >
+            <SlidersHorizontal size={20} />
+          </button>
+        </div>
+      </header>
 
       {/* SEARCH MODAL */}
       <SearchModal

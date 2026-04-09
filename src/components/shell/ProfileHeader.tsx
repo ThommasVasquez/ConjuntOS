@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { AlertTriangle, Bell, CheckCircle2, Package } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { Bell, CheckCircle2, Package, AlertTriangle } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
 
 interface ProfileHeaderProps {
   className?: string;
@@ -165,79 +165,24 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
              </div>
              <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar">
                 {notificationsList.map((notif) => (
-                  <div key={notif.id} className="w-full px-5 py-3.5 flex items-start gap-4 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 relative">
-                     {notif.isUnread && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent"></span>}
-                     <div className={`mt-0.5 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center ${notif.color}`}>
-                        {notif.icon}
-                     </div>
-                     <div className="flex flex-col flex-1">
-                        <div className="flex justify-between items-center mb-0.5">
-                           <span className="text-[11px] font-bold text-white">{notif.title}</span>
-                           <span className="text-[8px] text-white/30">{notif.time}</span>
-                        </div>
-                        <p className="text-[10px] text-white/50 leading-tight">{notif.desc}</p>
-                     </div>
-                  </div>
+                   <div key={notif.id} className="w-full px-5 py-3.5 flex items-start gap-4 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 relative">
+                      {notif.isUnread && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent"></span>}
+                      <div className={`mt-0.5 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center ${notif.color}`}>
+                         {notif.icon}
+                      </div>
+                      <div className="flex flex-col flex-1">
+                         <div className="flex justify-between items-center mb-0.5">
+                            <span className="text-[11px] font-bold text-white">{notif.title}</span>
+                            <span className="text-[8px] text-white/30">{notif.time}</span>
+                         </div>
+                         <p className="text-[10px] text-white/50 leading-tight">{notif.desc}</p>
+                      </div>
+                   </div>
                 ))}
              </div>
           </div>
         )}
       </div>
-
-      <style jsx global>{`
-        .liquid-story-ring {
-          position: relative;
-          background: linear-gradient(45deg, #D946EF, #8B5CF6, #D946EF);
-          background-size: 200% 200%;
-          animation: story-bg 5s infinite linear;
-          padding: 3px;
-        }
-        
-        .liquid-status-halo {
-          position: relative;
-          background: transparent;
-          padding: 3px;
-        }
-        
-        .liquid-status-halo::before {
-          content: "";
-          position: absolute;
-          inset: -4px;
-          border-radius: 9999px;
-          background: conic-gradient(from 0deg, transparent, #D946EF, #06b6d4, transparent);
-          animation: rotate-halo 3s linear infinite;
-          opacity: 0.6;
-          filter: blur(8px);
-        }
-        
-        .liquid-status-halo::after {
-          content: "";
-          position: absolute;
-          inset: 0px;
-          border-radius: 9999px;
-          background: #D946EF;
-          opacity: 0.4;
-          animation: breathe-halo 2s ease-in-out infinite;
-          filter: blur(4px);
-        }
-
-        @keyframes rotate-halo {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        @keyframes breathe-halo {
-          0%, 100% { transform: scale(1); opacity: 0.3; }
-          50% { transform: scale(1.1); opacity: 0.6; }
-        }
-
-        @keyframes story-bg {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .text-glow { text-shadow: 0 0 12px rgba(217,70,239,0.3); }
-      `}</style>
     </header>
   );
 }
