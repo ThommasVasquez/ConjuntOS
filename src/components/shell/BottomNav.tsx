@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListMusic, Heart, User, Phone, Users, Package, Map, DollarSign } from "lucide-react";
+import { DollarSign, Heart, Home, ListMusic, Map, Package, Phone, User, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export default function BottomNav() {

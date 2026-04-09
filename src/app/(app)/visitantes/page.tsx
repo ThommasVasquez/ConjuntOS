@@ -6,14 +6,14 @@
  */
 
 import { 
-  Plus, QrCode, Clock, Calendar, CheckCircle2, 
-  Share2, MoreHorizontal, UserPlus, 
-  ShieldCheck, ArrowRight, Download, User
+  ArrowRight, Calendar, CheckCircle2, Clock, Download, 
+  MoreHorizontal, Plus, QrCode, Share2, ShieldCheck, 
+  User, UserPlus
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
-import { toast } from "sonner";
 import ProfileHeader from "@/components/shell/ProfileHeader";
+import { gsap } from "gsap";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface Visitor {
   id: string;

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import ProfileHeader from "@/components/shell/ProfileHeader";
 import { 
-  Map, Car, ShieldCheck, HelpCircle, 
-  History, CheckCircle, AlertCircle, X, 
-  Clock, ArrowRight, ClipboardCheck
+  AlertCircle, ArrowRight, Car, CheckCircle, ClipboardCheck, 
+  Clock, HelpCircle, History, Map, ShieldCheck, X 
 } from "lucide-react";
+import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function MapaParqueaderoPage() {
