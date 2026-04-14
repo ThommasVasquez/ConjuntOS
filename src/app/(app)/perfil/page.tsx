@@ -559,9 +559,18 @@ function ProfileContent() {
         >
           <Image src={profilePic} alt="" fill className="object-cover object-top scale-105" unoptimized />
         </div>
+
+        {/* Layer 2.1: Progressive Blur HUD (Stage 74.5) - Blurs the edge of Layer 2 */}
+        <div 
+          className="absolute inset-0 z-11 w-full h-full backdrop-blur-[20px]"
+          style={{ 
+            maskImage: 'linear-gradient(to top, black 0%, black 20%, transparent 60%)',
+            WebkitMaskImage: 'linear-gradient(to top, black 0%, black 20%, transparent 60%)'
+          }}
+        />
         
         {/* Layer 3: HUD Contrast Gradient & Base Shadow */}
-        <div className="absolute inset-x-0 bottom-0 h-[300px] bg-linear-to-t from-[#05020a] via-[#05020a]/80 to-transparent z-20" />
+        <div className="absolute inset-x-0 bottom-0 h-[350px] bg-linear-to-t from-[#05020a] via-[#05020a]/80 to-transparent z-20" />
       </div>
 
       <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
