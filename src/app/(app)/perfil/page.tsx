@@ -510,11 +510,13 @@ function ProfileContent() {
       </header>
 
       {/* HERO IMAGE */}
-      <div className="absolute top-0 left-0 w-full h-[60vh] z-0 overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden">
         <Image src={profilePic} alt="" fill className="absolute inset-0 w-full h-full object-cover object-top scale-105" unoptimized />
-        {/* Bottom fade overlay */}
-        <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-[#05020a]" />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#05020a] to-transparent" />
+        
+        {/* Cinematic Fade Layers */}
+        <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-[#05020a]/80" />
+        <div className="absolute inset-x-0 bottom-0 h-64 bg-linear-to-t from-[#05020a] via-[#05020a]/90 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-32 backdrop-blur-md [mask-image:linear-gradient(to_top,black,transparent)]" />
       </div>
 
       <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
