@@ -541,19 +541,27 @@ function ProfileContent() {
         </div>
       </header>
 
-      {/* HERO IMAGE */}
+      {/* HERO IMAGE - PERFECT CINEMATIC BLUR ARCHITECTURE (Stage 74) */}
       <div className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden bg-[#05020a]">
-        {/* Deep Blur Background Layer (Stage 73) */}
-        <div className="absolute inset-0 z-0 opacity-40 blur-2xl scale-110">
+        
+        {/* Layer 1: Base Ambient Blur (Bokeh backdrop) */}
+        <div className="absolute inset-0 z-0 blur-[60px] opacity-60 scale-125">
            <Image src={profilePic} alt="" fill className="object-cover object-top" unoptimized />
         </div>
         
-        {/* Sharp Image Layer */}
-        <Image src={profilePic} alt="" fill className="absolute inset-0 w-full h-full object-cover object-top scale-105 z-10" unoptimized />
+        {/* Layer 2: Transition Sharp-to-Blur (Masked Sharp Image) */}
+        <div 
+          className="absolute inset-0 z-10 w-full h-full"
+          style={{ 
+            maskImage: 'linear-gradient(to bottom, black 0%, black 50%, rgba(0,0,0,0.5) 75%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, rgba(0,0,0,0.5) 75%, transparent 100%)'
+          }}
+        >
+          <Image src={profilePic} alt="" fill className="object-cover object-top scale-105" unoptimized />
+        </div>
         
-        {/* Cinematic Fade & Blur HUD (Stage 73.5) */}
-        <div className="absolute inset-x-0 bottom-0 h-[250px] bg-linear-to-t from-[#05020a] via-[#05020a]/80 to-transparent z-20" />
-        <div className="absolute inset-x-0 bottom-0 h-[180px] backdrop-blur-3xl [mask-image:linear-gradient(to_top,black_40%,transparent)] z-30 border-b border-[#05020a]" />
+        {/* Layer 3: HUD Contrast Gradient & Base Shadow */}
+        <div className="absolute inset-x-0 bottom-0 h-[300px] bg-linear-to-t from-[#05020a] via-[#05020a]/80 to-transparent z-20" />
       </div>
 
       <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
