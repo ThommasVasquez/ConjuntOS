@@ -78,9 +78,6 @@ export default function ClasificadosPage() {
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 gap-8 overflow-x-hidden relative">
       
-      {/* Background Orbs */}
-      <div className="fixed top-[-10%] right-[-10%] w-[300px] h-[300px] bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="fixed bottom-[10%] left-[-10%] w-[250px] h-[250px] bg-purple-500/10 rounded-full blur-[80px] pointer-events-none" />
 
       {/* HEADER */}
       <div className="fade-up flex flex-col gap-4">

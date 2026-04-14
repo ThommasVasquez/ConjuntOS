@@ -452,11 +452,7 @@ function ProfileContent() {
   ];
 
   return (
-    <div ref={containerRef} className="flex flex-col min-h-screen relative overflow-x-hidden pb-32 bg-[#0a0514]">
-      {/* BACKGROUND DECOR */}
-      <div className="fixed top-1/4 -left-10 text-[25vw] font-display font-black text-white/[0.02] pointer-events-none select-none uppercase tracking-tighter leading-none z-0">
-        CONJUNTOS
-      </div>
+    <div ref={containerRef} className="flex flex-col min-h-screen relative overflow-x-hidden pb-32">
 
       {/* TOP NAV - MOBILE VIEWPORT SYNC (max-w-[430px] + Centered) */}
       <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[9999] px-6 pt-10 pb-4 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent pointer-events-none">

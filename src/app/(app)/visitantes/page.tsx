@@ -66,12 +66,7 @@ export default function VisitantesPage() {
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-8">
       
-      {/* 0. HEADER ESTANDARIZADO */}
       <ProfileHeader className="fade-up" />
-
-      {/* BACKGROUND AMBIENT GLOW */}
-      <div className="fixed top-[-10%] right-[-10%] w-full h-[50%] bg-[#4C1D95]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
-      <div className="fixed bottom-[-10%] left-[-10%] w-full h-[50%] bg-[#BE185D]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
 
       {/* 2. SUMMARY CARDS */}
       <section className="grid grid-cols-2 gap-4 fade-up">
