@@ -16,10 +16,10 @@
 
 :root {
   /* Paleta Vibrante Deep Purple / Magenta (Liquid Glass ref) */
-  --color-primary: #331A4D;       /* Deep purple background */
-  --color-primary-light: #5B21B6; /* Violet */
+  --color-primary: #05020a;       /* Pitch black-purple background */
+  --color-primary-light: #4c1d95; /* Deep Violet */
   --color-accent: #D946EF;        /* Magenta / Fuchsia para CTAs */
-  --color-surface: rgba(46, 20, 80, 0.4); /* Glass surface */
+  --color-surface: rgba(20, 10, 35, 0.4); /* Glass surface darker */
   --color-surface-2: rgba(255, 255, 255, 0.05); /* Lighter glass */
   --color-text: #F8FAFC;          /* White/slate */
   --color-text-muted: #A78BFA;    /* Light purple text for muting */
@@ -34,7 +34,7 @@ html, body {
   margin: 0;
   padding: 0;
   /* Exterior background simulates table around phone */
-  background-color: #0f0a1c; 
+  background-color: #05020a; 
   color: var(--color-text);
   font-family: 'Inter', sans-serif;
 }
@@ -46,7 +46,7 @@ html, body {
   min-height: 100dvh;
   position: relative;
   overflow: hidden; /* Hide horizontal scroll */
-  background: radial-gradient(circle at top right, #6D28D9 0%, #311867 40%, #1a0b2e 100%);
+  background: #05020a;
   box-shadow: 0 0 30px rgba(0,0,0,0.5); /* Desktop device shadow */
 }
 
