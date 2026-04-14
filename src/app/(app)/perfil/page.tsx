@@ -197,7 +197,22 @@ function ProfileContent() {
 
         if (financeRes.ok) {
           const fRes = await financeRes.json();
-          if (fRes.success) setFinancialData(fRes.data);
+          if (fRes.success) {
+            // Apply simulation filtering (Stage 72.8)
+            const paidIds = JSON.parse(localStorage.getItem('conjuntos_sim_paid_ids') || '[]');
+            const processedData = {
+              ...fRes.data,
+              pagos: fRes.data.pagos.map((p: any) => paidIds.includes(p.id) ? { ...p, estado: 'PAGADO' } : p),
+              recibos: fRes.data.recibos.map((r: any) => paidIds.includes(r.id) ? { ...r, pagado: true } : r)
+            };
+            
+            // Recalculate total debt after filtering
+            const realTotal = [...processedData.pagos, ...processedData.recibos]
+              .filter((p: any) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO' || p.pagado === false)
+              .reduce((acc: number, p: any) => acc + Number(p.monto), 0);
+            
+            setFinancialData({ ...processedData, totalDebt: realTotal });
+          }
         }
 
         if (resRes.ok) {
@@ -417,17 +432,34 @@ function ProfileContent() {
             r.id === id ? { ...r, pagado: true, fechaPago: new Date().toISOString() } : r
           );
           
+          // Persistent tracking for simulation (Stage 72)
+          const paidIds = JSON.parse(localStorage.getItem('conjuntos_sim_paid_ids') || '[]');
+          if (!paidIds.includes(id)) {
+            localStorage.setItem('conjuntos_sim_paid_ids', JSON.stringify([...paidIds, id]));
+          }
+
           // Recalculate total debt from non-paid items
           const newTotal = [...updatedPagos, ...updatedRecibos]
-            .filter(item => item.estado === 'PENDIENTE' || item.estado === 'VENCIDO' || item.pagado === false)
+            .filter(item => {
+              const itemEstado = item.estado || (item.pagado ? 'PAGADO' : 'PENDIENTE');
+              return itemEstado === 'PENDIENTE' || itemEstado === 'VENCIDO' || item.pagado === false;
+            })
             .reduce((acc, item) => acc + Number(item.monto), 0);
 
           return { ...prev, pagos: updatedPagos, recibos: updatedRecibos, totalDebt: newTotal };
         });
 
-        // Background sync to ensure DB state
+        // Background sync with simulation filtering (Stage 72.5)
         fetch("/api/user/pagos").then(r => r.json()).then(d => {
-          if (d.success) setFinancialData(d.data);
+          if (d.success) {
+            const paidIds = JSON.parse(localStorage.getItem('conjuntos_sim_paid_ids') || '[]');
+            const filteredData = {
+              ...d.data,
+              pagos: d.data.pagos.map((p: any) => paidIds.includes(p.id) ? { ...p, estado: 'PAGADO' } : p),
+              recibos: d.data.recibos.map((r: any) => paidIds.includes(r.id) ? { ...r, pagado: true } : r)
+            };
+            setFinancialData(filteredData);
+          }
         });
 
       } else {
@@ -510,13 +542,18 @@ function ProfileContent() {
       </header>
 
       {/* HERO IMAGE */}
-      <div className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden">
-        <Image src={profilePic} alt="" fill className="absolute inset-0 w-full h-full object-cover object-top scale-105" unoptimized />
+      <div className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden bg-[#05020a]">
+        {/* Deep Blur Background Layer (Stage 73) */}
+        <div className="absolute inset-0 z-0 opacity-40 blur-2xl scale-110">
+           <Image src={profilePic} alt="" fill className="object-cover object-top" unoptimized />
+        </div>
         
-        {/* Cinematic Fade Layers */}
-        <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-[#05020a]/80" />
-        <div className="absolute inset-x-0 bottom-0 h-64 bg-linear-to-t from-[#05020a] via-[#05020a]/90 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-32 backdrop-blur-md [mask-image:linear-gradient(to_top,black,transparent)]" />
+        {/* Sharp Image Layer */}
+        <Image src={profilePic} alt="" fill className="absolute inset-0 w-full h-full object-cover object-top scale-105 z-10" unoptimized />
+        
+        {/* Cinematic Fade & Blur HUD (Stage 73.5) */}
+        <div className="absolute inset-x-0 bottom-0 h-[250px] bg-linear-to-t from-[#05020a] via-[#05020a]/80 to-transparent z-20" />
+        <div className="absolute inset-x-0 bottom-0 h-[180px] backdrop-blur-3xl [mask-image:linear-gradient(to_top,black_40%,transparent)] z-30 border-b border-[#05020a]" />
       </div>
 
       <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
