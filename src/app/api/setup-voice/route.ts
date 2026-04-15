@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { supabase } from "@/lib/db";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
@@ -40,22 +40,8 @@ export async function GET() {
       `);
       logs.push("✅ Columnas agregadas via HTTP driver.");
     } catch (e: any) {
-      logs.push(`⚠️ HTTP driver falló: ${e.message}. Probando binario local...`);
-      // Fallback: Intentar con el binario de prisma si estamos en Node
-      try {
-        const { execSync } = require('child_process');
-        const nodePath = process.execPath;
-        const prismaPath = require.resolve('prisma/package.json').replace('package.json', 'build/index.js');
-        
-        logs.push(`🔍 Node Path: ${nodePath}`);
-        
-        const cmd = `${nodePath} ./node_modules/prisma/build/index.js migrate dev --name add_voice --skip-generate --schema ./prisma/schema.prisma`;
-        execSync(cmd, { env: { ...process.env, DATABASE_URL } });
-        logs.push("✅ Migración completada via Prisma CLI.");
-      } catch (e2: any) {
-        logs.push(`❌ Fallo total de migración: ${e2.message}`);
-        // No lanzamos error para que al menos el bucket quede configurado
-      }
+      logs.push(`❌ Fallo de migración via HTTP: ${e.message}`);
+      // No lanzamos error para que al menos el bucket quede configurado
     }
 
     return NextResponse.json({
