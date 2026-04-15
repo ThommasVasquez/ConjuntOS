@@ -41,6 +41,7 @@ export const viewport: Viewport = {
 
 import { Providers } from "@/components/Providers";
 import { Toaster } from "sonner";
+import SplashScreen from "@/components/shell/SplashScreen";
 
 export default function RootLayout({
   children,
@@ -51,6 +52,7 @@ export default function RootLayout({
     <html lang="es" className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}>
       <body className="antialiased selection:bg-primary/20 bg-[#E2E8F0] min-h-screen">
         <Providers>
+          <SplashScreen />
           {children}
           <Toaster 
             position="top-center" 
