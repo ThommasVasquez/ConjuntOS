@@ -20,17 +20,19 @@ export async function GET() {
           id: "pago_admin_abril",
           concepto: "Cuota de Administración (Abril 2026)",
           monto: 155000,
-          estado: "PENDIENTE",
+          estado: "PAGADO",
           fechaVencimiento: "2026-04-30",
-          fechaGeneracion: "2026-04-01"
+          fechaGeneracion: "2026-04-01",
+          fechaPago: "2026-04-10"
         },
         {
           id: "pago_reserva_gym",
           concepto: "Sanción convivencia (Ruidos molestos)",
           monto: 120000,
-          estado: "PENDIENTE",
+          estado: "PAGADO",
           fechaVencimiento: "2026-04-15",
-          fechaGeneracion: "2026-04-05"
+          fechaGeneracion: "2026-04-05",
+          fechaPago: "2026-04-12"
         }
       ],
       recibos: [
@@ -39,17 +41,17 @@ export async function GET() {
           servicio: "Energía (Enel)",
           monto: 82450,
           vencimiento: "2026-04-12",
-          pagado: false
+          pagado: true
         },
         {
           id: "recibo_vanti_1",
           servicio: "Gas (Vanti)",
           monto: 12800,
           vencimiento: "2026-04-18",
-          pagado: false
+          pagado: true
         }
       ],
-      totalDebt: 370250
+      totalDebt: 0
     }
   };
 

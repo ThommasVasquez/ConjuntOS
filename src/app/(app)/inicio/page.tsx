@@ -409,8 +409,7 @@ function HomeResidente() {
 
       {/* WALLET HERO */}
       <section 
-        onClick={() => router.push('/perfil')}
-        className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[120px] shadow-[0_15px_40px_rgba(0,0,0,0.6)] border border-white/10 group cursor-pointer active:scale-95 transition-all"
+        className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[120px] shadow-[0_15px_40px_rgba(0,0,0,0.6)] border border-white/10 group overflow-hidden transition-all"
       >
         <div className={`absolute inset-0 bg-linear-to-br ${financialData.totalDebt > 0 ? 'from-[#4C1D95] via-[#331A4D] to-[#BE185D]' : 'from-[#065F46] via-[#064E3B] to-[#047857]'} opacity-90`} />
         <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
@@ -437,7 +436,8 @@ function HomeResidente() {
               </p>
             </div>
             <button 
-              className="bg-white text-primary text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all"
+              onClick={(e) => { e.stopPropagation(); router.push('/pagos'); }}
+              className="bg-white text-primary text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all relative z-20"
             >
               {financialData.totalDebt > 0 ? "Pagar Ahora" : "Ver Estado"}
             </button>
