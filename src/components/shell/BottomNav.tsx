@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DollarSign, Heart, Home, ListMusic, Map, Package, Phone, User, Users } from "lucide-react";
+import { DollarSign, Building2, Home, ListMusic, Map, Package, Phone, User, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export default function BottomNav() {
@@ -29,7 +29,7 @@ export default function BottomNav() {
   } else if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN' || role === 'CONCEJO') {
     tabs = [
       { name: "Panel", path: "/inicio", icon: Home },
-      { name: "Aprobaciones", path: "/admin-novedades", icon: Heart },
+      { name: "Aprobaciones", path: "/admin-novedades", icon: Building2 },
       { name: "Finanzas", path: "/admin-finanzas", icon: DollarSign },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
@@ -39,7 +39,7 @@ export default function BottomNav() {
       { name: "Inicio", path: "/inicio", icon: Home },
       { name: "Citofonía", path: "/citofonia", icon: Phone }, 
       { name: "Reservas", path: "/reservas", icon: ListMusic },
-      { name: "Cartelera", path: "/cartelera", icon: Heart },
+      { name: "Cartelera", path: "/cartelera", icon: Building2 },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
   }
