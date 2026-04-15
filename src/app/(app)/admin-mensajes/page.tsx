@@ -6,7 +6,6 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { supabase } from "@/lib/db";
-import { runVoiceSetup } from "@/app/actions/voice-setup";
 
 interface Conversation {
   usuarioId: string;
@@ -299,9 +298,14 @@ export default function AdminMensajesPage() {
         {/* SOS Setup Button */}
         <button 
            onClick={async () => {
-             const res = await runVoiceSetup();
-             if (res.success) toast.success("¡Voz Configurada! Reiniciando...");
-             else toast.error("Error: " + res.error);
+             try {
+               const res = await fetch('/api/setup-voice');
+               const data = await res.json();
+               if (data.success) toast.success("¡Voz Configurada! Reiniciando...");
+               else toast.error("Error: " + (data.error || "Fallo en el puente"));
+             } catch (err) {
+               toast.error("Error de red");
+             }
              setTimeout(() => window.location.reload(), 2000);
            }}
            className="w-full mb-8 p-4 rounded-3xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between group hover:bg-emerald-500/10 transition-all"
