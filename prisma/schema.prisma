@@ -557,3 +557,14 @@ model Inmueble {
   creadoEn      DateTime       @default(now())
   actualizadoEn DateTime       @updatedAt
 }
+
+model ChatAdmin {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  mensaje     String
+  esDeAdmin   Boolean  @default(false)
+  leido       Boolean  @default(false)
+  creadoEn    DateTime @default(now())
+}
+

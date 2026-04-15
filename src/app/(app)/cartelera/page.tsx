@@ -43,7 +43,67 @@ export default function CarteleraPage() {
   const [isLiveActive, setIsLiveActive] = useState(true); // Always active for simulation
   const [simulatedChat, setSimulatedChat] = useState<{user: string, msg: string, time: string}[]>([]);
   const [userMsg, setUserMsg] = useState("");
-  const [isAdminOnline, setIsAdminOnline] = useState(true); // Simulated online status
+  const [isAdminOnline, setIsAdminOnline] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{mensaje: string, esDeAdmin: boolean, creadoEn: string}[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Random Admin Status Simulation
+  useEffect(() => {
+    const statusInterval = setInterval(() => {
+      setIsAdminOnline(prev => Math.random() > 0.4);
+    }, 12000);
+    return () => clearInterval(statusInterval);
+  }, []);
+
+  // Fetch Chat History
+  const fetchChat = async () => {
+    try {
+      const res = await fetch("/api/user/chat");
+      const data = await res.json();
+      if (data.success) setChatMessages(data.data);
+    } catch (err) {
+      console.error("Error fetching chat:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isChatOpen) {
+      fetchChat();
+    }
+  }, [isChatOpen]);
+
+  // Scroll to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || isSending) return;
+    setIsSending(true);
+    
+    // Optimistic update
+    const tempMsg = { mensaje: newMessage, esDeAdmin: false, creadoEn: new Date().toISOString() };
+    setChatMessages(prev => [...prev, tempMsg]);
+    setNewMessage("");
+
+    try {
+      const res = await fetch("/api/user/chat", {
+        method: "POST",
+        body: JSON.stringify({ mensaje: tempMsg.mensaje })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        toast.error("Error al enviar mensaje");
+      }
+    } catch (err) {
+      toast.error("Error de conexión");
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   useEffect(() => {
     async function initData() {
@@ -458,7 +518,7 @@ export default function CarteleraPage() {
       <div className="fixed bottom-36 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-6 pointer-events-none z-100">
          <div className="flex justify-end w-full">
             <button 
-              onClick={() => toast.info("El chat administrativo estará disponible próximamente.")}
+              onClick={() => setIsChatOpen(true)}
               className="pointer-events-auto w-16 h-16 rounded-full bg-emerald-500 shadow-[0_15px_40px_rgba(16,185,129,0.3)] flex items-center justify-center text-white relative active:scale-95 hover:scale-105 transition-all group overflow-visible"
             >
                <MessageCircle size={28} />
@@ -475,6 +535,95 @@ export default function CarteleraPage() {
             </button>
          </div>
       </div>
+
+      {/* MODAL: ADMINISTRATIVE CHAT */}
+      {isChatOpen && (
+        <div className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-md flex items-end justify-center animate-in fade-in duration-300 isolate">
+           <div className="w-full max-w-[430px] h-[90vh] bg-[#0c0816] rounded-t-[40px] border-t border-white/10 flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500 shadow-2xl">
+              
+              {/* Chat Header */}
+              <div className="p-6 flex justify-between items-center border-b border-white/5 bg-white/5 backdrop-blur-2xl">
+                 <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 relative">
+                       <Building2 size={24} className="text-emerald-500" />
+                       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0c0816] ${isAdminOnline ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
+                    </div>
+                    <div className="flex flex-col">
+                       <h3 className="text-sm font-bold text-white tracking-tight">Atención al Copropietario</h3>
+                       <span className="text-[10px] text-white/40 font-medium uppercase tracking-widest flex items-center gap-1.5">
+                          {isAdminOnline ? (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                              Disponible
+                            </>
+                          ) : 'Ausente'}
+                       </span>
+                    </div>
+                 </div>
+                 <button 
+                   onClick={() => setIsChatOpen(false)}
+                   className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 transition-all active:scale-90"
+                 >
+                    <X size={20} />
+                 </button>
+              </div>
+
+              {/* Chat Body (Messages) */}
+              <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scroll-smooth hide-scrollbar bg-linear-to-b from-transparent to-black/20">
+                 {chatMessages.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-40">
+                       <MessageCircle size={48} className="text-emerald-500/50" />
+                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-center max-w-[200px] leading-relaxed">
+                          Envía un mensaje para iniciar una conversación directa con la administración
+                       </p>
+                    </div>
+                 ) : chatMessages.map((m, idx) => (
+                    <div key={idx} className={`flex ${m.esDeAdmin ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                       <div className={`max-w-[85%] p-4 rounded-3xl text-sm leading-relaxed ${
+                         m.esDeAdmin 
+                           ? 'bg-white/5 border border-white/10 text-white rounded-tl-none shadow-sm' 
+                           : 'bg-emerald-500 text-white rounded-tr-none shadow-lg shadow-emerald-500/10 font-medium'
+                       }`}>
+                          {m.mensaje}
+                          <div className={`text-[8px] mt-2 opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-start' : 'justify-end font-normal'}`}>
+                             {new Date(m.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                       </div>
+                    </div>
+                 ))}
+                 <div ref={chatEndRef} />
+              </div>
+
+              {/* Chat Input */}
+              <div className="p-6 bg-white/5 border-t border-white/5 pb-10">
+                 <div className="flex items-center gap-3">
+                    <div className="flex-1 min-h-[56px] bg-white/5 border border-white/10 rounded-[28px] flex items-center px-6 transition-all focus-within:border-emerald-500/50 focus-within:bg-white/10 shadow-inner">
+                       <input 
+                         type="text"
+                         value={newMessage}
+                         onChange={(e) => setNewMessage(e.target.value)}
+                         onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                         placeholder="Describe tu solicitud o duda..."
+                         className="w-full bg-transparent border-none text-white text-sm focus:ring-0 placeholder:text-white/20"
+                       />
+                    </div>
+                    <button 
+                      onClick={sendMessage}
+                      disabled={!newMessage.trim() || isSending}
+                      className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-[0_10px_25px_rgba(16,185,129,0.3)] active:scale-90 transition-all disabled:opacity-50 disabled:scale-100 group"
+                    >
+                       {isSending ? <Loader2 size={24} className="animate-spin" /> : <ArrowRight size={24} className="group-hover:translate-x-0.5 transition-transform" />}
+                    </button>
+                 </div>
+                 <div className="mt-4 flex items-center justify-center gap-2 opacity-20">
+                    <ShieldAlert size={10} />
+                    <p className="text-[9px] font-bold uppercase tracking-widest">Conexión Segura & Encriptada</p>
+                 </div>
+              </div>
+
+           </div>
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
