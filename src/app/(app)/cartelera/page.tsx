@@ -47,95 +47,100 @@ export default function CarteleraPage() {
   useEffect(() => {
     async function initData() {
       try {
-        const anunciosFetch = await fetch("/api/user/anuncios", { cache: 'no-store' });
-        const anunciosRes = await anunciosFetch.json();
-
-        if (anunciosRes.success && anunciosRes.data) {
-          const apiMapped: Notice[] = anunciosRes.data.map((a: Anuncio) => ({
-            id: a.id,
-            title: a.titulo,
-            content: a.contenido,
-            category: a.tipo,
-            priority: a.tipo === 'URGENTE' ? 'ALTA' : (a.tipo === 'MANTENIMIENTO' ? 'MEDIA' : 'BAJA'),
-            date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+        const mockNotices: Notice[] = [
+          {
+            id: "mock-1",
+            title: "Reunión de Consejo de Administración",
+            content: "Sesión mensual para la revisión del presupuesto operacional y seguimiento a proyectos de mantenimiento del segundo trimestre. Los copropietarios pueden enviar sus inquietudes previas al correo de administración.",
+            category: "ADMINISTRACION",
+            priority: "ALTA",
+            date: "18 Jun, 2024",
+            author: "Consejo de Admón.",
+            image: "https://images.unsplash.com/photo-1577416414929-7a7c850e816a?auto=format&fit=crop&q=80&w=1000",
+            fijado: true
+          },
+          {
+            id: "mock-2",
+            title: "Asamblea Extraordinaria Presencial",
+            content: "Citación obligatoria para tratar la aprobación de la cuota extraordinaria para la modernización de los sistemas de seguridad y CCTV. Se requiere quórum del 51%.",
+            category: "EVENTO",
+            priority: "ALTA",
+            date: "25 May, 2024",
             author: "Administración",
-            image: a.imagenUrl || undefined,
-            fijado: a.fijado
-          }));
-          
-          const mockNotices: Notice[] = [
-            {
-              id: "mock-1",
-              title: "Reunión de Consejo de Administración",
-              content: "Sesión mensual para la revisión del presupuesto operacional y seguimiento a proyectos de mantenimiento del segundo trimestre. Los copropietarios pueden enviar sus inquietudes previas al correo de administración.",
-              category: "ADMINISTRACION",
-              priority: "ALTA",
-              date: "18 Jun, 2024",
-              author: "Consejo de Admón.",
-              image: "https://images.unsplash.com/photo-1577416414929-7a7c850e816a?auto=format&fit=crop&q=80&w=1000",
-              fijado: true
-            },
-            {
-              id: "mock-2",
-              title: "Asamblea Extraordinaria Presencial",
-              content: "Citación obligatoria para tratar la aprobación de la cuota extraordinaria para la modernización de los sistemas de seguridad y CCTV. Se requiere quórum del 51%.",
-              category: "EVENTO",
-              priority: "ALTA",
-              date: "25 May, 2024",
-              author: "Administración",
-              image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=1000"
-            },
-            {
-              id: "licit-1",
-              title: "Licitación: Mantenimiento de Piscinas",
-              content: "Invitación pública para empresas especializadas en el tratamiento físico-químico y mantenimiento técnico de piscinas y zonas húmedas. Pliegos disponibles en oficina.",
-              category: "LICITACION",
-              priority: "MEDIA",
-              date: "Cierre: 30 Mayo",
-              author: "Admón. ConjuntOS",
-              image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=1000"
-            },
-            {
-              id: "licit-2",
-              title: "Licitación: Servicio de Aseo y Cafetería",
-              content: "Convocatoria para la prestación integral de servicios de limpieza, desinfección y mantenimiento de áreas comunes. Se evaluará certificación en procesos bioseguros.",
-              category: "LICITACION",
-              priority: "MEDIA",
-              date: "Abierta",
-              author: "Admón. ConjuntOS",
-              image: "https://images.unsplash.com/photo-1581578731548-c64695cc6954?auto=format&fit=crop&q=80&w=1000"
-            },
-            {
-              id: "licit-3",
-              title: "Convocatoria: Contaduría General",
-              content: "Se requiere Contador(a) Público con experiencia mínima de 5 años en propiedad horizontal para el manejo integral de la contabilidad bajo normas NIIF.",
-              category: "LICITACION",
-              priority: "MEDIA",
-              date: "En curso",
-              author: "Consejo de Admón."
-            },
-            {
-              id: "licit-4",
-              title: "Convocatoria: Revisoría Fiscal",
-              content: "Búsqueda de Revisor Fiscal para el periodo 2024-2025. Los candidatos deben presentar su propuesta técnica y económica detallando el alcance de sus auditorías.",
-              category: "LICITACION",
-              priority: "MEDIA",
-              date: "En curso",
-              author: "Consejo de Admón."
-            },
-            {
-              id: "licit-5",
-              title: "Licitación: Administración de PH",
-              content: "Convocatoria pública para la prestación de servicios de Administración de Propiedad Horizontal para el ConjuntOS®. Se busca gestión orientada a resultados y transparencia.",
-              category: "LICITACION",
-              priority: "ALTA",
-              date: "Urgente",
-              author: "Asamblea General",
-              image: "https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&q=80&w=1000"
-            }
-          ];
+            image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=1000"
+          },
+          {
+            id: "licit-1",
+            title: "Licitación: Mantenimiento de Piscinas",
+            content: "Invitación pública para empresas especializadas en el tratamiento físico-químico y mantenimiento técnico de piscinas y zonas húmedas. Pliegos disponibles en oficina.",
+            category: "LICITACION",
+            priority: "MEDIA",
+            date: "Cierre: 30 Mayo",
+            author: "Admón. ConjuntOS",
+            image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=1000"
+          },
+          {
+            id: "licit-2",
+            title: "Licitación: Servicio de Aseo y Cafetería",
+            content: "Convocatoria para la prestación integral de servicios de limpieza, desinfección y mantenimiento de áreas comunes. Se evaluará certificación en procesos bioseguros.",
+            category: "LICITACION",
+            priority: "MEDIA",
+            date: "Abierta",
+            author: "Admón. ConjuntOS",
+            image: "https://images.unsplash.com/photo-1581578731548-c64695cc6954?auto=format&fit=crop&q=80&w=1000"
+          },
+          {
+            id: "licit-3",
+            title: "Convocatoria: Contaduría General",
+            content: "Se requiere Contador(a) Público con experiencia mínima de 5 años en propiedad horizontal para el manejo integral de la contabilidad bajo normas NIIF.",
+            category: "LICITACION",
+            priority: "MEDIA",
+            date: "En curso",
+            author: "Consejo de Admón."
+          },
+          {
+            id: "licit-4",
+            title: "Convocatoria: Revisoría Fiscal",
+            content: "Búsqueda de Revisor Fiscal para el periodo 2024-2025. Los candidatos deben presentar su propuesta técnica y económica detallando el alcance de sus auditorías.",
+            category: "LICITACION",
+            priority: "MEDIA",
+            date: "En curso",
+            author: "Consejo de Admón."
+          },
+          {
+            id: "licit-5",
+            title: "Licitación: Administración de PH",
+            content: "Convocatoria pública para la prestación de servicios de Administración de Propiedad Horizontal para el ConjuntOS®. Se busca gestión orientada a resultados y transparencia.",
+            category: "LICITACION",
+            priority: "ALTA",
+            date: "Urgente",
+            author: "Asamblea General",
+            image: "https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&q=80&w=1000"
+          }
+        ];
 
+        try {
+          const anunciosFetch = await fetch("/api/user/anuncios", { cache: 'no-store' });
+          const anunciosRes = await anunciosFetch.json();
+
+          let apiMapped: Notice[] = [];
+          if (anunciosRes.success && anunciosRes.data) {
+            apiMapped = anunciosRes.data.map((a: any) => ({
+              id: a.id,
+              title: a.titulo,
+              content: a.contenido,
+              category: a.tipo,
+              priority: a.tipo === 'URGENTE' ? 'ALTA' : (a.tipo === 'MANTENIMIENTO' ? 'MEDIA' : 'BAJA'),
+              date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+              author: "Administración",
+              image: a.imagenUrl || undefined,
+              fijado: a.fijado
+            }));
+          }
           setNotices([...mockNotices, ...apiMapped]);
+        } catch (apiErr) {
+          console.warn("API fallida, usando mocks únicamente");
+          setNotices(mockNotices);
         }
       } catch (error) {
         console.error("❌ Error initializing Cartelera:", error);
@@ -143,6 +148,8 @@ export default function CarteleraPage() {
         setIsLoadingNotices(false);
       }
     }
+
+    if (session) initData();
 
     // SIMULATED CHAT FEED
     const chatInterval = setInterval(() => {
