@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DollarSign, Building2, Home, ListMusic, Map, Package, Phone, User, Users } from "lucide-react";
+import { DollarSign, Building2, Home, ListMusic, Map, Package, Phone, User, Users, MessageCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 
@@ -32,10 +32,11 @@ export default function BottomNav() {
       { name: "Mapa", path: "/mapa-parqueadero", icon: Map },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
-  } else if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN' || role === 'CONCEJO') {
+   } else if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN' || role === 'CONCEJO') {
     tabs = [
       { name: "Panel", path: "/inicio", icon: Home },
-      { name: "Aprobaciones", path: "/admin-novedades", icon: Building2 },
+      { name: "Mensajes", path: "/admin-mensajes", icon: MessageCircle },
+      { name: "Novedades", path: "/admin-novedades", icon: Building2 },
       { name: "Finanzas", path: "/admin-finanzas", icon: DollarSign },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
