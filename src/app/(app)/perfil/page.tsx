@@ -995,7 +995,7 @@ function ProfileContent() {
            {/* Backdrop con Blur 3XL */}
            <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" onClick={() => setShowEditModal(false)} />
            
-           <div className="w-full max-w-[430px] liquid-glass rounded-t-[48px] p-8 pb-12 border-t border-white/10 shadow-[0_-20px_80px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 overflow-y-auto max-h-[90vh] relative z-10">
+           <div className="w-full max-w-[430px] liquid-glass rounded-t-[48px] p-8 pb-40 border-t border-white/10 shadow-[0_-20px_80px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 overflow-y-auto max-h-[90vh] relative z-10">
               <div className="flex justify-between items-center mb-8">
                  <div>
                    <h2 className="text-2xl font-display font-bold text-white tracking-tight">Editar Perfil</h2>
