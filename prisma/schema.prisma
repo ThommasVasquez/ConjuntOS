@@ -560,12 +560,14 @@ model Inmueble {
 }
 
 model ChatAdmin {
-  id          String   @id @default(cuid())
-  usuarioId   String
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
-  mensaje     String
-  esDeAdmin   Boolean  @default(false)
-  leido       Boolean  @default(false)
-  creadoEn    DateTime @default(now())
+  id            String   @id @default(cuid())
+  usuarioId     String
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
+  mensaje       String
+  audioUrl      String?
+  transcripcion String?
+  esDeAdmin     Boolean  @default(false)
+  leido         Boolean  @default(false)
+  creadoEn      DateTime @default(now())
 }
 

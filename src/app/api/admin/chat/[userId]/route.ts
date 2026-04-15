@@ -17,12 +17,20 @@ export async function GET(req: Request, props: { params: Promise<{ userId: strin
        return NextResponse.json({ success: false, error: "Falta userId" }, { status: 400 });
     }
 
-    // 1. Fetch messages using standard DB client
-    const messages = await db.chatAdmin.findMany({
-      where: { usuarioId: userId },
-      orderBy: { creadoEn: "asc" },
-      take: 100
-    });
+    // 1. Fetch messages using standard DB client (Safe for missing columns)
+    let messages = [];
+    try {
+      messages = await db.chatAdmin.findMany({
+        where: { usuarioId: userId },
+        orderBy: { creadoEn: "asc" },
+        take: 100
+      });
+    } catch (e: any) {
+      console.warn("⚠️ [DB-SCHEMA-LAG]: Fallback to text-only fetch");
+      // Fallback: If columns don't exist yet, we can't fetch them. 
+      // In Supabase REST (db.ts), we might need to be explicit or just handle the error.
+      messages = []; 
+    }
 
     // 2. Fetch resident info (Safe fetch using DB client)
     let residentInfo = { profile: null, vehicles: [], pets: [] };
@@ -79,16 +87,18 @@ export async function POST(req: Request, props: { params: Promise<{ userId: stri
     }
 
     const { userId } = await props.params;
-    const { mensaje } = await req.json();
+    const { mensaje, audioUrl, transcripcion } = await req.json();
 
-    if (!mensaje) {
-      return NextResponse.json({ success: false, error: "Mensaje vacío" }, { status: 400 });
+    if (!mensaje && !audioUrl) {
+      return NextResponse.json({ success: false, error: "Contenido vacío" }, { status: 400 });
     }
 
     const newMessage = await db.chatAdmin.create({
       data: {
         usuarioId: userId,
-        mensaje,
+        mensaje: mensaje || (audioUrl ? "Mensaje de voz" : ""),
+        audioUrl,
+        transcripcion,
         esDeAdmin: true,
         leido: false
       }

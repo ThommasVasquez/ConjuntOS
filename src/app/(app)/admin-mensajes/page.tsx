@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MessageCircle, Search, ArrowRight, User, ChevronLeft, Building2, CheckCheck, Loader2, X, Phone, Car, Dog, ShieldCheck, Info } from "lucide-react";
+import { MessageCircle, Search, ArrowRight, User, ChevronLeft, Building2, CheckCheck, Loader2, X, Phone, Car, Dog, ShieldCheck, Info, Mic, Play, Pause, Music, Trash2 } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { supabase } from "@/lib/db";
+import { runVoiceSetup } from "@/app/actions/voice-setup";
 
 interface Conversation {
   usuarioId: string;
@@ -21,6 +23,8 @@ interface Conversation {
 interface Message {
   id: string;
   mensaje: string;
+  audioUrl?: string | null;
+  transcripcion?: string | null;
   esDeAdmin: boolean;
   creadoEn: string;
   leido: boolean;
@@ -65,6 +69,15 @@ export default function AdminMensajesPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
+  
+  // Voice Recording States
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [transcription, setTranscription] = useState("");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const timerRef = useRef<any>(null);
 
   const fetchConversations = async () => {
     try {
@@ -87,36 +100,133 @@ export default function AdminMensajesPage() {
       if (data.success) {
         setMessages(data.data);
         setResidentInfo(data.residentInfo);
+      } else {
+        if (data.error?.includes("column") || data.error?.includes("audioUrl")) {
+            toast.info("Configuración de infraestructura pendiente.");
+        }
       }
     } catch {
       toast.error("Error de sincronización");
     }
   };
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedUserId || sending) return;
+  const sendMessage = async (audioData?: { url: string, text: string }) => {
+    if (!audioData && (!newMessage.trim() || !selectedUserId || sending)) return;
     setSending(true);
     
     const temp: Message = {
         id: `temp_${Date.now()}`,
-        mensaje: newMessage,
+        mensaje: audioData ? "Mensaje de voz" : newMessage,
+        audioUrl: audioData?.url || null,
+        transcripcion: audioData?.text || null,
         esDeAdmin: true,
         creadoEn: new Date().toISOString(),
         leido: false
     };
     setMessages(prev => [...prev, temp]);
-    setNewMessage("");
+    if (!audioData) setNewMessage("");
 
     try {
       const res = await fetch(`/api/admin/chat/${selectedUserId}`, {
         method: "POST",
-        body: JSON.stringify({ mensaje: temp.mensaje })
+        body: JSON.stringify({ 
+          mensaje: temp.mensaje,
+          audioUrl: temp.audioUrl,
+          transcripcion: temp.transcripcion
+        })
       });
       const data = await res.json();
       if (!data.success) toast.error("Error al enviar");
       fetchChatHistory(selectedUserId);
     } catch {
       toast.error("Fallo de red");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Voice Recording Logic
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        handleUploadAndSend(blob);
+      };
+
+      // Real-time Transcription Setup
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const rec = new SpeechRecognition();
+        rec.lang = 'es-ES';
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.onresult = (e: any) => {
+          let text = "";
+          for (let i = 0; i < e.results.length; i++) {
+            text += e.results[i][0].transcript;
+          }
+          setTranscription(text);
+        };
+        recognitionRef.current = rec;
+        rec.start();
+      }
+
+      recorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      setTranscription("");
+      timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+
+    } catch (err) {
+      toast.error("Error al acceder al micrófono");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+    }
+    if (recognitionRef.current) {
+        recognitionRef.current.stop();
+    }
+    clearInterval(timerRef.current);
+    setIsRecording(false);
+  };
+
+  const handleUploadAndSend = async (blob: Blob) => {
+    try {
+      setSending(true);
+      const fileName = `${selectedUserId}_${Date.now()}.webm`;
+      
+      // Asegurar que el bucket existe (Supabase no tiene listBuckets accesible fácilmente en browser)
+      // Subimos directamente
+      const { data, error } = await supabase.storage
+        .from('chat-voice')
+        .upload(fileName, blob);
+
+      if (error) {
+        if (error.message.includes("not found")) {
+            toast.error("Error: Configure el bucket 'chat-voice' en Supabase Storage");
+            return;
+        }
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-voice')
+        .getPublicUrl(fileName);
+
+      sendMessage({ url: publicUrl, text: transcription });
+    } catch (err: any) {
+      toast.error("Error al subir audio: " + err.message);
     } finally {
       setSending(false);
     }
@@ -185,6 +295,23 @@ export default function AdminMensajesPage() {
              className="w-full bg-white/5 border border-white/10 rounded-[28px] py-4 pl-14 pr-6 text-sm outline-none focus:bg-white/10 focus:border-emerald-500/30 transition-all placeholder:text-white/10"
            />
         </div>
+
+        {/* SOS Setup Button */}
+        <button 
+           onClick={async () => {
+             const res = await runVoiceSetup();
+             if (res.success) toast.success("¡Voz Configurada! Reiniciando...");
+             else toast.error("Error: " + res.error);
+             setTimeout(() => window.location.reload(), 2000);
+           }}
+           className="w-full mb-8 p-4 rounded-3xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between group hover:bg-emerald-500/10 transition-all"
+        >
+          <div className="flex items-center gap-3 text-emerald-500/60 group-hover:text-emerald-500">
+             <ShieldCheck size={18} />
+             <span className="text-[10px] font-black uppercase tracking-widest">Activar Mensajes de Voz</span>
+          </div>
+          <ArrowRight size={14} className="text-emerald-500/30 group-hover:translate-x-1 transition-all" />
+        </button>
 
         <div className="space-y-3">
           {loading ? (
@@ -278,7 +405,13 @@ export default function AdminMensajesPage() {
                            ? 'bg-emerald-500 text-white rounded-tr-none shadow-emerald-500/20 font-medium' 
                            : 'bg-white/10 border border-white/10 text-white rounded-tl-none backdrop-blur-xl'
                          }`}>
-                          {m.mensaje}
+                          
+                          {m.audioUrl ? (
+                            <AudioMessage url={m.audioUrl} transcription={m.transcripcion} />
+                          ) : (
+                            m.mensaje
+                          )}
+                          
                           <div className={`text-[8px] mt-2.5 font-bold opacity-30 uppercase tracking-widest flex items-center gap-1.5 
                             ${m.esDeAdmin ? 'justify-end' : 'justify-start'}`}>
                              {new Date(m.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -368,24 +501,53 @@ export default function AdminMensajesPage() {
 
               {/* CHAT INPUT AREA */}
               <div className="p-6 bg-white/[0.02] border-t border-white/5 pb-11 backdrop-blur-3xl pt-6">
-                 <div className="max-w-[700px] mx-auto flex items-center gap-4">
-                    <div className="flex-1 min-h-[64px] bg-white/5 border border-white/10 rounded-[32px] flex items-center px-8 transition-all focus-within:border-emerald-500/40 focus-within:bg-white/10 shadow-2xl group">
-                       <input 
-                         type="text"
-                         value={newMessage}
-                         onChange={(e) => setNewMessage(e.target.value)}
-                         onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                         placeholder="Emitir respuesta administrativa..."
-                         className="w-full bg-transparent border-none text-white text-sm focus:ring-0 placeholder:text-white/10 font-medium"
-                       />
-                    </div>
-                    <button 
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim() || sending}
-                      className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-[0_20px_50px_rgba(16,185,129,0.3)] active:scale-90 transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100 group flex-shrink-0 border-[6px] border-white/5"
-                    >
-                       {sending ? <Loader2 size={28} className="animate-spin" /> : <ArrowRight size={32} className="group-hover:translate-x-1 transition-transform" />}
-                    </button>
+                <div className="max-w-[700px] mx-auto flex items-center gap-4 relative">
+                    {isRecording ? (
+                      <div className="flex-1 h-16 bg-red-500/10 border border-red-500/20 rounded-[32px] flex items-center px-8 gap-4 animate-in slide-in-from-bottom-4 duration-300">
+                        <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+                        <span className="text-sm font-black text-red-400 tabular-nums">
+                          {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                        </span>
+                        <div className="flex-1 flex items-center gap-1.5 overflow-hidden">
+                          {[...Array(12)].map((_, i) => (
+                            <div key={i} className="w-1 bg-red-500/30 rounded-full animate-bounce" style={{ height: `${Math.random() * 20 + 10}px`, animationDelay: `${i * 0.1}s`, animationDuration: '0.6s' }} />
+                          ))}
+                        </div>
+                        <button 
+                          onClick={stopRecording}
+                          className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white shadow-lg active:scale-90 transition-all"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex-1 min-h-[64px] bg-white/5 border border-white/10 rounded-[32px] flex items-center px-8 transition-all focus-within:border-emerald-500/40 focus-within:bg-white/10 shadow-2xl group">
+                         <input 
+                           type="text"
+                           value={newMessage}
+                           onChange={(e) => setNewMessage(e.target.value)}
+                           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                           placeholder="Emitir respuesta administrativa..."
+                           className="flex-1 bg-transparent border-none text-white text-sm focus:ring-0 placeholder:text-white/10 font-medium"
+                         />
+                         <button 
+                           onClick={startRecording}
+                           className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-white/40 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all border border-transparent hover:border-emerald-500/20"
+                         >
+                            <Mic size={20} />
+                         </button>
+                      </div>
+                    )}
+                    
+                    {!isRecording && (
+                      <button 
+                        onClick={sendMessage as any}
+                        disabled={(!newMessage.trim() && !audioBlob) || sending}
+                        className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-[0_20px_50px_rgba(16,185,129,0.3)] active:scale-90 transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100 group flex-shrink-0 border-[6px] border-white/5"
+                      >
+                         {sending ? <Loader2 size={28} className="animate-spin" /> : <ArrowRight size={32} className="group-hover:translate-x-1 transition-transform" />}
+                      </button>
+                    )}
                  </div>
                  <div className="mt-6 flex items-center justify-center gap-3 opacity-10 select-none">
                     <ShieldCheck size={14} className="text-emerald-500" />
@@ -410,6 +572,55 @@ function DashedEmpty({ label }: { label: string }) {
   return (
     <div className="p-8 rounded-[32px] bg-white/[0.01] border border-dashed border-white/10 flex flex-col items-center justify-center gap-4">
        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/10 italic">{label}</span>
+    </div>
+  );
+}
+
+function AudioMessage({ url, transcription }: { url: string, transcription?: string | null }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showTranscription, setShowTranscription] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) audioRef.current.pause();
+      else audioRef.current.play();
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 min-w-[200px]">
+      <div className="flex items-center gap-3">
+        <button 
+          onClick={togglePlay}
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all border border-white/5"
+        >
+          {isPlaying ? <Pause size={18} /> : <Play size={18} className="translate-x-0.5" />}
+        </button>
+        <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden relative">
+           <div className={`absolute inset-y-0 left-0 bg-white/40 transition-all duration-300 ${isPlaying ? 'w-full animate-pulse' : 'w-0'}`} />
+        </div>
+        <Music size={14} className="opacity-20" />
+      </div>
+      
+      {transcription && (
+        <div className="pt-2 border-t border-white/5 mt-1">
+          {!showTranscription ? (
+            <button 
+              onClick={() => setShowTranscription(true)}
+              className="text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors"
+            >
+              Ver transcripción
+            </button>
+          ) : (
+            <p className="text-[11px] leading-relaxed italic opacity-80 text-white animate-in fade-in duration-500">
+              "{transcription}"
+            </p>
+          )}
+        </div>
+      )}
+      <audio ref={audioRef} src={url} onEnded={() => setIsPlaying(false)} className="hidden" />
     </div>
   );
 }
