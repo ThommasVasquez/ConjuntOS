@@ -29,33 +29,32 @@ export async function GET() {
       )
     `);
 
-    // SQL strategy to get latest message per user with user details
+    // Simplified SQL to avoid CTE complexities for first test
     const res = await pool.query(`
-      WITH LatestMessages AS (
-        SELECT 
-          "usuarioId",
-          mensaje,
-          "creadoEn",
-          "esDeAdmin",
-          leido,
-          ROW_NUMBER() OVER(PARTITION BY "usuarioId" ORDER BY "creadoEn" DESC) as rn
-        FROM "ChatAdmin"
-      )
       SELECT 
-        lm.*,
+        c."usuarioId",
+        MAX(c.mensaje) as mensaje,
+        MAX(c."creadoEn") as "creadoEn",
+        BOOL_OR(c."esDeAdmin") as "esDeAdmin",
+        BOOL_AND(c.leido) as leido,
         u.nombre as "usuarioNombre",
         u.avatar as "usuarioAvatar",
         u.torre as "usuarioTorre",
         u.apto as "usuarioApto"
-      FROM LatestMessages lm
-      JOIN "Usuario" u ON lm."usuarioId" = u.id
-      WHERE lm.rn = 1
-      ORDER BY lm."creadoEn" DESC
+      FROM "ChatAdmin" c
+      JOIN "Usuario" u ON c."usuarioId" = u.id
+      GROUP BY c."usuarioId", u.nombre, u.avatar, u.torre, u.apto
+      ORDER BY MAX(c."creadoEn") DESC
     `);
 
     return NextResponse.json({ success: true, data: res.rows });
   } catch (error: any) {
     console.error("❌ [API-ADMIN-CHAT-LIST]:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message,
+      detail: error.detail || null,
+      code: error.code || "UNKNOWN"
+    }, { status: 500 });
   }
 }

@@ -40,14 +40,22 @@ export default function AdminMensajesPage() {
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
 
+  const [errorCount, setErrorCount] = useState(0);
+
   const fetchConversations = async () => {
+    if (errorCount > 3) return; // Stop polling if too many errors
     try {
       const res = await fetch("/api/admin/chat");
       const data = await res.json();
       if (data.success) {
         setConversations(data.data);
+        setErrorCount(0);
+      } else {
+        console.error("API Error Details:", data);
+        setErrorCount(prev => prev + 1);
       }
-    } catch {
+    } catch (e) {
+      setErrorCount(prev => prev + 1);
       toast.error("Error al cargar conversaciones");
     } finally {
       setLoading(false);
