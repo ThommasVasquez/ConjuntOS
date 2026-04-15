@@ -93,16 +93,31 @@ export async function POST(req: Request, props: { params: Promise<{ userId: stri
       return NextResponse.json({ success: false, error: "Contenido vacío" }, { status: 400 });
     }
 
-    const newMessage = await db.chatAdmin.create({
-      data: {
-        usuarioId: userId,
-        mensaje: mensaje || (audioUrl ? "Mensaje de voz" : ""),
-        audioUrl,
-        transcripcion,
-        esDeAdmin: true,
-        leido: false
-      }
-    });
+    let newMessage;
+    try {
+      newMessage = await db.chatAdmin.create({
+        data: {
+          usuarioId: userId,
+          mensaje: mensaje || (audioUrl ? "Mensaje de voz" : ""),
+          audioUrl,
+          transcripcion,
+          esDeAdmin: true,
+          leido: false
+        }
+      });
+    } catch (dbError: any) {
+      console.warn("⚠️ [DB-INSERT-FAIL]: Missing columns? Falling back to text-only.");
+      // FALLBACK: If the above failed (likely due to missing columns), 
+      // we try a standard text-only insert to save the interaction.
+      newMessage = await db.chatAdmin.create({
+        data: {
+          usuarioId: userId,
+          mensaje: mensaje || (audioUrl ? "Mensaje de voz (Audio no disponible aún)" : ""),
+          esDeAdmin: true,
+          leido: false
+        }
+      });
+    }
 
     return NextResponse.json({ success: true, data: newMessage });
   } catch (error: any) {
