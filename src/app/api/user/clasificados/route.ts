@@ -85,7 +85,6 @@ export async function GET() {
        return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
     }
 
-    // Try real DB first (Local model in Prisma)
     try {
       const { supabase } = await import("@/lib/db");
       const userId = session.user.id;
@@ -97,7 +96,6 @@ export async function GET() {
         .single();
 
       if (user?.conjuntoId) {
-        // We use 'Local' model for Classifieds/Entrepreneurships
         const { data } = await supabase
           .from("Local")
           .select("*, usuario:Usuario(nombre, avatar, telefono)")
@@ -106,14 +104,41 @@ export async function GET() {
           .order("creadoEn", { ascending: false });
 
         if (data && data.length > 0) {
-          return NextResponse.json({ success: true, data, source: "db" });
+          // Map DB 'Local' to UI 'Clasificado'
+          const mappedData = data.map(item => {
+            let extra = { precio: 0 };
+            try {
+               // Try to parse price from description if stored as JSON
+               if (item.descripcion?.startsWith("{")) {
+                  const parsed = JSON.parse(item.descripcion);
+                  return {
+                    ...item,
+                    titulo: item.nombre,
+                    descripcion: parsed.descripcion,
+                    precio: parsed.precio || 0,
+                    usuario_nombre: item.usuario?.nombre || "Vecino",
+                    usuario_avatar: item.usuario?.avatar,
+                    imagenUrl: item.imagenUrl
+                  };
+               }
+            } catch(e) {}
+            
+            return {
+              ...item,
+              titulo: item.nombre,
+              usuario_nombre: item.usuario?.nombre || "Vecino",
+              usuario_avatar: item.usuario?.avatar,
+              imagenUrl: item.imagenUrl,
+              precio: item.precio || 0 // If someone added it to DB manually
+            };
+          });
+          return NextResponse.json({ success: true, data: mappedData, source: "db" });
         }
       }
     } catch (err) {
       console.warn("⚠️ [CLASIFICADOS]: Database access failed, using fallback mocks.");
     }
 
-    // Fallback: Return Mock Data
     return NextResponse.json({ 
       success: true, 
       data: MOCK_CLASIFICADOS, 
@@ -122,6 +147,62 @@ export async function GET() {
 
   } catch (error: any) {
     console.error("❌ [API-CLASIFICADOS-FATAL]:", error.message);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { titulo, descripcion, precio, categoria, imagenUrl, whatsapp } = body;
+
+    const { supabase } = await import("@/lib/db");
+    const userId = session.user.id;
+
+    // Get user's context
+    const { data: user } = await supabase
+      .from("Usuario")
+      .select("conjuntoId, torre, apto")
+      .eq("id", userId)
+      .single();
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Usuario no encontrado" }, { status: 404 });
+    }
+
+    // Prepare description with metadata
+    const richDescription = JSON.stringify({
+      descripcion,
+      precio: Number(precio),
+      whatsapp: whatsapp || ""
+    });
+
+    const { data, error } = await supabase
+      .from("Local")
+      .insert({
+        conjuntoId: user.conjuntoId,
+        propietarioId: userId,
+        nombre: titulo,
+        categoria: categoria || "OTRO",
+        descripcion: richDescription,
+        imagenUrl: imagenUrl || "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&q=80&w=800",
+        whatsapp: whatsapp || user.telefono || "",
+        activo: true
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, data });
+
+  } catch (error: any) {
+    console.error("❌ [POST-CLASIFICADOS]:", error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
