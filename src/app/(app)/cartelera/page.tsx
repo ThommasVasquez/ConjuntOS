@@ -8,7 +8,7 @@
 import { 
   Megaphone, ShieldAlert, Wrench, Calendar, Info, 
   Clock, ArrowRight, X, Download, Share2, Building2,
-  Play, Users, MessageSquare, Vote, FileText
+  Play, Users, MessageSquare, Vote, FileText, MessageCircle
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
@@ -43,6 +43,7 @@ export default function CarteleraPage() {
   const [isLiveActive, setIsLiveActive] = useState(true); // Always active for simulation
   const [simulatedChat, setSimulatedChat] = useState<{user: string, msg: string, time: string}[]>([]);
   const [userMsg, setUserMsg] = useState("");
+  const [isAdminOnline, setIsAdminOnline] = useState(true); // Simulated online status
 
   useEffect(() => {
     async function initData() {
@@ -452,6 +453,28 @@ export default function CarteleraPage() {
            </div>
         </div>
       )}
+      
+      {/* FLOATING ACTION BUTTON: CHAT WITH ADMIN */}
+      <div className="fixed bottom-36 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-6 pointer-events-none z-100">
+         <div className="flex justify-end w-full">
+            <button 
+              onClick={() => toast.info("El chat administrativo estará disponible próximamente.")}
+              className="pointer-events-auto w-16 h-16 rounded-full bg-emerald-500 shadow-[0_15px_40px_rgba(16,185,129,0.3)] flex items-center justify-center text-white relative active:scale-95 hover:scale-105 transition-all group overflow-visible"
+            >
+               <MessageCircle size={28} />
+               
+               {/* Status Indicator Dot */}
+               <div className={`absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full border-4 border-[#05020a] flex items-center justify-center ${isAdminOnline ? 'bg-emerald-500' : 'bg-red-500'}`}>
+                  {isAdminOnline && <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-40" />}
+               </div>
+               
+               {/* Floating Label (Appears on Hover) */}
+               <div className="absolute right-full mr-4 bg-white/10 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-2xl opacity-0 group-hover:opacity-100 transition-all text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap pointer-events-none translate-x-4 group-hover:translate-x-0">
+                  Chat Administrativo
+               </div>
+            </button>
+         </div>
+      </div>
 
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
