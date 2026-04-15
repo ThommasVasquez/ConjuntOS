@@ -44,6 +44,7 @@ class ModelProxy {
       conjunto: "Conjunto", unidad: "Unidad", parqueadero: "Parqueadero", vehiculo: "Vehiculo",
       reserva: "Reserva", mascota: "Mascota", tramite: "Tramite", pago: "Pago", reciboPublico: "ReciboPublico",
       area: "AreaComun", areaComun: "AreaComun",
+      chatAdmin: "ChatAdmin",
       vehiculos: "Vehiculo", mascotas: "Mascota", visitas: "Visita", tramites: "Tramite", notificaciones: "Notificacion", pagos: "Pago", recibos: "ReciboPublico"
     };
 
@@ -378,9 +379,10 @@ const db: any = {
   reserva: getModel("Reserva"),
   pago: getModel("Pago"),
   reciboPublico: getModel("ReciboPublico"),
+  chatAdmin: getModel("ChatAdmin"),
   getLastError: () => globalThis.__DB_LAST_ERROR__,
 };
 
 export default db;
-export const discoverUrl = async () => SUPABASE_URL;
+export const discoverUrl = async () => process.env.DATABASE_URL || SUPABASE_URL;
 export { supabase };

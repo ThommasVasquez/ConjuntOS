@@ -49,6 +49,7 @@ export default function CarteleraPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const isInitialLoad = useRef(false);
 
   // Random Admin Status Simulation
   useEffect(() => {
@@ -107,6 +108,9 @@ export default function CarteleraPage() {
 
   useEffect(() => {
     async function initData() {
+      if (isInitialLoad.current) return;
+      isInitialLoad.current = true;
+
       try {
         const mockNotices: Notice[] = [
           {
