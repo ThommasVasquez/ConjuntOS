@@ -238,7 +238,7 @@ export default function CarteleraPage() {
       ctx.revert();
       clearInterval(chatInterval);
     };
-  }, [session, userId, showLiveSession]);
+  }, [session, userId]);
 
   const filteredNotices = selectedCategory === 'TODOS' ? notices : notices.filter((n: Notice) => n.category === selectedCategory);
 

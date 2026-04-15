@@ -75,6 +75,23 @@ export async function GET() {
       const url = await discoverUrl();
       const pool = new Pool({ connectionString: url });
       
+      // Ensure table exists (Harden)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "Anuncio" (
+          "id" TEXT PRIMARY KEY,
+          "conjuntoId" TEXT NOT NULL,
+          "titulo" TEXT NOT NULL,
+          "contenido" TEXT NOT NULL,
+          "tipo" TEXT DEFAULT 'GENERAL',
+          "imagenUrl" TEXT,
+          "archivosUrl" TEXT DEFAULT '',
+          "fijado" BOOLEAN DEFAULT false,
+          "publicadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          "expiresEn" TIMESTAMP WITH TIME ZONE,
+          "vistas" INTEGER DEFAULT 0
+        )
+      `);
+
       const res = await pool.query(`
         SELECT * FROM "Anuncio" 
         WHERE "conjuntoId" = $1 

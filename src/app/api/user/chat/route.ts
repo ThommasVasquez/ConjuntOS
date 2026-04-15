@@ -25,11 +25,24 @@ export async function GET() {
       return NextResponse.json({ success: true, data: messages });
     } catch (prismaErr) {
        console.warn("⚠️ [API-CHAT]: Prisma failed, using SQL fallback...");
-       // SQL Fallback
+       // SQL Fallback + Self-healing
        const { Pool } = await import("@neondatabase/serverless");
        const { discoverUrl } = await import("@/lib/db");
        const url = await discoverUrl();
        const pool = new Pool({ connectionString: url });
+       
+       // Ensure table exists
+       await pool.query(`
+         CREATE TABLE IF NOT EXISTS "ChatAdmin" (
+           "id" TEXT PRIMARY KEY,
+           "usuarioId" TEXT NOT NULL,
+           "mensaje" TEXT NOT NULL,
+           "esDeAdmin" BOOLEAN DEFAULT false,
+           "leido" BOOLEAN DEFAULT false,
+           "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+         )
+       `);
+
        const res = await pool.query('SELECT * FROM "ChatAdmin" WHERE "usuarioId" = $1 ORDER BY "creadoEn" ASC LIMIT 50', [userId]);
        return NextResponse.json({ success: true, data: res.rows });
     }
@@ -68,6 +81,19 @@ export async function POST(req: Request) {
        const { discoverUrl } = await import("@/lib/db");
        const url = await discoverUrl();
        const pool = new Pool({ connectionString: url });
+
+       // Ensure table exists
+       await pool.query(`
+         CREATE TABLE IF NOT EXISTS "ChatAdmin" (
+           "id" TEXT PRIMARY KEY,
+           "usuarioId" TEXT NOT NULL,
+           "mensaje" TEXT NOT NULL,
+           "esDeAdmin" BOOLEAN DEFAULT false,
+           "leido" BOOLEAN DEFAULT false,
+           "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+         )
+       `);
+
        const res = await pool.query(
          'INSERT INTO "ChatAdmin" (id, "usuarioId", mensaje, "esDeAdmin", leido, "creadoEn") VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *',
          [`chat_${Date.now()}`, userId, mensaje, false, false]
