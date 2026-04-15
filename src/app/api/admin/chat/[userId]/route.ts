@@ -29,12 +29,26 @@ export async function GET(req: Request, { params }: { params: { userId: string }
       )
     `);
 
-    const res = await pool.query('SELECT * FROM "ChatAdmin" WHERE "usuarioId" = $1 ORDER BY "creadoEn" ASC', [userId]);
+    // Fetch messages
+    const chatRes = await pool.query('SELECT * FROM "ChatAdmin" WHERE "usuarioId" = $1 ORDER BY "creadoEn" ASC', [userId]);
+
+    // Fetch resident info
+    const userRes = await pool.query('SELECT id, nombre, email, telefono, rol, torre, apto, avatar FROM "Usuario" WHERE id = $1', [userId]);
+    const vehiclesRes = await pool.query('SELECT placa, marca, modelo, color, tipo FROM "Vehiculo" WHERE "usuarioId" = $1', [userId]);
+    const petsRes = await pool.query('SELECT nombre, tipo, raza, "fotoUrl" FROM "Mascota" WHERE "usuarioId" = $1', [userId]);
 
     // Optional: Mark as read when admin opens the chat
     await pool.query('UPDATE "ChatAdmin" SET leido = true WHERE "usuarioId" = $1 AND "esDeAdmin" = false', [userId]);
 
-    return NextResponse.json({ success: true, data: res.rows });
+    return NextResponse.json({ 
+      success: true, 
+      data: chatRes.rows,
+      residentInfo: {
+        profile: userRes.rows[0] || null,
+        vehicles: vehiclesRes.rows || [],
+        pets: petsRes.rows || []
+      }
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
