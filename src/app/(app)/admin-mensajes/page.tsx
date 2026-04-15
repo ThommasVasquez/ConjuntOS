@@ -194,7 +194,9 @@ export default function AdminMensajesPage() {
                     <span className="text-[10px] text-white/30">{new Date(c.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] bg-white/5 px-2 py-0.5 rounded text-white/40 font-black uppercase tracking-tighter">T{c.usuarioTorre}-A{c.usuarioApto}</span>
+                    <span className="text-[9px] bg-white/5 px-2 py-0.5 rounded text-white/40 font-black uppercase tracking-tighter">
+                       {c.usuarioTorre ? `T${c.usuarioTorre}-A${c.usuarioApto}` : (c as any).usuarioEmail || 'Residente'}
+                    </span>
                     <p className={`text-[11px] truncate flex-1 ${!c.leido && !c.esDeAdmin ? 'text-emerald-400 font-bold' : 'text-white/40'}`}>
                       {c.esDeAdmin && "Tú: "}{c.mensaje}
                     </p>

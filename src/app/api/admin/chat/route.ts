@@ -39,11 +39,10 @@ export async function GET() {
         BOOL_AND(c.leido) as leido,
         u.nombre as "usuarioNombre",
         u.avatar as "usuarioAvatar",
-        u.torre as "usuarioTorre",
-        u.apto as "usuarioApto"
+        u.email as "usuarioEmail"
       FROM "ChatAdmin" c
       JOIN "Usuario" u ON c."usuarioId" = u.id
-      GROUP BY c."usuarioId", u.nombre, u.avatar, u.torre, u.apto
+      GROUP BY c."usuarioId", u.nombre, u.avatar, u.email
       ORDER BY MAX(c."creadoEn") DESC
     `);
 
