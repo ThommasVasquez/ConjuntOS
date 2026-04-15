@@ -144,22 +144,22 @@ export default function AdminMensajesPage() {
   );
 
   const activeConv = conversations.find(c => c.usuarioId === selectedUserId);
-
   return (
-    <div ref={containerRef} className="flex flex-col h-screen overflow-hidden isolate relative px-4 pb-20 pt-2">
-      {/* Background Orbs (Premium Design System) */}
-      <div className="fixed inset-0 pointer-events-none -z-1 overflow-hidden bg-[#05020a]">
+    <div ref={containerRef} className="flex flex-col h-screen overflow-hidden isolate relative bg-[#05020a]">
+      {/* Background Orbs (Mandatory Premium Design) */}
+      <div className="fixed inset-0 pointer-events-none -z-1">
         <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[70%] bg-emerald-500/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-15%] left-[-15%] w-[60%] h-[70%] bg-blue-500/5 blur-[120px] rounded-full" />
       </div>
 
-      <div className="flex-1 flex max-w-[1240px] mx-auto w-full gap-6 overflow-hidden relative">
+      <div className="flex-1 flex max-w-[1240px] mx-auto w-full relative h-[100dvh]">
         
-        {/* Sidebar: Conversations List */}
-        <div className={`flex flex-col liquid-glass rounded-[40px] overflow-hidden transition-all duration-500 border border-white/5 
-          ${selectedUserId ? 'hidden md:flex md:w-80' : 'flex w-full md:w-80'}`}>
-          <div className="p-8 pb-6">
-            <h1 className="text-2xl font-black tracking-tighter mb-6 bg-linear-to-r from-white to-white/60 bg-clip-text text-transparent">Mensajes</h1>
+        {/* Sidebar: Conversations List (Mobile: Full screen if no active chat) */}
+        <div className={`flex-col h-full transition-all duration-500 bg-transparent md:border-r md:border-white/5 
+          ${selectedUserId ? 'hidden md:flex md:w-96' : 'flex w-full md:w-96'}`}>
+          
+          <div className="pt-16 pb-6 px-6 md:pt-20">
+            <h1 className="text-2xl font-black tracking-tighter mb-6 text-white/90">Mensajes</h1>
             <div className="relative group">
               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
               <input 
@@ -167,37 +167,35 @@ export default function AdminMensajesPage() {
                 placeholder="Buscar residente..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm outline-none focus:bg-white/10 transition-all placeholder:text-white/10"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm outline-none focus:bg-white/10 focus:border-emerald-500/30 transition-all placeholder:text-white/10"
               />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 pt-0 space-y-2 hide-scrollbar">
+          <div className="flex-1 overflow-y-auto px-4 pb-24 space-y-1 hide-scrollbar">
             {loading ? (
               <div className="flex justify-center py-20 opacity-20"><Loader2 className="animate-spin" /></div>
             ) : filteredConversations.length === 0 ? (
                <div className="py-32 text-center opacity-20 flex flex-col items-center gap-4">
-                  <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center">
-                    <MessageCircle size={32} />
-                  </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em]">Bandeja vacía</p>
+                  <MessageCircle size={40} />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Bandeja de entrada vacía</p>
                </div>
             ) : filteredConversations.map((c) => (
               <button
                 key={c.usuarioId}
                 onClick={() => setSelectedUserId(c.usuarioId)}
-                className={`fade-in w-full p-4 rounded-3xl flex items-center gap-4 transition-all hover:bg-white/5 border 
-                  ${selectedUserId === c.usuarioId ? 'bg-emerald-500 text-white shadow-[0_20px_40px_rgba(16,185,129,0.15)] border-emerald-400/50' : 'border-transparent'}`}
+                className={`fade-in w-full p-4 rounded-[24px] flex items-center gap-4 transition-all active:scale-[0.98] border 
+                  ${selectedUserId === c.usuarioId ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/10 border-emerald-400/50' : 'bg-transparent border-transparent hover:bg-white/5'}`}
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 font-bold overflow-hidden relative shadow-inner
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 relative overflow-hidden shadow-inner
                    ${selectedUserId === c.usuarioId ? 'bg-white/20' : 'bg-white/5'}`}>
                    {c.usuarioAvatar ? <img src={c.usuarioAvatar} className="w-full h-full object-cover" alt="" /> : <User size={20} className={selectedUserId === c.usuarioId ? 'text-white' : 'text-white/20'} />}
-                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0c0c0c] rounded-full" />
+                   <div className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#05020a] rounded-full" />
                 </div>
                 <div className="flex-1 text-left min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[13px] font-bold truncate tracking-tight">{c.usuarioNombre}</span>
-                    <span className={`text-[9px] ${selectedUserId === c.usuarioId ? 'text-white/60' : 'text-white/20'}`}>
+                  <div className="flex justify-between items-center mb-0.5">
+                    <span className="text-[14px] font-bold truncate leading-none">{c.usuarioNombre}</span>
+                    <span className={`text-[9px] font-medium ${selectedUserId === c.usuarioId ? 'text-white/70' : 'text-white/30'}`}>
                       {new Date(c.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -205,6 +203,7 @@ export default function AdminMensajesPage() {
                     <p className={`text-[11px] truncate flex-1 leading-none ${!c.leido && !c.esDeAdmin ? 'text-white font-black' : (selectedUserId === c.usuarioId ? 'text-white/70' : 'text-white/30')}`}>
                       {c.esDeAdmin && "Tú: "}{c.mensaje}
                     </p>
+                    {(!c.leido && !c.esDeAdmin) && <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_white]" />}
                   </div>
                 </div>
               </button>
@@ -212,37 +211,38 @@ export default function AdminMensajesPage() {
           </div>
         </div>
 
-        {/* Main Content: Chat Window */}
-        <div className={`flex-1 flex flex-col liquid-glass rounded-[40px] overflow-hidden transition-all duration-500 border border-white/5 relative
-          ${!selectedUserId ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
+        {/* Main Content: Chat Window (Full screen on mobile if active) */}
+        <div className={`flex-1 flex flex-col bg-transparent h-full transition-all duration-500 relative
+          ${!selectedUserId ? 'hidden md:flex items-center justify-center' : 'flex w-full'}`}>
+          
           {!selectedUserId ? (
-            <div className="text-center space-y-8 max-w-sm px-10 animate-in fade-in zoom-in duration-1000">
+            <div className="text-center space-y-8 max-w-xs px-6 opacity-30 select-none animate-in fade-in zoom-in duration-1000">
                <div className="w-24 h-24 bg-white/5 rounded-[40px] flex items-center justify-center mx-auto border border-white/5 rotate-12">
-                  <Building2 size={40} className="text-white/10 -rotate-12" />
+                  <Building2 size={40} className="text-white/40 -rotate-12" />
                </div>
-               <div className="space-y-3">
-                  <h3 className="text-xl font-black tracking-tighter text-white/60">Canal Directo</h3>
-                  <p className="text-[10px] leading-relaxed uppercase tracking-[0.3em] font-black text-white/20">
-                    Selecciona un residente para iniciar la plataforma de comunicación oficial.
+               <div className="space-y-2">
+                  <h3 className="text-lg font-black tracking-tighter">Centro de Gestión</h3>
+                  <p className="text-[9px] leading-relaxed uppercase tracking-[0.25em] font-black">
+                    Selecciona un residente para iniciar la comunicación.
                   </p>
                </div>
             </div>
           ) : (
-            <>
-               {/* Chat Header */}
-               <div className="p-8 border-b border-white/5 flex items-center justify-between">
-                  <div className="flex items-center gap-5">
-                     <button onClick={() => setSelectedUserId(null)} className="p-3 -ml-4 rounded-2xl bg-white/5 hover:bg-white/10 md:hidden active:scale-90 transition-all">
-                        <ChevronLeft size={20} />
+            <div className="flex flex-col h-full w-full relative">
+               {/* Fixed Mobile/Desktop Chat Header */}
+               <div className="pt-16 pb-4 px-6 md:pt-20 border-b border-white/5 bg-[#05020a]/80 backdrop-blur-2xl z-40">
+                  <div className="flex items-center gap-4">
+                     <button onClick={() => setSelectedUserId(null)} className="p-3 -ml-4 rounded-full bg-white/5 hover:bg-white/10 md:hidden active:scale-90 transition-all">
+                        <ChevronLeft size={22} />
                      </button>
-                     <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5 font-bold overflow-hidden shadow-xl">
-                        {activeConv?.usuarioAvatar ? <img src={activeConv.usuarioAvatar} className="w-full h-full object-cover" alt="" /> : <User size={28} className="opacity-20" />}
+                     <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5 overflow-hidden">
+                        {activeConv?.usuarioAvatar ? <img src={activeConv.usuarioAvatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="opacity-20" />}
                      </div>
-                     <div>
-                        <h3 className="text-base font-black tracking-tighter">{activeConv?.usuarioNombre}</h3>
-                        <div className="flex items-center gap-2.5 mt-1">
-                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,1)]" />
-                           <span className="text-[9px] text-white/30 uppercase tracking-[0.15em] font-black">
+                     <div className="min-w-0">
+                        <h3 className="text-sm font-black tracking-tight truncate">{activeConv?.usuarioNombre}</h3>
+                        <div className="flex items-center gap-2 mt-0.5">
+                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                           <span className="text-[9px] text-white/30 uppercase tracking-[0.1em] font-black truncate">
                              Residente {activeConv?.usuarioTorre ? `• T${activeConv.usuarioTorre} A${activeConv.usuarioApto}` : (activeConv as any)?.usuarioEmail}
                            </span>
                         </div>
@@ -250,50 +250,52 @@ export default function AdminMensajesPage() {
                   </div>
                </div>
 
-               {/* Messages Area */}
-               <div className="flex-1 overflow-y-auto p-8 space-y-6 hide-scrollbar">
-                  {messages.map((m, idx) => (
-                     <div key={idx} className={`flex ${m.esDeAdmin ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
-                        <div className={`max-w-[80%] p-5 rounded-[32px] text-sm leading-relaxed shadow-lg ${
-                           m.esDeAdmin 
-                             ? 'bg-emerald-500 text-white rounded-tr-none shadow-emerald-500/10' 
-                             : 'bg-white/5 border border-white/5 text-white/90 rounded-tl-none backdrop-blur-md'
-                        }`}>
-                           {m.mensaje}
-                           <div className={`text-[8px] mt-3 font-black uppercase tracking-widest opacity-40 flex items-center gap-1.5 ${m.esDeAdmin ? 'justify-end' : 'justify-start'}`}>
-                              <Clock size={10} />
-                              {new Date(m.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              {m.esDeAdmin && <CheckCheck size={12} className="ml-1" />}
-                           </div>
-                        </div>
-                     </div>
-                  ))}
-                  <div ref={chatEndRef} />
+               {/* Messages Area (Mobile: Fills screen between header and input) */}
+               <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 hide-scrollbar">
+                  <div className="flex flex-col gap-6 pb-20">
+                    {messages.map((m, idx) => (
+                       <div key={idx} className={`flex ${m.esDeAdmin ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-400`}>
+                          <div className={`max-w-[85%] p-4 rounded-[28px] text-sm leading-relaxed shadow-lg ${
+                             m.esDeAdmin 
+                               ? 'bg-emerald-500 text-white rounded-tr-none shadow-emerald-500/10 font-medium' 
+                               : 'bg-white/5 border border-white/10 text-white/90 rounded-tl-none backdrop-blur-md'
+                          }`}>
+                             {m.mensaje}
+                             <div className={`text-[8px] mt-2 font-black uppercase tracking-widest opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-end text-white' : 'justify-start'}`}>
+                                {new Date(m.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {m.esDeAdmin && <CheckCheck size={10} className="ml-1" />}
+                             </div>
+                          </div>
+                       </div>
+                    ))}
+                    <div ref={chatEndRef} />
+                  </div>
                </div>
 
-               {/* Input Area */}
-               <div className="p-8 bg-white/5 backdrop-blur-3xl border-t border-white/5">
-                  <div className="flex items-center gap-4">
-                     <div className="flex-1 min-h-[64px] bg-white/5 border border-white/10 rounded-[32px] flex items-center px-8 focus-within:bg-white/10 transition-all">
+               {/* FIXED BOTTOM INPUT AREA (Crucial for Mobile) */}
+               <div className="absolute bottom-0 left-0 right-0 p-5 pb-24 md:pb-8 bg-linear-to-t from-[#05020a] to-transparent z-50 pointer-events-none">
+                  <div className="flex items-center gap-3 pointer-events-auto">
+                     <div className="flex-1 min-h-[58px] liquid-glass border border-white/10 rounded-[30px] flex items-center px-6 focus-within:border-emerald-500/40 transition-all focus-within:bg-white/10">
                         <textarea 
                           rows={1}
+                          autoFocus
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } }}
-                          placeholder="Responder mensaje..."
-                          className="w-full bg-transparent border-none text-[15px] text-white focus:ring-0 placeholder:text-white/10 py-5 resize-none hide-scrollbar font-medium"
+                          placeholder="Escribe tu respuesta..."
+                          className="w-full bg-transparent border-none text-[15px] text-white focus:ring-0 placeholder:text-white/20 py-4 resize-none hide-scrollbar"
                         />
                      </div>
                      <button 
                        onClick={sendMessage}
                        disabled={!newMessage.trim() || sending}
-                       className="w-16 h-16 rounded-[28px] bg-emerald-500 flex items-center justify-center text-white shadow-2xl shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-30 group"
+                       className="w-[58px] h-[58px] rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-xl shadow-emerald-500/20 active:scale-90 transition-all disabled:opacity-30 flex-shrink-0 group"
                      >
-                        {sending ? <Loader2 size={24} className="animate-spin" /> : <Send size={22} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /> }
+                        {sending ? <Loader2 size={24} className="animate-spin" /> : <Send size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" /> }
                      </button>
                   </div>
                </div>
-            </>
+            </div>
           )}
         </div>
 
