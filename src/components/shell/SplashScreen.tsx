@@ -91,8 +91,18 @@ export default function SplashScreen() {
           <path d="M88 78V110H104V58L96 58V66H88" fill="currentColor" fill-opacity="0.85"/>
           <path d="M92 82C92 80.3431 93.3431 79 95 79C96.6569 79 98 80.3431 98 82V89H92V82Z" fill="#05020a"/>
 
-          <text x="135" y="122" fill="currentColor" style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 72px; letter-spacing: -0.03em;">
-            Conjunt<tspan style="font-weight: 800;">OS</tspan><tspan dy="-34" style="font-size: 22px; font-weight: 400;">®</tspan>
+          <text 
+            x="135" 
+            y="122" 
+            fill="currentColor" 
+            style={{ 
+              fontFamily: "'Plus Jakarta Sans', sans-serif", 
+              fontWeight: 700, 
+              fontSize: "72px", 
+              letterSpacing: "-0.03em" 
+            }}
+          >
+            Conjunt<tspan style={{ fontWeight: 800 }}>OS</tspan><tspan dy="-34" style={{ fontSize: "22px", fontWeight: 400 }}>®</tspan>
           </text>
         </svg>
 
