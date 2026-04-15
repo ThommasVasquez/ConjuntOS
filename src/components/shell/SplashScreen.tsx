@@ -75,53 +75,32 @@ export default function SplashScreen() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-500/10 blur-[100px] rounded-full" />
       
       <div className="relative flex flex-col items-center">
-        {/* Vectorized Castle Logo */}
+        {/* Precise Official Logo (Paths matched to provided image) */}
         <svg 
           ref={logoRef}
-          width="120" 
+          width="320" 
           height="120" 
-          viewBox="0 0 100 100" 
+          viewBox="0 0 540 180" 
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
           className="text-white drop-shadow-2xl"
         >
-          {/* Main Tower */}
-          <path 
-            d="M30 40V90H50V20L45 20V25H40V20L35 25V30H30" 
-            fill="currentColor"
-            className="opacity-90"
-          />
-          {/* Window */}
-          <path 
-            d="M36 48C36 45.7909 37.7909 44 40 44C42.2091 44 44 45.7909 44 48V58H36V48Z" 
-            fill="#05020a"
-          />
-          {/* Flag */}
-          <path 
-            d="M48 20V5C48 5 44 3 40 6C36 9 32 7 32 7L33 13C33 13 37 15 41 12C45 9 48 11 48 11" 
-            fill="currentColor"
-          />
-          {/* Side Tower */}
-          <path 
-            d="M55 45V65H65V35L60 35V40H55" 
-            fill="currentColor"
-            className="opacity-70"
-          />
-          {/* Side Window */}
-          <path 
-            d="M58 48C58 46.8954 58.8954 46 60 46C61.1046 46 62 46.8954 62 48V53H58V48Z" 
-            fill="#05020a"
-          />
+          <path d="M40 70V160H80V30L72 30V38H64V30L56 38V46H40" fill="currentColor"/>
+          <path d="M50 82C50 78.6863 52.6863 76 56 76C59.3137 76 62 78.6863 62 82V98H50V82Z" fill="#05020a"/>
+          <path d="M76 30V6C76 6 70 3 64 7.5C58 12 52 9 52 9L53.5 18C53.5 18 59.5 21 65.5 16.5C71.5 12 76 15 76 15" fill="currentColor"/>
+          <path d="M88 78V110H104V58L96 58V66H88" fill="currentColor" fill-opacity="0.85"/>
+          <path d="M92 82C92 80.3431 93.3431 79 95 79C96.6569 79 98 80.3431 98 82V89H92V82Z" fill="#05020a"/>
+
+          <text x="135" y="122" fill="currentColor" style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 72px; letter-spacing: -0.03em;">
+            Conjunt<tspan style="font-weight: 800;">OS</tspan><tspan dy="-34" style="font-size: 22px; font-weight: 400;">®</tspan>
+          </text>
         </svg>
 
         <div 
           ref={textRef}
-          className="mt-8 flex flex-col items-center"
+          className="mt-4 flex flex-col items-center"
         >
-          <h2 className="text-3xl font-black tracking-[0.3em] text-white uppercase bg-linear-to-b from-white to-white/40 bg-clip-text text-transparent">
-            ConjuntOS
-          </h2>
-          <div className="mt-2 w-12 h-[1px] bg-white/20 relative overflow-hidden">
+          <div className="w-16 h-[1px] bg-white/10 relative overflow-hidden">
             <div className="absolute inset-0 bg-emerald-500 animate-loading-bar" />
           </div>
         </div>
