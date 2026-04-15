@@ -94,24 +94,51 @@ export default function PagosPage() {
     return () => ctx.revert();
   }, [session, userId]);
 
-  const handleSimulatePayment = () => {
+  const handleSimulatePayment = async () => {
     if (!selectedPayment) return;
     setIsProcessing(true);
     
-    // Simulación de procesamiento (Mock Wompi)
-    setTimeout(() => {
+    try {
+      // Determinar si es un Pago administrativo o un Recibo público
+      // En la DB, Pago tiene 'estado' y ReciboPublico tiene 'pagado'
+      // Pero en la interfaz Transaction del frontend, los unificamos.
+      // Aquí adivinamos el tipo o simplemente enviamos el ID.
+      // Para este demo, asumimos que son PAGO a menos que el concepto diga algo de servicios.
+      const type = selectedPayment.concepto.toLowerCase().includes('energía') || 
+                   selectedPayment.concepto.toLowerCase().includes('gas') ||
+                   selectedPayment.concepto.toLowerCase().includes('vanti') ||
+                   selectedPayment.concepto.toLowerCase().includes('enel') ? 'RECIBO' : 'PAGO';
+
+      const res = await fetch("/api/user/pagos", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: selectedPayment.id, type })
+      });
+
+      if (!res.ok) throw new Error("Error al persistir el pago en el servidor");
+
+      // Simulación de procesamiento visual (Mock Wompi)
+      await new Promise(resolve => setTimeout(resolve, 3500));
+
       setIsProcessing(false);
       setSelectedPayment(null);
+      
       toast.success("¡Pago procesado con éxito!", {
-        description: "Tu recibo ha sido generado y enviado a tu correo."
+        description: "Tu recibo ha sido generado y persistido en el sistema."
       });
+
       // Recargar datos localmente
       setData(prev => ({
         ...prev,
-        totalDebt: prev.totalDebt - selectedPayment.monto,
+        totalDebt: Math.max(0, prev.totalDebt - selectedPayment.monto),
         pagos: prev.pagos.map(p => p.id === selectedPayment.id ? { ...p, estado: 'PAGADO', fechaPago: new Date().toISOString() } : p)
       }));
-    }, 3500);
+
+    } catch (error: any) {
+      console.error("❌ Error en simulación de pago:", error);
+      toast.error(error.message || "No se pudo procesar el pago");
+      setIsProcessing(false);
+    }
   };
 
   const getStatusStyle = (status: string) => {

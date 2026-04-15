@@ -116,11 +116,36 @@ export async function GET() {
 export async function PUT(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id) {
+       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
     }
-    return NextResponse.json({ success: true, message: "Pago simulado con éxito" });
+    
+    const { id, type } = await req.json(); // id: string, type: 'PAGO' | 'RECIBO'
+    const { supabase } = await import("@/lib/db");
+    
+    if (type === 'PAGO') {
+      const { error } = await supabase
+        .from("Pago")
+        .update({ 
+          estado: 'PAGADO', 
+          fechaPago: new Date().toISOString() 
+        })
+        .eq("id", id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("ReciboPublico")
+        .update({ 
+          pagado: true, 
+          fechaPago: new Date().toISOString() 
+        })
+        .eq("id", id);
+      if (error) throw error;
+    }
+
+    return NextResponse.json({ success: true, message: "Pago simulado y persistido con éxito" });
   } catch (err: any) {
-    return NextResponse.json({ success: false, message: "Error en simulación" });
+    console.error("❌ [API-PAGOS-PUT-ERROR]:", err.message);
+    return NextResponse.json({ success: false, message: "Error en la persistencia del pago", error: err.message }, { status: 500 });
   }
 }
