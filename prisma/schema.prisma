@@ -198,6 +198,7 @@ model Usuario {
   tramitesSolicitados  Tramite[] @relation("UsuarioSolicitante")
   tramitesAprobados    Tramite[] @relation("UsuarioAprobador")
   notificaciones       Notificacion[]
+  chatsAdmin           ChatAdmin[]
 }
 
 model Notificacion {
