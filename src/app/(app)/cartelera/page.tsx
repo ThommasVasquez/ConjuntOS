@@ -208,12 +208,12 @@ export default function CarteleraPage() {
       {/* LIVE SESSION BANNER (Simulated) */}
       {isLiveActive && (
         <section className="fade-up w-full">
-           <div className="liquid-glass-card rounded-[32px] p-6 border border-red-500/20 bg-linear-to-br from-red-500/5 to-transparent relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl group-hover:bg-red-500/20 transition-all duration-700" />
+           <div className="liquid-glass-card rounded-[32px] p-6 border border-emerald-500/20 bg-linear-to-br from-emerald-500/5 to-transparent relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-700" />
               
               <div className="flex justify-between items-center mb-4">
                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">
                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> EN VIVO
                     </div>
                     <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Asamblea General 2024</span>
@@ -231,7 +231,7 @@ export default function CarteleraPage() {
 
               <button 
                 onClick={() => setShowLiveSession(true)}
-                className="w-full bg-red-500 py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-bold text-white shadow-xl shadow-red-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+                className="w-full bg-emerald-500 py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-bold text-white shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
                  <Play size={18} fill="currentColor" /> Unirse a la Sesión
               </button>
@@ -299,7 +299,7 @@ export default function CarteleraPage() {
            {/* Header Sesión */}
            <div className="p-6 flex justify-between items-center border-b border-white/10 bg-linear-to-b from-black/80 to-transparent fixed top-0 w-full max-w-[430px] z-10">
               <div className="flex items-center gap-3">
-                 <div className="px-2 py-0.5 rounded bg-red-500 text-[8px] font-black text-white uppercase tracking-tighter">LIVE</div>
+                 <div className="px-2 py-0.5 rounded bg-emerald-500 text-[8px] font-black text-white uppercase tracking-tighter">LIVE</div>
                  <h3 className="text-sm font-bold text-white tracking-tight">Asamblea General</h3>
               </div>
               <button 
