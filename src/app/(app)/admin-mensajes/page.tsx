@@ -433,7 +433,3 @@ export default function AdminMensajesPage() {
     </div>
   );
 }
-/>
-    </div>
-  );
-}
