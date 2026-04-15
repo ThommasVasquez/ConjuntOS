@@ -584,11 +584,7 @@ function ProfileContent() {
           <h1 className="text-4xl font-display font-bold tracking-tight text-white mb-1 drop-shadow-2xl">{userData.name}</h1>
           <p className="text-lg text-white/60 font-light capitalize tracking-wide mb-4">{userRole.toLowerCase()}</p>
           
-          {/* USER STATUS STICKER (Restored Stage 64) */}
-          <div className="px-4 py-2 rounded-2xl liquid-glass border border-white/10 flex items-center gap-3 shadow-2xl animate-in fade-in zoom-in duration-700">
-             <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_10px_rgba(217,70,239,0.8)]" />
-             <span className="text-xs font-medium text-white/80 italic tracking-tight">&quot;{userData.bio}&quot;</span>
-          </div>
+          {/* STATUS STICKER REMOVED AS REQUESTED */}
         </section>
 
         {/* PILLS */}
@@ -1048,36 +1044,24 @@ function ProfileContent() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold ml-1">Mi Estado (Sticker)</label>
-                    <textarea 
-                      value={editForm.bio}
-                      onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
-                      placeholder="Escribe algo sobre ti..."
-                      className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] p-5 text-white focus:outline-none focus:border-accent/40 focus:bg-white/[0.05] transition-all min-h-[100px] resize-none"
-                    />
-                  </div>
-
-                 <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                      <label className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold ml-1">Torre</label>
-                      <input 
-                        type="text" 
-                        value={editForm.torre}
-                        onChange={(e) => setEditForm({...editForm, torre: e.target.value})}
-                        className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] p-5 text-white focus:outline-none focus:border-accent/40 focus:bg-white/[0.05] transition-all"
-                      />
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold ml-1">Apto</label>
-                      <input 
-                        type="text" 
-                        value={editForm.apto}
-                        onChange={(e) => setEditForm({...editForm, apto: e.target.value})}
-                        className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] p-5 text-white focus:outline-none focus:border-accent/40 focus:bg-white/[0.05] transition-all"
-                      />
-                   </div>
-                 </div>
+                    <div className="space-y-2 opacity-50">
+                       <label className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold ml-1">Torre</label>
+                       <input 
+                         type="text" 
+                         value={editForm.torre}
+                         disabled
+                         className="w-full bg-white/[0.01] border border-white/5 rounded-[24px] p-5 text-white/40 cursor-not-allowed transition-all"
+                       />
+                    </div>
+                    <div className="space-y-2 opacity-50">
+                       <label className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold ml-1">Apto</label>
+                       <input 
+                         type="text" 
+                         value={editForm.apto}
+                         disabled
+                         className="w-full bg-white/[0.01] border border-white/5 rounded-[24px] p-5 text-white/40 cursor-not-allowed transition-all"
+                       />
+                    </div>
 
                  <div className="space-y-2">
                     <label className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold ml-1">Teléfono Móvil</label>
