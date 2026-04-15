@@ -991,7 +991,7 @@ function ProfileContent() {
 
       {/* EDIT MODAL - LIQUID GLASS VERSION (Transparency Restored) */}
       {showEditModal && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 animate-in fade-in duration-300 pointer-events-auto">
+        <div className="fixed inset-0 z-[10000] flex items-end justify-center p-0 animate-in fade-in duration-300 pointer-events-auto isolate">
            {/* Backdrop con Blur 3XL */}
            <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" onClick={() => setShowEditModal(false)} />
            
@@ -1101,7 +1101,7 @@ function ProfileContent() {
 
       {/* ASSET REGISTRATION MODAL - Stage 36 (Multi-file & Coexistence Rules) */}
       {showRegModal && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 animate-in fade-in duration-300 pointer-events-auto overflow-hidden">
+        <div className="fixed inset-0 z-[10000] flex items-end justify-center p-0 animate-in fade-in duration-300 pointer-events-auto overflow-hidden isolate">
            <div className="absolute inset-0 bg-black/60 backdrop-blur-2xl" onClick={() => setShowRegModal(false)} />
            
            <div className="w-full max-w-[430px] liquid-glass rounded-t-[48px] p-8 pb-12 border-t border-white/10 shadow-[0_-20px_80px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 overflow-y-auto max-h-[92vh] relative z-10 scrollbar-hide">

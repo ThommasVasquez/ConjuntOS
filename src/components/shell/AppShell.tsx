@@ -26,7 +26,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* Contenido principal con padding safe area top and bottom */}
       <main 
         ref={containerRef}
-        className="flex-1 overflow-y-auto page-content text-text mb-[80px] relative z-10" 
+        className="flex-1 overflow-y-auto page-content text-text mb-[80px] relative" 
       >
         {children}
       </main>

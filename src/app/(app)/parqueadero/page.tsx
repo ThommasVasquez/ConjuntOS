@@ -259,7 +259,7 @@ export default function ParqueaderoPage() {
 
       {/* MODAL HISTORIAL DE ACCESOS */}
       {showHistorialModal && (
-        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center animate-in fade-in duration-300 pointer-events-auto">
+        <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center animate-in fade-in duration-300 pointer-events-auto isolate">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl" onClick={() => setShowHistorialModal(false)} />
           <div className="liquid-glass rounded-t-[48px] sm:rounded-[48px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-[0_-20px_100px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-full duration-500 overflow-hidden flex flex-col max-h-[92vh]">
             <div className="flex justify-between items-center mb-8 shrink-0">
@@ -310,7 +310,7 @@ export default function ParqueaderoPage() {
 
       {/* MODAL REGLAMENTO COMPLETO */}
       {showReglamentoModal && (
-        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center animate-in fade-in duration-300 pointer-events-auto">
+        <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center animate-in fade-in duration-300 pointer-events-auto isolate">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl" onClick={() => setShowReglamentoModal(false)} />
           <div className="w-full max-w-[430px] liquid-glass rounded-t-[48px] sm:rounded-[52px] h-[92vh] sm:h-[85vh] p-8 pb-12 flex flex-col border-t sm:border border-white/10 shadow-[0_-20px_100px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 relative z-10 overflow-hidden">
             
@@ -389,7 +389,7 @@ export default function ParqueaderoPage() {
 
       {/* MODAL NUEVO VEHICULO (Restaurado) */}
       {showVehiculoModal && (
-        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center px-0 sm:px-4 pb-0 sm:pb-20 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center px-0 sm:px-4 pb-0 sm:pb-20 animate-in fade-in duration-300 isolate">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowVehiculoModal(false)} />
           <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-6 pb-12 sm:pb-6 relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-300">
             <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">

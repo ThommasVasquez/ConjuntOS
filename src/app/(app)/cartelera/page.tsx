@@ -274,7 +274,7 @@ export default function CarteleraPage() {
 
       {/* MODAL: LIVE ASSEMBLY SIMULATION */}
       {showLiveSession && (
-        <div className="fixed inset-0 z-200 bg-black flex flex-col animate-in fade-in duration-500 overflow-hidden items-center">
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col animate-in fade-in duration-500 overflow-hidden items-center isolate">
            {/* Header Sesión */}
            <div className="p-6 flex justify-between items-center border-b border-white/10 bg-linear-to-b from-black/80 to-transparent fixed top-0 w-full max-w-[430px] z-10">
               <div className="flex items-center gap-3">
@@ -363,7 +363,7 @@ export default function CarteleraPage() {
 
       {/* MODAL: NOTICE DETAIL */}
       {selectedNotice && (
-        <div className="fixed inset-0 z-200 flex items-end sm:items-center justify-center animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center animate-in fade-in duration-300 isolate">
            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedNotice(null)} />
            <div className="relative w-full max-w-[430px] bg-[#0d041a] rounded-t-[40px] sm:rounded-[40px] border-t sm:border border-white/20 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-400">
               <div className="max-h-[85vh] overflow-y-auto hide-scrollbar">
