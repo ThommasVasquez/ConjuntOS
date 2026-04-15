@@ -107,7 +107,7 @@ export default function AdminMensajesPage() {
 
   useEffect(() => {
     fetchConversations();
-    const interval = setInterval(fetchConversations, 10000); // Polling conversations
+    const interval = setInterval(fetchConversations, 12000); // Polling conversations (Increased interval)
     return () => clearInterval(interval);
   }, []);
 
@@ -115,7 +115,7 @@ export default function AdminMensajesPage() {
     let interval: any;
     if (selectedUserId) {
       fetchChatHistory(selectedUserId);
-      interval = setInterval(() => fetchChatHistory(selectedUserId), 5000); // Polling active chat
+      interval = setInterval(() => fetchChatHistory(selectedUserId), 8000); // Polling active chat (Optimized)
     }
     return () => clearInterval(interval);
   }, [selectedUserId]);
@@ -124,13 +124,15 @@ export default function AdminMensajesPage() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Animations
+  // Animations (Optimized to run only on meaningful changes)
+  const animTrigger = useRef(false);
   useEffect(() => {
-    if (conversations.length === 0) return;
+    if (conversations.length === 0 || animTrigger.current) return;
     const ctx = gsap.context(() => {
       const targets = gsap.utils.toArray(".fade-in");
       if (targets.length > 0) {
-        gsap.fromTo(targets, { opacity: 0, y: 10 }, { opacity: 1, y: 0, stagger: 0.05, duration: 0.4 });
+        gsap.fromTo(targets, { opacity: 0, y: 10 }, { opacity: 1, y: 0, stagger: 0.04, duration: 0.4, ease: "power2.out" });
+        animTrigger.current = true; // Only animate list once per session/reset
       }
     }, containerRef);
     return () => ctx.revert();
