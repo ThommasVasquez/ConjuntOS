@@ -4,12 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DollarSign, Building2, Home, ListMusic, Map, Package, Phone, User, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 
+// BUILD_REVISION: 1.2.0 - MANDATORY ICON: Building2 (Buildings)
 export default function BottomNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const role = (session?.user as { role?: string })?.role;
   
+  useEffect(() => {
+    console.log("🚀 [ConjuntOS] Navigation v1.2.0 - Buildings Active");
+  }, []);
+
   // Custom icons mapping based on the role
   let tabs = [];
   

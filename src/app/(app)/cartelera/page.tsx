@@ -274,12 +274,12 @@ export default function CarteleraPage() {
 
       {/* MODAL: LIVE ASSEMBLY SIMULATION */}
       {showLiveSession && (
-        <div className="fixed inset-0 z-200 bg-black flex flex-col animate-in fade-in duration-500 overflow-hidden">
+        <div className="fixed inset-0 z-200 bg-black flex flex-col animate-in fade-in duration-500 overflow-hidden items-center">
            {/* Header Sesión */}
-           <div className="p-6 flex justify-between items-center border-b border-white/10 bg-linear-to-b from-black/80 to-transparent fixed top-0 w-full z-10">
+           <div className="p-6 flex justify-between items-center border-b border-white/10 bg-linear-to-b from-black/80 to-transparent fixed top-0 w-full max-w-[430px] z-10">
               <div className="flex items-center gap-3">
                  <div className="px-2 py-0.5 rounded bg-red-500 text-[8px] font-black text-white uppercase tracking-tighter">LIVE</div>
-                 <h3 className="text-sm font-bold text-white tracking-tight">Asamblea General - ConjuntOS</h3>
+                 <h3 className="text-sm font-bold text-white tracking-tight">Asamblea General</h3>
               </div>
               <button 
                 onClick={() => setShowLiveSession(false)}
@@ -290,7 +290,7 @@ export default function CarteleraPage() {
            </div>
 
            {/* Video Mockup (Cinematric Gradient Animation) */}
-           <div className="flex-1 relative flex items-center justify-center bg-[#050110]">
+           <div className="flex-1 w-full max-w-[430px] relative flex items-center justify-center bg-[#050110]">
               <div className="absolute inset-0 bg-linear-to-br from-indigo-900/40 via-purple-900/40 to-black/80 animate-pulse" />
               <div className="relative z-10 flex flex-col items-center gap-6 p-8 text-center max-w-sm">
                  <div className="w-24 h-24 rounded-full bg-accent/20 flex items-center justify-center text-accent ring-4 ring-accent/20 animate-bounce">
@@ -322,7 +322,7 @@ export default function CarteleraPage() {
            </div>
 
            {/* Live Chat Overlay (Simulated) */}
-           <div className="h-[35vh] bg-black/40 backdrop-blur-3xl border-t border-white/10 flex flex-col">
+           <div className="h-[35vh] bg-black/40 backdrop-blur-3xl border-t border-white/10 flex flex-col w-full max-w-[430px]">
               <div className="px-6 py-3 border-b border-white/5 flex items-center justify-between">
                  <span className="text-[10px] text-white/30 uppercase font-black tracking-widest">Participación en Vivo</span>
                  <span className="text-[10px] text-emerald-400/60 font-mono">Chat Activado</span>
@@ -357,6 +357,77 @@ export default function CarteleraPage() {
                  />
                  <button type="submit" className="px-6 bg-accent rounded-xl text-[10px] font-black text-white uppercase tracking-widest active:scale-95 transition-all">Enviar</button>
               </form>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL: NOTICE DETAIL */}
+      {selectedNotice && (
+        <div className="fixed inset-0 z-200 flex items-end sm:items-center justify-center animate-in fade-in duration-300">
+           <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedNotice(null)} />
+           <div className="relative w-full max-w-[430px] bg-[#0d041a] rounded-t-[40px] sm:rounded-[40px] border-t sm:border border-white/20 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-400">
+              <div className="max-h-[85vh] overflow-y-auto hide-scrollbar">
+                 {selectedNotice.image && (
+                   <div className="h-56 w-full relative">
+                      <Image src={selectedNotice.image} alt="" fill className="w-full h-full object-cover" unoptimized />
+                      <div className="absolute inset-0 bg-linear-to-t from-[#0d041a] to-transparent" />
+                      <button onClick={() => setSelectedNotice(null)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white"><X size={20} /></button>
+                   </div>
+                 )}
+                 <div className="p-8 flex flex-col gap-6">
+                    {!selectedNotice.image && <div className="flex justify-end"><button onClick={() => setSelectedNotice(null)} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40"><X size={20} /></button></div>}
+                    <div className="flex flex-col gap-3">
+                       <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center text-white">{getNoticeIcon(selectedNotice.category)}</div>
+                          <div>
+                             <span className="text-[10px] text-accent font-bold uppercase tracking-widest">{selectedNotice.category}</span>
+                             <h2 className="text-2xl font-display font-bold text-white tracking-tight leading-none mt-1">{selectedNotice.title}</h2>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-4 text-white/30 text-[10px] font-bold uppercase tracking-widest mt-2">
+                          <div className="flex items-center gap-1.5"><Clock size={12} /> {selectedNotice.date}</div>
+                          <div className="flex items-center gap-1.5"><Megaphone size={12} /> {selectedNotice.author}</div>
+                       </div>
+                    </div>
+                    <p className="text-white/70 text-base leading-relaxed">{selectedNotice.content}</p>
+                    <div className="flex flex-col gap-4 pt-6 border-t border-white/10">
+                       <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
+                       <button 
+                         onClick={() => {
+                            toast.loading("Generando descarga...");
+                            setTimeout(() => toast.success("Documento descargado con éxito"), 2000);
+                         }}
+                         className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between hover:bg-white/10 transition-all text-left group"
+                       >
+                          <div className="flex items-center gap-3">
+                             <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400"><ShieldAlert size={18} /></div>
+                             <div>
+                                <p className="text-white text-sm font-bold">Circular_Informativa.pdf</p>
+                                <p className="text-white/20 text-[10px] uppercase font-bold tracking-tighter">PDF • 1.2 MB</p>
+                             </div>
+                          </div>
+                          <Download size={18} className="text-white/40 group-hover:text-accent transition-all" />
+                       </button>
+                    </div>
+                    <button 
+                      onClick={() => {
+                         if (navigator.share) {
+                           navigator.share({
+                             title: selectedNotice.title,
+                             text: selectedNotice.content,
+                             url: window.location.href,
+                           }).catch(() => toast.info("Link copiado al portapapeles"));
+                         } else {
+                           navigator.clipboard.writeText(window.location.href);
+                           toast.success("Link copiado al portapapeles");
+                         }
+                      }}
+                      className="w-full bg-accent py-4 rounded-2xl font-bold text-white shadow-xl shadow-accent/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                    >
+                      <Share2 size={18} /> Compartir
+                    </button>
+                 </div>
+              </div>
            </div>
         </div>
       )}

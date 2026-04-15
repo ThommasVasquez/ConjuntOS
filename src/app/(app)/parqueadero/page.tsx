@@ -261,7 +261,7 @@ export default function ParqueaderoPage() {
       {showHistorialModal && (
         <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center animate-in fade-in duration-300 pointer-events-auto">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl" onClick={() => setShowHistorialModal(false)} />
-          <div className="liquid-glass rounded-t-[48px] sm:rounded-[48px] w-full max-w-[480px] p-8 pb-12 sm:pb-8 relative z-10 shadow-[0_-20px_100px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-full duration-500 overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="liquid-glass rounded-t-[48px] sm:rounded-[48px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-[0_-20px_100px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-full duration-500 overflow-hidden flex flex-col max-h-[92vh]">
             <div className="flex justify-between items-center mb-8 shrink-0">
                <div>
                    <h3 className="text-2xl font-display font-bold text-white tracking-tight">Historial de Accesos</h3>
@@ -312,7 +312,7 @@ export default function ParqueaderoPage() {
       {showReglamentoModal && (
         <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center animate-in fade-in duration-300 pointer-events-auto">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl" onClick={() => setShowReglamentoModal(false)} />
-          <div className="w-full max-w-[520px] liquid-glass rounded-t-[48px] sm:rounded-[52px] h-[92vh] sm:h-[85vh] p-8 pb-12 flex flex-col border-t sm:border border-white/10 shadow-[0_-20px_100px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 relative z-10 overflow-hidden">
+          <div className="w-full max-w-[430px] liquid-glass rounded-t-[48px] sm:rounded-[52px] h-[92vh] sm:h-[85vh] p-8 pb-12 flex flex-col border-t sm:border border-white/10 shadow-[0_-20px_100px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 relative z-10 overflow-hidden">
             
             <div className="flex justify-between items-center mb-8 shrink-0">
                <div className="flex flex-col">
