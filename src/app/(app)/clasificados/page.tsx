@@ -76,8 +76,8 @@ export default function ClasificadosPage() {
 
   const filteredItems = items.filter(item => {
     const matchesCat = selectedCat === 'TODOS' || item.categoria === selectedCat;
-    const matchesSearch = item.titulo.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         item.descripcion.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (item.titulo || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         (item.descripcion || "").toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCat && matchesSearch;
   });
 

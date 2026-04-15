@@ -27,7 +27,7 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 
 interface Inmueble {
   id: string;
-  titulon: string;
+  titulo: string;
   descripcion: string;
   precio: number;
   tipoNegocio: "VENTA" | "ALQUILER";
@@ -96,8 +96,8 @@ export default function InmobiliariaPage() {
   }, [isLoading, inmuebles]);
 
   const filteredInmuebles = inmuebles.filter(inv => 
-    inv.titulon.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    inv.descripcion.toLowerCase().includes(searchQuery.toLowerCase())
+    (inv.titulo || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (inv.descripcion || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -247,7 +247,7 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
       <div className="relative h-44 overflow-hidden">
         <Image
           src={mainImage}
-          alt={item.titulon}
+          alt={item.titulo}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-700"
           unoptimized
@@ -272,7 +272,7 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
 
       <div className="p-4 flex-1 flex flex-col gap-3">
         <h3 className="text-sm font-bold text-white leading-snug line-clamp-2">
-          {item.titulon}
+          {item.titulo}
         </h3>
         <div className="flex flex-wrap gap-1.5">
           {isParking ? (
@@ -403,13 +403,13 @@ function PropertyDetailSimulation({ item, onClose }: { item: Inmueble, onClose: 
           <>
             <div className="flex-1 overflow-y-auto hide-scrollbar">
               <div className="relative h-[45vh] w-full">
-                <Image src={mainImage} alt={item.titulon} fill className="object-cover" unoptimized />
+                <Image src={mainImage} alt={item.titulo} fill className="object-cover" unoptimized />
                 <div className="absolute inset-0 bg-linear-to-t from-[#05020e] via-transparent to-transparent" />
                 <div className="absolute bottom-6 left-6">
                    <span className="px-3 py-1 rounded-full bg-accent text-primary text-[10px] font-black uppercase tracking-tight mb-2 inline-block">
                      {item.tipoNegocio}
                    </span>
-                   <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-md">{item.titulon}</h1>
+                   <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-md">{item.titulo}</h1>
                 </div>
               </div>
 
@@ -571,7 +571,7 @@ function PropertyDetailSimulation({ item, onClose }: { item: Inmueble, onClose: 
              <div className="w-full p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3">
                 <div className="flex justify-between text-sm">
                    <span className="text-white/40">Unidad:</span>
-                   <span className="text-white font-bold">{item.titulon}</span>
+                   <span className="text-white font-bold">{item.titulo}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                    <span className="text-white/40">Contrato No:</span>
@@ -594,7 +594,7 @@ function PropertyDetailSimulation({ item, onClose }: { item: Inmueble, onClose: 
 function PostingForm({ onSuccess }: { onSuccess: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    titulon: "",
+    titulo: "",
     descripcion: "",
     precio: "",
     tipoNegocio: "ALQUILER",
@@ -654,8 +654,8 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
               required
               className="w-full h-14 rounded-2xl bg-white/5 border border-white/10 px-4 focus:border-accent outline-none transition-all"
               placeholder="Ej: Apartamento remodelado Torre 2"
-              value={formData.titulon}
-              onChange={e => setFormData({...formData, titulon: e.target.value})}
+              value={formData.titulo}
+              onChange={e => setFormData({...formData, titulo: e.target.value})}
             />
           </div>
 
@@ -736,7 +736,7 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
 const DUMMY_DATA:Inmueble[] = [
   {
     id: "1",
-    titulon: "Bello Apartamento con Vista Panoramica",
+    titulo: "Bello Apartamento con Vista Panoramica",
     descripcion: "Apartamento moderno con excelente iluminacion, 3 alcobas y balcon.",
     precio: 450000000,
     tipoNegocio: "VENTA",
@@ -752,7 +752,7 @@ const DUMMY_DATA:Inmueble[] = [
    },
   {
     id: "2",
-    titulon: "Apartamento Familiar Enlo",
+    titulo: "Apartamento Familiar Enlo",
     descripcion: "Spacioso apartamento ideal para familia, cerca a zonas verdes.",
     precio: 370000000,
     tipoNegocio: "VENTA",
@@ -768,7 +768,7 @@ const DUMMY_DATA:Inmueble[] = [
   },
   {
     id: "3",
-    titulon: "Alquiler de PARQUEADERO exclusivo",
+    titulo: "Alquiler de PARQUEADERO exclusivo",
     descripcion: "Parqueadero cubierto, vigilancia 24h, facil acceso",
     precio: 150000,
     tipoNegocio: "ALQUILER",
