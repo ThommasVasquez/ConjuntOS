@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { 
   Car, Bike, Plus, Info, ChevronRight, 
   MapPin, ShieldCheck, Clock, ArrowRight,
-  Settings, X
+  Settings, X, Search, FileText, LayoutDashboard,
+  CheckCircle2
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
@@ -40,6 +41,8 @@ export default function ParqueaderoPage() {
   const [showVehiculoModal, setShowVehiculoModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [vehiculoForm, setVehiculoForm] = useState({ placa: '', marca: '', modelo: '', color: '', tipo: 'AUTOMOVIL' });
+  const [showHistorialModal, setShowHistorialModal] = useState(false);
+  const [showReglamentoModal, setShowReglamentoModal] = useState(false);
 
   const submitVehiculo = async () => {
      if(!vehiculoForm.placa || !vehiculoForm.marca) {
@@ -197,11 +200,12 @@ export default function ParqueaderoPage() {
           </button>
 
           {[
-            { icon: Clock, title: "Historial de Accesos", sub: "Ver registros de entrada y salida", color: "text-blue-400" },
-            { icon: Settings, title: "Configuración", sub: "Preferencias de notificaciones y tags", color: "text-purple-400" }
+            { icon: Clock, title: "Historial de Accesos", sub: "Ver registros de entrada y salida", color: "text-blue-400", action: () => setShowHistorialModal(true) },
+            { icon: FileText, title: "Reglamento Completo", sub: "Normas y sanciones de parqueo", color: "text-purple-400", action: () => setShowReglamentoModal(true) }
           ].map((item, idx) => (
             <button 
               key={idx}
+              onClick={item.action}
               className="w-full liquid-glass-card rounded-3xl p-4 border border-white/5 flex items-center gap-4 hover:bg-white/10 transition-all active:scale-[0.99] group overflow-hidden"
             >
               <div className={`p-3 rounded-2xl bg-white/5 border border-white/10 ${item.color} group-hover:scale-110 transition-transform`}>
@@ -253,7 +257,137 @@ export default function ParqueaderoPage() {
         </button>
       </section>
 
-      {/* MODAL NUEVO VEHICULO */}
+      {/* MODAL HISTORIAL DE ACCESOS */}
+      {showHistorialModal && (
+        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center animate-in fade-in duration-300 pointer-events-auto">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl" onClick={() => setShowHistorialModal(false)} />
+          <div className="liquid-glass rounded-t-[48px] sm:rounded-[48px] w-full max-w-[480px] p-8 pb-12 sm:pb-8 relative z-10 shadow-[0_-20px_100px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-full duration-500 overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="flex justify-between items-center mb-8 shrink-0">
+               <div>
+                   <h3 className="text-2xl font-display font-bold text-white tracking-tight">Historial de Accesos</h3>
+                   <p className="text-[11px] text-blue-400 uppercase tracking-widest font-black mt-1">Registros Recientes</p>
+               </div>
+               <button onClick={() => setShowHistorialModal(false)} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all">
+                  <X size={20} />
+               </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+               {[
+                 { tipo: "ENTRADA", placa: "SQL-404", fecha: "Hoy, 08:24 AM", punto: "Portería Principal", color: "emerald" },
+                 { tipo: "SALIDA", placa: "SQL-404", fecha: "Ayer, 06:15 PM", punto: "Portería Principal", color: "rose" },
+                 { tipo: "ENTRADA", placa: "SQL-404", fecha: "20 May, 07:11 AM", punto: "Portería Principal", color: "emerald" },
+                 { tipo: "SALIDA", placa: "SQL-404", fecha: "19 May, 05:45 PM", punto: "Portería Sótano", color: "rose" },
+                 { tipo: "ENTRADA", placa: "SQL-404", fecha: "19 May, 08:02 AM", punto: "Portería Principal", color: "emerald" },
+                 { tipo: "SALIDA", placa: "SQL-404", fecha: "18 May, 06:30 PM", punto: "Portería Principal", color: "rose" },
+               ].map((log, i) => (
+                 <div key={i} className="liquid-glass-card rounded-3xl p-5 border border-white/5 flex justify-between items-center bg-white/[0.01] hover:bg-white/[0.04] transition-colors">
+                    <div className="flex items-center gap-5">
+                       <div className={`w-12 h-12 rounded-2xl bg-${log.color}-500/10 border border-${log.color}-500/20 flex flex-col items-center justify-center text-${log.color}-400`}>
+                          <Clock size={16} className="mb-0.5" />
+                          <span className="text-[7px] font-black tracking-tighter uppercase">{log.tipo}</span>
+                       </div>
+                       <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white">{log.placa}</span>
+                          <span className="text-[10px] text-white/30 uppercase tracking-tighter">{log.punto}</span>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <span className="text-[10px] text-white/60 font-medium block mb-1">{log.fecha}</span>
+                       <div className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest bg-${log.color}-500/20 text-${log.color}-400 inline-block`}>Validado</div>
+                    </div>
+                 </div>
+               ))}
+            </div>
+
+            <div className="mt-8 p-4 rounded-3xl bg-blue-500/5 border border-blue-500/10 flex gap-3 items-center shrink-0">
+               <Info size={16} className="text-blue-400" />
+               <p className="text-[10px] text-white/40 leading-relaxed uppercase tracking-tighter font-black">Registros generados automáticamente por el sistema de reconocimiento de placas.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL REGLAMENTO COMPLETO */}
+      {showReglamentoModal && (
+        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center animate-in fade-in duration-300 pointer-events-auto">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl" onClick={() => setShowReglamentoModal(false)} />
+          <div className="w-full max-w-[520px] liquid-glass rounded-t-[48px] sm:rounded-[52px] h-[92vh] sm:h-[85vh] p-8 pb-12 flex flex-col border-t sm:border border-white/10 shadow-[0_-20px_100px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 relative z-10 overflow-hidden">
+            
+            <div className="flex justify-between items-center mb-8 shrink-0">
+               <div className="flex flex-col">
+                  <h3 className="text-2xl font-display font-bold text-white tracking-tight">Reglamento Oficial</h3>
+                  <p className="text-[11px] text-purple-400 uppercase tracking-[0.2em] mt-1 font-black">Normas de Parqueo y Movilidad v2.1</p>
+               </div>
+               <button onClick={() => setShowReglamentoModal(false)} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:bg-white/10 transition-colors">
+                  <X size={20} />
+               </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2 space-y-8 scrollbar-hide text-white/90">
+               <section className="space-y-4 pb-4 border-b border-white/5">
+                  <h4 className="text-sm font-black text-white/40 uppercase tracking-[0.15em] flex items-center gap-2">
+                     <div className="w-1.5 h-1.5 rounded-full bg-purple-500" /> I. Disposiciones Generales
+                  </h4>
+                  <p className="text-sm leading-relaxed font-light">
+                     El uso de las zonas de parqueo está restringido exclusivamente a los vehículos registrados y vinculados a las unidades residenciales. Queda prohibido el estacionamiento de vehículos no autorizados en celdas privadas.
+                  </p>
+               </section>
+
+               <section className="space-y-4 pb-4 border-b border-white/5">
+                  <h4 className="text-sm font-black text-white/40 uppercase tracking-[0.15em] flex items-center gap-2">
+                     <div className="w-1.5 h-1.5 rounded-full bg-purple-500" /> II. Velocidad y Seguridad
+                  </h4>
+                  <ul className="space-y-3">
+                     {[
+                       "Velocidad máxima de 10 km/h en todos los sótanos y áreas comunes.",
+                       "Uso obligatorio de luces bajas en todo momento dentro del parqueadero.",
+                       "Respetar las señales de 'Pare' y los sentidos de circulación vial.",
+                       "Los menores de edad no podrán conducir vehículos dentro del conjunto."
+                     ].map((item, i) => (
+                       <li key={i} className="text-sm font-light flex gap-3">
+                          <span className="text-purple-400 font-bold shrink-0">•</span>
+                          {item}
+                       </li>
+                     ))}
+                  </ul>
+               </section>
+
+               <section className="space-y-4 pb-4 border-b border-white/5">
+                  <h4 className="text-sm font-black text-white/40 uppercase tracking-[0.15em] flex items-center gap-2">
+                     <div className="w-1.5 h-1.5 rounded-full bg-purple-500" /> III. Parqueo de Visitantes
+                  </h4>
+                  <p className="text-sm leading-relaxed font-light">
+                     Los visitantes tienen derecho a un máximo de 12 horas continuas de parqueo gratuito. A partir de la hora 13, se aplicará el cobro de la tarifa vigente establecida por la asamblea.
+                  </p>
+                  <p className="text-[11px] text-yellow-500/80 font-bold bg-yellow-500/5 p-3 rounded-2xl border border-yellow-500/10 italic">
+                     * El mal uso de las celdas de visitantes (parqueo recurrente) será causal de sanción administrativa.
+                  </p>
+               </section>
+
+               <section className="space-y-4">
+                  <h4 className="text-sm font-black text-red-500/60 uppercase tracking-[0.15em] flex items-center gap-2">
+                     <div className="w-1.5 h-1.5 rounded-full bg-red-500" /> IV. Sanciones Económicas
+                  </h4>
+                  <p className="text-sm leading-relaxed font-light">
+                     El incumplimiento de las normas anteriores generará sanciones que van desde el 20% hasta el 100% de la cuota de administración ordinaria, según la gravedad de la falta.
+                  </p>
+               </section>
+            </div>
+
+            <div className="mt-10 shrink-0">
+               <button 
+                onClick={() => setShowReglamentoModal(false)}
+                className="w-full bg-white/5 text-white/90 font-bold py-5 rounded-[28px] border border-white/10 hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center gap-2"
+               >
+                 He leído y acepto el reglamento
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL NUEVO VEHICULO (Restaurado) */}
       {showVehiculoModal && (
         <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center px-0 sm:px-4 pb-0 sm:pb-20 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowVehiculoModal(false)} />
