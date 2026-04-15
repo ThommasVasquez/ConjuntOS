@@ -17,6 +17,18 @@ export async function GET() {
     const url = await discoverUrl();
     const pool = new Pool({ connectionString: url });
 
+    // Ensure table exists (Harden)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "ChatAdmin" (
+        "id" TEXT PRIMARY KEY,
+        "usuarioId" TEXT NOT NULL,
+        "mensaje" TEXT NOT NULL,
+        "esDeAdmin" BOOLEAN DEFAULT false,
+        "leido" BOOLEAN DEFAULT false,
+        "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // SQL strategy to get latest message per user with user details
     const res = await pool.query(`
       WITH LatestMessages AS (

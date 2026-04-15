@@ -118,8 +118,12 @@ export default function AdminMensajesPage() {
 
   // Animations
   useEffect(() => {
+    if (conversations.length === 0) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-in", { opacity: 0, y: 10 }, { opacity: 1, y: 0, stagger: 0.05, duration: 0.4 });
+      const targets = gsap.utils.toArray(".fade-in");
+      if (targets.length > 0) {
+        gsap.fromTo(targets, { opacity: 0, y: 10 }, { opacity: 1, y: 0, stagger: 0.05, duration: 0.4 });
+      }
     }, containerRef);
     return () => ctx.revert();
   }, [conversations.length]);

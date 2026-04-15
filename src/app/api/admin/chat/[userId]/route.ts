@@ -17,6 +17,18 @@ export async function GET(req: Request, { params }: { params: { userId: string }
     const url = await discoverUrl();
     const pool = new Pool({ connectionString: url });
 
+    // Ensure table exists (Harden)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "ChatAdmin" (
+        "id" TEXT PRIMARY KEY,
+        "usuarioId" TEXT NOT NULL,
+        "mensaje" TEXT NOT NULL,
+        "esDeAdmin" BOOLEAN DEFAULT false,
+        "leido" BOOLEAN DEFAULT false,
+        "creadoEn" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     const res = await pool.query('SELECT * FROM "ChatAdmin" WHERE "usuarioId" = $1 ORDER BY "creadoEn" ASC', [userId]);
 
     // Optional: Mark as read when admin opens the chat
