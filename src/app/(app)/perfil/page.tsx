@@ -542,7 +542,13 @@ function ProfileContent() {
       </header>
 
       {/* HERO IMAGE - PERFECT CINEMATIC BLUR ARCHITECTURE (Stage 74) */}
-      <div className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden bg-[#05020a]">
+      <div 
+        className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden bg-[#05020a]"
+        style={{ 
+          maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)'
+        }}
+      >
         
         {/* Layer 1: Base Ambient Blur (Bokeh backdrop) */}
         <div className="absolute inset-0 z-0 blur-[60px] opacity-60 scale-125">
@@ -570,7 +576,7 @@ function ProfileContent() {
         />
         
         {/* Layer 3: HUD Contrast Gradient & Base Shadow */}
-        <div className="absolute inset-x-0 bottom-0 h-[350px] bg-linear-to-t from-[#05020a] via-[#05020a]/80 to-transparent z-20" />
+        <div className="absolute inset-x-0 bottom-0 h-[450px] bg-linear-to-t from-[#05020a] via-[#05020a]/90 via-[#05020a]/40 to-transparent z-20" />
       </div>
 
       <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
