@@ -32,10 +32,26 @@ export async function GET(req: Request, { params }: { params: { userId: string }
     // Fetch messages
     const chatRes = await pool.query('SELECT * FROM "ChatAdmin" WHERE "usuarioId" = $1 ORDER BY "creadoEn" ASC', [userId]);
 
-    // Fetch resident info
-    const userRes = await pool.query('SELECT id, nombre, email, telefono, rol, torre, apto, avatar FROM "Usuario" WHERE id = $1', [userId]);
-    const vehiclesRes = await pool.query('SELECT placa, marca, modelo, color, tipo FROM "Vehiculo" WHERE "usuarioId" = $1', [userId]);
-    const petsRes = await pool.query('SELECT nombre, tipo, raza, "fotoUrl" FROM "Mascota" WHERE "usuarioId" = $1', [userId]);
+    // Fetch resident info (Safe Fetch)
+    let profile = null;
+    let vehicles = [];
+    let pets = [];
+
+    try {
+      const userRes = await pool.query('SELECT * FROM "Usuario" WHERE id = $1', [userId]);
+      if (userRes.rows.length > 0) {
+        profile = userRes.rows[0];
+      }
+      
+      const vRes = await pool.query('SELECT * FROM "Vehiculo" WHERE "usuarioId" = $1', [userId]);
+      vehicles = vRes.rows;
+
+      const pRes = await pool.query('SELECT * FROM "Mascota" WHERE "usuarioId" = $1', [userId]);
+      pets = pRes.rows;
+    } catch (enrichError: any) {
+      console.error("⚠️ [API-ADMIN-CHAT-ENRICHMENT-ERROR]:", enrichError.message);
+      // We don't crash the whole response if enrichment fails
+    }
 
     // Optional: Mark as read when admin opens the chat
     await pool.query('UPDATE "ChatAdmin" SET leido = true WHERE "usuarioId" = $1 AND "esDeAdmin" = false', [userId]);
@@ -44,13 +60,19 @@ export async function GET(req: Request, { params }: { params: { userId: string }
       success: true, 
       data: chatRes.rows,
       residentInfo: {
-        profile: userRes.rows[0] || null,
-        vehicles: vehiclesRes.rows || [],
-        pets: petsRes.rows || []
+        profile,
+        vehicles,
+        pets
       }
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error("❌ [API-ADMIN-CHAT-DETAIL]:", error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message,
+      detail: error.detail || null,
+      code: error.code || "UNKNOWN"
+    }, { status: 500 });
   }
 }
 
