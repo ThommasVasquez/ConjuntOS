@@ -211,7 +211,7 @@ export default function Hero() {
 
             <div className="flex items-center gap-8">
               <button 
-                onClick={() => navigate("/login")}
+                onClick={() => window.location.href = "https://app.conjuntos.app/login"}
                 className="bg-white text-[#05020a] px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:bg-gray-100 transition-colors"
               >
                 Comenzar Ahora

@@ -57,7 +57,7 @@ export default function Navbar() {
           <button className="text-white/80 hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">Buscar</button>
           <button className="text-white/80 hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">US</button>
           <button className="text-white/80 hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">Bolsa</button>
-          <button onClick={() => navigate("/login")} className="text-white hover:text-[#D946EF] text-[10px] font-bold tracking-widest uppercase transition-colors">Ingresar</button>
+          <button onClick={() => window.location.href = "https://app.conjuntos.app/login"} className="text-white hover:text-[#D946EF] text-[10px] font-bold tracking-widest uppercase transition-colors">Ingresar</button>
         </div>
       </div>
     </nav>
