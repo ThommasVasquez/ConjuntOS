@@ -26,7 +26,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
   const [trackingStep, setTrackingStep] = useState(1);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
+    const ctx = gsap. context(() => {
       gsap.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3 });
       gsap.fromTo(modalRef.current, { scale: 0.9, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.7)" });
     });

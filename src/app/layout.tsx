@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, JetBrains_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
+import "./view-transitions.css";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -17,9 +18,19 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "ConjuntOS - Tu comunidad sincronizada",
   description: "Plataforma de gestión residencial inteligente para copropiedades modernas.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
   // manifest: "/manifest.webmanifest", // Temporalmente desactivado hasta que configuremos PWA
   appleWebApp: {
     capable: true,
@@ -36,7 +47,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#1E3A5F",
+  themeColor: "#05020a",
 };
 
 import { Providers } from "@/components/Providers";
@@ -49,8 +60,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}>
-      <body className="antialiased selection:bg-primary/20 bg-[#E2E8F0] min-h-screen">
+    <html lang="es" className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} ${montserrat.variable}`}>
+      <body className="antialiased selection:bg-primary/20 bg-[#05020a] min-h-screen text-white">
         <Providers>
           <SplashScreen />
           {children}

@@ -51,7 +51,7 @@ export default function SplashScreen() {
         ease: "power3.out"
       }, "-=0.4")
       .to(logoRef.current, {
-        filter: "drop-shadow(0 0 20px rgba(16, 185, 129, 0.4))",
+        filter: "drop-shadow(0 0 20px rgba(217, 70, 239, 0.4))",
         duration: 1.5,
         repeat: 0,
         yoyo: true
@@ -72,7 +72,7 @@ export default function SplashScreen() {
       className="fixed inset-0 z-[9999] bg-[#05020a] flex flex-col items-center justify-center overflow-hidden"
     >
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-500/10 blur-[100px] rounded-full" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#D946EF]/10 blur-[100px] rounded-full" />
       
       <div className="relative flex flex-col items-center">
         {/* Precise Official Logo (Paths matched to provided image) */}
@@ -88,7 +88,7 @@ export default function SplashScreen() {
           <path d="M40 70V160H80V30L72 30V38H64V30L56 38V46H40" fill="currentColor"/>
           <path d="M50 82C50 78.6863 52.6863 76 56 76C59.3137 76 62 78.6863 62 82V98H50V82Z" fill="#05020a"/>
           <path d="M76 30V6C76 6 70 3 64 7.5C58 12 52 9 52 9L53.5 18C53.5 18 59.5 21 65.5 16.5C71.5 12 76 15 76 15" fill="currentColor"/>
-          <path d="M88 78V110H104V58L96 58V66H88" fill="currentColor" fill-opacity="0.85"/>
+          <path d="M88 78V110H104V58L96 58V66H88" fill="currentColor" fillOpacity="0.85"/>
           <path d="M92 82C92 80.3431 93.3431 79 95 79C96.6569 79 98 80.3431 98 82V89H92V82Z" fill="#05020a"/>
 
           <text 
@@ -111,7 +111,7 @@ export default function SplashScreen() {
           className="mt-4 flex flex-col items-center"
         >
           <div className="w-16 h-[1px] bg-white/10 relative overflow-hidden">
-            <div className="absolute inset-0 bg-emerald-500 animate-loading-bar" />
+            <div className="absolute inset-0 bg-[#D946EF] animate-loading-bar" />
           </div>
         </div>
       </div>

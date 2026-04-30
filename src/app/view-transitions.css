@@ -1,0 +1,33 @@
+/* View Transitions API - Global Rules */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+::view-transition-old(root) {
+  animation: 300ms ease-in both fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 400ms ease-out both fade-in;
+}
+
+/* Specific elements that should "morph" or stay fixed */
+.view-transition-hero {
+  view-transition-name: hero-content;
+}
+
+.view-transition-nav {
+  view-transition-name: main-nav;
+}
+
+/* Ensure background doesn't flicker */
+::view-transition-group(root) {
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
