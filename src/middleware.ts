@@ -5,19 +5,27 @@ import { authConfig } from "./auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-export default auth((req: NextRequest & { auth: any }) => {
-  const url = req.nextUrl;
+export default auth((req) => {
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
   const hostname = req.headers.get("host") || "";
 
-  // 1. Subdomain Routing: If user is on app.conjuntos.app and at root, show /inicio (the app dashboard)
+  // 1. App Subdomain Logic
   if (hostname.includes("app.conjuntos.app")) {
-    if (url.pathname === "/") {
+    // If user hits the root of the app subdomain
+    if (nextUrl.pathname === "/") {
+      if (!isLoggedIn) {
+        // Force redirect to login if accessing the app domain unauthenticated
+        const loginUrl = new URL("/login", nextUrl.origin);
+        return Response.redirect(loginUrl);
+      }
+      // If logged in, show the main dashboard
       return NextResponse.rewrite(new URL("/inicio", req.url));
     }
   }
 
-  // 2. Allow normal NextAuth flow
-  return auth(req as any);
+  // 2. Default behavior: Let authConfig handle the rest of the protection
+  return; 
 });
 
 export const config = {

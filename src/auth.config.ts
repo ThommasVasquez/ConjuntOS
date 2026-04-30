@@ -8,17 +8,25 @@ export const authConfig = {
   trustHost: true,
   callbacks: {
     authorized({ auth, request }) {
-      // Allow POST requests (Server Actions / API) to pass through the middleware
-      // real validation happens inside the handler via auth()
-      if (request.method === "POST") return true;
-
       const { nextUrl } = request;
       const isLoggedIn = !!auth?.user;
-      const isOnLogin = nextUrl.pathname.startsWith('/login');
 
-      if (!isOnLogin && !isLoggedIn) {
-        return false; // Redirect to login
-      }
+      // 1. Define Public Paths
+      const publicPaths = ["/", "/login", "/about", "/pricing", "/contact"];
+      const isPublicPath = publicPaths.includes(nextUrl.pathname) || 
+                          nextUrl.pathname.startsWith("/api") || 
+                          nextUrl.pathname.includes("."); // Matches static files
+
+      // 2. Allow POST requests (Server Actions) to pass through
+      if (request.method === "POST") return true;
+
+      // 3. Logic:
+      // If it's a public path, anyone can enter
+      if (isPublicPath) return true;
+
+      // If it's a protected path and NOT logged in, redirect to login
+      if (!isLoggedIn) return false;
+
       return true;
     },
   },
