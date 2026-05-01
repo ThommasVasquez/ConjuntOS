@@ -27,9 +27,9 @@ export const metadata: Metadata = {
   title: "ConjuntOS - Tu comunidad sincronizada",
   description: "Plataforma de gestión residencial inteligente para copropiedades modernas.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: "/solo.svg",
+    shortcut: "/solo.svg",
+    apple: "/solo.svg",
   },
   // manifest: "/manifest.webmanifest", // Temporalmente desactivado hasta que configuremos PWA
   appleWebApp: {

@@ -5,6 +5,8 @@ import { Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 
+import Image from "next/image";
+
 export default function Navbar() {
   const { navigate } = useViewTransition();
   const [scrolled, setScrolled] = useState(false);
@@ -46,14 +48,17 @@ export default function Navbar() {
             onClick={() => navigate("/")} 
             className="flex items-center cursor-pointer group"
           >
-            <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] text-white ${
-              scrolled ? "h-8 w-8" : "h-10 w-[120px]"
+            <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center ${
+              scrolled ? "h-10 w-10" : "h-10 w-[120px]"
             }`}>
               {scrolled ? (
-                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                  <path d="M20 80V20H40V30L35 30V35H30V30L25 35V40H20" fill="currentColor"/>
-                  <path d="M45 20V10C45 10 40 8 35 11C30 14 25 12 25 12L26 18C26 18 31 20 36 17C41 14 45 16 45 16" fill="currentColor"/>
-                </svg>
+                <Image 
+                  src="/solo.svg" 
+                  alt="ConjuntOS" 
+                  width={40} 
+                  height={40} 
+                  className="w-full h-full object-contain"
+                />
               ) : (
                 <svg viewBox="0 0 540 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full object-contain">
                   <path d="M40 70V160H80V30L72 30V38H64V30L56 38V46H40" fill="currentColor"/>
