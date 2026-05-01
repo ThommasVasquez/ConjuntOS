@@ -61,14 +61,15 @@ export default function FeaturesCollage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
-  const [activeIndex, setActiveIndex] = useState(2); // Start with Carlos (Index 2)
+  const [activeIndex, setActiveIndex] = useState(3); // Start with Elena (Index 3)
 
   // Initial scroll to center (Carlos) - ONLY ONCE ON MOUNT
   useEffect(() => {
     if (scrollRef.current) {
-      const scrollWidth = scrollRef.current.scrollWidth;
-      const clientWidth = scrollRef.current.clientWidth;
-      scrollRef.current.scrollLeft = (scrollWidth - clientWidth) / 2;
+      const cardWidth = 336; // 256px (w-64) + 80px (gap-20)
+      scrollRef.current.scrollLeft = (3 * cardWidth) + (cardWidth / 2) - 168; // Center Elena (Index 3)
+      // Actually, simplified: 3 * 336 = 1008
+      scrollRef.current.scrollLeft = 1008;
     }
   }, []);
 
@@ -140,7 +141,7 @@ export default function FeaturesCollage() {
         {/* Dynamic Testimonial Headline */}
         <div className="w-full flex justify-center mb-20 px-6 relative z-50 pointer-events-none">
           <div className="flex flex-col items-center">
-            <span className="text-purple-500 font-black tracking-[0.3em] text-sm mb-4 uppercase">TESTIMONIO REAL</span>
+            <span className="text-white font-black tracking-[0.3em] text-sm mb-4 uppercase">TESTIMONIO REAL</span>
             <h2 
               ref={headlineRef} 
               key={activeIndex}
