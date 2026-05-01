@@ -63,22 +63,37 @@ export default function FeaturesCollage() {
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const [activeIndex, setActiveIndex] = useState(3); // Start with Elena (Index 3)
 
-  // Initial scroll to center (Carlos) - ONLY ONCE ON MOUNT
+  // Initial scroll to center (Elena) - ONLY ONCE ON MOUNT
   useEffect(() => {
     if (scrollRef.current) {
       const cardWidth = 336; // 256px (w-64) + 80px (gap-20)
-      scrollRef.current.scrollLeft = (3 * cardWidth) + (cardWidth / 2) - 168; // Center Elena (Index 3)
-      // Actually, simplified: 3 * 336 = 1008
       scrollRef.current.scrollLeft = 1008;
     }
   }, []);
 
+  // Autoplay functionality
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const nextIndex = (activeIndex + 1) % features.length;
+      if (scrollRef.current) {
+        const cardWidth = 336;
+        scrollRef.current.scrollTo({
+          left: nextIndex * cardWidth,
+          behavior: "smooth"
+        });
+      }
+    }, 5000); // Change every 5 seconds
+
+    return () => clearInterval(timer);
+  }, [activeIndex]);
+
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Animation for quote change
-      gsap.fromTo(headlineRef.current, 
-        { opacity: 0, y: 10 },
-        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+      // Cinematic animation for quote and name change
+      const tl = gsap.timeline();
+      tl.fromTo(".testimonial-content", 
+        { opacity: 0, y: 20, filter: "blur(10px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, ease: "expo.out" }
       );
 
       // Track scroll for scaling and active index
@@ -109,8 +124,9 @@ export default function FeaturesCollage() {
           gsap.to(card, {
             scale: scale,
             opacity: opacity,
-            duration: 0.2,
-            overwrite: true
+            duration: 0.4,
+            ease: "power2.out",
+            overwrite: "auto"
           });
         });
 
@@ -140,7 +156,7 @@ export default function FeaturesCollage() {
       <div className="max-w-full mx-auto relative flex flex-col pt-10">
         {/* Dynamic Testimonial Headline */}
         <div className="w-full flex justify-center py-6 px-6 relative z-40">
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center testimonial-content">
             <span className="text-white font-black tracking-[0.3em] text-sm mb-4 uppercase">TESTIMONIO REAL</span>
             <h2 
               ref={headlineRef} 
@@ -181,11 +197,10 @@ export default function FeaturesCollage() {
              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-7 bg-black rounded-b-3xl z-30" />
              
              {/* Dynamic Content */}
-             <div className="absolute inset-0">
+             <div className="absolute inset-0 testimonial-content" key={activeIndex}>
                 <img 
-                  key={activeItem.img} // Key forces reload animation
                   src={activeItem.img} 
-                  className="w-full h-full object-cover transition-opacity duration-500 animate-in fade-in" 
+                  className="w-full h-full object-cover" 
                   alt="App Preview" 
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30" />
