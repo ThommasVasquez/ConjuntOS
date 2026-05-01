@@ -238,7 +238,7 @@ export default function FeaturesCollage() {
       </div>
 
       {/* Marquee Ticker */}
-      <div className="mt-10 bg-[#FF00E5] py-1.5 scale-105 border-y border-black z-50 relative shadow-[0_0_40px_rgba(255,0,229,0.2)]">
+      <div className="mt-10 bg-white py-1.5 scale-105 border-y border-black z-50 relative shadow-[0_0_40px_rgba(0,0,0,0.1)]">
         <div className="flex whitespace-nowrap overflow-hidden">
           <div className="flex whitespace-nowrap animate-marquee items-center">
             {[1,2,3,4,5,6,7,8].map(i => (
