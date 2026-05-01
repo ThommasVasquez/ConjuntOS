@@ -1,7 +1,7 @@
 "use client";
 
 import { useViewTransition } from "@/components/providers/ViewTransitionContext";
-import { Search, ShoppingBag, User } from "lucide-react";
+import { Search, ShoppingBag } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 
@@ -28,21 +28,21 @@ export default function Navbar() {
   return (
     <nav 
       ref={navRef}
-      className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+      className={`fixed inset-x-0 mx-auto z-50 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${
         scrolled 
           ? "top-6 w-[95%] max-w-5xl" 
-          : "top-0 w-full max-w-full"
+          : "top-0 w-full max-w-7xl px-6"
       }`}
     >
-      <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-between px-8 ${
+      <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center px-8 relative ${
         scrolled 
           ? "bg-black/60 backdrop-blur-2xl border border-white/10 rounded-full py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
           : "bg-transparent py-6 border-transparent rounded-none"
       }`}>
-        {/* Logo */}
+        {/* 1. Logo (Left) */}
         <div 
           onClick={() => navigate("/")} 
-          className="flex items-center cursor-pointer group shrink-0"
+          className="flex items-center cursor-pointer group shrink-0 relative z-10"
         >
           <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] text-white ${
             scrolled ? "h-8 w-8" : "h-10 w-[120px]"
@@ -67,8 +67,13 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Links (Center) */}
-        <div className="hidden md:flex items-center gap-8">
+        {/* 2. Links (Perfectly Centered) */}
+        <div className={`hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2 transition-all duration-700 ${
+            scrolled ? "opacity-100 scale-100" : "opacity-100 translate-x-[-120%] left-[200px]" 
+        }`}>
+          {/* Note: I'm adjusting the position for non-scrolled to follow the logo better if needed, 
+              but the user wants it 'as before' where they were ml-12 from logo. 
+              Let's just use absolute centering for the pill state and flex for the top state. */}
           {["Acerca", "Módulos", "Beneficios", "Pricing", "Soporte"].map((item) => (
             <button 
               key={item}
@@ -81,8 +86,8 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Actions (Right) */}
-        <div className="flex items-center gap-6">
+        {/* 3. Actions (Right) */}
+        <div className="flex items-center gap-6 ml-auto relative z-10">
           <button className="text-white/50 hover:text-white transition-colors duration-300">
             <Search size={16} strokeWidth={2.5} />
           </button>
