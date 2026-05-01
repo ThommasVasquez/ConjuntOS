@@ -38,19 +38,19 @@ export default function Navbar() {
     >
       <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center px-8 relative overflow-hidden ${
         scrolled 
-          ? "bg-white/[0.05] border-t border-l border-white/40 border-b border-r border-white/10 rounded-full py-2.5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]" 
+          ? "bg-white/[0.08] border-[1.5px] border-white/30 rounded-full py-2.5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.4)]" 
           : "bg-transparent py-6 border-transparent rounded-none"
       }`}>
-        {/* Specular Shine Gradient */}
+        {/* Lens Refraction Simulation */}
         {scrolled && (
           <div 
-            className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent pointer-events-none" 
+            className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(255,255,255,0.15),_transparent_60%)] pointer-events-none" 
           />
         )}
         
-        {/* Thick Glass Edge Simulation */}
+        {/* Specular Edge Highlight */}
         {scrolled && (
-          <div className="absolute inset-[1px] rounded-full border border-white/10 pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
         )}
         
         {/* 1. Logo Container (Fixed width to balance right side) */}
