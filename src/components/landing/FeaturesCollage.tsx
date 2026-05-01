@@ -132,14 +132,14 @@ export default function FeaturesCollage() {
   const activeItem = features[activeIndex];
 
   return (
-    <section ref={containerRef} className="relative py-32 bg-[#05020a] overflow-hidden min-h-screen">
+    <section ref={containerRef} className="relative py-16 bg-[#05020a] overflow-hidden">
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
-      <div className="max-w-full mx-auto relative min-h-screen flex flex-col pt-24">
+      <div className="max-w-full mx-auto relative flex flex-col pt-10">
         {/* Dynamic Testimonial Headline */}
-        <div className="w-full flex justify-center py-10 px-6 relative z-40">
+        <div className="w-full flex justify-center py-6 px-6 relative z-40">
           <div className="flex flex-col items-center">
             <span className="text-white font-black tracking-[0.3em] text-sm mb-4 uppercase">TESTIMONIO REAL</span>
             <h2 
