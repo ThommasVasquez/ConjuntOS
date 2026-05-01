@@ -36,11 +36,25 @@ export default function Navbar() {
           : "top-0 w-full max-w-7xl px-6"
       }`}
     >
-      <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center px-8 ${
+      <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center px-8 relative overflow-hidden ${
         scrolled 
-          ? "bg-white/60 dark:bg-black/60 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-full py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
+          ? "bg-white/40 dark:bg-white/[0.03] backdrop-blur-[40px] border border-white/20 dark:border-white/10 rounded-full py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)]" 
           : "bg-transparent py-6 border-transparent rounded-none"
       }`}>
+        {/* Noise Grain Overlay */}
+        {scrolled && (
+          <div 
+            className="absolute inset-0 opacity-[0.15] pointer-events-none mix-blend-overlay dark:opacity-[0.2]"
+            style={{ 
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` 
+            }}
+          />
+        )}
+        
+        {/* Inner Specular Highlight */}
+        {scrolled && (
+          <div className="absolute inset-0 rounded-full border border-white/20 pointer-events-none" />
+        )}
         
         {/* 1. Logo Container (Fixed width to balance right side) */}
         <div className={`transition-all duration-700 flex items-center ${scrolled ? "w-[120px]" : "w-[180px]"}`}>
