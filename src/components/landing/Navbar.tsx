@@ -30,7 +30,7 @@ export default function Navbar() {
   return (
     <nav 
       ref={navRef}
-      className={`fixed inset-x-0 mx-auto z-50 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+      className={`fixed inset-x-0 mx-auto z-[100] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${
         scrolled 
           ? "top-6 w-[95%] max-w-5xl" 
           : "top-0 w-full max-w-7xl px-6"

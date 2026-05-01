@@ -139,7 +139,7 @@ export default function FeaturesCollage() {
 
       <div className="max-w-full mx-auto relative h-full flex flex-col justify-center">
         {/* Dynamic Testimonial Headline */}
-        <div className="w-full flex justify-center mb-20 px-6 relative z-50 pointer-events-none">
+        <div className="w-full flex justify-center mb-20 px-6 relative z-10 pointer-events-none">
           <div className="flex flex-col items-center">
             <span className="text-white font-black tracking-[0.3em] text-sm mb-4 uppercase">TESTIMONIO REAL</span>
             <h2 
