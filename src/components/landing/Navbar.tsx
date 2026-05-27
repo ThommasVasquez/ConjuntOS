@@ -38,7 +38,7 @@ export default function Navbar() {
     >
       <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center px-8 relative overflow-hidden ${
         scrolled 
-          ? "bg-white/60 dark:bg-black/60 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-full py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
+          ? "liquid-glass rounded-full py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
           : "bg-transparent py-6 border-transparent rounded-none"
       }`}>
         {/* Specular Edge Highlight */}
@@ -64,7 +64,7 @@ export default function Navbar() {
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <svg viewBox="0 0 540 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full object-contain">
+                <svg viewBox="0 0 540 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full object-contain text-white">
                   <path d="M40 70V160H80V30L72 30V38H64V30L56 38V46H40" fill="currentColor"/>
                   <path d="M50 82C50 78.6863 52.6863 76 56 76C59.3137 76 62 78.6863 62 82V98H50V82Z" className="fill-white dark:fill-[#05020a]"/>
                   <path d="M76 30V6C76 6 70 3 64 7.5C58 12 52 9 52 9L53.5 18C53.5 18 59.5 21 65.5 16.5C71.5 12 76 15 76 15" fill="currentColor"/>
@@ -82,11 +82,14 @@ export default function Navbar() {
         {/* 2. Links Container (Center, takes all remaining space) */}
         <div className="flex-1 flex justify-center items-center">
           <div className="hidden md:flex items-center gap-8">
-            {["Acerca", "Módulos", "Beneficios", "Pricing", "Soporte"].map((item) => (
+            {["Acerca", "Módulos", "Beneficios", "Asambleas", "Pricing", "Soporte"].map((item) => (
               <button 
                 key={item}
-                className={`transition-all duration-500 text-[11px] font-medium tracking-tight uppercase ${
-                  scrolled ? "text-white/50 hover:text-white" : "text-white/70 hover:text-white tracking-widest"
+                onClick={() => {
+                  if (item === "Asambleas") navigate("/asamblea");
+                }}
+                className={`transition-all duration-500 text-[11px] font-bold tracking-widest uppercase hover:text-accent cursor-pointer ${
+                  scrolled ? "text-white/60" : "text-white/80"
                 }`}
               >
                 {item}
@@ -97,16 +100,16 @@ export default function Navbar() {
 
         {/* 3. Actions Container (Fixed width to balance left side) */}
         <div className={`transition-all duration-700 flex items-center justify-end gap-6 ${scrolled ? "w-[120px]" : "w-[180px]"}`}>
-          <button className="text-white/50 hover:text-white transition-colors duration-300">
+          <button className="text-white/50 hover:text-accent transition-colors duration-300">
             <Search size={16} strokeWidth={2.5} />
           </button>
           <div className="h-4 w-[1px] bg-white/10 mx-1" />
           <button 
-            onClick={() => window.location.href = "https://app.conjuntos.app/login"} 
-            className={`transition-all duration-700 px-5 py-1.5 rounded-full text-[11px] font-bold tracking-tight whitespace-nowrap ${
+            onClick={() => navigate("/login")} 
+            className={`transition-all duration-300 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase whitespace-nowrap hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(217,70,239,0.15)] ${
               scrolled 
-                ? "text-white bg-white/10 hover:bg-white hover:text-black" 
-                : "text-white border border-white/20 hover:bg-white hover:text-black"
+                ? "text-white bg-white/5 border border-white/10 hover:bg-accent" 
+                : "text-white border border-white/20 hover:bg-accent hover:border-accent"
             }`}
           >
             Ingresar

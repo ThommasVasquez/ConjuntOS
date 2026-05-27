@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { PhoneCall, CreditCard, Calendar, ShieldCheck } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -10,17 +11,91 @@ export default function ProductsSection() {
   const sectionRef = useRef<HTMLElement>(null);
 
   const products = [
-    { name: "Acceso Vehicular", desc: "Reconocimiento Facial & Placas", img: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=400&q=80" },
-    { name: "Pagos PSE", desc: "Integración Directa", img: "https://images.unsplash.com/photo-1556742044-3c52d6e88c62?auto=format&fit=crop&w=400&q=80" },
-    { name: "Alertas SOS", desc: "Seguridad 24/7", img: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=400&q=80" },
-    { name: "Cámaras", desc: "Integración CCTV", img: "https://images.unsplash.com/photo-1557401625-1e4e2d3bb164?auto=format&fit=crop&w=400&q=80" }
+    { 
+      name: "Citofonía Digital", 
+      desc: "Recibe llamadas de portería directamente en tu celular, autoriza ingresos y abre puertas con un toque.", 
+      component: (
+        <div className="w-full h-full flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div className="w-12 h-12 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(217,70,239,0.2)]">
+              <PhoneCall size={20} className="animate-pulse" />
+            </div>
+            <span className="text-[9px] bg-accent/20 text-accent font-bold uppercase px-2.5 py-1 rounded-full border border-accent/30 tracking-wider">Llamando</span>
+          </div>
+          <div>
+            <h5 className="text-[9px] text-accent font-black uppercase tracking-widest">Citófono Virtual</h5>
+            <p className="text-white text-lg font-bold truncate mt-1">Lobby Portería</p>
+            <div className="w-full h-[3px] bg-white/5 rounded-full overflow-hidden mt-3">
+              <div className="h-full bg-accent w-2/3 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      )
+    },
+    { 
+      name: "Pagos de Administración", 
+      desc: "Consulta tu saldo, genera recibos digitales y realiza pagos seguros por PSE de forma automatizada.", 
+      component: (
+        <div className="w-full h-full flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <CreditCard size={20} />
+            </div>
+            <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold uppercase px-2.5 py-1 rounded-full border border-emerald-500/30 tracking-wider">Al día</span>
+          </div>
+          <div>
+            <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Tu Residencia</h5>
+            <p className="text-white text-lg font-bold truncate mt-1">$ 0 Pendiente</p>
+            <p className="text-[9px] text-white/30 mt-1">Mes de Abril • Pago Exitoso</p>
+          </div>
+        </div>
+      )
+    },
+    { 
+      name: "Reservas de Áreas", 
+      desc: "Agenda el salón comunal, gimnasio o zona de BBQ. Control de aforo y disponibilidad en tiempo real.", 
+      component: (
+        <div className="w-full h-full flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <Calendar size={20} />
+            </div>
+            <span className="text-[9px] bg-blue-500/20 text-blue-400 font-bold uppercase px-2.5 py-1 rounded-full border border-blue-500/30 tracking-wider">Aprobado</span>
+          </div>
+          <div>
+            <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Zona Común</h5>
+            <p className="text-white text-lg font-bold truncate mt-1">Piscina & BBQ</p>
+            <p className="text-[9px] text-white/30 mt-1">Hoy, 18:00 - 20:00</p>
+          </div>
+        </div>
+      )
+    },
+    { 
+      name: "Control de Acceso QR", 
+      desc: "Genera códigos QR de acceso para tus invitados, domicilios y familiares autorizados con alertas inmediatas.", 
+      component: (
+        <div className="w-full h-full flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <ShieldCheck size={20} />
+            </div>
+            <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold uppercase px-2.5 py-1 rounded-full border border-emerald-500/30 tracking-wider">Autorizado</span>
+          </div>
+          <div>
+            <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Invitado Activo</h5>
+            <p className="text-white text-lg font-bold truncate mt-1">Carlos Rodríguez</p>
+            <p className="text-[9px] text-white/30 mt-1">Acceso Vehicular • Placa KJS-092</p>
+          </div>
+        </div>
+      )
+    }
   ];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(".product-card",
         { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: "power2.out", scrollTrigger: { trigger: ".product-grid", start: "top 85%" } }
+        { y: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: "power3.out", scrollTrigger: { trigger: ".product-grid", start: "top 85%" } }
       );
     }, sectionRef);
 
@@ -28,33 +103,36 @@ export default function ProductsSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#05020a]">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#05020a] relative">
+      {/* Background orbs for depth */}
+      <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-[#4C1D95]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[20%] right-[-10%] w-[500px] h-[500px] bg-[#BE185D]/5 blur-[120px] rounded-full pointer-events-none" />
+
       <div className="max-w-7xl mx-auto">
-        
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-12">
-          <div className="flex flex-wrap gap-4">
-            <button className="text-white font-bold border-b-2 border-white pb-1">Seguridad</button>
-            <button className="text-gray-400 font-medium hover:text-white transition-colors pb-1">Finanzas</button>
-            <button className="text-gray-400 font-medium hover:text-white transition-colors pb-1">Comunidad</button>
-            <button className="text-gray-400 font-medium hover:text-white transition-colors pb-1">Hardware</button>
-          </div>
-          <button className="px-6 py-2 bg-white/10 text-white rounded-full text-sm font-semibold hover:bg-[#D946EF] transition-colors border border-white/5">
-            Ver Todos
-          </button>
+        <div className="text-center mb-16 max-w-2xl mx-auto">
+          <span className="text-accent font-black tracking-[0.25em] text-xs uppercase mb-3 block">Módulos Integrales</span>
+          <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight font-[family-name:var(--font-montserrat)]">
+            La potencia de la app web en tu escritorio
+          </h2>
+          <p className="text-white/50 text-sm md:text-base mt-4 leading-relaxed font-[family-name:var(--font-inter)]">
+            Cada sección de nuestra plataforma replica la robustez de las herramientas de gestión del conjunto residencial para darte control absoluto.
+          </p>
         </div>
 
         <div className="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {products.map((p, i) => (
-            <div key={i} className="product-card group cursor-pointer">
-              <div className="w-full h-64 bg-white/5 border border-white/5 rounded-3xl overflow-hidden p-6 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-[1.02]">
-                <img src={p.img} alt={p.name} className="w-full h-full object-cover rounded-xl shadow-sm opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div key={i} className="product-card group cursor-pointer flex flex-col justify-between h-full">
+              <div className="w-full h-64 bg-white/5 border border-white/5 rounded-[32px] overflow-hidden p-6 flex flex-col mb-4 transition-all duration-500 group-hover:scale-[1.02] group-hover:border-accent/30 group-hover:shadow-[0_15px_35px_rgba(217,70,239,0.1)] relative">
+                <div className="absolute inset-0 bg-linear-to-b from-[#1a1333]/20 to-transparent" />
+                <div className="relative z-10 w-full h-full">
+                  {p.component}
+                </div>
               </div>
-              <h4 className="font-bold text-white">{p.name}</h4>
-              <p className="text-sm text-gray-500">{p.desc}</p>
+              <h4 className="font-bold text-white text-lg tracking-tight group-hover:text-accent transition-colors duration-300">{p.name}</h4>
+              <p className="text-sm text-white/50 mt-1 font-light leading-relaxed">{p.desc}</p>
             </div>
           ))}
         </div>
-
       </div>
     </section>
   );

@@ -163,6 +163,7 @@ model Conjunto {
   pedidos         Pedido[]
   inmuebles       Inmueble[]
   parqueaderos    Parqueadero[]
+  asambleas       Asamblea[]
 }
 
 model Usuario {
@@ -199,6 +200,7 @@ model Usuario {
   tramitesAprobados    Tramite[] @relation("UsuarioAprobador")
   notificaciones       Notificacion[]
   chatsAdmin           ChatAdmin[]
+  asistencias          AsambleaAsistencia[]
 }
 
 model Notificacion {
@@ -571,3 +573,104 @@ model ChatAdmin {
   creadoEn      DateTime @default(now())
 }
 
+model Asamblea {
+  id              String            @id @default(cuid())
+  conjuntoId      String
+  conjunto        Conjunto          @relation(fields: [conjuntoId], references: [id])
+  titulo          String
+  descripcion     String?
+  fecha           DateTime          @default(now())
+  activa          Boolean           @default(true)
+  ordenDia        String            @default("[]") // JSON string list of agenda items: [{id, title, status}]
+  itemActivoIndex Int               @default(0)
+  turnos          AsambleaTurno[]
+  opiniones       AsambleaOpinion[]
+  asistencias     AsambleaAsistencia[]
+  poderes         AsambleaPoder[]
+  votaciones      AsambleaVotacion[]
+}
+
+model AsambleaTurno {
+  id         String   @id @default(cuid())
+  asambleaId String
+  asamblea   Asamblea @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  usuarioId  String
+  nombre     String
+  apto       String?
+  estado     String   @default("PENDIENTE") // "PENDIENTE", "HABLANDO", "COMPLETADO"
+  creadoEn   DateTime @default(now())
+}
+
+model AsambleaOpinion {
+  id         String   @id @default(cuid())
+  asambleaId String
+  asamblea   Asamblea @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  usuarioId  String
+  nombre     String
+  apto       String?
+  contenido  String
+  creadoEn   DateTime @default(now())
+}
+
+model AsambleaPairing {
+  id        String   @id @default(cuid())
+  codigo    String   @unique // 6-digit code
+  usuarioId String?
+  email     String?
+  password  String?  // Saved plaintext for credentials login in this simulation
+  estado    String   @default("PENDIENTE") // "PENDIENTE", "VINCULADO", "EXPIRADO"
+  creadoEn  DateTime @default(now())
+  expiraEn  DateTime
+}
+
+model AsambleaAsistencia {
+  id          String   @id @default(cuid())
+  asambleaId  String
+  asamblea    Asamblea @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  tipo        String   @default("VIRTUAL") // "PRESENCIAL", "VIRTUAL"
+  verificado  Boolean  @default(false)
+  ip          String?
+  dispositivo String?
+  creadoEn    DateTime @default(now())
+
+  @@unique([asambleaId, usuarioId])
+}
+
+model AsambleaPoder {
+  id           String   @id @default(cuid())
+  asambleaId   String
+  asamblea     Asamblea @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  otorganteId  String
+  apoderadoId  String
+  documentoUrl String
+  verificado   Boolean  @default(false)
+  creadoEn     DateTime @default(now())
+}
+
+model AsambleaVotacion {
+  id          String   @id @default(cuid())
+  asambleaId  String
+  asamblea    Asamblea @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  titulo      String
+  descripcion String?
+  opciones    String   @default("[\"SI\", \"NO\", \"ABSTENCION\"]") // JSON Array
+  activa      Boolean  @default(false)
+  creadoEn    DateTime @default(now())
+  votos       AsambleaVoto[]
+}
+
+model AsambleaVoto {
+  id          String   @id @default(cuid())
+  votacionId  String
+  votacion    AsambleaVotacion @relation(fields: [votacionId], references: [id], onDelete: Cascade)
+  usuarioId   String
+  respuesta   String
+  coeficiente Decimal
+  esVirtual   Boolean  @default(true)
+  hashFirma   String
+  creadoEn    DateTime @default(now())
+
+  @@unique([votacionId, usuarioId])
+}

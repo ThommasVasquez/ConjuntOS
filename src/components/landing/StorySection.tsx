@@ -34,26 +34,30 @@ export default function StorySection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#05020a]">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#05020a] relative overflow-hidden">
+      {/* Background orbs */}
+      <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#BE185D]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-[#4C1D95]/5 blur-[120px] rounded-full pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 relative z-10">
         
         <div className="story-text flex-1 space-y-6">
           <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight font-[family-name:var(--font-montserrat)] tracking-tight max-w-xl">
-            Una historia de comunidad, seguridad y tecnología — <span className="text-gray-400">creamos tranquilidad.</span>
+            Una historia de comunidad, seguridad y tecnología — <span className="text-accent text-glow">creamos tranquilidad.</span>
           </h2>
-          <p className="text-gray-400 text-lg md:text-xl max-w-lg leading-relaxed">
+          <p className="text-white/50 text-base md:text-lg max-w-lg leading-relaxed font-light">
             Cada módulo está diseñado con técnicas probadas para asegurar que cada interacción sea no solo eficiente, sino construida para mejorar tu calidad de vida. Con cada línea de código, llevamos calidez, tradición y sostenibilidad a tu hogar.
           </p>
         </div>
 
         <div className="story-img-container flex-1 flex gap-4 h-[500px]">
           <div className="flex flex-col gap-4 w-1/2 pt-12">
-            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80" alt="Home interior 1" className="story-img w-full h-1/2 object-cover rounded-[32px]" />
-            <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80" alt="Home interior 2" className="story-img w-full h-1/2 object-cover rounded-[32px]" />
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80" alt="Home interior 1" className="story-img w-full h-1/2 object-cover rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40" />
+            <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80" alt="Home interior 2" className="story-img w-full h-1/2 object-cover rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40" />
           </div>
           <div className="flex flex-col gap-4 w-1/2 pb-12">
-            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80" alt="Home interior 3" className="story-img w-full h-1/2 object-cover rounded-[32px]" />
-            <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80" alt="Home interior 4" className="story-img w-full h-1/2 object-cover rounded-[32px]" />
+            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80" alt="Home interior 3" className="story-img w-full h-1/2 object-cover rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40" />
+            <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80" alt="Home interior 4" className="story-img w-full h-1/2 object-cover rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40" />
           </div>
         </div>
 

@@ -168,40 +168,45 @@ export default function Hero() {
             className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
             style={{ 
               backgroundImage: `url('${slide.image}')`,
-              opacity: activeSlide === idx ? 1 : 0,
+              opacity: activeSlide === idx ? 0.25 : 0,
               zIndex: activeSlide === idx ? 1 : 0,
-              transform: activeSlide === idx ? "scale(1)" : "scale(1.1)",
+              transform: activeSlide === idx ? "scale(1)" : "scale(1.05)",
               visibility: activeSlide === idx || Math.abs(activeSlide - idx) <= 1 ? 'visible' : 'hidden'
             }}
           />
         ))}
         
-        <div className="absolute inset-0 bg-gradient-to-r from-[#05020a]/80 via-[#05020a]/30 to-transparent z-10" />
+        {/* Ambient Orbs - Matching the App's UI style */}
+        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[70%] bg-[#4C1D95]/15 blur-[130px] rounded-full pointer-events-none z-10" />
+        <div className="absolute bottom-[-15%] left-[-15%] w-[80%] h-[70%] bg-[#BE185D]/10 blur-[130px] rounded-full pointer-events-none z-10" />
+        
+        {/* Dark Glass Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#05020a]/95 via-[#05020a]/80 to-transparent z-10" />
 
         <div className="relative z-20 w-full h-full flex items-center justify-between px-8 md:px-20">
           <div className="hero-text max-w-2xl text-white">
             
-            <div className="inline-flex items-center gap-1 mb-8 p-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+            <div className="inline-flex items-center gap-1 mb-8 p-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10">
               {slides.map((slide, idx) => (
                 <button 
                   key={slide.id}
                   onClick={() => handleSlideChange(idx)}
                   className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all duration-300 ${
-                    activeSlide === idx ? "bg-white text-[#05020a]" : "text-white hover:bg-white/10"
+                    activeSlide === idx ? "bg-accent text-white shadow-[0_0_15px_rgba(217,70,239,0.4)]" : "text-white/60 hover:text-white"
                   }`}
                 >
                   {slide.label}
                 </button>
               ))}
-              <div className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center ml-2">
+              <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center ml-2">
                  <div 
-                    className="w-2 h-2 rounded-full bg-white animate-pulse" 
+                    className="w-2 h-2 rounded-full bg-accent animate-pulse" 
                     style={{ animationDuration: '3s' }}
                   />
               </div>
             </div>
             
-            <h1 className="text-4xl md:text-6xl lg:text-[4.5rem] font-medium leading-[1.1] mb-6 font-[family-name:var(--font-montserrat)] tracking-tight whitespace-pre-line">
+            <h1 className="text-4xl md:text-6xl lg:text-[4.5rem] font-medium leading-[1.1] mb-6 font-[family-name:var(--font-montserrat)] tracking-tight whitespace-pre-line text-glow">
               {current.title}
             </h1>
             
@@ -211,13 +216,13 @@ export default function Hero() {
 
             <div className="flex items-center gap-8">
               <button 
-                onClick={() => window.location.href = "https://app.conjuntos.app/login"}
-                className="bg-white text-[#05020a] px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:bg-gray-100 transition-colors"
+                onClick={() => navigate("/login")}
+                className="bg-linear-to-r from-accent to-purple-600 text-white px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:scale-[1.03] active:scale-95 transition-all shadow-[0_0_20px_rgba(217,70,239,0.3)] hover:shadow-[0_0_30px_rgba(217,70,239,0.5)] cursor-pointer"
               >
                 Comenzar Ahora
               </button>
-              <button className="text-white flex items-center gap-2 text-xs font-bold tracking-widest uppercase hover:text-white/80 transition-colors">
-                <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
+              <button className="text-white/70 flex items-center gap-2 text-xs font-bold tracking-widest uppercase hover:text-white transition-colors">
+                <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors">
                   <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10 6L0.25 11.1962L0.25 0.803848L10 6Z" fill="currentColor"/>
                   </svg>
@@ -228,21 +233,21 @@ export default function Hero() {
           </div>
 
           {/* Interactive Feature Card */}
-          <div className="hero-card bg-white/10 border border-white/20 backdrop-blur-xl p-10 rounded-[40px] w-[480px] shadow-2xl relative overflow-hidden">
+          <div className="hero-card liquid-glass-card p-10 rounded-[40px] w-[480px] shadow-2xl relative overflow-hidden border border-white/10">
             <div className="relative z-10">
               <div className="feature-content">
-                <div className="w-20 h-20 rounded-2xl bg-white/20 overflow-hidden mb-8 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 overflow-hidden mb-8 flex items-center justify-center">
                    <img 
                       src={currentFeature.img} 
                       alt={currentFeature.title} 
-                      className="w-16 h-16 object-cover rounded-xl opacity-90" 
+                      className="w-16 h-16 object-cover rounded-xl opacity-90 grayscale group-hover:grayscale-0 transition-all duration-300" 
                     />
                 </div>
                 <div>
                   <h3 className="text-3xl font-medium text-white font-[family-name:var(--font-montserrat)] mb-4">{currentFeature.title}</h3>
                   <p className="text-base text-white/70 leading-relaxed mb-8 h-20">{currentFeature.desc}</p>
                   
-                  <button className="w-full py-4 rounded-full border border-white/20 text-white text-xs font-bold tracking-widest uppercase hover:bg-white hover:text-[#05020a] transition-all duration-300">
+                  <button className="w-full py-4 rounded-full border border-white/10 text-white text-xs font-bold tracking-widest uppercase hover:bg-accent hover:border-accent transition-all duration-300">
                     Ver cómo funciona
                   </button>
                 </div>
@@ -253,7 +258,7 @@ export default function Hero() {
                 {[0, 1, 2].map((i) => (
                   <div 
                     key={i} 
-                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-white" : "bg-white/20"}`}
+                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent shadow-[0_0_10px_rgba(217,70,239,0.8)]" : "bg-white/20"}`}
                   />
                 ))}
               </div>

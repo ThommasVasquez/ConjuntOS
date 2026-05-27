@@ -231,7 +231,10 @@ class ModelProxy {
     const key = Object.keys(where)[0];
     const value = where[key];
     const existing = await this.findUnique({ where: { [key]: value } });
-    if (existing) return await this.update({ where: { [key]: value }, data: update });
+    if (existing) {
+      if (!update || Object.keys(update).length === 0) return existing;
+      return await this.update({ where: { [key]: value }, data: update });
+    }
     else return await this.create({ data: create });
   }
 
@@ -380,6 +383,7 @@ const db: any = {
   pago: getModel("Pago"),
   reciboPublico: getModel("ReciboPublico"),
   chatAdmin: getModel("ChatAdmin"),
+  junta: getModel("Junta"),
   getLastError: () => globalThis.__DB_LAST_ERROR__,
 };
 

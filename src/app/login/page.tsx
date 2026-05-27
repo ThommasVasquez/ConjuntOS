@@ -102,9 +102,10 @@ export default function LoginPage() {
               <input 
                 type="text" 
                 required
+                autoComplete="username"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
-                placeholder="ej: thommyadmin" 
+                placeholder="ej: thommy" 
                 className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-6 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white/10"
               />
             </div>
@@ -117,6 +118,7 @@ export default function LoginPage() {
               <input 
                 type="password" 
                 required
+                autoComplete="current-password"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 placeholder="••••••••" 

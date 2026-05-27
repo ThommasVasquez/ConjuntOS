@@ -192,26 +192,26 @@ export default function FeaturesCollage() {
 
         {/* The Fixed Phone Mockup - Focal Point */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
-          <div className="relative w-[300px] md:w-[380px] aspect-[9/19.5] bg-black rounded-[3.5rem] border-[10px] border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden">
+          <div className="relative w-[300px] md:w-[380px] aspect-[9/19.5] bg-[#05020a] rounded-[3.5rem] border-[10px] border-white/10 shadow-[0_40px_100px_rgba(217,70,239,0.2)] overflow-hidden">
              {/* Notch */}
-             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-7 bg-black rounded-b-3xl z-30" />
+             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-7 bg-[#05020a] rounded-b-3xl z-30" />
              
              {/* Dynamic Content */}
              <div className="absolute inset-0 testimonial-content" key={activeIndex}>
                 <img 
                   src={activeItem.img} 
-                  className="w-full h-full object-cover" 
+                  className="w-full h-full object-cover opacity-80" 
                   alt="App Preview" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#05020a] via-[#05020a]/40 to-[#05020a]/20" />
                 <div className="absolute bottom-12 left-8 right-8 text-white text-center">
-                   <h4 className="text-3xl font-black italic tracking-tighter mb-1 uppercase animate-in slide-in-from-bottom-2 duration-500">
+                   <h4 className="text-3xl font-black italic tracking-tighter mb-1 uppercase animate-in slide-in-from-bottom-2 duration-500 text-glow">
                      {activeItem.name}
                    </h4>
-                   <p className="text-[10px] text-white/70 font-medium tracking-widest uppercase mb-4">
+                   <p className="text-[10px] text-accent font-bold tracking-widest uppercase mb-4">
                      {activeItem.role}
                    </p>
-                   <div className="h-[1px] w-12 bg-[#FF00E5] mx-auto mb-4 shadow-[0_0_10px_rgba(255,0,229,0.5)]" />
+                   <div className="h-[1px] w-12 bg-accent mx-auto mb-4 shadow-[0_0_10px_rgba(217,70,239,0.5)]" />
                    <p className="text-[11px] text-white/50 italic leading-tight">
                      {activeItem.details}
                    </p>
@@ -233,16 +233,16 @@ export default function FeaturesCollage() {
                    i % 2 === 0 ? 'translate-y-24' : '-translate-y-24'
                 }`}
               >
-                <div className="bg-white/5 backdrop-blur-2xl p-2.5 rounded-[32px] shadow-2xl border border-white/10 relative group">
+                <div className="liquid-glass-card p-2.5 rounded-[32px] shadow-2xl border border-white/10 relative group">
                   <div className="relative aspect-[4/5.5] rounded-[24px] overflow-hidden mb-4">
-                    <img src={f.img} alt={f.name} className="w-full h-full object-cover opacity-40 grayscale group-hover:grayscale-0 transition-all duration-500" />
-                    <div className={`absolute bottom-4 left-4 ${f.color} text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest`}>
+                    <img src={f.img} alt={f.name} className="w-full h-full object-cover opacity-45 grayscale group-hover:grayscale-0 transition-all duration-500" />
+                    <div className={`absolute bottom-4 left-4 ${f.color} text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg`}>
                       {f.role}
                     </div>
                   </div>
                   <div className="px-4 pb-3 flex items-center justify-between">
                      <h4 className="font-black text-sm text-white tracking-tight uppercase italic">{f.name}</h4>
-                     <div className="w-8 h-8 rounded-full bg-[#FF00E5] flex items-center justify-center text-white shadow-[0_0_15px_rgba(255,0,229,0.4)]">
+                     <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white shadow-[0_0_15px_rgba(217,70,239,0.4)]">
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3"><path d="M2 6H10M10 6L6 2M10 6L6 10"/></svg>
                      </div>
                   </div>
@@ -254,17 +254,17 @@ export default function FeaturesCollage() {
       </div>
 
       {/* Marquee Ticker */}
-      <div className="mt-10 bg-white py-1.5 scale-105 border-y border-black z-50 relative shadow-[0_0_40px_rgba(0,0,0,0.1)]">
+      <div className="mt-10 bg-[#160a2b] py-3 scale-105 border-y border-accent/20 z-50 relative shadow-[0_0_30px_rgba(217,70,239,0.15)]">
         <div className="flex whitespace-nowrap overflow-hidden">
           <div className="flex whitespace-nowrap animate-marquee items-center">
             {[1,2,3,4,5,6,7,8].map(i => (
               <div key={i} className="flex items-center gap-10 px-5">
-                <span className="text-black font-black italic text-sm uppercase tracking-tighter">PRUEBA CONJUNTOS</span>
-                <div className="w-2 h-2 rounded-full bg-black" />
-                <span className="text-black font-black italic text-sm uppercase tracking-tighter">GESTIÓN INTELIGENTE</span>
-                <div className="w-2 h-2 rounded-full bg-black" />
-                <span className="text-black font-black italic text-sm uppercase tracking-tighter">COMUNIDAD ACTIVA</span>
-                <div className="w-2 h-2 rounded-full bg-black" />
+                <span className="text-accent font-black italic text-sm uppercase tracking-widest text-glow">PRUEBA CONJUNTOS</span>
+                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(217,70,239,0.8)]" />
+                <span className="text-accent font-black italic text-sm uppercase tracking-widest text-glow">GESTIÓN INTELIGENTE</span>
+                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(217,70,239,0.8)]" />
+                <span className="text-accent font-black italic text-sm uppercase tracking-widest text-glow">COMUNIDAD ACTIVA</span>
+                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(217,70,239,0.8)]" />
               </div>
             ))}
           </div>

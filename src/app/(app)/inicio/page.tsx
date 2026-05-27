@@ -345,6 +345,29 @@ function HomeResidente() {
         </div>
       </header>
 
+      {/* 🔴 ASSEMBLY LIVE BANNER */}
+      <div 
+        onClick={() => router.push('/asamblea')}
+        className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[90px] shadow-[0_15px_30px_rgba(239,68,68,0.2)] border border-red-500/20 group cursor-pointer hover:border-red-500/40 transition-all"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-red-950/80 via-purple-950/70 to-red-950/80 opacity-95" />
+        <div className="absolute inset-0 p-4 flex items-center justify-between z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/40 animate-pulse">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            </div>
+            <div>
+              <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest block">Sesión en Vivo</span>
+              <h3 className="text-sm font-display font-bold text-white tracking-tight">Asamblea General Ordinaria</h3>
+              <p className="text-white/40 text-[9px] mt-0.5">Únete y participa en la votación del presupuesto 2026</p>
+            </div>
+          </div>
+          <div className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-1">
+            Entrar <ArrowRight size={10} />
+          </div>
+        </div>
+      </div>
+
       {/* SEARCH MODAL */}
       <SearchModal
         isOpen={isSearchOpen}
@@ -579,6 +602,27 @@ function HomeAdmin() {
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <ProfileHeader />
+      
+      {/* 🔴 LIVE ASSEMBLY ADMIN CONTROL CARD */}
+      <div 
+        onClick={() => router.push('/asamblea')}
+        className="w-full bg-linear-to-r from-purple-900/40 via-accent/10 to-purple-950/40 rounded-[28px] p-6 border border-accent/20 shadow-2xl text-white cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent">
+            <span className="w-3.5 h-3.5 rounded-full bg-accent animate-ping" />
+          </div>
+          <div>
+            <span className="text-[9px] text-accent font-black uppercase tracking-widest block mb-0.5">Control de Reunión</span>
+            <h3 className="text-lg font-display font-bold leading-tight">Asamblea General Activa</h3>
+            <p className="text-white/40 text-xs mt-0.5">Abre la mesa de discusión, administra turnos y lee sugerencias de la IA.</p>
+          </div>
+        </div>
+        <button className="bg-accent text-primary text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 group-hover:bg-accent/80 cursor-pointer">
+          Moderar <ArrowRight size={10} />
+        </button>
+      </div>
+
       <div className="liquid-glass rounded-3xl p-6 border border-white/10 shadow-2xl text-white">
         <h2 className="text-2xl font-bold mb-2">Panel Administrativo</h2>
         <button onClick={() => router.push('/admin-novedades')} className="mt-4 bg-accent text-primary px-6 py-3 rounded-2xl font-bold">Gestionar Novedades</button>
