@@ -1066,7 +1066,7 @@ export default function AsambleaPage() {
                             ref={localVideoRef} 
                             autoPlay 
                             playsInline 
-                            className="w-full h-full object-cover" 
+                            className="w-full h-full object-cover -scale-x-100" 
                           />
                         ) : (
                           /* Otherwise, simulated premium avatar stream of speaking resident */
@@ -1095,7 +1095,7 @@ export default function AsambleaPage() {
                             ref={localVideoRef} 
                             autoPlay 
                             playsInline 
-                            className="w-full h-full object-cover" 
+                            className="w-full h-full object-cover -scale-x-100" 
                           />
                         ) : (
                           /* Otherwise, simulated Admin stream */
@@ -1996,7 +1996,7 @@ export default function AsambleaPage() {
                                     autoPlay 
                                     playsInline 
                                     muted 
-                                    className="w-full h-full object-cover" 
+                                    className="w-full h-full object-cover -scale-x-100" 
                                   />
                                 ) : (
                                   <div className="text-center p-2 flex flex-col items-center justify-center">
