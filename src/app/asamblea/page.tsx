@@ -1052,13 +1052,35 @@ export default function AsambleaPage() {
                     )}
                     
                     {/* Overlay Status info */}
-                    <div className="absolute top-2 left-2 bg-red-500/80 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest animate-pulse">
+                    <div className="absolute top-2 left-2 bg-red-500/80 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest animate-pulse z-10">
                       Administración
                     </div>
-                    <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[9px] bg-black/40 backdrop-blur-xs p-1 rounded-md">
-                      <span className="truncate max-w-[80px]">Thommy (Admin)</span>
-                      <span className="text-[8px] text-emerald-400 font-bold">● En directo</span>
-                    </div>
+                    
+                    {!isWebAdmin ? (
+                      <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[9px] bg-black/40 backdrop-blur-xs p-1 rounded-md z-10">
+                        <span className="truncate max-w-[80px]">Thommy (Admin)</span>
+                        <span className="text-[8px] text-emerald-400 font-bold">● En directo</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] text-emerald-400 font-bold flex items-center gap-1 z-10">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Thommy (Admin)
+                        </div>
+                        {/* Pinned AI Suggestions Overlay at the bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-[#05020a]/90 backdrop-blur-md border-t border-white/10 p-2.5 flex flex-col gap-1.5 max-h-[55%] overflow-y-auto z-10 select-none">
+                          <span className="text-[8px] text-accent font-black uppercase tracking-wider flex items-center gap-1">
+                            <Sparkles size={8} className="text-accent" /> Sugerencias del Copiloto IA
+                          </span>
+                          <div className="flex flex-col gap-1">
+                            {copilotData.sugerencias.slice(0, 3).map((sug, idx) => (
+                              <p key={idx} className="text-[8px] text-white/90 leading-normal font-medium">
+                                • {sug}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* 2. Council Members Pinned */}
