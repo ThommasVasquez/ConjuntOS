@@ -366,18 +366,24 @@ export default function AsambleaPage() {
     }
   };
 
+  const recognitionRef = useRef<any>(null);
+
   // AI Copilot trigger
-  const triggerCopilot = async () => {
+  const triggerCopilot = async (overrideOpiniones?: any[], overrideTranscripcion?: string) => {
     if (ordenDia.length === 0) return;
     setCopilotLoading(true);
     try {
       const activeItem = ordenDia[itemActivoIndex];
+      const currentOpinions = overrideOpiniones || opiniones;
+      const currentTranscripcion = overrideTranscripcion || (subtitulos && subtitulos.length > 0 ? subtitulos[subtitulos.length - 1].text : "");
+      
       const res = await fetch("/api/asamblea/copilot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agendaItem: activeItem,
-          opiniones: opiniones
+          opiniones: currentOpinions,
+          transcripcion: currentTranscripcion
         })
       });
       const data = await res.json();
@@ -713,50 +719,151 @@ export default function AsambleaPage() {
   };
 
   // WEB SPEECH API / LIVE SUBTITLES SIMULATION
+  const startSpeakingSimulation = () => {
+    setIsSpeaking(true);
+    
+    const phrases = [
+      "Buenas noches a todos, empezamos el debate de la asamblea.",
+      "Revisemos primero el cambio de administración de piscinas y las ofertas.",
+      "Tenemos tres cotizaciones para la piscina, incluyendo la de Aquaservicios.",
+      "Pasamos al tema de la cuota extraordinaria y mantenimiento de ascensores.",
+      "Evaluemos si Otis o Schindler nos ofrecen mejores precios."
+    ];
+    
+    let count = 0;
+    const subInterval = setInterval(() => {
+      const nextPhrase = phrases[count % phrases.length];
+      const newSub = {
+        id: "sub_" + Date.now(),
+        speaker: session?.user?.name || "Administrador",
+        text: nextPhrase,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      
+      setSubtitulos([newSub]);
+      
+      // Auto-trigger copilot suggestions based on what was said!
+      triggerCopilot(opiniones, nextPhrase);
+
+      // Also post as a chat opinion to simulate participant talking transcript
+      fetch("/api/asamblea/opiniones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contenido: `[Transcripción Voz] ${nextPhrase}` })
+      }).then(r => r.json()).then(d => {
+        if (d.success) setOpiniones(d.opiniones);
+      });
+
+      count++;
+      if (count >= phrases.length) {
+        clearInterval(subInterval);
+        setIsSpeaking(false);
+      }
+    }, 6000);
+
+    recognitionRef.current = subInterval;
+  };
+
+  const simulateSpeechTopic = (topic: string) => {
+    let phrase = "";
+    
+    if (topic === "piscina") {
+      phrase = "Iniciamos el debate sobre el cambio de administración de piscinas del conjunto.";
+    } else if (topic === "ascensor") {
+      phrase = "Procedemos a evaluar las cotizaciones presentadas para el mantenimiento preventivo de los ascensores Otis y Kone.";
+    } else if (topic === "seguridad") {
+      phrase = "Pasamos a debatir la contratación de la empresa de seguridad y vigilancia Atlas.";
+    } else if (topic === "presupuesto") {
+      phrase = "Abrimos la discusión sobre el proyecto de presupuesto 2026 y la cuota extraordinaria del muro.";
+    }
+    
+    const newSub = {
+      id: "sub_" + Date.now(),
+      speaker: session?.user?.name || "Administrador",
+      text: phrase,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    
+    setSubtitulos([newSub]);
+    
+    // Automatically trigger Copilot with this topic text!
+    triggerCopilot(opiniones, phrase);
+    
+    // Also post to opinions to simulate voice transcription appearing in the log
+    fetch("/api/asamblea/opiniones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contenido: `[Transcripción Voz] ${phrase}` })
+    }).then(r => r.json()).then(d => {
+      if (d.success) setOpiniones(d.opiniones);
+    });
+
+    toast.success(`Discutiendo: ${topic.toUpperCase()} (IA sugerirá licitantes y precios en subtítulos)`);
+  };
+
   const handleToggleSpeaking = () => {
     if (isSpeaking) {
+      if (recognitionRef.current) {
+        if (typeof recognitionRef.current === "object" && typeof recognitionRef.current.stop === "function") {
+          recognitionRef.current.stop();
+        } else {
+          clearInterval(recognitionRef.current);
+        }
+      }
       setIsSpeaking(false);
       toast.info("Micrófono cerrado para subtítulos");
     } else {
-      setIsSpeaking(true);
-      toast.success("Micrófono abierto. Habla para generar subtítulos en tiempo real...");
-      
-      // Simulate real-time rolling subtitles in local state
-      const phrases = [
-        "Buenas noches a todos los copropietarios de la asamblea.",
-        "Verificamos que en este momento contamos con quórum suficiente para deliberar.",
-        "Pasamos al punto de discusión sobre la cuota extraordinaria del ascensor.",
-        "Les pido mantener el orden y esperar a que se les ceda la palabra en la cola.",
-        "Abrimos la votación formal para la aprobación del presupuesto presentado."
-      ];
-      
-      let count = 0;
-      const subInterval = setInterval(() => {
-        const nextPhrase = phrases[count % phrases.length];
-        const newSub = {
-          id: "sub_" + Date.now(),
-          speaker: session?.user?.name || "Administrador",
-          text: nextPhrase,
-          timestamp: new Date().toLocaleTimeString()
-        };
-        
-        setSubtitulos(prev => [...prev.slice(-3), newSub]); // keep last 4
-        
-        // Also post as a chat opinion to simulate participant talking transcript
-        fetch("/api/asamblea/opiniones", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contenido: `[Transcripción Voz] ${nextPhrase}` })
-        }).then(r => r.json()).then(d => {
-          if (d.success) setOpiniones(d.opiniones);
-        });
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.lang = "es-ES";
+          recognition.interimResults = false;
+          recognition.maxAlternatives = 1;
+          recognition.continuous = true;
 
-        count++;
-        if (count >= phrases.length) {
-          clearInterval(subInterval);
-          setIsSpeaking(false);
+          recognition.onstart = () => {
+            setIsSpeaking(true);
+            toast.success("Micrófono abierto. Habla para generar subtítulos reales y disparar sugerencias IA...");
+          };
+
+          recognition.onresult = (event: any) => {
+            const resultText = event.results[event.results.length - 1][0].transcript;
+            const newSub = {
+              id: "sub_" + Date.now(),
+              speaker: session?.user?.name || "Administrador",
+              text: resultText,
+              timestamp: new Date().toLocaleTimeString()
+            };
+            
+            setSubtitulos([newSub]);
+            
+            // Auto-trigger copilot suggestions based on what was said!
+            triggerCopilot(opiniones, resultText);
+          };
+
+          recognition.onerror = (event: any) => {
+            console.error("Speech Recognition Error:", event.error);
+            if (event.error === "not-allowed") {
+              toast.warn("Acceso a micrófono no permitido. Iniciando simulación de voz...");
+              startSpeakingSimulation();
+            }
+          };
+
+          recognition.onend = () => {
+            setIsSpeaking(false);
+          };
+
+          recognition.start();
+          recognitionRef.current = recognition;
+        } catch (e) {
+          console.warn("Reconocimiento de voz falló al iniciar. Usando simulación.");
+          startSpeakingSimulation();
         }
-      }, 5000);
+      } else {
+        toast.info("Navegador sin Web Speech API nativo. Iniciando simulación...");
+        startSpeakingSimulation();
+      }
     }
   };
 
@@ -1048,6 +1155,41 @@ export default function AsambleaPage() {
                   </div>
                 </div>
 
+                {/* Simulated Topics Bar for Admin */}
+                {isWebAdmin && (
+                  <div className="flex flex-col gap-2 bg-white/5 border border-white/5 p-3 rounded-2xl">
+                    <span className="text-[9px] text-accent font-black uppercase tracking-widest flex items-center gap-1">
+                      <Sparkles size={10} className="text-accent" /> Temas Rápidos para Simular Voz (IA sugerirá Licitaciones y Precios en vivo):
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <button 
+                        onClick={() => simulateSpeechTopic("piscina")}
+                        className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/35 border border-purple-500/30 text-purple-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
+                      >
+                        🏊‍♂️ Piscinas
+                      </button>
+                      <button 
+                        onClick={() => simulateSpeechTopic("ascensor")}
+                        className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-500/30 text-cyan-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
+                      >
+                        🛗 Ascensores
+                      </button>
+                      <button 
+                        onClick={() => simulateSpeechTopic("seguridad")}
+                        className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-500/30 text-emerald-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
+                      >
+                        🛡️ Seguridad
+                      </button>
+                      <button 
+                        onClick={() => simulateSpeechTopic("presupuesto")}
+                        className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/30 text-amber-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
+                      >
+                        💰 Presupuesto
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* 2.1.1 MAIN SPOTLIGHT STAGE (Priority Active Speaker) */}
                 {(() => {
                   const activeSpeaker = turnos.find(t => t.estado === "HABLANDO");
@@ -1130,6 +1272,18 @@ export default function AsambleaPage() {
                       <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-xl text-[9px] text-emerald-400 font-bold flex items-center gap-1.5 shadow-md z-20">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {spotlightName}
                       </div>
+
+                      {/* Live spoken transcription subtitle for everyone */}
+                      {subtitulos && subtitulos.length > 0 && (
+                        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 w-[85%] max-w-xl bg-black/60 backdrop-blur-xs px-4 py-2 rounded-lg shadow-lg text-center z-20 pointer-events-none select-none border border-white/5 animate-fade-in">
+                          <p className="text-[11px] sm:text-xs text-white font-sans font-medium tracking-wide drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)]">
+                            <span className="text-emerald-400 font-bold uppercase tracking-wider text-[8px] mr-1.5">
+                              [{subtitulos[subtitulos.length - 1].speaker}]:
+                            </span>
+                            "{subtitulos[subtitulos.length - 1].text}"
+                          </p>
+                        </div>
+                      )}
 
                       {/* AI Suggestions floating subtitles block for the Administrator */}
                       {isWebAdmin && copilotData.sugerencias && copilotData.sugerencias.length > 0 && (
