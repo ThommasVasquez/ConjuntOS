@@ -37,6 +37,28 @@ interface ResidentOpinion {
   creadoEn: string;
 }
 
+const getInitials = (name: string) => {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return parts[0][0].toUpperCase();
+};
+
+const getGradientClass = (name: string) => {
+  const charCode = name.charCodeAt(0) || 0;
+  const gradients = [
+    "from-pink-500 to-rose-600 text-white",
+    "from-purple-500 to-indigo-600 text-white",
+    "from-blue-500 to-cyan-600 text-white",
+    "from-emerald-500 to-teal-600 text-white",
+    "from-amber-500 to-orange-600 text-white",
+    "from-violet-500 to-fuchsia-600 text-white"
+  ];
+  return gradients[charCode % gradients.length];
+};
+
 export default function AsambleaPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -988,7 +1010,7 @@ export default function AsambleaPage() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/5 pb-3">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                    <h4 className="text-xs font-black uppercase tracking-widest text-white">Transmisión de Video en Vivo</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-white">Videoconferencia de Asamblea (Meet Stage)</h4>
                   </div>
                   
                   {/* WebRTC Streaming Controls */}
@@ -1026,136 +1048,166 @@ export default function AsambleaPage() {
                   </div>
                 </div>
 
-                {/* Grid of video boxes */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {/* 2.1.1 MAIN SPOTLIGHT STAGE (Priority Active Speaker) */}
+                {(() => {
+                  const activeSpeaker = turnos.find(t => t.estado === "HABLANDO");
+                  const isResidentActive = !!activeSpeaker;
+                  const spotlightName = activeSpeaker ? activeSpeaker.nombre : "Thommy Admin";
+                  const spotlightApto = activeSpeaker ? (activeSpeaker.apto || "N/A") : "Administración";
                   
-                  {/* 1. Administrador (Pinned, always visible) */}
-                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-black/60 border border-white/10 flex flex-col justify-center items-center group">
-                    {/* If current user is Admin AND camera is active, render local video stream */}
-                    {isWebAdmin && isCameraActive && localStream ? (
-                      <video 
-                        ref={localVideoRef} 
-                        autoPlay 
-                        playsInline 
-                        muted 
-                        className="w-full h-full object-cover" 
-                      />
-                    ) : (
-                      /* Otherwise, simulated Admin stream */
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <div className="w-12 h-12 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-accent text-lg mb-2 animate-pulse">
-                          👑
-                        </div>
-                        <span className="text-xs font-bold text-white">Thommy Admin</span>
-                        <span className="text-[9px] text-white/40 uppercase font-black mt-0.5 tracking-wider">Administrador</span>
-                      </div>
-                    )}
-                    
-                    {/* Overlay Status info */}
-                    <div className="absolute top-2 left-2 bg-red-500/80 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest animate-pulse z-10">
-                      Administración
-                    </div>
-                    
-                    {!isWebAdmin ? (
-                      <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[9px] bg-black/40 backdrop-blur-xs p-1 rounded-md z-10">
-                        <span className="truncate max-w-[80px]">Thommy (Admin)</span>
-                        <span className="text-[8px] text-emerald-400 font-bold">● En directo</span>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] text-emerald-400 font-bold flex items-center gap-1 z-10">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Thommy (Admin)
-                        </div>
-                        {/* Pinned AI Suggestions Overlay at the bottom */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-[#05020a]/90 backdrop-blur-md border-t border-white/10 p-2.5 flex flex-col gap-1.5 max-h-[55%] overflow-y-auto z-10 select-none">
-                          <span className="text-[8px] text-accent font-black uppercase tracking-wider flex items-center gap-1">
-                            <Sparkles size={8} className="text-accent" /> Sugerencias del Copiloto IA
-                          </span>
-                          <div className="flex flex-col gap-1">
-                            {copilotData.sugerencias.slice(0, 3).map((sug, idx) => (
-                              <p key={idx} className="text-[8px] text-white/90 leading-normal font-medium">
-                                • {sug}
-                              </p>
-                            ))}
+                  return (
+                    <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-[#0a0a0d] border border-white/10 flex flex-col justify-center items-center shadow-2xl group max-h-[480px]">
+                      
+                      {/* Active Video Rendering */}
+                      {isResidentActive ? (
+                        /* Case A: Resident is the active speaker speaking */
+                        (!isWebAdmin && isCameraActive && localStream && activeSpeaker.usuarioId === session?.user?.id) ? (
+                          <video 
+                            ref={localVideoRef} 
+                            autoPlay 
+                            playsInline 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          /* Otherwise, simulated premium avatar stream of speaking resident */
+                          <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#121216] to-[#070709] flex flex-col items-center justify-center">
+                            {/* Animated voice waves for active speaker */}
+                            <div className="relative flex items-center justify-center">
+                              <div className="absolute w-24 h-24 rounded-full bg-red-500/10 animate-ping duration-1000" />
+                              <div className="absolute w-28 h-28 rounded-full bg-red-500/5 animate-pulse duration-700" />
+                              <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${getGradientClass(spotlightName)} flex items-center justify-center text-3xl font-bold shadow-lg border border-white/15 z-10`}>
+                                {getInitials(spotlightName)}
+                              </div>
+                            </div>
+                            <span className="text-base font-bold text-white mt-4 flex items-center gap-2">
+                              {spotlightName} 
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]" />
+                            </span>
+                            <span className="text-[10px] text-red-400 uppercase font-black tracking-widest mt-1">
+                              Hablando...
+                            </span>
                           </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                        )
+                      ) : (
+                        /* Case B: No resident is speaking, Admin occupies the stage */
+                        (isWebAdmin && isCameraActive && localStream) ? (
+                          <video 
+                            ref={localVideoRef} 
+                            autoPlay 
+                            playsInline 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          /* Otherwise, simulated Admin stream */
+                          <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#121216] to-[#070709] flex flex-col items-center justify-center">
+                            <div className="relative flex items-center justify-center">
+                              <div className="absolute w-24 h-24 rounded-full bg-accent/15 animate-pulse duration-1000" />
+                              <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${getGradientClass(spotlightName)} flex items-center justify-center text-3xl font-bold shadow-lg border border-white/15 z-10`}>
+                                {getInitials(spotlightName)}
+                              </div>
+                            </div>
+                            <span className="text-base font-bold text-white mt-4 flex items-center gap-1.5">
+                              {spotlightName}
+                              <span className="text-[8px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider">MOD</span>
+                            </span>
+                            <span className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">
+                              Administrador de la Asamblea
+                            </span>
+                          </div>
+                        )
+                      )}
 
-                  {/* 2. Council Members Pinned */}
-                  {councilFeeds.map((feed) => (
-                    <div key={feed.id} className="relative aspect-video rounded-2xl overflow-hidden bg-black/60 border border-white/10 flex flex-col justify-center items-center group">
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <div className="w-12 h-12 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-xl mb-2">
-                          {feed.avatar}
-                        </div>
-                        <span className="text-xs font-bold text-white">{feed.nombre}</span>
-                        <span className="text-[9px] text-white/40 uppercase font-black mt-0.5 tracking-wider">{feed.rol}</span>
-                      </div>
-
-                      {/* Mic status indicators */}
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${feed.microfonoActivo ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                          {feed.microfonoActivo ? <Mic size={10} /> : <MicOff size={10} />}
+                      {/* Top status badges */}
+                      <div className="absolute top-4 left-4 flex gap-2 z-20">
+                        <span className="bg-red-500 text-white px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest animate-pulse shadow-md">
+                          En Pantalla Principal
+                        </span>
+                        <span className="bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-xl text-[9px] font-bold shadow-md">
+                          {spotlightApto}
                         </span>
                       </div>
-                      
-                      {/* Active speaking animation */}
-                      {feed.microfonoActivo && (
-                        <div className="absolute bottom-2 right-2 flex gap-0.5 items-end h-3">
-                          <span className="w-[1.5px] bg-emerald-400 animate-bounce h-2" style={{ animationDelay: '0.1s' }} />
-                          <span className="w-[1.5px] bg-emerald-400 animate-bounce h-3" style={{ animationDelay: '0.3s' }} />
-                          <span className="w-[1.5px] bg-emerald-400 animate-bounce h-1" style={{ animationDelay: '0.5s' }} />
+
+                      <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-xl text-[9px] text-emerald-400 font-bold flex items-center gap-1.5 shadow-md z-20">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {spotlightName}
+                      </div>
+
+                      {/* AI Suggestions floating subtitles block for the Administrator */}
+                      {isWebAdmin && copilotData.sugerencias && copilotData.sugerencias.length > 0 && (
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-black/75 backdrop-blur-xs px-5 py-3 rounded-xl shadow-2xl text-center z-20 pointer-events-none select-none border border-white/5 animate-fade-in">
+                          <div className="flex flex-col gap-2">
+                            <p className="text-xs sm:text-sm md:text-base text-yellow-300 font-sans font-semibold tracking-wide leading-relaxed drop-shadow-[0_2px_3px_rgba(0,0,0,1)]">
+                              <span className="text-accent font-black uppercase tracking-wider text-[9px] mr-2">[IA COPILOTO]:</span>
+                              {copilotData.sugerencias[0]}
+                            </p>
+                            {copilotData.sugerencias[1] && (
+                              <p className="text-[11px] sm:text-xs text-white/90 font-sans font-normal leading-relaxed drop-shadow-[0_2px_3px_rgba(0,0,0,1)] border-t border-white/10 pt-2 mt-1">
+                                <span className="text-cyan-400 font-black uppercase tracking-wider text-[9px] mr-2">[CONSEJO ALTERNATIVO]:</span>
+                                {copilotData.sugerencias[1]}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       )}
+                    </div>
+                  );
+                })()}
 
-                      <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[9px] bg-black/40 backdrop-blur-xs p-1 rounded-md">
-                        <span className="truncate max-w-[80px]">{feed.apto}</span>
-                        <span className="text-[8px] text-white/50">{feed.microfonoActivo ? "Hablando" : "Silenciado"}</span>
+                {/* 2.1.2 SECONDARY TILES (Google Meet style Sidebar strip below) */}
+                <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
+                  <span className="text-[9px] text-white/30 uppercase tracking-widest font-black block">Otros Participantes en la Reunión</span>
+                  
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                    
+                    {/* Compact Tile 1: Admin */}
+                    <div className="relative w-[140px] aspect-video rounded-xl overflow-hidden bg-gradient-to-b from-[#18181c] to-[#0c0c0e] border border-white/10 flex flex-col justify-center items-center shrink-0 shadow-md">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center text-xs font-bold shadow-sm mb-1">
+                        TA
+                      </div>
+                      <span className="text-[9px] font-bold text-white max-w-[120px] truncate">Thommy Admin</span>
+                      <div className="absolute bottom-1 left-1.5 bg-black/60 px-1 py-0.5 rounded text-[7px] text-white/60 font-black uppercase tracking-wider scale-90 origin-bottom-left">
+                        MOD / Admin
                       </div>
                     </div>
-                  ))}
+
+                    {/* Compact Council Members Tiles */}
+                    {councilFeeds.map((feed) => (
+                      <div key={feed.id} className="relative w-[140px] aspect-video rounded-xl overflow-hidden bg-gradient-to-b from-[#18181c] to-[#0c0c0e] border border-white/10 flex flex-col justify-center items-center shrink-0 shadow-md">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-xs font-bold shadow-sm mb-1">
+                          {getInitials(feed.nombre)}
+                        </div>
+                        <span className="text-[9px] font-bold text-white max-w-[120px] truncate">{feed.nombre.split(" ").slice(-1)[0]}</span>
+                        
+                        {/* Mic status indicator */}
+                        <span className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center ${feed.microfonoActivo ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                          {feed.microfonoActivo ? <Mic size={8} /> : <MicOff size={8} />}
+                        </span>
+                        
+                        <div className="absolute bottom-1 left-1.5 bg-black/60 px-1 py-0.5 rounded text-[7px] text-white/60 font-black uppercase tracking-wider scale-90 origin-bottom-left">
+                          {feed.rol}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Compact Tile of speaking Resident if active */}
+                    {(() => {
+                      const activeSpeaker = turnos.find(t => t.estado === "HABLANDO");
+                      if (!activeSpeaker) return null;
+                      return (
+                        <div className="relative w-[140px] aspect-video rounded-xl overflow-hidden bg-gradient-to-b from-[#18181c] to-[#0c0c0e] border-2 border-red-500/60 flex flex-col justify-center items-center shrink-0 shadow-md animate-pulse">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-xs font-bold shadow-sm mb-1">
+                            {getInitials(activeSpeaker.nombre)}
+                          </div>
+                          <span className="text-[9px] font-bold text-white max-w-[120px] truncate">{activeSpeaker.nombre}</span>
+                          <div className="absolute bottom-1 left-1.5 bg-red-600 px-1.5 py-0.5 rounded text-[7px] text-white font-black uppercase tracking-widest scale-90 origin-bottom-left flex items-center gap-0.5">
+                            <span className="w-1 h-1 rounded-full bg-white animate-ping" /> Hablando
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                  </div>
                 </div>
 
-                {/* Active Resident Speaker Stream (Renders if someone has the mic) */}
-                {turnos.some(t => t.estado === "HABLANDO") && (
-                  <div className="mt-4 p-4 bg-accent/5 border border-accent/20 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-red-500/20 border border-red-500 flex items-center justify-center text-red-400 animate-pulse">
-                        <Mic size={18} />
-                      </div>
-                      <div>
-                        <span className="text-[8px] font-black text-red-400 uppercase tracking-widest">Orador de la Comunidad en Directo</span>
-                        <h5 className="text-sm font-bold text-white">
-                          {turnos.find(t => t.estado === "HABLANDO")?.nombre} ({turnos.find(t => t.estado === "HABLANDO")?.apto || "N/A"})
-                        </h5>
-                      </div>
-                    </div>
-                    
-                    {/* Active speaker video feed */}
-                    <div className="w-full sm:w-[240px] aspect-video rounded-xl overflow-hidden bg-black/80 border border-white/10 flex items-center justify-center relative">
-                      {/* If local user is the active speaker and camera is on, render their stream */}
-                      {!isWebAdmin && isCameraActive && localStream && turnos.some(t => t.usuarioId === session?.user?.id && t.estado === "HABLANDO") ? (
-                        <video 
-                          ref={localVideoRef} 
-                          autoPlay 
-                          playsInline 
-                          muted 
-                          className="w-full h-full object-cover" 
-                        />
-                      ) : (
-                        <div className="text-center p-2">
-                          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center mx-auto text-accent text-sm mb-1 animate-pulse">🎤</div>
-                          <span className="text-[10px] font-medium text-white/60">Transmisión de Audio y Video Abierta</span>
-                        </div>
-                      )}
-                      <div className="absolute bottom-1.5 right-1.5 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
-                        Micrófono Abierto
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* ADMIN PANEL */}
