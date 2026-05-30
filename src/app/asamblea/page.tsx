@@ -82,6 +82,8 @@ const RemoteVideo = ({ stream, className }: { stream: MediaStream; className?: s
 export default function AsambleaPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const webUserRole = (session?.user as { role?: string })?.role;
+  const isWebAdmin = webUserRole === "ADMINISTRADOR" || webUserRole === "SUPER_ADMIN";
 
   // Mode settings
   const [isDemoMode, setIsDemoMode] = useState(true); // Default to split demo on desktop
@@ -418,13 +420,27 @@ export default function AsambleaPage() {
 
     const timer = setInterval(() => {
       setSpeakingTimeLeft(prev => {
-        if (prev === null || prev <= 0) return 0;
+        if (prev === null || prev <= 0) {
+          clearInterval(timer);
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
   }, [turnos]);
+
+  // Auto-mute active speaker if time runs out (triggered on Admin side)
+  useEffect(() => {
+    if (isWebAdmin && speakingTimeLeft === 0) {
+      const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
+      if (activeSpeaker) {
+        toast.warning(`Tiempo agotado para ${activeSpeaker.nombre}. Silenciando automáticamente...`);
+        handleCompleteTurn(activeSpeaker.id);
+      }
+    }
+  }, [speakingTimeLeft, isWebAdmin, turnos]);
 
   // Fetch session data
   const fetchSession = async () => {
@@ -1295,8 +1311,6 @@ export default function AsambleaPage() {
   };
 
   const activeAgendaItem = ordenDia[itemActivoIndex] || { titulo: "Sin orden del día", descripcion: "" };
-  const webUserRole = (session?.user as { role?: string })?.role;
-  const isWebAdmin = webUserRole === "ADMINISTRADOR" || webUserRole === "SUPER_ADMIN";
 
   if (status === "authenticated") {
     return (
@@ -1447,16 +1461,78 @@ export default function AsambleaPage() {
                   <div className="bg-white border border-stone-200 rounded-2xl p-3 flex flex-col gap-2.5 shadow-xs">
                     <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider block">Orador en Turno</span>
                     {(() => {
-                      const speakingUser = turnos.find(t => t.estado === "HABLANDO") || { nombre: "Thommy Admin", apto: "Administración", iniciadoHablarEn: new Date().toISOString() };
+                      const activeSpeaker = turnos.find(t => t.estado === "HABLANDO");
+                      const speakingUser = activeSpeaker || { id: "admin", nombre: "Thommy Admin", apto: "Administración", iniciadoHablarEn: new Date().toISOString() };
+                      
                       return (
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                            {getInitials(speakingUser.nombre)}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                              {getInitials(speakingUser.nombre)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-bold text-stone-800 truncate leading-none mb-1">{speakingUser.nombre}</p>
+                              <p className="text-[9px] text-stone-400 uppercase tracking-wider">{speakingUser.apto || "Consejo"}</p>
+                            </div>
+                            {activeSpeaker && speakingTimeLeft !== null && (
+                              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
+                                speakingTimeLeft <= 20 ? 'bg-red-50 text-red-500 animate-pulse' : 'bg-stone-50 text-stone-600'
+                              }`}>
+                                {Math.floor(speakingTimeLeft / 60)}:{(speakingTimeLeft % 60).toString().padStart(2, '0')}
+                              </span>
+                            )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-bold text-stone-800 truncate leading-none mb-1">{speakingUser.nombre}</p>
-                            <p className="text-[9px] text-stone-400 uppercase tracking-wider">{speakingUser.apto || "Consejo"}</p>
-                          </div>
+                          
+                          {/* Admin complete/mute button */}
+                          {isWebAdmin && activeSpeaker && (
+                            <button
+                              onClick={() => handleCompleteTurn(activeSpeaker.id)}
+                              className="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1"
+                            >
+                              <MicOff size={11} />
+                              <span>Terminar Turno (Silenciar)</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Speaker Queue Box */}
+                  <div className="bg-white border border-stone-200 rounded-2xl p-3 flex flex-col gap-2 shadow-xs">
+                    <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider block">Cola de Peticiones de Palabra</span>
+                    {(() => {
+                      const pendingTurns = turnos.filter(t => t.estado === "PENDIENTE");
+                      if (pendingTurns.length === 0) {
+                        return <p className="text-[10px] text-stone-400 italic py-1 text-center">No hay solicitudes.</p>;
+                      }
+                      
+                      return (
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                          {pendingTurns.map((turn, index) => {
+                            const isMyTurn = turn.usuarioId === session?.user?.id;
+                            return (
+                              <div key={turn.id} className={`flex justify-between items-center p-2 rounded-xl border text-xs ${
+                                isMyTurn ? 'bg-indigo-50/50 border-indigo-200' : 'bg-stone-50 border-stone-100'
+                              }`}>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-stone-700 truncate leading-tight">{turn.nombre}</p>
+                                  <p className="text-[8px] text-stone-400 font-medium">{turn.apto || "Vecino"} • Cola #{index + 1}</p>
+                                </div>
+                                
+                                {isWebAdmin ? (
+                                  <button
+                                    onClick={() => handleGrantMic(turn.id)}
+                                    className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[9px] font-bold uppercase transition-all cursor-pointer shrink-0"
+                                  >
+                                    Ceder Mic
+                                  </button>
+                                ) : isMyTurn ? (
+                                  <span className="text-[8px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">Tú</span>
+                                ) : null}
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })()}
@@ -1590,6 +1666,34 @@ export default function AsambleaPage() {
                               <span className="text-[9px] text-white/40 uppercase font-black tracking-widest mt-1">Administrador</span>
                             </div>
                           )
+                        )}
+
+                        {/* Speaking turn countdown overlay */}
+                        {isResidentActive && speakingTimeLeft !== null && (
+                          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 z-30 flex items-center gap-2 shadow-lg">
+                            <span className={`w-2 h-2 rounded-full ${speakingTimeLeft <= 20 ? 'bg-red-500 animate-ping' : 'bg-emerald-500 animate-pulse'}`} />
+                            <span className="font-mono text-xs text-white font-black tracking-wider">
+                              TIEMPO: {Math.floor(speakingTimeLeft / 60)}:{(speakingTimeLeft % 60).toString().padStart(2, '0')}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Admin HUD Controls over video */}
+                        {isWebAdmin && isResidentActive && (
+                          <div className="absolute top-4 right-4 z-30 bg-black/75 backdrop-blur-md p-3 rounded-2xl border border-white/10 flex flex-col gap-2 shadow-2xl text-left pointer-events-auto">
+                            <span className="text-[8px] font-black text-red-400 uppercase tracking-widest block">Control de Moderador</span>
+                            <div className="text-[10px] text-white">
+                              <p className="font-bold">Hablando: {activeSpeaker.nombre}</p>
+                              <p className="text-[8px] text-white/60">{activeSpeaker.apto}</p>
+                            </div>
+                            <button
+                              onClick={() => handleCompleteTurn(activeSpeaker.id)}
+                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-md"
+                            >
+                              <MicOff size={10} />
+                              <span>Silenciar Residente</span>
+                            </button>
+                          </div>
                         )}
 
                         {/* HUD left overlay */}
