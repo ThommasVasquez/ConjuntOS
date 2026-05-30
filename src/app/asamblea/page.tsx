@@ -195,6 +195,7 @@ export default function AsambleaPage() {
   const [isMuted, setIsMuted] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const mobileVideoRef = useRef<HTMLVideoElement>(null);
+  const dialedPeersRef = useRef<Record<string, number>>({});
 
   // Council members (Simulated active remote streams)
   const [councilFeeds, setCouncilFeeds] = useState([
@@ -317,40 +318,52 @@ export default function AsambleaPage() {
   useEffect(() => {
     if (!peer || !myUserId) return;
 
+    const now = Date.now();
+    const COOLDOWN_MS = 15000; // 15 seconds cooldown between dial attempts for the same peer
+
     // 1. Dial the Administrator
     if (adminUserId && adminUserId !== myUserId && !remoteStreams[adminUserId]) {
-      console.log('Dialing Admin:', adminUserId);
-      try {
-        const call = peer.call(adminUserId, localStream || new MediaStream());
-        if (call) {
-          call.on('stream', (remoteStream: MediaStream) => {
-            setRemoteStreams(prev => ({ ...prev, [adminUserId]: remoteStream }));
-          });
-          call.on('error', (err: any) => {
-            console.error('Call to Admin error:', err);
-          });
+      const lastDial = dialedPeersRef.current[adminUserId] || 0;
+      if (now - lastDial > COOLDOWN_MS) {
+        dialedPeersRef.current[adminUserId] = now;
+        console.log('Dialing Admin:', adminUserId);
+        try {
+          const call = peer.call(adminUserId, localStream || new MediaStream());
+          if (call) {
+            call.on('stream', (remoteStream: MediaStream) => {
+              setRemoteStreams(prev => ({ ...prev, [adminUserId]: remoteStream }));
+            });
+            call.on('error', (err: any) => {
+              console.error('Call to Admin error:', err);
+            });
+          }
+        } catch (err) {
+          console.error('Failed to call Admin:', err);
         }
-      } catch (err) {
-        console.error('Failed to call Admin:', err);
       }
     }
 
     // 2. Dial the Active Speaker
     const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
     if (activeSpeaker && activeSpeaker.usuarioId !== myUserId && activeSpeaker.usuarioId !== adminUserId && !remoteStreams[activeSpeaker.usuarioId]) {
-      console.log('Dialing Active Speaker:', activeSpeaker.usuarioId);
-      try {
-        const call = peer.call(activeSpeaker.usuarioId, localStream || new MediaStream());
-        if (call) {
-          call.on('stream', (remoteStream: MediaStream) => {
-            setRemoteStreams(prev => ({ ...prev, [activeSpeaker.usuarioId]: remoteStream }));
-          });
-          call.on('error', (err: any) => {
-            console.error('Call to Active Speaker error:', err);
-          });
+      const targetId = activeSpeaker.usuarioId;
+      const lastDial = dialedPeersRef.current[targetId] || 0;
+      if (now - lastDial > COOLDOWN_MS) {
+        dialedPeersRef.current[targetId] = now;
+        console.log('Dialing Active Speaker:', targetId);
+        try {
+          const call = peer.call(targetId, localStream || new MediaStream());
+          if (call) {
+            call.on('stream', (remoteStream: MediaStream) => {
+              setRemoteStreams(prev => ({ ...prev, [targetId]: remoteStream }));
+            });
+            call.on('error', (err: any) => {
+              console.error('Call to Active Speaker error:', err);
+            });
+          }
+        } catch (err) {
+          console.error('Failed to call Active Speaker:', err);
         }
-      } catch (err) {
-        console.error('Failed to call Active Speaker:', err);
       }
     }
   }, [peer, adminUserId, turnos, remoteStreams, myUserId, localStream]);
