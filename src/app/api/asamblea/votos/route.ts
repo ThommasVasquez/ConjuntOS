@@ -175,8 +175,11 @@ export async function POST(req: NextRequest) {
       creadoEn: timestamp
     };
 
-    // Remove old vote if user is re-voting
-    votacion.votos = votacion.votos.filter(v => v.usuarioId !== voter.id);
+    // Enforce that voters can only vote once per poll (no re-voting/vote changes)
+    const alreadyVoted = votacion.votos.some(v => v.usuarioId === voter.id);
+    if (alreadyVoted) {
+      return NextResponse.json({ error: "Ya has registrado tu voto. Solo se permite votar una vez por encuesta." }, { status: 400 });
+    }
     votacion.votos.push(newVoto);
 
     state.votaciones[votIndex] = votacion;

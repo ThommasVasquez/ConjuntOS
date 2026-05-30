@@ -1603,9 +1603,70 @@ export default function AsambleaPage() {
                         </div>
                       )}
 
+                      {/* Twitch/Kick-style Live Chat Overlay */}
+                      <div className="absolute top-0 right-0 bottom-0 w-[220px] bg-black/70 border-l border-white/5 backdrop-blur-md z-20 flex flex-col p-3 text-left animate-fade-in hidden md:flex">
+                        <div className="flex items-center gap-1.5 border-b border-white/5 pb-2 mb-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                          <span className="text-[9px] font-black text-white uppercase tracking-widest">Chat de la Asamblea</span>
+                        </div>
+                        
+                        {/* Scrollable opinions list */}
+                        <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                          {opiniones.length === 0 ? (
+                            <p className="text-[8px] text-white/30 italic text-center pt-8">No hay mensajes aún.</p>
+                          ) : (
+                            opiniones.slice(-8).map((op) => (
+                              <div key={op.id} className="text-[9px] leading-relaxed">
+                                <span className="font-bold text-accent mr-1 uppercase text-[8px] tracking-wide">
+                                  {op.apto ? `[${op.apto.split(" ").slice(-1)[0]}]` : ""}{op.nombre.split(" ").slice(-1)[0]}:
+                                </span>
+                                <span className="text-white/90 font-sans">{op.contenido}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {/* Send opinion input inside video overlay */}
+                        <div className="border-t border-white/5 pt-2 mt-2">
+                          <form 
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              const form = e.currentTarget;
+                              const input = form.elements.namedItem("overlayChatMsg") as HTMLInputElement;
+                              if (!input.value.trim()) return;
+                              
+                              const msg = input.value;
+                              input.value = "";
+                              
+                              fetch("/api/asamblea/opiniones", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ contenido: msg })
+                              }).then(r => r.json()).then(d => {
+                                if (d.success) setOpiniones(d.opiniones);
+                              });
+                            }}
+                            className="flex gap-1"
+                          >
+                            <input
+                              name="overlayChatMsg"
+                              type="text"
+                              placeholder="Enviar mensaje..."
+                              className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-[8.5px] text-white placeholder-white/30 outline-none focus:border-accent"
+                            />
+                            <button
+                              type="submit"
+                              className="px-2 py-1 bg-accent text-primary rounded-lg text-[8.5px] font-black uppercase hover:scale-102 transition-transform cursor-pointer"
+                            >
+                              <Send size={8} />
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+
                       {/* Live spoken transcription subtitle for everyone */}
                       {subtitulos && subtitulos.length > 0 && (
-                        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 w-[85%] max-w-xl bg-black/60 backdrop-blur-xs px-4 py-2 rounded-lg shadow-lg text-center z-20 pointer-events-none select-none border border-white/5 animate-fade-in">
+                        <div className="absolute bottom-32 left-1/2 md:left-[38%] -translate-x-1/2 w-[85%] md:w-[60%] max-w-xl bg-black/60 backdrop-blur-xs px-4 py-2 rounded-lg shadow-lg text-center z-20 pointer-events-none select-none border border-white/5 animate-fade-in">
                           <p className="text-[11px] sm:text-xs text-white font-sans font-medium tracking-wide drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)]">
                             <span className="text-emerald-400 font-bold uppercase tracking-wider text-[8px] mr-1.5">
                               [{subtitulos[subtitulos.length - 1].speaker}]:
@@ -1621,7 +1682,7 @@ export default function AsambleaPage() {
 
                       {/* AI Suggestions floating subtitles block for the Administrator */}
                       {isWebAdmin && copilotData.sugerencias && copilotData.sugerencias.length > 0 && (
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-black/75 backdrop-blur-xs px-5 py-3 rounded-xl shadow-2xl text-center z-20 pointer-events-none select-none border border-white/5 animate-fade-in">
+                        <div className="absolute bottom-6 left-1/2 md:left-[38%] -translate-x-1/2 w-[90%] md:w-[60%] max-w-2xl bg-black/75 backdrop-blur-xs px-5 py-3 rounded-xl shadow-2xl text-center z-20 pointer-events-none select-none border border-white/5 animate-fade-in">
                           <div className="flex flex-col gap-2">
                             <p className="text-xs sm:text-sm md:text-base text-yellow-300 font-sans font-semibold tracking-wide leading-relaxed drop-shadow-[0_2px_3px_rgba(0,0,0,1)]">
                               <span className="text-accent font-black uppercase tracking-wider text-[9px] mr-2">[IA COPILOTO]:</span>
