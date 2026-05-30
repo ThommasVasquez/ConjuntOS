@@ -286,12 +286,7 @@ export default function AsambleaPage() {
         setItemActivoIndex(data.itemActivoIndex ?? 0);
       }
       
-      // Si no está autenticado, no consultar el resto de endpoints seguros
-      if (status !== "authenticated") {
-        return;
-      }
-      
-      // Fetch turns
+      // Fetch turns (publicly accessible)
       const resTurnos = await fetch("/api/asamblea/turnos");
       if (resTurnos.ok) {
         const dataTurnos = await resTurnos.json();
@@ -300,13 +295,18 @@ export default function AsambleaPage() {
         }
       }
 
-      // Fetch opinions
+      // Fetch opinions (publicly accessible)
       const resOpiniones = await fetch("/api/asamblea/opiniones");
       if (resOpiniones.ok) {
         const dataOpiniones = await resOpiniones.json();
         if (dataOpiniones.success) {
           setOpiniones(dataOpiniones.opiniones || []);
         }
+      }
+
+      // Si no está autenticado, no consultar el resto de endpoints seguros
+      if (status !== "authenticated") {
+        return;
       }
 
       // Fetch assistance / quorum
@@ -2117,7 +2117,7 @@ export default function AsambleaPage() {
                             <MicOff size={28} />
                           </div>
                           <span className="text-sm font-bold text-yellow-400">
-                            En cola de espera (Posición #{turnos.findIndex(t => t.usuarioId === session?.user?.id) + 1})
+                            En cola de espera (Posición #{turnos.filter(t => t.estado === "PENDIENTE" || t.estado === "HABLANDO").findIndex(t => t.usuarioId === session?.user?.id) + 1})
                           </span>
                           <span className="text-[10px] text-white/30">Espera a que el administrador te ceda la palabra.</span>
                         </div>
@@ -2167,10 +2167,10 @@ export default function AsambleaPage() {
                 <div className="liquid-glass rounded-[32px] p-5 border border-white/10">
                   <h4 className="text-xs font-black uppercase tracking-widest text-white/30 mb-4">Solicitudes de Palabra</h4>
                   <div className="space-y-2.5 max-h-[250px] overflow-y-auto pr-1">
-                    {turnos.length === 0 ? (
+                    {turnos.filter(t => t.estado === "PENDIENTE" || t.estado === "HABLANDO").length === 0 ? (
                       <div className="text-center py-6 text-white/30 text-xs">No hay solicitudes de palabra activas.</div>
                     ) : (
-                      turnos.map((t, idx) => (
+                      turnos.filter(t => t.estado === "PENDIENTE" || t.estado === "HABLANDO").map((t, idx) => (
                         <div key={t.id} className="bg-white/5 p-3 rounded-2xl border border-white/5 flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <span className="text-xs text-white/30 font-black">#{idx + 1}</span>
@@ -2566,7 +2566,7 @@ export default function AsambleaPage() {
                                 </div>
                               ) : turnos.some(t => t.usuarioId === mobileSession.id && t.estado === "PENDIENTE") ? (
                                 <div className="text-yellow-400 font-bold text-[9px] flex items-center gap-1">
-                                  <MicOff size={9} /> En cola (Posición #{turnos.findIndex(t => t.usuarioId === mobileSession.id) + 1})
+                                  <MicOff size={9} /> En cola (Posición #{turnos.filter(t => t.estado === "PENDIENTE" || t.estado === "HABLANDO").findIndex(t => t.usuarioId === mobileSession.id) + 1})
                                 </div>
                               ) : (
                                 <button 

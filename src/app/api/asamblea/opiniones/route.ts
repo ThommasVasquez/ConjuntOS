@@ -34,14 +34,19 @@ export async function POST(req: NextRequest) {
   injectDbEnv();
 
   try {
+    let body: any = {};
+    const contentType = req.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      body = await req.json().catch(() => ({}));
+    }
+    const { contenido, usuarioId } = body;
+
     const session = await auth();
-    if (!session || !session.user?.id) {
+    if (!session?.user?.id && !usuarioId) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { contenido, usuarioId } = body;
-    const targetUserId = usuarioId || session.user.id;
+    const targetUserId = usuarioId || session?.user?.id;
 
     if (!contenido || contenido.trim() === "") {
       return NextResponse.json({ error: "El contenido no puede estar vacío" }, { status: 400 });
@@ -60,7 +65,7 @@ export async function POST(req: NextRequest) {
     const newOpinion: ResidentOpinion = {
       id: `opn_${Date.now()}`,
       usuarioId: targetUserId,
-      nombre: userDetail?.nombre || session.user.name || "Residente",
+      nombre: userDetail?.nombre || session?.user?.name || "Residente",
       apto: aptoText || "N/A",
       contenido: contenido.trim(),
       creadoEn: new Date().toISOString()
