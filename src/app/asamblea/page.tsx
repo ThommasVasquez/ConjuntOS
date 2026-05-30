@@ -287,6 +287,7 @@ export default function AsambleaPage() {
       });
 
       p.on('call', (call: any) => {
+        if (!call) return;
         console.log('Incoming call from peer:', call.peer);
         call.answer(localStream || new MediaStream());
         call.on('stream', (remoteStream: MediaStream) => {
@@ -319,26 +320,38 @@ export default function AsambleaPage() {
     // 1. Dial the Administrator
     if (adminUserId && adminUserId !== myUserId && !remoteStreams[adminUserId]) {
       console.log('Dialing Admin:', adminUserId);
-      const call = peer.call(adminUserId, localStream || new MediaStream());
-      call.on('stream', (remoteStream: MediaStream) => {
-        setRemoteStreams(prev => ({ ...prev, [adminUserId]: remoteStream }));
-      });
-      call.on('error', (err: any) => {
-        console.error('Call to Admin error:', err);
-      });
+      try {
+        const call = peer.call(adminUserId, localStream || new MediaStream());
+        if (call) {
+          call.on('stream', (remoteStream: MediaStream) => {
+            setRemoteStreams(prev => ({ ...prev, [adminUserId]: remoteStream }));
+          });
+          call.on('error', (err: any) => {
+            console.error('Call to Admin error:', err);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to call Admin:', err);
+      }
     }
 
     // 2. Dial the Active Speaker
     const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
     if (activeSpeaker && activeSpeaker.usuarioId !== myUserId && activeSpeaker.usuarioId !== adminUserId && !remoteStreams[activeSpeaker.usuarioId]) {
       console.log('Dialing Active Speaker:', activeSpeaker.usuarioId);
-      const call = peer.call(activeSpeaker.usuarioId, localStream || new MediaStream());
-      call.on('stream', (remoteStream: MediaStream) => {
-        setRemoteStreams(prev => ({ ...prev, [activeSpeaker.usuarioId]: remoteStream }));
-      });
-      call.on('error', (err: any) => {
-        console.error('Call to Active Speaker error:', err);
-      });
+      try {
+        const call = peer.call(activeSpeaker.usuarioId, localStream || new MediaStream());
+        if (call) {
+          call.on('stream', (remoteStream: MediaStream) => {
+            setRemoteStreams(prev => ({ ...prev, [activeSpeaker.usuarioId]: remoteStream }));
+          });
+          call.on('error', (err: any) => {
+            console.error('Call to Active Speaker error:', err);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to call Active Speaker:', err);
+      }
     }
   }, [peer, adminUserId, turnos, remoteStreams, myUserId, localStream]);
 
