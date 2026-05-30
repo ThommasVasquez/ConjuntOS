@@ -29,6 +29,14 @@ export async function GET(req: NextRequest) {
     const junta = await getOrCreateActiveAsamblea();
     const state = parseAsambleaState(junta);
 
+    const adminUser = await db.usuario.findFirst({
+      where: {
+        conjuntoId: junta.conjuntoId,
+        rol: { in: ["ADMINISTRADOR", "SUPER_ADMIN"] }
+      }
+    });
+    const adminUserId = adminUser?.id || null;
+
     return NextResponse.json({
       success: true,
       juntaId: junta.id,
@@ -37,7 +45,8 @@ export async function GET(req: NextRequest) {
       ordenDia: state.ordenDia,
       itemActivoIndex: state.itemActivoIndex,
       isAdmin,
-      user: session?.user || null
+      user: session?.user || null,
+      adminUserId
     });
   } catch (error: any) {
     console.error("GET Assembly Session Error:", error);

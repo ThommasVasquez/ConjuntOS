@@ -69,6 +69,16 @@ const getOptionColor = (op: string) => {
   return "bg-gradient-to-r from-blue-500 to-indigo-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]";
 };
 
+const RemoteVideo = ({ stream, className }: { stream: MediaStream; className?: string }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+  return <video ref={videoRef} autoPlay playsInline className={className} />;
+};
+
 export default function AsambleaPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -85,6 +95,11 @@ export default function AsambleaPage() {
   const [itemActivoIndex, setItemActivoIndex] = useState(0);
   const [turnos, setTurnos] = useState<SpeakingTurn[]>([]);
   const [opiniones, setOpiniones] = useState<ResidentOpinion[]>([]);
+
+  // WebRTC PeerJS & signaling states
+  const [adminUserId, setAdminUserId] = useState<string | null>(null);
+  const [peer, setPeer] = useState<any>(null);
+  const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
   
   // Pairing states
   const [pairingCode, setPairingCode] = useState<string | null>(null);
@@ -243,6 +258,89 @@ export default function AsambleaPage() {
     }
   }, [localStream, status, mobileSession]);
 
+  // WebRTC PeerJS connection & signaling
+  const myUserId = session?.user?.id || mobileSession?.id || null;
+
+  useEffect(() => {
+    if (!myUserId) return;
+
+    let activePeer: any = null;
+    import('peerjs').then(({ default: Peer }) => {
+      const p = new Peer(myUserId, {
+        host: '0.peerjs.com',
+        port: 443,
+        secure: true,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+          ]
+        }
+      });
+
+      p.on('open', (id) => {
+        console.log('PeerJS connection established with ID:', id);
+        setPeer(p);
+        activePeer = p;
+      });
+
+      p.on('call', (call: any) => {
+        console.log('Incoming call from peer:', call.peer);
+        call.answer(localStream || new MediaStream());
+        call.on('stream', (remoteStream: MediaStream) => {
+          console.log('Received stream from peer:', call.peer);
+          setRemoteStreams(prev => ({ ...prev, [call.peer]: remoteStream }));
+        });
+      });
+      
+      p.on('error', (err) => {
+        console.error('PeerJS connection error:', err);
+      });
+    });
+
+    return () => {
+      if (activePeer) {
+        activePeer.destroy();
+      }
+    };
+  }, [myUserId, localStream]);
+
+  // Clear remote streams cache on local stream changes to force re-dialing
+  useEffect(() => {
+    setRemoteStreams({});
+  }, [localStream]);
+
+  // WebRTC Dialing Effect
+  useEffect(() => {
+    if (!peer || !myUserId) return;
+
+    // 1. Dial the Administrator
+    if (adminUserId && adminUserId !== myUserId && !remoteStreams[adminUserId]) {
+      console.log('Dialing Admin:', adminUserId);
+      const call = peer.call(adminUserId, localStream || new MediaStream());
+      call.on('stream', (remoteStream: MediaStream) => {
+        setRemoteStreams(prev => ({ ...prev, [adminUserId]: remoteStream }));
+      });
+      call.on('error', (err: any) => {
+        console.error('Call to Admin error:', err);
+      });
+    }
+
+    // 2. Dial the Active Speaker
+    const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
+    if (activeSpeaker && activeSpeaker.usuarioId !== myUserId && activeSpeaker.usuarioId !== adminUserId && !remoteStreams[activeSpeaker.usuarioId]) {
+      console.log('Dialing Active Speaker:', activeSpeaker.usuarioId);
+      const call = peer.call(activeSpeaker.usuarioId, localStream || new MediaStream());
+      call.on('stream', (remoteStream: MediaStream) => {
+        setRemoteStreams(prev => ({ ...prev, [activeSpeaker.usuarioId]: remoteStream }));
+      });
+      call.on('error', (err: any) => {
+        console.error('Call to Active Speaker error:', err);
+      });
+    }
+  }, [peer, adminUserId, turnos, remoteStreams, myUserId, localStream]);
+
   // Initial loading
   useEffect(() => {
     fetchSession();
@@ -293,6 +391,7 @@ export default function AsambleaPage() {
         setActiva(data.activa);
         setOrdenDia(data.ordenDia || []);
         setItemActivoIndex(data.itemActivoIndex ?? 0);
+        setAdminUserId(data.adminUserId || null);
       }
       
       // Fetch turns (publicly accessible)
@@ -1394,6 +1493,8 @@ export default function AsambleaPage() {
                         {isResidentActive ? (
                           (!isWebAdmin && isCameraActive && localStream && activeSpeaker.usuarioId === session?.user?.id) ? (
                             <video ref={localVideoRef} autoPlay playsInline className="w-full h-full object-cover -scale-x-100" />
+                          ) : remoteStreams[activeSpeaker.usuarioId] ? (
+                            <RemoteVideo stream={remoteStreams[activeSpeaker.usuarioId]} className="w-full h-full object-cover" />
                           ) : (
                             <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#1c1c24] to-[#0c0c0e] flex flex-col items-center justify-center">
                               <div className="relative flex items-center justify-center">
@@ -1412,6 +1513,8 @@ export default function AsambleaPage() {
                         ) : (
                           (isWebAdmin && isCameraActive && localStream) ? (
                             <video ref={localVideoRef} autoPlay playsInline className="w-full h-full object-cover -scale-x-100" />
+                          ) : (remoteStreams[adminUserId || ""] || remoteStreams["admin"]) ? (
+                            <RemoteVideo stream={remoteStreams[adminUserId || ""] || remoteStreams["admin"]} className="w-full h-full object-cover" />
                           ) : (
                             <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#1c1c24] to-[#0c0c0e] flex flex-col items-center justify-center">
                               <div className="relative flex items-center justify-center">
