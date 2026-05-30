@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { titulo, descripcion, opciones } = body;
+    const { titulo, descripcion, opciones, formula } = body;
 
     if (!titulo) {
       return NextResponse.json({ error: "El título es requerido" }, { status: 400 });
@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
       opciones: opciones && opciones.length > 0 ? opciones : ["SI", "NO", "ABSTENCION"],
       activa: false,
       votos: [],
-      creadoEn: new Date().toISOString()
+      creadoEn: new Date().toISOString(),
+      formula: formula || 'MAYORIA_SIMPLE'
     };
 
     state.votaciones.push(newVotacion);

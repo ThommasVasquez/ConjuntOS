@@ -59,6 +59,14 @@ const getGradientClass = (name: string) => {
   return gradients[charCode % gradients.length];
 };
 
+const getOptionColor = (op: string) => {
+  const norm = op.toUpperCase().trim();
+  if (norm === "SI" || norm === "SÍ" || norm === "APROBAR") return "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]";
+  if (norm === "NO" || norm === "RECHAZAR") return "bg-gradient-to-r from-rose-500 to-red-500 shadow-[0_0_8px_rgba(244,63,94,0.3)]";
+  if (norm === "ABSTENCION" || norm === "ABSTENCIÓN" || norm === "BLANCO") return "bg-gradient-to-r from-amber-500 to-orange-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]";
+  return "bg-gradient-to-r from-blue-500 to-indigo-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]";
+};
+
 export default function AsambleaPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -138,6 +146,7 @@ export default function AsambleaPage() {
   const [votacionTituloInput, setVotacionTituloInput] = useState("");
   const [votacionDescripcionInput, setVotacionDescripcionInput] = useState("");
   const [votacionOpcionesInput, setVotacionOpcionesInput] = useState("SI, NO, ABSTENCION");
+  const [votacionFormulaInput, setVotacionFormulaInput] = useState<'MAYORIA_SIMPLE' | 'QUORUM_CALIFICADO'>('MAYORIA_SIMPLE');
 
   // Post-Assembly / Minutes states
   const [actaLoading, setActaLoading] = useState(false);
@@ -641,7 +650,8 @@ export default function AsambleaPage() {
         body: JSON.stringify({
           titulo: votacionTituloInput.trim(),
           descripcion: votacionDescripcionInput.trim() || undefined,
-          opciones: optionsArray.length > 0 ? optionsArray : undefined
+          opciones: optionsArray.length > 0 ? optionsArray : undefined,
+          formula: votacionFormulaInput
         })
       });
       const data = await res.json();
@@ -649,6 +659,7 @@ export default function AsambleaPage() {
         setVotaciones(data.votaciones);
         setVotacionTituloInput("");
         setVotacionDescripcionInput("");
+        setVotacionFormulaInput("MAYORIA_SIMPLE");
         toast.success("Propuesta de votación creada con éxito");
       } else {
         toast.error(data.error);
@@ -845,7 +856,7 @@ export default function AsambleaPage() {
           recognition.onerror = (event: any) => {
             console.error("Speech Recognition Error:", event.error);
             if (event.error === "not-allowed") {
-              toast.warn("Acceso a micrófono no permitido. Iniciando simulación de voz...");
+              toast.warning("Acceso a micrófono no permitido. Iniciando simulación de voz...");
               startSpeakingSimulation();
             }
           };
@@ -1572,7 +1583,7 @@ export default function AsambleaPage() {
                           <h4 className="text-xs font-black uppercase tracking-widest text-white">Copiloto IA (Gemini)</h4>
                         </div>
                         <button 
-                          onClick={triggerCopilot}
+                          onClick={() => triggerCopilot()}
                           disabled={copilotLoading}
                           className="px-3 py-1 bg-accent hover:bg-accent/80 text-primary font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                         >
@@ -1615,24 +1626,36 @@ export default function AsambleaPage() {
                       <h4 className="text-xs font-black uppercase tracking-widest text-white/40 mb-3 flex items-center gap-1.5">
                         <CheckCircle size={12} className="text-accent" /> Control de Votaciones Ponderadas
                       </h4>
+
+                      {/* Legal warning if overall attendance is less than 70% for qualified quorum */}
+                      {isWebAdmin && quorumPercentage < 0.70 && (
+                        <div className="bg-red-500/15 border border-red-500/25 p-3 rounded-2xl text-[9px] text-red-400 font-semibold leading-relaxed mb-3 animate-pulse">
+                          ⚠️ ALERTA DE QUÓRUM LEGAL: El quórum verificado actual es de {(quorumPercentage * 100).toFixed(1)}%. Ninguna propuesta de Quórum Calificado (70% total) podrá ser aprobada hoy a menos que ingresen más copropietarios o se registren más poderes.
+                        </div>
+                      )}
                       
                       {/* Active proposals list */}
                       <div className="space-y-3 mb-4">
                         {votaciones.length === 0 ? (
                           <div className="text-center py-4 text-white/30 text-xs">No hay propuestas de votación creadas.</div>
                         ) : (
-                          votaciones.map(v => {
+                          votaciones.map((v: any) => {
                             const totalVotes = v.votos.length;
-                            const totalWeight = v.votos.reduce((acc, curr) => acc + curr.coeficiente, 0);
+                            const totalWeight = v.votos.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
                             
                             return (
-                              <div key={v.id} className="bg-black/40 border border-white/5 p-4 rounded-2xl">
-                                <div className="flex justify-between items-start mb-2.5">
-                                  <div>
-                                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase mr-2 border ${v.activa ? 'bg-red-500/20 text-red-400 border-red-500/30 animate-pulse' : 'bg-white/5 text-white/40 border-white/10'}`}>
-                                      {v.activa ? "Activa" : "Cerrada"}
-                                    </span>
-                                    <span className="text-xs font-bold text-white">{v.titulo}</span>
+                              <div key={v.id} className="bg-black/40 border border-white/5 p-4 rounded-2xl space-y-3">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${v.activa ? 'bg-red-500/20 text-red-400 border-red-500/30 animate-pulse' : 'bg-white/5 text-white/40 border-white/10'}`}>
+                                        {v.activa ? "Activa" : "Cerrada"}
+                                      </span>
+                                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${v.formula === 'QUORUM_CALIFICADO' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30'}`}>
+                                        {v.formula === 'QUORUM_CALIFICADO' ? "Quórum Calificado (70%)" : "Mayoría Simple"}
+                                      </span>
+                                    </div>
+                                    <h5 className="text-xs font-bold text-white mt-1">{v.titulo}</h5>
                                   </div>
                                   <button 
                                     onClick={() => handleActivarVotacion(v.id, !v.activa)}
@@ -1642,24 +1665,70 @@ export default function AsambleaPage() {
                                   </button>
                                 </div>
                                 
-                                {v.descripcion && <p className="text-[10px] text-white/50 mb-3">{v.descripcion}</p>}
+                                {v.descripcion && <p className="text-[10px] text-white/50">{v.descripcion}</p>}
 
                                 {/* Results display */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-white/5">
-                                  {v.opciones.map(op => {
-                                    const matchingVotes = v.votos.filter(x => x.respuesta === op);
-                                    const opWeight = matchingVotes.reduce((acc, curr) => acc + curr.coeficiente, 0);
-                                    const pct = totalWeight > 0 ? (opWeight / totalWeight) * 100 : 0;
+                                <div className="space-y-2.5 pt-3 border-t border-white/5">
+                                  {v.opciones.map((op: string) => {
+                                    const matchingVotes = v.votos.filter((x: any) => x.respuesta === op);
+                                    const opWeight = matchingVotes.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
+                                    // Pct of Cast: for Mayoria Simple
+                                    const pctOfCast = totalWeight > 0 ? (opWeight / totalWeight) * 100 : 0;
+                                    // Pct of Total (1.0 or 100%): for Quorum Calificado
+                                    const pctOfTotal = opWeight * 100;
+                                    
+                                    const displayPct = v.formula === "QUORUM_CALIFICADO" ? pctOfTotal : pctOfCast;
+                                    const colorGradient = getOptionColor(op);
                                     
                                     return (
-                                      <div key={op} className="bg-white/[0.02] p-2 rounded-xl border border-white/5 text-center">
-                                        <span className="text-[9px] font-bold text-white/50 block uppercase">{op}</span>
-                                        <span className="text-xs font-black text-white mt-1 block">{(opWeight * 100).toFixed(1)}% Coef</span>
-                                        <span className="text-[8px] text-white/30 mt-0.5 block">{matchingVotes.length} Votos</span>
+                                      <div key={op} className="space-y-1">
+                                        <div className="flex justify-between text-[10px]">
+                                          <span className="font-bold uppercase text-white/80">{op}</span>
+                                          <span className="font-semibold text-white/60">
+                                            {displayPct.toFixed(1)}% {v.formula === "QUORUM_CALIFICADO" ? "del Total" : "de Votos Emitidos"} ({matchingVotes.length} {matchingVotes.length === 1 ? 'voto' : 'votos'})
+                                          </span>
+                                        </div>
+                                        <div className="relative w-full h-3.5 bg-black/45 rounded-full overflow-hidden border border-white/5">
+                                          {v.formula === "QUORUM_CALIFICADO" && (
+                                            <>
+                                              <div className="absolute left-[70%] top-0 bottom-0 border-l border-red-500/60 border-dashed z-10" />
+                                              <span className="absolute left-[71%] top-0 text-[6.5px] font-black text-red-400 uppercase leading-[14px] tracking-widest z-10">70% Req</span>
+                                            </>
+                                          )}
+                                          <div 
+                                            className={`h-full rounded-full transition-all duration-500 ${colorGradient}`} 
+                                            style={{ width: `${Math.min(displayPct, 100)}%` }} 
+                                          />
+                                        </div>
                                       </div>
                                     );
                                   })}
                                 </div>
+
+                                {/* Quorum Calificado Legal Result Summary */}
+                                {v.formula === "QUORUM_CALIFICADO" && (
+                                  <div className="mt-3 p-2 rounded-xl text-[10px] font-semibold text-center border border-white/5">
+                                    {(() => {
+                                      const siVotes = v.votos.filter((x: any) => x.respuesta.toUpperCase() === "SI" || x.respuesta.toUpperCase() === "SÍ");
+                                      const siWeight = siVotes.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
+                                      const passed = siWeight >= 0.70;
+                                      
+                                      if (passed) {
+                                        return (
+                                          <div className="bg-emerald-500/10 border-emerald-500/25 text-emerald-400">
+                                            ✅ Propuesta APROBADA (SÍ alcanzó el {(siWeight * 100).toFixed(1)}% del Coeficiente Total)
+                                          </div>
+                                        );
+                                      } else {
+                                        return (
+                                          <div className="bg-yellow-500/10 border-yellow-500/25 text-yellow-400 animate-pulse">
+                                            ⏳ Propuesta EN DEBATE (SÍ lleva el {(siWeight * 100).toFixed(1)}% del 70.0% requerido)
+                                          </div>
+                                        );
+                                      }
+                                    })()}
+                                  </div>
+                                )}
                               </div>
                             );
                           })
@@ -1679,19 +1748,29 @@ export default function AsambleaPage() {
                           />
                           <input 
                             type="text"
-                            placeholder="Opciones separadas por coma (ej: SI, NO, ABSTENCION)"
+                            placeholder="Opciones (ej: SI, NO, ABSTENCION)"
                             value={votacionOpcionesInput}
                             onChange={e => setVotacionOpcionesInput(e.target.value)}
                             className="bg-[#05020a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden"
                           />
                         </div>
-                        <input 
-                          type="text"
-                          placeholder="Descripción breve..."
-                          value={votacionDescripcionInput}
-                          onChange={e => setVotacionDescripcionInput(e.target.value)}
-                          className="w-full bg-[#05020a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden"
-                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <input 
+                            type="text"
+                            placeholder="Descripción breve..."
+                            value={votacionDescripcionInput}
+                            onChange={e => setVotacionDescripcionInput(e.target.value)}
+                            className="bg-[#05020a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden"
+                          />
+                          <select
+                            value={votacionFormulaInput}
+                            onChange={e => setVotacionFormulaInput(e.target.value as any)}
+                            className="bg-[#05020a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden cursor-pointer"
+                          >
+                            <option value="MAYORIA_SIMPLE">Mayoría Simple (Coeficiente Relativo)</option>
+                            <option value="QUORUM_CALIFICADO">Quórum Calificado (70% Coeficiente Total)</option>
+                          </select>
+                        </div>
                         <button 
                           onClick={handleCrearVotacion}
                           className="w-full bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-[9px] uppercase tracking-wider py-2.5 rounded-xl cursor-pointer"
@@ -1807,30 +1886,73 @@ export default function AsambleaPage() {
                     )}
 
                     {/* Active proposals list for resident voting */}
-                    {votaciones.filter(v => v.activa).map(v => {
-                      const hasVoted = v.votos.some(x => x.usuarioId === session?.user?.id);
-                      const myVote = v.votos.find(x => x.usuarioId === session?.user?.id);
+                    {votaciones.filter((v: any) => v.activa).map((v: any) => {
+                      const hasVoted = v.votos.some((x: any) => x.usuarioId === session?.user?.id);
+                      const myVote = v.votos.find((x: any) => x.usuarioId === session?.user?.id);
                       
                       return (
-                        <div key={v.id} className="bg-accent/15 border border-accent shadow-lg shadow-accent/5 rounded-3xl p-5 animate-pulse">
-                          <span className="text-[8px] font-black bg-accent text-primary px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit mb-2">Votación Activa en Curso</span>
+                        <div key={v.id} className="bg-accent/15 border border-accent shadow-lg shadow-accent/5 rounded-3xl p-5 space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[8px] font-black bg-accent text-primary px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit">Votación Activa</span>
+                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${v.formula === 'QUORUM_CALIFICADO' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30'}`}>
+                              {v.formula === 'QUORUM_CALIFICADO' ? "Quórum Calificado (70%)" : "Mayoría Simple"}
+                            </span>
+                          </div>
+                          
                           <h4 className="text-sm font-bold text-white leading-tight">{v.titulo}</h4>
-                          {v.descripcion && <p className="text-[10px] text-white/50 mt-1 leading-relaxed">{v.descripcion}</p>}
+                          {v.descripcion && <p className="text-[10px] text-white/50 leading-relaxed">{v.descripcion}</p>}
                           
                           {hasVoted ? (
-                            <div className="mt-3.5 p-3.5 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex flex-col gap-1.5 text-xs text-emerald-400">
-                              <p className="font-bold flex items-center gap-1.5">
-                                <CheckCircle size={14} /> Votaste: "{myVote?.respuesta}"
-                              </p>
-                              <p className="text-[8px] text-white/40 font-mono break-all leading-normal">Firma Jurídica: {myVote?.hashFirma}</p>
+                            <div className="space-y-3 pt-2">
+                              <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] text-emerald-400 font-medium">
+                                <p className="flex items-center gap-1.5">
+                                  <CheckCircle size={12} /> Tu voto: "{myVote?.respuesta}" registrado con éxito.
+                                </p>
+                                <p className="text-[7.5px] text-white/40 font-mono mt-1 truncate">Firma: {myVote?.hashFirma}</p>
+                              </div>
+                              
+                              {/* Live Results Progress for Resident */}
+                              <div className="space-y-2 bg-black/30 p-3 rounded-2xl border border-white/5">
+                                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest block mb-1">Resultados Parciales en Vivo</span>
+                                {(() => {
+                                  const totalWeight = v.votos.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
+                                  
+                                  return v.opciones.map((op: string) => {
+                                    const matchingVotes = v.votos.filter((x: any) => x.respuesta === op);
+                                    const opWeight = matchingVotes.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
+                                    const pctOfCast = totalWeight > 0 ? (opWeight / totalWeight) * 100 : 0;
+                                    const pctOfTotal = opWeight * 100;
+                                    const displayPct = v.formula === "QUORUM_CALIFICADO" ? pctOfTotal : pctOfCast;
+                                    const colorGradient = getOptionColor(op);
+                                    
+                                    return (
+                                      <div key={op} className="space-y-1">
+                                        <div className="flex justify-between text-[9px]">
+                                          <span className="font-bold text-white/70 uppercase">{op}</span>
+                                          <span className="font-semibold text-white/50">{displayPct.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="relative w-full h-2.5 bg-black/45 rounded-full overflow-hidden border border-white/5">
+                                          {v.formula === "QUORUM_CALIFICADO" && (
+                                            <div className="absolute left-[70%] top-0 bottom-0 border-l border-red-500/50 border-dashed z-10" />
+                                          )}
+                                          <div 
+                                            className={`h-full rounded-full transition-all duration-300 ${colorGradient}`} 
+                                            style={{ width: `${Math.min(displayPct, 100)}%` }} 
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  });
+                                })()}
+                              </div>
                             </div>
                           ) : (
-                            <div className="flex gap-2 mt-4">
-                              {v.opciones.map(op => (
+                            <div className="flex gap-2 pt-2">
+                              {v.opciones.map((op: string) => (
                                 <button 
                                   key={op}
                                   onClick={() => handleVotar(v.id, op)}
-                                  className="flex-1 bg-accent/20 hover:bg-accent text-white hover:text-primary border border-accent/40 rounded-xl py-2.5 text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                                  className="flex-1 bg-accent/20 hover:bg-accent text-white hover:text-primary border border-accent/40 rounded-xl py-2.5 text-xs font-black uppercase tracking-wider transition-all cursor-pointer hover:scale-102"
                                 >
                                   {op}
                                 </button>
@@ -2194,25 +2316,62 @@ export default function AsambleaPage() {
                             )}
 
                             {/* Active Votation Toast inside Mobile */}
-                            {votaciones.filter(v => v.activa).map(v => {
-                              const hasVoted = v.votos.some(x => x.usuarioId === mobileSession.id);
-                              const myVote = v.votos.find(x => x.usuarioId === mobileSession.id);
+                            {votaciones.filter((v: any) => v.activa).map((v: any) => {
+                              const hasVoted = v.votos.some((x: any) => x.usuarioId === mobileSession.id);
+                              const myVote = v.votos.find((x: any) => x.usuarioId === mobileSession.id);
                               
                               return (
                                 <div key={v.id} className="bg-accent/15 border border-accent rounded-2xl p-3 flex flex-col gap-2">
-                                  <span className="text-[7px] font-black bg-accent text-primary px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit">Votación Activa</span>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[7px] font-black bg-accent text-primary px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit">Votación Activa</span>
+                                    <span className="text-[7px] font-bold text-white/50">
+                                      {v.formula === 'QUORUM_CALIFICADO' ? "Q. Calificado" : "M. Simple"}
+                                    </span>
+                                  </div>
                                   <h5 className="text-[10px] font-bold text-white leading-tight">{v.titulo}</h5>
                                   
                                   {hasVoted ? (
-                                    <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex flex-col gap-0.5 text-[9px] text-emerald-400 font-medium">
-                                      <p className="flex items-center gap-1">
-                                        <CheckCircle size={10} /> Voto registrado: "{myVote?.respuesta}"
-                                      </p>
-                                      <p className="text-[6px] text-white/45 truncate">Firma: {myVote?.hashFirma}</p>
+                                    <div className="space-y-2">
+                                      <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex flex-col gap-0.5 text-[9px] text-emerald-400 font-medium font-sans">
+                                        <p className="flex items-center gap-1 font-bold">
+                                          <CheckCircle size={10} /> Voto: "{myVote?.respuesta}"
+                                        </p>
+                                        <p className="text-[6px] text-white/45 truncate">Firma: {myVote?.hashFirma}</p>
+                                      </div>
+                                      
+                                      {/* Mobile live results list */}
+                                      <div className="bg-black/35 p-2 rounded-xl space-y-1.5 border border-white/5">
+                                        {(() => {
+                                          const totalWeight = v.votos.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
+                                          return v.opciones.map((op: string) => {
+                                            const matchingVotes = v.votos.filter((x: any) => x.respuesta === op);
+                                            const opWeight = matchingVotes.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
+                                            const pctOfCast = totalWeight > 0 ? (opWeight / totalWeight) * 100 : 0;
+                                            const pctOfTotal = opWeight * 100;
+                                            const displayPct = v.formula === "QUORUM_CALIFICADO" ? pctOfTotal : pctOfCast;
+                                            const colorGradient = getOptionColor(op);
+                                            
+                                            return (
+                                              <div key={op} className="space-y-0.5">
+                                                <div className="flex justify-between text-[7px] font-bold">
+                                                  <span className="text-white/60 uppercase">{op}</span>
+                                                  <span className="text-white/40">{displayPct.toFixed(0)}%</span>
+                                                </div>
+                                                <div className="relative w-full h-1.5 bg-black/45 rounded-full overflow-hidden border border-white/5">
+                                                  <div 
+                                                    className={`h-full rounded-full transition-all duration-300 ${colorGradient}`} 
+                                                    style={{ width: `${Math.min(displayPct, 100)}%` }} 
+                                                  />
+                                                </div>
+                                              </div>
+                                            );
+                                          });
+                                        })()}
+                                      </div>
                                     </div>
                                   ) : (
                                     <div className="flex gap-1.5">
-                                      {v.opciones.map(op => (
+                                      {v.opciones.map((op: string) => (
                                         <button 
                                           key={op}
                                           onClick={() => handleVotar(v.id, op)}

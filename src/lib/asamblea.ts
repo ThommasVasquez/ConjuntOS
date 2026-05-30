@@ -67,6 +67,7 @@ export interface AsambleaVotacion {
   activa: boolean;
   votos: AsambleaVoto[];
   creadoEn: string;
+  formula?: 'MAYORIA_SIMPLE' | 'QUORUM_CALIFICADO';
 }
 
 export interface LiveSubtitle {
