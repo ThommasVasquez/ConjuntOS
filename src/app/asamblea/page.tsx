@@ -1407,7 +1407,7 @@ export default function AsambleaPage() {
                   const spotlightApto = activeSpeaker ? (activeSpeaker.apto || "N/A") : "Administración";
                   
                   return (
-                    <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-[#0a0a0d] border border-white/10 flex flex-col justify-center items-center shadow-2xl group max-h-[480px]">
+                    <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-[#0a0a0d] border border-white/10 flex flex-col justify-center items-center shadow-2xl group max-h-[75vh]">
                       
                       {/* Active Video Rendering */}
                       {isResidentActive ? (
