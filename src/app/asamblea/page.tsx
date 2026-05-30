@@ -341,6 +341,15 @@ export default function AsambleaPage() {
     }
   }, [peer, adminUserId, turnos, remoteStreams, myUserId, localStream]);
 
+  // Automatically adjust isDemoMode according to the user's authentication state
+  useEffect(() => {
+    if (status === "authenticated") {
+      setIsDemoMode(false);
+    } else if (status === "unauthenticated") {
+      setIsDemoMode(true);
+    }
+  }, [status]);
+
   // Initial loading
   useEffect(() => {
     fetchSession();
