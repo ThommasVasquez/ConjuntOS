@@ -86,6 +86,7 @@ export default function AsambleaPage() {
   // Mode settings
   const [isDemoMode, setIsDemoMode] = useState(true); // Default to split demo on desktop
   const [activeTab, setActiveTab] = useState<"web" | "app">("web"); // Tab selector on mobile
+  const [mobileActiveTab, setMobileActiveTab] = useState<"agenda" | "video" | "chat" | "votos" | "gestion">("video");
   
   // Web session states
   const [juntaId, setJuntaId] = useState<string | null>(null);
@@ -349,6 +350,17 @@ export default function AsambleaPage() {
       setIsDemoMode(true);
     }
   }, [status]);
+
+  // Sync activeRightTab with mobileActiveTab when they transition
+  useEffect(() => {
+    if (["chat", "votos", "gestion"].includes(mobileActiveTab)) {
+      setActiveRightTab(mobileActiveTab as any);
+    }
+  }, [mobileActiveTab]);
+
+  useEffect(() => {
+    setMobileActiveTab(activeRightTab as any);
+  }, [activeRightTab]);
 
   // Initial loading
   useEffect(() => {
@@ -1270,7 +1282,7 @@ export default function AsambleaPage() {
           <div className={`${isDemoMode ? "lg:col-span-3" : "col-span-1"} bg-white flex h-full relative overflow-hidden`}>
             
             {/* 1. Left Vertical Sidebar (w-18) */}
-            <div className="w-18 bg-white border-r border-stone-200 flex flex-col justify-between items-center py-6 shrink-0 z-20">
+            <div className="hidden md:flex w-18 bg-white border-r border-stone-200 flex-col justify-between items-center py-6 shrink-0 z-20">
               {/* Top Logo */}
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-purple-500/20">
                 CO
@@ -1339,7 +1351,7 @@ export default function AsambleaPage() {
             </div>
 
             {/* Main workspace container */}
-            <div className="flex-1 flex flex-col min-w-0 bg-white">
+            <div className="flex-1 flex flex-col min-w-0 bg-white relative pb-16 md:pb-0">
               
               {/* 2. Topbar */}
               <div className="h-16 border-b border-stone-200 bg-white px-6 flex justify-between items-center shrink-0 z-10">
@@ -1386,7 +1398,9 @@ export default function AsambleaPage() {
               <div className="flex-1 flex overflow-hidden bg-white">
                 
                 {/* Column 1: Order of the Day / Agenda (28%) */}
-                <div className="w-[28%] border-r border-stone-200 bg-[#fafaf8] p-5 flex flex-col gap-4 overflow-y-auto shrink-0 hidden md:flex">
+                <div className={`border-r border-stone-200 bg-[#fafaf8] p-5 flex-col gap-4 overflow-y-auto shrink-0 ${
+                  mobileActiveTab === "agenda" ? "flex flex-1 w-full" : "hidden md:flex w-[28%]"
+                }`}>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Orden del Día</span>
                     <span className="text-[9px] bg-indigo-50 border border-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">
@@ -1482,7 +1496,9 @@ export default function AsambleaPage() {
                 </div>
 
                 {/* Column 2: Video Stage & Controls */}
-                <div className="flex-1 flex flex-col p-5 overflow-y-auto bg-[#fdfdfb] gap-4">
+                <div className={`p-5 overflow-y-auto bg-[#fdfdfb] gap-4 ${
+                  mobileActiveTab === "video" ? "flex flex-1 flex-col w-full" : "hidden md:flex md:flex-1 md:flex-col"
+                }`}>
                   <div className="flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
@@ -1645,7 +1661,7 @@ export default function AsambleaPage() {
                   })()}
 
                   {/* Controls Row */}
-                  <div className="flex justify-center items-center gap-3 bg-stone-50 border border-stone-200 rounded-2xl p-2.5 shrink-0 shadow-xs">
+                  <div className="flex flex-wrap md:flex-nowrap justify-center items-center gap-2 md:gap-3 bg-stone-50 border border-stone-200 rounded-2xl p-2 md:p-2.5 shrink-0 shadow-xs">
                     <button 
                       onClick={toggleMute}
                       className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all border cursor-pointer ${
@@ -1731,12 +1747,19 @@ export default function AsambleaPage() {
 
                 {/* Column 3: Tabbed sidepanel */}
                 {!isDemoMode && (
-                  <div className="w-[30%] border-l border-stone-200 bg-white flex flex-col overflow-hidden shrink-0">
+                  <div className={`bg-white flex flex-col overflow-hidden shrink-0 ${
+                    ["chat", "votos", "gestion"].includes(mobileActiveTab) 
+                      ? "flex flex-1 w-full" 
+                      : "hidden md:flex w-[30%] border-l border-stone-200"
+                  }`}>
                     <div className="flex border-b border-stone-200 bg-stone-50 p-1.5 gap-1 shrink-0">
                       {["chat", "votos", "gestion"].map((tabName) => (
                         <button 
                           key={tabName}
-                          onClick={() => setActiveRightTab(tabName as any)}
+                          onClick={() => {
+                            setActiveRightTab(tabName as any);
+                            setMobileActiveTab(tabName as any);
+                          }}
                           className={`flex-1 py-1.5 text-center text-xs font-bold rounded-lg transition-all cursor-pointer uppercase tracking-wider text-[10px] ${
                             activeRightTab === tabName 
                               ? "bg-white text-stone-900 shadow-xs border border-stone-200" 
@@ -2071,12 +2094,65 @@ export default function AsambleaPage() {
                   </div>
                 </div>
               )}
+
+              {/* Mobile Bottom Navigation Bar */}
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-md border-t border-stone-200 flex md:hidden justify-around items-center px-2 z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+                <button 
+                  onClick={() => setMobileActiveTab("agenda")}
+                  className={`flex flex-col items-center gap-1 flex-1 py-1 transition-all ${
+                    mobileActiveTab === "agenda" ? "text-indigo-600 font-bold scale-105" : "text-stone-400"
+                  }`}
+                >
+                  <Calendar size={18} />
+                  <span className="text-[9px] uppercase tracking-wider">Agenda</span>
+                </button>
+
+                <button 
+                  onClick={() => setMobileActiveTab("video")}
+                  className={`flex flex-col items-center gap-1 flex-1 py-1 transition-all ${
+                    mobileActiveTab === "video" ? "text-indigo-600 font-bold scale-105" : "text-stone-400"
+                  }`}
+                >
+                  <Laptop size={18} />
+                  <span className="text-[9px] uppercase tracking-wider">Video</span>
+                </button>
+
+                <button 
+                  onClick={() => setMobileActiveTab("chat")}
+                  className={`flex flex-col items-center gap-1 flex-1 py-1 transition-all ${
+                    mobileActiveTab === "chat" ? "text-indigo-600 font-bold scale-105" : "text-stone-400"
+                  }`}
+                >
+                  <MessageSquare size={18} />
+                  <span className="text-[9px] uppercase tracking-wider">Chat</span>
+                </button>
+
+                <button 
+                  onClick={() => setMobileActiveTab("votos")}
+                  className={`flex flex-col items-center gap-1 flex-1 py-1 transition-all ${
+                    mobileActiveTab === "votos" ? "text-purple-600 font-bold scale-105" : "text-stone-400"
+                  }`}
+                >
+                  <CheckCircle size={18} />
+                  <span className="text-[9px] uppercase tracking-wider">Votos</span>
+                </button>
+
+                <button 
+                  onClick={() => setMobileActiveTab("gestion")}
+                  className={`flex flex-col items-center gap-1 flex-1 py-1 transition-all ${
+                    mobileActiveTab === "gestion" ? "text-emerald-600 font-bold scale-105" : "text-stone-400"
+                  }`}
+                >
+                  <Shield size={18} />
+                  <span className="text-[9px] uppercase tracking-wider">Gestión</span>
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Right Column: MOBILE SIMULATOR FRAME */}
           {isDemoMode && (
-            <div className="bg-[#fafaf8] border-l border-stone-200 flex flex-col items-center justify-center h-full relative p-6 overflow-y-auto">
+            <div className="hidden lg:flex bg-[#fafaf8] border-l border-stone-200 flex-col items-center justify-center h-full relative p-6 overflow-y-auto">
               <div className="flex flex-col items-center gap-3">
                 <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-stone-200 rounded-full text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-1">
                   <Smartphone size={10} /> Simulador App Celular (Residente)
@@ -2323,7 +2399,7 @@ export default function AsambleaPage() {
 
         {/* Right Column: MOBILE SIMULATOR FRAME (visible only in Demo Mode on desktop) */}
         {isDemoMode && (
-          <div className="flex flex-col items-center relative">
+          <div className="hidden lg:flex flex-col items-center relative">
             <div className="sticky top-6 flex flex-col items-center gap-4">
               <div className="flex items-center gap-1.5 px-3 py-1 bg-[#1a0e38] rounded-full border border-purple-500/20 text-[10px] text-purple-400 font-bold uppercase tracking-wider mb-2">
                 <Smartphone size={10} /> Simulador App Celular (Residente)
