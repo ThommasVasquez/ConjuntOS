@@ -278,7 +278,22 @@ export default function AsambleaPage() {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' }
+            { urls: 'stun:stun2.l.google.com:19302' },
+            {
+              urls: 'turn:openrelay.metered.ca:80',
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            },
+            {
+              urls: 'turn:openrelay.metered.ca:443',
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            },
+            {
+              urls: 'turns:openrelay.metered.ca:443?transport=tcp',
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            }
           ]
         }
       });
@@ -1827,7 +1842,7 @@ export default function AsambleaPage() {
 
                     <button 
                       onClick={handleRequestSpeak}
-                      disabled={turnos.some(t => t.usuarioId === session?.user?.id)}
+                      disabled={turnos.some(t => t.usuarioId === session?.user?.id && (t.estado === "PENDIENTE" || t.estado === "HABLANDO"))}
                       className="px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-indigo-700 cursor-pointer disabled:bg-stone-100 disabled:text-stone-400"
                     >
                       <Mic size={11} />
@@ -2374,6 +2389,20 @@ export default function AsambleaPage() {
                               <button onClick={() => handleCheckIn("VIRTUAL", mobileSession.id)} className="w-full py-2 bg-amber-500 text-primary font-bold text-[9px] uppercase tracking-wider rounded-xl cursor-pointer">Confirmar Asistencia</button>
                             ) : (
                               <div className="bg-emerald-600/10 border border-emerald-500/25 p-2 rounded-2xl flex items-center justify-center gap-1.5 text-emerald-400 text-[9px] font-bold"><CheckCircle size={10} /> Presente en Quórum</div>
+                            )}
+
+                            {mobileSession.rol !== "ADMINISTRADOR" && mobileSession.rol !== "SUPER_ADMIN" && (
+                              <button 
+                                onClick={handleMobileRequestSpeak}
+                                disabled={turnos.some(t => t.usuarioId === mobileSession.id && (t.estado === "PENDIENTE" || t.estado === "HABLANDO"))}
+                                className="w-full py-2 bg-indigo-600 text-white font-bold text-[9px] uppercase tracking-wider rounded-xl cursor-pointer disabled:bg-zinc-800 disabled:text-zinc-500 transition-all hover:bg-indigo-700"
+                              >
+                                {turnos.some(t => t.usuarioId === mobileSession.id && t.estado === "PENDIENTE") 
+                                  ? "Palabra Solicitada" 
+                                  : turnos.some(t => t.usuarioId === mobileSession.id && t.estado === "HABLANDO") 
+                                    ? "Hablando..." 
+                                    : "Pedir Palabra"}
+                              </button>
                             )}
 
                             {votaciones.filter(v => v.activa).map(v => {
