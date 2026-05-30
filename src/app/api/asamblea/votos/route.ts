@@ -67,9 +67,27 @@ export async function GET(req: NextRequest) {
       totalVotedCoefficient += v.coeficiente;
     });
 
+    let sanitizedVotacion = votacion;
+    if (votacion.esSecreto) {
+      sanitizedVotacion = {
+        ...votacion,
+        votos: votacion.votos.map(v => {
+          if (v.usuarioId === session?.user?.id) {
+            return v;
+          }
+          return {
+            ...v,
+            nombre: "Voto Anónimo",
+            apto: "Apto -",
+            usuarioId: "anonymous"
+          };
+        })
+      };
+    }
+
     return NextResponse.json({
       success: true,
-      votacion,
+      votacion: sanitizedVotacion,
       results,
       totalVotedCoefficient
     });
@@ -90,7 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { votacionId, respuesta } = body;
+    const { votacionId, respuesta, usuarioId } = body;
 
     if (!votacionId || !respuesta) {
       return NextResponse.json({ error: "Parámetros incompletos" }, { status: 400 });
@@ -118,7 +136,9 @@ export async function POST(req: NextRequest) {
       where: { conjuntoId: junta.conjuntoId }
     });
 
-    const voter = users.find((u: any) => u.id === session.user.id);
+    const userRole = (session.user as { role?: string })?.role;
+    const targetUserId = (usuarioId && (userRole === "ADMINISTRADOR" || userRole === "SUPER_ADMIN")) ? usuarioId : session.user.id;
+    const voter = users.find((u: any) => u.id === targetUserId);
     if (!voter) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
@@ -185,9 +205,24 @@ export async function POST(req: NextRequest) {
     state.votaciones[votIndex] = votacion;
     await saveAsambleaState(junta.id, state);
 
+    let sanitizedVotos = votacion.votos;
+    if (votacion.esSecreto) {
+      sanitizedVotos = votacion.votos.map(v => {
+        if (v.usuarioId === session?.user?.id) {
+          return v;
+        }
+        return {
+          ...v,
+          nombre: "Voto Anónimo",
+          apto: "Apto -",
+          usuarioId: "anonymous"
+        };
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      votos: votacion.votos
+      votos: sanitizedVotos
     });
 
   } catch (error: any) {

@@ -7,7 +7,8 @@ import {
   Play, Pause, Sparkles, Mic, MicOff, MessageSquare, Send, 
   QrCode, Phone, Laptop, ChevronUp, ChevronDown, CheckCircle, 
   Circle, AlertCircle, ArrowRight, Lock, User, Plus, Trash2, 
-  LogOut, RefreshCw, Smartphone, Layers, Shield
+  LogOut, RefreshCw, Smartphone, Layers, Shield, Home, Calendar,
+  UserPlus, Download, Share2
 } from "lucide-react";
 import { toast } from "sonner";
 import { gsap } from "gsap";
@@ -155,6 +156,9 @@ export default function AsambleaPage() {
   const [votacionDescripcionInput, setVotacionDescripcionInput] = useState("");
   const [votacionOpcionesInput, setVotacionOpcionesInput] = useState("SI, NO, ABSTENCION");
   const [votacionFormulaInput, setVotacionFormulaInput] = useState<'MAYORIA_SIMPLE' | 'QUORUM_CALIFICADO'>('MAYORIA_SIMPLE');
+  const [votacionEsSecreto, setVotacionEsSecreto] = useState(false);
+  const [activeRightTab, setActiveRightTab] = useState<"chat" | "votos" | "gestion">("chat");
+  const lastActiveVoteIdRef = useRef<string | null>(null);
   const [generatingConsensus, setGeneratingConsensus] = useState(false);
   const [subtitlesLanguage, setSubtitlesLanguage] = useState<"ES" | "EN" | "PT" | "FR">("ES");
   const [translatedSubtitleText, setTranslatedSubtitleText] = useState("");
@@ -360,6 +364,17 @@ export default function AsambleaPage() {
       console.warn("Failed to fetch assembly updates (likely offline or server rebuild):", e);
     }
   };
+  
+  useEffect(() => {
+    const activeVote = votaciones.find(v => v.activa);
+    if (activeVote && activeVote.id !== lastActiveVoteIdRef.current) {
+      lastActiveVoteIdRef.current = activeVote.id;
+      setActiveRightTab("votos");
+      toast.info(`Nueva votación activa: "${activeVote.titulo}"`);
+    } else if (!activeVote) {
+      lastActiveVoteIdRef.current = null;
+    }
+  }, [votaciones]);
 
   // Pairing: Poll pairing status if logged out on Web
   useEffect(() => {
@@ -796,7 +811,8 @@ export default function AsambleaPage() {
           titulo: votacionTituloInput.trim(),
           descripcion: votacionDescripcionInput.trim() || undefined,
           opciones: optionsArray.length > 0 ? optionsArray : undefined,
-          formula: votacionFormulaInput
+          formula: votacionFormulaInput,
+          esSecreto: votacionEsSecreto
         })
       });
       const data = await res.json();
@@ -805,6 +821,7 @@ export default function AsambleaPage() {
         setVotacionTituloInput("");
         setVotacionDescripcionInput("");
         setVotacionFormulaInput("MAYORIA_SIMPLE");
+        setVotacionEsSecreto(false);
         toast.success("Propuesta de votación creada con éxito");
       } else {
         toast.error(data.error);
@@ -833,12 +850,12 @@ export default function AsambleaPage() {
     }
   };
 
-  const handleVotar = async (votacionId: string, respuesta: string) => {
+  const handleVotar = async (votacionId: string, respuesta: string, simulateUserId?: string) => {
     try {
       const res = await fetch("/api/asamblea/votos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ votacionId, respuesta })
+        body: JSON.stringify({ votacionId, respuesta, usuarioId: simulateUserId })
       });
       const data = await res.json();
       if (data.success) {
@@ -1135,6 +1152,939 @@ export default function AsambleaPage() {
   const webUserRole = (session?.user as { role?: string })?.role;
   const isWebAdmin = webUserRole === "ADMINISTRADOR" || webUserRole === "SUPER_ADMIN";
 
+  if (status === "authenticated") {
+    return (
+      <div className="min-h-screen bg-gradient-to-tr from-[#dcedc8]/20 via-[#f5f5f0] to-[#ffe0b2]/20 p-6 flex flex-col items-center justify-center font-sans text-stone-800 relative overflow-hidden">
+        {/* Dynamic Background Circles/Orbs */}
+        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-indigo-200/10 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-rose-200/10 rounded-full blur-[140px] pointer-events-none" />
+
+        {/* Main Grid: split-screen or 100% */}
+        <div className={`w-full max-w-[1600px] grid grid-cols-1 ${isDemoMode ? "lg:grid-cols-4" : "grid-cols-1"} gap-6 items-stretch relative z-10`}>
+          
+          {/* Main Desktop Container (takes 3 cols in demo mode, or all when unique mode) */}
+          <div className={`${isDemoMode ? "lg:col-span-3" : "col-span-1"} bg-[#fdfdfb]/90 border border-stone-200 shadow-2xl rounded-[32px] overflow-hidden flex h-auto lg:h-[86vh] max-h-[850px] relative backdrop-blur-md`}>
+            
+            {/* 1. Left Vertical Sidebar (w-18) */}
+            <div className="w-18 bg-white border-r border-stone-200 flex flex-col justify-between items-center py-6 shrink-0 z-20">
+              {/* Top Logo */}
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-purple-500/20">
+                CO
+              </div>
+              
+              {/* Navigation Icons */}
+              <div className="flex flex-col gap-5">
+                <button onClick={() => router.push("/inicio")} className="p-3 text-stone-400 hover:text-stone-700 hover:bg-stone-50 rounded-xl transition-all cursor-pointer" title="Inicio">
+                  <Home size={20} />
+                </button>
+                <button className="p-3 text-stone-400 hover:text-stone-700 hover:bg-stone-50 rounded-xl transition-all cursor-pointer" title="Calendario">
+                  <Calendar size={20} />
+                </button>
+                <button 
+                  onClick={() => {
+                    if (isDemoMode) {
+                      setIsDemoMode(false);
+                    }
+                    setActiveRightTab("chat");
+                  }}
+                  className={`p-3 rounded-xl transition-all cursor-pointer ${activeRightTab === "chat" ? "text-indigo-600 bg-indigo-50" : "text-stone-400 hover:text-stone-700 hover:bg-stone-50"}`} 
+                  title="Chat de Asamblea"
+                >
+                  <MessageSquare size={20} />
+                </button>
+                <button 
+                  onClick={() => {
+                    if (isDemoMode) {
+                      setIsDemoMode(false);
+                    }
+                    setActiveRightTab("votos");
+                  }}
+                  className={`p-3 rounded-xl transition-all cursor-pointer ${activeRightTab === "votos" ? "text-purple-600 bg-purple-50" : "text-stone-400 hover:text-stone-700 hover:bg-stone-50"}`} 
+                  title="Votaciones"
+                >
+                  <CheckCircle size={20} />
+                </button>
+                <button 
+                  onClick={() => {
+                    if (isDemoMode) {
+                      setIsDemoMode(false);
+                    }
+                    setActiveRightTab("gestion");
+                  }}
+                  className={`p-3 rounded-xl transition-all cursor-pointer ${activeRightTab === "gestion" ? "text-emerald-600 bg-emerald-50" : "text-stone-400 hover:text-stone-700 hover:bg-stone-50"}`} 
+                  title="Gestión y Asistencia"
+                >
+                  <Shield size={20} />
+                </button>
+              </div>
+              
+              {/* Bottom User Avatar */}
+              <div className="flex flex-col items-center gap-4">
+                {/* Demo Mode Toggle (small icon size) */}
+                <button 
+                  onClick={() => setIsDemoMode(!isDemoMode)} 
+                  className={`p-2 rounded-lg border transition-all cursor-pointer ${isDemoMode ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-stone-50 border-stone-200 text-stone-400 hover:text-stone-600'}`}
+                  title={isDemoMode ? "Modo Único (Pantalla Completa)" : "Modo Demo (Celular)"}
+                >
+                  <Smartphone size={16} />
+                </button>
+                <div className="w-10 h-10 rounded-full bg-indigo-100 border border-stone-200 flex items-center justify-center font-bold text-stone-700 text-sm shadow-sm" title={session?.user?.name || "Usuario"}>
+                  {session?.user?.name?.[0] || "U"}
+                </div>
+              </div>
+            </div>
+
+            {/* Main workspace container */}
+            <div className="flex-1 flex flex-col min-w-0 bg-white">
+              
+              {/* 2. Topbar */}
+              <div className="h-16 border-b border-stone-200 bg-white px-6 flex justify-between items-center shrink-0 z-10">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5 bg-red-50 text-red-600 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    ● Grabando [40:12:32]
+                  </div>
+                  <h2 className="text-sm font-bold text-stone-800 truncate max-w-[250px] md:max-w-[400px]">
+                    {tituloAsamblea}
+                  </h2>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  {/* Copy meeting link component */}
+                  <div className="hidden sm:flex items-center gap-1.5 bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 text-xs text-stone-500">
+                    <span className="font-mono select-all truncate max-w-[120px]">meet.conjuntos.com/asamblea</span>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText("https://meet.conjuntos.com/asamblea");
+                        toast.success("Enlace de reunión copiado");
+                      }}
+                      className="p-1 hover:bg-stone-200 rounded-md transition-colors text-stone-400 hover:text-stone-600 cursor-pointer"
+                      title="Copiar Enlace"
+                    >
+                      <Share2 size={12} />
+                    </button>
+                  </div>
+                  
+                  {/* Invite neighbors action button */}
+                  <button 
+                    onClick={() => {
+                      toast.success("Enlace de invitación generado para residentes");
+                    }}
+                    className="bg-stone-950 hover:bg-stone-900 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                  >
+                    <UserPlus size={13} />
+                    <span>Invitar Copropietario</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Columns Section */}
+              <div className="flex-1 flex overflow-hidden bg-white">
+                
+                {/* Column 1: Order of the Day / Agenda (28%) */}
+                <div className="w-[28%] border-r border-stone-200 bg-[#fafaf8] p-5 flex flex-col gap-4 overflow-y-auto shrink-0 hidden md:flex">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Orden del Día</span>
+                    <span className="text-[9px] bg-indigo-50 border border-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">
+                      {ordenDia.filter(item => item.estado === 'COMPLETADO').length}/{ordenDia.length} Completados
+                    </span>
+                  </div>
+                  
+                  {/* Speaker Turn Box */}
+                  <div className="bg-white border border-stone-200 rounded-2xl p-3 flex flex-col gap-2.5 shadow-xs">
+                    <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider block">Orador en Turno</span>
+                    {(() => {
+                      const speakingUser = turnos.find(t => t.estado === "HABLANDO") || { nombre: "Thommy Admin", apto: "Administración", iniciadoHablarEn: new Date().toISOString() };
+                      return (
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                            {getInitials(speakingUser.nombre)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-bold text-stone-800 truncate leading-none mb-1">{speakingUser.nombre}</p>
+                            <p className="text-[9px] text-stone-400 uppercase tracking-wider">{speakingUser.apto || "Consejo"}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Timeline list */}
+                  <div className="flex flex-col gap-2 flex-1">
+                    {ordenDia.map((item, idx) => {
+                      const isActive = idx === itemActivoIndex;
+                      const isCompleted = item.estado === 'COMPLETADO';
+                      return (
+                        <div 
+                          key={item.id}
+                          onClick={() => {
+                            if (isWebAdmin) {
+                              handleAgendaSelect(idx);
+                            }
+                          }}
+                          className={`p-3.5 rounded-2xl border transition-all ${
+                            isWebAdmin ? "cursor-pointer" : ""
+                          } ${
+                            isActive 
+                              ? 'bg-white border-indigo-400 shadow-sm ring-2 ring-indigo-100/50' 
+                              : isCompleted
+                              ? 'bg-stone-50 border-stone-200/60 opacity-60 hover:opacity-85'
+                              : 'bg-white border-stone-200 hover:border-stone-300'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex gap-2">
+                              {isCompleted ? (
+                                <CheckCircle size={15} className="text-emerald-500 shrink-0 mt-0.5" />
+                              ) : isActive ? (
+                                <span className="w-3.5 h-3.5 rounded-full bg-indigo-500 shrink-0 mt-0.5 flex items-center justify-center text-[8px] font-black text-white animate-pulse">●</span>
+                              ) : (
+                                <Circle size={15} className="text-stone-300 shrink-0 mt-0.5" />
+                              )}
+                              <span className={`text-[11px] font-bold leading-snug ${isActive ? 'text-stone-900' : 'text-stone-600'}`}>
+                                {item.titulo}
+                              </span>
+                            </div>
+                            
+                            {/* Admin ordering buttons */}
+                            {isWebAdmin && (
+                              <div className="flex gap-0.5 shrink-0 ml-1" onClick={e => e.stopPropagation()}>
+                                <button 
+                                  onClick={() => handleUpdateAgendaOrder(idx, "up")}
+                                  disabled={idx === 0}
+                                  className="p-0.5 hover:bg-stone-100 rounded text-stone-400 disabled:opacity-20"
+                                >
+                                  <ChevronUp size={11} />
+                                </button>
+                                <button 
+                                  onClick={() => handleUpdateAgendaOrder(idx, "down")}
+                                  disabled={idx === ordenDia.length - 1}
+                                  className="p-0.5 hover:bg-stone-100 rounded text-stone-400 disabled:opacity-20"
+                                >
+                                  <ChevronDown size={11} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          {item.descripcion && (
+                            <p className="text-[9.5px] text-stone-400 mt-1 leading-normal ml-5">
+                              {item.descripcion}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Column 2: Video Stage & Controls */}
+                <div className="flex-1 flex flex-col p-5 overflow-y-auto bg-[#fdfdfb] gap-4">
+                  <div className="flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+                      <span className="text-[10px] font-black text-stone-500 uppercase tracking-wider">Spotlight Principal</span>
+                    </div>
+                  </div>
+
+                  {/* Spotlight Box */}
+                  {(() => {
+                    const activeSpeaker = turnos.find(t => t.estado === "HABLANDO");
+                    const isResidentActive = !!activeSpeaker;
+                    const spotlightName = activeSpeaker ? activeSpeaker.nombre : "Thommy Admin";
+                    const spotlightApto = activeSpeaker ? (activeSpeaker.apto || "N/A") : "Administración";
+                    
+                    return (
+                      <div className="relative w-full aspect-video rounded-[28px] overflow-hidden bg-stone-900 border border-stone-200 shadow-lg flex flex-col justify-center items-center group max-h-[70vh]">
+                        {isResidentActive ? (
+                          (!isWebAdmin && isCameraActive && localStream && activeSpeaker.usuarioId === session?.user?.id) ? (
+                            <video ref={localVideoRef} autoPlay playsInline className="w-full h-full object-cover -scale-x-100" />
+                          ) : (
+                            <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#1c1c24] to-[#0c0c0e] flex flex-col items-center justify-center">
+                              <div className="relative flex items-center justify-center">
+                                <div className="absolute w-24 h-24 rounded-full bg-red-500/10 animate-ping duration-1000" />
+                                <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${getGradientClass(spotlightName)} flex items-center justify-center text-3xl font-bold shadow-lg text-white z-10 border border-white/20`}>
+                                  {getInitials(spotlightName)}
+                                </div>
+                              </div>
+                              <span className="text-base font-bold text-white mt-4 flex items-center gap-2">
+                                {spotlightName} 
+                                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]" />
+                              </span>
+                              <span className="text-[10px] text-red-400 uppercase font-black tracking-widest mt-1">Hablando...</span>
+                            </div>
+                          )
+                        ) : (
+                          (isWebAdmin && isCameraActive && localStream) ? (
+                            <video ref={localVideoRef} autoPlay playsInline className="w-full h-full object-cover -scale-x-100" />
+                          ) : (
+                            <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#1c1c24] to-[#0c0c0e] flex flex-col items-center justify-center">
+                              <div className="relative flex items-center justify-center">
+                                <div className="absolute w-20 h-20 rounded-full bg-indigo-500/15 animate-pulse duration-1000" />
+                                <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${getGradientClass(spotlightName)} flex items-center justify-center text-2xl font-bold shadow-lg text-white z-10 border border-white/20`}>
+                                  {getInitials(spotlightName)}
+                                </div>
+                              </div>
+                              <span className="text-sm font-bold text-white mt-3 flex items-center gap-1">
+                                {spotlightName}
+                                <span className="text-[8px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-bold">MOD</span>
+                              </span>
+                              <span className="text-[9px] text-white/40 uppercase font-black tracking-widest mt-1">Administrador</span>
+                            </div>
+                          )
+                        )}
+
+                        {/* HUD left overlay */}
+                        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 items-start pointer-events-none max-w-[190px]">
+                          <div className="flex gap-1.5 items-center pointer-events-auto">
+                            <span className="bg-red-500 text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider animate-pulse shadow-md">En Directo</span>
+                            <span className="bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[8px] font-bold shadow-md">{spotlightApto}</span>
+                          </div>
+
+                          {/* Quick HUD overlay in Demo Mode */}
+                          {isDemoMode && (
+                            <>
+                              {!asistencias.some(a => a.usuarioId === session?.user?.id) && (
+                                <div className="bg-amber-500 text-stone-950 p-2.5 rounded-xl shadow-2xl flex flex-col gap-1.5 pointer-events-auto text-left w-[180px] animate-bounce">
+                                  <span className="text-[7px] font-black uppercase block">Quórum Pendiente</span>
+                                  <p className="text-[9px] font-bold leading-tight">Debes registrar asistencia.</p>
+                                  <button 
+                                    onClick={() => handleCheckIn("VIRTUAL")}
+                                    className="w-full py-1 bg-stone-900 hover:bg-stone-800 text-white rounded text-[8px] font-bold uppercase transition-all"
+                                  >
+                                    Check-In
+                                  </button>
+                                </div>
+                              )}
+                              
+                              {votaciones.find(v => v.activa) && (() => {
+                                const v = votaciones.find(x => x.activa);
+                                const hasVoted = v.votos.some((x: any) => x.usuarioId === session?.user?.id);
+                                
+                                if (!hasVoted) {
+                                  return (
+                                    <div className="bg-indigo-600 text-white p-3 rounded-2xl border border-indigo-400 shadow-2xl flex flex-col gap-2 pointer-events-auto text-left w-[180px] animate-fade-in">
+                                      <span className="text-[7.5px] font-black uppercase tracking-wider block bg-indigo-500 px-1.5 py-0.5 rounded w-fit">Voto Pendiente</span>
+                                      <p className="text-[10px] font-bold leading-tight">{v.titulo}</p>
+                                      <div className="flex gap-1">
+                                        {v.opciones.map((op: any) => (
+                                          <button 
+                                            key={op}
+                                            onClick={() => handleVotar(v.id, op)}
+                                            className="flex-1 py-1 bg-white text-indigo-600 rounded text-[8px] font-black uppercase hover:bg-indigo-50 transition-all"
+                                          >
+                                            {op}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                              })()}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Subtitles Overlay */}
+                        {subtitulos && subtitulos.length > 0 && (
+                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[85%] bg-black/75 backdrop-blur-xs px-4 py-2 rounded-xl text-center border border-white/10 z-10">
+                            <p className="text-[11px] text-white font-sans">
+                              <span className="text-emerald-400 font-bold uppercase tracking-wider text-[8px] mr-1.5">
+                                [{subtitulos[subtitulos.length - 1].speaker}]:
+                              </span>
+                              {translatingSubtitles ? "..." : (subtitlesLanguage === "ES" ? subtitulos[subtitulos.length - 1].text : translatedSubtitleText || subtitulos[subtitulos.length - 1].text)}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Twitch chat box if isDemoMode is true */}
+                        {isDemoMode && (
+                          <div className="absolute top-0 right-0 bottom-0 w-[180px] bg-black/60 border-l border-white/10 backdrop-blur-md z-20 flex flex-col p-2 text-left hidden sm:flex pointer-events-auto">
+                            <span className="text-[8px] font-black text-white/50 uppercase tracking-widest block border-b border-white/5 pb-1 mb-1">Chat de Vecinos</span>
+                            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-none">
+                              {opiniones.slice(-6).map((op) => (
+                                <div key={op.id} className="text-[8.5px] leading-relaxed">
+                                  <span className="font-bold text-indigo-300 mr-1">
+                                    {op.nombre.split(" ").slice(-1)[0]}:
+                                  </span>
+                                  <span className="text-white/80">{op.contenido}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <form 
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                const input = e.currentTarget.elements.namedItem("overlayChatMsg") as HTMLInputElement;
+                                if (!input.value.trim()) return;
+                                const msg = input.value;
+                                input.value = "";
+                                fetch("/api/asamblea/opiniones", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ contenido: msg })
+                                }).then(r => r.json()).then(d => {
+                                  if (d.success) setOpiniones(d.opiniones);
+                                });
+                              }}
+                              className="flex gap-1 pt-1 border-t border-white/5 mt-1"
+                            >
+                              <input name="overlayChatMsg" type="text" placeholder="Hablar..." className="flex-1 bg-white/5 border border-white/10 rounded px-1 py-0.5 text-[8px] text-white outline-none" />
+                              <button type="submit" className="p-1 bg-indigo-500 text-white rounded"><Send size={8} /></button>
+                            </form>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Controls Row */}
+                  <div className="flex justify-center items-center gap-3 bg-stone-50 border border-stone-200 rounded-2xl p-2.5 shrink-0 shadow-xs">
+                    <button 
+                      onClick={toggleMute}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all border cursor-pointer ${
+                        isMuted 
+                          ? 'bg-red-50 text-red-500 border-red-200' 
+                          : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
+                      }`}
+                    >
+                      {isMuted ? <MicOff size={11} /> : <Mic size={11} />}
+                      <span>{isMuted ? "Silenciado" : "Activo"}</span>
+                    </button>
+
+                    <button 
+                      onClick={toggleCamera}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all border cursor-pointer ${
+                        !isCameraActive 
+                          ? 'bg-red-50 text-red-500 border-red-200' 
+                          : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
+                      }`}
+                    >
+                      {!isCameraActive ? <Play size={11} /> : <Pause size={11} />}
+                      <span>Cámara</span>
+                    </button>
+
+                    <button 
+                      onClick={handleRequestSpeak}
+                      disabled={turnos.some(t => t.usuarioId === session?.user?.id)}
+                      className="px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-indigo-700 cursor-pointer disabled:bg-stone-100 disabled:text-stone-400"
+                    >
+                      <Mic size={11} />
+                      <span>Pedir Palabra</span>
+                    </button>
+
+                    {isWebAdmin && (
+                      <button 
+                        onClick={() => triggerCopilot()}
+                        disabled={copilotLoading}
+                        className="px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                      >
+                        <Sparkles size={11} />
+                        <span>Copiloto</span>
+                      </button>
+                    )}
+
+                    <div className="w-[1px] h-5 bg-stone-200 mx-1" />
+
+                    <button 
+                      onClick={() => signOut({ redirect: false }).then(() => router.refresh())}
+                      className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-xs"
+                    >
+                      <LogOut size={12} className="rotate-180" />
+                    </button>
+                  </div>
+
+                  {/* Secondary participant list */}
+                  <div className="flex flex-col gap-2 mt-1">
+                    <span className="text-[9px] text-stone-400 uppercase tracking-widest font-black block">Otros Copropietarios (Participantes)</span>
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                      <div className="relative w-[130px] aspect-video rounded-xl overflow-hidden bg-stone-100 border border-stone-200 flex flex-col justify-center items-center shrink-0 shadow-xs">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm mb-1">
+                          TA
+                        </div>
+                        <span className="text-[9px] font-bold text-stone-700 truncate max-w-[110px]">Thommy Admin</span>
+                        <div className="absolute bottom-1 left-1.5 bg-white/80 border border-stone-200 px-1 py-0.5 rounded text-[7px] text-stone-500 font-bold uppercase tracking-wider scale-90 origin-bottom-left">
+                          Admin
+                        </div>
+                      </div>
+
+                      {councilFeeds.map(feed => (
+                        <div key={feed.id} className="relative w-[130px] aspect-video rounded-xl overflow-hidden bg-stone-100 border border-stone-200 flex flex-col justify-center items-center shrink-0 shadow-xs">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-sm mb-1">
+                            {getInitials(feed.nombre)}
+                          </div>
+                          <span className="text-[9px] font-bold text-stone-700 truncate max-w-[110px]">{feed.nombre.split(" ").slice(-1)[0]}</span>
+                          <div className="absolute bottom-1 left-1.5 bg-white/80 border border-stone-200 px-1 py-0.5 rounded text-[7px] text-stone-500 font-bold uppercase tracking-wider scale-90 origin-bottom-left">
+                            {feed.rol}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 3: Tabbed sidepanel */}
+                {!isDemoMode && (
+                  <div className="w-[30%] border-l border-stone-200 bg-white flex flex-col overflow-hidden shrink-0">
+                    <div className="flex border-b border-stone-200 bg-stone-50 p-1.5 gap-1 shrink-0">
+                      {["chat", "votos", "gestion"].map((tabName) => (
+                        <button 
+                          key={tabName}
+                          onClick={() => setActiveRightTab(tabName as any)}
+                          className={`flex-1 py-1.5 text-center text-xs font-bold rounded-lg transition-all cursor-pointer uppercase tracking-wider text-[10px] ${
+                            activeRightTab === tabName 
+                              ? "bg-white text-stone-900 shadow-xs border border-stone-200" 
+                              : "text-stone-500 hover:text-stone-800"
+                          }`}
+                        >
+                          {tabName}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Tab content body */}
+                    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                      
+                      {/* CHAT TAB */}
+                      {activeRightTab === "chat" && (
+                        <div className="flex-1 flex flex-col min-h-0 justify-between h-full">
+                          <div className="space-y-3 flex-1 overflow-y-auto pr-1 pb-4">
+                            {opiniones.length === 0 ? (
+                              <div className="text-center py-8 text-stone-400 italic text-xs">No hay comentarios.</div>
+                            ) : (
+                              opiniones.map((op) => (
+                                <div key={op.id} className="text-xs bg-stone-50 border border-stone-200/50 p-2.5 rounded-2xl">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="font-bold text-stone-800 text-[10px]">{op.nombre}</span>
+                                    <span className="text-[9px] text-stone-400 font-medium">{op.apto || "Vecino"}</span>
+                                  </div>
+                                  <p className="text-stone-600 leading-normal font-sans">{op.contenido}</p>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                          <form onSubmit={handleSubmitOpinion} className="border-t border-stone-200 pt-3 flex gap-2 shrink-0 bg-white">
+                            <input 
+                              type="text"
+                              required
+                              value={opinionInput}
+                              onChange={(e) => setOpinionInput(e.target.value)}
+                              placeholder="Escribe tu opinión..."
+                              className="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-800 placeholder-stone-400 outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                            />
+                            <button type="submit" className="w-9 h-9 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-indigo-700 cursor-pointer shrink-0"><Send size={14} /></button>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* VOTACIONES TAB */}
+                      {activeRightTab === "votos" && (
+                        <div className="space-y-4">
+                          {isWebAdmin ? (
+                            <div className="bg-stone-50 border border-stone-200 p-3.5 rounded-2xl space-y-3 shadow-2xs">
+                              <span className="text-[9px] font-black text-stone-500 uppercase tracking-widest block">Lanzar Nueva Propuesta</span>
+                              <div className="flex flex-col gap-2">
+                                <input 
+                                  type="text"
+                                  placeholder="Título..."
+                                  value={votacionTituloInput}
+                                  onChange={e => setVotacionTituloInput(e.target.value)}
+                                  className="bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none"
+                                />
+                                <input 
+                                  type="text"
+                                  placeholder="Opciones (SI, NO, ABSTENCION)"
+                                  value={votacionOpcionesInput}
+                                  onChange={e => setVotacionOpcionesInput(e.target.value)}
+                                  className="bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none"
+                                />
+                                <input 
+                                  type="text"
+                                  placeholder="Descripción..."
+                                  value={votacionDescripcionInput}
+                                  onChange={e => setVotacionDescripcionInput(e.target.value)}
+                                  className="bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none"
+                                />
+                                <select
+                                  value={votacionFormulaInput}
+                                  onChange={e => setVotacionFormulaInput(e.target.value as any)}
+                                  className="bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-700 cursor-pointer focus:outline-none"
+                                >
+                                  <option value="MAYORIA_SIMPLE">Mayoría Simple</option>
+                                  <option value="QUORUM_CALIFICADO">Quórum Calificado (70%)</option>
+                                </select>
+
+                                {/* Option 4: Secret vote checkbox */}
+                                <div className="flex items-center gap-2 p-1">
+                                  <input 
+                                    type="checkbox"
+                                    id="esSecreto"
+                                    checked={votacionEsSecreto}
+                                    onChange={e => setVotacionEsSecreto(e.target.checked)}
+                                    className="w-4 h-4 rounded text-indigo-600 border-stone-300 focus:ring-indigo-500 cursor-pointer"
+                                  />
+                                  <label htmlFor="esSecreto" className="text-xs text-stone-600 font-bold select-none cursor-pointer">
+                                    Votación Secreta 🔒
+                                  </label>
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <button 
+                                  type="button"
+                                  onClick={handleGenerateConsensusProposal}
+                                  disabled={generatingConsensus}
+                                  className="flex-1 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-bold text-[10px] uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
+                                >
+                                  <Sparkles size={11} className={generatingConsensus ? "animate-spin" : ""} />
+                                  Consensus IA
+                                </button>
+                                <button onClick={handleCrearVotacion} className="flex-1 bg-stone-900 hover:bg-stone-800 text-white font-bold text-[10px] uppercase rounded-xl py-2 cursor-pointer shadow-sm">Lanzar</button>
+                              </div>
+                            </div>
+                          ) : (
+                            votaciones.filter(v => v.activa).map(v => {
+                              const hasVoted = v.votos.some((x: any) => x.usuarioId === session?.user?.id);
+                              const myVote = v.votos.find((x: any) => x.usuarioId === session?.user?.id);
+                              return (
+                                <div key={v.id} className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 space-y-3 shadow-xs text-left">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[7.5px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-md uppercase tracking-wider">Voto Activo</span>
+                                    {v.esSecreto && (
+                                      <span className="text-[7.5px] font-black bg-stone-200 text-stone-600 px-2 py-0.5 rounded-md uppercase">Voto Secreto 🔒</span>
+                                    )}
+                                  </div>
+                                  <h4 className="text-xs font-bold text-stone-800 leading-snug">{v.titulo}</h4>
+                                  {v.descripcion && <p className="text-[10px] text-stone-500">{v.descripcion}</p>}
+                                  {hasVoted ? (
+                                    <div className="bg-white border border-emerald-200 p-2.5 rounded-xl text-[10px] text-emerald-600 leading-normal">
+                                      <p className="font-bold flex items-center gap-1.5"><CheckCircle size={13} /> Tu voto: "{myVote?.respuesta}"</p>
+                                      <p className="text-[6.5px] font-mono text-stone-400 mt-1 truncate">Firma: {myVote?.hashFirma}</p>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col gap-1.5">
+                                      {v.opciones.map((op: any) => (
+                                        <button key={op} onClick={() => handleVotar(v.id, op)} className="w-full bg-white hover:bg-stone-50 border border-stone-200 rounded-xl py-2 text-xs font-bold text-stone-700 cursor-pointer">{op}</button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+
+                          {/* List of other polls */}
+                          <div className="space-y-3">
+                            <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest block">Listado de Votaciones</span>
+                            {votaciones.length === 0 ? (
+                              <div className="text-center py-4 text-stone-400 text-xs italic">No hay votaciones.</div>
+                            ) : (
+                              votaciones.map((v) => {
+                                const totalWeight = v.votos.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
+                                return (
+                                  <div key={v.id} className="border border-stone-200 rounded-2xl p-3.5 bg-[#fafaf8] space-y-2.5 shadow-2xs text-left">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                          <span className={`px-1.5 py-0.5 rounded text-[7.5px] font-bold border ${v.activa ? 'bg-red-50 text-red-500 border-red-200 animate-pulse' : 'bg-stone-100 text-stone-500 border-stone-200'}`}>
+                                            {v.activa ? "Activa" : "Cerrada"}
+                                          </span>
+                                          {v.esSecreto && <span className="px-1.5 py-0.5 rounded text-[7.5px] font-bold bg-purple-50 text-purple-600 border border-purple-200">🔒 Secreto</span>}
+                                        </div>
+                                        <h5 className="text-[11px] font-bold text-stone-800 mt-1.5 leading-tight">{v.titulo}</h5>
+                                      </div>
+                                      {isWebAdmin && (
+                                        <button onClick={() => handleActivarVotacion(v.id, !v.activa)} className={`px-2 py-1 rounded-lg text-[8px] font-bold uppercase cursor-pointer ${v.activa ? 'bg-red-500 text-white' : 'bg-indigo-600 text-white'}`}>{v.activa ? "Cerrar" : "Lanzar"}</button>
+                                      )}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      {v.opciones.map((op: any) => {
+                                        const matchingVotes = v.votos.filter((x: any) => x.respuesta === op);
+                                        const opWeight = matchingVotes.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
+                                        const pct = totalWeight > 0 ? (opWeight / totalWeight) * 100 : 0;
+                                        return (
+                                          <div key={op} className="space-y-0.5">
+                                            <div className="flex justify-between text-[9px] text-stone-600 font-medium">
+                                              <span className="uppercase">{op}</span>
+                                              <span>{pct.toFixed(0)}%</span>
+                                            </div>
+                                            <div className="relative w-full h-1.5 bg-stone-200 rounded-full overflow-hidden">
+                                              <div className={`h-full rounded-full ${getOptionColor(op)}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* GESTIÓN TAB */}
+                      {activeRightTab === "gestion" && (
+                        <div className="space-y-4">
+                          <div className="bg-stone-50 border border-stone-200 p-3.5 rounded-2xl space-y-2 text-left">
+                            <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest block">Quórum Coeficiente</span>
+                            <div className="flex justify-between items-end">
+                              <span className="text-[10px] text-stone-500 font-medium">Total Presente:</span>
+                              <span className="text-sm font-black text-indigo-600">{(quorumPercentage * 100).toFixed(2)}%</span>
+                            </div>
+                            <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
+                              <div className={`h-full ${quorumPercentage >= 0.51 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, quorumPercentage * 100)}%` }} />
+                            </div>
+                          </div>
+
+                          {!isWebAdmin && (
+                            <>
+                              {!asistencias.some(a => a.usuarioId === session?.user?.id) ? (
+                                <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl flex flex-col items-center gap-2 text-center">
+                                  <AlertCircle size={20} className="text-amber-500" />
+                                  <button onClick={() => handleCheckIn("VIRTUAL")} className="w-full py-2 bg-amber-500 text-stone-950 font-bold text-[10px] uppercase rounded-xl cursor-pointer">Registrar Check-In</button>
+                                </div>
+                              ) : (
+                                <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl flex items-center gap-2 text-emerald-700 text-xs text-left">
+                                  <CheckCircle size={14} className="shrink-0" />
+                                  <div><p className="font-bold">Asistencia Lista</p></div>
+                                </div>
+                              )}
+                            </>
+                          )}
+
+                          {isWebAdmin && (
+                            <div className="space-y-2 text-left">
+                              <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest block">Aprobación de Poderes</span>
+                              {poderes.map(p => (
+                                <div key={p.id} className="border border-stone-200 p-2.5 rounded-xl bg-stone-50 flex justify-between items-center text-xs">
+                                  <div>
+                                    <p className="font-bold text-stone-800">{p.otorganteNombre}</p>
+                                    <p className="text-[8px] text-stone-400">➔ {p.apoderadoNombre}</p>
+                                  </div>
+                                  {!p.verificado && (
+                                    <button onClick={() => handleAprobarPoder(p.id, true)} className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[8px] uppercase font-bold cursor-bold">Aprobar</button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="space-y-2 text-left">
+                            <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest block">Lista de Asistencia ({asistencias.length})</span>
+                            <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                              {asistencias.map((as, idx) => (
+                                <div key={idx} className="flex justify-between items-center text-xs p-2 bg-stone-50 border border-stone-200/50 rounded-xl">
+                                  <span className="font-medium text-stone-700 truncate max-w-[110px]">{as.nombre}</span>
+                                  <span className="text-[9px] text-stone-400 font-bold uppercase">{as.apto}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Option 6: Post-Assembly / Minutes Dashboard area */}
+              {actaContent && (
+                <div className="border-t border-stone-200 bg-amber-50/40 p-4 shrink-0 flex flex-col gap-3 text-left">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-stone-800 flex items-center gap-1">
+                        📊 Panel de Cierre de Asamblea Ordinaria
+                      </h4>
+                      <p className="text-[9px] text-stone-500 mt-0.5">Analíticas post-asamblea, certificado quórum y descarga del acta digital.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <a 
+                        href={`data:text/markdown;charset=utf-8,${encodeURIComponent(actaContent)}`}
+                        download="Acta_Asamblea_Ordinaria.md"
+                        className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold text-[9px] uppercase tracking-wider rounded-lg flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <Download size={11} /> Descargar Acta
+                      </a>
+                    </div>
+                  </div>
+                  
+                  {/* SVG tension curve & participation heatmap */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Tension chart */}
+                    <div className="bg-white border border-stone-200 p-3 rounded-2xl">
+                      <span className="text-[8.5px] font-bold text-stone-500 uppercase tracking-wider block mb-2">Curva de Participación y Tensión</span>
+                      <div className="h-28 w-full flex items-center justify-center">
+                        <svg viewBox="0 0 300 100" className="w-full h-full">
+                          <defs>
+                            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.15" />
+                              <stop offset="100%" stopColor="#4f46e5" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          <line x1="0" y1="80" x2="300" y2="80" stroke="#f0f0f0" strokeWidth="1" />
+                          <line x1="0" y1="50" x2="300" y2="50" stroke="#f0f0f0" strokeWidth="1" />
+                          <line x1="0" y1="20" x2="300" y2="20" stroke="#f0f0f0" strokeWidth="1" />
+                          <path d="M 0 80 Q 50 20, 100 60 T 200 40 T 300 10 L 300 80 L 0 80 Z" fill="url(#areaGrad)" />
+                          <path d="M 0 80 Q 50 20, 100 60 T 200 40 T 300 10" fill="none" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round" />
+                          <circle cx="50" cy="40" r="4.5" fill="#e11d48" stroke="#ffffff" strokeWidth="1.5" />
+                          <circle cx="250" cy="25" r="4.5" fill="#10b981" stroke="#ffffff" strokeWidth="1.5" />
+                          <text x="50" y="28" fontSize="6.5" fontWeight="bold" fill="#e11d48" textAnchor="middle">Punto 4: Tensión Alta</text>
+                          <text x="250" y="15" fontSize="6.5" fontWeight="bold" fill="#10b981" textAnchor="middle">Votación Exitosa</text>
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Heatmap */}
+                    <div className="bg-white border border-stone-200 p-3 rounded-2xl">
+                      <span className="text-[8.5px] font-bold text-stone-500 uppercase tracking-wider block mb-2">Mapa Térmico de Participación por Torre</span>
+                      <div className="grid grid-cols-6 gap-1 text-center font-mono">
+                        {[1, 2, 3, 4, 5, 6].map(tower => {
+                          const participationVal = Math.floor((Math.sin(tower * 2.3) + 1.1) * 45);
+                          let colorClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                          if (participationVal > 75) colorClass = "bg-emerald-600 text-white border-emerald-700";
+                          else if (participationVal > 50) colorClass = "bg-emerald-400 text-stone-900 border-emerald-500";
+                          else if (participationVal > 30) colorClass = "bg-amber-100 text-amber-800 border-amber-200";
+                          else colorClass = "bg-red-50 text-red-700 border-red-200";
+                          
+                          return (
+                            <div key={tower} className={`border rounded-lg p-2 text-xs flex flex-col justify-center items-center shadow-2xs ${colorClass}`}>
+                              <span className="text-[7px] uppercase font-sans font-bold">Torre {tower}</span>
+                              <span className="font-bold mt-0.5">{participationVal}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Audit signature */}
+                  <div className="bg-white border border-stone-200 rounded-xl p-2.5 flex justify-between items-center text-[10px]">
+                    <span className="text-stone-500 font-medium">📜 Firma del Acta en Blockchain / P2P:</span>
+                    <span className="font-mono text-stone-400 select-all truncate max-w-[400px]">SHA-256: 8a73c1d9b3d2b271d4719264c92b21cf59f939e0db9637c89f55e0dbd5813d9c</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: MOBILE SIMULATOR FRAME */}
+          {isDemoMode && (
+            <div className="flex flex-col items-center relative">
+              <div className="sticky top-6 flex flex-col items-center gap-3">
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-stone-200 rounded-full text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-1">
+                  <Smartphone size={10} /> Simulador App Celular (Residente)
+                </div>
+
+                {/* iPhone 14 CSS chassis */}
+                <div className="relative border-gray-900 bg-gray-900 border-[10px] rounded-[2.5rem] h-[580px] w-[290px] shadow-2xl z-20 overflow-hidden">
+                  <div className="h-[32px] w-[3px] bg-gray-900 absolute -left-[13px] top-[72px] rounded-l-lg" />
+                  <div className="h-[46px] w-[3px] bg-gray-900 absolute -left-[13px] top-[124px] rounded-l-lg" />
+                  <div className="h-[64px] w-[3px] bg-gray-900 absolute -right-[13px] top-[94px] rounded-r-lg" />
+
+                  {/* iPhone screen content */}
+                  <div className="rounded-[2.1rem] overflow-hidden w-full h-full bg-[#05020a] flex flex-col text-white relative">
+                    <div className="h-10 bg-black/40 flex justify-between items-center px-6 relative z-30 select-none text-[10px] font-bold text-white/90">
+                      <span>9:41 AM</span>
+                      <div className="w-[80px] h-[18px] bg-black rounded-full mx-auto absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 bg-zinc-800 rounded-full mr-2" />
+                        <div className="w-8 h-1 bg-zinc-900 rounded-full" />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[8px]">5G</span>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 p-4 overflow-y-auto pb-8 flex flex-col gap-4 text-left relative z-20">
+                      {!mobileSession ? (
+                        <div className="flex-1 flex flex-col justify-center items-center text-center p-2">
+                          <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/30 rounded-2xl flex items-center justify-center text-accent mb-4">
+                            <Smartphone size={24} />
+                          </div>
+                          <h4 className="text-sm font-bold text-white mb-1">ConjuntOS App</h4>
+                          <p className="text-[10px] text-white/40 mb-6 leading-relaxed">Inicia sesión en el celular simulado.</p>
+                          <div className="w-full space-y-3.5 bg-white/5 p-4 rounded-2xl border border-white/5">
+                            <div className="space-y-1">
+                              <select 
+                                className="w-full bg-[#05020a] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-hidden"
+                                value={mobileUserEmail}
+                                onChange={(e) => setMobileUserEmail(e.target.value)}
+                              >
+                                <option value="raulmontaño@conjuntos.com">Raúl Montaño (Propietario)</option>
+                                <option value="thommyadmin@example.com">Thommy Admin (Administrador)</option>
+                                <option value="thommy@example.com">Thommy Master (Super Admin)</option>
+                              </select>
+                            </div>
+                            <button onClick={handleMobileLogin} className="w-full bg-gradient-to-r from-accent to-purple-600 text-white font-bold text-[10px] uppercase py-3 rounded-xl cursor-pointer">Entrar</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex flex-col h-full gap-4">
+                          <div className="flex justify-between items-center bg-white/5 p-3 rounded-2xl border border-white/5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center font-bold text-xs text-primary">{mobileSession.nombre[0]}</div>
+                              <div>
+                                <h5 className="text-[10px] font-bold text-white leading-none mb-0.5">{mobileSession.nombre}</h5>
+                                <span className="text-[8px] text-white/30 uppercase font-medium">{mobileSession.apto}</span>
+                              </div>
+                            </div>
+                            <button onClick={() => setMobileSession(null)} className="text-red-400 text-[8px] font-bold uppercase p-1">Salir</button>
+                          </div>
+
+                          <div className="flex-1 flex flex-col gap-3">
+                            <div className="bg-black/50 border border-white/10 rounded-2xl p-2 flex flex-col gap-1.5 relative overflow-hidden">
+                              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/5 flex items-center justify-center relative">
+                                <div className="text-center p-2 flex flex-col items-center justify-center">
+                                  <span className="text-xl animate-pulse block mb-1">👑</span>
+                                  <span className="text-[9px] font-bold text-white block">Thommy Admin</span>
+                                </div>
+                                {subtitulos && subtitulos.length > 0 && (
+                                  <div className="absolute bottom-1.5 right-1.5 left-1.5 bg-black/70 px-2 py-1 rounded text-center pointer-events-none border border-white/5 z-10">
+                                    <p className="text-[7.5px] text-white font-sans leading-tight">
+                                      <span className="text-emerald-400 font-bold uppercase text-[6px] mr-1">[{subtitulos[subtitulos.length - 1].speaker}]:</span>
+                                      {subtitlesLanguage === "ES" ? subtitulos[subtitulos.length - 1].text : translatedSubtitleText || subtitulos[subtitulos.length - 1].text}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {!asistencias.some(a => a.usuarioId === mobileSession.id) ? (
+                              <button onClick={() => handleCheckIn("VIRTUAL", mobileSession.id)} className="w-full py-2 bg-amber-500 text-primary font-bold text-[9px] uppercase tracking-wider rounded-xl cursor-pointer">Confirmar Asistencia</button>
+                            ) : (
+                              <div className="bg-emerald-600/10 border border-emerald-500/25 p-2 rounded-2xl flex items-center justify-center gap-1.5 text-emerald-400 text-[9px] font-bold"><CheckCircle size={10} /> Presente en Quórum</div>
+                            )}
+
+                            {votaciones.filter(v => v.activa).map(v => {
+                              const hasVoted = v.votos.some((x: any) => x.usuarioId === mobileSession.id);
+                              const myVote = v.votos.find((x: any) => x.usuarioId === mobileSession.id);
+                              return (
+                                <div key={v.id} className="bg-accent/15 border border-accent rounded-2xl p-3 flex flex-col gap-2">
+                                  <h5 className="text-[10px] font-bold text-white leading-tight">{v.titulo}</h5>
+                                  {hasVoted ? (
+                                    <div className="p-2 bg-emerald-500/10 rounded-xl text-[9px] text-emerald-400 font-medium">Registrado: "{myVote?.respuesta}"</div>
+                                  ) : (
+                                    <div className="flex gap-1.5">
+                                      {v.opciones.map((op: any) => (
+                                        <button key={op} onClick={() => handleVotar(v.id, op, mobileSession.id)} className="flex-1 bg-accent/20 hover:bg-accent text-white hover:text-primary border border-accent/40 rounded-lg py-1.5 text-[9px] font-black uppercase transition-all cursor-pointer">{op}</button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#05020a] text-white p-6 relative overflow-hidden font-sans">
       {/* Background Orbs */}
@@ -1258,1316 +2208,8 @@ export default function AsambleaPage() {
           )}
 
           {/* 2. AUTHENTICATED: Web View UI */}
-          {status === "authenticated" && (
-            <>
-              {/* Floating Subtitle Notification Card (Twitch/Kick style alert) */}
-              {showSubtitleNotification && subtitulos && subtitulos.length > 0 && (
-                <div className="fixed top-24 right-6 z-50 w-[300px] bg-gradient-to-r from-neutral-900/95 to-black/95 backdrop-blur-md p-3.5 rounded-2xl border border-emerald-500/35 shadow-[0_10px_35px_rgba(0,0,0,0.65)] flex gap-3 animate-fade-in hover:border-emerald-500/60 transition-all duration-300">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5 shadow-inner">
-                    <Mic size={14} className="animate-pulse" />
-                  </div>
-                  <div className="text-left flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[7px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> Hablando en Vivo
-                      </span>
-                      <span className="text-[7px] text-white/30">{subtitulos[subtitulos.length - 1].timestamp}</span>
-                    </div>
-                    <p className="text-[9.5px] font-bold text-white truncate mb-0.5">
-                      {subtitulos[subtitulos.length - 1].speaker}
-                    </p>
-                    <p className="text-[9.5px] text-white/80 leading-normal font-sans italic">
-                      {translatingSubtitles ? (
-                        <span className="text-white/40 animate-pulse">Traduciendo...</span>
-                      ) : (
-                        `"${subtitlesLanguage === "ES" ? subtitulos[subtitulos.length - 1].text : translatedSubtitleText || subtitulos[subtitulos.length - 1].text}"`
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )}
+/* Handled by early return above */
 
-              {/* Web Header for Logged In User */}
-              <div className="liquid-glass rounded-[28px] p-6 border border-white/10 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white border border-white/20 font-bold text-sm ${isWebAdmin ? 'bg-accent' : 'bg-emerald-600'}`}>
-                    {session.user?.name?.[0] || "U"}
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold leading-none mb-1">{session.user?.name || session.user?.email}</h3>
-                    <p className="text-[10px] text-white/40 uppercase tracking-widest font-black flex items-center gap-1">
-                      <Shield size={10} className={isWebAdmin ? "text-accent" : "text-emerald-500"} />
-                      {isWebAdmin ? "Administrador del Conjunto" : "Copropietario / Residente"}
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => signOut({ redirect: false }).then(() => router.refresh())}
-                  className="px-3.5 py-1.5 bg-red-950/40 hover:bg-red-950/60 border border-red-500/30 text-red-400 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <LogOut size={12} /> Salir
-                </button>
-              </div>
-
-              {/* 2.1 Video Conference Grid (Shared by Admin & Resident) */}
-              <div className="liquid-glass rounded-[32px] p-5 border border-white/10 flex flex-col gap-4 mb-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/5 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                    <h4 className="text-xs font-black uppercase tracking-widest text-white">Videoconferencia de Asamblea (Meet Stage)</h4>
-                  </div>
-                  
-                  {/* WebRTC Streaming Controls */}
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={toggleMute}
-                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all border cursor-pointer ${
-                        isMuted 
-                          ? 'bg-red-500/20 text-red-400 border-red-500/30' 
-                          : 'bg-white/5 text-white/80 border-white/10 hover:bg-white/10'
-                      }`}
-                    >
-                      {isMuted ? <MicOff size={12} /> : <Mic size={12} />} {isMuted ? "Silenciado" : "Silenciar Mic"}
-                    </button>
-
-                    <button 
-                      onClick={toggleCamera}
-                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all border cursor-pointer ${
-                        !isCameraActive 
-                          ? 'bg-red-500/20 text-red-400 border-red-500/30' 
-                          : 'bg-white/5 text-white/80 border-white/10 hover:bg-white/10'
-                      }`}
-                    >
-                      {isCameraActive ? <Play size={12} /> : <Pause size={12} />} {isCameraActive ? "Apagar Cámara" : "Encender Cámara"}
-                    </button>
-                    
-                    {!localStream && (
-                      <button 
-                        onClick={startVideo}
-                        className="px-3.5 py-1.5 bg-accent text-primary rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:scale-102 hover:shadow-[0_0_15px_rgba(217,70,239,0.4)] transition-all cursor-pointer"
-                      >
-                        <Play size={12} /> Conectar Cámara
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Simulated Topics Bar for Admin */}
-                {isWebAdmin && (
-                  <div className="flex flex-col gap-2 bg-white/5 border border-white/5 p-3 rounded-2xl">
-                    <span className="text-[9px] text-accent font-black uppercase tracking-widest flex items-center gap-1">
-                      <Sparkles size={10} className="text-accent" /> Temas Rápidos para Simular Voz (IA sugerirá Licitaciones y Precios en vivo):
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      <button 
-                        onClick={() => simulateSpeechTopic("piscina")}
-                        className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/35 border border-purple-500/30 text-purple-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
-                      >
-                        🏊‍♂️ Piscinas
-                      </button>
-                      <button 
-                        onClick={() => simulateSpeechTopic("ascensor")}
-                        className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-500/30 text-cyan-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
-                      >
-                        🛗 Ascensores
-                      </button>
-                      <button 
-                        onClick={() => simulateSpeechTopic("seguridad")}
-                        className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-500/30 text-emerald-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
-                      >
-                        🛡️ Seguridad
-                      </button>
-                      <button 
-                        onClick={() => simulateSpeechTopic("presupuesto")}
-                        className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/30 text-amber-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
-                      >
-                        💰 Presupuesto
-                      </button>
-                      <button 
-                        onClick={() => simulateSpeechTopic("repeticion")}
-                        className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/35 border border-red-500/30 text-red-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
-                      >
-                        🔁 Simular Repetición
-                      </button>
-                      <button 
-                        onClick={() => simulateSpeechTopic("divagacion")}
-                        className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/35 border border-orange-500/30 text-orange-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
-                      >
-                        🔀 Simular Divagación
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* 2.1.1 MAIN SPOTLIGHT STAGE (Priority Active Speaker) */}
-                {(() => {
-                  const activeSpeaker = turnos.find(t => t.estado === "HABLANDO");
-                  const isResidentActive = !!activeSpeaker;
-                  const spotlightName = activeSpeaker ? activeSpeaker.nombre : "Thommy Admin";
-                  const spotlightApto = activeSpeaker ? (activeSpeaker.apto || "N/A") : "Administración";
-                  
-                  return (
-                    <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-[#0a0a0d] border border-white/10 flex flex-col justify-center items-center shadow-2xl group max-h-[75vh]">
-                      
-                      {/* Active Video Rendering */}
-                      {isResidentActive ? (
-                        /* Case A: Resident is the active speaker speaking */
-                        (!isWebAdmin && isCameraActive && localStream && activeSpeaker.usuarioId === session?.user?.id) ? (
-                          <video 
-                            ref={localVideoRef} 
-                            autoPlay 
-                            playsInline 
-                            className="w-full h-full object-cover -scale-x-100" 
-                          />
-                        ) : (
-                          /* Otherwise, simulated premium avatar stream of speaking resident */
-                          <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#121216] to-[#070709] flex flex-col items-center justify-center">
-                            {/* Animated voice waves for active speaker */}
-                            <div className="relative flex items-center justify-center">
-                              <div className="absolute w-24 h-24 rounded-full bg-red-500/10 animate-ping duration-1000" />
-                              <div className="absolute w-28 h-28 rounded-full bg-red-500/5 animate-pulse duration-700" />
-                              <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${getGradientClass(spotlightName)} flex items-center justify-center text-3xl font-bold shadow-lg border border-white/15 z-10`}>
-                                {getInitials(spotlightName)}
-                              </div>
-                            </div>
-                            <span className="text-base font-bold text-white mt-4 flex items-center gap-2">
-                              {spotlightName} 
-                              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]" />
-                            </span>
-                            <span className="text-[10px] text-red-400 uppercase font-black tracking-widest mt-1">
-                              Hablando...
-                            </span>
-                          </div>
-                        )
-                      ) : (
-                        /* Case B: No resident is speaking, Admin occupies the stage */
-                        (isWebAdmin && isCameraActive && localStream) ? (
-                          <video 
-                            ref={localVideoRef} 
-                            autoPlay 
-                            playsInline 
-                            className="w-full h-full object-cover -scale-x-100" 
-                          />
-                        ) : (
-                          /* Otherwise, simulated Admin stream */
-                          <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#121216] to-[#070709] flex flex-col items-center justify-center">
-                            <div className="relative flex items-center justify-center">
-                              <div className="absolute w-24 h-24 rounded-full bg-accent/15 animate-pulse duration-1000" />
-                              <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${getGradientClass(spotlightName)} flex items-center justify-center text-3xl font-bold shadow-lg border border-white/15 z-10`}>
-                                {getInitials(spotlightName)}
-                              </div>
-                            </div>
-                            <span className="text-base font-bold text-white mt-4 flex items-center gap-1.5">
-                              {spotlightName}
-                              <span className="text-[8px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider">MOD</span>
-                            </span>
-                            <span className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">
-                              Administrador de la Asamblea
-                            </span>
-                          </div>
-                        )
-                      )}
-
-                      {/* --- OVERLAY LAYOUT STRIP 1: LEFT STACK (Status, Mic Requests, and Sentiment Summary) --- */}
-                      <div className="absolute top-4 left-4 z-20 flex flex-col gap-2.5 items-start pointer-events-none max-w-[190px]">
-                        
-                        {/* Status badges */}
-                        <div className="flex gap-2 items-center flex-wrap pointer-events-auto">
-                          <span className="bg-red-500 text-white px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest animate-pulse shadow-md">
-                            En Pantalla Principal
-                          </span>
-                          <span className="bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-xl text-[9px] font-bold shadow-md">
-                            {spotlightApto}
-                          </span>
-                          {isWebAdmin && (
-                            <div className="bg-black/75 backdrop-blur-md border border-white/10 text-[9px] text-accent font-black uppercase tracking-widest px-3 py-1 rounded-xl shadow-md flex items-center gap-1.5 animate-fade-in">
-                              <span className={`w-1.5 h-1.5 rounded-full ${quorumPercentage >= 0.51 ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                              Quórum: {(quorumPercentage * 100).toFixed(1)}%
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Floating HUD: Pending Speak Requests */}
-                        {isWebAdmin && turnos.filter(t => t.estado === "PENDIENTE").length > 0 && (() => {
-                          const pendingTurns = turnos.filter(t => t.estado === "PENDIENTE");
-                          const nextSpeaker = pendingTurns[0];
-                          return (
-                            <div className="bg-gradient-to-br from-indigo-950/80 to-purple-950/80 backdrop-blur-md p-3 rounded-2xl border border-indigo-500/40 shadow-2xl flex flex-col gap-2 animate-fade-in w-[190px] hover:border-accent transition-colors duration-300 pointer-events-auto">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
-                                  <span className="text-[8px] font-black text-accent uppercase tracking-widest">Petición Mic</span>
-                                </div>
-                                <span className="text-[7px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded-md font-bold">
-                                  En Cola: {pendingTurns.length}
-                                </span>
-                              </div>
-                              <div className="border-t border-white/5 pt-1.5 mt-0.5">
-                                <p className="text-[9.5px] font-bold text-white truncate leading-none mb-0.5">{nextSpeaker.nombre}</p>
-                                <p className="text-[8px] text-white/50 font-medium">{nextSpeaker.apto || "Sin Apto"}</p>
-                              </div>
-                              <button
-                                onClick={() => handleGrantMic(nextSpeaker.id)}
-                                className="w-full py-1 bg-gradient-to-r from-accent to-purple-600 hover:from-accent/90 hover:to-purple-500 text-white rounded-lg text-[8px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-[0_0_12px_rgba(217,70,239,0.3)] flex items-center justify-center gap-1 hover:scale-102 mt-0.5"
-                              >
-                                <Mic size={9} /> Ceder Mic
-                              </button>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Floating HUD: AI Sentiment Summary */}
-                        {isWebAdmin && copilotData.resumenSentimiento && (
-                          <div className="bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 shadow-md max-w-[190px] animate-fade-in text-left pointer-events-auto">
-                            <span className="text-[7px] text-cyan-400 font-black uppercase tracking-widest block mb-0.5">Sentimiento IA</span>
-                            <p className="text-[9px] text-white/90 font-medium leading-normal">
-                              💬 {copilotData.resumenSentimiento}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* --- OVERLAY LAYOUT STRIP 2: RIGHT STACK (Active speaker badge, lang & active vote) --- */}
-                      <div className="absolute top-4 right-4 md:right-[236px] z-20 flex flex-col gap-2.5 items-end pointer-events-none max-w-[190px]">
-                        
-                        {/* Speaker badge & language select */}
-                        <div className="flex items-center gap-1.5 pointer-events-auto max-w-full flex-wrap justify-end">
-                          <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl text-[9px] text-emerald-400 font-bold flex items-center gap-1.5 shadow-md border border-white/5 whitespace-nowrap">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {spotlightName}
-                          </div>
-                          <div className="relative">
-                            <select
-                              id="web-subtitle-lang-select"
-                              value={subtitlesLanguage}
-                              onChange={(e) => setSubtitlesLanguage(e.target.value as any)}
-                              className="bg-black/60 backdrop-blur-md text-[9px] text-white font-bold px-2 py-1.5 rounded-xl border border-white/5 shadow-md cursor-pointer outline-none hover:bg-black/80 transition-colors focus:ring-1 focus:ring-accent"
-                            >
-                              <option value="ES" className="bg-neutral-900 text-white">🇪🇸 ES</option>
-                              <option value="EN" className="bg-neutral-900 text-white">🇺🇸 EN</option>
-                              <option value="PT" className="bg-neutral-900 text-white">🇧🇷 PT</option>
-                              <option value="FR" className="bg-neutral-900 text-white">🇫🇷 FR</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Floating HUD: Active Voting Progress */}
-                        {isWebAdmin && votaciones.find(v => v.activo) && (() => {
-                          const activeVote = votaciones.find(v => v.activo);
-                          const totalVotos = activeVote.votos?.length || 0;
-                          const siVotos = activeVote.votos?.filter((v: any) => v.respuesta === "SI").reduce((acc: number, v: any) => acc + (v.coeficiente || 0), 0) || 0;
-                          const noVotos = activeVote.votos?.filter((v: any) => v.respuesta === "NO").reduce((acc: number, v: any) => acc + (v.coeficiente || 0), 0) || 0;
-                          const absVotos = activeVote.votos?.filter((v: any) => v.respuesta === "ABSTENCION").reduce((acc: number, v: any) => acc + (v.coeficiente || 0), 0) || 0;
-                          
-                          return (
-                            <div className="bg-black/80 backdrop-blur-md p-3 rounded-2xl border border-emerald-500/30 shadow-2xl flex flex-col gap-2 w-[190px] animate-fade-in hover:border-emerald-500/50 transition-colors duration-300 pointer-events-auto">
-                              <div className="flex justify-between items-center">
-                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Votación Activa
-                                </span>
-                                <span className="text-[7.5px] bg-white/5 border border-white/10 text-white/60 px-1.5 py-0.5 rounded font-bold">{totalVotos} votos</span>
-                              </div>
-                              <div className="border-t border-white/5 pt-1.5 mt-0.5">
-                                <p className="text-[10px] font-bold text-white truncate leading-none mb-0.5">{activeVote.titulo}</p>
-                                <span className="text-[7px] text-white/40 uppercase font-black tracking-wider block mb-1">
-                                  {activeVote.formula === 'QUORUM_CALIFICADO' ? 'Quórum Calificado (70%)' : 'Mayoría Simple'}
-                                </span>
-                              </div>
-                              
-                              <div className="flex flex-col gap-1 text-[8px] text-white/95 font-medium">
-                                <div className="flex justify-between">
-                                  <span className="text-emerald-400">SÍ: {(siVotos * 100).toFixed(0)}%</span>
-                                  <span className="text-rose-400">NO: {(noVotos * 100).toFixed(0)}%</span>
-                                  <span className="text-amber-400">ABS: {(absVotos * 100).toFixed(0)}%</span>
-                                </div>
-                                <div className="w-full bg-white/15 h-1 rounded-full overflow-hidden flex">
-                                  <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${siVotos * 100}%` }} />
-                                  <div className="bg-rose-500 h-full transition-all duration-300" style={{ width: `${noVotos * 100}%` }} />
-                                  <div className="bg-amber-500 h-full transition-all duration-300" style={{ width: `${absVotos * 100}%` }} />
-                                </div>
-                              </div>
-                              
-                              <button
-                                onClick={() => handleActivarVotacion(activeVote.id, false)}
-                                className="w-full py-1.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white rounded-lg text-[8px] font-black uppercase tracking-wider transition-all duration-200 mt-1 cursor-pointer shadow-[0_0_10px_rgba(239,68,68,0.2)] flex items-center justify-center gap-1 hover:scale-102"
-                              >
-                                <CheckCircle size={9} /> Cerrar Votos
-                              </button>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      {/* --- OVERLAY LAYOUT STRIP 3: TOP CENTER STACK (Timer & AI Moderation Alert) --- */}
-                      <div className="absolute top-4 left-1/2 -translate-x-1/2 md:left-[calc((100%-220px)/2)] md:-translate-x-1/2 w-[85%] max-w-md z-30 flex flex-col gap-2 pointer-events-none items-center">
-                        
-                        {/* Speaking Timer on Main Spotlight (visible to everyone) */}
-                        {isResidentActive && speakingTimeLeft !== null && (
-                          <div className="bg-black/65 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-2xl flex items-center gap-2.5 animate-fade-in pointer-events-auto">
-                            <svg className="w-4.5 h-4.5 -rotate-90">
-                              <circle 
-                                cx="9" 
-                                cy="9" 
-                                r="7" 
-                                className="stroke-white/10 fill-none" 
-                                strokeWidth="2" 
-                              />
-                              <circle 
-                                cx="9" 
-                                cy="9" 
-                                r="7" 
-                                className={`fill-none transition-all duration-1000 ${
-                                  speakingTimeLeft > 60 
-                                    ? "stroke-emerald-500" 
-                                    : speakingTimeLeft > 20 
-                                      ? "stroke-amber-500" 
-                                      : "stroke-red-500 animate-pulse"
-                                }`}
-                                strokeWidth="2" 
-                                strokeDasharray={2 * Math.PI * 7}
-                                strokeDashoffset={((120 - speakingTimeLeft) / 120) * (2 * Math.PI * 7)}
-                              />
-                            </svg>
-                            <span className={`text-[9px] font-mono font-black ${
-                              speakingTimeLeft > 60 
-                                ? "text-emerald-400" 
-                                : speakingTimeLeft > 20 
-                                  ? "text-amber-400" 
-                                  : "text-red-400 animate-pulse"
-                            }`}>
-                              Límite de Habla: {Math.floor(speakingTimeLeft / 60)}:{(speakingTimeLeft % 60).toString().padStart(2, '0')}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* AI Moderation Alert Card (visible ONLY to Admin) */}
-                        {isWebAdmin && copilotData.alertaModeracion && (
-                          <div className="w-full bg-red-950/85 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-red-500/40 shadow-2xl flex items-center gap-3 animate-bounce pointer-events-auto">
-                            <AlertCircle className="text-red-400 shrink-0 animate-pulse" size={16} />
-                            <div className="text-left flex-1">
-                              <span className="text-[7px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit mb-0.5">
-                                🛡️ MODERACIÓN IA ({copilotData.alertaModeracion.type})
-                              </span>
-                              <p className="text-[10px] font-bold text-white leading-normal">
-                                {copilotData.alertaModeracion.mensaje}
-                              </p>
-                              <p className="text-[8.5px] text-red-300 mt-0.5 font-medium">
-                                💡 {copilotData.alertaModeracion.sugerenciaAccion}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Twitch/Kick-style Live Chat Overlay */}
-                      <div className="absolute top-0 right-0 bottom-0 w-[220px] bg-black/70 border-l border-white/5 backdrop-blur-md z-20 flex flex-col p-3 text-left animate-fade-in hidden md:flex">
-                        <div className="flex items-center gap-1.5 border-b border-white/5 pb-2 mb-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                          <span className="text-[9px] font-black text-white uppercase tracking-widest">Chat de la Asamblea</span>
-                        </div>
-                        
-                        {/* Scrollable opinions list */}
-                        <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-white/10">
-                          {opiniones.length === 0 ? (
-                            <p className="text-[8px] text-white/30 italic text-center pt-8">No hay mensajes aún.</p>
-                          ) : (
-                            opiniones.slice(-8).map((op) => (
-                              <div key={op.id} className="text-[9px] leading-relaxed">
-                                <span className="font-bold text-accent mr-1 uppercase text-[8px] tracking-wide">
-                                  {op.apto ? `[${op.apto.split(" ").slice(-1)[0]}]` : ""}{op.nombre.split(" ").slice(-1)[0]}:
-                                </span>
-                                <span className="text-white/90 font-sans">{op.contenido}</span>
-                              </div>
-                            ))
-                          )}
-                        </div>
-
-                        {/* Send opinion input inside video overlay */}
-                        <div className="border-t border-white/5 pt-2 mt-2">
-                          <form 
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              const form = e.currentTarget;
-                              const input = form.elements.namedItem("overlayChatMsg") as HTMLInputElement;
-                              if (!input.value.trim()) return;
-                              
-                              const msg = input.value;
-                              input.value = "";
-                              
-                              fetch("/api/asamblea/opiniones", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ contenido: msg })
-                              }).then(r => r.json()).then(d => {
-                                if (d.success) setOpiniones(d.opiniones);
-                              });
-                            }}
-                            className="flex gap-1"
-                          >
-                            <input
-                              name="overlayChatMsg"
-                              type="text"
-                              placeholder="Enviar mensaje..."
-                              className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-[8.5px] text-white placeholder-white/30 outline-none focus:border-accent"
-                            />
-                            <button
-                              type="submit"
-                              className="px-2 py-1 bg-accent text-primary rounded-lg text-[8.5px] font-black uppercase hover:scale-102 transition-transform cursor-pointer"
-                            >
-                              <Send size={8} />
-                            </button>
-                          </form>
-                        </div>
-                      </div>
-
-                      {/* --- OVERLAY LAYOUT STRIP 4: BOTTOM CENTER STACK (Subtitles & Copilot Suggestions) --- */}
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 md:left-[calc((100%-220px)/2)] md:-translate-x-1/2 w-[90%] md:w-[60%] max-w-xl z-20 flex flex-col gap-2 pointer-events-none select-none justify-end">
-                        
-                        {/* Live spoken transcription subtitle for everyone */}
-                        {subtitulos && subtitulos.length > 0 && (
-                          <div className="bg-black/60 backdrop-blur-xs px-4 py-2 rounded-lg shadow-lg text-center border border-white/5 animate-fade-in">
-                            <p className="text-[11px] sm:text-xs text-white font-sans font-medium tracking-wide drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)]">
-                              <span className="text-emerald-400 font-bold uppercase tracking-wider text-[8px] mr-1.5">
-                                [{subtitulos[subtitulos.length - 1].speaker}]:
-                              </span>
-                              {translatingSubtitles ? (
-                                <span className="italic text-white/60 animate-pulse">Traduciendo...</span>
-                              ) : (
-                                `"${subtitlesLanguage === "ES" ? subtitulos[subtitulos.length - 1].text : translatedSubtitleText || subtitulos[subtitulos.length - 1].text}"`
-                              )}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* AI Suggestions floating subtitles block for the Administrator */}
-                        {isWebAdmin && copilotData.sugerencias && copilotData.sugerencias.length > 0 && (
-                          <div className="bg-black/75 backdrop-blur-xs px-5 py-3 rounded-xl shadow-2xl text-center border border-white/5 animate-fade-in">
-                            <div className="flex flex-col gap-2">
-                              <p className="text-xs sm:text-sm md:text-base text-yellow-300 font-sans font-semibold tracking-wide leading-relaxed drop-shadow-[0_2px_3px_rgba(0,0,0,1)]">
-                                <span className="text-accent font-black uppercase tracking-wider text-[9px] mr-2">[IA COPILOTO]:</span>
-                                {copilotData.sugerencias[0]}
-                              </p>
-                              {copilotData.sugerencias[1] && (
-                                <p className="text-[11px] sm:text-xs text-white/90 font-sans font-normal leading-relaxed drop-shadow-[0_2px_3px_rgba(0,0,0,1)] border-t border-white/10 pt-2 mt-1">
-                                  <span className="text-cyan-400 font-black uppercase tracking-wider text-[9px] mr-2">[CONSEJO ALTERNATIVO]:</span>
-                                  {copilotData.sugerencias[1]}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* 2.1.2 SECONDARY TILES (Google Meet style Sidebar strip below) */}
-                <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
-                  <span className="text-[9px] text-white/30 uppercase tracking-widest font-black block">Otros Participantes en la Reunión</span>
-                  
-                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
-                    
-                    {/* Compact Tile 1: Admin */}
-                    <div className="relative w-[140px] aspect-video rounded-xl overflow-hidden bg-gradient-to-b from-[#18181c] to-[#0c0c0e] border border-white/10 flex flex-col justify-center items-center shrink-0 shadow-md">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center text-xs font-bold shadow-sm mb-1">
-                        TA
-                      </div>
-                      <span className="text-[9px] font-bold text-white max-w-[120px] truncate">Thommy Admin</span>
-                      <div className="absolute bottom-1 left-1.5 bg-black/60 px-1 py-0.5 rounded text-[7px] text-white/60 font-black uppercase tracking-wider scale-90 origin-bottom-left">
-                        MOD / Admin
-                      </div>
-                    </div>
-
-                    {/* Compact Council Members Tiles */}
-                    {councilFeeds.map((feed) => (
-                      <div key={feed.id} className="relative w-[140px] aspect-video rounded-xl overflow-hidden bg-gradient-to-b from-[#18181c] to-[#0c0c0e] border border-white/10 flex flex-col justify-center items-center shrink-0 shadow-md">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-xs font-bold shadow-sm mb-1">
-                          {getInitials(feed.nombre)}
-                        </div>
-                        <span className="text-[9px] font-bold text-white max-w-[120px] truncate">{feed.nombre.split(" ").slice(-1)[0]}</span>
-                        
-                        {/* Mic status indicator */}
-                        <span className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center ${feed.microfonoActivo ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                          {feed.microfonoActivo ? <Mic size={8} /> : <MicOff size={8} />}
-                        </span>
-                        
-                        <div className="absolute bottom-1 left-1.5 bg-black/60 px-1 py-0.5 rounded text-[7px] text-white/60 font-black uppercase tracking-wider scale-90 origin-bottom-left">
-                          {feed.rol}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Compact Tile of speaking Resident if active */}
-                    {(() => {
-                      const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
-                      if (!activeSpeaker) return null;
-                      return (
-                        <div className="relative w-[140px] aspect-video rounded-xl overflow-hidden bg-gradient-to-b from-[#18181c] to-[#0c0c0e] border-2 border-red-500/60 flex flex-col justify-center items-center shrink-0 shadow-md">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-xs font-bold shadow-sm mb-1">
-                            {getInitials(activeSpeaker.nombre)}
-                          </div>
-                          <span className="text-[9px] font-bold text-white max-w-[120px] truncate">{activeSpeaker.nombre}</span>
-                          
-                          {/* Floating Traffic-Light Circle Timer */}
-                          {speakingTimeLeft !== null && (
-                            <div className="absolute top-1 left-1.5 z-20 flex items-center gap-1 bg-black/60 backdrop-blur-xs px-1.5 py-0.5 rounded-md">
-                              <span className={`w-1.5 h-1.5 rounded-full ${
-                                speakingTimeLeft > 60 
-                                  ? "bg-emerald-400 shadow-[0_0_6px_#10b981]" 
-                                  : speakingTimeLeft > 20 
-                                    ? "bg-amber-400 shadow-[0_0_6px_#f59e0b]" 
-                                    : "bg-red-500 shadow-[0_0_6px_#ef4444] animate-ping"
-                              }`} />
-                              <span className="text-[7px] font-mono font-bold text-white">
-                                {Math.floor(speakingTimeLeft / 60)}:{(speakingTimeLeft % 60).toString().padStart(2, '0')}
-                              </span>
-                            </div>
-                          )}
-
-                          <div className="absolute bottom-1 left-1.5 bg-red-600 px-1.5 py-0.5 rounded text-[7px] text-white font-black uppercase tracking-widest scale-90 origin-bottom-left flex items-center gap-0.5">
-                            <span className="w-1 h-1 rounded-full bg-white animate-ping" /> Hablando
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                  </div>
-                </div>
-
-              </div>
-
-              {/* ADMIN PANEL */}
-              {isWebAdmin && (
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                  {/* Left Column: Agenda & Quorum & Powers (2/5 size) */}
-                  <div className="md:col-span-2 flex flex-col gap-5">
-                    
-                    {/* Quorum Progress Bar */}
-                    <div className="bg-white/5 border border-white/5 rounded-3xl p-5 flex flex-col gap-3">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-white/60 uppercase tracking-widest text-[9px]">Quórum de Coeficiente Presente</span>
-                        <span className="font-black text-accent text-sm">{(quorumPercentage * 100).toFixed(2)}%</span>
-                      </div>
-                      <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden relative">
-                        <div 
-                          className={`h-full transition-all duration-500 rounded-full ${quorumPercentage >= 0.51 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
-                          style={{ width: `${Math.min(100, quorumPercentage * 100)}%` }} 
-                        />
-                        {/* 51% target marker line */}
-                        <div className="absolute top-0 bottom-0 left-[51%] w-[1.5px] bg-red-500/80 shadow-[0_0_5px_red]" title="Mínimo Reglamentario (51%)" />
-                      </div>
-                      <div className="flex justify-between text-[9px] text-white/30 font-bold uppercase mt-0.5">
-                        <span>Presentes: {asistencias.length} Residentes</span>
-                        <span>{quorumPercentage >= 0.51 ? "✅ Quórum Válido" : "⚠️ Sin Quórum (Min 51%)"}</span>
-                      </div>
-                    </div>
-
-                    {/* Powers of representation verification */}
-                    <div className="bg-white/5 border border-white/5 rounded-3xl p-5">
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-white/40">Validación de Poderes</h4>
-                        <span className="text-[9px] bg-white/5 border border-white/10 px-2 py-0.5 rounded-full font-bold text-white/60">
-                          {poderes.filter(p => p.verificado).length}/{poderes.length} Aprobados
-                        </span>
-                      </div>
-                      <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
-                        {poderes.length === 0 ? (
-                          <div className="text-center py-4 text-white/30 text-xs">No hay poderes cargados.</div>
-                        ) : (
-                          poderes.map(p => (
-                            <div key={p.id} className="bg-black/30 border border-white/5 p-3 rounded-2xl flex justify-between items-center text-xs">
-                              <div>
-                                <p className="font-bold text-white leading-tight">{p.otorganteNombre}</p>
-                                <p className="text-[9px] text-white/40 uppercase mt-0.5">{p.otorganteApto} ➔ {p.apoderadoNombre}</p>
-                              </div>
-                              <div className="flex gap-1">
-                                {p.verificado ? (
-                                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase border border-emerald-500/20 rounded-md">Verificado</span>
-                                ) : (
-                                  <>
-                                    <button 
-                                      onClick={() => handleAprobarPoder(p.id, true)}
-                                      className="px-2 py-1 bg-accent text-primary font-black text-[8px] uppercase tracking-wider rounded-md cursor-pointer"
-                                    >
-                                      Aprobar
-                                    </button>
-                                    <button 
-                                      onClick={() => handleAprobarPoder(p.id, false, true)}
-                                      className="px-2 py-1 bg-red-950/40 text-red-400 font-black text-[8px] uppercase tracking-wider rounded-md border border-red-500/20 cursor-pointer"
-                                    >
-                                      Rechazar
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Agenda / Orden del dia list */}
-                    <div className="flex flex-col gap-3">
-                      <div className="flex justify-between items-center px-1">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-white/30">Orden del Día</h3>
-                        <span className="text-[9px] bg-accent/20 border border-accent/40 text-accent font-bold px-2 py-0.5 rounded-full">
-                          {ordenDia.filter(item => item.estado === 'COMPLETADO').length}/{ordenDia.length} Listos
-                        </span>
-                      </div>
-
-                      <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[350px] pr-1">
-                        {ordenDia.map((item, index) => {
-                          const isActive = index === itemActivoIndex;
-                          const isCompleted = item.estado === 'COMPLETADO';
-                          
-                          return (
-                            <div 
-                              key={item.id}
-                              className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                                isActive 
-                                  ? 'bg-linear-to-br from-accent/20 to-purple-900/10 border-accent shadow-lg shadow-accent/5' 
-                                  : isCompleted
-                                  ? 'bg-white/[0.01] border-white/5 opacity-50 hover:opacity-80'
-                                  : 'bg-white/5 border-white/5 hover:border-white/15'
-                              }`}
-                              onClick={() => handleAgendaSelect(index)}
-                            >
-                              <div className="flex justify-between items-start">
-                                <div className="flex gap-2">
-                                  {isCompleted ? (
-                                    <CheckCircle size={16} className="text-accent shrink-0 mt-0.5" />
-                                  ) : isActive ? (
-                                    <span className="w-4 h-4 rounded-full bg-accent shrink-0 mt-0.5 flex items-center justify-center text-[9px] font-black text-primary animate-pulse">●</span>
-                                  ) : (
-                                    <Circle size={16} className="text-white/20 shrink-0 mt-0.5" />
-                                  )}
-                                  <span className={`text-xs font-bold leading-tight ${isActive ? 'text-white' : 'text-white/70'}`}>
-                                    {item.titulo}
-                                  </span>
-                                </div>
-
-                                {/* Ordering buttons */}
-                                <div className="flex gap-1 shrink-0 ml-2" onClick={e => e.stopPropagation()}>
-                                  <button 
-                                    onClick={() => handleUpdateAgendaOrder(index, "up")}
-                                    disabled={index === 0}
-                                    className="p-1 hover:bg-white/10 rounded-md text-white/30 hover:text-white disabled:opacity-20"
-                                  >
-                                    <ChevronUp size={12} />
-                                  </button>
-                                  <button 
-                                    onClick={() => handleUpdateAgendaOrder(index, "down")}
-                                    disabled={index === ordenDia.length - 1}
-                                    className="p-1 hover:bg-white/10 rounded-md text-white/30 hover:text-white disabled:opacity-20"
-                                  >
-                                    <ChevronDown size={12} />
-                                  </button>
-                                </div>
-                              </div>
-                              {item.descripcion && (
-                                <p className="text-[10px] text-white/40 mt-1.5 leading-relaxed ml-6">
-                                  {item.descripcion}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                  </div>
- 
-                  {/* Center Column: Teleprompter, AI Copilot, Votations & Closure (3/5 size) */}
-                  <div className="md:col-span-3 flex flex-col gap-6">
-                    
-                    {/* A. Teleprompter Widget */}
-                    <div className="liquid-glass rounded-[32px] p-5 border border-white/10 flex flex-col h-[260px]">
-                      <div className="flex justify-between items-center border-b border-white/5 pb-3 mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
-                          <h4 className="text-xs font-black uppercase tracking-widest text-accent">Teleprompter Guía (Solo Admin)</h4>
-                        </div>
-                        {/* prompter controls */}
-                        <div className="flex items-center gap-2">
-                          {/* Live speech / subtitles trigger */}
-                          {isSpeaking ? (
-                            <button 
-                              onClick={handleToggleSpeaking}
-                              className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 animate-pulse cursor-pointer"
-                            >
-                              <Pause size={10} /> Cerrar Mic
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={handleToggleSpeaking}
-                              className="px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/30 text-emerald-400 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <Mic size={10} /> Hablar
-                            </button>
-                          )}
-
-                          <button 
-                            onClick={() => setIsPrompterScrolling(!isPrompterScrolling)}
-                            className={`p-2 rounded-xl text-xs font-bold tracking-wider transition-all flex items-center justify-center cursor-pointer ${isPrompterScrolling ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`}
-                          >
-                            {isPrompterScrolling ? <Pause size={12} /> : <Play size={12} />}
-                          </button>
-                          
-                          <select 
-                            className="bg-[#05020a] border border-white/10 rounded-xl px-2 py-1 text-[10px] text-white focus:outline-hidden"
-                            value={prompterSpeed}
-                            onChange={(e) => setPrompterSpeed(Number(e.target.value))}
-                          >
-                            <option value={1}>Lento</option>
-                            <option value={2}>Medio</option>
-                            <option value={3}>Rápido</option>
-                          </select>
-                        </div>
-                      </div>
- 
-                      {/* Prompter Scrolling Text */}
-                      <div 
-                        ref={prompterRef}
-                        className="flex-1 overflow-y-auto hide-scrollbar bg-black/40 p-4 rounded-2xl border border-white/5 font-serif text-sm leading-relaxed text-yellow-100 select-none max-h-[160px] scroll-smooth"
-                      >
-                        <p className="whitespace-pre-line text-glow">
-                          {copilotData.guiaTeleprompter}
-                        </p>
-                      </div>
-                    </div>
- 
-                    {/* B. AI Copilot Widget */}
-                    <div className="liquid-glass rounded-[32px] p-5 border border-white/10 flex flex-col">
-                      <div className="flex justify-between items-center border-b border-white/5 pb-3 mb-3">
-                        <div className="flex items-center gap-2">
-                          <Sparkles size={14} className="text-accent" />
-                          <h4 className="text-xs font-black uppercase tracking-widest text-white">Copiloto IA (Gemini)</h4>
-                        </div>
-                        <button 
-                          onClick={() => triggerCopilot()}
-                          disabled={copilotLoading}
-                          className="px-3 py-1 bg-accent hover:bg-accent/80 text-primary font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        >
-                          {copilotLoading ? (
-                            <RefreshCw size={10} className="animate-spin" />
-                          ) : (
-                            <Sparkles size={10} />
-                          )}
-                          Actualizar Sugerencias
-                        </button>
-                      </div>
- 
-                      {/* AI suggestions content */}
-                      <div className="space-y-4">
-                        {/* Sentiment */}
-                        <div>
-                          <span className="text-[9px] font-black text-white/30 uppercase tracking-widest block mb-1">Análisis de Sentimiento de Residentes</span>
-                          <p className="text-xs text-white/70 italic bg-white/5 p-3 rounded-xl border border-white/5">
-                            {copilotData.resumenSentimiento}
-                          </p>
-                        </div>
- 
-                        {/* Ideas/Tips */}
-                        <div>
-                          <span className="text-[9px] font-black text-white/30 uppercase tracking-widest block mb-1.5">Sugerencias y Soluciones del Copiloto</span>
-                          <ul className="space-y-2">
-                            {copilotData.sugerencias.map((sug, idx) => (
-                              <li key={idx} className="text-xs text-white/80 flex items-start gap-2">
-                                <span className="text-accent shrink-0 mt-0.5">✦</span>
-                                <span>{sug}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* C. Admin Votations Panel */}
-                    <div className="liquid-glass rounded-[32px] p-5 border border-white/10 flex flex-col">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-white/40 mb-3 flex items-center gap-1.5">
-                        <CheckCircle size={12} className="text-accent" /> Control de Votaciones Ponderadas
-                      </h4>
-
-                      {/* Legal warning if overall attendance is less than 70% for qualified quorum */}
-                      {isWebAdmin && quorumPercentage < 0.70 && (
-                        <div className="bg-red-500/15 border border-red-500/25 p-3 rounded-2xl text-[9px] text-red-400 font-semibold leading-relaxed mb-3 animate-pulse">
-                          ⚠️ ALERTA DE QUÓRUM LEGAL: El quórum verificado actual es de {(quorumPercentage * 100).toFixed(1)}%. Ninguna propuesta de Quórum Calificado (70% total) podrá ser aprobada hoy a menos que ingresen más copropietarios o se registren más poderes.
-                        </div>
-                      )}
-                      
-                      {/* Active proposals list */}
-                      <div className="space-y-3 mb-4">
-                        {votaciones.length === 0 ? (
-                          <div className="text-center py-4 text-white/30 text-xs">No hay propuestas de votación creadas.</div>
-                        ) : (
-                          votaciones.map((v: any) => {
-                            const totalVotes = v.votos.length;
-                            const totalWeight = v.votos.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
-                            
-                            return (
-                              <div key={v.id} className="bg-black/40 border border-white/5 p-4 rounded-2xl space-y-3">
-                                <div className="flex justify-between items-start">
-                                  <div className="flex flex-col gap-1">
-                                    <div className="flex flex-wrap items-center gap-1.5">
-                                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${v.activa ? 'bg-red-500/20 text-red-400 border-red-500/30 animate-pulse' : 'bg-white/5 text-white/40 border-white/10'}`}>
-                                        {v.activa ? "Activa" : "Cerrada"}
-                                      </span>
-                                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${v.formula === 'QUORUM_CALIFICADO' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30'}`}>
-                                        {v.formula === 'QUORUM_CALIFICADO' ? "Quórum Calificado (70%)" : "Mayoría Simple"}
-                                      </span>
-                                    </div>
-                                    <h5 className="text-xs font-bold text-white mt-1">{v.titulo}</h5>
-                                  </div>
-                                  <button 
-                                    onClick={() => handleActivarVotacion(v.id, !v.activa)}
-                                    className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${v.activa ? 'bg-amber-600/30 text-amber-400 hover:bg-amber-600/50' : 'bg-accent text-primary'}`}
-                                  >
-                                    {v.activa ? "Cerrar" : "Lanzar Votación"}
-                                  </button>
-                                </div>
-                                
-                                {v.descripcion && <p className="text-[10px] text-white/50">{v.descripcion}</p>}
-
-                                {/* Results display */}
-                                <div className="space-y-2.5 pt-3 border-t border-white/5">
-                                  {v.opciones.map((op: string) => {
-                                    const matchingVotes = v.votos.filter((x: any) => x.respuesta === op);
-                                    const opWeight = matchingVotes.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
-                                    // Pct of Cast: for Mayoria Simple
-                                    const pctOfCast = totalWeight > 0 ? (opWeight / totalWeight) * 100 : 0;
-                                    // Pct of Total (1.0 or 100%): for Quorum Calificado
-                                    const pctOfTotal = opWeight * 100;
-                                    
-                                    const displayPct = v.formula === "QUORUM_CALIFICADO" ? pctOfTotal : pctOfCast;
-                                    const colorGradient = getOptionColor(op);
-                                    
-                                    return (
-                                      <div key={op} className="space-y-1">
-                                        <div className="flex justify-between text-[10px]">
-                                          <span className="font-bold uppercase text-white/80">{op}</span>
-                                          <span className="font-semibold text-white/60">
-                                            {displayPct.toFixed(1)}% {v.formula === "QUORUM_CALIFICADO" ? "del Total" : "de Votos Emitidos"} ({matchingVotes.length} {matchingVotes.length === 1 ? 'voto' : 'votos'})
-                                          </span>
-                                        </div>
-                                        <div className="relative w-full h-3.5 bg-black/45 rounded-full overflow-hidden border border-white/5">
-                                          {v.formula === "QUORUM_CALIFICADO" && (
-                                            <>
-                                              <div className="absolute left-[70%] top-0 bottom-0 border-l border-red-500/60 border-dashed z-10" />
-                                              <span className="absolute left-[71%] top-0 text-[6.5px] font-black text-red-400 uppercase leading-[14px] tracking-widest z-10">70% Req</span>
-                                            </>
-                                          )}
-                                          <div 
-                                            className={`h-full rounded-full transition-all duration-500 ${colorGradient}`} 
-                                            style={{ width: `${Math.min(displayPct, 100)}%` }} 
-                                          />
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-
-                                {/* Quorum Calificado Legal Result Summary */}
-                                {v.formula === "QUORUM_CALIFICADO" && (
-                                  <div className="mt-3 p-2 rounded-xl text-[10px] font-semibold text-center border border-white/5">
-                                    {(() => {
-                                      const siVotes = v.votos.filter((x: any) => x.respuesta.toUpperCase() === "SI" || x.respuesta.toUpperCase() === "SÍ");
-                                      const siWeight = siVotes.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
-                                      const passed = siWeight >= 0.70;
-                                      
-                                      if (passed) {
-                                        return (
-                                          <div className="bg-emerald-500/10 border-emerald-500/25 text-emerald-400">
-                                            ✅ Propuesta APROBADA (SÍ alcanzó el {(siWeight * 100).toFixed(1)}% del Coeficiente Total)
-                                          </div>
-                                        );
-                                      } else {
-                                        return (
-                                          <div className="bg-yellow-500/10 border-yellow-500/25 text-yellow-400 animate-pulse">
-                                            ⏳ Propuesta EN DEBATE (SÍ lleva el {(siWeight * 100).toFixed(1)}% del 70.0% requerido)
-                                          </div>
-                                        );
-                                      }
-                                    })()}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                      
-                      {/* Create form */}
-                      <div className="border-t border-white/5 pt-4 space-y-2">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-[9px] font-black text-white/30 uppercase tracking-widest block">Nueva Propuesta</span>
-                          <button 
-                            type="button"
-                            onClick={handleGenerateConsensusProposal}
-                            disabled={generatingConsensus}
-                            className="text-[8.5px] font-black text-accent hover:text-purple-400 uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                          >
-                            <Sparkles size={11} className={generatingConsensus ? "animate-spin text-purple-400" : "animate-pulse"} />
-                            {generatingConsensus ? "Redactando..." : "Redactar Consenso con IA"}
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <input 
-                            type="text"
-                            placeholder="Título (ej: Cuota extraordinaria ascensor)"
-                            value={votacionTituloInput}
-                            onChange={e => setVotacionTituloInput(e.target.value)}
-                            className="bg-[#05020a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden"
-                          />
-                          <input 
-                            type="text"
-                            placeholder="Opciones (ej: SI, NO, ABSTENCION)"
-                            value={votacionOpcionesInput}
-                            onChange={e => setVotacionOpcionesInput(e.target.value)}
-                            className="bg-[#05020a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden"
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <input 
-                            type="text"
-                            placeholder="Descripción breve..."
-                            value={votacionDescripcionInput}
-                            onChange={e => setVotacionDescripcionInput(e.target.value)}
-                            className="bg-[#05020a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden"
-                          />
-                          <select
-                            value={votacionFormulaInput}
-                            onChange={e => setVotacionFormulaInput(e.target.value as any)}
-                            className="bg-[#05020a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden cursor-pointer"
-                          >
-                            <option value="MAYORIA_SIMPLE">Mayoría Simple (Coeficiente Relativo)</option>
-                            <option value="QUORUM_CALIFICADO">Quórum Calificado (70% Coeficiente Total)</option>
-                          </select>
-                        </div>
-                        <button 
-                          onClick={handleCrearVotacion}
-                          className="w-full bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-[9px] uppercase tracking-wider py-2.5 rounded-xl cursor-pointer"
-                        >
-                          Crear y Guardar Propuesta
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* D. Finalizar & AI Acta Widget */}
-                    <div className="liquid-glass rounded-[32px] p-6 border border-white/10 flex flex-col gap-4">
-                      <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                        <div>
-                          <h4 className="text-xs font-black uppercase tracking-widest text-white">Clausura y Acta Legal (Gemini IA)</h4>
-                          <p className="text-[9px] text-white/40 mt-0.5">Genera automáticamente el acta de la asamblea consolidando quórum y votaciones.</p>
-                        </div>
-                        <button 
-                          onClick={handleFinalizarAsamblea}
-                          disabled={actaLoading}
-                          className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        >
-                          {actaLoading ? <RefreshCw size={10} className="animate-spin" /> : <Shield size={10} />}
-                          Cerrar y Redactar Acta
-                        </button>
-                      </div>
-
-                      {actaContent && (
-                        <div className="space-y-3">
-                          <div className="bg-black/50 border border-white/5 rounded-2xl p-4 max-h-[220px] overflow-y-auto text-[10px] font-mono text-white/70 leading-relaxed whitespace-pre-wrap select-all scroll-smooth">
-                            {actaContent}
-                          </div>
-                          <div className="flex justify-between items-center pt-2">
-                            <span className="text-[9px] text-emerald-400 font-bold uppercase flex items-center gap-1">
-                              <CheckCircle size={10} /> Validada bajo hash de auditoría legal
-                            </span>
-                            <a 
-                              href={`data:text/markdown;charset=utf-8,${encodeURIComponent(actaContent)}`}
-                              download="Acta_Asamblea_Ordinaria.md"
-                              className="px-3.5 py-2 bg-accent text-primary hover:scale-102 transition-all font-black text-[9px] uppercase tracking-wider rounded-xl flex items-center gap-1 cursor-pointer"
-                            >
-                              Descargar Acta (.md)
-                            </a>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-                </div>
-              )}
-
-              {/* RESIDENT PANEL (WEB VIEW) */}
-              {!isWebAdmin && (
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                  {/* Left Column: Agenda (2/5 size) */}
-                  <div className="md:col-span-2 flex flex-col gap-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-white/30 px-1">Progreso de la Asamblea</h3>
-                    <div className="bg-white/5 border border-white/5 rounded-3xl p-5">
-                      <div className="flex items-center gap-2 mb-4 bg-accent/15 border border-accent/30 p-4 rounded-2xl">
-                        <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse shrink-0" />
-                        <div>
-                          <span className="text-[8px] font-black text-accent uppercase tracking-widest block">Tema en Discusión</span>
-                          <h4 className="text-sm font-bold text-white leading-tight mt-0.5">{activeAgendaItem.titulo}</h4>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 pl-2">
-                        {ordenDia.map((item, idx) => (
-                          <div key={item.id} className="flex items-center gap-3 text-xs">
-                            {item.estado === 'COMPLETADO' ? (
-                              <CheckCircle size={14} className="text-accent shrink-0" />
-                            ) : idx === itemActivoIndex ? (
-                              <span className="w-2 h-2 rounded-full bg-accent shrink-0 animate-ping" />
-                            ) : (
-                              <Circle size={14} className="text-white/10 shrink-0" />
-                            )}
-                            <span className={idx === itemActivoIndex ? "text-white font-bold" : "text-white/40"}>
-                              {item.titulo}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Interaction (3/5 size) */}
-                  <div className="md:col-span-3 flex flex-col gap-5">
-                    
-                    {/* Check-In Card */}
-                    {!asistencias.some(a => a.usuarioId === session?.user?.id) ? (
-                      <div className="bg-amber-600/10 border border-amber-500/30 rounded-3xl p-5 flex flex-col items-center text-center gap-3">
-                        <AlertCircle size={28} className="text-amber-400 animate-bounce" />
-                        <div>
-                          <h4 className="text-xs font-bold text-white">Asistencia No Confirmada</h4>
-                          <p className="text-[10px] text-white/50 mt-1">Registra tu asistencia para computar tu coeficiente en el quórum reglamentario.</p>
-                        </div>
-                        <button 
-                          onClick={() => handleCheckIn("VIRTUAL")}
-                          disabled={submittingCheckIn}
-                          className="px-5 py-2.5 bg-amber-500 text-primary font-black text-[10px] uppercase tracking-wider rounded-xl hover:scale-102 transition-all cursor-pointer disabled:opacity-50"
-                        >
-                          Confirmar Mi Asistencia (Check-In)
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="bg-emerald-600/10 border border-emerald-500/30 rounded-3xl p-4 flex items-center gap-3 text-emerald-400 text-xs">
-                        <CheckCircle size={18} className="shrink-0" />
-                        <div>
-                          <p className="font-bold">Asistencia Registrada</p>
-                          <p className="text-[9px] text-white/40">Presente en asamblea virtual. IP registrada para auditoría legal.</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Active proposals list for resident voting */}
-                    {votaciones.filter((v: any) => v.activa).map((v: any) => {
-                      const hasVoted = v.votos.some((x: any) => x.usuarioId === session?.user?.id);
-                      const myVote = v.votos.find((x: any) => x.usuarioId === session?.user?.id);
-                      
-                      return (
-                        <div key={v.id} className="bg-accent/15 border border-accent shadow-lg shadow-accent/5 rounded-3xl p-5 space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[8px] font-black bg-accent text-primary px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit">Votación Activa</span>
-                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${v.formula === 'QUORUM_CALIFICADO' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30'}`}>
-                              {v.formula === 'QUORUM_CALIFICADO' ? "Quórum Calificado (70%)" : "Mayoría Simple"}
-                            </span>
-                          </div>
-                          
-                          <h4 className="text-sm font-bold text-white leading-tight">{v.titulo}</h4>
-                          {v.descripcion && <p className="text-[10px] text-white/50 leading-relaxed">{v.descripcion}</p>}
-                          
-                          {hasVoted ? (
-                            <div className="space-y-3 pt-2">
-                              <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] text-emerald-400 font-medium">
-                                <p className="flex items-center gap-1.5">
-                                  <CheckCircle size={12} /> Tu voto: "{myVote?.respuesta}" registrado con éxito.
-                                </p>
-                                <p className="text-[7.5px] text-white/40 font-mono mt-1 truncate">Firma: {myVote?.hashFirma}</p>
-                              </div>
-                              
-                              {/* Live Results Progress for Resident */}
-                              <div className="space-y-2 bg-black/30 p-3 rounded-2xl border border-white/5">
-                                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest block mb-1">Resultados Parciales en Vivo</span>
-                                {(() => {
-                                  const totalWeight = v.votos.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
-                                  
-                                  return v.opciones.map((op: string) => {
-                                    const matchingVotes = v.votos.filter((x: any) => x.respuesta === op);
-                                    const opWeight = matchingVotes.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
-                                    const pctOfCast = totalWeight > 0 ? (opWeight / totalWeight) * 100 : 0;
-                                    const pctOfTotal = opWeight * 100;
-                                    const displayPct = v.formula === "QUORUM_CALIFICADO" ? pctOfTotal : pctOfCast;
-                                    const colorGradient = getOptionColor(op);
-                                    
-                                    return (
-                                      <div key={op} className="space-y-1">
-                                        <div className="flex justify-between text-[9px]">
-                                          <span className="font-bold text-white/70 uppercase">{op}</span>
-                                          <span className="font-semibold text-white/50">{displayPct.toFixed(1)}%</span>
-                                        </div>
-                                        <div className="relative w-full h-2.5 bg-black/45 rounded-full overflow-hidden border border-white/5">
-                                          {v.formula === "QUORUM_CALIFICADO" && (
-                                            <div className="absolute left-[70%] top-0 bottom-0 border-l border-red-500/50 border-dashed z-10" />
-                                          )}
-                                          <div 
-                                            className={`h-full rounded-full transition-all duration-300 ${colorGradient}`} 
-                                            style={{ width: `${Math.min(displayPct, 100)}%` }} 
-                                          />
-                                        </div>
-                                      </div>
-                                    );
-                                  });
-                                })()}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex gap-2 pt-2">
-                              {v.opciones.map((op: string) => (
-                                <button 
-                                  key={op}
-                                  onClick={() => handleVotar(v.id, op)}
-                                  className="flex-1 bg-accent/20 hover:bg-accent text-white hover:text-primary border border-accent/40 rounded-xl py-2.5 text-xs font-black uppercase tracking-wider transition-all cursor-pointer hover:scale-102"
-                                >
-                                  {op}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {/* Turn widget */}
-                    <div className="liquid-glass rounded-[32px] p-6 border border-white/10 flex flex-col justify-center items-center text-center">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-white/30 mb-4">Intervención en la Reunión</h4>
-                      
-                      {turnos.some(t => t.usuarioId === session?.user?.id && t.estado === "HABLANDO") ? (
-                        <div className="flex flex-col items-center gap-3 animate-bounce">
-                          <div className="w-16 h-16 bg-red-500/20 border border-red-500 rounded-full flex items-center justify-center text-red-400">
-                            <Mic size={28} />
-                          </div>
-                          <span className="text-sm font-bold text-red-400">¡Tu micrófono está abierto! Habla ahora.</span>
-                        </div>
-                      ) : turnos.some(t => t.usuarioId === session?.user?.id && t.estado === "PENDIENTE") ? (
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="w-16 h-16 bg-yellow-500/20 border border-yellow-500/40 rounded-full flex items-center justify-center text-yellow-400">
-                            <MicOff size={28} />
-                          </div>
-                          <span className="text-sm font-bold text-yellow-400">
-                            En cola de espera (Posición #{turnos.filter(t => t.estado === "PENDIENTE" || t.estado === "HABLANDO").findIndex(t => t.usuarioId === session?.user?.id) + 1})
-                          </span>
-                          <span className="text-[10px] text-white/30">Espera a que el administrador te ceda la palabra.</span>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={handleRequestSpeak}
-                          className="px-6 py-4 bg-linear-to-r from-accent to-purple-600 hover:scale-102 active:scale-98 text-white font-bold text-sm uppercase tracking-wider rounded-2xl flex items-center gap-3 transition-all shadow-[0_10px_25px_rgba(217,70,239,0.3)] cursor-pointer"
-                        >
-                          <Mic size={18} /> Pedir la Palabra
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Opinions widget */}
-                    <div className="liquid-glass rounded-[32px] p-5 border border-white/10 flex flex-col">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-white/30 mb-4">Enviar mi Opinión a la Administración</h4>
-                      
-                      <form onSubmit={handleSubmitOpinion} className="flex gap-2">
-                        <input 
-                          type="text"
-                          required
-                          value={opinionInput}
-                          onChange={(e) => setOpinionInput(e.target.value)}
-                          placeholder="ej: Sugiero votar primero el punto sobre la cuota."
-                          className="flex-1 bg-white/5 border border-white/5 rounded-2xl px-4 py-3 text-xs text-white focus:outline-hidden focus:border-accent/40"
-                        />
-                        <button 
-                          type="submit"
-                          disabled={submittingOpinion}
-                          className="w-12 h-12 bg-accent text-primary rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                        >
-                          <Send size={16} />
-                        </button>
-                      </form>
-                      <span className="text-[9px] text-white/20 mt-2 block">
-                        Tus opiniones serán analizadas por el Copiloto IA para guiar al administrador.
-                      </span>
-                    </div>
-
-                  </div>
-                </div>
-              )}
-
-              {/* SHARED LIVE PANELS (Admin Queue / Opinions Feed visible to logged in users) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                {/* 1. Turn queue */}
-                <div className="liquid-glass rounded-[32px] p-5 border border-white/10">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-white/30 mb-4">Solicitudes de Palabra</h4>
-                  <div className="space-y-2.5 max-h-[250px] overflow-y-auto pr-1">
-                    {turnos.filter(t => t.estado === "PENDIENTE" || t.estado === "HABLANDO").length === 0 ? (
-                      <div className="text-center py-6 text-white/30 text-xs">No hay solicitudes de palabra activas.</div>
-                    ) : (
-                      turnos.filter(t => t.estado === "PENDIENTE" || t.estado === "HABLANDO").map((t, idx) => (
-                        <div key={t.id} className="bg-white/5 p-3 rounded-2xl border border-white/5 flex justify-between items-center">
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-white/30 font-black">#{idx + 1}</span>
-                            <div>
-                              <h5 className="text-xs font-bold leading-none mb-1 text-white">{t.nombre}</h5>
-                              <p className="text-[9px] text-white/40 uppercase font-medium">{t.apto || "N/A"}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {t.estado === "HABLANDO" ? (
-                              <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-[8px] text-red-400 font-bold uppercase animate-pulse">Hablando</span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[8px] text-white/40 font-bold uppercase">En cola</span>
-                            )}
-
-                            {isWebAdmin && (
-                              <div className="flex gap-1.5">
-                                {t.estado !== "HABLANDO" && (
-                                  <button 
-                                    onClick={() => handleGrantMic(t.id)}
-                                    className="px-2 py-1 bg-accent text-primary rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer"
-                                  >
-                                    Ceder Mic
-                                  </button>
-                                )}
-                                <button 
-                                  onClick={() => handleCompleteTurn(t.id)}
-                                  className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white/80 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer"
-                                >
-                                  Terminar
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* 2. Live opinions stream */}
-                <div className="liquid-glass rounded-[32px] p-5 border border-white/10">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-white/30 mb-4">Comentarios y Opiniones Recientes</h4>
-                  <div className="space-y-2.5 max-h-[250px] overflow-y-auto pr-1">
-                    {opiniones.length === 0 ? (
-                      <div className="text-center py-6 text-white/30 text-xs">No hay opiniones enviadas todavía.</div>
-                    ) : (
-                      [...opiniones].reverse().map((op) => (
-                        <div key={op.id} className="bg-white/5 p-3.5 rounded-2xl border border-white/5">
-                          <div className="flex justify-between items-start mb-1.5">
-                            <span className="text-[10px] font-bold text-accent">{op.nombre}</span>
-                            <span className="text-[8px] text-white/30">{op.apto || "N/A"}</span>
-                          </div>
-                          <p className="text-xs text-white/80 leading-normal">{op.contenido}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
 
         </div>
 
@@ -2704,261 +2346,8 @@ export default function AsambleaPage() {
                         )}
 
                         {/* RESIDENT INTERFACE FOR ASSEMBLY IN SIMULATOR */}
-                        {status === "authenticated" && (
-                          <div className="flex-1 flex flex-col gap-3.5">
-                            
-                            {/* Mobile Video Conference Stream */}
-                            <div className="bg-black/50 border border-white/10 rounded-2xl p-2 flex flex-col gap-1.5 relative overflow-hidden">
-                              <div className="flex justify-between items-center px-1">
-                                <span className="text-[7px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1">
-                                  <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" /> Video en Vivo
-                                </span>
-                                
-                                {/* Micro controls inside Mobile App */}
-                                <div className="flex gap-1 items-center">
-                                  <select
-                                    id="mobile-subtitle-lang-select"
-                                    value={subtitlesLanguage}
-                                    onChange={(e) => setSubtitlesLanguage(e.target.value as any)}
-                                    className="bg-white/10 hover:bg-white/20 transition-all text-[8px] text-white font-bold p-1 rounded-md border border-white/10 cursor-pointer outline-none max-w-[65px] font-sans"
-                                  >
-                                    <option value="ES" className="bg-neutral-900 text-white">🇪🇸 ES</option>
-                                    <option value="EN" className="bg-neutral-900 text-white">🇺🇸 EN</option>
-                                    <option value="PT" className="bg-neutral-900 text-white">🇧🇷 PT</option>
-                                    <option value="FR" className="bg-neutral-900 text-white">🇫🇷 FR</option>
-                                  </select>
-                                  <button 
-                                    onClick={toggleMute}
-                                    className={`p-1 rounded-md text-[8px] font-bold uppercase transition-all ${
-                                      isMuted ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white/80'
-                                    }`}
-                                  >
-                                    {isMuted ? <MicOff size={8} /> : <Mic size={8} />}
-                                  </button>
-                                  <button 
-                                    onClick={toggleCamera}
-                                    className={`p-1 rounded-md text-[8px] font-bold uppercase transition-all ${
-                                      !isCameraActive ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white/80'
-                                    }`}
-                                  >
-                                    {isCameraActive ? <Play size={8} /> : <Pause size={8} />}
-                                  </button>
-                                </div>
-                              </div>
+/* Handled by early return above */
 
-                              {/* Main screen focus (Admin or Self speaking) */}
-                              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/5 flex items-center justify-center relative">
-                                {isCameraActive && localStream ? (
-                                  <video 
-                                    ref={mobileVideoRef} 
-                                    autoPlay 
-                                    playsInline 
-                                    muted 
-                                    className="w-full h-full object-cover -scale-x-100" 
-                                  />
-                                ) : (
-                                  <div className="text-center p-2 flex flex-col items-center justify-center">
-                                    <span className="text-xl animate-pulse block mb-1">👑</span>
-                                    <span className="text-[9px] font-bold text-white block">Thommy Admin</span>
-                                    <span className="text-[7px] text-white/40 block">Administrador del Conjunto</span>
-                                  </div>
-                                )}
-                                
-                                <div className="absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded text-[7px] font-bold text-white/90 z-10">
-                                  {isCameraActive && localStream ? "Tu Cámara" : "Transmisión Admin"}
-                                </div>
-
-                                {/* Translated Subtitles Overlay for Mobile Screen */}
-                                {subtitulos && subtitulos.length > 0 && (
-                                  <div className="absolute bottom-1.5 right-1.5 left-1.5 bg-black/70 backdrop-blur-xs px-2 py-1 rounded text-center pointer-events-none select-none border border-white/5 animate-fade-in z-10">
-                                    <p className="text-[7px] text-white font-sans font-medium tracking-wide leading-tight">
-                                      <span className="text-emerald-400 font-bold uppercase text-[6px] mr-1">
-                                        [{subtitulos[subtitulos.length - 1].speaker}]:
-                                      </span>
-                                      {translatingSubtitles ? (
-                                        <span className="italic text-white/60 animate-pulse">Translating...</span>
-                                      ) : (
-                                        `"${subtitlesLanguage === "ES" ? subtitulos[subtitulos.length - 1].text : translatedSubtitleText || subtitulos[subtitulos.length - 1].text}"`
-                                      )}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Council list carousel/strip */}
-                              <div className="flex gap-1.5 overflow-x-auto pb-1 mt-0.5">
-                                {councilFeeds.map(c => (
-                                  <div key={c.id} className="flex items-center gap-1 bg-white/5 border border-white/5 p-1 rounded-lg min-w-[75px] text-[7px] shrink-0">
-                                    <span>{c.avatar}</span>
-                                    <span className="truncate font-semibold text-white/70 max-w-[45px]">{c.nombre.split(" ").slice(-1)[0]}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Check-In status */}
-                            {!asistencias.some(a => a.usuarioId === mobileSession.id) ? (
-                              <div className="bg-amber-600/10 border border-amber-500/25 p-3 rounded-2xl flex flex-col gap-2 items-center text-center">
-                                <span className="text-[7px] font-black text-amber-400 uppercase">Quórum Pendiente</span>
-                                <button 
-                                  onClick={() => handleCheckIn("VIRTUAL", mobileSession.id)}
-                                  className="w-full py-2 bg-amber-500 text-primary font-black text-[9px] uppercase tracking-wider rounded-xl cursor-pointer"
-                                >
-                                  Confirmar Asistencia
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="bg-emerald-600/10 border border-emerald-500/25 p-2 rounded-2xl flex items-center justify-center gap-1.5 text-emerald-400 text-[9px] font-bold">
-                                <CheckCircle size={10} /> Presente en Quórum
-                              </div>
-                            )}
-
-                            {/* Active Votation Toast inside Mobile */}
-                            {votaciones.filter((v: any) => v.activa).map((v: any) => {
-                              const hasVoted = v.votos.some((x: any) => x.usuarioId === mobileSession.id);
-                              const myVote = v.votos.find((x: any) => x.usuarioId === mobileSession.id);
-                              
-                              return (
-                                <div key={v.id} className="bg-accent/15 border border-accent rounded-2xl p-3 flex flex-col gap-2">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[7px] font-black bg-accent text-primary px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit">Votación Activa</span>
-                                    <span className="text-[7px] font-bold text-white/50">
-                                      {v.formula === 'QUORUM_CALIFICADO' ? "Q. Calificado" : "M. Simple"}
-                                    </span>
-                                  </div>
-                                  <h5 className="text-[10px] font-bold text-white leading-tight">{v.titulo}</h5>
-                                  
-                                  {hasVoted ? (
-                                    <div className="space-y-2">
-                                      <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex flex-col gap-0.5 text-[9px] text-emerald-400 font-medium font-sans">
-                                        <p className="flex items-center gap-1 font-bold">
-                                          <CheckCircle size={10} /> Voto: "{myVote?.respuesta}"
-                                        </p>
-                                        <p className="text-[6px] text-white/45 truncate">Firma: {myVote?.hashFirma}</p>
-                                      </div>
-                                      
-                                      {/* Mobile live results list */}
-                                      <div className="bg-black/35 p-2 rounded-xl space-y-1.5 border border-white/5">
-                                        {(() => {
-                                          const totalWeight = v.votos.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
-                                          return v.opciones.map((op: string) => {
-                                            const matchingVotes = v.votos.filter((x: any) => x.respuesta === op);
-                                            const opWeight = matchingVotes.reduce((acc: number, curr: any) => acc + curr.coeficiente, 0);
-                                            const pctOfCast = totalWeight > 0 ? (opWeight / totalWeight) * 100 : 0;
-                                            const pctOfTotal = opWeight * 100;
-                                            const displayPct = v.formula === "QUORUM_CALIFICADO" ? pctOfTotal : pctOfCast;
-                                            const colorGradient = getOptionColor(op);
-                                            
-                                            return (
-                                              <div key={op} className="space-y-0.5">
-                                                <div className="flex justify-between text-[7px] font-bold">
-                                                  <span className="text-white/60 uppercase">{op}</span>
-                                                  <span className="text-white/40">{displayPct.toFixed(0)}%</span>
-                                                </div>
-                                                <div className="relative w-full h-1.5 bg-black/45 rounded-full overflow-hidden border border-white/5">
-                                                  <div 
-                                                    className={`h-full rounded-full transition-all duration-300 ${colorGradient}`} 
-                                                    style={{ width: `${Math.min(displayPct, 100)}%` }} 
-                                                  />
-                                                </div>
-                                              </div>
-                                            );
-                                          });
-                                        })()}
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex gap-1.5">
-                                      {v.opciones.map((op: string) => (
-                                        <button 
-                                          key={op}
-                                          onClick={() => handleVotar(v.id, op)}
-                                          className="flex-1 bg-accent/20 hover:bg-accent text-white hover:text-primary border border-accent/40 rounded-lg py-1.5 text-[9px] font-black uppercase transition-all cursor-pointer"
-                                        >
-                                          {op}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-
-                            {/* Delegation Power (Representation) */}
-                            <div className="bg-white/5 border border-white/5 p-3 rounded-2xl flex flex-col gap-2">
-                              <span className="text-[7px] font-black text-white/30 uppercase tracking-widest">Otorgar Poder</span>
-                              <div className="flex gap-1.5">
-                                <select 
-                                  value={mobileOtorganteId}
-                                  onChange={e => setMobileOtorganteId(e.target.value)}
-                                  className="flex-1 bg-[#05020a] border border-white/10 rounded-xl px-2 py-1.5 text-[9px] text-white focus:outline-hidden"
-                                >
-                                  <option value="">Elegir Vecino...</option>
-                                  <option value="usr_01ovtd">Raúl Montaño (Torre 1 Apto 502)</option>
-                                  <option value="usr_thommyadmin">Thommy Admin (Admin Oficina)</option>
-                                  <option value="usr_thommy">Thommy Master (Penthouse)</option>
-                                </select>
-                                <button 
-                                  onClick={handleOtorgarPoder}
-                                  disabled={!mobileOtorganteId || submittingPoder}
-                                  className="px-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-30"
-                                >
-                                  Otorgar
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Current agenda banner */}
-                            <div className="bg-accent/10 border border-accent/20 rounded-2xl p-3 flex flex-col">
-                              <span className="text-[7px] font-black text-accent uppercase tracking-wider block mb-0.5">Punto en discusión</span>
-                              <h4 className="text-[10px] font-bold text-white leading-tight truncate">{activeAgendaItem.titulo}</h4>
-                              <p className="text-[8px] text-white/45 line-clamp-2 mt-1 leading-normal">
-                                {activeAgendaItem.descripcion || "Sin descripción."}
-                              </p>
-                            </div>
-
-                            {/* Speaker queue status */}
-                            <div className="bg-white/5 border border-white/5 rounded-2xl p-3 flex flex-col items-center text-center gap-1.5">
-                              <span className="text-[7px] font-black text-white/30 uppercase tracking-widest">Hablar en la Reunión</span>
-                              
-                              {turnos.some(t => t.usuarioId === mobileSession.id && t.estado === "HABLANDO") ? (
-                                <div className="text-red-400 font-bold text-[9px] animate-pulse flex items-center gap-1">
-                                  <Mic size={9} /> ¡Tu micrófono está abierto!
-                                </div>
-                              ) : turnos.some(t => t.usuarioId === mobileSession.id && t.estado === "PENDIENTE") ? (
-                                <div className="text-yellow-400 font-bold text-[9px] flex items-center gap-1">
-                                  <MicOff size={9} /> En cola (Posición #{turnos.filter(t => t.estado === "PENDIENTE" || t.estado === "HABLANDO").findIndex(t => t.usuarioId === mobileSession.id) + 1})
-                                </div>
-                              ) : (
-                                <button 
-                                  onClick={handleMobileRequestSpeak}
-                                  className="w-full py-2 bg-accent text-primary rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer"
-                                >
-                                  Pedir la Palabra
-                                </button>
-                              )}
-                            </div>
-
-                            {/* Comment box */}
-                            <div className="bg-white/5 border border-white/5 rounded-2xl p-3 flex flex-col">
-                              <span className="text-[7px] font-black text-white/30 uppercase tracking-widest mb-1.5 block">Enviar Opinión</span>
-                              <textarea 
-                                value={mobileOpinionText}
-                                onChange={(e) => setMobileOpinionText(e.target.value)}
-                                placeholder="Escribe aquí tu opinión sobre el punto..."
-                                className="bg-[#05020a] border border-white/10 rounded-xl p-2 text-[9px] text-white focus:outline-hidden resize-none mb-2 min-h-[40px]"
-                              />
-                              <button 
-                                onClick={handleMobileSubmitOpinion}
-                                disabled={!mobileOpinionText.trim()}
-                                className="w-full py-2 bg-linear-to-r from-accent to-purple-600 text-white rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-50"
-                              >
-                                Enviar Comentario
-                              </button>
-                            </div>
-
-                          </div>
-                        )}
                         
                       </div>
                     )}

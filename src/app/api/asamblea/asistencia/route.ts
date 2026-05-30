@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     const aptoText = `${userDetail.torre ? `T${userDetail.torre}` : ""} ${userDetail.apto ? `Apto ${userDetail.apto}` : ""}`.trim() || "N/A";
 
     // Client metadata
-    const ip = req.headers.get("x-forwarded-for") || req.ip || "127.0.0.1";
+    const ip = req.headers.get("x-forwarded-for") || (req as any).ip || "127.0.0.1";
     const dispositivo = req.headers.get("user-agent") || "Web Client";
 
     const newAsistencia: AsambleaAsistencia = {

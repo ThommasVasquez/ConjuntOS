@@ -18,6 +18,28 @@ function injectDbEnv() {
   } catch {}
 }
 
+function sanitizeVotaciones(votaciones: AsambleaVotacion[], currentUserId: string): AsambleaVotacion[] {
+  return votaciones.map(vot => {
+    if (vot.esSecreto) {
+      return {
+        ...vot,
+        votos: vot.votos.map(v => {
+          if (v.usuarioId === currentUserId) {
+            return v;
+          }
+          return {
+            ...v,
+            nombre: "Voto Anónimo",
+            apto: "Apto -",
+            usuarioId: "anonymous"
+          };
+        })
+      };
+    }
+    return vot;
+  });
+}
+
 export async function GET(req: NextRequest) {
   injectDbEnv();
 
@@ -32,7 +54,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      votaciones: state.votaciones
+      votaciones: sanitizeVotaciones(state.votaciones, session.user.id)
     });
 
   } catch (error: any) {
@@ -56,7 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { titulo, descripcion, opciones, formula } = body;
+    const { titulo, descripcion, opciones, formula, esSecreto } = body;
 
     if (!titulo) {
       return NextResponse.json({ error: "El título es requerido" }, { status: 400 });
@@ -73,7 +95,8 @@ export async function POST(req: NextRequest) {
       activa: false,
       votos: [],
       creadoEn: new Date().toISOString(),
-      formula: formula || 'MAYORIA_SIMPLE'
+      formula: formula || 'MAYORIA_SIMPLE',
+      esSecreto: !!esSecreto
     };
 
     state.votaciones.push(newVotacion);
@@ -81,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      votaciones: state.votaciones
+      votaciones: sanitizeVotaciones(state.votaciones, session.user.id)
     });
 
   } catch (error: any) {
@@ -131,7 +154,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      votaciones: state.votaciones
+      votaciones: sanitizeVotaciones(state.votaciones, session.user.id)
     });
 
   } catch (error: any) {
