@@ -1432,9 +1432,9 @@ export default function AsambleaPage() {
               {/* 3. Columns Section */}
               <div className="flex-1 flex overflow-hidden bg-white">
                 
-                {/* Column 1: Order of the Day / Agenda (28%) */}
+                {/* Column 1: Order of the Day / Agenda (20%) */}
                 <div className={`border-r border-stone-200 bg-[#fafaf8] p-5 flex-col gap-4 overflow-y-auto shrink-0 ${
-                  mobileActiveTab === "agenda" ? "flex flex-1 w-full" : "hidden md:flex w-[28%]"
+                  mobileActiveTab === "agenda" ? "flex flex-1 w-full" : "hidden md:flex w-[20%]"
                 }`}>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Orden del Día</span>
@@ -1785,7 +1785,7 @@ export default function AsambleaPage() {
                   <div className={`bg-white flex flex-col overflow-hidden shrink-0 ${
                     ["chat", "votos", "gestion"].includes(mobileActiveTab) 
                       ? "flex flex-1 w-full" 
-                      : "hidden md:flex w-[30%] border-l border-stone-200"
+                      : "hidden md:flex w-[22%] border-l border-stone-200"
                   }`}>
                     <div className="flex border-b border-stone-200 bg-stone-50 p-1.5 gap-1 shrink-0">
                       {["chat", "votos", "gestion"].map((tabName) => (
