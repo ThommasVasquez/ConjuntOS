@@ -155,6 +155,7 @@ export default function AsambleaPage() {
   const [votacionDescripcionInput, setVotacionDescripcionInput] = useState("");
   const [votacionOpcionesInput, setVotacionOpcionesInput] = useState("SI, NO, ABSTENCION");
   const [votacionFormulaInput, setVotacionFormulaInput] = useState<'MAYORIA_SIMPLE' | 'QUORUM_CALIFICADO'>('MAYORIA_SIMPLE');
+  const [generatingConsensus, setGeneratingConsensus] = useState(false);
 
   // Post-Assembly / Minutes states
   const [actaLoading, setActaLoading] = useState(false);
@@ -669,6 +670,46 @@ export default function AsambleaPage() {
       }
     } catch (e) {
       toast.error("Error de conexión");
+    }
+  };
+
+  const handleGenerateConsensusProposal = async () => {
+    const activeAgendaItem = ordenDia[itemActivoIndex];
+    if (!activeAgendaItem) {
+      toast.error("No hay un punto activo en el orden del día");
+      return;
+    }
+
+    setGeneratingConsensus(true);
+    try {
+      // Get active speaker's name or active speech
+      const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
+      const currentSpeech = activeSpeaker ? `El residente ${activeSpeaker.nombre} está opinando.` : undefined;
+
+      const res = await fetch("/api/asamblea/copilot/consensuar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agendaItem: activeAgendaItem,
+          opiniones: opiniones,
+          transcripcion: currentSpeech
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.proposal) {
+        setVotacionTituloInput(data.proposal.titulo || "");
+        setVotacionDescripcionInput(data.proposal.descripcion || "");
+        if (data.proposal.opciones && Array.isArray(data.proposal.opciones)) {
+          setVotacionOpcionesInput(data.proposal.opciones.join(", "));
+        }
+        toast.success("¡Propuesta de consenso redactada por la IA!");
+      } else {
+        toast.error(data.error || "No se pudo generar la propuesta");
+      }
+    } catch (e) {
+      toast.error("Error al conectar con la IA");
+    } finally {
+      setGeneratingConsensus(false);
     }
   };
 
@@ -1874,7 +1915,18 @@ export default function AsambleaPage() {
                       
                       {/* Create form */}
                       <div className="border-t border-white/5 pt-4 space-y-2">
-                        <span className="text-[9px] font-black text-white/30 uppercase tracking-widest block mb-1">Nueva Propuesta</span>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[9px] font-black text-white/30 uppercase tracking-widest block">Nueva Propuesta</span>
+                          <button 
+                            type="button"
+                            onClick={handleGenerateConsensusProposal}
+                            disabled={generatingConsensus}
+                            className="text-[8.5px] font-black text-accent hover:text-purple-400 uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            <Sparkles size={11} className={generatingConsensus ? "animate-spin text-purple-400" : "animate-pulse"} />
+                            {generatingConsensus ? "Redactando..." : "Redactar Consenso con IA"}
+                          </button>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <input 
                             type="text"
