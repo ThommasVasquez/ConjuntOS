@@ -986,7 +986,8 @@ export default function AsambleaPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contenido: `[Celular] ${mobileOpinionText}`
+          contenido: `[Celular] ${mobileOpinionText}`,
+          usuarioId: mobileSession.id
         })
       });
       const data = await res.json();
@@ -1004,7 +1005,11 @@ export default function AsambleaPage() {
   const handleMobileRequestSpeak = async () => {
     if (!mobileSession) return;
     try {
-      const res = await fetch("/api/asamblea/turnos", { method: "POST" });
+      const res = await fetch("/api/asamblea/turnos", { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuarioId: mobileSession.id })
+      });
       const data = await res.json();
       if (data.success) {
         setTurnos(data.turnos);

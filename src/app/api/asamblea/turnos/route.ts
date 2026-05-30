@@ -39,12 +39,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const { usuarioId } = body;
+    const targetUserId = usuarioId || session.user.id;
+
     const junta = await getOrCreateActiveAsamblea();
     const state = parseAsambleaState(junta);
 
     // Check if user already has a pending or active turn
     const hasTurn = state.turnos.some((t: SpeakingTurn) => 
-      t.usuarioId === session.user?.id && (t.estado === "PENDIENTE" || t.estado === "HABLANDO")
+      t.usuarioId === targetUserId && (t.estado === "PENDIENTE" || t.estado === "HABLANDO")
     );
 
     if (hasTurn) {
@@ -53,15 +57,15 @@ export async function POST(req: NextRequest) {
 
     // Fetch user details to get tower/apartment info
     const userDetail = await db.usuario.findFirst({
-      where: { id: session.user.id }
+      where: { id: targetUserId }
     });
 
     const aptoText = userDetail ? `${userDetail.torre ? `T${userDetail.torre}` : ""} ${userDetail.apto ? `Apto ${userDetail.apto}` : ""}`.trim() : "";
 
     const newTurn: SpeakingTurn = {
       id: `trn_${Date.now()}`,
-      usuarioId: session.user.id,
-      nombre: session.user.name || userDetail?.nombre || "Residente",
+      usuarioId: targetUserId,
+      nombre: userDetail?.nombre || session.user.name || "Residente",
       apto: aptoText || "N/A",
       estado: "PENDIENTE",
       creadoEn: new Date().toISOString()

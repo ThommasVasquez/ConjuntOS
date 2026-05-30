@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { contenido } = body;
+    const { contenido, usuarioId } = body;
+    const targetUserId = usuarioId || session.user.id;
 
     if (!contenido || contenido.trim() === "") {
       return NextResponse.json({ error: "El contenido no puede estar vacío" }, { status: 400 });
@@ -51,15 +52,15 @@ export async function POST(req: NextRequest) {
 
     // Fetch user details for tower/apartment info
     const userDetail = await db.usuario.findFirst({
-      where: { id: session.user.id }
+      where: { id: targetUserId }
     });
 
     const aptoText = userDetail ? `${userDetail.torre ? `T${userDetail.torre}` : ""} ${userDetail.apto ? `Apto ${userDetail.apto}` : ""}`.trim() : "";
 
     const newOpinion: ResidentOpinion = {
       id: `opn_${Date.now()}`,
-      usuarioId: session.user.id,
-      nombre: session.user.name || userDetail?.nombre || "Residente",
+      usuarioId: targetUserId,
+      nombre: userDetail?.nombre || session.user.name || "Residente",
       apto: aptoText || "N/A",
       contenido: contenido.trim(),
       creadoEn: new Date().toISOString()
