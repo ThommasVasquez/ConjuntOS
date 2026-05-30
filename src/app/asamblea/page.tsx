@@ -1483,13 +1483,19 @@ export default function AsambleaPage() {
                       )}
 
                       {/* Top status badges */}
-                      <div className="absolute top-4 left-4 flex gap-2 z-20">
+                      <div className="absolute top-4 left-4 flex gap-2 z-20 items-center">
                         <span className="bg-red-500 text-white px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest animate-pulse shadow-md">
                           En Pantalla Principal
                         </span>
                         <span className="bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-xl text-[9px] font-bold shadow-md">
                           {spotlightApto}
                         </span>
+                        {isWebAdmin && (
+                          <div className="bg-black/75 backdrop-blur-md border border-white/10 text-[9px] text-accent font-black uppercase tracking-widest px-3 py-1 rounded-xl shadow-md flex items-center gap-1.5 animate-fade-in">
+                            <span className={`w-1.5 h-1.5 rounded-full ${quorumPercentage >= 0.51 ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                            Quórum: {(quorumPercentage * 100).toFixed(1)}%
+                          </div>
+                        )}
                       </div>
 
                       <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
@@ -1511,6 +1517,91 @@ export default function AsambleaPage() {
                           </select>
                         </div>
                       </div>
+
+                      {/* Floating HUD: Pending Speak Requests */}
+                      {isWebAdmin && turnos.filter(t => t.estado === "PENDIENTE").length > 0 && (() => {
+                        const pendingTurns = turnos.filter(t => t.estado === "PENDIENTE");
+                        const nextSpeaker = pendingTurns[0];
+                        return (
+                          <div className="absolute top-16 left-4 bg-gradient-to-br from-indigo-950/80 to-purple-950/80 backdrop-blur-md p-3 rounded-2xl border border-indigo-500/40 shadow-2xl z-30 flex flex-col gap-2 animate-fade-in w-[190px] hover:border-accent transition-colors duration-300">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
+                                <span className="text-[8px] font-black text-accent uppercase tracking-widest">Petición Mic</span>
+                              </div>
+                              <span className="text-[7px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded-md font-bold">
+                                En Cola: {pendingTurns.length}
+                              </span>
+                            </div>
+                            <div className="border-t border-white/5 pt-1.5 mt-0.5">
+                              <p className="text-[9.5px] font-bold text-white truncate leading-none mb-0.5">{nextSpeaker.nombre}</p>
+                              <p className="text-[8px] text-white/50 font-medium">{nextSpeaker.apto || "Sin Apto"}</p>
+                            </div>
+                            <button
+                              onClick={() => handleGrantMic(nextSpeaker.id)}
+                              className="w-full py-1 bg-gradient-to-r from-accent to-purple-600 hover:from-accent/90 hover:to-purple-500 text-white rounded-lg text-[8px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-[0_0_12px_rgba(217,70,239,0.3)] flex items-center justify-center gap-1 hover:scale-102 mt-0.5"
+                            >
+                              <Mic size={9} /> Ceder Mic
+                            </button>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Floating HUD: Active Voting Progress */}
+                      {isWebAdmin && votaciones.find(v => v.activo) && (() => {
+                        const activeVote = votaciones.find(v => v.activo);
+                        const totalVotos = activeVote.votos?.length || 0;
+                        const siVotos = activeVote.votos?.filter((v: any) => v.respuesta === "SI").reduce((acc: number, v: any) => acc + (v.coeficiente || 0), 0) || 0;
+                        const noVotos = activeVote.votos?.filter((v: any) => v.respuesta === "NO").reduce((acc: number, v: any) => acc + (v.coeficiente || 0), 0) || 0;
+                        const absVotos = activeVote.votos?.filter((v: any) => v.respuesta === "ABSTENCION").reduce((acc: number, v: any) => acc + (v.coeficiente || 0), 0) || 0;
+                        
+                        return (
+                          <div className="absolute top-16 right-4 bg-black/80 backdrop-blur-md p-3 rounded-2xl border border-emerald-500/30 shadow-2xl z-30 flex flex-col gap-2 w-[190px] animate-fade-in hover:border-emerald-500/50 transition-colors duration-300">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Votación Activa
+                              </span>
+                              <span className="text-[7.5px] bg-white/5 border border-white/10 text-white/60 px-1.5 py-0.5 rounded font-bold">{totalVotos} votos</span>
+                            </div>
+                            <div className="border-t border-white/5 pt-1.5 mt-0.5">
+                              <p className="text-[10px] font-bold text-white truncate leading-none mb-0.5">{activeVote.titulo}</p>
+                              <span className="text-[7px] text-white/40 uppercase font-black tracking-wider block mb-1">
+                                {activeVote.formula === 'QUORUM_CALIFICADO' ? 'Quórum Calificado (70%)' : 'Mayoría Simple'}
+                              </span>
+                            </div>
+                            
+                            <div className="flex flex-col gap-1 text-[8px] text-white/95 font-medium">
+                              <div className="flex justify-between">
+                                <span className="text-emerald-400">SÍ: {(siVotos * 100).toFixed(0)}%</span>
+                                <span className="text-rose-400">NO: {(noVotos * 100).toFixed(0)}%</span>
+                                <span className="text-amber-400">ABS: {(absVotos * 100).toFixed(0)}%</span>
+                              </div>
+                              <div className="w-full bg-white/15 h-1 rounded-full overflow-hidden flex">
+                                <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${siVotos * 100}%` }} />
+                                <div className="bg-rose-500 h-full transition-all duration-300" style={{ width: `${noVotos * 100}%` }} />
+                                <div className="bg-amber-500 h-full transition-all duration-300" style={{ width: `${absVotos * 100}%` }} />
+                              </div>
+                            </div>
+                            
+                            <button
+                              onClick={() => handleActivarVotacion(activeVote.id, false)}
+                              className="w-full py-1.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white rounded-lg text-[8px] font-black uppercase tracking-wider transition-all duration-200 mt-1 cursor-pointer shadow-[0_0_10px_rgba(239,68,68,0.2)] flex items-center justify-center gap-1 hover:scale-102"
+                            >
+                              <CheckCircle size={9} /> Cerrar Votos
+                            </button>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Floating HUD: AI Sentiment Summary */}
+                      {isWebAdmin && copilotData.resumenSentimiento && (
+                        <div className="absolute bottom-4 left-4 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 shadow-md max-w-[200px] z-20 animate-fade-in text-left">
+                          <span className="text-[7px] text-cyan-400 font-black uppercase tracking-widest block mb-0.5">Sentimiento IA</span>
+                          <p className="text-[9px] text-white/90 font-medium leading-normal">
+                            💬 {copilotData.resumenSentimiento}
+                          </p>
+                        </div>
+                      )}
 
                       {/* Live spoken transcription subtitle for everyone */}
                       {subtitulos && subtitulos.length > 0 && (
