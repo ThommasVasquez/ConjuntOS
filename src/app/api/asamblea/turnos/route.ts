@@ -112,6 +112,7 @@ export async function PUT(req: NextRequest) {
         t.estado === "HABLANDO" ? { ...t, estado: "COMPLETADO" as const } : t
       );
       state.turnos[turnIndex].estado = "HABLANDO";
+      state.turnos[turnIndex].iniciadoHablarEn = new Date().toISOString();
     } else if (estado === "COMPLETADO") {
       state.turnos[turnIndex].estado = "COMPLETADO";
     } else if (estado === "CANCELADO") {

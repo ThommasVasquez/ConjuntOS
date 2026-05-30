@@ -26,6 +26,7 @@ interface SpeakingTurn {
   apto?: string;
   estado: 'PENDIENTE' | 'HABLANDO' | 'COMPLETADO';
   creadoEn: string;
+  iniciadoHablarEn?: string;
 }
 
 interface ResidentOpinion {
@@ -94,6 +95,11 @@ export default function AsambleaPage() {
     guiaTeleprompter: string;
     sugerencias: string[];
     resumenSentimiento: string;
+    alertaModeracion?: {
+      type: 'REPETICION' | 'DIVAGACION';
+      mensaje: string;
+      sugerenciaAccion: string;
+    } | null;
   }>({
     guiaTeleprompter: "Cargando guía de asamblea...",
     sugerencias: [
@@ -101,7 +107,8 @@ export default function AsambleaPage() {
       "Los residentes pueden opinar o pedir el micrófono desde la app.",
       "Haz clic en 'Obtener sugerencias IA' para generar guiones y consejos."
     ],
-    resumenSentimiento: "Falta recabar opiniones de los residentes en este punto."
+    resumenSentimiento: "Falta recabar opiniones de los residentes en este punto.",
+    alertaModeracion: null
   });
 
   // Teleprompter scrolling state
@@ -137,6 +144,7 @@ export default function AsambleaPage() {
   const [presentCoefficient, setPresentCoefficient] = useState(0);
   const [totalCoefficient, setTotalCoefficient] = useState(1);
   const [submittingCheckIn, setSubmittingCheckIn] = useState(false);
+  const [speakingTimeLeft, setSpeakingTimeLeft] = useState<number | null>(null);
 
   // Power delegation form states (Mobile)
   const [mobileOtorganteId, setMobileOtorganteId] = useState("");
@@ -234,6 +242,35 @@ export default function AsambleaPage() {
     const interval = setInterval(fetchSession, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // Speaking timer countdown effect
+  useEffect(() => {
+    const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
+    if (!activeSpeaker) {
+      setSpeakingTimeLeft(null);
+      return;
+    }
+
+    const totalLimit = 120; // 2 minutes limit in seconds
+    const calcTimeLeft = () => {
+      if (activeSpeaker.iniciadoHablarEn) {
+        const elapsed = Math.floor((Date.now() - new Date(activeSpeaker.iniciadoHablarEn).getTime()) / 1000);
+        return Math.max(0, totalLimit - elapsed);
+      }
+      return totalLimit;
+    };
+
+    setSpeakingTimeLeft(calcTimeLeft());
+
+    const timer = setInterval(() => {
+      setSpeakingTimeLeft(prev => {
+        if (prev === null || prev <= 0) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [turnos]);
 
   // Fetch session data
   const fetchSession = async () => {
@@ -743,10 +780,12 @@ export default function AsambleaPage() {
     
     let count = 0;
     const subInterval = setInterval(() => {
+      const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
+      const speakerName = activeSpeaker ? activeSpeaker.nombre : (session?.user?.name || "Administrador");
       const nextPhrase = phrases[count % phrases.length];
       const newSub = {
         id: "sub_" + Date.now(),
-        speaker: session?.user?.name || "Administrador",
+        speaker: speakerName,
         text: nextPhrase,
         timestamp: new Date().toLocaleTimeString()
       };
@@ -786,11 +825,18 @@ export default function AsambleaPage() {
       phrase = "Pasamos a debatir la contratación de la empresa de seguridad y vigilancia Atlas.";
     } else if (topic === "presupuesto") {
       phrase = "Abrimos la discusión sobre el proyecto de presupuesto 2026 y la cuota extraordinaria del muro.";
+    } else if (topic === "repeticion") {
+      phrase = "Repito e insisto, ya lo he dicho varias veces en esta asamblea, que el costo de Aquaservicios es demasiado elevado y no deberíamos contratar a esa empresa por ser excesivamente cara.";
+    } else if (topic === "divagacion") {
+      phrase = "Por cierto, hablando de las piscinas, quería comentar que los perros en el parqueadero andan sueltos y los dueños no limpian el excremento. Además deberíamos contratar más vigilantes para vigilar los vehículos.";
     }
     
+    const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
+    const speakerName = activeSpeaker ? activeSpeaker.nombre : (session?.user?.name || "Administrador");
+
     const newSub = {
       id: "sub_" + Date.now(),
-      speaker: session?.user?.name || "Administrador",
+      speaker: speakerName,
       text: phrase,
       timestamp: new Date().toLocaleTimeString()
     };
@@ -1197,6 +1243,18 @@ export default function AsambleaPage() {
                       >
                         💰 Presupuesto
                       </button>
+                      <button 
+                        onClick={() => simulateSpeechTopic("repeticion")}
+                        className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/35 border border-red-500/30 text-red-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
+                      >
+                        🔁 Simular Repetición
+                      </button>
+                      <button 
+                        onClick={() => simulateSpeechTopic("divagacion")}
+                        className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/35 border border-orange-500/30 text-orange-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 hover:scale-102"
+                      >
+                        🔀 Simular Divagación
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1211,6 +1269,63 @@ export default function AsambleaPage() {
                   return (
                     <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-[#0a0a0d] border border-white/10 flex flex-col justify-center items-center shadow-2xl group max-h-[480px]">
                       
+                      {/* Speaking Timer on Main Spotlight (visible to everyone) */}
+                      {isResidentActive && speakingTimeLeft !== null && (
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/65 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-2xl flex items-center gap-2.5 z-20 animate-fade-in">
+                          <svg className="w-4.5 h-4.5 -rotate-90">
+                            <circle 
+                              cx="9" 
+                              cy="9" 
+                              r="7" 
+                              className="stroke-white/10 fill-none" 
+                              strokeWidth="2" 
+                            />
+                            <circle 
+                              cx="9" 
+                              cy="9" 
+                              r="7" 
+                              className={`fill-none transition-all duration-1000 ${
+                                speakingTimeLeft > 60 
+                                  ? "stroke-emerald-500" 
+                                  : speakingTimeLeft > 20 
+                                    ? "stroke-amber-500" 
+                                    : "stroke-red-500 animate-pulse"
+                              }`}
+                              strokeWidth="2" 
+                              strokeDasharray={2 * Math.PI * 7}
+                              strokeDashoffset={((120 - speakingTimeLeft) / 120) * (2 * Math.PI * 7)}
+                            />
+                          </svg>
+                          <span className={`text-[9px] font-mono font-black ${
+                            speakingTimeLeft > 60 
+                              ? "text-emerald-400" 
+                              : speakingTimeLeft > 20 
+                                ? "text-amber-400" 
+                                : "text-red-400 animate-pulse"
+                          }`}>
+                            Límite de Habla: {Math.floor(speakingTimeLeft / 60)}:{(speakingTimeLeft % 60).toString().padStart(2, '0')}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* AI Moderation Alert Card (visible ONLY to Admin) */}
+                      {isWebAdmin && copilotData.alertaModeracion && (
+                        <div className="absolute top-16 left-1/2 -translate-x-1/2 w-[85%] max-w-md bg-red-950/85 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-red-500/40 shadow-2xl z-30 flex items-center gap-3 animate-bounce">
+                          <AlertCircle className="text-red-400 shrink-0 animate-pulse" size={16} />
+                          <div className="text-left flex-1">
+                            <span className="text-[7px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit mb-0.5">
+                              🛡️ MODERACIÓN IA ({copilotData.alertaModeracion.type})
+                            </span>
+                            <p className="text-[10px] font-bold text-white leading-normal">
+                              {copilotData.alertaModeracion.mensaje}
+                            </p>
+                            <p className="text-[8.5px] text-red-300 mt-0.5 font-medium">
+                              💡 {copilotData.alertaModeracion.sugerenciaAccion}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Active Video Rendering */}
                       {isResidentActive ? (
                         /* Case A: Resident is the active speaker speaking */
@@ -1355,14 +1470,31 @@ export default function AsambleaPage() {
 
                     {/* Compact Tile of speaking Resident if active */}
                     {(() => {
-                      const activeSpeaker = turnos.find(t => t.estado === "HABLANDO");
+                      const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
                       if (!activeSpeaker) return null;
                       return (
-                        <div className="relative w-[140px] aspect-video rounded-xl overflow-hidden bg-gradient-to-b from-[#18181c] to-[#0c0c0e] border-2 border-red-500/60 flex flex-col justify-center items-center shrink-0 shadow-md animate-pulse">
+                        <div className="relative w-[140px] aspect-video rounded-xl overflow-hidden bg-gradient-to-b from-[#18181c] to-[#0c0c0e] border-2 border-red-500/60 flex flex-col justify-center items-center shrink-0 shadow-md">
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-xs font-bold shadow-sm mb-1">
                             {getInitials(activeSpeaker.nombre)}
                           </div>
                           <span className="text-[9px] font-bold text-white max-w-[120px] truncate">{activeSpeaker.nombre}</span>
+                          
+                          {/* Floating Traffic-Light Circle Timer */}
+                          {speakingTimeLeft !== null && (
+                            <div className="absolute top-1 left-1.5 z-20 flex items-center gap-1 bg-black/60 backdrop-blur-xs px-1.5 py-0.5 rounded-md">
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                speakingTimeLeft > 60 
+                                  ? "bg-emerald-400 shadow-[0_0_6px_#10b981]" 
+                                  : speakingTimeLeft > 20 
+                                    ? "bg-amber-400 shadow-[0_0_6px_#f59e0b]" 
+                                    : "bg-red-500 shadow-[0_0_6px_#ef4444] animate-ping"
+                              }`} />
+                              <span className="text-[7px] font-mono font-bold text-white">
+                                {Math.floor(speakingTimeLeft / 60)}:{(speakingTimeLeft % 60).toString().padStart(2, '0')}
+                              </span>
+                            </div>
+                          )}
+
                           <div className="absolute bottom-1 left-1.5 bg-red-600 px-1.5 py-0.5 rounded text-[7px] text-white font-black uppercase tracking-widest scale-90 origin-bottom-left flex items-center gap-0.5">
                             <span className="w-1 h-1 rounded-full bg-white animate-ping" /> Hablando
                           </div>

@@ -14,6 +14,7 @@ export interface SpeakingTurn {
   apto?: string;
   estado: 'PENDIENTE' | 'HABLANDO' | 'COMPLETADO';
   creadoEn: string;
+  iniciadoHablarEn?: string;
 }
 
 export interface ResidentOpinion {

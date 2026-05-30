@@ -95,8 +95,18 @@ Genera una respuesta en formato JSON con la siguiente estructura:
     "Sugerencia 2 (Camino a seguir recomendado o consejo para responder a las inquietudes)",
     "Sugerencia 3 (Idea para conciliar o proponer votación sobre el tema)"
   ],
-  "resumenSentimiento": "Un resumen ejecutivo brevísimo (2-3 frases) que analice el tono de las opiniones de los residentes y destaque los puntos de mayor acuerdo o conflicto."
+  "resumenSentimiento": "Un resumen ejecutivo brevísimo (2-3 frases) que analice el tono de las opiniones de los residentes y destaque los puntos de mayor acuerdo o conflicto.",
+  "alertaModeracion": null | {
+    "type": "REPETICION" | "DIVAGACION",
+    "mensaje": "Explicación breve en español sobre qué regla infringió el orador en su habla actual (transcripcion).",
+    "sugerenciaAccion": "Acción recomendada en español para el administrador (ej: 'Sugiera pasar a votación' o 'Sugiera registrar el tema en proposiciones y varios')"
+  }
 }
+
+REGLAS DE MODERACIÓN DE LA REUNIÓN (CRÍTICO):
+1. **REPETICIÓN**: Compara lo que el orador expresa en "transcripcion" con el historial de "opiniones". Si el orador está insistiendo en argumentos o quejas similares que ya fueron expuestos anteriormente, marca "alertaModeracion" con el tipo "REPETICION".
+2. **DIVAGACIÓN**: Compara "transcripcion" con el punto activo de la agenda ("agendaItem"). Si el orador habla de un tema que no tiene relación directa con el punto en discusión (ej: si discuten piscinas y el orador habla de mascotas o del parqueadero), marca "alertaModeracion" con el tipo "DIVAGACION".
+3. **CASO CORRECTO**: Si el orador habla al grano, de manera relevante al tema actual y sin repetir argumentos previos, "alertaModeracion" debe ser estrictamente null.
 
 INSTRUCCIONES CRITICALES DE DATOS:
 - Si se menciona "piscina" o "piscinas" en el punto o en la transcripción, es OBLIGATORIO que en la sugerencia 1 detalles las 3 ofertas de piscinas y sus precios.
@@ -160,10 +170,37 @@ INSTRUCCIONES CRITICALES DE DATOS:
         localResumen = "Consenso favorable respecto a la administración ordinaria, pero resistencia inicial por la cuota extraordinaria del muro.";
       }
 
+      // Local fallback analyzer for moderation alerts
+      let localAlerta = null;
+      if (transcripcion) {
+        const transLower = transcripcion.toLowerCase();
+        const agendaTitleLower = agendaItem.titulo.toLowerCase();
+        
+        // Repetition detection (e.g. key words like "insisto", "ya lo he dicho", "repito")
+        if (transLower.includes("insisto") || transLower.includes("ya lo he dicho") || transLower.includes("repito") || transLower.includes("muy caro") || transLower.includes("muy costosa")) {
+          localAlerta = {
+            type: "REPETICION",
+            mensaje: "El orador está repitiendo que el costo del contrato es demasiado elevado.",
+            sugerenciaAccion: "Sugiera cerrar el debate de manera formal y proceder directamente a la votación."
+          };
+        } 
+        // Divagation detection (e.g. talking about parkings or pets during swimming pool debate)
+        else if (transLower.includes("perro") || transLower.includes("mascota") || transLower.includes("parqueadero") || transLower.includes("estacionamiento")) {
+          if (agendaTitleLower.includes("piscina") || agendaTitleLower.includes("ascensor") || agendaTitleLower.includes("presupuesto")) {
+            localAlerta = {
+              type: "DIVAGACION",
+              mensaje: "El orador se desvió del tema activo para hablar de mascotas o parqueaderos.",
+              sugerenciaAccion: "Indíquele que ese tema corresponde al punto 6 de Proposiciones y Varios."
+            };
+          }
+        }
+      }
+
       parsedJson = {
         guiaTeleprompter: localGuia,
         sugerencias: localSugerencias,
-        resumenSentimiento: localResumen
+        resumenSentimiento: localResumen,
+        alertaModeracion: localAlerta
       };
     }
 
