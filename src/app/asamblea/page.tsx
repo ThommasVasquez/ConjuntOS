@@ -1154,16 +1154,12 @@ export default function AsambleaPage() {
 
   if (status === "authenticated") {
     return (
-      <div className="min-h-screen bg-gradient-to-tr from-[#dcedc8]/20 via-[#f5f5f0] to-[#ffe0b2]/20 p-6 flex flex-col items-center justify-center font-sans text-stone-800 relative overflow-hidden">
-        {/* Dynamic Background Circles/Orbs */}
-        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-indigo-200/10 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-rose-200/10 rounded-full blur-[140px] pointer-events-none" />
-
+      <div className="w-screen h-screen bg-[#fafaf8] font-sans text-stone-800 relative overflow-hidden flex flex-col">
         {/* Main Grid: split-screen or 100% */}
-        <div className={`w-full max-w-[1600px] grid grid-cols-1 ${isDemoMode ? "lg:grid-cols-4" : "grid-cols-1"} gap-6 items-stretch relative z-10`}>
+        <div className={`w-full h-full grid grid-cols-1 ${isDemoMode ? "lg:grid-cols-4" : "grid-cols-1"} items-stretch relative z-10`}>
           
           {/* Main Desktop Container (takes 3 cols in demo mode, or all when unique mode) */}
-          <div className={`${isDemoMode ? "lg:col-span-3" : "col-span-1"} bg-[#fdfdfb]/90 border border-stone-200 shadow-2xl rounded-[32px] overflow-hidden flex h-auto lg:h-[86vh] max-h-[850px] relative backdrop-blur-md`}>
+          <div className={`${isDemoMode ? "lg:col-span-3" : "col-span-1"} bg-white flex h-full relative overflow-hidden`}>
             
             {/* 1. Left Vertical Sidebar (w-18) */}
             <div className="w-18 bg-white border-r border-stone-200 flex flex-col justify-between items-center py-6 shrink-0 z-20">
@@ -1968,8 +1964,8 @@ export default function AsambleaPage() {
 
           {/* Right Column: MOBILE SIMULATOR FRAME */}
           {isDemoMode && (
-            <div className="flex flex-col items-center relative">
-              <div className="sticky top-6 flex flex-col items-center gap-3">
+            <div className="bg-[#fafaf8] border-l border-stone-200 flex flex-col items-center justify-center h-full relative p-6 overflow-y-auto">
+              <div className="flex flex-col items-center gap-3">
                 <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-stone-200 rounded-full text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-1">
                   <Smartphone size={10} /> Simulador App Celular (Residente)
                 </div>
