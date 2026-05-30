@@ -156,6 +156,9 @@ export default function AsambleaPage() {
   const [votacionOpcionesInput, setVotacionOpcionesInput] = useState("SI, NO, ABSTENCION");
   const [votacionFormulaInput, setVotacionFormulaInput] = useState<'MAYORIA_SIMPLE' | 'QUORUM_CALIFICADO'>('MAYORIA_SIMPLE');
   const [generatingConsensus, setGeneratingConsensus] = useState(false);
+  const [subtitlesLanguage, setSubtitlesLanguage] = useState<"ES" | "EN" | "PT" | "FR">("ES");
+  const [translatedSubtitleText, setTranslatedSubtitleText] = useState("");
+  const [translatingSubtitles, setTranslatingSubtitles] = useState(false);
 
   // Post-Assembly / Minutes states
   const [actaLoading, setActaLoading] = useState(false);
@@ -475,6 +478,54 @@ export default function AsambleaPage() {
       if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
     };
   }, [isPrompterScrolling, prompterSpeed]);
+
+  // Real-time simultaneous translation of subtitles
+  useEffect(() => {
+    if (!subtitulos || subtitulos.length === 0) {
+      setTranslatedSubtitleText("");
+      return;
+    }
+    const lastSubText = subtitulos[subtitulos.length - 1].text;
+    if (subtitlesLanguage === "ES") {
+      setTranslatedSubtitleText(lastSubText);
+      return;
+    }
+
+    let active = true;
+    const translateText = async () => {
+      setTranslatingSubtitles(true);
+      try {
+        const response = await fetch("/api/asamblea/copilot/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: lastSubText, targetLang: subtitlesLanguage }),
+        });
+        const data = await response.json();
+        if (active) {
+          if (data.success && data.translatedText) {
+            setTranslatedSubtitleText(data.translatedText);
+          } else {
+            setTranslatedSubtitleText(`[${subtitlesLanguage}] ${lastSubText}`);
+          }
+        }
+      } catch (err) {
+        console.error("Error translating subtitle:", err);
+        if (active) {
+          setTranslatedSubtitleText(`[${subtitlesLanguage}] ${lastSubText}`);
+        }
+      } finally {
+        if (active) {
+          setTranslatingSubtitles(false);
+        }
+      }
+    };
+
+    translateText();
+
+    return () => {
+      active = false;
+    };
+  }, [subtitulos, subtitlesLanguage]);
 
   // Admin controls
   const handleAgendaSelect = async (index: number) => {
@@ -1441,8 +1492,24 @@ export default function AsambleaPage() {
                         </span>
                       </div>
 
-                      <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-xl text-[9px] text-emerald-400 font-bold flex items-center gap-1.5 shadow-md z-20">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {spotlightName}
+                      <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+                        <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl text-[9px] text-emerald-400 font-bold flex items-center gap-1.5 shadow-md border border-white/5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {spotlightName}
+                        </div>
+                        {/* Selector de idioma de subtítulos */}
+                        <div className="relative">
+                          <select
+                            id="web-subtitle-lang-select"
+                            value={subtitlesLanguage}
+                            onChange={(e) => setSubtitlesLanguage(e.target.value as any)}
+                            className="bg-black/60 backdrop-blur-md text-[9px] text-white font-bold px-2 py-1.5 rounded-xl border border-white/5 shadow-md cursor-pointer outline-none hover:bg-black/80 transition-colors focus:ring-1 focus:ring-accent"
+                          >
+                            <option value="ES" className="bg-neutral-900 text-white">🇪🇸 Español</option>
+                            <option value="EN" className="bg-neutral-900 text-white">🇺🇸 English</option>
+                            <option value="PT" className="bg-neutral-900 text-white">🇧🇷 Português</option>
+                            <option value="FR" className="bg-neutral-900 text-white">🇫🇷 Français</option>
+                          </select>
+                        </div>
                       </div>
 
                       {/* Live spoken transcription subtitle for everyone */}
@@ -1452,7 +1519,11 @@ export default function AsambleaPage() {
                             <span className="text-emerald-400 font-bold uppercase tracking-wider text-[8px] mr-1.5">
                               [{subtitulos[subtitulos.length - 1].speaker}]:
                             </span>
-                            "{subtitulos[subtitulos.length - 1].text}"
+                            {translatingSubtitles ? (
+                              <span className="italic text-white/60 animate-pulse">Traduciendo...</span>
+                            ) : (
+                              `"${subtitlesLanguage === "ES" ? subtitulos[subtitulos.length - 1].text : translatedSubtitleText || subtitulos[subtitulos.length - 1].text}"`
+                            )}
                           </p>
                         </div>
                       )}
@@ -2433,7 +2504,18 @@ export default function AsambleaPage() {
                                 </span>
                                 
                                 {/* Micro controls inside Mobile App */}
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 items-center">
+                                  <select
+                                    id="mobile-subtitle-lang-select"
+                                    value={subtitlesLanguage}
+                                    onChange={(e) => setSubtitlesLanguage(e.target.value as any)}
+                                    className="bg-white/10 hover:bg-white/20 transition-all text-[8px] text-white font-bold p-1 rounded-md border border-white/10 cursor-pointer outline-none max-w-[65px] font-sans"
+                                  >
+                                    <option value="ES" className="bg-neutral-900 text-white">🇪🇸 ES</option>
+                                    <option value="EN" className="bg-neutral-900 text-white">🇺🇸 EN</option>
+                                    <option value="PT" className="bg-neutral-900 text-white">🇧🇷 PT</option>
+                                    <option value="FR" className="bg-neutral-900 text-white">🇫🇷 FR</option>
+                                  </select>
                                   <button 
                                     onClick={toggleMute}
                                     className={`p-1 rounded-md text-[8px] font-bold uppercase transition-all ${
@@ -2471,9 +2553,25 @@ export default function AsambleaPage() {
                                   </div>
                                 )}
                                 
-                                <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded text-[7px] font-bold text-white/90">
+                                <div className="absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded text-[7px] font-bold text-white/90 z-10">
                                   {isCameraActive && localStream ? "Tu Cámara" : "Transmisión Admin"}
                                 </div>
+
+                                {/* Translated Subtitles Overlay for Mobile Screen */}
+                                {subtitulos && subtitulos.length > 0 && (
+                                  <div className="absolute bottom-1.5 right-1.5 left-1.5 bg-black/70 backdrop-blur-xs px-2 py-1 rounded text-center pointer-events-none select-none border border-white/5 animate-fade-in z-10">
+                                    <p className="text-[7px] text-white font-sans font-medium tracking-wide leading-tight">
+                                      <span className="text-emerald-400 font-bold uppercase text-[6px] mr-1">
+                                        [{subtitulos[subtitulos.length - 1].speaker}]:
+                                      </span>
+                                      {translatingSubtitles ? (
+                                        <span className="italic text-white/60 animate-pulse">Translating...</span>
+                                      ) : (
+                                        `"${subtitlesLanguage === "ES" ? subtitulos[subtitulos.length - 1].text : translatedSubtitleText || subtitulos[subtitulos.length - 1].text}"`
+                                      )}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Council list carousel/strip */}
