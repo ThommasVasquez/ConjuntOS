@@ -1284,16 +1284,24 @@ export default function AsambleaPage() {
             {/* 1. Left Vertical Sidebar (w-18) */}
             <div className="hidden md:flex w-18 bg-white border-r border-stone-200 flex-col justify-between items-center py-6 shrink-0 z-20">
               {/* Top Logo */}
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-purple-500/20">
+              <button 
+                onClick={() => router.push("/inicio")}
+                className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-purple-500/20 hover:scale-105 transition-all cursor-pointer"
+                title="Volver a Inicio"
+              >
                 CO
-              </div>
+              </button>
               
               {/* Navigation Icons */}
               <div className="flex flex-col gap-5">
                 <button onClick={() => router.push("/inicio")} className="p-3 text-stone-400 hover:text-stone-700 hover:bg-stone-50 rounded-xl transition-all cursor-pointer" title="Inicio">
                   <Home size={20} />
                 </button>
-                <button className="p-3 text-stone-400 hover:text-stone-700 hover:bg-stone-50 rounded-xl transition-all cursor-pointer" title="Calendario">
+                <button 
+                  onClick={() => router.push("/reservas")}
+                  className="p-3 text-stone-400 hover:text-stone-700 hover:bg-stone-50 rounded-xl transition-all cursor-pointer" 
+                  title="Calendario y Reservas"
+                >
                   <Calendar size={20} />
                 </button>
                 <button 
@@ -1384,7 +1392,8 @@ export default function AsambleaPage() {
                   {/* Invite neighbors action button */}
                   <button 
                     onClick={() => {
-                      toast.success("Enlace de invitación generado para residentes");
+                      navigator.clipboard.writeText("https://meet.conjuntos.com/asamblea");
+                      toast.success("Enlace de invitación copiado al portapapeles");
                     }}
                     className="bg-stone-950 hover:bg-stone-900 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
                   >
