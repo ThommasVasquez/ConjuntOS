@@ -159,6 +159,7 @@ export default function AsambleaPage() {
   const [subtitlesLanguage, setSubtitlesLanguage] = useState<"ES" | "EN" | "PT" | "FR">("ES");
   const [translatedSubtitleText, setTranslatedSubtitleText] = useState("");
   const [translatingSubtitles, setTranslatingSubtitles] = useState(false);
+  const [showSubtitleNotification, setShowSubtitleNotification] = useState(false);
 
   // Post-Assembly / Minutes states
   const [actaLoading, setActaLoading] = useState(false);
@@ -526,6 +527,21 @@ export default function AsambleaPage() {
       active = false;
     };
   }, [subtitulos, subtitlesLanguage]);
+
+  // Manage subtitle notification visibility timeout
+  useEffect(() => {
+    if (!subtitulos || subtitulos.length === 0) {
+      setShowSubtitleNotification(false);
+      return;
+    }
+    setShowSubtitleNotification(true);
+    
+    const timer = setTimeout(() => {
+      setShowSubtitleNotification(false);
+    }, 6000); // Hide after 6 seconds of silence
+    
+    return () => clearTimeout(timer);
+  }, [subtitulos]);
 
   // Admin controls
   const handleAgendaSelect = async (index: number) => {
@@ -1244,6 +1260,33 @@ export default function AsambleaPage() {
           {/* 2. AUTHENTICATED: Web View UI */}
           {status === "authenticated" && (
             <>
+              {/* Floating Subtitle Notification Card (Twitch/Kick style alert) */}
+              {showSubtitleNotification && subtitulos && subtitulos.length > 0 && (
+                <div className="fixed top-24 right-6 z-50 w-[300px] bg-gradient-to-r from-neutral-900/95 to-black/95 backdrop-blur-md p-3.5 rounded-2xl border border-emerald-500/35 shadow-[0_10px_35px_rgba(0,0,0,0.65)] flex gap-3 animate-fade-in hover:border-emerald-500/60 transition-all duration-300">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5 shadow-inner">
+                    <Mic size={14} className="animate-pulse" />
+                  </div>
+                  <div className="text-left flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[7px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> Hablando en Vivo
+                      </span>
+                      <span className="text-[7px] text-white/30">{subtitulos[subtitulos.length - 1].timestamp}</span>
+                    </div>
+                    <p className="text-[9.5px] font-bold text-white truncate mb-0.5">
+                      {subtitulos[subtitulos.length - 1].speaker}
+                    </p>
+                    <p className="text-[9.5px] text-white/80 leading-normal font-sans italic">
+                      {translatingSubtitles ? (
+                        <span className="text-white/40 animate-pulse">Traduciendo...</span>
+                      ) : (
+                        `"${subtitlesLanguage === "ES" ? subtitulos[subtitulos.length - 1].text : translatedSubtitleText || subtitulos[subtitulos.length - 1].text}"`
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Web Header for Logged In User */}
               <div className="liquid-glass rounded-[28px] p-6 border border-white/10 flex justify-between items-center">
                 <div className="flex items-center gap-3">
