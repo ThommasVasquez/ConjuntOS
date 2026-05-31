@@ -89,13 +89,13 @@ export default function ClasificadosPage() {
         <div className="flex items-center gap-4">
            <button 
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all active:scale-90"
+            className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text-muted hover:text-text transition-all active:scale-90"
            >
              <ArrowLeft size={20} />
            </button>
-           <h1 className="text-3xl font-black text-white tracking-tight">Mercadillo <span className="text-accent underline decoration-white/10">Vecinal</span></h1>
+           <h1 className="text-3xl font-black text-text tracking-tight">Mercadillo <span className="text-accent underline decoration-border">Vecinal</span></h1>
         </div>
-        <p className="text-white/40 text-sm font-medium leading-relaxed">Apoya el talento local de tu conjunto. Servicios, emprendimientos y ventas internas.</p>
+        <p className="text-text-muted text-sm font-medium leading-relaxed">Apoya el talento local de tu conjunto. Servicios, emprendimientos y ventas internas.</p>
       </div>
 
       <ProfileHeader className="fade-up" />
@@ -103,13 +103,13 @@ export default function ClasificadosPage() {
       {/* SEARCH & FILTERS */}
       <section className="fade-up space-y-4">
         <div className="relative group">
-          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-accent transition-colors" />
+          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent transition-colors" />
           <input 
             type="text"
             placeholder="¿Qué buscas hoy?"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-14 pr-6 text-sm text-white focus:outline-none focus:border-accent/40 focus:bg-white/[0.08] transition-all"
+            className="w-full h-14 bg-surface-2 border border-border rounded-2xl pl-14 pr-6 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-surface-2/80 transition-all"
           />
         </div>
 
@@ -121,7 +121,7 @@ export default function ClasificadosPage() {
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                 selectedCat === cat.id 
                 ? 'bg-accent border-accent text-primary shadow-lg shadow-accent/20' 
-                : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'
+                : 'bg-surface-2 border-border text-text-muted hover:bg-surface-2/80'
               }`}
             >
               {cat.icon}
@@ -134,14 +134,14 @@ export default function ClasificadosPage() {
       {/* LISTINGS GRID */}
       <section className="flex flex-col gap-6">
         <div className="fade-up flex justify-between items-center">
-           <h3 className="text-xs font-bold uppercase tracking-widest text-white/20">Resultados ({filteredItems.length})</h3>
-           <Filter size={14} className="text-white/20" />
+           <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted/60">Resultados ({filteredItems.length})</h3>
+           <Filter size={14} className="text-text-muted/60" />
         </div>
 
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
              <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
-             <p className="text-[10px] font-black text-white/20 uppercase tracking-[.2em]">Cargando emprendimientos...</p>
+             <p className="text-[10px] font-black text-text-muted uppercase tracking-[.2em]">Cargando emprendimientos...</p>
           </div>
         ) : filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -154,13 +154,13 @@ export default function ClasificadosPage() {
             ))}
           </div>
         ) : (
-          <div className="py-20 flex flex-col items-center text-center gap-4 bg-white/5 rounded-[40px] border border-dashed border-white/10">
-             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/20">
+          <div className="py-20 flex flex-col items-center text-center gap-4 bg-surface-2 rounded-[40px] border border-dashed border-border">
+             <div className="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center text-text-muted">
                 <ShoppingBag size={32} />
              </div>
              <div className="space-y-1">
-                <p className="text-white/60 font-bold">No se encontraron resultados</p>
-                <p className="text-white/30 text-xs">Intenta con otra categoría o palabra clave.</p>
+                <p className="text-text font-bold">No se encontraron resultados</p>
+                <p className="text-text-muted text-xs">Intenta con otra categoría o palabra clave.</p>
              </div>
           </div>
         )}
@@ -222,7 +222,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
   return (
     <div 
       onClick={onClick}
-      className="fade-up group liquid-glass-card rounded-[32px] overflow-hidden border border-white/10 hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 flex flex-col cursor-pointer active:scale-[0.98]"
+      className="fade-up group liquid-glass-card rounded-[32px] overflow-hidden border border-border hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 flex flex-col cursor-pointer active:scale-[0.98]"
     >
        
        <div className="relative h-48 w-full group overflow-hidden">
@@ -233,7 +233,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
             className="object-cover transition-transform duration-1000 group-hover:scale-110" 
             unoptimized 
           />
-          <div className="absolute inset-0 bg-linear-to-t from-[#120a2e] via-[#120a2e]/20 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-primary/80 dark:from-[#120a2e]/80 via-transparent to-transparent" />
           
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
              <div className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[9px] font-black text-white uppercase tracking-widest">
@@ -248,7 +248,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
           </div>
 
           <div className="absolute bottom-4 left-4">
-             <div className="px-3 py-1.5 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
+             <div className="px-3 py-1.5 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20">
                 <p className="text-[18px] font-black text-white leading-none">${item.precio.toLocaleString()}</p>
              </div>
           </div>
@@ -256,11 +256,11 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
 
        <div className="p-5 flex flex-col gap-4 flex-1">
           <div className="space-y-1">
-             <h4 className="text-lg font-bold text-white leading-tight group-hover:text-accent transition-colors duration-300">{item.titulo}</h4>
-             <p className="text-white/40 text-[11px] line-clamp-2 leading-relaxed font-medium">{item.descripcion}</p>
+             <h4 className="text-lg font-bold text-text leading-tight group-hover:text-accent transition-colors duration-300">{item.titulo}</h4>
+             <p className="text-text-muted text-[11px] line-clamp-2 leading-relaxed font-medium">{item.descripcion}</p>
           </div>
 
-          <div className="pt-4 border-t border-white/5 flex items-center justify-between mt-auto">
+          <div className="pt-4 border-t border-border flex items-center justify-between mt-auto">
              <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full border border-accent/30 overflow-hidden bg-accent/10 flex items-center justify-center">
                    {item.usuario_avatar ? (
@@ -270,13 +270,13 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
                    )}
                 </div>
                 <div>
-                   <p className="text-[10px] font-bold text-white leading-none mb-0.5">{item.usuario_nombre}</p>
-                   <p className="text-[9px] text-white/30 font-bold uppercase tracking-tighter">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
+                   <p className="text-[10px] font-bold text-text leading-none mb-0.5">{item.usuario_nombre}</p>
+                   <p className="text-[9px] text-text-muted font-bold uppercase tracking-tighter">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
                 </div>
              </div>
              <button 
                 onClick={handleWhatsApp}
-                className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all active:scale-90"
+                className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all active:scale-90"
              >
                 <MessageCircle size={18} />
              </button>
@@ -325,68 +325,68 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
     <div className="flex flex-col gap-5">
       <div className="space-y-4">
         {/* IMAGE PLACEHOLDER SIMULATION */}
-        <div className="w-full h-44 rounded-3xl bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 group hover:border-accent/40 hover:bg-white/[0.08] transition-all cursor-pointer">
-           <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/20 group-hover:text-accent group-hover:scale-110 transition-all">
+        <div className="w-full h-44 rounded-3xl bg-surface-2 border-2 border-dashed border-border flex flex-col items-center justify-center gap-3 group hover:border-accent/40 hover:bg-surface-2/80 transition-all cursor-pointer">
+           <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-text-muted group-hover:text-accent group-hover:scale-110 transition-all">
               <Camera size={24} />
            </div>
-           <p className="text-[10px] font-black text-white/20 uppercase tracking-widest group-hover:text-white/40">Subir foto del producto</p>
+           <p className="text-[10px] font-black text-text-muted uppercase tracking-widest group-hover:text-text-muted/80">Subir foto del producto</p>
         </div>
 
         <div className="space-y-1.5 px-1">
-          <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] ml-1">Título del anuncio</label>
+          <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Título del anuncio</label>
           <input 
             type="text" 
             placeholder="Ej: Empanadas de Pipian" 
             value={form.titulo}
             onChange={(e) => setForm({...form, titulo: e.target.value})}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:border-accent/40"
+            className="w-full bg-surface-2 border border-border rounded-2xl px-5 py-4 text-sm text-text focus:outline-none focus:border-accent"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5 px-1">
-              <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] ml-1">Precio (COP)</label>
+              <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Precio (COP)</label>
               <input 
                 type="number" 
                 placeholder="0" 
                 value={form.precio}
                 onChange={(e) => setForm({...form, precio: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:border-accent/40"
+                className="w-full bg-surface-2 border border-border rounded-2xl px-5 py-4 text-sm text-text focus:outline-none focus:border-accent"
               />
             </div>
             <div className="space-y-1.5 px-1">
-              <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] ml-1">Categoría</label>
+              <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Categoría</label>
               <select 
                 value={form.categoria}
                 onChange={(e) => setForm({...form, categoria: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm text-white focus:outline-none focus:border-accent/40 appearance-none"
+                className="w-full bg-surface-2 border border-border rounded-2xl px-4 py-4 text-sm text-text focus:outline-none focus:border-accent appearance-none"
               >
                 {CATEGORIES.filter(c => c.id !== 'TODOS').map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.label}</option>
+                  <option key={cat.id} value={cat.id} className="bg-primary text-text">{cat.label}</option>
                 ))}
               </select>
             </div>
         </div>
 
         <div className="space-y-1.5 px-1">
-          <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] ml-1">WhatsApp de contacto</label>
+          <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">WhatsApp de contacto</label>
           <input 
             type="tel" 
             placeholder="310 123 4567" 
             value={form.whatsapp}
             onChange={(e) => setForm({...form, whatsapp: e.target.value})}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:border-accent/40"
+            className="w-full bg-surface-2 border border-border rounded-2xl px-5 py-4 text-sm text-text focus:outline-none focus:border-accent"
           />
         </div>
 
         <div className="space-y-1.5 px-1">
-          <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] ml-1">Descripción</label>
+          <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Descripción</label>
           <textarea 
             placeholder="Cuéntanos más sobre lo que ofreces..." 
             rows={3}
             value={form.descripcion}
             onChange={(e) => setForm({...form, descripcion: e.target.value})}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:border-accent/40 resize-none"
+            className="w-full bg-surface-2 border border-border rounded-2xl px-5 py-4 text-sm text-text focus:outline-none focus:border-accent resize-none"
           />
         </div>
       </div>
@@ -424,7 +424,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
     <div ref={modalRef} className="fixed inset-0 z-[70] flex items-end justify-center px-0">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
       
-      <div className="modal-content relative w-full max-w-[430px] h-[85vh] bg-[#0c061a] rounded-t-[40px] overflow-hidden flex flex-col border-t border-white/10">
+      <div className="modal-content relative w-full max-w-[430px] h-[85vh] bg-primary dark:bg-[#0c061a] rounded-t-[40px] overflow-hidden flex flex-col border-t border-border">
          {/* IMAGE HEADER */}
          <div className="relative h-2/5 w-full shrink-0">
             <Image 
@@ -434,7 +434,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
               className="object-cover" 
               unoptimized 
             />
-            <div className="absolute inset-0 bg-linear-to-t from-[#0c061a] via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-primary dark:from-[#0c061a] via-transparent to-transparent" />
             <button 
               onClick={onClose}
               className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white"
@@ -449,14 +449,14 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
          <div className="p-8 flex flex-col gap-6 overflow-y-auto">
             <div className="space-y-3">
                <div className="flex justify-between items-start">
-                  <h2 className="text-3xl font-black text-white leading-tight flex-1">{item.titulo}</h2>
+                  <h2 className="text-3xl font-black text-text leading-tight flex-1">{item.titulo}</h2>
                   <div className="text-right">
                      <p className="text-[28px] font-black text-accent tracking-tighter leading-none">${item.precio.toLocaleString()}</p>
-                     <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mt-1">Precio sugerido</p>
+                     <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1">Precio sugerido</p>
                   </div>
                </div>
                
-               <div className="flex items-center gap-3 py-4 border-y border-white/5">
+               <div className="flex items-center gap-3 py-4 border-y border-border">
                   <div className="w-12 h-12 rounded-full border-2 border-accent/20 overflow-hidden">
                      {item.usuario_avatar ? (
                        <Image src={item.usuario_avatar} alt="" width={48} height={48} unoptimized />
@@ -465,15 +465,15 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
                      )}
                   </div>
                   <div>
-                    <h4 className="text-white font-bold">{item.usuario_nombre}</h4>
-                    <p className="text-xs text-white/40">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
+                    <h4 className="text-text font-bold">{item.usuario_nombre}</h4>
+                    <p className="text-xs text-text-muted">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
                   </div>
                </div>
             </div>
 
             <div className="space-y-4">
-               <h3 className="text-xs font-black text-white/30 uppercase tracking-[0.3em]">Descripción del vendedor</h3>
-               <p className="text-white/70 leading-relaxed text-sm font-medium">{item.descripcion}</p>
+               <h3 className="text-xs font-black text-text-muted uppercase tracking-[0.3em]">Descripción del vendedor</h3>
+               <p className="text-text/70 leading-relaxed text-sm font-medium">{item.descripcion}</p>
             </div>
 
             <div className="mt-auto py-8">
@@ -483,7 +483,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
                >
                  <MessageCircle size={24} /> Contactar por WhatsApp
                </button>
-               <p className="text-center text-[10px] text-white/20 mt-4 uppercase tracking-widest font-black">Transacción directa entre residentes</p>
+               <p className="text-center text-[10px] text-text-muted/40 mt-4 uppercase tracking-widest font-black">Transacción directa entre residentes</p>
             </div>
          </div>
       </div>

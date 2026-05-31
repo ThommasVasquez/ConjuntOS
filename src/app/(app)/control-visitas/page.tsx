@@ -24,14 +24,12 @@ export default function ControlVisitas() {
   useEffect(() => {
     async function loadData() {
        try {
-         // In a real app we would have an endpoint to list residents, for now we will assume the API supports fetching current visits.
          const res = await fetch('/api/vigilancia/visitas');
          const data = await res.json();
          if(data.success) {
             setVisitas(data.data);
          }
          
-         // Mock residents for the dropdown due to lack of specific endpoint
          setResidentes([
             { id: "demo_id_jorge", nombre: "Jorge Residente", unidad: { numero: "101", torre: "Torre A" } },
             { id: "demo_id_maria", nombre: "Maria Lopez", unidad: { numero: "302", torre: "Torre B" } }
@@ -73,78 +71,78 @@ export default function ControlVisitas() {
      }
   };
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-white/20 border-t-accent rounded-full animate-spin" /></div>;
+  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
        <ProfileHeader />
        
-       <div className="fade-up liquid-glass rounded-3xl p-6 border border-white/10 shadow-2xl">
+       <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
              <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent">
                 <Users size={24} />
              </div>
              <div>
-               <h2 className="text-xl font-bold text-white">Ingreso Visitas</h2>
-               <p className="text-xs text-white/50">Control peatonal y vehicular</p>
+               <h2 className="text-xl font-bold text-text">Ingreso Visitas</h2>
+               <p className="text-xs text-text/50">Control peatonal y vehicular</p>
              </div>
           </div>
           
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-white/50 font-bold uppercase tracking-widest pl-1">Residente Destino</label>
+                <label className="text-[10px] text-text/50 font-bold uppercase tracking-widest pl-1">Residente Destino</label>
                 <select 
                    value={formData.usuarioId} 
                    onChange={e => setFormData({...formData, usuarioId: e.target.value})}
-                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white focus:outline-none focus:border-accent"
+                   className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all"
                 >
                    <option value="">Seleccione residente...</option>
                    {residentes.map(r => (
-                     <option key={r.id} value={r.id} className="text-black">{r.unidad.torre} - Apto {r.unidad.numero} ({r.nombre})</option>
+                     <option key={r.id} value={r.id} className="bg-primary text-text">{r.unidad.torre} - Apto {r.unidad.numero} ({r.nombre})</option>
                    ))}
                 </select>
              </div>
              
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-white/50 font-bold uppercase tracking-widest pl-1">Ocupante Principal</label>
+                <label className="text-[10px] text-text/50 font-bold uppercase tracking-widest pl-1">Ocupante Principal</label>
                 <input 
                    required
                    type="text" 
                    placeholder="Nombre del visitante" 
                    value={formData.nombre}
                    onChange={e => setFormData({...formData, nombre: e.target.value})}
-                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white focus:outline-none focus:border-accent" 
+                   className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
                 />
              </div>
 
              <div className="flex gap-4">
                 <div className="flex-1 flex flex-col gap-1.5">
-                   <label className="text-[10px] text-white/50 font-bold uppercase tracking-widest pl-1">Tipo de Ingreso</label>
+                   <label className="text-[10px] text-text/50 font-bold uppercase tracking-widest pl-1">Tipo de Ingreso</label>
                    <select 
                       value={formData.tipo}
                       onChange={e => setFormData({...formData, tipo: e.target.value, vehiculoTipo: e.target.value === 'PEATONAL' ? 'NINGUNO' : formData.vehiculoTipo})}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white focus:outline-none focus:border-accent"
+                      className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all"
                    >
-                      <option value="PEATONAL" className="text-black">Peatonal</option>
-                      <option value="VEHICULAR" className="text-black">Vehicular</option>
+                      <option value="PEATONAL" className="bg-primary text-text">Peatonal</option>
+                      <option value="VEHICULAR" className="bg-primary text-text">Vehicular</option>
                    </select>
                 </div>
                 {formData.tipo === 'VEHICULAR' && (
                   <div className="flex-1 flex flex-col gap-1.5">
-                     <label className="text-[10px] text-white/50 font-bold uppercase tracking-widest pl-1">Placa</label>
+                     <label className="text-[10px] text-text/50 font-bold uppercase tracking-widest pl-1">Placa</label>
                      <input 
                         required
                         type="text" 
                         placeholder="ABC-123" 
                         value={formData.placa}
                         onChange={e => setFormData({...formData, placa: e.target.value.toUpperCase()})}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white focus:outline-none focus:border-accent uppercase" 
+                        className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent uppercase transition-all" 
                      />
                   </div>
                 )}
              </div>
 
-             <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-accent hover:bg-accent/80 transition-colors rounded-2xl font-bold text-white shadow-[0_0_20px_rgba(217,70,239,0.3)] flex justify-center items-center gap-2">
+             <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-accent hover:bg-accent/80 transition-colors rounded-2xl font-bold text-primary shadow-[0_0_20px_rgba(217,70,239,0.3)] flex justify-center items-center gap-2">
                 {isSubmitting ? "Registrando..." : <><PlusCircle size={18}/> Registrar Ingreso</>}
              </button>
           </form>
@@ -152,24 +150,24 @@ export default function ControlVisitas() {
 
        {/* Bitácora de Hoy */}
        <div className="fade-up flex flex-col gap-4">
-          <h3 className="text-sm font-bold text-white uppercase tracking-widest ml-2 flex items-center gap-2"><Eye size={16} className="text-accent"/> Bitácora Reciente</h3>
-          {visitas.length === 0 && <p className="text-white/30 text-sm text-center py-6">No hay visitas registradas hoy.</p>}
+          <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2"><Eye size={16} className="text-accent"/> Bitácora Reciente</h3>
+          {visitas.length === 0 && <p className="text-text/30 text-sm text-center py-6">No hay visitas registradas hoy.</p>}
           {visitas.map((v, i) => (
-             <div key={i} className="liquid-glass p-4 rounded-3xl border border-white/5 flex flex-col gap-3">
+             <div key={i} className="liquid-glass p-4 rounded-3xl border border-border/50 flex flex-col gap-3">
                 <div className="flex justify-between items-start">
                    <div>
-                     <p className="text-white font-bold">{v.nombre}</p>
-                     <p className="text-white/40 text-xs">Visita a: {v.usuario?.unidad?.torre} - {v.usuario?.unidad?.numero}</p>
+                     <p className="text-text font-bold">{v.nombre}</p>
+                     <p className="text-text/40 text-xs">Visita a: {v.usuario?.unidad?.torre} - {v.usuario?.unidad?.numero}</p>
                    </div>
-                   <div className="bg-white/5 px-3 py-1 rounded-full border border-white/10 text-[10px] font-bold text-white/60">
+                   <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text/60">
                       {new Date(v.creadoEn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                    </div>
                 </div>
-                <div className="flex bg-black/20 p-2 rounded-xl gap-4 items-center">
+                <div className="flex bg-surface/50 p-2 rounded-xl gap-4 items-center border border-border/30">
                    <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${v.tipo === 'VEHICULAR' ? 'text-emerald-400' : 'text-accent'}`}>
                       {v.tipo === 'VEHICULAR' ? <Car size={14}/> : <Users size={14}/>} {v.tipo}
                    </div>
-                   {v.placa && <div className="text-xs text-white/50 bg-white/5 px-2 py-0.5 rounded border border-white/10 font-mono tracking-widest">{v.placa}</div>}
+                   {v.placa && <div className="text-xs text-text/50 bg-text/5 px-2 py-0.5 rounded border border-border font-mono tracking-widest">{v.placa}</div>}
                 </div>
              </div>
           ))}

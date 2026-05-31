@@ -221,22 +221,46 @@ export default function AsambleaPage() {
       setIsCameraActive(true);
       setIsMuted(false);
       toast.success("Cámara y micrófono conectados");
+      startSpeechRecognition();
     } catch (e) {
       console.warn("No se pudo iniciar cámara/micrófono real. Usando simulación.");
       setIsCameraActive(true); // simulate
       setIsMuted(false);
       toast.info("Acceso denegado o sin dispositivos. Se activó avatar interactivo.");
+      startSpeechRecognition();
     }
   };
 
-  const toggleMute = () => {
+  const toggleMute = async () => {
+    const nextMuted = !isMuted;
     if (localStream) {
       localStream.getAudioTracks().forEach(track => {
-        track.enabled = !track.enabled;
+        track.enabled = !nextMuted;
       });
+      setIsMuted(nextMuted);
+      toast.info(nextMuted ? "Micrófono silenciado" : "Micrófono activado");
+      if (nextMuted) {
+        stopSpeechRecognition();
+      } else {
+        startSpeechRecognition();
+      }
+    } else {
+      // If localStream is null, start media capture first
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        setLocalStream(stream);
+        setIsCameraActive(true);
+        setIsMuted(false);
+        toast.success("Cámara y micrófono conectados");
+        startSpeechRecognition();
+      } catch (e) {
+        console.warn("No se pudo iniciar cámara/micrófono real. Usando simulación.");
+        setIsCameraActive(true); // simulate
+        setIsMuted(false);
+        toast.info("Acceso denegado o sin dispositivos. Se activó avatar interactivo.");
+        startSpeechRecognition(); // Will start simulation
+      }
     }
-    setIsMuted(!isMuted);
-    toast.info(!isMuted ? "Micrófono silenciado" : "Micrófono activado");
   };
 
   const toggleCamera = () => {
@@ -264,6 +288,42 @@ export default function AsambleaPage() {
 
   // WebRTC PeerJS connection & signaling
   const myUserId = session?.user?.id || mobileSession?.id || null;
+
+  // Auto-activate mic and subtitles when current user is granted the floor
+  useEffect(() => {
+    if (!myUserId) return;
+    const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
+    const isMeActiveSpeaker = activeSpeaker && activeSpeaker.usuarioId === myUserId;
+
+    if (isMeActiveSpeaker) {
+      if (!localStream) {
+        startVideo();
+      } else {
+        if (isMuted) {
+          localStream.getAudioTracks().forEach(track => {
+            track.enabled = true;
+          });
+          setIsMuted(false);
+        }
+        if (!isSpeaking) {
+          startSpeechRecognition();
+        }
+      }
+    } else {
+      // Auto-mute if we are not the active speaker and not the admin
+      if (localStream && !isWebAdmin) {
+        if (!isMuted) {
+          localStream.getAudioTracks().forEach(track => {
+            track.enabled = false;
+          });
+          setIsMuted(true);
+        }
+        if (isSpeaking) {
+          stopSpeechRecognition();
+        }
+      }
+    }
+  }, [turnos, myUserId, isWebAdmin, localStream, isMuted, isSpeaking]);
 
   useEffect(() => {
     if (!myUserId) return;
@@ -1072,7 +1132,7 @@ export default function AsambleaPage() {
   };
 
   // WEB SPEECH API / LIVE SUBTITLES SIMULATION
-  const startSpeakingSimulation = () => {
+  function startSpeakingSimulation() {
     setIsSpeaking(true);
     
     const phrases = [
@@ -1129,9 +1189,9 @@ export default function AsambleaPage() {
     }, 6000);
 
     recognitionRef.current = subInterval;
-  };
+  }
 
-  const simulateSpeechTopic = (topic: string) => {
+  function simulateSpeechTopic(topic: string) {
     let phrase = "";
     
     if (topic === "piscina") {
@@ -1185,82 +1245,105 @@ export default function AsambleaPage() {
     });
 
     toast.success(`Discutiendo: ${topic.toUpperCase()} (IA sugerirá licitantes y precios en subtítulos)`);
-  };
+  }
+
+  function startSpeechRecognition() {
+    // Stop any active recognition/simulation first
+    if (recognitionRef.current) {
+      if (typeof recognitionRef.current === "object" && typeof recognitionRef.current.stop === "function") {
+        try { recognitionRef.current.stop(); } catch {}
+      } else {
+        clearInterval(recognitionRef.current);
+      }
+      recognitionRef.current = null;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.lang = "es-ES";
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.continuous = true;
+
+        recognition.onstart = () => {
+          setIsSpeaking(true);
+          toast.success("Micrófono abierto. Habla para generar subtítulos reales...");
+        };
+
+        recognition.onresult = (event: any) => {
+          const resultText = event.results[event.results.length - 1][0].transcript;
+          const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
+          const speakerName = activeSpeaker ? activeSpeaker.nombre : (session?.user?.name || "Administrador");
+          const speakerId = activeSpeaker ? activeSpeaker.usuarioId : session?.user?.id;
+
+          const newSub = {
+            id: "sub_" + Date.now(),
+            speaker: speakerName,
+            text: resultText,
+            timestamp: new Date().toLocaleTimeString()
+          };
+          
+          setSubtitulos([newSub]);
+
+          // Sync with backend API
+          fetch("/api/asamblea/subtitulos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text: resultText,
+              speaker: speakerName,
+              usuarioId: speakerId
+            })
+          }).catch(e => console.error("Error syncing subtitle to backend:", e));
+          
+          // Auto-trigger copilot suggestions based on what was said!
+          triggerCopilot(opiniones, resultText);
+        };
+
+        recognition.onerror = (event: any) => {
+          console.error("Speech Recognition Error:", event.error);
+          if (event.error === "not-allowed") {
+            toast.warning("Acceso a micrófono no permitido. Iniciando simulación de voz...");
+            startSpeakingSimulation();
+          }
+        };
+
+        recognition.onend = () => {
+          setIsSpeaking(false);
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+      } catch (e) {
+        console.warn("Reconocimiento de voz falló al iniciar. Usando simulación.");
+        startSpeakingSimulation();
+      }
+    } else {
+      toast.info("Navegador sin Web Speech API nativo. Iniciando simulación...");
+      startSpeakingSimulation();
+    }
+  }
+
+  function stopSpeechRecognition() {
+    if (recognitionRef.current) {
+      if (typeof recognitionRef.current === "object" && typeof recognitionRef.current.stop === "function") {
+        try { recognitionRef.current.stop(); } catch {}
+      } else {
+        clearInterval(recognitionRef.current);
+      }
+      recognitionRef.current = null;
+    }
+    setIsSpeaking(false);
+    toast.info("Micrófono cerrado para subtítulos");
+  }
 
   const handleToggleSpeaking = () => {
     if (isSpeaking) {
-      if (recognitionRef.current) {
-        if (typeof recognitionRef.current === "object" && typeof recognitionRef.current.stop === "function") {
-          recognitionRef.current.stop();
-        } else {
-          clearInterval(recognitionRef.current);
-        }
-      }
-      setIsSpeaking(false);
-      toast.info("Micrófono cerrado para subtítulos");
+      stopSpeechRecognition();
     } else {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        try {
-          const recognition = new SpeechRecognition();
-          recognition.lang = "es-ES";
-          recognition.interimResults = false;
-          recognition.maxAlternatives = 1;
-          recognition.continuous = true;
-
-          recognition.onstart = () => {
-            setIsSpeaking(true);
-            toast.success("Micrófono abierto. Habla para generar subtítulos reales y disparar sugerencias IA...");
-          };
-
-          recognition.onresult = (event: any) => {
-            const resultText = event.results[event.results.length - 1][0].transcript;
-            const newSub = {
-              id: "sub_" + Date.now(),
-              speaker: session?.user?.name || "Administrador",
-              text: resultText,
-              timestamp: new Date().toLocaleTimeString()
-            };
-            
-            setSubtitulos([newSub]);
-
-            // Sync with backend API
-            fetch("/api/asamblea/subtitulos", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                text: resultText,
-                speaker: session?.user?.name || "Administrador",
-                usuarioId: session?.user?.id
-              })
-            }).catch(e => console.error("Error syncing subtitle to backend:", e));
-            
-            // Auto-trigger copilot suggestions based on what was said!
-            triggerCopilot(opiniones, resultText);
-          };
-
-          recognition.onerror = (event: any) => {
-            console.error("Speech Recognition Error:", event.error);
-            if (event.error === "not-allowed") {
-              toast.warning("Acceso a micrófono no permitido. Iniciando simulación de voz...");
-              startSpeakingSimulation();
-            }
-          };
-
-          recognition.onend = () => {
-            setIsSpeaking(false);
-          };
-
-          recognition.start();
-          recognitionRef.current = recognition;
-        } catch (e) {
-          console.warn("Reconocimiento de voz falló al iniciar. Usando simulación.");
-          startSpeakingSimulation();
-        }
-      } else {
-        toast.info("Navegador sin Web Speech API nativo. Iniciando simulación...");
-        startSpeakingSimulation();
-      }
+      startSpeechRecognition();
     }
   };
 
@@ -1681,7 +1764,7 @@ export default function AsambleaPage() {
                       <div className="relative w-full aspect-video rounded-[28px] overflow-hidden bg-stone-900 border border-stone-200 shadow-lg flex flex-col justify-center items-center group max-h-[70vh]">
                         {isResidentActive ? (
                           (!isWebAdmin && isCameraActive && localStream && activeSpeaker.usuarioId === session?.user?.id) ? (
-                            <video ref={localVideoRef} autoPlay playsInline className="w-full h-full object-cover -scale-x-100" />
+                            <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
                           ) : remoteStreams[activeSpeaker.usuarioId] ? (
                             <RemoteVideo stream={remoteStreams[activeSpeaker.usuarioId]} className="w-full h-full object-cover" />
                           ) : (
@@ -1701,7 +1784,7 @@ export default function AsambleaPage() {
                           )
                         ) : (
                           (isWebAdmin && isCameraActive && localStream) ? (
-                            <video ref={localVideoRef} autoPlay playsInline className="w-full h-full object-cover -scale-x-100" />
+                            <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
                           ) : (remoteStreams[adminUserId || ""] || remoteStreams["admin"]) ? (
                             <RemoteVideo stream={remoteStreams[adminUserId || ""] || remoteStreams["admin"]} className="w-full h-full object-cover" />
                           ) : (

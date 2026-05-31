@@ -202,7 +202,7 @@ export default function ReservasPage() {
     }
   };
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center text-white/50"><div className="animate-spin w-8 h-8 border-2 border-white/20 border-t-accent rounded-full"></div></div>;
+  if(loading) return <div className="min-h-screen flex items-center justify-center text-text/50"><div className="animate-spin w-8 h-8 border-2 border-text/20 border-t-accent rounded-full"></div></div>;
 
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-10">
@@ -210,50 +210,50 @@ export default function ReservasPage() {
 
       <section className="fade-up flex gap-3">
         <div className="relative flex-1 group">
-           <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-accent transition-colors" />
-           <input type="text" placeholder="Buscar servicios..." className="w-full bg-[#1a1333] border border-white/5 rounded-[24px] py-4 pl-14 pr-6 text-sm text-white focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner" />
+           <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text/30 group-focus-within:text-accent transition-colors" />
+           <input type="text" placeholder="Buscar servicios..." className="w-full bg-text/5 border border-border rounded-[24px] py-4 pl-14 pr-6 text-sm text-text focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner" />
         </div>
-        <button className="w-14 h-14 rounded-[22px] bg-[#241a4a] border border-white/5 flex items-center justify-center text-white/60 hover:border-white/10 transition-all active:scale-95 shadow-lg">
+        <button className="w-14 h-14 rounded-[22px] bg-primary-light border border-border flex items-center justify-center text-text/60 hover:border-accent/20 transition-all active:scale-95 shadow-lg cursor-pointer">
            <SlidersHorizontal size={20} />
         </button>
       </section>
 
       <div className="flex flex-col gap-2 -mt-4 mb-2">
-          <h1 className="text-3xl font-display font-bold text-white tracking-tight">Reservas</h1>
-          <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest ">Zonas Comunes del Conjunto</p>
+          <h1 className="text-3xl font-display font-bold text-text tracking-tight">Reservas</h1>
+          <p className="text-text/40 text-[10px] uppercase font-bold tracking-widest ">Zonas Comunes del Conjunto</p>
       </div>
 
       {step === 'GRID' && (
         <section className="flex flex-col gap-6">
-           {areas.length === 0 && <p className="text-white/50 text-center py-10">No hay áreas activas registradas.</p>}
+           {areas.length === 0 && <p className="text-text/50 text-center py-10">No hay áreas activas registradas.</p>}
            {areas.map((area) => (
-             <div key={area.id} onClick={() => handleSelectArea(area)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden group cursor-pointer active:scale-[0.98] transition-all border border-white/5 shadow-2xl relative">
-                <div className="relative h-60 w-full overflow-hidden">
-                    <Image src={area.imagenUrl || "https://images.unsplash.com/photo-1549488344-c61f2f6ffb18?auto=format&fit=crop&q=80&w=1000"} alt={area.nombre} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-                   <div className="absolute inset-0 bg-linear-to-t from-[#0d041a] via-transparent to-transparent opacity-80" />
-                   <div className="absolute top-4 right-4 liquid-glass px-4 py-2 rounded-full border border-white/10">
-                      <span className="text-white font-bold text-sm">
-                        {!area.requiereDeposito || Number(area.depositoMonto) === 0 ? 'Gratis' : `$${Number(area.depositoMonto).toLocaleString()}`}
-                      </span>
-                   </div>
-                </div>
-                <div className="p-6">
-                   <div className="flex justify-between items-start mb-3">
-                      <div>
-                         <h3 className="text-xl font-bold text-white text-glow mb-1 leading-tight">{area.nombre}</h3>
-                         <div className="flex gap-2">
-                           <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">{area.horaApertura}-{area.horaCierre}</span>
-                         </div>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent"><MapPin size={18}/></div>
-                   </div>
-                   <p className="text-white/50 text-xs leading-relaxed font-light mb-6 line-clamp-2">{area.descripcion}</p>
-                   <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1.5 text-white/30 text-[10px] font-bold uppercase"><Users size={12} /> {area.capacidadMax} Max</div>
-                      <div className="flex items-center gap-2 group/btn"><span className="text-accent text-[11px] font-bold uppercase tracking-widest group-hover/btn:translate-x-[-4px] transition-transform">Reservar</span><ArrowRight size={14} className="text-accent" /></div>
-                   </div>
-                </div>
-             </div>
+              <div key={area.id} onClick={() => handleSelectArea(area)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden group cursor-pointer active:scale-[0.98] transition-all border border-border shadow-2xl relative">
+                 <div className="relative h-60 w-full overflow-hidden">
+                     <Image src={area.imagenUrl || "https://images.unsplash.com/photo-1549488344-c61f2f6ffb18?auto=format&fit=crop&q=80&w=1000"} alt={area.nombre} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
+                    <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/25 to-transparent opacity-80" />
+                    <div className="absolute top-4 right-4 liquid-glass px-4 py-2 rounded-full border border-border">
+                       <span className="text-text font-bold text-sm">
+                         {!area.requiereDeposito || Number(area.depositoMonto) === 0 ? 'Gratis' : `$${Number(area.depositoMonto).toLocaleString()}`}
+                       </span>
+                    </div>
+                 </div>
+                 <div className="p-6">
+                    <div className="flex justify-between items-start mb-3">
+                       <div>
+                          <h3 className="text-xl font-bold text-text text-glow mb-1 leading-tight">{area.nombre}</h3>
+                          <div className="flex gap-2">
+                            <span className="text-[10px] text-text/40 font-bold uppercase tracking-wider">{area.horaApertura}-{area.horaCierre}</span>
+                          </div>
+                       </div>
+                       <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent"><MapPin size={18}/></div>
+                    </div>
+                    <p className="text-text/50 text-xs leading-relaxed font-light mb-6 line-clamp-2">{area.descripcion}</p>
+                    <div className="flex justify-between items-center">
+                       <div className="flex items-center gap-1.5 text-text/30 text-[10px] font-bold uppercase"><Users size={12} /> {area.capacidadMax} Max</div>
+                       <div className="flex items-center gap-2 group/btn"><span className="text-accent text-[11px] font-bold uppercase tracking-widest group-hover/btn:translate-x-[-4px] transition-transform">Reservar</span><ArrowRight size={14} className="text-accent" /></div>
+                    </div>
+                 </div>
+              </div>
            ))}
         </section>
       )}
@@ -261,18 +261,18 @@ export default function ReservasPage() {
       {step === 'BOOKING' && selectedArea && (
         <section className="fade-up fixed inset-0 z-1000 flex flex-col justify-end">
            <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setStep('GRID')} />
-           <div className="liquid-glass rounded-t-[40px] p-6 sm:p-8 pb-32 sm:pb-8 w-full max-w-[480px] mx-auto relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500 overflow-y-auto max-h-[95vh] hide-scrollbar border-t border-white/10">
+           <div className="liquid-glass rounded-t-[40px] p-6 sm:p-8 pb-32 sm:pb-8 w-full max-w-[480px] mx-auto relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500 overflow-y-auto max-h-[95vh] hide-scrollbar border-t border-border">
               <div className="flex justify-between items-center mb-6">
-                 <h3 className="text-2xl font-display font-medium text-white tracking-tight">Tu Reserva</h3>
-                 <button onClick={() => setStep('GRID')} className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 transition-colors"><X size={20} /></button>
+                 <h3 className="text-2xl font-display font-medium text-text tracking-tight">Tu Reserva</h3>
+                 <button onClick={() => setStep('GRID')} className="w-10 h-10 rounded-full bg-text/5 hover:bg-text/10 flex items-center justify-center text-text/50 transition-colors cursor-pointer"><X size={20} /></button>
               </div>
               
-              <div className="flex gap-4 items-center mb-6 p-3 rounded-[24px] bg-white/5 border border-white/5">
+              <div className="flex gap-4 items-center mb-6 p-3 rounded-[24px] bg-text/5 border border-border">
                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden shrink-0">
                     <Image src={selectedArea.imagenUrl || ""} alt="" fill className="w-full h-full object-cover" unoptimized />
                  </div>
                  <div className="flex-1">
-                    <h4 className="text-white font-bold text-base mb-1">{selectedArea.nombre}</h4>
+                    <h4 className="text-text font-bold text-base mb-1">{selectedArea.nombre}</h4>
                     <p className="text-accent text-xs font-bold uppercase tracking-widest">
                        {!selectedArea.requiereDeposito ? 'Gratis' : `Depósito: $${Number(selectedArea.depositoMonto).toLocaleString()}`}
                     </p>
@@ -282,7 +282,7 @@ export default function ReservasPage() {
               <div className="flex flex-col gap-6 mb-8">
                  {/* Selector de Día */}
                  <div className="flex flex-col gap-3">
-                    <label className="text-[10px] text-white/40 font-bold uppercase tracking-widest ml-1">Selecciona el Día</label>
+                    <label className="text-[10px] text-text/40 font-bold uppercase tracking-widest ml-1">Selecciona el Día</label>
                     <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 px-1 -mx-1 snap-x">
                         {availableDays.map((date, idx) => {
                           const isSelected = selectedDay?.getDate() === date.getDate() && selectedDay?.getMonth() === date.getMonth();
@@ -293,12 +293,12 @@ export default function ReservasPage() {
                              <button 
                                 key={idx} 
                                 onClick={() => setSelectedDay(date)}
-                                className={`min-w-[70px] snap-center py-3 rounded-2xl border transition-all flex flex-col items-center gap-1 shrink-0 
-                                ${isSelected ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'bg-black/30 border-white/5 text-white/50 hover:bg-white/5'}`}
+                                className={`min-w-[70px] snap-center py-3 rounded-2xl border transition-all flex flex-col items-center gap-1 shrink-0 cursor-pointer 
+                                ${isSelected ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text hover:bg-text/10'}`}
                              >
                                <span className="text-[10px] font-medium uppercase tracking-widest">{dow}</span>
                                <span className="text-xl font-display font-bold">{date.getDate()}</span>
-                               <span className="text-[9px] font-bold uppercase text-white/30">{mos}</span>
+                               <span className="text-[9px] font-bold uppercase text-text/60">{mos}</span>
                              </button>
                           )
                         })}
@@ -307,9 +307,9 @@ export default function ReservasPage() {
 
                  {/* Selector de Hora */}
                  <div className="flex flex-col gap-3">
-                    <label className="text-[10px] text-white/40 font-bold uppercase tracking-widest ml-1">Horario ({selectedArea.duracionSlot} min)</label>
+                    <label className="text-[10px] text-text/40 font-bold uppercase tracking-widest ml-1">Horario ({selectedArea.duracionSlot} min)</label>
                     <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto hide-scrollbar pr-1">
-                        {timeSlots.length === 0 && <p className="text-white/30 text-xs py-4 col-span-2 text-center">No hay horarios disponibles.</p>}
+                        {timeSlots.length === 0 && <p className="text-text/30 text-xs py-4 col-span-2 text-center">No hay horarios disponibles.</p>}
                         {timeSlots.map((slot, index) => {
                            const st = slot.start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                            const ed = slot.end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -319,9 +319,9 @@ export default function ReservasPage() {
                                disabled={!slot.available}
                                onClick={() => setSelectedSlotIndex(index)}
                                className={`
-                                 py-3 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border
-                                 ${!slot.available ? 'opacity-30 bg-black/50 border-transparent cursor-not-allowed text-white/40' : 
-                                   selectedSlotIndex === index ? 'bg-white text-black border-white shadow-xl' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}
+                                 py-3 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border cursor-pointer
+                                 ${!slot.available ? 'opacity-30 bg-text/5 border-transparent cursor-not-allowed text-text/40' : 
+                                   selectedSlotIndex === index ? 'bg-accent text-white border-accent shadow-xl' : 'bg-text/5 border-border text-text hover:bg-text/10'}
                                `}
                              >
                                 <span className={selectedSlotIndex === index ? 'opacity-50 text-[10px]' : 'text-accent/70 text-[10px]'}>MIE {selectedDay?.getDate()}</span>
@@ -336,7 +336,7 @@ export default function ReservasPage() {
               <button 
                   disabled={selectedSlotIndex === null || isProcessing}
                   onClick={proceedToBook} 
-                  className="w-full py-5 bg-gradient-to-r from-accent to-purple-600 rounded-[24px] font-bold text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100"
+                  className="w-full py-5 bg-gradient-to-r from-accent to-purple-600 rounded-[24px] font-bold text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100 cursor-pointer"
                >
                   {isProcessing ? 'Procesando...' : selectedArea.requiereDeposito ? 'Pagar Depósito' : 'Confirmar Reserva'} 
                   <ArrowRight size={18} />
@@ -346,54 +346,53 @@ export default function ReservasPage() {
       )}
 
       {step === 'PAYMENT' && (
-        <section className="fade-up fixed inset-0 z-100 flex flex-col items-center justify-center p-8 bg-[#0d041a]/95 backdrop-blur-3xl">
-           <div className="w-16 h-16 rounded-full border-4 border-white/10 border-t-accent animate-spin mb-4" />
-           <h3 className="text-2xl font-display font-medium text-white tracking-tight">Procesando Pago Seguro...</h3>
-           <p className="text-white/40 text-xs mt-4">Simulando respuesta de Wompi</p>
+        <section className="fade-up fixed inset-0 z-100 flex flex-col items-center justify-center p-8 bg-primary/95 backdrop-blur-3xl">
+           <div className="w-16 h-16 rounded-full border-4 border-border border-t-accent animate-spin mb-4" />
+           <h3 className="text-2xl font-display font-medium text-text tracking-tight">Procesando Pago Seguro...</h3>
+           <p className="text-text/40 text-xs mt-4">Simulando respuesta de Wompi</p>
            {/* Mocking the payment return internally */}
-           <button onClick={executeBooking} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-white transition-colors">Acelerar Simulación</button>
+           <button onClick={executeBooking} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-white transition-colors cursor-pointer">Acelerar Simulación</button>
         </section>
       )}
 
       {step === 'SUCCESS' && selectedArea && selectedSlotIndex !== null && (
-        <section className="fade-up fixed inset-0 z-100 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#1a0b2e] to-[#0d041a] animate-in slide-in-from-bottom-20 duration-700">
+        <section className="fade-up fixed inset-0 z-100 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-primary to-primary-light animate-in slide-in-from-bottom-20 duration-700">
            <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.3)] mb-8 animate-bounce delay-100"><CheckCircle2 size={40} className="text-white" /></div>
-           <h2 className="text-3xl font-display font-bold text-white tracking-tight mb-2 text-glow">¡Reserva Confirmada!</h2>
-           <p className="text-white/50 text-sm mb-10 text-center font-light">Tu espacio ha sido separado exitosamente.</p>
+           <h2 className="text-3xl font-display font-bold text-text tracking-tight mb-2 text-glow">¡Reserva Confirmada!</h2>
+           <p className="text-text/50 text-sm mb-10 text-center font-light">Tu espacio ha sido separado exitosamente.</p>
            
-           <div className="w-full max-w-[340px] liquid-glass rounded-[40px] overflow-hidden shadow-2xl border border-white/10 p-8 relative">
+           <div className="w-full max-w-[340px] liquid-glass rounded-[40px] overflow-hidden shadow-2xl border border-border p-8 relative">
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-accent/20 blur-3xl rounded-full pointer-events-none"></div>
               
               <div className="flex flex-col gap-6 mb-8 relative z-10">
                  <div className="flex gap-4 items-center">
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-accent"><MapPin size={20} /></div>
-                    <div><p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">Espacio</p><p className="text-white font-bold">{selectedArea.nombre}</p></div>
+                    <div className="w-12 h-12 rounded-2xl bg-text/5 border border-border flex items-center justify-center text-accent"><MapPin size={20} /></div>
+                    <div><p className="text-[10px] text-text/30 uppercase font-bold tracking-widest">Espacio</p><p className="text-text font-bold">{selectedArea.nombre}</p></div>
                  </div>
                  <div className="flex gap-4 items-center">
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-accent"><Clock size={20} /></div>
-                    <div><p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">Horario</p>
-                      <p className="text-white font-bold text-sm">
-                        {selectedDay?.toLocaleDateString('es-ES', {month:'short', day:'numeric'})} • {timeSlots[selectedSlotIndex].start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                      </p>
+                    <div className="w-12 h-12 rounded-2xl bg-text/5 border border-border flex items-center justify-center text-accent"><Clock size={20} /></div>
+                    <div><p className="text-[10px] text-text/30 uppercase font-bold tracking-widest">Horario</p>
+                       <p className="text-text font-bold text-sm">
+                         {selectedDay?.toLocaleDateString('es-ES', {month:'short', day:'numeric'})} • {timeSlots[selectedSlotIndex].start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                       </p>
                     </div>
                  </div>
               </div>
-              <div className="w-full aspect-square bg-[#0d041a]/50 p-4 rounded-[32px] flex items-center justify-center border border-white/5 relative z-10">
+              <div className="w-full aspect-square bg-text/5 p-4 rounded-[32px] flex items-center justify-center border border-border relative z-10">
                  {/* QR Decorativo premium */}
                  <div className="w-full h-full bg-white rounded-[20px] flex items-center justify-center p-4">
-                     <QrCode size={180} className="text-black" />
+                      <QrCode size={180} className="text-black" />
                  </div>
               </div>
            </div>
            
-           <button onClick={() => window.location.reload()} className="mt-12 text-white/40 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors">Volver a Reservas</button>
+           <button onClick={() => window.location.reload()} className="mt-12 text-text/40 text-[10px] font-bold uppercase tracking-widest hover:text-text transition-colors cursor-pointer">Volver a Reservas</button>
         </section>
       )}
 
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .text-glow { text-shadow: 0 0 20px rgba(255,255,255,0.3); }
       `}} />
     </div>
   );

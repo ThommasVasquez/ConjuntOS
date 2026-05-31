@@ -259,10 +259,10 @@ export default function CarteleraPage() {
 
   const getPriorityColor = (priority: string) => {
     switch(priority) {
-      case 'ALTA': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'MEDIA': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'BAJA': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      default: return 'bg-white/10 text-white/50 border-white/10';
+      case 'ALTA': return 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/20 dark:border-red-500/30';
+      case 'MEDIA': return 'bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30';
+      case 'BAJA': return 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30';
+      default: return 'bg-surface-2 text-text-muted border-border';
     }
   };
 
@@ -307,7 +307,7 @@ export default function CarteleraPage() {
       {/* FILTER TABS */}
       <section className="fade-up flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
          {['TODOS', 'ADMINISTRACION', 'LICITACION', 'SEGURIDAD', 'EVENTO', 'MANTENIMIENTO'].map((cat) => (
-           <button key={cat} onClick={() => setSelectedCategory(cat)} className={`shrink-0 px-5 py-2.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-accent border-accent text-white shadow-lg' : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'}`}>
+           <button key={cat} onClick={() => setSelectedCategory(cat)} className={`shrink-0 px-5 py-2.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-accent border-accent text-primary shadow-lg' : 'bg-surface-2 border-border text-text-muted hover:bg-surface-2/80'}`}>
               {cat}
            </button>
          ))}
@@ -318,15 +318,15 @@ export default function CarteleraPage() {
          {isLoadingNotices ? (
            <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-10 h-10 text-accent animate-spin" />
-              <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Sincronizando Cartelera...</p>
+              <p className="text-text-muted text-xs font-bold uppercase tracking-widest">Sincronizando Cartelera...</p>
            </div>
          ) : filteredNotices.length === 0 ? (
-           <div className="flex flex-col items-center justify-center py-20 gap-4 liquid-glass-card rounded-[32px] border border-white/5 p-10">
-              <Megaphone size={32} className="text-white/20 mb-2" />
-              <p className="text-white/60 text-sm font-bold">No hay avisos publicados</p>
+           <div className="flex flex-col items-center justify-center py-20 gap-4 liquid-glass-card rounded-[32px] border border-border p-10">
+              <Megaphone size={32} className="text-text-muted mb-2" />
+              <p className="text-text-muted text-sm font-bold">No hay avisos publicados</p>
            </div>
          ) : filteredNotices.map((notice: Notice) => (
-           <div key={notice.id} onClick={() => setSelectedNotice(notice)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden border border-white/10 hover:border-white/20 transition-all active:scale-[0.98] cursor-pointer group shadow-2xl">
+           <div key={notice.id} onClick={() => setSelectedNotice(notice)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden border border-border hover:border-accent/30 transition-all active:scale-[0.98] cursor-pointer group shadow-2xl">
               {notice.image && (
                 <div className="h-40 w-full overflow-hidden relative">
                    <Image src={notice.image} alt={notice.title} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" unoptimized />
@@ -336,20 +336,20 @@ export default function CarteleraPage() {
               <div className="p-6 flex flex-col gap-4">
                  <div className="flex justify-between items-start">
                     <div className={`px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${getPriorityColor(notice.priority)}`}>Prioridad {notice.priority}</div>
-                    <span className="text-[10px] text-white/30 font-bold">{notice.date}</span>
+                    <span className="text-[10px] text-text-muted font-bold">{notice.date}</span>
                  </div>
                  <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-accent">
                        {getNoticeIcon(notice.category)}
                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{notice.category}</span>
                     </div>
-                    <h3 className="text-white text-lg font-bold leading-snug group-hover:text-accent transition-colors">{notice.title}</h3>
-                    <p className="text-white/40 text-xs line-clamp-2 leading-relaxed">{notice.content}</p>
+                    <h3 className="text-text text-lg font-bold leading-snug group-hover:text-accent transition-colors">{notice.title}</h3>
+                    <p className="text-text-muted text-xs line-clamp-2 leading-relaxed">{notice.content}</p>
                  </div>
-                 <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                 <div className="flex justify-between items-center pt-2 border-t border-border">
                     <div className="flex items-center gap-2">
-                       <Megaphone size={12} className="text-white/30" />
-                       <span className="text-[10px] text-white/50">{notice.author}</span>
+                       <Megaphone size={12} className="text-text-muted" />
+                       <span className="text-[10px] text-text-muted">{notice.author}</span>
                     </div>
                     <div className="flex items-center gap-1 text-accent text-[10px] font-bold uppercase group-hover:gap-2 transition-all">Leer más <ArrowRight size={14} /></div>
                  </div>
@@ -387,11 +387,11 @@ export default function CarteleraPage() {
                     <p className="text-xs text-white/40 leading-relaxed italic">"Presentando el informe de gestión 2023 y proyecciones presupuestarias para el periodo 2024..."</p>
                  </div>
                  <div className="grid grid-cols-2 gap-3 w-full">
-                    <div className="p-3 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center">
-                       <span className="text-[8px] text-white/30 uppercase font-black">Quórum</span>
+                    <div className="p-3 rounded-2xl bg-surface-2 border border-border flex flex-col items-center">
+                       <span className="text-[8px] text-text-muted uppercase font-black">Quórum</span>
                        <span className="text-lg font-bold text-emerald-400">84.2%</span>
                     </div>
-                    <div className="p-3 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center text-accent">
+                    <div className="p-3 rounded-2xl bg-surface-2 border border-border flex flex-col items-center text-accent">
                         <Vote size={14} className="mb-1" />
                         <span className="text-[10px] font-black uppercase">Votar</span>
                     </div>
@@ -400,10 +400,10 @@ export default function CarteleraPage() {
 
               {/* Bottom UI Controls */}
               <div className="absolute bottom-40 left-6 right-6 flex items-center gap-3">
-                  <div className="flex-1 h-12 bg-white/10 rounded-2xl flex items-center px-4 border border-white/10">
-                    <span className="text-xs text-white/20 italic">Enlace a documento adjunto...</span>
+                  <div className="flex-1 h-12 bg-surface-2 rounded-2xl flex items-center px-4 border border-border">
+                    <span className="text-xs text-text-muted/40 italic">Enlace a documento adjunto...</span>
                   </div>
-                  <button className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white/40"><MessageSquare size={18} /></button>
+                  <button className="w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center text-text-muted/60"><MessageSquare size={18} /></button>
               </div>
            </div>
 
@@ -447,52 +447,51 @@ export default function CarteleraPage() {
         </div>
       )}
 
-      {/* MODAL: NOTICE DETAIL */}
       {selectedNotice && (
         <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center animate-in fade-in duration-300 isolate">
            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedNotice(null)} />
-           <div className="relative w-full max-w-[430px] bg-[#0d041a] rounded-t-[40px] sm:rounded-[40px] border-t sm:border border-white/20 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-400">
+           <div className="relative w-full max-w-[430px] bg-primary dark:bg-[#0d041a] rounded-t-[40px] sm:rounded-[40px] border-t sm:border border-border shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-400">
               <div className="max-h-[85vh] overflow-y-auto hide-scrollbar">
                  {selectedNotice.image && (
                    <div className="h-56 w-full relative">
                       <Image src={selectedNotice.image} alt="" fill className="w-full h-full object-cover" unoptimized />
-                      <div className="absolute inset-0 bg-linear-to-t from-[#0d041a] to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-t from-primary dark:from-[#0d041a] to-transparent" />
                       <button onClick={() => setSelectedNotice(null)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white"><X size={20} /></button>
                    </div>
                  )}
                  <div className="p-8 flex flex-col gap-6">
-                    {!selectedNotice.image && <div className="flex justify-end"><button onClick={() => setSelectedNotice(null)} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40"><X size={20} /></button></div>}
+                    {!selectedNotice.image && <div className="flex justify-end"><button onClick={() => setSelectedNotice(null)} className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text-muted/60"><X size={20} /></button></div>}
                     <div className="flex flex-col gap-3">
                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center text-white">{getNoticeIcon(selectedNotice.category)}</div>
+                          <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center text-primary">{getNoticeIcon(selectedNotice.category)}</div>
                           <div>
                              <span className="text-[10px] text-accent font-bold uppercase tracking-widest">{selectedNotice.category}</span>
-                             <h2 className="text-2xl font-display font-bold text-white tracking-tight leading-none mt-1">{selectedNotice.title}</h2>
+                             <h2 className="text-2xl font-display font-bold text-text tracking-tight leading-none mt-1">{selectedNotice.title}</h2>
                           </div>
                        </div>
-                       <div className="flex items-center gap-4 text-white/30 text-[10px] font-bold uppercase tracking-widest mt-2">
+                       <div className="flex items-center gap-4 text-text-muted text-[10px] font-bold uppercase tracking-widest mt-2">
                           <div className="flex items-center gap-1.5"><Clock size={12} /> {selectedNotice.date}</div>
                           <div className="flex items-center gap-1.5"><Megaphone size={12} /> {selectedNotice.author}</div>
                        </div>
                     </div>
-                    <p className="text-white/70 text-base leading-relaxed">{selectedNotice.content}</p>
-                    <div className="flex flex-col gap-4 pt-6 border-t border-white/10">
-                       <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
+                    <p className="text-text/70 text-base leading-relaxed">{selectedNotice.content}</p>
+                    <div className="flex flex-col gap-4 pt-6 border-t border-border">
+                       <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-text-muted text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
                        <button 
                          onClick={() => {
                             toast.loading("Generando descarga...");
                             setTimeout(() => toast.success("Documento descargado con éxito"), 2000);
                          }}
-                         className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between hover:bg-white/10 transition-all text-left group"
+                         className="w-full bg-surface-2 border border-border rounded-2xl p-4 flex items-center justify-between hover:bg-surface-2/85 transition-all text-left group"
                        >
                           <div className="flex items-center gap-3">
                              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400"><ShieldAlert size={18} /></div>
                              <div>
-                                <p className="text-white text-sm font-bold">Circular_Informativa.pdf</p>
-                                <p className="text-white/20 text-[10px] uppercase font-bold tracking-tighter">PDF • 1.2 MB</p>
+                                 <p className="text-text text-sm font-bold">Circular_Informativa.pdf</p>
+                                 <p className="text-text-muted text-[10px] uppercase font-bold tracking-tighter">PDF • 1.2 MB</p>
                              </div>
                           </div>
-                          <Download size={18} className="text-white/40 group-hover:text-accent transition-all" />
+                          <Download size={18} className="text-text-muted/60 group-hover:text-accent transition-all" />
                        </button>
                     </div>
                     <button 
@@ -515,6 +514,9 @@ export default function CarteleraPage() {
                  </div>
               </div>
            </div>
+        </div>           </div>
+              </div>
+           </div>
         </div>
       )}
       
@@ -528,12 +530,12 @@ export default function CarteleraPage() {
                <MessageCircle size={28} />
                
                {/* Status Indicator Dot */}
-               <div className={`absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full border-4 border-[#05020a] flex items-center justify-center ${isAdminOnline ? 'bg-emerald-500' : 'bg-red-500'}`}>
+               <div className={`absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full border-4 border-primary flex items-center justify-center ${isAdminOnline ? 'bg-emerald-500' : 'bg-red-500'}`}>
                   {isAdminOnline && <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-40" />}
                </div>
                
                {/* Floating Label (Appears on Hover) */}
-               <div className="absolute right-full mr-4 bg-white/10 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-2xl opacity-0 group-hover:opacity-100 transition-all text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap pointer-events-none translate-x-4 group-hover:translate-x-0">
+               <div className="absolute right-full mr-4 bg-surface-2 backdrop-blur-xl border border-border px-4 py-2 rounded-2xl opacity-0 group-hover:opacity-100 transition-all text-text text-[10px] font-bold uppercase tracking-widest whitespace-nowrap pointer-events-none translate-x-4 group-hover:translate-x-0">
                   Chat Administrativo
                </div>
             </button>
@@ -543,18 +545,18 @@ export default function CarteleraPage() {
       {/* MODAL: ADMINISTRATIVE CHAT */}
       {isChatOpen && (
         <div className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-md flex items-end justify-center animate-in fade-in duration-300 isolate">
-           <div className="w-full max-w-[430px] h-[90vh] bg-[#0c0816] rounded-t-[40px] border-t border-white/10 flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500 shadow-2xl">
+           <div className="w-full max-w-[430px] h-[90vh] bg-primary dark:bg-[#0c0816] rounded-t-[40px] border-t border-border flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500 shadow-2xl">
               
               {/* Chat Header */}
-              <div className="p-6 flex justify-between items-center border-b border-white/5 bg-white/5 backdrop-blur-2xl">
+              <div className="p-6 flex justify-between items-center border-b border-border bg-surface-2 backdrop-blur-2xl">
                  <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 relative">
                        <Building2 size={24} className="text-emerald-500" />
-                       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0c0816] ${isAdminOnline ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
+                       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-primary dark:border-[#0c0816] ${isAdminOnline ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
                     </div>
                     <div className="flex flex-col">
-                       <h3 className="text-sm font-bold text-white tracking-tight">Atención al Copropietario</h3>
-                       <span className="text-[10px] text-white/40 font-medium uppercase tracking-widest flex items-center gap-1.5">
+                       <h3 className="text-sm font-bold text-text tracking-tight">Atención al Copropietario</h3>
+                       <span className="text-[10px] text-text-muted font-medium uppercase tracking-widest flex items-center gap-1.5">
                           {isAdminOnline ? (
                             <>
                               <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
@@ -566,7 +568,7 @@ export default function CarteleraPage() {
                  </div>
                  <button 
                    onClick={() => setIsChatOpen(false)}
-                   className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 transition-all active:scale-90"
+                   className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-text-muted hover:bg-surface-2/80 transition-all active:scale-90"
                  >
                     <X size={20} />
                  </button>
@@ -575,7 +577,7 @@ export default function CarteleraPage() {
               {/* Chat Body (Messages) */}
               <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scroll-smooth hide-scrollbar bg-linear-to-b from-transparent to-black/20">
                  {chatMessages.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-40">
+                    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text-muted/40">
                        <MessageCircle size={48} className="text-emerald-500/50" />
                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-center max-w-[200px] leading-relaxed">
                           Envía un mensaje para iniciar una conversación directa con la administración
@@ -585,11 +587,11 @@ export default function CarteleraPage() {
                     <div key={idx} className={`flex ${m.esDeAdmin ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                        <div className={`max-w-[85%] p-4 rounded-3xl text-sm leading-relaxed ${
                          m.esDeAdmin 
-                           ? 'bg-white/5 border border-white/10 text-white rounded-tl-none shadow-sm' 
+                           ? 'bg-surface-2 border border-border text-text rounded-tl-none shadow-sm' 
                            : 'bg-emerald-500 text-white rounded-tr-none shadow-lg shadow-emerald-500/10 font-medium'
                        }`}>
                           {m.mensaje}
-                          <div className={`text-[8px] mt-2 opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-start' : 'justify-end font-normal'}`}>
+                          <div className={`text-[8px] mt-2 opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-start text-text-muted' : 'justify-end font-normal text-white'}`}>
                              {new Date(m.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                        </div>
@@ -599,16 +601,16 @@ export default function CarteleraPage() {
               </div>
 
               {/* Chat Input */}
-              <div className="p-6 bg-white/5 border-t border-white/5 pb-10">
+              <div className="p-6 bg-surface-2 border-t border-border pb-10">
                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-h-[56px] bg-white/5 border border-white/10 rounded-[28px] flex items-center px-6 transition-all focus-within:border-emerald-500/50 focus-within:bg-white/10 shadow-inner">
+                    <div className="flex-1 min-h-[56px] bg-primary border border-border rounded-[28px] flex items-center px-6 transition-all focus-within:border-emerald-500/50 focus-within:bg-primary/80 shadow-inner">
                        <input 
                          type="text"
                          value={newMessage}
                          onChange={(e) => setNewMessage(e.target.value)}
                          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                          placeholder="Describe tu solicitud o duda..."
-                         className="w-full bg-transparent border-none text-white text-sm focus:ring-0 placeholder:text-white/20"
+                         className="w-full bg-transparent border-none text-text text-sm focus:ring-0 placeholder:text-text-muted/40"
                        />
                     </div>
                     <button 
@@ -619,7 +621,7 @@ export default function CarteleraPage() {
                        {isSending ? <Loader2 size={24} className="animate-spin" /> : <ArrowRight size={24} className="group-hover:translate-x-0.5 transition-transform" />}
                     </button>
                  </div>
-                 <div className="mt-4 flex items-center justify-center gap-2 opacity-20">
+                 <div className="mt-4 flex items-center justify-center gap-2 text-text-muted/30">
                     <ShieldAlert size={10} />
                     <p className="text-[9px] font-bold uppercase tracking-widest">Conexión Segura & Encriptada</p>
                  </div>

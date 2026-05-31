@@ -61,7 +61,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} ${montserrat.variable}`}>
-      <body className="antialiased selection:bg-primary/20 bg-[#05020a] min-h-screen text-white">
+      <body className="antialiased selection:bg-primary/20 min-h-screen">
         <Providers>
           <SplashScreen />
           {children}

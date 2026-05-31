@@ -91,61 +91,61 @@ export default function PaqueteriaPage() {
     }
   };
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-white/20 border-t-accent rounded-full animate-spin" /></div>;
+  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
        <ProfileHeader />
        
-       <div className="fade-up liquid-glass rounded-3xl p-6 border border-white/10 shadow-2xl">
+       <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                 <ScanLine size={24} />
              </div>
              <div>
-               <h2 className="text-xl font-bold text-white">Recepción de Envíos</h2>
-               <p className="text-xs text-white/50">Mensajería y domicilios</p>
+                <h2 className="text-xl font-bold text-text">Recepción de Envíos</h2>
+                <p className="text-xs text-text-muted">Mensajería y domicilios</p>
              </div>
           </div>
           
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-white/50 font-bold uppercase tracking-widest pl-1">Destinatario</label>
+                <label className="text-[10px] text-text-muted font-bold uppercase tracking-widest pl-1">Destinatario</label>
                 <select 
                    value={formData.usuarioId} 
                    onChange={e => setFormData({...formData, usuarioId: e.target.value})}
-                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white focus:outline-none focus:border-emerald-500"
+                   className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-emerald-500"
                 >
-                   <option value="">Seleccione apartamento/residente...</option>
+                   <option value="" className="bg-primary text-text">Seleccione apartamento/residente...</option>
                    {residentes.map(r => (
-                     <option key={r.id} value={r.id} className="text-black">{r.unidad.torre} - Apto {r.unidad.numero} ({r.nombre})</option>
+                     <option key={r.id} value={r.id} className="bg-primary text-text">{r.unidad.torre} - Apto {r.unidad.numero} ({r.nombre})</option>
                    ))}
                 </select>
              </div>
 
              <div className="flex gap-4">
-                 <div className="flex-1 flex flex-col gap-1.5">
-                    <label className="text-[10px] text-white/50 font-bold uppercase tracking-widest pl-1">Empresa / Remitente</label>
-                    <input 
-                       required
-                       type="text" 
-                       placeholder="Amazon, Rappi..." 
-                       value={formData.remitente}
-                       onChange={e => setFormData({...formData, remitente: e.target.value})}
-                       className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white focus:outline-none focus:border-emerald-500" 
-                    />
-                 </div>
+                  <div className="flex-1 flex flex-col gap-1.5">
+                     <label className="text-[10px] text-text-muted font-bold uppercase tracking-widest pl-1">Empresa / Remitente</label>
+                     <input 
+                        required
+                        type="text" 
+                        placeholder="Amazon, Rappi..." 
+                        value={formData.remitente}
+                        onChange={e => setFormData({...formData, remitente: e.target.value})}
+                        className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-emerald-500" 
+                     />
+                  </div>
              </div>
 
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-white/50 font-bold uppercase tracking-widest pl-1">Descripción Rápida</label>
+                <label className="text-[10px] text-text-muted font-bold uppercase tracking-widest pl-1">Descripción Rápida</label>
                 <input 
                    required
                    type="text" 
                    placeholder="Caja mediana, Documento..." 
                    value={formData.descripcion}
                    onChange={e => setFormData({...formData, descripcion: e.target.value})}
-                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white focus:outline-none focus:border-emerald-500" 
+                   className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-emerald-500" 
                 />
              </div>
 
@@ -158,29 +158,29 @@ export default function PaqueteriaPage() {
        {/* Inventario Portería */}
        <div className="fade-up flex flex-col gap-4">
           <div className="flex justify-between items-center ml-2">
-             <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2"><Clock size={16} className="text-emerald-400"/> Inventario Portería</h3>
-             <span className="bg-white/10 text-white/50 text-[10px] px-2 py-0.5 rounded-full font-bold">{paquetes.length} ÍTEMS</span>
+             <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><Clock size={16} className="text-emerald-400"/> Inventario Portería</h3>
+             <span className="bg-surface-2 text-text-muted text-[10px] px-2 py-0.5 rounded-full font-bold">{paquetes.length} ÍTEMS</span>
           </div>
           
-          {paquetes.length === 0 && <p className="text-white/30 text-sm text-center py-6">Portería libre de paquetes.</p>}
+          {paquetes.length === 0 && <p className="text-text-muted text-sm text-center py-6">Portería libre de paquetes.</p>}
           
           {paquetes.map((p, i) => (
-             <div key={i} className="liquid-glass p-5 rounded-3xl border border-white/5 flex flex-col gap-4 relative overflow-hidden">
+             <div key={i} className="liquid-glass-card p-5 rounded-3xl border border-border flex flex-col gap-4 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none translate-x-1/2 -translate-y-1/2"></div>
                 
                 <div className="flex justify-between items-start relative z-10">
                    <div>
-                     <p className="text-white font-bold text-lg leading-tight">{p.descripcion}</p>
-                     <p className="text-emerald-400 font-bold text-[10px] tracking-widest uppercase">{p.remitente}</p>
+                     <p className="text-text font-bold text-lg leading-tight">{p.descripcion}</p>
+                     <p className="text-emerald-500 dark:text-emerald-400 font-bold text-[10px] tracking-widest uppercase">{p.remitente}</p>
                    </div>
-                   <div className="bg-white/5 px-3 py-1 rounded-full border border-white/10 text-[10px] font-bold text-white/60">
+                   <div className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text-muted">
                       Hace {Math.floor((new Date().getTime() - new Date(p.fechaLlegada).getTime()) / 60000)} min
                    </div>
                 </div>
-                <div className="flex items-center gap-2 text-white/50 text-xs font-semibold relative z-10">
+                <div className="flex items-center gap-2 text-text-muted text-xs font-semibold relative z-10">
                    <MapPin size={14} /> {p.usuario?.unidad?.torre} - Apto {p.usuario?.unidad?.numero} ({p.usuario?.nombre})
                 </div>
-                <button onClick={() => markAsDelivered(p.id)} className="w-full mt-2 py-3 bg-white/5 border border-white/10 hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:text-emerald-400 transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest relative z-10">
+                <button onClick={() => markAsDelivered(p.id)} className="w-full mt-2 py-3 bg-surface-2 border border-border hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest relative z-10 text-text">
                    <CheckCircle2 size={16} /> Marcar como Entregado
                 </button>
              </div>

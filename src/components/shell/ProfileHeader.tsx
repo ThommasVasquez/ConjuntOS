@@ -136,15 +136,15 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
             </div>
           )}
         </div>
-        <div className="flex flex-col">
+          <div className="flex flex-col">
           {showWelcome && (
             <div className="flex items-center gap-1.5 leading-none mb-1">
-              <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-text/50 text-[10px] font-bold uppercase tracking-widest">
                 {userData.gender === 'masculino' ? 'Bienvenido' : userData.gender === 'neutro' ? 'Bienvenide' : 'Bienvenida'} 👋
               </span>
             </div>
           )}
-          <h1 className="text-white text-xl font-display font-bold tracking-tight text-glow leading-none">{userData.name || 'Residente'}</h1>
+          <h1 className="text-text text-xl font-display font-bold tracking-tight text-glow leading-none">{userData.name || 'Residente'}</h1>
         </div>
       </div>
 
@@ -158,24 +158,24 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         </button>
 
         {isNotificationsOpen && (
-          <div className="absolute top-14 right-0 w-[280px] liquid-glass backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
-             <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                <span className="text-sm font-bold text-white tracking-wide">Notificaciones</span>
+          <div className="absolute top-14 right-0 w-[280px] liquid-glass backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-border overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
+             <div className="p-4 border-b border-border bg-surface/50 flex justify-between items-center">
+                <span className="text-sm font-bold text-text tracking-wide">Notificaciones</span>
                 <button className="text-[10px] text-accent font-bold uppercase hover:underline">Limpiar</button>
              </div>
              <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar">
                 {notificationsList.map((notif) => (
-                   <div key={notif.id} className="w-full px-5 py-3.5 flex items-start gap-4 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 relative">
+                   <div key={notif.id} className="w-full px-5 py-3.5 flex items-start gap-4 hover:bg-text/5 transition-colors border-b border-border last:border-0 relative">
                       {notif.isUnread && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent"></span>}
-                      <div className={`mt-0.5 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center ${notif.color}`}>
+                      <div className={`mt-0.5 w-8 h-8 rounded-full bg-text/5 flex items-center justify-center ${notif.color}`}>
                          {notif.icon}
                       </div>
                       <div className="flex flex-col flex-1">
                          <div className="flex justify-between items-center mb-0.5">
-                            <span className="text-[11px] font-bold text-white">{notif.title}</span>
-                            <span className="text-[8px] text-white/30">{notif.time}</span>
+                            <span className="text-[11px] font-bold text-text">{notif.title}</span>
+                            <span className="text-[8px] text-text/30">{notif.time}</span>
                          </div>
-                         <p className="text-[10px] text-white/50 leading-tight">{notif.desc}</p>
+                         <p className="text-[10px] text-text/50 leading-tight">{notif.desc}</p>
                       </div>
                    </div>
                 ))}

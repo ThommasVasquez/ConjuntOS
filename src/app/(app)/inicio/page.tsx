@@ -331,14 +331,14 @@ function HomeResidente() {
             onClick={() => setIsSearchOpen(true)}
             className="relative flex-1 group text-left"
           >
-            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-hover:text-accent transition-colors" />
-            <div className="w-full bg-[#1a1333] border border-white/5 rounded-[24px] py-4 pl-14 pr-6 text-sm text-white/30 hover:border-accent/30 hover:bg-[#1f1640] transition-all shadow-inner cursor-pointer select-none">
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text/30 group-hover:text-accent transition-colors" />
+            <div className="w-full bg-primary-light/50 border border-border rounded-[24px] py-4 pl-14 pr-6 text-sm text-text/30 hover:border-accent/30 hover:bg-primary-light/80 transition-all shadow-inner cursor-pointer select-none">
               Buscar o preguntar algo...
             </div>
           </button>
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="w-14 h-14 rounded-[22px] bg-[#241a4a] border border-white/5 flex items-center justify-center text-white/60 hover:text-accent hover:border-accent/30 transition-all active:scale-95 shadow-lg"
+            className="w-14 h-14 rounded-[22px] bg-primary-light/80 border border-border flex items-center justify-center text-text/60 hover:text-accent hover:border-accent/30 transition-all active:scale-95 shadow-lg"
           >
             <SlidersHorizontal size={20} />
           </button>
@@ -383,8 +383,8 @@ function HomeResidente() {
       {/* 🧭 CATEGORÍAS PREMIUM */}
       <section className="fade-up-home flex flex-col gap-4">
         <div className="flex justify-between items-center px-1">
-           <h2 className="text-xs font-bold uppercase tracking-widest text-white/30">Navegación</h2>
-           <ArrowRight size={14} className="text-white/20" />
+           <h2 className="text-xs font-bold uppercase tracking-widest text-text/30">Navegación</h2>
+           <ArrowRight size={14} className="text-text/20" />
         </div>
         <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 px-1 -mx-1">
           {categories.map((cat, idx) => (
@@ -401,12 +401,12 @@ function HomeResidente() {
           ))}
         </div>
       </section>
-
+ 
       {/* NOTIFICATIONS BANNER */}
       {notificaciones.length > 0 && (
           <section className="fade-up-home flex flex-col gap-3">
               <div className="flex justify-between items-center px-1">
-                  <h2 className="text-white font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                  <h2 className="text-text font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
                       <Bell size={14} className="text-accent animate-pulse" /> Avisos Recientes
                   </h2>
                   <span className="text-accent text-[10px] font-bold">{notificaciones.length} nuevos</span>
@@ -416,14 +416,14 @@ function HomeResidente() {
                       <div 
                         key={n.id} 
                         onClick={() => markAsRead(n.id)}
-                        className="min-w-[280px] bg-linear-to-r from-accent/20 to-purple-500/10 border border-accent/30 rounded-[22px] p-4 flex flex-col gap-2 cursor-pointer hover:bg-white/5 transition-all shadow-lg shadow-accent/5 group"
+                        className="min-w-[280px] bg-linear-to-r from-accent/20 to-purple-500/10 border border-accent/30 rounded-[22px] p-4 flex flex-col gap-2 cursor-pointer hover:bg-text/5 transition-all shadow-lg shadow-accent/5 group"
                       >
                           <div className="flex justify-between items-start">
                               <span className="text-[10px] font-black text-accent uppercase tracking-tighter">{n.tipo}</span>
                               <div className="w-2 h-2 rounded-full bg-accent group-hover:scale-150 transition-transform" />
                           </div>
-                          <h3 className="text-white text-sm font-bold truncate">{n.titulo}</h3>
-                          <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">{n.mensaje}</p>
+                          <h3 className="text-text text-sm font-bold truncate">{n.titulo}</h3>
+                          <p className="text-[11px] text-text/60 line-clamp-2 leading-relaxed">{n.mensaje}</p>
                       </div>
                   ))}
               </div>
@@ -471,15 +471,15 @@ function HomeResidente() {
       {/* SOCIAL FEED */}
       <section className="flex flex-col gap-6">
          <div className="flex justify-between items-end mb-1 fade-up-home">
-           <h3 className="text-white font-display text-lg font-bold tracking-tight">Novedades</h3>
-           <span className="text-white/30 text-[10px] font-bold uppercase tracking-widest">Hoy</span>
+           <h3 className="text-text font-display text-lg font-bold tracking-tight">Novedades</h3>
+           <span className="text-text/40 text-[10px] font-bold uppercase tracking-widest">Hoy</span>
          </div>
-         <section className="fade-up-home flex justify-between items-center py-4 border-t border-white/5 mt-4">
+         <section className="fade-up-home flex justify-between items-center py-4 border-t border-border mt-4">
           <div className="flex flex-col">
-              <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">ConjuntOS v3.2</span>
-              <span className="text-[9px] text-white/10 uppercase">Resident Edition</span>
+              <span className="text-[10px] font-black text-text/30 uppercase tracking-widest">ConjuntOS v3.2</span>
+              <span className="text-[9px] text-text/20 uppercase">Resident Edition</span>
           </div>
-          <button onClick={() => router.push('/perfil')} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors">
+          <button onClick={() => router.push('/perfil')} className="flex items-center gap-2 text-text/40 hover:text-text transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-tighter">Mi Cuenta</span>
               <ArrowRight size={14} />
           </button>
@@ -495,10 +495,10 @@ function HomeResidente() {
              {isLoadingMore ? (
                <>
                  <div className="w-8 h-8 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
-                 <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest animate-pulse">Cargando novedades...</span>
+                 <span className="text-[10px] font-bold text-text/30 uppercase tracking-widest animate-pulse">Cargando novedades...</span>
                </>
              ) : (
-               <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+               <div className="w-1.5 h-1.5 rounded-full bg-border" />
              )}
           </div>
        </section>
@@ -528,7 +528,7 @@ function PostCard({ post }: { post: FeedItem }) {
   }, []);
 
   return (
-    <div className="fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t border-white/20 transition-all active:scale-[0.98] relative overflow-hidden">
+    <div className="fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t border-border/20 transition-all active:scale-[0.98] relative overflow-hidden">
       
       {/* AD INDICATOR (Badge) */}
       {post.type === 'AD' && (
@@ -539,24 +539,24 @@ function PostCard({ post }: { post: FeedItem }) {
 
       <div className="p-5 flex justify-between items-center relative z-10">
          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 font-bold text-xs text-white ${post.type === 'AD' ? 'bg-accent text-primary' : 'bg-linear-to-tr from-purple-500 to-pink-500'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs ${post.type === 'AD' ? 'bg-accent text-primary' : 'bg-linear-to-tr from-purple-500 to-pink-500 text-white'}`}>
                {post.type === 'AD' ? 'AD' : (post.category?.[0] || 'A')}
             </div>
             <div>
-               <h4 className="text-sm font-bold text-white leading-none mb-1">{post.type === 'AD' ? post.brand : post.category}</h4>
-               <p className="text-[10px] text-white/40 flex items-center gap-1 font-medium">
+               <h4 className="text-sm font-bold text-text leading-none mb-1">{post.type === 'AD' ? post.brand : post.category}</h4>
+               <p className="text-[10px] text-text/50 flex items-center gap-1 font-medium">
                   {post.type === 'AD' ? 'Publicidad' : `Hace ${post.id} horas`} • {post.tag}
                </p>
             </div>
          </div>
-         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-8 h-8 rounded-full flex items-center justify-center text-white/30 hover:text-white">
+         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-8 h-8 rounded-full flex items-center justify-center text-text/40 hover:text-text">
             <MoreHorizontal size={18} />
          </button>
       </div>
 
       <div className="px-5 pb-2">
-         <h2 className="text-xl font-display font-semibold text-white mb-2 leading-tight">{post.title}</h2>
-         <p className="text-sm text-white/70 leading-relaxed font-light mb-4">{post.content}</p>
+         <h2 className="text-xl font-display font-semibold text-text mb-2 leading-tight">{post.title}</h2>
+         <p className="text-sm text-text/70 leading-relaxed font-light mb-4">{post.content}</p>
          
          {post.type === 'AD' && post.cta && (
             <button className="mb-4 px-6 py-2.5 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-accent/20">
@@ -572,8 +572,8 @@ function PostCard({ post }: { post: FeedItem }) {
          </div>
       )}
 
-      <div className="p-4 flex items-center justify-between border-t border-white/5 bg-white/5 backdrop-blur-xl mt-auto rounded-b-[32px]">
-         <button className="text-white/50 text-[11px] flex items-center gap-1.5 hover:text-white transition-colors font-semibold uppercase tracking-wider">
+      <div className="p-4 flex items-center justify-between border-t border-border bg-surface/40 backdrop-blur-xl mt-auto rounded-b-[32px]">
+         <button className="text-text/50 text-[11px] flex items-center gap-1.5 hover:text-text transition-colors font-semibold uppercase tracking-wider">
             {post.type === 'AD' ? 'Más Info' : '¿Dudas?'} <Bell size={12} />
          </button>
          <button className="text-accent text-[11px] font-bold flex items-center gap-1.5 hover:accent-glow transition-all uppercase tracking-widest">
@@ -589,9 +589,9 @@ function HomeVigilante() {
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <ProfileHeader />
-      <div className="liquid-glass rounded-3xl p-6 border border-white/10 shadow-2xl">
-        <h2 className="text-2xl font-bold text-white mb-2">Central de Guardia</h2>
-        <p className="text-white/50 text-sm mb-6">Módulo de control de acceso y paquetería.</p>
+      <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
+        <h2 className="text-2xl font-bold text-text mb-2">Central de Guardia</h2>
+        <p className="text-text/50 text-sm mb-6">Módulo de control de acceso y paquetería.</p>
       </div>
     </div>
   );
@@ -606,7 +606,7 @@ function HomeAdmin() {
       {/* 🔴 LIVE ASSEMBLY ADMIN CONTROL CARD */}
       <div 
         onClick={() => router.push('/asamblea')}
-        className="w-full bg-linear-to-r from-purple-900/40 via-accent/10 to-purple-950/40 rounded-[28px] p-6 border border-accent/20 shadow-2xl text-white cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
+        className="w-full bg-linear-to-r from-purple-900/40 via-accent/10 to-purple-950/40 rounded-[28px] p-6 border border-accent/20 shadow-2xl text-text cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
       >
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent">
@@ -615,7 +615,7 @@ function HomeAdmin() {
           <div>
             <span className="text-[9px] text-accent font-black uppercase tracking-widest block mb-0.5">Control de Reunión</span>
             <h3 className="text-lg font-display font-bold leading-tight">Asamblea General Activa</h3>
-            <p className="text-white/40 text-xs mt-0.5">Abre la mesa de discusión, administra turnos y lee sugerencias de la IA.</p>
+            <p className="text-text/40 text-xs mt-0.5">Abre la mesa de discusión, administra turnos y lee sugerencias de la IA.</p>
           </div>
         </div>
         <button className="bg-accent text-primary text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 group-hover:bg-accent/80 cursor-pointer">
@@ -623,7 +623,7 @@ function HomeAdmin() {
         </button>
       </div>
 
-      <div className="liquid-glass rounded-3xl p-6 border border-white/10 shadow-2xl text-white">
+      <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl text-text">
         <h2 className="text-2xl font-bold mb-2">Panel Administrativo</h2>
         <button onClick={() => router.push('/admin-novedades')} className="mt-4 bg-accent text-primary px-6 py-3 rounded-2xl font-bold">Gestionar Novedades</button>
       </div>

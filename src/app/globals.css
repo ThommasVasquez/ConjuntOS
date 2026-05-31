@@ -29,14 +29,27 @@
   --color-border: rgba(255, 255, 255, 0.1); /* Subtle white border for glass */
 }
 
+/* Modo Claro override variables */
+.light {
+  --color-primary: #F8FAFC;       /* Slate 50 limpio */
+  --color-primary-light: #EEF2F6; /* Slate/Indigo muy claro para fondos de tarjetas */
+  --color-accent: #6366F1;        /* Indigo/Azul Real */
+  --color-surface: rgba(255, 255, 255, 0.7); /* Vidrio blanco translúcido */
+  --color-surface-2: rgba(99, 102, 241, 0.05); /* Fondo de entrada o botón sutil */
+  --color-text: #0F172A;          /* Slate 900 */
+  --color-text-muted: #475569;    /* Slate 600 */
+  --color-border: rgba(15, 23, 42, 0.08); /* Bordes sutiles en modo claro */
+}
+
 /* Base resets & view transitions */
 html, body {
   margin: 0;
   padding: 0;
   /* Exterior background simulates table around phone */
-  background-color: #05020a; 
+  background-color: var(--color-primary); 
   color: var(--color-text);
   font-family: 'Inter', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* App Shell container */
@@ -46,8 +59,9 @@ html, body {
   min-height: 100dvh;
   position: relative;
   overflow: hidden; /* Hide horizontal scroll */
-  background: #05020a;
+  background: var(--color-primary);
   box-shadow: 0 0 30px rgba(0,0,0,0.5); /* Desktop device shadow */
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Native view transitions */
@@ -74,6 +88,7 @@ html, body {
     0 10px 40px -10px rgba(0,0,0,0.5),
     inset 0 1px 0 rgba(255,255,255,0.2),
     inset 0 -1px 0 rgba(0,0,0,0.2);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .liquid-glass-card {
@@ -82,6 +97,22 @@ html, body {
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Light mode overrides for glass styles */
+.light .liquid-glass {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  box-shadow: 
+    0 10px 40px -10px rgba(99, 102, 241, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.light .liquid-glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(238, 242, 246, 0.8) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.03);
 }
 
 /* Glowing text */
@@ -109,6 +140,14 @@ html, body {
   min-width: 320px !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
   letter-spacing: -0.01em !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.light .liquid-glass-toast {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(99, 102, 241, 0.15) !important;
+  color: #0f172a !important;
+  box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.1) !important;
 }
 
 [data-type='success'].liquid-glass-toast {

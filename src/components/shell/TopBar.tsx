@@ -53,7 +53,7 @@ export default function TopBar() {
   const isHideTopBar = isHome || pathname === "/perfil" || pathname === "/reservas" || pathname === "/citofonia" || pathname === "/parqueadero" || pathname === "/cartelera" || pathname === "/inmobiliaria" || pathname === "/pagos" || pathname === "/pqrs";
 
   return (
-    <header className={`fixed top-0 w-full max-w-[430px] z-100 flex items-start justify-between px-6 pt-10 pb-4 bg-gradient-to-b from-[#1a0b2e]/90 to-transparent transition-all duration-500 ${isHideTopBar ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
+    <header className={`fixed top-0 w-full max-w-[430px] z-100 flex items-start justify-between px-6 pt-10 pb-4 bg-gradient-to-b from-primary/90 to-transparent transition-all duration-500 ${isHideTopBar ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
       
       {/* Título en la Izquierda (Glass Style) */}
       <div className="flex flex-col">
@@ -62,44 +62,44 @@ export default function TopBar() {
         </div>
         <div className="flex items-center gap-3">
           {!isHome && (
-            <button onClick={() => router.back()} className="text-white hover:text-accent transition-colors" aria-label="Volver atrás">
+            <button onClick={() => router.back()} className="text-text hover:text-accent transition-colors animate-fade-in" aria-label="Volver atrás">
               <ChevronLeft size={24} />
             </button>
           )}
           <h1 
             ref={titleRef}
-            className="text-white font-display font-semibold text-2xl tracking-wide text-glow"
+            className="text-text font-display font-semibold text-2xl tracking-wide text-glow"
             style={{ viewTransitionName: 'page-title' }}
           >
             {title}
           </h1>
         </div>
       </div>
-
+      
       {/* Botones Flotantes Circulares Liquid Glass */}
       <div className="flex items-center gap-3">
-        <button className="w-10 h-10 rounded-full liquid-glass flex items-center justify-center text-white/90 hover:text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(217,70,239,0.2)]">
+        <button className="w-10 h-10 rounded-full liquid-glass flex items-center justify-center text-text/90 hover:text-text hover:scale-105 active:scale-95 transition-all shadow-accent/20">
           <Search size={18} />
         </button>
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="relative w-10 h-10 rounded-full liquid-glass flex items-center justify-center text-white/90 hover:text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(217,70,239,0.2)]"
+            className="relative w-10 h-10 rounded-full liquid-glass flex items-center justify-center text-text/90 hover:text-text hover:scale-105 active:scale-95 transition-all shadow-accent/20"
           >
             <MoreHorizontal size={20} />
             {/* Badge sutil */}
-            <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-accent rounded-full border border-[#331A4D] animate-pulse"></span>
+            <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-accent rounded-full border border-primary animate-pulse"></span>
           </button>
           
           {/* Dropdown Menu Dinámico */}
           {dropdownOpen && (
-            <div className="absolute top-12 right-0 w-48 liquid-glass backdrop-blur-3xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden flex flex-col z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute top-12 right-0 w-48 liquid-glass backdrop-blur-3xl rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col z-50 animate-in fade-in slide-in-from-top-2 duration-200">
               {pathname === "/perfil" ? (
                 <>
-                  <button onClick={() => { router.push('?modal=edit'); setDropdownOpen(false); }} className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors border-b border-white/5 flex items-center gap-2">
+                  <button onClick={() => { router.push('?modal=edit'); setDropdownOpen(false); }} className="w-full text-left px-4 py-3 text-sm text-text hover:bg-text/10 transition-colors border-b border-border flex items-center gap-2">
                     Editar Perfil
                   </button>
-                  <button onClick={() => setDropdownOpen(false)} className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors border-b border-white/5 flex items-center gap-2">
+                  <button onClick={() => setDropdownOpen(false)} className="w-full text-left px-4 py-3 text-sm text-text hover:bg-text/10 transition-colors border-b border-border flex items-center gap-2">
                     Privacidad
                   </button>
                   <button onClick={() => {
@@ -109,16 +109,16 @@ export default function TopBar() {
                       success: "¡Hasta pronto!",
                       error: "Error al cerrar sesión"
                     });
-                  }} className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-white/10 transition-colors flex items-center gap-2">
+                  }} className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-text/10 transition-colors flex items-center gap-2">
                     <LogOut size={14} /> Cerrar Sesión
                   </button>
                 </>
               ) : (
                 <>
-                  <button onClick={() => setDropdownOpen(false)} className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors border-b border-white/5 flex items-center gap-2">
+                  <button onClick={() => setDropdownOpen(false)} className="w-full text-left px-4 py-3 text-sm text-text hover:bg-text/10 transition-colors border-b border-border flex items-center gap-2">
                     <Bell size={14} /> Notificaciones
                   </button>
-                  <button onClick={() => setDropdownOpen(false)} className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors flex items-center gap-2">
+                  <button onClick={() => setDropdownOpen(false)} className="w-full text-left px-4 py-3 text-sm text-text hover:bg-text/10 transition-colors flex items-center gap-2">
                     Soporte Técnico
                   </button>
                 </>
