@@ -331,8 +331,8 @@ function HomeResidente() {
             onClick={() => setIsSearchOpen(true)}
             className="relative flex-1 group text-left"
           >
-            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text/30 group-hover:text-accent transition-colors" />
-            <div className="w-full bg-primary-light/50 border border-border rounded-[24px] py-4 pl-14 pr-6 text-sm text-text/30 hover:border-accent/30 hover:bg-primary-light/80 transition-all shadow-inner cursor-pointer select-none">
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text/50 group-hover:text-accent transition-colors" />
+            <div className="w-full bg-primary-light/50 border border-border rounded-[24px] py-4 pl-14 pr-6 text-sm text-text/50 hover:border-accent/30 hover:bg-primary-light/80 transition-all shadow-inner cursor-pointer select-none">
               Buscar o preguntar algo...
             </div>
           </button>
@@ -359,7 +359,7 @@ function HomeResidente() {
             <div>
               <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest block">Sesión en Vivo</span>
               <h3 className="text-sm font-display font-bold text-white tracking-tight">Asamblea General Ordinaria</h3>
-              <p className="text-white/40 text-[9px] mt-0.5">Únete y participa en la votación del presupuesto 2026</p>
+              <p className="text-white/60 text-[9px] mt-0.5">Únete y participa en la votación del presupuesto 2026</p>
             </div>
           </div>
           <div className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-1">
@@ -383,8 +383,8 @@ function HomeResidente() {
       {/* 🧭 CATEGORÍAS PREMIUM */}
       <section className="fade-up-home flex flex-col gap-4">
         <div className="flex justify-between items-center px-1">
-           <h2 className="text-xs font-bold uppercase tracking-widest text-text/30">Navegación</h2>
-           <ArrowRight size={14} className="text-text/20" />
+           <h2 className="text-xs font-bold uppercase tracking-widest text-text/50">Navegación</h2>
+           <ArrowRight size={14} className="text-text/45" />
         </div>
         <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 px-1 -mx-1">
           {categories.map((cat, idx) => (
@@ -441,7 +441,7 @@ function HomeResidente() {
                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
                  <CreditCard size={14} className="text-white/70" />
                </div>
-               <span className="text-[10px] text-white/50 font-bold uppercase tracking-widest">Mi Cuota</span>
+               <span className="text-[10px] text-white/70 font-bold uppercase tracking-widest">Mi Cuota</span>
             </div>
             {financialData.totalDebt > 0 ? (
               <div className="px-2.5 py-1 rounded-full bg-accent/20 border border-accent/40 text-[10px] text-accent font-bold uppercase animate-pulse">Pendiente</div>
@@ -454,13 +454,13 @@ function HomeResidente() {
               <h2 className="text-2xl font-display font-bold text-white tracking-tight">
                 $ {financialData.totalDebt.toLocaleString()}
               </h2>
-              <p className="text-white/40 text-[10px] mt-0.5">
-                {financialData.totalDebt > 0 ? "Vence en 4 días • Abril 2026" : "Corte al día • Abril 2026"}
+              <p className="text-white/60 text-[10px] mt-0.5">
+                {financialData.totalDebt > 0 ? "Vence en 4 days • Abril 2026" : "Corte al día • Abril 2026"}
               </p>
             </div>
             <button 
               onClick={(e) => { e.stopPropagation(); router.push('/pagos'); }}
-              className="bg-white text-primary text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all relative z-20"
+              className="bg-white text-[#05020a] text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all relative z-20"
             >
               {financialData.totalDebt > 0 ? "Pagar Ahora" : "Ver Estado"}
             </button>
@@ -472,14 +472,14 @@ function HomeResidente() {
       <section className="flex flex-col gap-6">
          <div className="flex justify-between items-end mb-1 fade-up-home">
            <h3 className="text-text font-display text-lg font-bold tracking-tight">Novedades</h3>
-           <span className="text-text/40 text-[10px] font-bold uppercase tracking-widest">Hoy</span>
+           <span className="text-text/60 text-[10px] font-bold uppercase tracking-widest">Hoy</span>
          </div>
          <section className="fade-up-home flex justify-between items-center py-4 border-t border-border mt-4">
           <div className="flex flex-col">
-              <span className="text-[10px] font-black text-text/30 uppercase tracking-widest">ConjuntOS v3.2</span>
-              <span className="text-[9px] text-text/20 uppercase">Resident Edition</span>
+              <span className="text-[10px] font-black text-text/50 uppercase tracking-widest">ConjuntOS v3.2</span>
+              <span className="text-[9px] text-text/40 uppercase">Resident Edition</span>
           </div>
-          <button onClick={() => router.push('/perfil')} className="flex items-center gap-2 text-text/40 hover:text-text transition-colors">
+          <button onClick={() => router.push('/perfil')} className="flex items-center gap-2 text-text/60 hover:text-text transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-tighter">Mi Cuenta</span>
               <ArrowRight size={14} />
           </button>
@@ -544,19 +544,19 @@ function PostCard({ post }: { post: FeedItem }) {
             </div>
             <div>
                <h4 className="text-sm font-bold text-text leading-none mb-1">{post.type === 'AD' ? post.brand : post.category}</h4>
-               <p className="text-[10px] text-text/50 flex items-center gap-1 font-medium">
+               <p className="text-[10px] text-text/60 flex items-center gap-1 font-medium">
                   {post.type === 'AD' ? 'Publicidad' : `Hace ${post.id} horas`} • {post.tag}
                </p>
             </div>
          </div>
-         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-8 h-8 rounded-full flex items-center justify-center text-text/40 hover:text-text">
+         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-8 h-8 rounded-full flex items-center justify-center text-text/60 hover:text-text">
             <MoreHorizontal size={18} />
          </button>
       </div>
 
       <div className="px-5 pb-2">
          <h2 className="text-xl font-display font-semibold text-text mb-2 leading-tight">{post.title}</h2>
-         <p className="text-sm text-text/70 leading-relaxed font-light mb-4">{post.content}</p>
+         <p className="text-sm text-text/80 leading-relaxed font-normal mb-4">{post.content}</p>
          
          {post.type === 'AD' && post.cta && (
             <button className="mb-4 px-6 py-2.5 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-accent/20">
@@ -573,7 +573,7 @@ function PostCard({ post }: { post: FeedItem }) {
       )}
 
       <div className="p-4 flex items-center justify-between border-t border-border bg-surface/40 backdrop-blur-xl mt-auto rounded-b-[32px]">
-         <button className="text-text/50 text-[11px] flex items-center gap-1.5 hover:text-text transition-colors font-semibold uppercase tracking-wider">
+         <button className="text-text/60 text-[11px] flex items-center gap-1.5 hover:text-text transition-colors font-semibold uppercase tracking-wider">
             {post.type === 'AD' ? 'Más Info' : '¿Dudas?'} <Bell size={12} />
          </button>
          <button className="text-accent text-[11px] font-bold flex items-center gap-1.5 hover:accent-glow transition-all uppercase tracking-widest">
@@ -606,16 +606,16 @@ function HomeAdmin() {
       {/* 🔴 LIVE ASSEMBLY ADMIN CONTROL CARD */}
       <div 
         onClick={() => router.push('/asamblea')}
-        className="w-full bg-linear-to-r from-purple-900/40 via-accent/10 to-purple-950/40 rounded-[28px] p-6 border border-accent/20 shadow-2xl text-text cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
+        className="w-full bg-linear-to-r from-purple-950 via-purple-900 to-purple-950 rounded-[28px] p-6 border border-accent/20 shadow-2xl text-white cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
       >
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent">
             <span className="w-3.5 h-3.5 rounded-full bg-accent animate-ping" />
           </div>
           <div>
-            <span className="text-[9px] text-accent font-black uppercase tracking-widest block mb-0.5">Control de Reunión</span>
-            <h3 className="text-lg font-display font-bold leading-tight">Asamblea General Activa</h3>
-            <p className="text-text/40 text-xs mt-0.5">Abre la mesa de discusión, administra turnos y lee sugerencias de la IA.</p>
+            <span className="text-[9px] text-fuchsia-400 font-black uppercase tracking-widest block mb-0.5">Control de Reunión</span>
+            <h3 className="text-lg font-display font-bold leading-tight text-white">Asamblea General Activa</h3>
+            <p className="text-white/60 text-xs mt-0.5">Abre la mesa de discusión, administra turnos y lee sugerencias de la IA.</p>
           </div>
         </div>
         <button className="bg-accent text-primary text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 group-hover:bg-accent/80 cursor-pointer">

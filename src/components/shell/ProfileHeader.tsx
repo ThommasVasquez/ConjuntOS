@@ -114,9 +114,9 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   }, [status, userId]);
 
   const notificationsList = [
-    { id: 1, title: "Pago Recibido", desc: "Administración Abril 2026 procesada.", time: "Hace 5m", icon: <CheckCircle2 size={14} />, color: "text-emerald-400", isUnread: true },
-    { id: 2, title: "Paquete en Portería", desc: "Tienes un envío esperando.", time: "Hace 1h", icon: <Package size={14} />, color: "text-amber-400", isUnread: true },
-    { id: 3, title: "Mantenimiento", desc: "Lavado de tanques mañana.", time: "Hace 2h", icon: <AlertTriangle size={14} />, color: "text-primary", isUnread: false },
+    { id: 1, title: "Pago Recibido", desc: "Administración Abril 2026 procesada.", time: "Hace 5m", icon: <CheckCircle2 size={14} />, color: "text-success", isUnread: true },
+    { id: 2, title: "Paquete en Portería", desc: "Tienes un envío esperando.", time: "Hace 1h", icon: <Package size={14} />, color: "text-warning", isUnread: true },
+    { id: 3, title: "Mantenimiento", desc: "Lavado de tanques mañana.", time: "Hace 2h", icon: <AlertTriangle size={14} />, color: "text-danger", isUnread: false },
   ];
 
   return (
@@ -128,18 +128,18 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative liquid-status-halo`}>
           <div className="w-full h-full rounded-full overflow-hidden relative shadow-xl backdrop-blur-xl z-20">
             <Image src={profilePic} alt="User Avatar" width={56} height={56} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" unoptimized />
-            <div className="absolute inset-0 border border-white/10 rounded-full pointer-events-none" />
+            <div className="absolute inset-0 border border-border rounded-full pointer-events-none" />
           </div>
           {hasStory && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[#0d041a] z-30 flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-primary z-30 flex items-center justify-center">
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
             </div>
           )}
         </div>
-          <div className="flex flex-col">
+        <div className="flex flex-col">
           {showWelcome && (
             <div className="flex items-center gap-1.5 leading-none mb-1">
-              <span className="text-text/50 text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-text/60 text-[10px] font-bold uppercase tracking-widest">
                 {userData.gender === 'masculino' ? 'Bienvenido' : userData.gender === 'neutro' ? 'Bienvenide' : 'Bienvenida'} 👋
               </span>
             </div>
@@ -151,10 +151,10 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
       <div className="relative" ref={notificationsRef}>
         <button 
           onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-          className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-white/10 active:scale-95 ${isNotificationsOpen ? 'bg-accent text-white border-accent/50' : 'liquid-glass text-white/80 hover:text-white'}`}
+          className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-border active:scale-95 ${isNotificationsOpen ? 'bg-accent text-white border-accent/50' : 'liquid-glass text-text/80 hover:text-text'}`}
         >
           <Bell size={22} />
-          <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-[#1a0b2e] shadow-[0_0_10px_rgba(217,70,239,0.8)]"></span>
+          <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-primary shadow-[0_0_10px_rgba(217,70,239,0.8)]"></span>
         </button>
 
         {isNotificationsOpen && (

@@ -259,9 +259,9 @@ export default function CarteleraPage() {
 
   const getPriorityColor = (priority: string) => {
     switch(priority) {
-      case 'ALTA': return 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/20 dark:border-red-500/30';
-      case 'MEDIA': return 'bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30';
-      case 'BAJA': return 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30';
+      case 'ALTA': return 'bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30';
+      case 'MEDIA': return 'bg-orange-500/10 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30';
+      case 'BAJA': return 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30';
       default: return 'bg-surface-2 text-text-muted border-border';
     }
   };
@@ -281,9 +281,9 @@ export default function CarteleraPage() {
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">
                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> EN VIVO
                     </div>
-                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Asamblea General 2024</span>
+                    <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">Asamblea General 2024</span>
                  </div>
-                 <div className="flex items-center gap-1.5 text-white/60">
+                 <div className="flex items-center gap-1.5 text-white/80">
                     <Users size={12} />
                     <span className="text-[10px] font-mono">154</span>
                  </div>
@@ -291,7 +291,7 @@ export default function CarteleraPage() {
 
               <div className="flex flex-col gap-1 mb-5">
                  <h2 className="text-xl font-display font-bold text-white tracking-tight">Decisiones Conjuntas: Presupuesto Anual</h2>
-                 <p className="text-xs text-white/40">Participa en tiempo real y ejerce tu voto.</p>
+                 <p className="text-xs text-white/60">Participa en tiempo real y ejerce tu voto.</p>
               </div>
 
               <button 
@@ -384,7 +384,7 @@ export default function CarteleraPage() {
                  </div>
                  <div className="space-y-2">
                     <h4 className="text-lg font-bold text-white">Administrador en Línea</h4>
-                    <p className="text-xs text-white/40 leading-relaxed italic">"Presentando el informe de gestión 2023 y proyecciones presupuestarias para el periodo 2024..."</p>
+                    <p className="text-xs text-white/60 leading-relaxed italic">"Presentando el informe de gestión 2023 y proyecciones presupuestarias para el periodo 2024..."</p>
                  </div>
                  <div className="grid grid-cols-2 gap-3 w-full">
                     <div className="p-3 rounded-2xl bg-surface-2 border border-border flex flex-col items-center">
@@ -401,16 +401,16 @@ export default function CarteleraPage() {
               {/* Bottom UI Controls */}
               <div className="absolute bottom-40 left-6 right-6 flex items-center gap-3">
                   <div className="flex-1 h-12 bg-surface-2 rounded-2xl flex items-center px-4 border border-border">
-                    <span className="text-xs text-text-muted/40 italic">Enlace a documento adjunto...</span>
+                    <span className="text-xs text-white/60 italic">Enlace a documento adjunto...</span>
                   </div>
-                  <button className="w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center text-text-muted/60"><MessageSquare size={18} /></button>
+                  <button className="w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center text-text-muted/80"><MessageSquare size={18} /></button>
               </div>
            </div>
 
            {/* Live Chat Overlay (Simulated) */}
            <div className="h-[35vh] bg-black/40 backdrop-blur-3xl border-t border-white/10 flex flex-col w-full max-w-[430px]">
               <div className="px-6 py-3 border-b border-white/5 flex items-center justify-between">
-                 <span className="text-[10px] text-white/30 uppercase font-black tracking-widest">Participación en Vivo</span>
+                 <span className="text-[10px] text-white/60 uppercase font-black tracking-widest">Participación en Vivo</span>
                  <span className="text-[10px] text-emerald-400/60 font-mono">Chat Activado</span>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -418,7 +418,7 @@ export default function CarteleraPage() {
                    <div key={i} className="flex flex-col gap-1 animate-in fade-in slide-in-from-left duration-300">
                       <div className="flex items-center gap-2">
                          <span className="text-[10px] font-black text-accent/80 uppercase">{chat.user}</span>
-                         <span className="text-[8px] text-white/20 font-mono">{chat.time}</span>
+                         <span className="text-[8px] text-white/40 font-mono">{chat.time}</span>
                       </div>
                       <p className="text-xs text-white/70 leading-relaxed">{chat.msg}</p>
                    </div>
@@ -439,7 +439,7 @@ export default function CarteleraPage() {
                    value={userMsg}
                    onChange={(e) => setUserMsg(e.target.value)}
                    placeholder="Escribe un mensaje..."
-                   className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-accent" 
+                   className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-accent placeholder:text-white/40" 
                  />
                  <button type="submit" className="px-6 bg-accent rounded-xl text-[10px] font-black text-white uppercase tracking-widest active:scale-95 transition-all">Enviar</button>
               </form>
@@ -607,7 +607,7 @@ export default function CarteleraPage() {
                          onChange={(e) => setNewMessage(e.target.value)}
                          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                          placeholder="Describe tu solicitud o duda..."
-                         className="w-full bg-transparent border-none text-text text-sm focus:ring-0 placeholder:text-text-muted/40"
+                         className="w-full bg-transparent border-none text-text text-sm focus:ring-0 placeholder:text-text-muted/60"
                        />
                     </div>
                     <button 
@@ -618,7 +618,7 @@ export default function CarteleraPage() {
                        {isSending ? <Loader2 size={24} className="animate-spin" /> : <ArrowRight size={24} className="group-hover:translate-x-0.5 transition-transform" />}
                     </button>
                  </div>
-                 <div className="mt-4 flex items-center justify-center gap-2 text-text-muted/30">
+                 <div className="mt-4 flex items-center justify-center gap-2 text-text-muted/60">
                     <ShieldAlert size={10} />
                     <p className="text-[9px] font-bold uppercase tracking-widest">Conexión Segura & Encriptada</p>
                  </div>

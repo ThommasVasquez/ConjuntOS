@@ -54,7 +54,7 @@ export default function BottomNav() {
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div 
-        className="liquid-glass rounded-[35px] w-full flex justify-between items-center p-2.5 relative shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl bg-white/5"
+        className="liquid-glass rounded-[35px] w-full flex justify-between items-center p-2.5 relative shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-2xl"
       >
         {tabs.map((tab) => {
           const isActive = pathname.includes(tab.path);
@@ -64,14 +64,14 @@ export default function BottomNav() {
             <Link 
               key={tab.path} 
               href={tab.path}
-              className={`relative flex items-center justify-center transition-all duration-300 rounded-full h-[52px]
-                ${isActive ? 'w-[120px] bg-linear-to-r from-accent to-purple-600 shadow-[0_0_20px_rgba(217,70,239,0.5)] px-4' : 'w-[52px] liquid-glass hover:bg-white/10 mx-1'}
+              className={`relative flex items-center justify-center transition-all duration-300 rounded-full h-[52px] group
+                ${isActive ? 'w-[120px] bg-linear-to-r from-accent to-purple-600 shadow-[0_0_20px_rgba(217,70,239,0.5)] px-4' : 'w-[52px] liquid-glass hover:bg-text/10 mx-1'}
               `}
             >
               <div className="flex items-center gap-2 relative z-10 w-full justify-center">
                 <Icon 
                   size={20} 
-                  className={`transition-colors duration-300 ${isActive ? 'text-white' : 'text-white/60'}`} 
+                  className={`transition-colors duration-300 ${isActive ? 'text-white' : 'text-text/60 group-hover:text-text'}`} 
                   strokeWidth={isActive ? 2.5 : 2}
                 />
                 

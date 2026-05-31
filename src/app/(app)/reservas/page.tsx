@@ -220,7 +220,7 @@ export default function ReservasPage() {
 
       <div className="flex flex-col gap-2 -mt-4 mb-2">
           <h1 className="text-3xl font-display font-bold text-text tracking-tight">Reservas</h1>
-          <p className="text-text/40 text-[10px] uppercase font-bold tracking-widest ">Zonas Comunes del Conjunto</p>
+          <p className="text-text/60 text-[10px] uppercase font-bold tracking-widest ">Zonas Comunes del Conjunto</p>
       </div>
 
       {step === 'GRID' && (
@@ -242,14 +242,14 @@ export default function ReservasPage() {
                        <div>
                           <h3 className="text-xl font-bold text-text text-glow mb-1 leading-tight">{area.nombre}</h3>
                           <div className="flex gap-2">
-                            <span className="text-[10px] text-text/40 font-bold uppercase tracking-wider">{area.horaApertura}-{area.horaCierre}</span>
+                            <span className="text-[10px] text-text/60 font-bold uppercase tracking-wider">{area.horaApertura}-{area.horaCierre}</span>
                           </div>
                        </div>
                        <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent"><MapPin size={18}/></div>
                     </div>
-                    <p className="text-text/50 text-xs leading-relaxed font-light mb-6 line-clamp-2">{area.descripcion}</p>
+                    <p className="text-text/75 text-xs leading-relaxed font-normal mb-6 line-clamp-2">{area.descripcion}</p>
                     <div className="flex justify-between items-center">
-                       <div className="flex items-center gap-1.5 text-text/30 text-[10px] font-bold uppercase"><Users size={12} /> {area.capacidadMax} Max</div>
+                       <div className="flex items-center gap-1.5 text-text/60 text-[10px] font-bold uppercase"><Users size={12} /> {area.capacidadMax} Max</div>
                        <div className="flex items-center gap-2 group/btn"><span className="text-accent text-[11px] font-bold uppercase tracking-widest group-hover/btn:translate-x-[-4px] transition-transform">Reservar</span><ArrowRight size={14} className="text-accent" /></div>
                     </div>
                  </div>
@@ -282,7 +282,7 @@ export default function ReservasPage() {
               <div className="flex flex-col gap-6 mb-8">
                  {/* Selector de Día */}
                  <div className="flex flex-col gap-3">
-                    <label className="text-[10px] text-text/40 font-bold uppercase tracking-widest ml-1">Selecciona el Día</label>
+                    <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest ml-1">Selecciona el Día</label>
                     <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 px-1 -mx-1 snap-x">
                         {availableDays.map((date, idx) => {
                           const isSelected = selectedDay?.getDate() === date.getDate() && selectedDay?.getMonth() === date.getMonth();
@@ -307,9 +307,9 @@ export default function ReservasPage() {
 
                  {/* Selector de Hora */}
                  <div className="flex flex-col gap-3">
-                    <label className="text-[10px] text-text/40 font-bold uppercase tracking-widest ml-1">Horario ({selectedArea.duracionSlot} min)</label>
+                    <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest ml-1">Horario ({selectedArea.duracionSlot} min)</label>
                     <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto hide-scrollbar pr-1">
-                        {timeSlots.length === 0 && <p className="text-text/30 text-xs py-4 col-span-2 text-center">No hay horarios disponibles.</p>}
+                        {timeSlots.length === 0 && <p className="text-text/50 text-xs py-4 col-span-2 text-center">No hay horarios disponibles.</p>}
                         {timeSlots.map((slot, index) => {
                            const st = slot.start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                            const ed = slot.end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -349,7 +349,7 @@ export default function ReservasPage() {
         <section className="fade-up fixed inset-0 z-100 flex flex-col items-center justify-center p-8 bg-primary/95 backdrop-blur-3xl">
            <div className="w-16 h-16 rounded-full border-4 border-border border-t-accent animate-spin mb-4" />
            <h3 className="text-2xl font-display font-medium text-text tracking-tight">Procesando Pago Seguro...</h3>
-           <p className="text-text/40 text-xs mt-4">Simulando respuesta de Wompi</p>
+           <p className="text-text/60 text-xs mt-4">Simulando respuesta de Wompi</p>
            {/* Mocking the payment return internally */}
            <button onClick={executeBooking} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-white transition-colors cursor-pointer">Acelerar Simulación</button>
         </section>
@@ -367,11 +367,11 @@ export default function ReservasPage() {
               <div className="flex flex-col gap-6 mb-8 relative z-10">
                  <div className="flex gap-4 items-center">
                     <div className="w-12 h-12 rounded-2xl bg-text/5 border border-border flex items-center justify-center text-accent"><MapPin size={20} /></div>
-                    <div><p className="text-[10px] text-text/30 uppercase font-bold tracking-widest">Espacio</p><p className="text-text font-bold">{selectedArea.nombre}</p></div>
+                    <div><p className="text-[10px] text-text/50 uppercase font-bold tracking-widest">Espacio</p><p className="text-text font-bold">{selectedArea.nombre}</p></div>
                  </div>
                  <div className="flex gap-4 items-center">
                     <div className="w-12 h-12 rounded-2xl bg-text/5 border border-border flex items-center justify-center text-accent"><Clock size={20} /></div>
-                    <div><p className="text-[10px] text-text/30 uppercase font-bold tracking-widest">Horario</p>
+                    <div><p className="text-[10px] text-text/50 uppercase font-bold tracking-widest">Horario</p>
                        <p className="text-text font-bold text-sm">
                          {selectedDay?.toLocaleDateString('es-ES', {month:'short', day:'numeric'})} • {timeSlots[selectedSlotIndex].start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                        </p>
@@ -386,7 +386,7 @@ export default function ReservasPage() {
               </div>
            </div>
            
-           <button onClick={() => window.location.reload()} className="mt-12 text-text/40 text-[10px] font-bold uppercase tracking-widest hover:text-text transition-colors cursor-pointer">Volver a Reservas</button>
+           <button onClick={() => window.location.reload()} className="mt-12 text-text/60 text-[10px] font-bold uppercase tracking-widest hover:text-text transition-colors cursor-pointer">Volver a Reservas</button>
         </section>
       )}
 

@@ -131,7 +131,7 @@ export default function CitofoniaPage() {
               <button 
                 key={t.id}
                 onClick={() => setActiveTab(t.id as Tab)}
-                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-text/10 text-text border border-border shadow-lg' : 'text-text/30 hover:text-text/50'}`}
+                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-text/10 text-text border border-border shadow-lg' : 'text-text/60 hover:text-text/80'}`}
               >
                 <t.icon size={16} strokeWidth={activeTab === t.id ? 2.5 : 1.5} />
                 <span className="text-[9px] font-bold uppercase tracking-wider">{t.label}</span>
@@ -211,14 +211,14 @@ export default function CitofoniaPage() {
               {/* PARKING STATUS */}
               <div className="grid grid-cols-2 gap-3">
                  <div className="liquid-glass-card rounded-[24px] p-4 border border-border flex flex-col">
-                    <span className="text-text/40 text-[9px] font-black uppercase tracking-widest mb-1">Cupos Carros</span>
+                    <span className="text-text/60 text-[9px] font-black uppercase tracking-widest mb-1">Cupos Carros</span>
                     <div className="flex items-center gap-2">
                        <Car size={16} className="text-accent" />
                        <span className="text-lg font-display font-bold text-text">{parking.carros} Disponibles</span>
                     </div>
                  </div>
                  <div className="liquid-glass-card rounded-[24px] p-4 border border-border flex flex-col">
-                    <span className="text-text/40 text-[9px] font-black uppercase tracking-widest mb-1">Cupos Motos</span>
+                    <span className="text-text/60 text-[9px] font-black uppercase tracking-widest mb-1">Cupos Motos</span>
                     <div className="flex items-center gap-2">
                        <Bike size={16} className="text-secondary" />
                        <span className="text-lg font-display font-bold text-text">{parking.motos} Disponibles</span>
@@ -236,11 +236,11 @@ export default function CitofoniaPage() {
 
               {/* LIST */}
               <div className="space-y-4">
-                 <h4 className="text-[10px] font-black text-text/30 uppercase tracking-widest px-2">Visitas Recientes</h4>
+                 <h4 className="text-[10px] font-black text-text/60 uppercase tracking-widest px-2">Visitas Recientes</h4>
                  {isLoading ? (
                    <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-accent" /></div>
                  ) : visitas.length === 0 ? (
-                   <div className="py-12 flex flex-col items-center bg-text/5 rounded-3xl border border-dashed border-border text-text/30">
+                   <div className="py-12 flex flex-col items-center bg-text/5 rounded-3xl border border-dashed border-border text-text/50">
                       <Users size={40} strokeWidth={1} />
                       <p className="text-[10px] font-bold mt-2">No has programado visitas aún</p>
                    </div>
@@ -252,10 +252,10 @@ export default function CitofoniaPage() {
                          </div>
                          <div className="flex flex-col">
                             <span className="text-text font-bold text-sm">{v.nombre}</span>
-                            <span className="text-text/30 text-[10px]">{v.placa ? `Placa: ${v.placa}` : 'Personal'} • {new Date(v.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
+                            <span className="text-text/50 text-[10px]">{v.placa ? `Placa: ${v.placa}` : 'Personal'} • {new Date(v.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
                          </div>
                       </div>
-                      <div className="px-2 py-1 bg-text/5 border border-border rounded-lg text-[8px] font-black uppercase text-text/40">PROGRAMADA</div>
+                      <div className="px-2 py-1 bg-text/5 border border-border rounded-lg text-[8px] font-black uppercase text-text/60">PROGRAMADA</div>
                    </div>
                  ))}
               </div>
@@ -277,11 +277,11 @@ export default function CitofoniaPage() {
              )}
 
              <div className="space-y-4">
-                <h4 className="text-[10px] font-black text-text/30 uppercase tracking-widest px-2">Historial de Entregas</h4>
+                <h4 className="text-[10px] font-black text-text/60 uppercase tracking-widest px-2">Historial de Entregas</h4>
                 {isLoading ? (
                   <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-accent" /></div>
                 ) : paquetes.length === 0 ? (
-                  <div className="py-20 flex flex-col items-center text-text/20">
+                  <div className="py-20 flex flex-col items-center text-text/50">
                      <Package size={60} strokeWidth={1} />
                      <p className="font-bold text-sm mt-4">Sin paquetes pendientes</p>
                      <p className="text-[10px] uppercase tracking-widest mt-1">Todo está entregado</p>
@@ -291,17 +291,17 @@ export default function CitofoniaPage() {
                      <div className="flex justify-between items-start">
                         <div className="flex flex-col">
                            <span className="text-text font-bold text-base">{p.descripcion}</span>
-                           <span className="text-text/30 text-[10px] uppercase tracking-widest font-bold">De: {p.remitente}</span>
+                           <span className="text-text/50 text-[10px] uppercase tracking-widest font-bold">De: {p.remitente}</span>
                         </div>
                         <div className="p-2 rounded-xl bg-accent/10 border border-accent/20 text-accent">
                            <Package size={18} />
                         </div>
                      </div>
                      <div className="flex items-center gap-6 pt-2 border-t border-border">
-                        <div className="flex items-center gap-1.5 text-text/40 text-[9px] font-bold">
+                        <div className="flex items-center gap-1.5 text-text/60 text-[9px] font-bold">
                            <Clock size={12} /> Llegó: {new Date(p.fechaLlegada).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                         </div>
-                        <div className="flex items-center gap-1.5 text-text/40 text-[9px] font-bold">
+                        <div className="flex items-center gap-1.5 text-text/60 text-[9px] font-bold">
                            <MapPin size={12} /> Portería 1
                         </div>
                      </div>
@@ -318,21 +318,21 @@ export default function CitofoniaPage() {
            <div className="absolute inset-0 bg-primary/95 backdrop-blur-xl" onClick={() => setIsAddingVisita(false)} />
            <div className="relative w-full max-w-lg bg-primary-light rounded-t-[48px] border-t border-border p-10 animate-in slide-in-from-bottom duration-500">
               <div className="flex flex-col gap-8 pb-10">
-                 <div className="w-12 h-1.5 bg-text/10 rounded-full mx-auto" />
+                 <div className="w-12 h-1.5 bg-text/20 rounded-full mx-auto" />
                  <div className="flex justify-between items-center">
                     <h3 className="text-2xl font-display font-bold text-text">Programar Visita</h3>
-                    <button onClick={() => setIsAddingVisita(false)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text/40 cursor-pointer"><X size={20} /></button>
+                    <button onClick={() => setIsAddingVisita(false)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text/45 cursor-pointer"><X size={20} /></button>
                  </div>
 
                  <div className="space-y-6">
                     <div className="space-y-2">
-                       <label className="text-[10px] font-black text-text/40 uppercase tracking-widest">Nombre del Invitado</label>
-                       <input type="text" placeholder="Ej: Diana Prince" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text placeholder:text-text/20 focus:border-accent outline-none transition-all" />
+                       <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Nombre del Invitado</label>
+                       <input type="text" placeholder="Ej: Diana Prince" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text placeholder:text-text/55 focus:border-accent outline-none transition-all" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-text/40 uppercase tracking-widest">Tipo de Vehículo</label>
+                          <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Tipo de Vehículo</label>
                           <select className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none">
                              <option className="bg-primary text-text" value="NINGUNO">Peatonal</option>
                              <option className="bg-primary text-text" value="CARRO">Carro</option>
@@ -340,8 +340,8 @@ export default function CitofoniaPage() {
                           </select>
                        </div>
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-text/40 uppercase tracking-widest">Placa (Si aplica)</label>
-                          <input type="text" placeholder="ABC-123" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none placeholder:text-text/20 uppercase" />
+                          <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Placa (Si aplica)</label>
+                          <input type="text" placeholder="ABC-123" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none placeholder:text-text/55 uppercase" />
                        </div>
                     </div>
 
