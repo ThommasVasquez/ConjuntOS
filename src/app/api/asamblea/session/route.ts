@@ -44,6 +44,7 @@ export async function GET(req: NextRequest) {
       activa: state.activa,
       ordenDia: state.ordenDia,
       itemActivoIndex: state.itemActivoIndex,
+      subtitulos: state.subtitulos || [],
       isAdmin,
       user: session?.user || null,
       adminUserId

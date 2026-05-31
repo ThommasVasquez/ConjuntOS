@@ -470,6 +470,9 @@ export default function AsambleaPage() {
         setOrdenDia(data.ordenDia || []);
         setItemActivoIndex(data.itemActivoIndex ?? 0);
         setAdminUserId(data.adminUserId || null);
+        if (data.subtitulos) {
+          setSubtitulos(data.subtitulos);
+        }
       }
       
       // Fetch turns (publicly accessible)
@@ -1084,6 +1087,7 @@ export default function AsambleaPage() {
     const subInterval = setInterval(() => {
       const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
       const speakerName = activeSpeaker ? activeSpeaker.nombre : (session?.user?.name || "Administrador");
+      const speakerId = activeSpeaker ? activeSpeaker.usuarioId : session?.user?.id;
       const nextPhrase = phrases[count % phrases.length];
       const newSub = {
         id: "sub_" + Date.now(),
@@ -1093,6 +1097,17 @@ export default function AsambleaPage() {
       };
       
       setSubtitulos([newSub]);
+
+      // Publish subtitle to backend
+      fetch("/api/asamblea/subtitulos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: nextPhrase,
+          speaker: speakerName,
+          usuarioId: speakerId
+        })
+      }).catch(e => console.error("Error posting simulation subtitle:", e));
       
       // Auto-trigger copilot suggestions based on what was said!
       triggerCopilot(opiniones, nextPhrase);
@@ -1135,6 +1150,7 @@ export default function AsambleaPage() {
     
     const activeSpeaker = turnos.find((t: any) => t.estado === "HABLANDO");
     const speakerName = activeSpeaker ? activeSpeaker.nombre : (session?.user?.name || "Administrador");
+    const speakerId = activeSpeaker ? activeSpeaker.usuarioId : session?.user?.id;
 
     const newSub = {
       id: "sub_" + Date.now(),
@@ -1144,6 +1160,17 @@ export default function AsambleaPage() {
     };
     
     setSubtitulos([newSub]);
+
+    // Publish subtitle to backend
+    fetch("/api/asamblea/subtitulos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: phrase,
+        speaker: speakerName,
+        usuarioId: speakerId
+      })
+    }).catch(e => console.error("Error posting topic simulation subtitle:", e));
     
     // Automatically trigger Copilot with this topic text!
     triggerCopilot(opiniones, phrase);
@@ -1196,6 +1223,17 @@ export default function AsambleaPage() {
             };
             
             setSubtitulos([newSub]);
+
+            // Sync with backend API
+            fetch("/api/asamblea/subtitulos", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                text: resultText,
+                speaker: session?.user?.name || "Administrador",
+                usuarioId: session?.user?.id
+              })
+            }).catch(e => console.error("Error syncing subtitle to backend:", e));
             
             // Auto-trigger copilot suggestions based on what was said!
             triggerCopilot(opiniones, resultText);
