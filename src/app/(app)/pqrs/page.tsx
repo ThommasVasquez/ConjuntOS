@@ -103,10 +103,10 @@ export default function PQRSPage() {
 
   const getStatusLabel = (status: string) => {
     switch(status) {
-      case 'COMPLETADA': return { text: "Resuelto", color: "text-emerald-400 bg-emerald-500/10" };
-      case 'EN_PROGRESO': return { text: "En Proceso", color: "text-blue-400 bg-blue-500/10" };
-      case 'ASIGNADA': return { text: "Asignado", color: "text-indigo-400 bg-indigo-500/10" };
-      default: return { text: "Pendiente", color: "text-amber-400 bg-amber-500/10" };
+      case 'COMPLETADA': return { text: "Resuelto", color: "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10" };
+      case 'EN_PROGRESO': return { text: "En Proceso", color: "text-blue-700 dark:text-blue-400 bg-blue-500/10" };
+      case 'ASIGNADA': return { text: "Asignado", color: "text-indigo-700 dark:text-indigo-400 bg-indigo-500/10" };
+      default: return { text: "Pendiente", color: "text-amber-700 dark:text-amber-400 bg-amber-500/10" };
     }
   };
 
@@ -128,7 +128,7 @@ export default function PQRSPage() {
                 {stat.icon}
              </div>
              <span className="text-xl font-display font-bold text-text tracking-tight">{stat.value}</span>
-             <span className="text-[8px] font-black uppercase tracking-widest text-text/30">{stat.label}</span>
+             <span className="text-[8px] font-black uppercase tracking-widest text-text/60">{stat.label}</span>
           </div>
         ))}
       </section>
@@ -151,7 +151,7 @@ export default function PQRSPage() {
       {/* LIST HEADER */}
       <div className="fade-up-pqrs flex justify-between items-end mt-4">
          <h3 className="text-text font-display text-lg font-bold tracking-tight">Tus Solicitudes</h3>
-         <button className="text-text/30 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 hover:text-text transition-colors cursor-pointer">
+         <button className="text-text/60 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 hover:text-text transition-colors cursor-pointer">
             Filtrar <ArrowRight size={10} />
          </button>
       </div>
@@ -161,15 +161,15 @@ export default function PQRSPage() {
          {isLoading ? (
            <div className="py-20 flex flex-col items-center gap-4">
               <Loader2 className="w-10 h-10 text-accent animate-spin" />
-              <p className="text-text/30 text-[10px] font-bold uppercase tracking-widest">Sincronizando radicados...</p>
+              <p className="text-text/60 text-[10px] font-bold uppercase tracking-widest">Sincronizando radicados...</p>
            </div>
          ) : solicitudes.length === 0 ? (
            <div className="py-20 flex flex-col items-center gap-4 liquid-glass-card rounded-[32px] border border-border p-10 text-center">
-              <div className="w-16 h-16 rounded-full bg-text/5 flex items-center justify-center text-text/20 mb-2">
+              <div className="w-16 h-16 rounded-full bg-text/5 flex items-center justify-center text-text/40 mb-2">
                  <FileText size={32} />
               </div>
               <h4 className="text-text text-sm font-bold">Aún no tienes solicitudes</h4>
-              <p className="text-text/40 text-xs px-6">Cuando radiques una PQRS aparecerá listada en esta sección para su seguimiento.</p>
+              <p className="text-text/60 text-xs px-6">Cuando radiques una PQRS aparecerá listada en esta sección para su seguimiento.</p>
            </div>
          ) : (
            solicitudes.map((s) => (
@@ -181,7 +181,7 @@ export default function PQRSPage() {
                       </div>
                       <div>
                          <h4 className="text-text font-bold text-sm tracking-tight">{s.tipo}</h4>
-                         <span className="text-[8px] font-black uppercase tracking-widest text-text/30">{s.categoria}</span>
+                         <span className="text-[8px] font-black uppercase tracking-widest text-text/60">{s.categoria}</span>
                       </div>
                    </div>
                    <div className={`px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border border-border ${getStatusLabel(s.estado).color}`}>
@@ -195,11 +195,11 @@ export default function PQRSPage() {
 
                 <div className="pt-4 mt-2 border-t border-border flex justify-between items-center">
                    <div className="flex items-center gap-1.5">
-                      <Calendar size={12} className="text-text/20" />
-                      <span className="text-[10px] text-text/40 font-medium">{new Date(s.creadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      <Calendar size={12} className="text-text/50" />
+                      <span className="text-[10px] text-text/60 font-medium">{new Date(s.creadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                    </div>
                    <div className="flex items-center gap-2">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-text/20">ID: {s.id.slice(-6).toUpperCase()}</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-text/50">ID: {s.id.slice(-6).toUpperCase()}</span>
                       {s.urgente && <span className="bg-red-500/20 text-red-400 text-[8px] font-black uppercase px-2 py-0.5 rounded-full">Urgente</span>}
                    </div>
                 </div>
@@ -218,21 +218,21 @@ export default function PQRSPage() {
                  <div className="flex justify-between items-center">
                     <div>
                        <h3 className="text-xl font-display font-bold text-text tracking-tight">Nueva PQRS</h3>
-                       <p className="text-text/40 text-[10px] font-bold uppercase tracking-widest mt-1">Radicación oficial</p>
+                       <p className="text-text/60 text-[10px] font-bold uppercase tracking-widest mt-1">Radicación oficial</p>
                     </div>
-                    <button type="button" onClick={() => setIsFormOpen(false)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text/40 hover:text-text cursor-pointer"><X size={20} /></button>
+                    <button type="button" onClick={() => setIsFormOpen(false)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text/60 hover:text-text cursor-pointer"><X size={20} /></button>
                  </div>
 
                  {/* TIPO PICKER */}
                  <div className="flex flex-col gap-3">
-                    <span className="text-text/40 text-[10px] font-bold uppercase tracking-widest px-2">Tipo de Solicitud</span>
+                    <span className="text-text/60 text-[10px] font-bold uppercase tracking-widest px-2">Tipo de Solicitud</span>
                     <div className="grid grid-cols-2 gap-2">
                        {Object.entries(TIPO_CONFIG).map(([key, config]) => (
                          <button 
                            type="button"
                            key={key} 
                            onClick={() => setFormData({ ...formData, tipo: key, categoria: key === 'MANTENIMIENTO' ? 'ELECTRICIDAD' : 'OTRO' })}
-                           className={`flex items-center gap-2 p-3 rounded-2xl border transition-all cursor-pointer ${formData.tipo === key ? `${config.bg} border-${config.color.split('-')[1]}/40 ${config.color}` : 'bg-text/5 border-border text-text/30'}`}
+                           className={`flex items-center gap-2 p-3 rounded-2xl border transition-all cursor-pointer ${formData.tipo === key ? `${config.bg} border-${config.color.split('-')[1]}/40 ${config.color}` : 'bg-text/5 border-border text-text/60'}`}
                          >
                             {config.icon}
                             <span className="text-[10px] font-bold uppercase tracking-widest">{key.slice(0, 8)}</span>
@@ -243,13 +243,13 @@ export default function PQRSPage() {
 
                  {/* DESCRIPTION */}
                  <div className="flex flex-col gap-3">
-                    <span className="text-text/40 text-[10px] font-bold uppercase tracking-widest px-2">Descripción del caso</span>
+                    <span className="text-text/60 text-[10px] font-bold uppercase tracking-widest px-2">Descripción del caso</span>
                     <div className="relative group">
                        <textarea 
                          value={formData.descripcion}
                          onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                          placeholder="Escribe aquí los detalles de tu solicitud..."
-                         className="w-full bg-text/5 border border-border rounded-3xl p-5 min-h-[140px] text-text placeholder:text-text/30 focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none resize-none"
+                         className="w-full bg-text/5 border border-border rounded-3xl p-5 min-h-[140px] text-text placeholder:text-text/50 focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none resize-none"
                        />
                     </div>
                  </div>
@@ -257,13 +257,13 @@ export default function PQRSPage() {
                  {/* OPTIONS */}
                  <div className="flex items-center justify-between p-4 rounded-2xl bg-text/5 border border-border">
                     <div className="flex items-center gap-2 overflow-hidden">
-                       <div className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/40">
+                       <div className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/60">
                           <Camera size={16} />
                        </div>
-                       <span className="text-[10px] text-text/40 font-bold uppercase tracking-widest">Vincular Foto</span>
+                       <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest">Vincular Foto</span>
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                       <span className={`text-[10px] font-bold uppercase transition-colors ${formData.urgente ? 'text-red-400' : 'text-text/30 group-hover:text-text/50'}`}>¡Urgente!</span>
+                       <span className={`text-[10px] font-bold uppercase transition-colors ${formData.urgente ? 'text-red-500' : 'text-text/60 group-hover:text-text/80'}`}>¡Urgente!</span>
                        <input 
                          type="checkbox" 
                          checked={formData.urgente} 

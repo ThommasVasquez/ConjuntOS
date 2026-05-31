@@ -89,13 +89,13 @@ export default function ClasificadosPage() {
         <div className="flex items-center gap-4">
            <button 
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text-muted hover:text-text transition-all active:scale-90"
+            className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text/70 hover:text-text transition-all active:scale-90"
            >
              <ArrowLeft size={20} />
            </button>
            <h1 className="text-3xl font-black text-text tracking-tight">Mercadillo <span className="text-accent underline decoration-border">Vecinal</span></h1>
         </div>
-        <p className="text-text-muted text-sm font-medium leading-relaxed">Apoya el talento local de tu conjunto. Servicios, emprendimientos y ventas internas.</p>
+        <p className="text-text/70 text-sm font-medium leading-relaxed">Apoya el talento local de tu conjunto. Servicios, emprendimientos y ventas internas.</p>
       </div>
 
       <ProfileHeader className="fade-up" />
@@ -103,13 +103,13 @@ export default function ClasificadosPage() {
       {/* SEARCH & FILTERS */}
       <section className="fade-up space-y-4">
         <div className="relative group">
-          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent transition-colors" />
+          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text/60 group-focus-within:text-accent transition-colors" />
           <input 
             type="text"
             placeholder="¿Qué buscas hoy?"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-14 bg-surface-2 border border-border rounded-2xl pl-14 pr-6 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-surface-2/80 transition-all"
+            className="w-full h-14 bg-surface-2 border border-border rounded-2xl pl-14 pr-6 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-surface-2/80 transition-all placeholder:text-text/50"
           />
         </div>
 
@@ -121,7 +121,7 @@ export default function ClasificadosPage() {
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                 selectedCat === cat.id 
                 ? 'bg-accent border-accent text-primary shadow-lg shadow-accent/20' 
-                : 'bg-surface-2 border-border text-text-muted hover:bg-surface-2/80'
+                : 'bg-surface-2 border-border text-text/70 hover:bg-surface-2/80'
               }`}
             >
               {cat.icon}
@@ -134,14 +134,14 @@ export default function ClasificadosPage() {
       {/* LISTINGS GRID */}
       <section className="flex flex-col gap-6">
         <div className="fade-up flex justify-between items-center">
-           <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted/60">Resultados ({filteredItems.length})</h3>
-           <Filter size={14} className="text-text-muted/60" />
+           <h3 className="text-xs font-bold uppercase tracking-widest text-text/75">Resultados ({filteredItems.length})</h3>
+           <Filter size={14} className="text-text/75" />
         </div>
 
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
              <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
-             <p className="text-[10px] font-black text-text-muted uppercase tracking-[.2em]">Cargando emprendimientos...</p>
+             <p className="text-[10px] font-black text-text/70 uppercase tracking-[.2em]">Cargando emprendimientos...</p>
           </div>
         ) : filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -155,12 +155,12 @@ export default function ClasificadosPage() {
           </div>
         ) : (
           <div className="py-20 flex flex-col items-center text-center gap-4 bg-surface-2 rounded-[40px] border border-dashed border-border">
-             <div className="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center text-text-muted">
+             <div className="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center text-text/60">
                 <ShoppingBag size={32} />
              </div>
              <div className="space-y-1">
                 <p className="text-text font-bold">No se encontraron resultados</p>
-                <p className="text-text-muted text-xs">Intenta con otra categoría o palabra clave.</p>
+                <p className="text-text/70 text-xs">Intenta con otra categoría o palabra clave.</p>
              </div>
           </div>
         )}
@@ -257,7 +257,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
        <div className="p-5 flex flex-col gap-4 flex-1">
           <div className="space-y-1">
              <h4 className="text-lg font-bold text-text leading-tight group-hover:text-accent transition-colors duration-300">{item.titulo}</h4>
-             <p className="text-text-muted text-[11px] line-clamp-2 leading-relaxed font-medium">{item.descripcion}</p>
+             <p className="text-text/75 text-[11px] line-clamp-2 leading-relaxed font-medium">{item.descripcion}</p>
           </div>
 
           <div className="pt-4 border-t border-border flex items-center justify-between mt-auto">
@@ -271,7 +271,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
                 </div>
                 <div>
                    <p className="text-[10px] font-bold text-text leading-none mb-0.5">{item.usuario_nombre}</p>
-                   <p className="text-[9px] text-text-muted font-bold uppercase tracking-tighter">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
+                   <p className="text-[9px] text-text/75 font-bold uppercase tracking-tighter">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
                 </div>
              </div>
              <button 
@@ -326,14 +326,14 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
       <div className="space-y-4">
         {/* IMAGE PLACEHOLDER SIMULATION */}
         <div className="w-full h-44 rounded-3xl bg-surface-2 border-2 border-dashed border-border flex flex-col items-center justify-center gap-3 group hover:border-accent/40 hover:bg-surface-2/80 transition-all cursor-pointer">
-           <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-text-muted group-hover:text-accent group-hover:scale-110 transition-all">
+           <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-text/60 group-hover:text-accent group-hover:scale-110 transition-all">
               <Camera size={24} />
            </div>
-           <p className="text-[10px] font-black text-text-muted uppercase tracking-widest group-hover:text-text-muted/80">Subir foto del producto</p>
+           <p className="text-[10px] font-black text-text/70 uppercase tracking-widest group-hover:text-text/80">Subir foto del producto</p>
         </div>
 
         <div className="space-y-1.5 px-1">
-          <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Título del anuncio</label>
+          <label className="text-[9px] font-black text-text/60 uppercase tracking-[0.2em] ml-1">Título del anuncio</label>
           <input 
             type="text" 
             placeholder="Ej: Empanadas de Pipian" 
@@ -345,7 +345,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
 
         <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5 px-1">
-              <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Precio (COP)</label>
+              <label className="text-[9px] font-black text-text/60 uppercase tracking-[0.2em] ml-1">Precio (COP)</label>
               <input 
                 type="number" 
                 placeholder="0" 
@@ -355,7 +355,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
               />
             </div>
             <div className="space-y-1.5 px-1">
-              <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Categoría</label>
+              <label className="text-[9px] font-black text-text/60 uppercase tracking-[0.2em] ml-1">Categoría</label>
               <select 
                 value={form.categoria}
                 onChange={(e) => setForm({...form, categoria: e.target.value})}
@@ -369,7 +369,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
 
         <div className="space-y-1.5 px-1">
-          <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">WhatsApp de contacto</label>
+          <label className="text-[9px] font-black text-text/60 uppercase tracking-[0.2em] ml-1">WhatsApp de contacto</label>
           <input 
             type="tel" 
             placeholder="310 123 4567" 
@@ -380,7 +380,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
 
         <div className="space-y-1.5 px-1">
-          <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Descripción</label>
+          <label className="text-[9px] font-black text-text/60 uppercase tracking-[0.2em] ml-1">Descripción</label>
           <textarea 
             placeholder="Cuéntanos más sobre lo que ofreces..." 
             rows={3}
@@ -445,14 +445,13 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
               {item.categoria}
             </div>
          </div>
-
          <div className="p-8 flex flex-col gap-6 overflow-y-auto">
             <div className="space-y-3">
                <div className="flex justify-between items-start">
                   <h2 className="text-3xl font-black text-text leading-tight flex-1">{item.titulo}</h2>
                   <div className="text-right">
                      <p className="text-[28px] font-black text-accent tracking-tighter leading-none">${item.precio.toLocaleString()}</p>
-                     <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1">Precio sugerido</p>
+                     <p className="text-[10px] text-text/75 font-bold uppercase tracking-widest mt-1">Precio sugerido</p>
                   </div>
                </div>
                
@@ -466,16 +465,16 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
                   </div>
                   <div>
                     <h4 className="text-text font-bold">{item.usuario_nombre}</h4>
-                    <p className="text-xs text-text-muted">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
+                    <p className="text-xs text-text/75">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
                   </div>
                </div>
             </div>
-
+ 
             <div className="space-y-4">
-               <h3 className="text-xs font-black text-text-muted uppercase tracking-[0.3em]">Descripción del vendedor</h3>
+               <h3 className="text-xs font-black text-text/80 uppercase tracking-[0.3em]">Descripción del vendedor</h3>
                <p className="text-text/70 leading-relaxed text-sm font-medium">{item.descripcion}</p>
             </div>
-
+ 
             <div className="mt-auto py-8">
                <button 
                  onClick={handleWhatsApp}
@@ -483,7 +482,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
                >
                  <MessageCircle size={24} /> Contactar por WhatsApp
                </button>
-               <p className="text-center text-[10px] text-text-muted/40 mt-4 uppercase tracking-widest font-black">Transacción directa entre residentes</p>
+               <p className="text-center text-[10px] text-text/60 mt-4 uppercase tracking-widest font-black">Transacción directa entre residentes</p>
             </div>
          </div>
       </div>

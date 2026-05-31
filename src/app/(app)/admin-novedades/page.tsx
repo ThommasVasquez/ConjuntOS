@@ -142,7 +142,7 @@ export default function AdminNovedadesPage() {
        <div className="fade-up flex items-center justify-between">
             <div>
                 <h1 className="text-2xl font-display font-medium text-text tracking-wide">Trámites</h1>
-                <p className="text-sm text-text-muted">Solicitudes de residentes</p>
+                <p className="text-sm text-text/70">Solicitudes de residentes</p>
             </div>
        </div>
 
@@ -150,13 +150,13 @@ export default function AdminNovedadesPage() {
        <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
             <button 
               onClick={() => setTab('PENDIENTE')} 
-              className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-accent/10 text-accent shadow-inner' : 'text-text-muted hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-accent/10 text-accent shadow-inner' : 'text-text/70 hover:text-text'}`}
             >
                Pendientes
             </button>
             <button 
               onClick={() => setTab('HISTORIAL')} 
-              className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-surface text-text border border-border shadow-md' : 'text-text-muted hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-surface text-text border border-border shadow-md' : 'text-text/70 hover:text-text'}`}
             >
                Historial
             </button>
@@ -170,7 +170,7 @@ export default function AdminNovedadesPage() {
                 <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
                     <CheckCircle2 size={40} className="mx-auto text-emerald-500/50 mb-3" />
                     <p className="text-text/80 font-medium">Bandeja al día</p>
-                    <p className="text-xs text-text-muted mt-1">No hay trámites en esta sección.</p>
+                    <p className="text-xs text-text/70 mt-1">No hay trámites en esta sección.</p>
                 </div>
             ) : (
                 tramites.map((t) => {
@@ -183,7 +183,7 @@ export default function AdminNovedadesPage() {
                                  <span className="p-2 rounded-full bg-surface-2 border border-border text-xl">{getTipoIcon(t.tipo)}</span>
                                  <div className="flex flex-col">
                                     <span className="text-xs font-bold text-text uppercase tracking-wider">{t.tipo}</span>
-                                    <span className="text-[10px] text-text-muted">{new Date(t.creadoEn).toLocaleString()}</span>
+                                    <span className="text-[10px] text-text/70">{new Date(t.creadoEn).toLocaleString()}</span>
                                  </div>
                               </div>
                               {t.estado === 'PENDIENTE' && <span className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20 dark:border-yellow-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock size={10}/> Pendiente</span>}
@@ -192,7 +192,7 @@ export default function AdminNovedadesPage() {
                           </div>
 
                           <div className="flex bg-surface-2 rounded-xl p-3 items-center gap-3">
-                             <User size={16} className="text-text-muted/40" />
+                             <User size={16} className="text-text/60" />
                              <div className="flex flex-col">
                                  <span className="text-sm font-medium text-text">
                                     {u.nombre} 
@@ -204,14 +204,14 @@ export default function AdminNovedadesPage() {
                           </div>
                           
                           {/* Desc Preview */}
-                          <div className="text-xs text-text-muted line-clamp-2 italic">
+                          <div className="text-xs text-text/70 line-clamp-2 italic">
                              &quot;{t.tipo === 'VEHICULO' ? `${desc.metadatos?.marca || 'Vehículo'} - Placa: ${desc.metadatos?.placa || '?'}` : 
                                t.tipo === 'MASCOTA' ? `Mascota: ${desc.metadatos?.nombre || 'Pet'} (${desc.metadatos?.tipo || '?'})` : 
                                t.tipo === 'MUDANZA' ? `Fecha Mudanza: ${desc.metadatos?.fecha || '?'}` : 'Solicitud pendiente...'}&quot;
                           </div>
 
                           {tab === 'HISTORIAL' && t.aprobadoPor && (
-                              <div className="text-[10px] text-text-muted/60 border-t border-border pt-2 mt-1">
+                              <div className="text-[10px] text-text/60 border-t border-border pt-2 mt-1">
                                  Procesado por: {t.aprobadoPor.nombre}
                               </div>
                           )}
@@ -228,18 +228,18 @@ export default function AdminNovedadesPage() {
                <div className="liquid-glass-card rounded-[32px] p-6 w-full max-w-[400px] border border-border relative z-10 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
                    <h3 className="text-lg font-bold text-text mb-2 pb-2 border-b border-border">Resolver Trámite</h3>
                    <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface-2 border border-border">
-                       <span className="text-xs text-text-muted uppercase tracking-widest font-bold">Solicitante</span>
+                       <span className="text-xs text-text/70 uppercase tracking-widest font-bold">Solicitante</span>
                        <span className="text-sm text-text">{selectedTramite.usuario.nombre}</span>
                    </div>
                    
                    <div className="flex flex-col gap-3">
                        {/* Metadatos - Stage 39 Grid Fix */}
                        <div className="p-4 rounded-2xl bg-surface-2 border border-border">
-                          <span className="text-[10px] text-text-muted uppercase tracking-[0.2em] font-black mb-3 block">Detalles del Activo</span>
+                          <span className="text-[10px] text-text/70 uppercase tracking-[0.2em] font-black mb-3 block">Detalles del Activo</span>
                           <div className="grid grid-cols-2 gap-3">
                              {Object.entries(parseDesc(selectedTramite.descripcion).metadatos || {}).map(([k, v]: any) => (
                                  <div key={k} className="flex flex-col">
-                                    <span className="text-[9px] text-text-muted/40 uppercase font-bold">{k}</span>
+                                    <span className="text-[9px] text-text/60 uppercase font-bold">{k}</span>
                                     <span className="text-xs text-text font-mono">{String(v)}</span>
                                  </div>
                              ))}
@@ -249,13 +249,13 @@ export default function AdminNovedadesPage() {
                        {/* Documentación - Stage 39 Document Viewer */}
                        {parseDesc(selectedTramite.descripcion).documentos?.length > 0 && (
                          <div className="p-4 rounded-2xl bg-surface-2 border border-border">
-                            <span className="text-[10px] text-text-muted uppercase tracking-[0.2em] font-black mb-3 block">Documentación Adjunta</span>
+                            <span className="text-[10px] text-text/70 uppercase tracking-[0.2em] font-black mb-3 block">Documentación Adjunta</span>
                             <div className="flex flex-col gap-2">
                                {parseDesc(selectedTramite.descripcion).documentos.map((doc: any, i: number) => (
                                   <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-surface-2 border border-border group">
                                      <div className="flex items-center gap-2 overflow-hidden">
                                         <FileText size={14} className={doc.type === 'pdf' ? 'text-red-400' : 'text-blue-400'} />
-                                        <span className="text-[10px] text-text-muted truncate">{doc.nombre}</span>
+                                        <span className="text-[10px] text-text/70 truncate">{doc.nombre}</span>
                                      </div>
                                      <button 
                                        onClick={() => downloadFile(doc.base64, doc.nombre)}
@@ -287,7 +287,7 @@ export default function AdminNovedadesPage() {
                     )}
 
                    <div className="flex flex-col gap-2 mt-2">
-                       <label className="text-xs text-text-muted uppercase tracking-widest font-bold">Observaciones (Opcional si aprueba)</label>
+                       <label className="text-xs text-text/70 uppercase tracking-widest font-bold">Observaciones (Opcional si aprueba)</label>
                        <textarea 
                          value={obs}
                          onChange={(e) => setObs(e.target.value)}

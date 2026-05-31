@@ -36,8 +36,8 @@ export async function GET() {
           misCeldas,
           disponibilidadVisitantes: {
             total: disponibilidad.length,
-            libres: disponibilidad.filter(c => c.estado === "DISPONIBLE").length,
-            ocupadas: disponibilidad.filter(c => c.estado === "OCUPADO").length
+            libres: disponibilidad.filter((c: any) => c.estado === "DISPONIBLE").length,
+            ocupadas: disponibilidad.filter((c: any) => c.estado === "OCUPADO").length
           }
         }
       });

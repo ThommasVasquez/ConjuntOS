@@ -104,13 +104,13 @@ export default function PaqueteriaPage() {
              </div>
              <div>
                 <h2 className="text-xl font-bold text-text">Recepción de Envíos</h2>
-                <p className="text-xs text-text-muted">Mensajería y domicilios</p>
+                <p className="text-xs text-text/70">Mensajería y domicilios</p>
              </div>
           </div>
           
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text-muted font-bold uppercase tracking-widest pl-1">Destinatario</label>
+                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Destinatario</label>
                 <select 
                    value={formData.usuarioId} 
                    onChange={e => setFormData({...formData, usuarioId: e.target.value})}
@@ -125,7 +125,7 @@ export default function PaqueteriaPage() {
 
              <div className="flex gap-4">
                   <div className="flex-1 flex flex-col gap-1.5">
-                     <label className="text-[10px] text-text-muted font-bold uppercase tracking-widest pl-1">Empresa / Remitente</label>
+                     <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Empresa / Remitente</label>
                      <input 
                         required
                         type="text" 
@@ -138,7 +138,7 @@ export default function PaqueteriaPage() {
              </div>
 
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text-muted font-bold uppercase tracking-widest pl-1">Descripción Rápida</label>
+                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Descripción Rápida</label>
                 <input 
                    required
                    type="text" 
@@ -159,10 +159,10 @@ export default function PaqueteriaPage() {
        <div className="fade-up flex flex-col gap-4">
           <div className="flex justify-between items-center ml-2">
              <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><Clock size={16} className="text-emerald-400"/> Inventario Portería</h3>
-             <span className="bg-surface-2 text-text-muted text-[10px] px-2 py-0.5 rounded-full font-bold">{paquetes.length} ÍTEMS</span>
+             <span className="bg-surface-2 text-text/75 text-[10px] px-2 py-0.5 rounded-full font-bold">{paquetes.length} ÍTEMS</span>
           </div>
           
-          {paquetes.length === 0 && <p className="text-text-muted text-sm text-center py-6">Portería libre de paquetes.</p>}
+          {paquetes.length === 0 && <p className="text-text/60 text-sm text-center py-6">Portería libre de paquetes.</p>}
           
           {paquetes.map((p, i) => (
              <div key={i} className="liquid-glass-card p-5 rounded-3xl border border-border flex flex-col gap-4 relative overflow-hidden">
@@ -171,13 +171,13 @@ export default function PaqueteriaPage() {
                 <div className="flex justify-between items-start relative z-10">
                    <div>
                      <p className="text-text font-bold text-lg leading-tight">{p.descripcion}</p>
-                     <p className="text-emerald-500 dark:text-emerald-400 font-bold text-[10px] tracking-widest uppercase">{p.remitente}</p>
+                     <p className="text-emerald-700 dark:text-emerald-400 font-bold text-[10px] tracking-widest uppercase">{p.remitente}</p>
                    </div>
-                   <div className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text-muted">
+                   <div className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text/75">
                       Hace {Math.floor((new Date().getTime() - new Date(p.fechaLlegada).getTime()) / 60000)} min
                    </div>
                 </div>
-                <div className="flex items-center gap-2 text-text-muted text-xs font-semibold relative z-10">
+                <div className="flex items-center gap-2 text-text/75 text-xs font-semibold relative z-10">
                    <MapPin size={14} /> {p.usuario?.unidad?.torre} - Apto {p.usuario?.unidad?.numero} ({p.usuario?.nombre})
                 </div>
                 <button onClick={() => markAsDelivered(p.id)} className="w-full mt-2 py-3 bg-surface-2 border border-border hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest relative z-10 text-text">

@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 
 export async function GET() {
   const session = await auth();
-  if (!session || session.user.role !== 'ENCARGADO_PARQUEADERO') {
+  if (!session?.user || (session.user as any).role !== 'ENCARGADO_PARQUEADERO') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

@@ -167,7 +167,7 @@ export async function POST(req: Request) {
     // Get user's context
     const { data: user } = await supabase
       .from("Usuario")
-      .select("conjuntoId, torre, apto")
+      .select("conjuntoId, torre, apto, telefono")
       .eq("id", userId)
       .single();
 

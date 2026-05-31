@@ -647,11 +647,11 @@ function ProfileContent() {
                  
                  <div className="space-y-4">
                     <div className="flex flex-col gap-1">
-                      <span className="text-[10px] text-text/20 uppercase tracking-widest font-black">Correo Electrónico</span>
+                      <span className="text-[10px] text-text/50 uppercase tracking-widest font-black">Correo Electrónico</span>
                       <span className="text-sm font-medium text-text/80">{userData.email}</span>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className="text-[10px] text-text/20 uppercase tracking-widest font-black">Teléfono</span>
+                      <span className="text-[10px] text-text/50 uppercase tracking-widest font-black">Teléfono</span>
                       <span className="text-sm font-medium text-text/80">{userData.phone || "No especificado"}</span>
                     </div>
                  </div>
@@ -669,8 +669,8 @@ function ProfileContent() {
                <div className="space-y-3">
                   {activeReservas.length === 0 ? (
                     <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
-                       <Calendar className="mx-auto text-text/10 mb-3" size={40} />
-                       <p className="text-text/30 text-xs italic">No tienes reservas activas en este momento.</p>
+                       <Calendar className="mx-auto text-text/20 mb-3" size={40} />
+                       <p className="text-text/60 text-xs italic">No tienes reservas activas en este momento.</p>
                     </div>
                   ) : (
                     activeReservas.map((res, i) => (
@@ -698,7 +698,7 @@ function ProfileContent() {
                                 </h4>
                               </div>
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] text-text/40 font-mono tracking-tighter">
+                                <span className="text-[10px] text-text/60 font-mono tracking-tighter">
                                   {new Date(res.fechaInicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} • {new Date(res.fechaFin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
@@ -723,13 +723,13 @@ function ProfileContent() {
                  </button>
                </div>
                {vehiculos.length === 0 ? (
-                 <p className="text-text/30 text-sm italic px-2">No tienes vehículos registrados.</p>
+                 <p className="text-text/60 text-sm italic px-2">No tienes vehículos registrados.</p>
                ) : (
                  vehiculos.map((v, i) => (
                    <div key={i} className="liquid-glass-card rounded-2xl p-5 border border-border flex justify-between items-center bg-primary-light/50">
                       <div className="flex flex-col">
                          <span className="text-2xl font-black text-text tracking-widest font-mono uppercase">{v.placa}</span>
-                         <span className="text-xs text-text/50">{v.marca} {v.modelo} • {v.color}</span>
+                         <span className="text-xs text-text/70">{v.marca} {v.modelo} • {v.color}</span>
                       </div>
                       <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
                          <CheckCircle2 size={18} />
@@ -757,11 +757,11 @@ function ProfileContent() {
                  mascotas.map((m, i) => (
                     <div key={i} className="liquid-glass-card rounded-2xl p-4 border border-border flex gap-4 items-center bg-primary-light/50">
                       <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-border shrink-0">
-                         {m.fotoUrl ? <Image src={m.fotoUrl} alt="" width={56} height={56} className="object-cover" /> : <div className="w-full h-full bg-text/5 flex items-center justify-center"><PawPrint className="text-text/20"/></div>}
+                         {m.fotoUrl ? <Image src={m.fotoUrl} alt="" width={56} height={56} className="object-cover" /> : <div className="w-full h-full bg-text/5 flex items-center justify-center"><PawPrint className="text-text/50"/></div>}
                       </div>
                       <div className="flex flex-col">
                          <span className="text-lg font-bold text-text capitalize">{m.nombre}</span>
-                         <span className="text-xs text-text/50">{m.tipo} • {m.raza || "Cruce"}</span>
+                         <span className="text-xs text-text/70">{m.tipo} • {m.raza || "Cruce"}</span>
                       </div>
                    </div>
                  ))
@@ -807,15 +807,15 @@ function ProfileContent() {
                </div>
 
                <div className="space-y-3">
-                  <p className="text-[10px] text-text/30 uppercase tracking-widest font-black ml-2 mb-2">Solicitudes Recientes</p>
+                  <p className="text-[10px] text-text/60 uppercase tracking-widest font-black ml-2 mb-2">Solicitudes Recientes</p>
                   {tramites.length === 0 ? (
-                    <p className="text-text/20 text-xs italic ml-2">No hay trámites pendientes.</p>
+                    <p className="text-text/55 text-xs italic ml-2">No hay trámites pendientes.</p>
                   ) : (
                     tramites.map((t, i) => (
                       <div key={i} className="liquid-glass-card rounded-2xl p-4 border border-border flex justify-between items-center bg-primary-light/30">
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-text capitalize">{t.tipo.toLowerCase()}</span>
-                          <span className="text-[10px] text-text/40 uppercase tracking-tighter">{new Date(t.creadoEn).toLocaleDateString()}</span>
+                          <span className="text-[10px] text-text/60 uppercase tracking-tighter">{new Date(t.creadoEn).toLocaleDateString()}</span>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
                           t.estado === "APROBADO" ? "bg-green-500/20 text-green-400" : 
@@ -840,7 +840,7 @@ function ProfileContent() {
                       <button 
                          key={tab}
                          onClick={() => setFinancialTab(tab as "pendientes" | "historial")}
-                         className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${financialTab === tab ? "bg-accent text-primary shadow-lg" : "text-text/40"}`}
+                         className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${financialTab === tab ? "bg-accent text-primary shadow-lg" : "text-text/60"}`}
                       >
                          {tab}
                       </button>
@@ -857,7 +857,7 @@ function ProfileContent() {
                            <div className="flex flex-col">
                               <span className="text-[10px] text-accent/60 uppercase tracking-widest font-black mb-1">Administración</span>
                               <span className="text-sm font-bold text-text">{p.concepto}</span>
-                              <span className="text-[10px] text-text/30 uppercase mt-1">Vence: {new Date(p.fechaVencimiento).toLocaleDateString()}</span>
+                              <span className="text-[10px] text-text/60 uppercase mt-1">Vence: {new Date(p.fechaVencimiento).toLocaleDateString()}</span>
                            </div>
                            <div className="flex flex-col items-end gap-2">
                               <span className="text-lg font-black text-text">${Number(p.monto).toLocaleString()}</span>
@@ -876,7 +876,7 @@ function ProfileContent() {
                            <div className="flex flex-col">
                               <span className="text-[10px] text-blue-400 uppercase tracking-widest font-black mb-1">Servicios Públicos</span>
                               <span className="text-sm font-bold text-text">{r.servicio}</span>
-                              <span className="text-[10px] text-text/30 uppercase mt-1">Vence: {new Date(r.vencimiento).toLocaleDateString()}</span>
+                              <span className="text-[10px] text-text/60 uppercase mt-1">Vence: {new Date(r.vencimiento).toLocaleDateString()}</span>
                            </div>
                            <div className="flex flex-col items-end gap-2">
                                <span className="text-lg font-black text-text">${Number(r.monto).toLocaleString()}</span>
@@ -893,7 +893,7 @@ function ProfileContent() {
                       {financialData.pagos.filter(p => (p as any).estado !== 'PAGADO').length === 0 && 
                        financialData.recibos.filter(r => !(r as any).pagado).length === 0 && (
                         <div className="text-center py-10">
-                           <p className="text-text/20 text-sm italic mb-4">No tienes deudas pendientes.</p>
+                           <p className="text-text/60 text-sm italic mb-4">No tienes deudas pendientes.</p>
                         </div>
                       )}
                     </>
@@ -901,7 +901,7 @@ function ProfileContent() {
                     <>
                       {/* HISTORIAL DE PAGOS */}
                       {[...financialData.pagos.filter(p => p.estado === 'PAGADO'), ...financialData.recibos.filter(r => r.pagado)].length === 0 ? (
-                        <p className="text-text/20 text-xs italic ml-2">No hay registros de pagos anteriores.</p>
+                        <p className="text-text/60 text-xs italic ml-2">No hay registros de pagos anteriores.</p>
                       ) : (
                         [...financialData.pagos.filter(p => p.estado === 'PAGADO'), ...financialData.recibos.filter(r => r.pagado)]
                           .sort((a,b) => new Date((b as any).fechaPago || (b as any).creadoEn).getTime() - new Date((a as any).fechaPago || (a as any).creadoEn).getTime())
@@ -909,13 +909,13 @@ function ProfileContent() {
                             <div key={i} className="liquid-glass-card rounded-2xl p-4 border border-border flex justify-between items-center bg-primary-light/30">
                                <div className="flex flex-col">
                                   <span className="text-sm font-bold text-text">{(item as any).concepto || (item as any).servicio}</span>
-                                  <span className="text-[10px] text-text/30 uppercase tracking-tighter">
+                                  <span className="text-[10px] text-text/60 uppercase tracking-tighter">
                                     Pagado el: {new Date((item as any).fechaPago || (item as any).creadoEn).toLocaleDateString()}
                                   </span>
                                </div>
                                <div className="flex flex-col items-end">
                                   <span className="text-sm font-black text-green-400">${Number((item as any).monto).toLocaleString()}</span>
-                                  <div className="flex items-center gap-1 text-[8px] text-text/20 uppercase font-black">
+                                  <div className="flex items-center gap-1 text-[8px] text-text/50 uppercase font-black">
                                      <CheckCircle2 size={10} /> Conciliado
                                   </div>
                                </div>
@@ -940,8 +940,8 @@ function ProfileContent() {
               <div className="space-y-3">
                 {activePaquetes.length === 0 ? (
                   <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
-                    <Package className="mx-auto text-text/10 mb-3" size={40} />
-                    <p className="text-text/30 text-xs italic text-pretty">No hay paquetes registrados a tu nombre en este momento.</p>
+                    <Package className="mx-auto text-text/20 mb-3" size={40} />
+                    <p className="text-text/60 text-xs italic text-pretty">No hay paquetes registrados a tu nombre en este momento.</p>
                   </div>
                 ) : (
                   activePaquetes.map((pkg, i) => (
@@ -951,11 +951,11 @@ function ProfileContent() {
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-start mb-1">
-                          <span className="text-[10px] font-black text-text/40 uppercase tracking-widest leading-none">{pkg.remitente || "Remitente Desconocido"}</span>
+                          <span className="text-[10px] font-black text-text/60 uppercase tracking-widest leading-none">{pkg.remitente || "Remitente Desconocido"}</span>
                           <span className="text-[8px] font-black text-accent uppercase bg-accent/10 px-2 py-0.5 rounded-full ring-1 ring-accent/20">{pkg.origen || "Nacional"}</span>
                         </div>
                         <h4 className="text-sm font-bold text-text mb-1">Guía: {pkg.guia || "S/G"}</h4>
-                        <p className="text-[10px] text-text/30 uppercase tracking-tighter">Recibido: {new Date(pkg.fechaLlegada).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-[10px] text-text/65 uppercase tracking-tighter">Recibido: {new Date(pkg.fechaLlegada).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                       <div className="flex flex-col items-center gap-1">
                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
@@ -967,7 +967,7 @@ function ProfileContent() {
 
                 <div className="mt-8 p-4 rounded-3xl bg-blue-500/5 border border-blue-500/20 flex gap-3 items-center">
                    <Info size={16} className="text-blue-400 shrink-0" />
-                   <p className="text-[10px] text-text/40 leading-relaxed uppercase tracking-tighter italic">Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.</p>
+                   <p className="text-[10px] text-text/60 leading-relaxed uppercase tracking-tighter italic">Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.</p>
                 </div>
               </div>
             </div>
@@ -1024,9 +1024,9 @@ function ProfileContent() {
               <div className="flex justify-between items-center mb-8">
                  <div>
                    <h2 className="text-2xl font-display font-bold text-text tracking-tight">Editar Perfil</h2>
-                   <p className="text-[10px] text-accent/50 uppercase tracking-[0.2em] mt-1 font-black">Configuración personal</p>
+                   <p className="text-[10px] text-accent/70 uppercase tracking-[0.2em] mt-1 font-black">Configuración personal</p>
                  </div>
-                 <button onClick={() => setShowEditModal(false)} className="w-12 h-12 rounded-full bg-text/5 flex items-center justify-center text-text/50 hover:bg-text/10 transition-colors">
+                 <button onClick={() => setShowEditModal(false)} className="w-12 h-12 rounded-full bg-text/5 flex items-center justify-center text-text/70 hover:bg-text/10 transition-colors">
                     <X size={20} />
                  </button>
               </div>
@@ -1060,46 +1060,46 @@ function ProfileContent() {
                  />
 
                  <div className="space-y-2">
-                    <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-bold ml-1">Nombre Completo</label>
+                    <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-bold ml-1">Nombre Completo</label>
                     <input 
                       type="text" 
                       value={editForm.name}
                       onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                      className="w-full bg-primary-light/50 border border-border rounded-[24px] p-5 text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all"
+                      className="w-full bg-primary-light/50 border border-border rounded-[24px] p-5 text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50"
                     />
                   </div>
 
                     <div className="space-y-2 opacity-50">
-                       <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-bold ml-1">Torre</label>
+                       <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-bold ml-1">Torre</label>
                        <input 
                          type="text" 
                          value={editForm.torre}
                          disabled
-                         className="w-full bg-primary-light/20 border border-border rounded-[24px] p-5 text-text/40 cursor-not-allowed transition-all"
+                         className="w-full bg-primary-light/20 border border-border rounded-[24px] p-5 text-text/50 cursor-not-allowed transition-all"
                        />
                     </div>
                     <div className="space-y-2 opacity-50">
-                       <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-bold ml-1">Apto</label>
+                       <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-bold ml-1">Apto</label>
                        <input 
                          type="text" 
                          value={editForm.apto}
                          disabled
-                         className="w-full bg-primary-light/20 border border-border rounded-[24px] p-5 text-text/40 cursor-not-allowed transition-all"
+                         className="w-full bg-primary-light/20 border border-border rounded-[24px] p-5 text-text/50 cursor-not-allowed transition-all"
                        />
                     </div>
 
                  <div className="space-y-2">
-                    <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-bold ml-1">Teléfono Móvil</label>
+                    <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-bold ml-1">Teléfono Móvil</label>
                     <input 
                       type="text" 
                       value={editForm.phone}
                       onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
-                      className="w-full bg-primary-light/50 border border-border rounded-[24px] p-5 text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all"
+                      className="w-full bg-primary-light/50 border border-border rounded-[24px] p-5 text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50"
                     />
                  </div>
 
                  <div className="space-y-2">
-                    <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-bold ml-1">Género</label>
+                    <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-bold ml-1">Género</label>
                     <select
                       value={editForm.gender}
                       onChange={(e) => setEditForm({...editForm, gender: e.target.value as any})}
@@ -1137,11 +1137,11 @@ function ProfileContent() {
                         regType === "MASCOTA" ? <><PawPrint className="text-purple-400" /> Registrar Mascota</> :
                         <><ClipboardList className="text-blue-400" /> Solicitud de Trámite</>}
                     </h2>
-                    <p className="text-[10px] text-text/40 uppercase tracking-[0.2em] mt-1 font-black">
+                    <p className="text-[10px] text-text/60 uppercase tracking-[0.2em] mt-1 font-black">
                        {regType === "OTRO" ? "Actualización de Datos Sensibles" : "Solicitud de Vinculación Oficial"}
                     </p>
                  </div>
-                 <button onClick={() => setShowRegModal(false)} className="w-12 h-12 rounded-full bg-text/5 flex items-center justify-center text-text/50 hover:bg-text/10 transition-colors">
+                 <button onClick={() => setShowRegModal(false)} className="w-12 h-12 rounded-full bg-text/5 flex items-center justify-center text-text/70 hover:bg-text/10 transition-colors">
                     <X size={20} />
                  </button>
               </div>
@@ -1150,14 +1150,14 @@ function ProfileContent() {
                  {regType === "VEHICULO" ? (
                     <>
                        <div className="space-y-1.5">
-                           <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Clase de Vehículo</label>
+                           <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Clase de Vehículo</label>
                            <div className="grid grid-cols-3 gap-2">
                               {["CARRO", "MOTO", "BICI"].map((t) => (
                                  <button 
                                    key={t}
                                    type="button"
                                    onClick={() => setRegForm({...regForm, tipoVehiculo: t})}
-                                   className={`py-3 rounded-2xl text-[10px] font-bold tracking-widest border transition-all ${regForm.tipoVehiculo === t ? 'bg-accent/20 border-accent text-accent' : 'bg-primary-light/50 border-border text-text/40'}`}
+                                   className={`py-3 rounded-2xl text-[10px] font-bold tracking-widest border transition-all ${regForm.tipoVehiculo === t ? 'bg-accent/20 border-accent text-accent' : 'bg-primary-light/50 border-border text-text/60'}`}
                                  >
                                     {t}
                                  </button>
@@ -1166,38 +1166,38 @@ function ProfileContent() {
                        </div>
                        <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Marca</label>
-                            <input required placeholder="Ej: Toyota" type="text" value={regForm.marca} onChange={(e) => setRegForm({...regForm, marca: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all" />
+                            <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Marca</label>
+                            <input required placeholder="Ej: Toyota" type="text" value={regForm.marca} onChange={(e) => setRegForm({...regForm, marca: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
                          </div>
                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Modelo</label>
-                            <input required placeholder="Ej: Corolla" type="text" value={regForm.modelo} onChange={(e) => setRegForm({...regForm, modelo: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all" />
+                            <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Modelo</label>
+                            <input required placeholder="Ej: Corolla" type="text" value={regForm.modelo} onChange={(e) => setRegForm({...regForm, modelo: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
                          </div>
                        </div>
                        <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Año</label>
-                            <input required placeholder="2024" type="text" value={regForm.ano} onChange={(e) => setRegForm({...regForm, ano: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all" />
+                            <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Año</label>
+                            <input required placeholder="2024" type="text" value={regForm.ano} onChange={(e) => setRegForm({...regForm, ano: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
                          </div>
                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Color</label>
-                            <input required placeholder="Blanco" type="text" value={regForm.color} onChange={(e) => setRegForm({...regForm, color: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all" />
+                            <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Color</label>
+                            <input required placeholder="Blanco" type="text" value={regForm.color} onChange={(e) => setRegForm({...regForm, color: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
                          </div>
                        </div>
                        <div className="space-y-1.5">
-                          <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Placa</label>
-                          <input required placeholder="ABC-123" type="text" value={regForm.placa} onChange={(e) => setRegForm({...regForm, placa: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-lg font-mono text-center tracking-[0.3em] font-black text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 uppercase transition-all" />
+                          <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Placa</label>
+                          <input required placeholder="ABC-123" type="text" value={regForm.placa} onChange={(e) => setRegForm({...regForm, placa: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-lg font-mono text-center tracking-[0.3em] font-black text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 uppercase transition-all placeholder:text-text/50" />
                        </div>
                     </>
                  ) : regType === "MASCOTA" ? (
                     <>
                        <div className="space-y-1.5">
-                          <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Nombre de la Mascota</label>
-                          <input required placeholder="Ej: Toby" type="text" value={regForm.nombre} onChange={(e) => setRegForm({...regForm, nombre: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-purple-400/40 focus:bg-primary-light/80 transition-all" />
+                          <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Nombre de la Mascota</label>
+                          <input required placeholder="Ej: Toby" type="text" value={regForm.nombre} onChange={(e) => setRegForm({...regForm, nombre: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-purple-400/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
                        </div>
                        <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Tipo</label>
+                            <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Tipo</label>
                             <select required value={regForm.tipo} onChange={(e) => setRegForm({...regForm, tipo: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none appearance-none cursor-pointer focus:bg-primary-light/80 transition-all">
                                <option value="" className="bg-primary text-text">Seleccionar...</option>
                                <option value="PERRO" className="bg-primary text-text">Perro</option>
@@ -1206,15 +1206,15 @@ function ProfileContent() {
                             </select>
                          </div>
                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Raza</label>
-                            <input required placeholder="Ej: Criollo" type="text" value={regForm.raza} onChange={(e) => setRegForm({...regForm, raza: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:bg-primary-light/80 transition-all" />
+                            <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Raza</label>
+                            <input required placeholder="Ej: Criollo" type="text" value={regForm.raza} onChange={(e) => setRegForm({...regForm, raza: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
                          </div>
                        </div>
                     </>
                  ) : (
                     <>
                        <div className="space-y-1.5">
-                          <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">
+                          <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">
                             {regForm.tipo === "CELULAR" ? "Nuevo Número Celular" : 
                              regForm.tipo === "EMAIL" ? "Nuevo Correo Electrónico" : 
                              regForm.tipo === "PASSWORD" ? "Nueva Contraseña" : "Descripción del Trámite"}
@@ -1225,11 +1225,11 @@ function ProfileContent() {
                             type={regForm.tipo === "PASSWORD" ? "password" : "text"} 
                             value={regForm.nombre} 
                             onChange={(e) => setRegForm({...regForm, nombre: e.target.value})} 
-                            className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-blue-500/40 focus:bg-primary-light/80 transition-all" 
+                            className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-blue-500/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" 
                           />
                        </div>
                        <div className="p-4 rounded-2xl bg-primary-light/30 border border-border">
-                         <p className="text-[10px] text-text/60 leading-relaxed italic">
+                         <p className="text-[10px] text-text/70 leading-relaxed italic">
                             * Al solicitar este cambio, recibirás una notificación una vez el administrador haya verificado y aprobado la actualización.
                          </p>
                        </div>
@@ -1238,7 +1238,7 @@ function ProfileContent() {
  
                  {/* DOCUMENT DROPZONE (Multi-format) */}
                  <div className="space-y-3">
-                    <label className="text-[10px] text-text/30 uppercase tracking-[0.2em] font-black ml-1">Documentación Requerida (PDF/IMG)</label>
+                    <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Documentación Requerida (PDF/IMG)</label>
                     <div className="grid grid-cols-3 gap-2">
                        {regDocs.map((doc, idx) => (
                           <div key={idx} className="relative aspect-square rounded-2xl bg-text/5 border border-border flex flex-col items-center justify-center p-2 group overflow-hidden">
@@ -1247,19 +1247,19 @@ function ProfileContent() {
                              ) : (
                                 <Image src={doc.base64} alt="" fill className="object-cover opacity-60" />
                              )}
-                             <span className="text-[8px] text-text/30 truncate w-full text-center mt-1 px-1">{doc.nombre}</span>
+                             <span className="text-[8px] text-text/60 truncate w-full text-center mt-1 px-1">{doc.nombre}</span>
                              <button type="button" onClick={() => setRegDocs(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500/80 text-white flex items-center justify-center scale-0 group-hover:scale-100 transition-transform">
                                 <X size={12} />
                              </button>
                           </div>
                        ))}
                        <label className="aspect-square rounded-2xl border-2 border-dashed border-border hover:border-accent/40 cursor-pointer flex flex-col items-center justify-center transition-colors hover:bg-text/5 group">
-                          <Plus size={20} className="text-text/20 group-hover:text-accent transition-colors" />
-                          <span className="text-[8px] text-text/20 mt-1 uppercase font-bold tracking-tighter">Adjuntar</span>
+                          <Plus size={20} className="text-text/50 group-hover:text-accent transition-colors" />
+                          <span className="text-[8px] text-text/50 mt-1 uppercase font-bold tracking-tighter">Adjuntar</span>
                           <input type="file" multiple accept="image/*,application/pdf" className="hidden" onChange={handleRegFileSelection} />
                        </label>
                     </div>
-                    <p className="text-[9px] text-text/30 italic px-1">
+                    <p className="text-[9px] text-text/60 italic px-1">
                        {regType === "VEHICULO" ? "Adjuntar: SOAT, Técnico-Mecánica, Licencia y Matrícula." : 
                         regType === "MASCOTA" ? "Adjuntar: Certificado de Vacunación actualizado." :
                         "Adjuntar: Copia de Cédula o Documento que soporte el cambio."}
@@ -1271,10 +1271,10 @@ function ProfileContent() {
                     <Info size={20} className="text-blue-400 shrink-0 mt-0.5" />
                     <div className="space-y-2">
                        <h4 className="text-[11px] font-black text-blue-300 uppercase tracking-widest">Aviso de Reglas y Convivencia</h4>
-                       <p className="text-[10px] text-text/40 leading-relaxed">
+                       <p className="text-[10px] text-text/60 leading-relaxed">
                           La vinculación está sujeta a **aprobación administrativa y disponibilidad**. Es indispensable estar **a paz y salvo**. 
                           Queda prohibido el lavado o reparaciones de vehículos en áreas comunes. 
-                          <span className="text-yellow-500/60 font-bold block mt-1">⚠️ El incumplimiento de las normas de convivencia puede generar multas pecuniarias.</span>
+                          <span className="text-yellow-600 dark:text-yellow-400 font-bold block mt-1">⚠️ El incumplimiento de las normas de convivencia puede generar multas pecuniarias.</span>
                        </p>
                     </div>
                  </div>

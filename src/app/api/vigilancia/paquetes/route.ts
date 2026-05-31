@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 
 export async function GET() {
   const session = await auth();
-  if (!session || (session.user.role !== 'VIGILANTE' && session.user.role !== 'SUPERVISOR_VIGILANCIA')) {
+  if (!session?.user || ((session.user as any).role !== 'VIGILANTE' && (session.user as any).role !== 'SUPERVISOR_VIGILANCIA')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
@@ -28,7 +28,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session || (session.user.role !== 'VIGILANTE' && session.user.role !== 'SUPERVISOR_VIGILANCIA')) {
+  if (!session?.user || ((session.user as any).role !== 'VIGILANTE' && (session.user as any).role !== 'SUPERVISOR_VIGILANCIA')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 // Para marcar como ENTREGADO
 export async function PUT(req: Request) {
   const session = await auth();
-  if (!session || (session.user.role !== 'VIGILANTE' && session.user.role !== 'SUPERVISOR_VIGILANCIA')) {
+  if (!session?.user || ((session.user as any).role !== 'VIGILANTE' && (session.user as any).role !== 'SUPERVISOR_VIGILANCIA')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

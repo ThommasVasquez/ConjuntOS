@@ -262,7 +262,7 @@ export default function CarteleraPage() {
       case 'ALTA': return 'bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30';
       case 'MEDIA': return 'bg-orange-500/10 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30';
       case 'BAJA': return 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30';
-      default: return 'bg-surface-2 text-text-muted border-border';
+      default: return 'bg-surface-2 text-text/70 border-border';
     }
   };
 
@@ -274,24 +274,23 @@ export default function CarteleraPage() {
       {isLiveActive && (
         <section className="fade-up w-full">
            <div className="liquid-glass-card rounded-[32px] p-6 border border-emerald-500/20 bg-linear-to-br from-emerald-500/5 to-transparent relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-700" />
-              
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500" />
               <div className="flex justify-between items-center mb-4">
                  <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">
                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> EN VIVO
                     </div>
-                    <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">Asamblea General 2024</span>
+                    <span className="text-[10px] text-text/80 font-bold uppercase tracking-widest">Asamblea General 2024</span>
                  </div>
-                 <div className="flex items-center gap-1.5 text-white/80">
+                 <div className="flex items-center gap-1.5 text-text">
                     <Users size={12} />
                     <span className="text-[10px] font-mono">154</span>
                  </div>
               </div>
-
+ 
               <div className="flex flex-col gap-1 mb-5">
-                 <h2 className="text-xl font-display font-bold text-white tracking-tight">Decisiones Conjuntas: Presupuesto Anual</h2>
-                 <p className="text-xs text-white/60">Participa en tiempo real y ejerce tu voto.</p>
+                 <h2 className="text-xl font-display font-bold text-text tracking-tight">Decisiones Conjuntas: Presupuesto Anual</h2>
+                 <p className="text-xs text-text/75">Participa en tiempo real y ejerce tu voto.</p>
               </div>
 
               <button 
@@ -307,7 +306,7 @@ export default function CarteleraPage() {
       {/* FILTER TABS */}
       <section className="fade-up flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
          {['TODOS', 'ADMINISTRACION', 'LICITACION', 'SEGURIDAD', 'EVENTO', 'MANTENIMIENTO'].map((cat) => (
-           <button key={cat} onClick={() => setSelectedCategory(cat)} className={`shrink-0 px-5 py-2.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-accent border-accent text-primary shadow-lg' : 'bg-surface-2 border-border text-text-muted hover:bg-surface-2/80'}`}>
+           <button key={cat} onClick={() => setSelectedCategory(cat)} className={`shrink-0 px-5 py-2.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-accent border-accent text-primary shadow-lg' : 'bg-surface-2 border-border text-text/70 hover:bg-surface-2/80'}`}>
               {cat}
            </button>
          ))}
@@ -318,12 +317,12 @@ export default function CarteleraPage() {
          {isLoadingNotices ? (
            <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-10 h-10 text-accent animate-spin" />
-              <p className="text-text-muted text-xs font-bold uppercase tracking-widest">Sincronizando Cartelera...</p>
+              <p className="text-text/75 text-xs font-bold uppercase tracking-widest">Sincronizando Cartelera...</p>
            </div>
          ) : filteredNotices.length === 0 ? (
            <div className="flex flex-col items-center justify-center py-20 gap-4 liquid-glass-card rounded-[32px] border border-border p-10">
-              <Megaphone size={32} className="text-text-muted mb-2" />
-              <p className="text-text-muted text-sm font-bold">No hay avisos publicados</p>
+              <Megaphone size={32} className="text-text/60 mb-2" />
+              <p className="text-text/80 text-sm font-bold">No hay avisos publicados</p>
            </div>
          ) : filteredNotices.map((notice: Notice) => (
            <div key={notice.id} onClick={() => setSelectedNotice(notice)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden border border-border hover:border-accent/30 transition-all active:scale-[0.98] cursor-pointer group shadow-2xl">
@@ -336,7 +335,7 @@ export default function CarteleraPage() {
               <div className="p-6 flex flex-col gap-4">
                  <div className="flex justify-between items-start">
                     <div className={`px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${getPriorityColor(notice.priority)}`}>Prioridad {notice.priority}</div>
-                    <span className="text-[10px] text-text-muted font-bold">{notice.date}</span>
+                    <span className="text-[10px] text-text/70 font-bold">{notice.date}</span>
                  </div>
                  <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-accent">
@@ -344,12 +343,12 @@ export default function CarteleraPage() {
                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{notice.category}</span>
                     </div>
                     <h3 className="text-text text-lg font-bold leading-snug group-hover:text-accent transition-colors">{notice.title}</h3>
-                    <p className="text-text-muted text-xs line-clamp-2 leading-relaxed">{notice.content}</p>
+                    <p className="text-text/75 text-xs line-clamp-2 leading-relaxed">{notice.content}</p>
                  </div>
                  <div className="flex justify-between items-center pt-2 border-t border-border">
                     <div className="flex items-center gap-2">
-                       <Megaphone size={12} className="text-text-muted" />
-                       <span className="text-[10px] text-text-muted">{notice.author}</span>
+                       <Megaphone size={12} className="text-text/60" />
+                       <span className="text-[10px] text-text/75">{notice.author}</span>
                     </div>
                     <div className="flex items-center gap-1 text-accent text-[10px] font-bold uppercase group-hover:gap-2 transition-all">Leer más <ArrowRight size={14} /></div>
                  </div>
@@ -388,7 +387,7 @@ export default function CarteleraPage() {
                  </div>
                  <div className="grid grid-cols-2 gap-3 w-full">
                     <div className="p-3 rounded-2xl bg-surface-2 border border-border flex flex-col items-center">
-                       <span className="text-[8px] text-text-muted uppercase font-black">Quórum</span>
+                       <span className="text-[8px] text-text/70 uppercase font-black">Quórum</span>
                        <span className="text-lg font-bold text-emerald-400">84.2%</span>
                     </div>
                     <div className="p-3 rounded-2xl bg-surface-2 border border-border flex flex-col items-center text-accent">
@@ -403,7 +402,7 @@ export default function CarteleraPage() {
                   <div className="flex-1 h-12 bg-surface-2 rounded-2xl flex items-center px-4 border border-border">
                     <span className="text-xs text-white/60 italic">Enlace a documento adjunto...</span>
                   </div>
-                  <button className="w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center text-text-muted/80"><MessageSquare size={18} /></button>
+                  <button className="w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center text-text/80"><MessageSquare size={18} /></button>
               </div>
            </div>
 
@@ -460,7 +459,7 @@ export default function CarteleraPage() {
                    </div>
                  )}
                  <div className="p-8 flex flex-col gap-6">
-                    {!selectedNotice.image && <div className="flex justify-end"><button onClick={() => setSelectedNotice(null)} className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text-muted/60"><X size={20} /></button></div>}
+                    {!selectedNotice.image && <div className="flex justify-end"><button onClick={() => setSelectedNotice(null)} className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text/65"><X size={20} /></button></div>}
                     <div className="flex flex-col gap-3">
                        <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center text-primary">{getNoticeIcon(selectedNotice.category)}</div>
@@ -469,14 +468,14 @@ export default function CarteleraPage() {
                              <h2 className="text-2xl font-display font-bold text-text tracking-tight leading-none mt-1">{selectedNotice.title}</h2>
                           </div>
                        </div>
-                       <div className="flex items-center gap-4 text-text-muted text-[10px] font-bold uppercase tracking-widest mt-2">
+                       <div className="flex items-center gap-4 text-text/70 text-[10px] font-bold uppercase tracking-widest mt-2">
                           <div className="flex items-center gap-1.5"><Clock size={12} /> {selectedNotice.date}</div>
                           <div className="flex items-center gap-1.5"><Megaphone size={12} /> {selectedNotice.author}</div>
                        </div>
                     </div>
                     <p className="text-text/70 text-base leading-relaxed">{selectedNotice.content}</p>
                     <div className="flex flex-col gap-4 pt-6 border-t border-border">
-                       <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-text-muted text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
+                       <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-text/70 text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
                        <button 
                          onClick={() => {
                             toast.loading("Generando descarga...");
@@ -488,10 +487,10 @@ export default function CarteleraPage() {
                              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400"><ShieldAlert size={18} /></div>
                              <div>
                                  <p className="text-text text-sm font-bold">Circular_Informativa.pdf</p>
-                                 <p className="text-text-muted text-[10px] uppercase font-bold tracking-tighter">PDF • 1.2 MB</p>
+                                 <p className="text-text/70 text-[10px] uppercase font-bold tracking-tighter">PDF • 1.2 MB</p>
                              </div>
                           </div>
-                          <Download size={18} className="text-text-muted/60 group-hover:text-accent transition-all" />
+                          <Download size={18} className="text-text/60 group-hover:text-accent transition-all" />
                        </button>
                     </div>
                     <button 
@@ -553,7 +552,7 @@ export default function CarteleraPage() {
                     </div>
                     <div className="flex flex-col">
                        <h3 className="text-sm font-bold text-text tracking-tight">Atención al Copropietario</h3>
-                       <span className="text-[10px] text-text-muted font-medium uppercase tracking-widest flex items-center gap-1.5">
+                       <span className="text-[10px] text-text/70 font-medium uppercase tracking-widest flex items-center gap-1.5">
                           {isAdminOnline ? (
                             <>
                               <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
@@ -565,7 +564,7 @@ export default function CarteleraPage() {
                  </div>
                  <button 
                    onClick={() => setIsChatOpen(false)}
-                   className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-text-muted hover:bg-surface-2/80 transition-all active:scale-90"
+                   className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-text/70 hover:bg-surface-2/80 transition-all active:scale-90"
                  >
                     <X size={20} />
                  </button>
@@ -574,7 +573,7 @@ export default function CarteleraPage() {
               {/* Chat Body (Messages) */}
               <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scroll-smooth hide-scrollbar bg-linear-to-b from-transparent to-black/20">
                  {chatMessages.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text-muted/40">
+                    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text/60">
                        <MessageCircle size={48} className="text-emerald-500/50" />
                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-center max-w-[200px] leading-relaxed">
                           Envía un mensaje para iniciar una conversación directa con la administración
@@ -588,7 +587,7 @@ export default function CarteleraPage() {
                            : 'bg-emerald-500 text-white rounded-tr-none shadow-lg shadow-emerald-500/10 font-medium'
                        }`}>
                           {m.mensaje}
-                          <div className={`text-[8px] mt-2 opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-start text-text-muted' : 'justify-end font-normal text-white'}`}>
+                          <div className={`text-[8px] mt-2 opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-start text-text/65' : 'justify-end font-normal text-white'}`}>
                              {new Date(m.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                        </div>
@@ -607,7 +606,7 @@ export default function CarteleraPage() {
                          onChange={(e) => setNewMessage(e.target.value)}
                          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                          placeholder="Describe tu solicitud o duda..."
-                         className="w-full bg-transparent border-none text-text text-sm focus:ring-0 placeholder:text-text-muted/60"
+                         className="w-full bg-transparent border-none text-text text-sm focus:ring-0 placeholder:text-text/50"
                        />
                     </div>
                     <button 
@@ -618,7 +617,7 @@ export default function CarteleraPage() {
                        {isSending ? <Loader2 size={24} className="animate-spin" /> : <ArrowRight size={24} className="group-hover:translate-x-0.5 transition-transform" />}
                     </button>
                  </div>
-                 <div className="mt-4 flex items-center justify-center gap-2 text-text-muted/60">
+                 <div className="mt-4 flex items-center justify-center gap-2 text-text/70">
                     <ShieldAlert size={10} />
                     <p className="text-[9px] font-bold uppercase tracking-widest">Conexión Segura & Encriptada</p>
                  </div>

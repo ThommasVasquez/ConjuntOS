@@ -75,7 +75,7 @@ export default function VisitantesPage() {
             <User size={20} />
           </div>
           <div>
-            <span className="text-[10px] text-text/40 font-bold uppercase tracking-widest">En casa</span>
+            <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest">En casa</span>
             <p className="text-2xl font-bold text-text tracking-tight">02</p>
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function VisitantesPage() {
             <Calendar size={20} />
           </div>
           <div>
-            <span className="text-[10px] text-text/40 font-bold uppercase tracking-widest">Agendadas</span>
+            <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest">Agendadas</span>
             <p className="text-2xl font-bold text-text tracking-tight">01</p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function VisitantesPage() {
                </div>
                <div>
                   <h3 className="text-text font-bold text-lg leading-tight">Nueva Invitación</h3>
-                  <p className="text-text/40 text-xs">Genera un QR para tu visita en segundos.</p>
+                  <p className="text-text/60 text-xs">Genera un QR para tu visita en segundos.</p>
                </div>
             </div>
 
@@ -109,7 +109,7 @@ export default function VisitantesPage() {
                <input 
                  type="text" 
                  placeholder="Nombre del Invitado"
-                 className="w-full bg-text/5 border border-border rounded-2xl py-4 px-5 text-sm text-text focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none placeholder:text-text/30"
+                 className="w-full bg-text/5 border border-border rounded-2xl py-4 px-5 text-sm text-text focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none placeholder:text-text/55"
                  value={newVisitForm.name}
                  onChange={(e) => setNewVisitForm({...newVisitForm, name: e.target.value})}
                />
@@ -119,7 +119,7 @@ export default function VisitantesPage() {
                     <button 
                       key={type}
                       onClick={() => setNewVisitForm({...newVisitForm, type: type as 'OCASIONAL' | 'FRECUENTE' | 'DELIVERY'})}
-                      className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer ${newVisitForm.type === type ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text/40 hover:bg-text/10'}`}
+                      className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer ${newVisitForm.type === type ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text/60 hover:bg-text/10'}`}
                     >
                       {type}
                     </button>
@@ -151,7 +151,7 @@ export default function VisitantesPage() {
               <div key={visitor.id} className="liquid-glass-card rounded-[28px] p-5 flex items-center justify-between border border-border hover:border-accent/20 transition-all">
                 <div className="flex items-center gap-4">
                    <div className="w-14 h-14 rounded-full bg-text/5 border border-border flex items-center justify-center relative">
-                      <User size={28} className="text-text/20" />
+                      <User size={28} className="text-text/50" />
                       <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-green-500 rounded-full border-2 border-primary flex items-center justify-center">
                          <CheckCircle2 size={12} className="text-white" />
                       </div>
@@ -162,14 +162,14 @@ export default function VisitantesPage() {
                         <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${visitor.type === 'DELIVERY' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                            {visitor.type}
                         </span>
-                        <div className="flex items-center gap-1 text-text/30 text-[10px]">
+                        <div className="flex items-center gap-1 text-text/60 text-[10px]">
                            <Clock size={12} />
                            <span>Ingresó {visitor.entryTime}</span>
                         </div>
                      </div>
                    </div>
                 </div>
-                <button className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text/40 hover:text-text transition-all ring-1 ring-border cursor-pointer">
+                <button className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text/60 hover:text-text transition-all ring-1 ring-border cursor-pointer">
                    <MoreHorizontal size={20} />
                 </button>
               </div>
@@ -181,19 +181,19 @@ export default function VisitantesPage() {
       <section className="fade-up flex flex-col gap-6">
          <div className="flex justify-between items-center px-1">
             <h2 className="text-text font-display text-lg font-bold tracking-tight">Programadas & Historial</h2>
-            <button className="text-text/40 text-[10px] font-bold uppercase tracking-widest hover:text-text transition-colors cursor-pointer">Ver Todo</button>
+            <button className="text-text/60 text-[10px] font-bold uppercase tracking-widest hover:text-text transition-colors cursor-pointer">Ver Todo</button>
          </div>
 
          <div className="flex flex-col gap-3">
             {visitors.filter(v => v.status !== 'ACTIVO').map((visitor) => (
               <div key={visitor.id} className="liquid-glass-card rounded-[24px] p-4 flex items-center justify-between border border-border opacity-85 hover:opacity-100 transition-all">
                 <div className="flex items-center gap-4">
-                   <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${visitor.status === 'PROGRAMADO' ? 'bg-accent/10 text-accent' : 'bg-text/5 text-text/40'}`}>
+                   <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${visitor.status === 'PROGRAMADO' ? 'bg-accent/10 text-accent' : 'bg-text/5 text-text/60'}`}>
                      {visitor.status === 'PROGRAMADO' ? <Calendar size={20} /> : <Clock size={20} />}
                    </div>
                    <div>
                      <h4 className="text-text font-semibold text-sm leading-tight">{visitor.name}</h4>
-                     <p className="text-text/30 text-[10px] mt-0.5">
+                     <p className="text-text/60 text-[10px] mt-0.5">
                        {visitor.status === 'PROGRAMADO' ? `Llega ${visitor.scheduledDate}` : `Salió ${visitor.entryTime}`}
                      </p>
                    </div>
@@ -201,12 +201,12 @@ export default function VisitantesPage() {
                 {visitor.status === 'PROGRAMADO' ? (
                    <button 
                      onClick={() => { setIsQRModalOpen(true); }}
-                     className="px-4 py-2 rounded-full bg-text/5 border border-border text-text/60 text-[10px] font-bold hover:bg-accent hover:text-white hover:border-accent transition-all cursor-pointer"
+                     className="px-4 py-2 rounded-full bg-text/5 border border-border text-text/70 text-[10px] font-bold hover:bg-accent hover:text-white hover:border-accent transition-all cursor-pointer"
                    >
                      REENVIAR QR
                    </button>
                 ) : (
-                   <button className="w-9 h-9 rounded-full bg-text/5 flex items-center justify-center text-text/20 cursor-pointer">
+                   <button className="w-9 h-9 rounded-full bg-text/5 flex items-center justify-center text-text/50 cursor-pointer">
                       <ArrowRight size={16} />
                    </button>
                 )}
@@ -225,9 +225,9 @@ export default function VisitantesPage() {
                  <div className="w-full flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
                        <ShieldCheck size={18} className="text-green-400" />
-                       <span className="text-text/40 text-[10px] font-bold uppercase tracking-widest">Acceso Seguro</span>
+                       <span className="text-text/60 text-[10px] font-bold uppercase tracking-widest">Acceso Seguro</span>
                     </div>
-                    <button onClick={() => setIsQRModalOpen(false)} className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/40 hover:bg-text/10 cursor-pointer">
+                    <button onClick={() => setIsQRModalOpen(false)} className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/70 hover:bg-text/10 cursor-pointer">
                        <Plus className="rotate-45" size={20} />
                     </button>
                  </div>
@@ -250,7 +250,7 @@ export default function VisitantesPage() {
 
                  <div className="w-full flex flex-col gap-4">
                     <div className="bg-text/5 rounded-2xl p-4 border border-border">
-                       <span className="text-[10px] text-text/30 font-bold uppercase tracking-widest">Invitado</span>
+                       <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest">Invitado</span>
                        <p className="text-text font-bold text-lg">{newVisitForm.name || "Invitado Especial"}</p>
                        <div className="flex items-center gap-2 mt-1">
                           <CheckCircle2 size={14} className="text-accent" />

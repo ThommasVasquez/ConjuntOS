@@ -114,7 +114,7 @@ export default function ParqueaderoPage() {
           </div>
           <div>
             <h3 className="text-2xl font-display font-bold text-text tracking-tight">{misCeldas[0]?.numero || 'N/A'}</h3>
-            <p className="text-[10px] text-text/40 font-bold uppercase tracking-wider">Torre {misCeldas[0]?.torre || '1'}</p>
+            <p className="text-[10px] text-text/60 font-bold uppercase tracking-wider">Torre {misCeldas[0]?.torre || '1'}</p>
           </div>
         </div>
 
@@ -123,11 +123,11 @@ export default function ParqueaderoPage() {
             <div className="p-2.5 rounded-full bg-accent/20 border border-accent/40 text-accent group-hover:scale-110 transition-transform">
               <MapPin size={18} />
             </div>
-            <span className="text-[10px] text-text/40 font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-border">Visitantes</span>
+            <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-border">Visitantes</span>
           </div>
           <div>
             <h3 className="text-2xl font-display font-bold text-text tracking-tight">{disponibilidad.libres} / {disponibilidad.total}</h3>
-            <p className="text-[10px] text-text/40 font-bold uppercase tracking-wider">Disponibles</p>
+            <p className="text-[10px] text-text/60 font-bold uppercase tracking-wider">Disponibles</p>
           </div>
         </div>
       </section>      {/* MY VEHICLES */}
@@ -157,21 +157,21 @@ export default function ParqueaderoPage() {
                        {v.tipo === 'CARRO' ? <Car size={24} /> : <Bike size={24} />}
                     </div>
                     <div className="flex flex-col items-end">
-                       <span className="text-[10px] text-text/30 font-black uppercase tracking-[0.2em]">Placa</span>
+                       <span className="text-[10px] text-text/60 font-black uppercase tracking-[0.2em]">Placa</span>
                        <span className="text-xl font-display font-bold text-text tracking-widest">{v.placa}</span>
                     </div>
                  </div>
 
                  <div className="flex flex-col gap-1">
                     <h4 className="text-lg font-bold text-text tracking-tight">{v.marca}</h4>
-                    <p className="text-xs text-text/40">{v.modelo} • {v.color}</p>
+                    <p className="text-xs text-text/60">{v.modelo} • {v.color}</p>
                  </div>
               </div>
             ))
           ) : (
             <div className="w-full liquid-glass-card rounded-[32px] p-10 border border-dashed border-border flex flex-col items-center justify-center text-center gap-4">
-               <Car size={40} className="text-text/10" />
-               <p className="text-text/40 text-sm font-medium">No tienes vehículos registrados.</p>
+               <Car size={40} className="text-text/30" />
+               <p className="text-text/60 text-sm font-medium">No tienes vehículos registrados.</p>
                <button onClick={() => setShowVehiculoModal(true)} className="text-accent text-xs font-bold uppercase tracking-widest hover:underline cursor-pointer">Registrar ahora</button>
             </div>
           )}
@@ -192,9 +192,9 @@ export default function ParqueaderoPage() {
             </div>
             <div className="flex-1 text-left">
               <h4 className="text-sm font-bold text-text leading-none mb-1.5">Registrar Nuevo Vehículo</h4>
-              <p className="text-[11px] text-text/40">Notificar a portería</p>
+              <p className="text-[11px] text-text/60">Notificar a portería</p>
             </div>
-            <ChevronRight size={16} className="text-text/20 group-hover:text-text transition-colors" />
+            <ChevronRight size={16} className="text-text/50 group-hover:text-text transition-colors" />
           </button>
 
           {[
@@ -211,9 +211,9 @@ export default function ParqueaderoPage() {
               </div>
               <div className="flex-1 text-left">
                 <h4 className="text-sm font-bold text-text leading-none mb-1.5">{item.title}</h4>
-                <p className="text-[11px] text-text/40">{item.sub}</p>
+                <p className="text-[11px] text-text/60">{item.sub}</p>
               </div>
-              <ChevronRight size={16} className="text-text/20 group-hover:text-text transition-colors" />
+              <ChevronRight size={16} className="text-text/50 group-hover:text-text transition-colors" />
             </button>
           ))}
         </div>
@@ -229,7 +229,7 @@ export default function ParqueaderoPage() {
           </div>
           <div>
             <h3 className="text-lg font-display font-bold text-text tracking-tight">Reglamento</h3>
-            <p className="text-[10px] text-text/30 font-bold uppercase tracking-widest">Normas de Convivencia</p>
+            <p className="text-[10px] text-text/60 font-bold uppercase tracking-widest">Normas de Convivencia</p>
           </div>
         </div>
 
@@ -287,7 +287,7 @@ export default function ParqueaderoPage() {
                        </div>
                        <div className="flex flex-col">
                           <span className="text-sm font-bold text-text">{log.placa}</span>
-                          <span className="text-[10px] text-text/30 uppercase tracking-tighter">{log.punto}</span>
+                          <span className="text-[10px] text-text/60 uppercase tracking-tighter">{log.punto}</span>
                        </div>
                     </div>
                     <div className="text-right">
@@ -300,7 +300,7 @@ export default function ParqueaderoPage() {
 
             <div className="mt-8 p-4 rounded-3xl bg-blue-500/5 border border-blue-500/20 flex gap-3 items-center shrink-0">
                <Info size={16} className="text-blue-400" />
-               <p className="text-[10px] text-text/40 leading-relaxed uppercase tracking-tighter font-black">Registros generados automáticamente por el sistema de reconocimiento de placas.</p>
+               <p className="text-[10px] text-text/60 leading-relaxed uppercase tracking-tighter font-black">Registros generados automáticamente por el sistema de reconocimiento de placas.</p>
             </div>
           </div>
         </div>
@@ -324,7 +324,7 @@ export default function ParqueaderoPage() {
 
             <div className="flex-1 overflow-y-auto pr-2 space-y-8 scrollbar-hide text-text/90">
                <section className="space-y-4 pb-4 border-b border-border">
-                  <h4 className="text-sm font-black text-text/40 uppercase tracking-[0.15em] flex items-center gap-2">
+                  <h4 className="text-sm font-black text-text/60 uppercase tracking-[0.15em] flex items-center gap-2">
                      <div className="w-1.5 h-1.5 rounded-full bg-purple-500" /> I. Disposiciones Generales
                   </h4>
                   <p className="text-sm leading-relaxed font-light">
@@ -333,7 +333,7 @@ export default function ParqueaderoPage() {
                </section>
 
                <section className="space-y-4 pb-4 border-b border-border">
-                  <h4 className="text-sm font-black text-text/40 uppercase tracking-[0.15em] flex items-center gap-2">
+                  <h4 className="text-sm font-black text-text/60 uppercase tracking-[0.15em] flex items-center gap-2">
                      <div className="w-1.5 h-1.5 rounded-full bg-purple-500" /> II. Velocidad y Seguridad
                   </h4>
                   <ul className="space-y-3">
@@ -352,19 +352,19 @@ export default function ParqueaderoPage() {
                </section>
 
                <section className="space-y-4 pb-4 border-b border-border">
-                  <h4 className="text-sm font-black text-text/40 uppercase tracking-[0.15em] flex items-center gap-2">
+                  <h4 className="text-sm font-black text-text/60 uppercase tracking-[0.15em] flex items-center gap-2">
                      <div className="w-1.5 h-1.5 rounded-full bg-purple-500" /> III. Parqueo de Visitantes
                   </h4>
                   <p className="text-sm leading-relaxed font-light">
                      Los visitantes tienen derecho a un maximum de 12 horas continuas de parqueo gratuito. A partir de la hora 13, se aplicará el cobro de la tarifa vigente establecida por la asamblea.
                   </p>
-                  <p className="text-[11px] text-yellow-500/80 font-bold bg-yellow-500/5 p-3 rounded-2xl border border-yellow-500/20 italic">
+                  <p className="text-[11px] text-yellow-600 dark:text-yellow-400 font-bold bg-yellow-500/5 p-3 rounded-2xl border border-yellow-500/20 italic">
                      * El mal uso de las celdas de visitantes (parqueo recurrente) será causal de sanción administrativa.
                   </p>
                </section>
 
                <section className="space-y-4">
-                  <h4 className="text-sm font-black text-red-500/60 uppercase tracking-[0.15em] flex items-center gap-2">
+                  <h4 className="text-sm font-black text-red-600 dark:text-red-400 uppercase tracking-[0.15em] flex items-center gap-2">
                      <div className="w-1.5 h-1.5 rounded-full bg-red-500" /> IV. Sanciones Económicas
                   </h4>
                   <p className="text-sm leading-relaxed font-light">
@@ -393,7 +393,7 @@ export default function ParqueaderoPage() {
             <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
                <div>
                    <h3 className="text-xl font-display font-semibold text-text tracking-wide">Añadir Vehículo</h3>
-                   <p className="text-xs text-text/50 mt-1">Registrar para acceso vehicular</p>
+                   <p className="text-xs text-text/70 mt-1">Registrar para acceso vehicular</p>
                </div>
                <button onClick={() => setShowVehiculoModal(false)} className="w-8 h-8 rounded-full bg-text/10 flex items-center justify-center text-text/70 hover:text-text hover:bg-text/20 transition-all cursor-pointer">
                   <X size={16} />
@@ -401,10 +401,10 @@ export default function ParqueaderoPage() {
             </div>
             
             <div className="flex flex-col gap-4">
-                <input type="text" placeholder="Placa (ej. XYZ-123)" value={vehiculoForm.placa} onChange={(e) => setVehiculoForm({...vehiculoForm, placa: e.target.value})} className="w-full bg-text/5 border border-border rounded-2xl px-4 py-3.5 text-text outline-none focus:border-accent uppercase placeholder:text-text/30" />
+                <input type="text" placeholder="Placa (ej. XYZ-123)" value={vehiculoForm.placa} onChange={(e) => setVehiculoForm({...vehiculoForm, placa: e.target.value})} className="w-full bg-text/5 border border-border rounded-2xl px-4 py-3.5 text-text outline-none focus:border-accent uppercase placeholder:text-text/50" />
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Marca (BMW)" value={vehiculoForm.marca} onChange={(e) => setVehiculoForm({...vehiculoForm, marca: e.target.value})} className="w-full bg-text/5 border border-border rounded-2xl px-4 py-3.5 text-text outline-none focus:border-accent placeholder:text-text/30" />
-                  <input type="text" placeholder="Gris Claro" value={vehiculoForm.color} onChange={(e) => setVehiculoForm({...vehiculoForm, color: e.target.value})} className="w-full bg-text/5 border border-border rounded-2xl px-4 py-3.5 text-text outline-none focus:border-accent placeholder:text-text/30" />
+                  <input type="text" placeholder="Marca (BMW)" value={vehiculoForm.marca} onChange={(e) => setVehiculoForm({...vehiculoForm, marca: e.target.value})} className="w-full bg-text/5 border border-border rounded-2xl px-4 py-3.5 text-text outline-none focus:border-accent placeholder:text-text/50" />
+                  <input type="text" placeholder="Gris Claro" value={vehiculoForm.color} onChange={(e) => setVehiculoForm({...vehiculoForm, color: e.target.value})} className="w-full bg-text/5 border border-border rounded-2xl px-4 py-3.5 text-text outline-none focus:border-accent placeholder:text-text/50" />
                 </div>
                 <select value={vehiculoForm.tipo} onChange={(e) => setVehiculoForm({...vehiculoForm, tipo: e.target.value})} className="w-full bg-text/5 border border-border rounded-2xl px-4 py-3.5 text-text outline-none focus:border-accent">
                     <option className="bg-primary text-text" value="AUTOMOVIL">Automóvil</option>

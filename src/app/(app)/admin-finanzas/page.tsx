@@ -29,11 +29,11 @@ export default function AdminFinanzasPage() {
              </div>
              <div>
                 <h2 className="text-xl font-bold text-text">Finanzas</h2>
-                <p className="text-xs text-text-muted">Historial general de pagos</p>
+                <p className="text-xs text-text/70">Historial general de pagos</p>
              </div>
           </div>
           
-          <p className="text-text-muted text-sm text-center py-6">Consolidado general protegido. No hay reportes este mes.</p>
+          <p className="text-text/75 text-sm text-center py-6">Consolidado general protegido. No hay reportes este mes.</p>
        </div>
     </div>
   );
