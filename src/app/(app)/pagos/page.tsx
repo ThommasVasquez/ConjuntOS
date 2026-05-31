@@ -138,12 +138,15 @@ export default function PagosPage() {
       console.error("❌ Error en simulación de pago:", error);
       toast.error(error.message || "No se pudo procesar el pago");
       setIsProcessing(false);
+    }
+  };
+
   const getStatusStyle = (status: string) => {
     switch(status) {
-      case 'PAGADO': return 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/30';
-      case 'VENCIDO': return 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/20 dark:border-red-500/30';
-      case 'PENDIENTE': return 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/20 dark:border-amber-500/30';
-      default: return 'bg-surface-2 text-text-muted border-border';
+      case 'PAGADO': return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
+      case 'VENCIDO': return 'bg-red-500/10 text-red-600 border-red-500/20';
+      case 'PENDIENTE': return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+      default: return 'bg-text/5 text-text border-border';
     }
   };
 

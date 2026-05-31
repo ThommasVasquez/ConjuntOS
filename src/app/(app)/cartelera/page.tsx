@@ -514,9 +514,6 @@ export default function CarteleraPage() {
                  </div>
               </div>
            </div>
-        </div>           </div>
-              </div>
-           </div>
         </div>
       )}
       
