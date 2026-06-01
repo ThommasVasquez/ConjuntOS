@@ -30,15 +30,24 @@ interface IPaquete {
   fechaLlegada: string;
 }
 
+import { useCall } from "@/components/providers/CallContext";
+
 export default function CitofoniaPage() {
   const [activeTab, setActiveTab] = useState<Tab>("CITOFONIA");
   const [isLoading, setIsLoading] = useState(true);
-  const [dialNum, setDialNum] = useState("");
-  const [isCalling, setIsCalling] = useState(false);
-  const [callTime, setCallTime] = useState(0);
-  const [callStatus, setCallStatus] = useState<"IDLE" | "RINGING" | "CONNECTED">("IDLE");
-  const [callerName, setCallerName] = useState("");
-  const [lastSpeechResponse, setLastSpeechResponse] = useState("");
+  
+  const {
+    callState,
+    callerName,
+    callTime,
+    lastSpeechResponse,
+    dialNum,
+    setDialNum,
+    startCall,
+    endCall,
+    handleOptionClick,
+    getCallOptions
+  } = useCall();
   
   const [visitas, setVisitas] = useState<IVisita[]>([]);
   const [paquetes, setPaquetes] = useState<IPaquete[]>([]);
@@ -46,9 +55,6 @@ export default function CitofoniaPage() {
   const [isAddingVisita, setIsAddingVisita] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const callTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const activeToneRef = useRef<{ stop: () => void } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -58,20 +64,8 @@ export default function CitofoniaPage() {
     }, containerRef);
     return () => {
       ctx.revert();
-      stopSpeech();
-      if (activeToneRef.current) activeToneRef.current.stop();
     };
   }, []);
-
-  useEffect(() => {
-    if (isCalling && callStatus === "CONNECTED") {
-      callTimerRef.current = setInterval(() => setCallTime(prev => prev + 1), 1000);
-    } else {
-      if (callTimerRef.current) clearInterval(callTimerRef.current);
-      setCallTime(0);
-    }
-    return () => { if (callTimerRef.current) clearInterval(callTimerRef.current); };
-  }, [isCalling, callStatus]);
 
   async function fetchData() {
     setIsLoading(true);
@@ -94,242 +88,15 @@ export default function CitofoniaPage() {
   }
 
   const handleDial = (num: string) => {
-    if (dialNum.length < 5) setDialNum(prev => prev + num);
-  };
-
-  const startAudioContext = () => {
-    if (typeof window === "undefined") return null;
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    if (audioCtxRef.current.state === "suspended") {
-      audioCtxRef.current.resume();
-    }
-    return audioCtxRef.current;
-  };
-
-  const playRingback = () => {
-    const ctx = startAudioContext();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.frequency.value = 425;
-    osc.type = "sine";
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    
-    let t = ctx.currentTime;
-    for (let i = 0; i < 15; i++) {
-      gain.gain.setValueAtTime(0.08, t);
-      gain.gain.setValueAtTime(0, t + 1.2);
-      t += 3.0;
-    }
-    
-    osc.start();
-    activeToneRef.current = {
-      stop: () => {
-        try {
-          osc.stop();
-          osc.disconnect();
-        } catch (e) {}
-      }
-    };
-  };
-
-  const playBeep = () => {
-    const ctx = startAudioContext();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.frequency.value = 800;
-    osc.type = "sine";
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-    gain.gain.setValueAtTime(0, ctx.currentTime + 0.12);
-    
-    osc.start();
-    setTimeout(() => {
-      try {
-        osc.stop();
-        osc.disconnect();
-      } catch (e) {}
-    }, 200);
-  };
-
-  const playDisconnect = () => {
-    const ctx = startAudioContext();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.frequency.value = 425;
-    osc.type = "sine";
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    let t = ctx.currentTime;
-    for (let i = 0; i < 3; i++) {
-      gain.gain.setValueAtTime(0.08, t);
-      gain.gain.setValueAtTime(0, t + 0.15);
-      t += 0.3;
-    }
-    
-    osc.start();
-    setTimeout(() => {
-      try {
-        osc.stop();
-        osc.disconnect();
-      } catch (e) {}
-    }, 1200);
-  };
-
-  const speakText = (text: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "es-ES";
-    utterance.rate = 1.0;
-    
-    const voices = window.speechSynthesis.getVoices();
-    const esVoice = voices.find(v => v.lang.startsWith("es"));
-    if (esVoice) utterance.voice = esVoice;
-    
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const stopSpeech = () => {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
+    if (dialNum.length < 5) setDialNum(dialNum + num);
   };
 
   const handleCall = (targetNum?: string) => {
     const num = targetNum !== undefined ? targetNum : dialNum;
-    if (!num && callStatus === "IDLE") {
-      setDialNum("P");
-      startCall("P");
-      return;
-    }
-    
-    if (callStatus === "IDLE") {
-      startCall(num);
+    if (callState === "IDLE") {
+      startCall(num || "P");
     } else {
       endCall();
-    }
-  };
-
-  const startCall = (num: string) => {
-    let name = "Portería Principal";
-    if (num === "P") name = "Portería Principal";
-    else if (num === "A") name = "Administración";
-    else name = `Apto ${num}`;
-    
-    setCallerName(name);
-    setCallStatus("RINGING");
-    setLastSpeechResponse("Marcando canal digital...");
-    
-    playRingback();
-    
-    setTimeout(() => {
-      setCallStatus((current) => {
-        if (current === "RINGING") {
-          if (activeToneRef.current) {
-            activeToneRef.current.stop();
-          }
-          playBeep();
-          triggerGreeting(name);
-          setIsCalling(true);
-          return "CONNECTED";
-        }
-        return current;
-      });
-    }, 3500);
-  };
-
-  const triggerGreeting = (name: string) => {
-    let text = "";
-    if (name === "Portería Principal") {
-      text = "Hola, buenas, habla con la portería principal de ConjuntOS. ¿En qué le puedo colaborar hoy, vecino?";
-    } else if (name === "Administración") {
-      text = "Buenos días, oficina de administración de ConjuntOS. ¿En qué le podemos colaborar el día de hoy?";
-    } else {
-      text = `Hola, habla con la recepción. Estamos enlazando su llamada con el apartamento ${dialNum}. Un momento por favor.`;
-    }
-    setLastSpeechResponse(text);
-    speakText(text);
-  };
-
-  const endCall = () => {
-    if (activeToneRef.current) {
-      activeToneRef.current.stop();
-    }
-    playDisconnect();
-    stopSpeech();
-    
-    setCallStatus("IDLE");
-    setIsCalling(false);
-    setDialNum("");
-    setLastSpeechResponse("");
-    toast.info("Llamada finalizada");
-  };
-
-  const handleOptionClick = (optionText: string, replyText: string) => {
-    speakText(replyText);
-    setLastSpeechResponse(replyText);
-    toast.success(`Respuesta enviada: "${optionText}"`);
-  };
-
-  const getCallOptions = (name: string) => {
-    if (name === "Portería Principal") {
-      return [
-        {
-          label: "Autorizar llegada de visita",
-          reply: "Entendido, señor. Por favor regístrelo en la pestaña de visitas de la aplicación para dejar constancia y permitir el ingreso."
-        },
-        {
-          label: "¿Tengo algún paquete?",
-          reply: "Déjeme verificar en la bitácora... Sí, señor, tiene un paquete recibido de Logística Nacional. Puede pasar por él cuando guste."
-        },
-        {
-          label: "Reportar un carro mal parqueado",
-          reply: "Entendido, vecino. Ya mismo enviamos un oficial de ronda a verificar el vehículo y hacer el reporte."
-        },
-        {
-          label: "Reportar emergencia",
-          reply: "Entendido. Mantenga la calma, por favor. Ya mismo activamos el protocolo de seguridad y llamamos a las autoridades."
-        }
-      ];
-    } else if (name === "Administración") {
-      return [
-        {
-          label: "Preguntar saldo de administración",
-          reply: "Hola. Su saldo actual de administración está al día. Recuerde que puede ver los detalles y pagar en el módulo de pagos de la app."
-        },
-        {
-          label: "Reservar salón comunal / áreas",
-          reply: "Para reservar áreas comunes, puede hacerlo de forma inmediata desde el módulo de reservas de la aplicación."
-        },
-        {
-          label: "Reportar un daño en zonas comunes",
-          reply: "Muchas gracias por el reporte. Tomamos nota de la novedad y enviaremos al personal de mantenimiento a revisar."
-        }
-      ];
-    } else {
-      return [
-        {
-          label: "Dejar un mensaje",
-          reply: "Entendido, tomamos nota del mensaje y se lo informamos al residente cuando sea posible. Gracias."
-        }
-      ];
     }
   };
 
@@ -344,22 +111,22 @@ export default function CitofoniaPage() {
       <ProfileHeader className="fade-up" />
 
       {/* CALL SCREEN OVERLAY */}
-      {callStatus !== "IDLE" && (
+      {callState !== "IDLE" && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-primary/98 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
            <div className="w-full flex flex-col items-center gap-2 mt-16">
               <span className="text-[10px] font-black text-accent uppercase tracking-widest animate-pulse">
-                 {callStatus === "RINGING" ? "LLAMANDO..." : "CONEXIÓN SEGURA"}
+                 {callState === "RINGING" || callState === "OUTGOING" ? "LLAMANDO..." : "CONEXIÓN SEGURA"}
               </span>
               <h2 className="text-3xl font-display font-black text-text text-center mt-2">{callerName}</h2>
               <span className="text-text/60 text-xs font-bold mt-1">
-                 {callStatus === "RINGING" ? "Marcando canal digital..." : `${formatTime(callTime)} • EN LÍNEA`}
+                 {callState === "RINGING" || callState === "OUTGOING" ? "Marcando canal digital..." : `${formatTime(callTime)} • EN LÍNEA`}
               </span>
            </div>
 
            {/* Pulse Animation */}
            <div className="flex flex-col items-center justify-center my-4">
               <div className="relative w-32 h-32 flex items-center justify-center mb-6">
-                 {callStatus === "RINGING" ? (
+                 {callState === "RINGING" || callState === "OUTGOING" ? (
                    <>
                      <div className="absolute inset-0 rounded-full bg-accent/10 animate-ping duration-1000" />
                      <div className="absolute inset-4 rounded-full bg-accent/20 animate-pulse duration-700" />
@@ -370,13 +137,13 @@ export default function CitofoniaPage() {
                      <div className="absolute inset-2 rounded-full bg-emerald-500/20 animate-pulse duration-700" />
                    </>
                  )}
-                 <div className={`w-24 h-24 rounded-full flex items-center justify-center shadow-2xl border border-white/10 ${callStatus === "RINGING" ? "bg-linear-to-tr from-accent to-secondary animate-pulse" : "bg-linear-to-tr from-emerald-500 to-teal-400"}`}>
+                 <div className={`w-24 h-24 rounded-full flex items-center justify-center shadow-2xl border border-white/10 ${callState === "RINGING" || callState === "OUTGOING" ? "bg-linear-to-tr from-accent to-secondary animate-pulse" : "bg-linear-to-tr from-emerald-500 to-teal-400"}`}>
                     <Phone size={36} className="text-white" />
                  </div>
               </div>
 
               {/* Equalizer animation when connected */}
-              {callStatus === "CONNECTED" && (
+              {(callState === "CONNECTED" || callState === "FALLBACK") && (
                  <div className="flex items-center gap-1.5 h-10 justify-center">
                     <span className="w-1 bg-accent rounded-full animate-pulse" style={{ height: '40%', animationDuration: '0.6s' }} />
                     <span className="w-1 bg-accent rounded-full animate-pulse" style={{ height: '90%', animationDuration: '0.4s' }} />
@@ -389,23 +156,23 @@ export default function CitofoniaPage() {
            </div>
 
            {/* Dialogue box */}
-           {callStatus === "CONNECTED" && (
+           {(callState === "CONNECTED" || callState === "FALLBACK") && (
               <div className="w-full max-w-sm bg-text/5 border border-border rounded-3xl p-6 text-center my-2 animate-in zoom-in-95 duration-300">
                  <p className="text-[10px] font-black uppercase text-accent tracking-widest mb-2">RESPUESTA RECIBIDA</p>
                  <p className="text-xs text-text/80 italic font-medium leading-relaxed">
-                    "{lastSpeechResponse || "Escuchando..."}"
+                    "{lastSpeechResponse || (callState === "CONNECTED" ? "Habla por el micrófono..." : "Escuchando...")}"
                  </p>
               </div>
            )}
 
            {/* Interactive speech options */}
-           {callStatus === "CONNECTED" && (
+           {callState === "FALLBACK" && (
               <div className="w-full max-w-md flex flex-col gap-3 px-4 my-2">
                  <span className="text-[9px] font-black text-text/50 uppercase tracking-widest text-center mb-1">
                     OPCIONES DE DIÁLOGO
                  </span>
                  <div className="flex flex-col gap-2.5 max-h-[160px] overflow-y-auto pr-1">
-                    {getCallOptions(callerName).map((opt, idx) => (
+                    {getCallOptions().map((opt, idx) => (
                        <button
                           key={idx}
                           onClick={() => handleOptionClick(opt.label, opt.reply)}
@@ -426,7 +193,7 @@ export default function CitofoniaPage() {
                  className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white shadow-2xl hover:shadow-red-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
                  style={{ animationDuration: '3s' }}
               >
-                 <X size={28} />
+                 <PhoneOff size={28} />
               </button>
            </div>
         </div>
@@ -495,7 +262,7 @@ export default function CitofoniaPage() {
                         {dialNum || "MARCAR"}
                       </span>
                    </div>
-                   {callStatus !== "IDLE" && <span className="text-accent text-xs font-black animate-pulse">{formatTime(callTime)} • EN LÍNEA</span>}
+                   {callState !== "IDLE" && <span className="text-accent text-xs font-black animate-pulse">{formatTime(callTime)} • EN LÍNEA</span>}
                 </div>
 
                 <div className="grid grid-cols-3 gap-6 w-full max-w-[240px]">
@@ -519,10 +286,10 @@ export default function CitofoniaPage() {
                    </button>
                    <button 
                      onClick={() => handleCall()}
-                     className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black cursor-pointer ${callStatus !== "IDLE" ? 'bg-red-500' : 'bg-emerald-500'}`}
+                     className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black cursor-pointer ${callState !== "IDLE" ? 'bg-red-500' : 'bg-emerald-500'}`}
                    >
-                     {callStatus !== "IDLE" ? <X size={18} /> : <Phone size={18} />}
-                     {callStatus !== "IDLE" ? 'COLGAR' : 'LLAMAR'}
+                     {callState !== "IDLE" ? <PhoneOff size={18} /> : <Phone size={18} />}
+                     {callState !== "IDLE" ? 'COLGAR' : 'LLAMAR'}
                    </button>
                 </div>
              </div>
