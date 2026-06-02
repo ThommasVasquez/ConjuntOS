@@ -329,7 +329,11 @@ export default function AsambleaPage() {
     if (!myUserId) return;
 
     let activePeer: any = null;
+    let isCancelled = false;
+
     import('peerjs').then(({ default: Peer }) => {
+      if (isCancelled) return;
+
       const p = new Peer(myUserId, {
         host: '0.peerjs.com',
         port: 443,
@@ -358,31 +362,41 @@ export default function AsambleaPage() {
         }
       });
 
+      activePeer = p;
+
       p.on('open', (id) => {
+        if (isCancelled) {
+          p.destroy();
+          return;
+        }
         console.log('PeerJS connection established with ID:', id);
         setPeer(p);
-        activePeer = p;
       });
 
       p.on('call', (call: any) => {
+        if (isCancelled) return;
         if (!call) return;
         console.log('Incoming call from peer:', call.peer);
         call.answer(localStream || new MediaStream());
         call.on('stream', (remoteStream: MediaStream) => {
+          if (isCancelled) return;
           console.log('Received stream from peer:', call.peer);
           setRemoteStreams(prev => ({ ...prev, [call.peer]: remoteStream }));
         });
       });
       
       p.on('error', (err) => {
+        if (isCancelled) return;
         console.error('PeerJS connection error:', err);
       });
     });
 
     return () => {
+      isCancelled = true;
       if (activePeer) {
         activePeer.destroy();
       }
+      setPeer(null);
     };
   }, [myUserId, localStream]);
 

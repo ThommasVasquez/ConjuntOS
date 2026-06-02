@@ -74,6 +74,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if (!profile) return;
 
     let activePeer: any = null;
+    let isCancelled = false;
     const conjuntoId = profile.conjuntoId || "demo_id";
     const userId = profile.id;
     const role = profile.rol;
@@ -92,19 +93,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log("Initializing Citofonía PeerJS with ID:", myPeerId);
 
     import("peerjs").then(({ default: Peer }) => {
+      if (isCancelled) return;
+
       const p = new Peer(myPeerId, {
         host: "0.peerjs.com",
         port: 443,
         secure: true,
       });
 
+      activePeer = p;
+      peerRef.current = p;
+
       p.on("open", (id) => {
+        if (isCancelled) {
+          p.destroy();
+          return;
+        }
         console.log("Citofonía PeerJS connection open. Peer ID:", id);
-        peerRef.current = p;
-        activePeer = p;
       });
 
       p.on("call", (call: any) => {
+        if (isCancelled) return;
         console.log("Citofonía: Recibiendo llamada WebRTC de:", call.peer);
         incomingCallRef.current = call;
         
@@ -130,6 +139,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         playRingtone();
       });
       p.on("error", (err: any) => {
+        if (isCancelled) return;
         console.error("Citofonía PeerJS error:", err);
         if (err.type === "peer-unavailable") {
           toast.error("El destinatario se encuentra fuera de línea.");
@@ -149,7 +159,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     return () => {
+      isCancelled = true;
       if (activePeer) activePeer.destroy();
+      if (peerRef.current) {
+        peerRef.current.destroy();
+        peerRef.current = null;
+      }
       if (remoteAudioRef.current) remoteAudioRef.current.remove();
       stopSpeech();
     };
