@@ -87,7 +87,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     } else if (role === "ADMINISTRADOR") {
       myPeerId = `${conjuntoId}-ADMINISTRADOR`;
     } else if (profile.unidad?.numero) {
-      const towerStr = profile.unidad.torre ? `${profile.unidad.torre}-` : "";
+      const cleanTorre = profile.unidad.torre ? String(profile.unidad.torre).trim() : "";
+      let normalizedTorre = cleanTorre;
+      if (/^\d+$/.test(cleanTorre)) {
+        normalizedTorre = String(parseInt(cleanTorre, 10));
+      }
+      const towerStr = normalizedTorre ? `${normalizedTorre}-` : "";
       myPeerId = `${conjuntoId}-APTO-${towerStr}${profile.unidad.numero}`;
     }
 
@@ -358,15 +363,44 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const startCall = async (num: string) => {
     if (!profile) return;
     const conjuntoId = profile.conjuntoId || "demo_id";
-    let targetPeerId = `${conjuntoId}-APTO-${num}`;
+    
+    let targetNum = num.trim();
     let name = `Apto ${num}`;
 
     if (num === "P") {
-      targetPeerId = `${conjuntoId}-VIGILANTE`;
+      targetNum = "VIGILANTE";
       name = "Portería Principal";
     } else if (num === "A") {
-      targetPeerId = `${conjuntoId}-ADMINISTRADOR`;
+      targetNum = "ADMINISTRADOR";
       name = "Administración";
+    } else {
+      // Normalizar número de apartamento ingresado
+      if (targetNum.includes("-")) {
+        const parts = targetNum.split("-");
+        const torrePart = parts[0].trim();
+        const aptoPart = parts[1].trim();
+        if (/^\d+$/.test(torrePart)) {
+          targetNum = `${parseInt(torrePart, 10)}-${aptoPart}`;
+        } else {
+          targetNum = `${torrePart}-${aptoPart}`;
+        }
+      } else if (/^\d+$/.test(targetNum)) {
+        if (targetNum.length === 5) {
+          // e.g. "41410" -> "4-1410"
+          targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
+        } else if (targetNum.length === 6) {
+          // e.g. "041410" -> "4-1410"
+          targetNum = `${parseInt(targetNum.slice(0, 2), 10)}-${targetNum.slice(2)}`;
+        } else if (targetNum.length === 4) {
+          // e.g. "1101" -> "1-101"
+          targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
+        }
+      }
+    }
+
+    let targetPeerId = `${conjuntoId}-${targetNum}`;
+    if (targetNum !== "VIGILANTE" && targetNum !== "ADMINISTRADOR") {
+      targetPeerId = `${conjuntoId}-APTO-${targetNum}`;
     }
 
     setCallerName(name);
