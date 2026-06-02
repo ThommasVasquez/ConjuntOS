@@ -644,11 +644,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
     pushStatusRef.current = { checked: false, sent: false };
     peerUnavailableReceivedRef.current = false;
 
-    try {
-      // Get microphone stream
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStreamRef.current = stream;
+    // Capture the current path so we can return here when the call ends
+    if (typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      if (currentPath !== "/citofonia") {
+        previousPathRef.current = currentPath;
+      }
+    }
 
+    // Get microphone stream — fall back to silent stream if no mic available
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStreamRef.current = stream;
+    } catch (e) {
+      console.warn("Micrófono no disponible en llamada saliente, usando stream vacío:", e);
+      toast.info("Sin micrófono — realizando llamada sin audio de salida.");
+      stream = new MediaStream();
+      localStreamRef.current = stream;
+    }
+
+    try {
       if (!peerRef.current) {
         throw new Error("PeerJS client is not initialized.");
       }
@@ -738,8 +754,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
         endCall();
       }
     } catch (e) {
-      console.warn("No mic or PeerJS failed:", e);
-      toast.error("No se pudo acceder al micrófono para realizar la llamada.");
+      console.warn("Error al iniciar la llamada PeerJS:", e);
+      toast.error("No se pudo iniciar la llamada.");
       endCall();
     }
   };
