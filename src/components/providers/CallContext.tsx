@@ -42,6 +42,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [callTime, setCallTime] = useState(0);
   const [lastSpeechResponse, setLastSpeechResponse] = useState("");
   const [dialNum, setDialNum] = useState("");
+  const [isPeerReady, setIsPeerReady] = useState(false);
+  const pendingCallbackRef = useRef<string | null>(null);
 
   // WebRTC Refs
   const peerRef = useRef<any>(null);
@@ -135,6 +137,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
             return;
           }
           console.log("Citofonía PeerJS connection open. Peer ID:", id);
+          setIsPeerReady(true);
+        });
+
+        p.on("disconnected", () => {
+          console.log("Citofonía PeerJS connection disconnected.");
+          setIsPeerReady(false);
+        });
+
+        p.on("close", () => {
+          console.log("Citofonía PeerJS connection closed.");
+          setIsPeerReady(false);
         });
 
         p.on("call", (call: any) => {
@@ -236,6 +249,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isCancelled = true;
+      setIsPeerReady(false);
       if (retryTimeout) clearTimeout(retryTimeout);
       if (typeof window !== "undefined") {
         window.removeEventListener("beforeunload", handleUnload);
@@ -326,18 +340,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
           if (event.data.callerName) {
             setCallerName(event.data.callerName);
           }
-          if (startCallRef.current) {
-            startCallRef.current(event.data.callerPeerId);
+          if (isPeerReady) {
+            if (startCallRef.current) {
+              startCallRef.current(event.data.callerPeerId);
+            }
+          } else {
+            console.log("PeerJS no listo. Encolando llamada de retorno.");
+            pendingCallbackRef.current = event.data.callerPeerId;
           }
         }
       };
       navigator.serviceWorker.addEventListener("message", handleMessage);
       return () => navigator.serviceWorker.removeEventListener("message", handleMessage);
     }
-  }, [profile]);
+  }, [profile, isPeerReady]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !profile) return;
+    if (typeof window === "undefined" || !profile || !isPeerReady) return;
 
     const params = new URLSearchParams(window.location.search);
     const hasIncomingCall = params.get("answerCall") === "true" || params.get("incoming") === "true";
@@ -357,7 +376,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
         startCallRef.current(callerPeerId);
       }
     }
-  }, [profile]);
+  }, [profile, isPeerReady]);
+
+  // Procesar llamadas de retorno encoladas cuando PeerJS esté listo
+  useEffect(() => {
+    if (isPeerReady && pendingCallbackRef.current) {
+      const target = pendingCallbackRef.current;
+      pendingCallbackRef.current = null;
+      console.log("Procesando llamada de retorno encolada para:", target);
+      if (startCallRef.current) {
+        startCallRef.current(target);
+      }
+    }
+  }, [isPeerReady]);
 
   // Manage call timer
   useEffect(() => {
