@@ -88,7 +88,7 @@ export default function CitofoniaPage() {
   }
 
   const handleDial = (num: string) => {
-    if (dialNum.length < 5) setDialNum(dialNum + num);
+    if (dialNum.length < 8) setDialNum(dialNum + num);
   };
 
   const handleCall = (targetNum?: string) => {
@@ -266,7 +266,7 @@ export default function CitofoniaPage() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-6 w-full max-w-[240px]">
-                   {["1","2","3","4","5","6","7","8","9","*","0","#"].map((n) => (
+                   {["1","2","3","4","5","6","7","8","9","-","0","#"].map((n) => (
                      <button 
                        key={n}
                        onClick={() => handleDial(n)}
