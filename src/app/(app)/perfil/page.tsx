@@ -293,9 +293,23 @@ function ProfileContent() {
         if (userId) {
           localStorage.setItem(`conjuntos_profile_pic_${userId}`, compressed);
         }
-        toast.success("Foto cargada");
-      } catch {
-          toast.error("Error al descargar archivo");
+        
+        // Persistir en base de datos
+        const res = await fetch("/api/user/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ avatar: compressed })
+        });
+        
+        if (res.ok) {
+          toast.success("Foto de perfil actualizada");
+        } else {
+          console.warn("No se pudo guardar la foto en la base de datos, usando almacenamiento local.");
+          toast.success("Foto cargada localmente");
+        }
+      } catch (err) {
+          console.error("Error saving avatar:", err);
+          toast.error("Error al procesar la imagen");
       }
     };
     reader.readAsDataURL(file);

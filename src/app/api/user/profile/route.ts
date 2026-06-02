@@ -121,13 +121,12 @@ export async function PUT(req: Request) {
     const body = await req.json();
     
     // Mapeo de campos SEGUROS (que existen en el schema actual)
-    const updateData: any = {
-      nombre: body.name,
-      telefono: body.phone,
-      genero: body.gender,
-      avatar: body.avatar || body.profilePic
-      // NOTA: torre y apto se remueven de Usuario porque causan Error 500 en la DB física
-    };
+    const updateData: any = {};
+    if (body.name !== undefined) updateData.nombre = body.name;
+    if (body.phone !== undefined) updateData.telefono = body.phone;
+    if (body.gender !== undefined) updateData.genero = body.gender;
+    if (body.avatar !== undefined) updateData.avatar = body.avatar;
+    if (body.profilePic !== undefined) updateData.avatar = body.profilePic;
 
     // NOTA: torre y apto se omiten temporalmente de la DB si no existen las columnas
     // para evitar el Error 500, pero se mantienen en el body para depuración.
