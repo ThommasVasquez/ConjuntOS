@@ -54,6 +54,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const callStateRef = useRef<CallState>("IDLE");
   callStateRef.current = callState;
   const answerCallRef = useRef<any>(null);
+  const pushStatusRef = useRef<{ checked: boolean; sent: boolean; error?: string }>({ checked: false, sent: false });
+  const peerUnavailableReceivedRef = useRef(false);
   
   // Audio Tone Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -187,9 +189,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          if (err.type === "peer-unavailable") {
-            toast.info("El residente no está activo en la app. Enviando notificación...");
-            setLastSpeechResponse("Enviando notificación push...");
+          const isPeerUnavailable = err.type === "peer-unavailable" || 
+            (err.message && String(err.message).toLowerCase().includes("could not connect to peer"));
+
+          if (isPeerUnavailable) {
+            peerUnavailableReceivedRef.current = true;
+            if (pushStatusRef.current.checked) {
+              if (pushStatusRef.current.sent) {
+                toast.info("El residente no está activo en la app. Notificación enviada.");
+                setLastSpeechResponse("Enviando notificación push...");
+              } else {
+                toast.error("El residente no está activo y no tiene notificaciones configuradas.");
+                endCall();
+              }
+            } else {
+              toast.info("El residente no está activo. Verificando notificaciones...");
+              setLastSpeechResponse("Buscando destinatario...");
+            }
             return;
           }
 
@@ -557,6 +573,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
     targetPeerIdRef.current = targetPeerId;
     playRingback();
 
+    pushStatusRef.current = { checked: false, sent: false };
+    peerUnavailableReceivedRef.current = false;
+
     try {
       // Get microphone stream
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -578,7 +597,33 @@ export function CallProvider({ children }: { children: ReactNode }) {
           callerName: callerRoleName,
           callerPeerId: myPeerIdRef.current
         })
-      }).catch(err => console.error("Error al enviar notificación push de llamada:", err));
+      })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.sent > 0) {
+          pushStatusRef.current = { checked: true, sent: true };
+          console.log(`[push] Push notification sent successfully to ${json.sent} devices.`);
+          if (callStateRef.current === "OUTGOING" && peerUnavailableReceivedRef.current) {
+            toast.info("El residente no está activo en la app. Notificación enviada.");
+            setLastSpeechResponse("Enviando notificación push...");
+          }
+        } else {
+          pushStatusRef.current = { checked: true, sent: false, error: json.reason || "No subscriptions found" };
+          console.log(`[push] Push notification not sent:`, json.reason);
+          if (callStateRef.current === "OUTGOING" && peerUnavailableReceivedRef.current) {
+            toast.error("El residente no está activo y no tiene notificaciones configuradas.");
+            endCall();
+          }
+        }
+      })
+      .catch(err => {
+        pushStatusRef.current = { checked: true, sent: false, error: err.message };
+        console.error("Error al enviar notificación push de llamada:", err);
+        if (callStateRef.current === "OUTGOING" && peerUnavailableReceivedRef.current) {
+          toast.error("El residente no está activo y falló el envío de la notificación.");
+          endCall();
+        }
+      });
 
       const call = peerRef.current.call(targetPeerId, stream);
       
