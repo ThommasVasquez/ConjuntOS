@@ -75,19 +75,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   }, [session]);
 
-  // Setup PeerJS connection when profile is loaded
-  useEffect(() => {
-    if (!profile) return;
-
-    let activePeer: any = null;
-    let isCancelled = false;
-    let retryTimeout: NodeJS.Timeout | null = null;
+  // Predictable Peer ID depending on role
+  let myPeerId = "";
+  if (profile) {
     const conjuntoId = profile.conjuntoId || "demo_id";
     const userId = profile.id;
     const role = profile.rol;
     
-    // Predictable Peer ID depending on role
-    let myPeerId = `user-${userId}`;
+    myPeerId = `user-${userId}`;
     if (role === "VIGILANTE") {
       myPeerId = `${conjuntoId}-VIGILANTE`;
     } else if (role === "ADMINISTRADOR") {
@@ -101,7 +96,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const towerStr = normalizedTorre ? `${normalizedTorre}-` : "";
       myPeerId = `${conjuntoId}-APTO-${towerStr}${profile.unidad.numero}`;
     }
+  }
 
+  // Setup PeerJS connection when profile is loaded
+  useEffect(() => {
+    if (!profile || !myPeerId) return;
+
+    let activePeer: any = null;
+    let isCancelled = false;
+    let retryTimeout: NodeJS.Timeout | null = null;
+    
     myPeerIdRef.current = myPeerId;
 
     const initPeer = (retryCount = 0) => {
@@ -230,7 +234,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (remoteAudioRef.current) remoteAudioRef.current.remove();
       stopSpeech();
     };
-  }, [profile]);
+  }, [myPeerId]);
 
   // Setup Push Notifications and Service Worker
   useEffect(() => {
