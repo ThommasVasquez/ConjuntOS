@@ -391,6 +391,37 @@ export default function AsambleaPage() {
           });
         });
         
+        p.on('disconnected', () => {
+          if (isCancelled) return;
+          console.warn('Asamblea PeerJS disconnected from signaling server. Attempting reconnect...');
+          // Clear peer state immediately so the dial effect stops trying to call
+          setPeer(null);
+          // Attempt to reconnect unless we've been cancelled
+          retryTimeout = setTimeout(() => {
+            if (!isCancelled) {
+              // If the peer is still alive (not destroyed), try reconnecting to the signaling server
+              if (activePeer && !activePeer.destroyed) {
+                try {
+                  activePeer.reconnect();
+                  // When reconnect succeeds, the 'open' event fires again and re-sets peer
+                } catch (e) {
+                  // If reconnect fails, destroy and reinitialize
+                  try { activePeer.destroy(); } catch (_) {}
+                  initPeer(0);
+                }
+              } else {
+                initPeer(0);
+              }
+            }
+          }, 3000);
+        });
+
+        p.on('close', () => {
+          if (isCancelled) return;
+          console.warn('Asamblea PeerJS connection closed.');
+          setPeer(null);
+        });
+
         p.on('error', (err) => {
           if (isCancelled) return;
           console.error('PeerJS connection error:', err);
@@ -403,6 +434,11 @@ export default function AsambleaPage() {
               }
             }, 2000);
             return;
+          }
+
+          // For server-loss errors, clear peer so the dial effect stops spamming
+          if (err.type === 'server-error' || err.type === 'socket-error' || err.type === 'network') {
+            setPeer(null);
           }
         });
       });
@@ -441,6 +477,12 @@ export default function AsambleaPage() {
   useEffect(() => {
     if (!peer || !myUserId) return;
 
+    // Guard: never attempt to call on a broken peer connection
+    if (peer.destroyed || peer.disconnected) {
+      console.warn('Asamblea: skipping dial attempt — peer is disconnected/destroyed.');
+      return;
+    }
+
     const now = Date.now();
     const COOLDOWN_MS = 15000; // 15 seconds cooldown between dial attempts for the same peer
 
@@ -458,6 +500,14 @@ export default function AsambleaPage() {
             });
             call.on('error', (err: any) => {
               console.error('Call to Admin error:', err);
+            });
+            call.on('close', () => {
+              // Remove stream on close so re-dial can happen after cooldown
+              setRemoteStreams(prev => {
+                const next = { ...prev };
+                delete next[adminUserId];
+                return next;
+              });
             });
           }
         } catch (err) {
@@ -482,6 +532,13 @@ export default function AsambleaPage() {
             });
             call.on('error', (err: any) => {
               console.error('Call to Active Speaker error:', err);
+            });
+            call.on('close', () => {
+              setRemoteStreams(prev => {
+                const next = { ...prev };
+                delete next[targetId];
+                return next;
+              });
             });
           }
         } catch (err) {
