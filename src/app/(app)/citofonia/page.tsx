@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Phone, PhoneOff, Users, Package, 
   MapPin, Clock, 
@@ -35,6 +36,8 @@ import { useCall } from "@/components/providers/CallContext";
 export default function CitofoniaPage() {
   const [activeTab, setActiveTab] = useState<Tab>("CITOFONIA");
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const prevCallStateRef = useRef<string>("IDLE");
   
   const {
     callState,
@@ -45,6 +48,8 @@ export default function CitofoniaPage() {
     setDialNum,
     startCall,
     endCall,
+    answerCall,
+    rejectCall,
     handleOptionClick,
     getCallOptions
   } = useCall();
@@ -70,6 +75,21 @@ export default function CitofoniaPage() {
       };
     }
   }, [isLoading]);
+
+  useEffect(() => {
+    // Regresar a la pantalla anterior cuando finalice la llamada
+    if (prevCallStateRef.current !== "IDLE" && callState === "IDLE") {
+      console.log("Llamada finalizada. Regresando a la pantalla en que estaba...");
+      if (typeof window !== "undefined") {
+        if (window.history.state && window.history.state.idx > 0) {
+          router.back();
+        } else {
+          router.push("/inicio");
+        }
+      }
+    }
+    prevCallStateRef.current = callState;
+  }, [callState, router]);
 
   async function fetchData() {
     setIsLoading(true);
@@ -119,11 +139,11 @@ export default function CitofoniaPage() {
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-primary/98 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
            <div className="w-full flex flex-col items-center gap-2 mt-16">
               <span className="text-[10px] font-black text-accent uppercase tracking-widest animate-pulse">
-                 {callState === "RINGING" || callState === "OUTGOING" ? "LLAMANDO..." : "CONEXIÓN SEGURA"}
+                 {callState === "RINGING" ? "LLAMADA ENTRANTE..." : (callState === "OUTGOING" ? "LLAMANDO..." : "CONEXIÓN SEGURA")}
               </span>
               <h2 className="text-3xl font-display font-black text-text text-center mt-2">{callerName}</h2>
               <span className="text-text/60 text-xs font-bold mt-1">
-                 {callState === "RINGING" || callState === "OUTGOING" ? "Marcando canal digital..." : `${formatTime(callTime)} • EN LÍNEA`}
+                 {callState === "RINGING" ? "Recibiendo llamada entrante..." : (callState === "OUTGOING" ? "Marcando canal digital..." : `${formatTime(callTime)} • EN LÍNEA`)}
               </span>
            </div>
 
@@ -190,15 +210,33 @@ export default function CitofoniaPage() {
               </div>
            )}
 
-           {/* End Call Button */}
-           <div className="w-full max-w-xs mb-8 flex justify-center">
-              <button
-                 onClick={endCall}
-                 className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white shadow-2xl hover:shadow-red-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
-                 style={{ animationDuration: '3s' }}
-              >
-                 <PhoneOff size={28} />
-              </button>
+           {/* Action Buttons */}
+           <div className="w-full max-w-xs mb-8 flex justify-center gap-6">
+             {callState === "RINGING" ? (
+               <>
+                 <button
+                    onClick={rejectCall}
+                    className="w-16 h-16 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 flex items-center justify-center text-red-500 shadow-2xl active:scale-90 transition-all cursor-pointer"
+                 >
+                    <PhoneOff size={28} />
+                 </button>
+                 <button
+                    onClick={answerCall}
+                    className="w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-600 flex items-center justify-center text-white shadow-2xl hover:shadow-emerald-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                    style={{ animationDuration: '2s' }}
+                 >
+                    <Phone size={28} />
+                 </button>
+               </>
+             ) : (
+               <button
+                  onClick={endCall}
+                  className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white shadow-2xl hover:shadow-red-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                  style={{ animationDuration: '3s' }}
+               >
+                  <PhoneOff size={28} />
+               </button>
+             )}
            </div>
         </div>
       )}

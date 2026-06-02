@@ -40,12 +40,16 @@ self.addEventListener("notificationclick", (event) => {
   const urlToOpen = event.notification.data?.url || "/citofonia";
   const action = event.action;
 
+  if (action === "close") {
+    return;
+  }
+
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
       // Intentar encontrar una pestaña de citofonía ya abierta
       for (let client of windowClients) {
         if (client.url.includes("/citofonia") && "focus" in client) {
-          if (action === "answer" && event.notification.data?.callerPeerId) {
+          if (event.notification.data?.callerPeerId) {
             client.postMessage({ 
               type: "ANSWER_CALL", 
               callerPeerId: event.notification.data.callerPeerId,
@@ -59,10 +63,8 @@ self.addEventListener("notificationclick", (event) => {
       // Si no hay pestaña abierta, abrir una nueva
       if (clients.openWindow) {
         let targetUrl = urlToOpen;
-        if (action === "answer" && event.notification.data?.callerPeerId) {
+        if (event.notification.data?.callerPeerId) {
           targetUrl = `${urlToOpen}?answerCall=true&callerPeerId=${encodeURIComponent(event.notification.data.callerPeerId)}&callerName=${encodeURIComponent(event.notification.data.callerName || "Portería")}`;
-        } else if (event.notification.data?.callerPeerId) {
-          targetUrl = `${urlToOpen}?incoming=true&callerPeerId=${encodeURIComponent(event.notification.data.callerPeerId)}&callerName=${encodeURIComponent(event.notification.data.callerName || "Portería")}`;
         }
         return clients.openWindow(targetUrl);
       }
