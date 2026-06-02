@@ -327,19 +327,28 @@ export function CallProvider({ children }: { children: ReactNode }) {
         const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
         let subscription = await registration.pushManager.getSubscription();
+        let isNew = false;
         if (!subscription) {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: convertedVapidKey
           });
+          isNew = true;
         }
 
-        await fetch("/api/user/push-subscribe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subscription })
-        });
-        console.log("Suscripción push registrada en base de datos.");
+        // Only register in the DB when we have a brand-new subscription.
+        // Re-registering an existing subscription on every profile render
+        // causes duplicate push notifications per call.
+        if (isNew) {
+          await fetch("/api/user/push-subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subscription })
+          });
+          console.log("Suscripción push registrada en base de datos.");
+        } else {
+          console.log("Suscripción push ya registrada, sin cambios.");
+        }
       } catch (err) {
         console.error("Error al registrar notificaciones push:", err);
       }
