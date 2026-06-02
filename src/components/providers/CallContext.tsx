@@ -60,6 +60,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const answerCallRef = useRef<any>(null);
   const pushStatusRef = useRef<{ checked: boolean; sent: boolean; error?: string }>({ checked: false, sent: false });
   const peerUnavailableReceivedRef = useRef(false);
+  const previousPathRef = useRef<string>("/inicio");
   
   // Audio Tone Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -360,6 +361,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
           }
 
           if (event.data.redirectToCallPage) {
+            const currentPath = window.location.pathname;
+            if (currentPath !== "/citofonia") {
+              previousPathRef.current = currentPath;
+            }
             router.push("/citofonia");
           }
 
@@ -744,32 +749,44 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if (activeToneRef.current) activeToneRef.current.stop();
     playBeep();
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStreamRef.current = stream;
-
-      if (incomingCallRef.current) {
-        incomingCallRef.current.answer(stream);
-        
-        incomingCallRef.current.on("stream", (remoteStream: MediaStream) => {
-          console.log("Citofonía: Transmisión WebRTC establecida bidireccional.");
-          if (remoteAudioRef.current) {
-            remoteAudioRef.current.srcObject = remoteStream;
-            remoteAudioRef.current.play().catch(e => console.error("Error playing WebRTC stream:", e));
-          }
-        });
-
-        incomingCallRef.current.on("close", () => {
-          endCall();
-        });
-
-        setCallState("CONNECTED");
-        router.push("/citofonia");
+    // Capture the current path so we can return here when the call ends
+    if (typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      if (currentPath !== "/citofonia") {
+        previousPathRef.current = currentPath;
       }
+    }
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStreamRef.current = stream;
     } catch (e) {
-      console.error("Failed to answer call with mic:", e);
-      toast.error("No se pudo iniciar el micrófono para contestar.");
-      rejectCall();
+      // Device has no mic, or permission was denied — answer silently so the
+      // resident can still hear the caller (one-way audio).
+      console.warn("Micrófono no disponible, contestando sin audio de salida:", e);
+      toast.info("Contestando sin micrófono — el dispositivo no tiene uno disponible.");
+      stream = new MediaStream();
+      localStreamRef.current = stream;
+    }
+
+    if (incomingCallRef.current) {
+      incomingCallRef.current.answer(stream);
+
+      incomingCallRef.current.on("stream", (remoteStream: MediaStream) => {
+        console.log("Citofonía: Transmisión WebRTC establecida.");
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = remoteStream;
+          remoteAudioRef.current.play().catch(e => console.error("Error playing WebRTC stream:", e));
+        }
+      });
+
+      incomingCallRef.current.on("close", () => {
+        endCall();
+      });
+
+      setCallState("CONNECTED");
+      router.push("/citofonia");
     }
   };
   answerCallRef.current = answerCall;
@@ -811,6 +828,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setDialNum("");
     setLastSpeechResponse("");
     toast.info("Llamada finalizada");
+
+    // Return to the page the user was on before the call started
+    if (typeof window !== "undefined" && window.location.pathname === "/citofonia") {
+      router.push(previousPathRef.current || "/inicio");
+    }
   };
 
   const handleOptionClick = (optionText: string, replyText: string) => {
