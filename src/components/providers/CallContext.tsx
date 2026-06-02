@@ -48,6 +48,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const activeCallRef = useRef<any>(null);
   const incomingCallRef = useRef<any>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const myPeerIdRef = useRef("");
+  const startCallRef = useRef<any>(null);
   
   // Audio Tone Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -95,6 +97,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const towerStr = normalizedTorre ? `${normalizedTorre}-` : "";
       myPeerId = `${conjuntoId}-APTO-${towerStr}${profile.unidad.numero}`;
     }
+
+    myPeerIdRef.current = myPeerId;
 
     const initPeer = (retryCount = 0) => {
       console.log(`Initializing Citofonía PeerJS with ID: ${myPeerId} (attempt ${retryCount + 1})`);
@@ -209,6 +213,113 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (remoteAudioRef.current) remoteAudioRef.current.remove();
       stopSpeech();
     };
+  }, [profile]);
+
+  // Setup Push Notifications and Service Worker
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+      return;
+    }
+    if (!profile) return;
+
+    const registerPush = async () => {
+      try {
+        const registration = await navigator.serviceWorker.register("/sw.js");
+        console.log("Service Worker registrado con éxito. Scope:", registration.scope);
+
+        let permission = Notification.permission;
+        if (permission === "default") {
+          permission = await Notification.requestPermission();
+        }
+
+        if (permission !== "granted") {
+          console.warn("Permiso de notificaciones no concedido:", permission);
+          return;
+        }
+
+        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (!vapidPublicKey) {
+          console.warn("NEXT_PUBLIC_VAPID_PUBLIC_KEY no configurado.");
+          return;
+        }
+
+        const urlBase64ToUint8Array = (base64String: string) => {
+          const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+          const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+          const rawData = window.atob(base64);
+          const outputArray = new Uint8Array(rawData.length);
+          for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+          }
+          return outputArray;
+        };
+
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+          });
+        }
+
+        await fetch("/api/user/push-subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subscription })
+        });
+        console.log("Suscripción push registrada en base de datos.");
+      } catch (err) {
+        console.error("Error al registrar notificaciones push:", err);
+      }
+    };
+
+    registerPush();
+  }, [profile]);
+
+  // Manejar mensajes del Service Worker y URL parameters para contestar llamadas
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if ("serviceWorker" in navigator) {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === "ANSWER_CALL" && event.data?.callerPeerId) {
+          console.log("Respondiendo llamada desde Service Worker message:", event.data);
+          if (event.data.callerName) {
+            setCallerName(event.data.callerName);
+          }
+          if (startCallRef.current) {
+            startCallRef.current(event.data.callerPeerId);
+          }
+        }
+      };
+      navigator.serviceWorker.addEventListener("message", handleMessage);
+      return () => navigator.serviceWorker.removeEventListener("message", handleMessage);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !profile) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const hasIncomingCall = params.get("answerCall") === "true" || params.get("incoming") === "true";
+    const callerPeerId = params.get("callerPeerId");
+    const callerNameParam = params.get("callerName");
+
+    if (hasIncomingCall && callerPeerId) {
+      console.log("Iniciando conexión/devolución de llamada a:", callerPeerId);
+      
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+
+      if (callerNameParam) {
+        setCallerName(decodeURIComponent(callerNameParam));
+      }
+      if (startCallRef.current) {
+        startCallRef.current(callerPeerId);
+      }
+    }
   }, [profile]);
 
   // Manage call timer
@@ -366,41 +477,57 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     let targetNum = num.trim();
     let name = `Apto ${num}`;
+    let targetPeerId = "";
 
-    if (num === "P") {
-      targetNum = "VIGILANTE";
-      name = "Portería Principal";
-    } else if (num === "A") {
-      targetNum = "ADMINISTRADOR";
-      name = "Administración";
+    // Si es un Peer ID completo:
+    if (num.startsWith("user-") || num.includes("-VIGILANTE") || num.includes("-ADMINISTRADOR") || num.includes("-APTO-")) {
+      targetPeerId = num;
+      if (num.includes("-VIGILANTE")) {
+        name = "Portería Principal";
+      } else if (num.includes("-ADMINISTRADOR")) {
+        name = "Administración";
+      } else if (num.includes("-APTO-")) {
+        const parts = num.split("-APTO-");
+        name = `Apto ${parts[1]}`;
+      } else {
+        name = "Residente";
+      }
     } else {
-      // Normalizar número de apartamento ingresado
-      if (targetNum.includes("-")) {
-        const parts = targetNum.split("-");
-        const torrePart = parts[0].trim();
-        const aptoPart = parts[1].trim();
-        if (/^\d+$/.test(torrePart)) {
-          targetNum = `${parseInt(torrePart, 10)}-${aptoPart}`;
-        } else {
-          targetNum = `${torrePart}-${aptoPart}`;
-        }
-      } else if (/^\d+$/.test(targetNum)) {
-        if (targetNum.length === 5) {
-          // e.g. "41410" -> "4-1410"
-          targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
-        } else if (targetNum.length === 6) {
-          // e.g. "041410" -> "4-1410"
-          targetNum = `${parseInt(targetNum.slice(0, 2), 10)}-${targetNum.slice(2)}`;
-        } else if (targetNum.length === 4) {
-          // e.g. "1101" -> "1-101"
-          targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
+      if (num === "P") {
+        targetNum = "VIGILANTE";
+        name = "Portería Principal";
+      } else if (num === "A") {
+        targetNum = "ADMINISTRADOR";
+        name = "Administración";
+      } else {
+        // Normalizar número de apartamento ingresado
+        if (targetNum.includes("-")) {
+          const parts = targetNum.split("-");
+          const torrePart = parts[0].trim();
+          const aptoPart = parts[1].trim();
+          if (/^\d+$/.test(torrePart)) {
+            targetNum = `${parseInt(torrePart, 10)}-${aptoPart}`;
+          } else {
+            targetNum = `${torrePart}-${aptoPart}`;
+          }
+        } else if (/^\d+$/.test(targetNum)) {
+          if (targetNum.length === 5) {
+            // e.g. "41410" -> "4-1410"
+            targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
+          } else if (targetNum.length === 6) {
+            // e.g. "041410" -> "4-1410"
+            targetNum = `${parseInt(targetNum.slice(0, 2), 10)}-${targetNum.slice(2)}`;
+          } else if (targetNum.length === 4) {
+            // e.g. "1101" -> "1-101"
+            targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
+          }
         }
       }
-    }
 
-    let targetPeerId = `${conjuntoId}-${targetNum}`;
-    if (targetNum !== "VIGILANTE" && targetNum !== "ADMINISTRADOR") {
-      targetPeerId = `${conjuntoId}-APTO-${targetNum}`;
+      targetPeerId = `${conjuntoId}-${targetNum}`;
+      if (targetNum !== "VIGILANTE" && targetNum !== "ADMINISTRADOR") {
+        targetPeerId = `${conjuntoId}-APTO-${targetNum}`;
+      }
     }
 
     setCallerName(name);
@@ -418,6 +545,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
 
       console.log("Citofonía: Realizando llamada a peer ID:", targetPeerId);
+      
+      // Enviar notificación Push al destinatario para despertarlo / avisarle en su navegador
+      const callerRoleName = profile.rol === "VIGILANTE" ? "Portería Principal" : (profile.rol === "ADMINISTRADOR" ? "Administración" : `Apto ${profile.unidad?.numero || ""}`);
+      fetch("/api/citofonia/call-push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetPeerId,
+          callerName: callerRoleName,
+          callerPeerId: myPeerIdRef.current
+        })
+      }).catch(err => console.error("Error al enviar notificación push de llamada:", err));
+
       const call = peerRef.current.call(targetPeerId, stream);
       
       if (call) {
