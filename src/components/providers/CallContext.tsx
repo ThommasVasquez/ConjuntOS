@@ -50,6 +50,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const myPeerIdRef = useRef("");
   const startCallRef = useRef<any>(null);
+  const targetPeerIdRef = useRef("");
+  const callStateRef = useRef<CallState>("IDLE");
+  callStateRef.current = callState;
+  const answerCallRef = useRef<any>(null);
   
   // Audio Tone Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -130,6 +134,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
         p.on("call", (call: any) => {
           if (isCancelled) return;
           console.log("Citofonía: Recibiendo llamada WebRTC de:", call.peer);
+          
+          // Si el estado es OUTGOING y el peer coincide con el que estamos llamando, contestamos automáticamente (llamada de retorno)
+          if (callStateRef.current === "OUTGOING" && call.peer === targetPeerIdRef.current) {
+            console.log("Citofonía: Auto-contestando llamada de retorno del destinatario despertado.");
+            incomingCallRef.current = call;
+            if (answerCallRef.current) {
+              answerCallRef.current();
+            }
+            return;
+          }
+
           incomingCallRef.current = call;
           
           // Find caller info based on Peer ID format
@@ -169,10 +184,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
           }
 
           if (err.type === "peer-unavailable") {
-            toast.error("El destinatario se encuentra fuera de línea.");
-          } else {
-            toast.error(`Error de citofonía: ${err.message || err.type}`);
+            toast.info("El residente no está activo en la app. Enviando notificación...");
+            setLastSpeechResponse("Enviando notificación push...");
+            return;
           }
+
+          toast.error(`Error de citofonía: ${err.message || err.type}`);
           endCall();
         });
       });
@@ -533,6 +550,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setCallerName(name);
     setCallState("OUTGOING");
     setLastSpeechResponse("Marcando canal digital...");
+    targetPeerIdRef.current = targetPeerId;
     playRingback();
 
     try {
@@ -608,6 +626,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       endCall();
     }
   };
+  startCallRef.current = startCall;
 
   const answerCall = async () => {
     if (activeToneRef.current) activeToneRef.current.stop();
@@ -640,6 +659,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       rejectCall();
     }
   };
+  answerCallRef.current = answerCall;
 
   const rejectCall = () => {
     if (activeToneRef.current) activeToneRef.current.stop();
