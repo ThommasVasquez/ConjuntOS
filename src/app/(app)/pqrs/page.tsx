@@ -68,12 +68,16 @@ export default function PQRSPage() {
     }
 
     if (session) fetchSolicitudes();
-
-    const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-up-pqrs", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.1 });
-    }, containerRef);
-    return () => ctx.revert();
   }, [session, userId]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      const ctx = gsap.context(() => {
+        gsap.fromTo(".fade-up-pqrs", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.1 });
+      }, containerRef);
+      return () => ctx.revert();
+    }
+  }, [isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -56,14 +56,16 @@ export default function AdminNovedadesPage() {
   }, [tab]);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-up", 
-        { opacity: 0, y: 20 }, 
-        { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: "power2.out" }
-      );
-    }, containerRef);
-    return () => ctx.revert();
-  }, [tramites, tab]);
+    if (!loading) {
+      const ctx = gsap.context(() => {
+        gsap.fromTo(".fade-up", 
+          { opacity: 0, y: 20 }, 
+          { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: "power2.out" }
+        );
+      }, containerRef);
+      return () => ctx.revert();
+    }
+  }, [loading, tab]);
 
   const parseDesc = (str: string) => {
       try { 

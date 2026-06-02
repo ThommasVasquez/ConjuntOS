@@ -18,11 +18,16 @@ export default function AdminParqueaderoPage() {
 
   useEffect(() => {
     loadData();
-    const ctx = gsap.context(() => {
-       gsap.fromTo(".fade-up", { opacity: 0, y: 30 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
-    });
-    return () => ctx.revert();
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      const ctx = gsap.context(() => {
+         gsap.fromTo(".fade-up", { opacity: 0, y: 30 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
+      });
+      return () => ctx.revert();
+    }
+  }, [loading]);
 
   async function loadData() {
     try {

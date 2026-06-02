@@ -58,14 +58,18 @@ export default function CitofoniaPage() {
 
   useEffect(() => {
     fetchData();
-    
-    const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" });
-    }, containerRef);
-    return () => {
-      ctx.revert();
-    };
   }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      const ctx = gsap.context(() => {
+        gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" });
+      }, containerRef);
+      return () => {
+        ctx.revert();
+      };
+    }
+  }, [isLoading]);
 
   async function fetchData() {
     setIsLoading(true);

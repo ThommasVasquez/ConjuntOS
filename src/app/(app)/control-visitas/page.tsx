@@ -38,11 +38,16 @@ export default function ControlVisitas() {
          toast.error("Error al cargar datos");
        } finally {
          setLoading(false);
-         gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
        }
     }
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
+    }
+  }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
      e.preventDefault();

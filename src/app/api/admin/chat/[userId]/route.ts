@@ -38,15 +38,20 @@ export async function GET(req: Request, props: { params: Promise<{ userId: strin
       const user = await db.usuario.findUnique({
         where: { id: userId },
         include: {
+          unidad: true,
           vehiculos: true,
           mascotas: true
         }
       });
 
       if (user) {
-        const { vehiculos, mascotas, ...profile } = user;
+        const { vehiculos, mascotas, unidad, ...profile } = user;
         residentInfo = {
-          profile: profile || null,
+          profile: {
+            ...profile,
+            torre: user.unidad?.torre || user.torre || null,
+            apto: user.unidad?.numero || user.apto || null,
+          } as any,
           vehicles: vehiculos || [],
           pets: mascotas || []
         };

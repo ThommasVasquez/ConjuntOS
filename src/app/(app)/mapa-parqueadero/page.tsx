@@ -37,9 +37,14 @@ export default function MapaParqueaderoPage() {
       toast.error("Error al cargar mapa");
     } finally {
       setLoading(false);
-      gsap.fromTo(".fade-up", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, stagger: 0.05, duration: 0.4 });
     }
   }
+
+  useEffect(() => {
+    if (!loading) {
+      gsap.fromTo(".fade-up", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, stagger: 0.05, duration: 0.4 });
+    }
+  }, [loading]);
 
   async function loadExtra() {
     try {

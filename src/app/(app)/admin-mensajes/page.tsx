@@ -338,7 +338,7 @@ export default function AdminMensajesPage() {
              >
                 <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center border border-border relative overflow-hidden flex-shrink-0">
                    {c.usuarioAvatar ? <img src={c.usuarioAvatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-text/60" />}
-                   {!c.leido && !c.esDeAdmin && <div className="absolute top-1 right-1 w-3 h-3 bg-red-500 border-2 border-background rounded-full animate-pulse" />}
+                   {!c.leido && !c.esDeAdmin && <div className="absolute top-1 right-1 w-3 h-3 bg-red-500 border-2 border-primary rounded-full animate-pulse" />}
                 </div>
                 <div className="flex-1 text-left min-w-0">
                    <div className="flex justify-between items-center mb-1.5">
@@ -359,8 +359,8 @@ export default function AdminMensajesPage() {
 
       {/* IMMERSIVE CHAT MODAL */}
       {selectedUserId && (
-        <div className="fixed inset-0 z-[10000] bg-background/95 backdrop-blur-3xl flex items-end justify-center animate-in fade-in duration-300 isolate">
-           <div ref={modalRef} className="w-full max-w-[430px] h-full sm:h-[95vh] bg-background sm:rounded-t-[40px] flex flex-col overflow-hidden shadow-[0_-20px_100px_rgba(0,0,0,0.5)] border-t border-border">
+        <div className="fixed inset-0 z-[10000] bg-primary/95 backdrop-blur-3xl flex items-end justify-center animate-in fade-in duration-300 isolate">
+           <div ref={modalRef} className="w-full max-w-[430px] h-full sm:h-[95vh] bg-primary sm:rounded-t-[40px] flex flex-col overflow-hidden shadow-[0_-20px_100px_rgba(0,0,0,0.5)] border-t border-border">
               
               {/* MODAL HEADER */}
               <div className="p-6 flex justify-between items-center border-b border-border bg-surface/50 backdrop-blur-2xl z-50">
@@ -373,7 +373,7 @@ export default function AdminMensajesPage() {
                     </button>
                     <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 relative overflow-hidden shadow-inner group-hover:border-emerald-500/40 transition-all">
                        {activeConv?.usuarioAvatar ? <img src={activeConv.usuarioAvatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-emerald-500" />}
-                       <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-background bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                       <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-primary bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                     </div>
                     <div className="flex flex-col">
                        <h3 className="text-sm font-black text-text tracking-tight leading-none group-hover:text-emerald-400 transition-colors uppercase italic flex items-center gap-2">
@@ -430,7 +430,7 @@ export default function AdminMensajesPage() {
 
               {/* RESIDENT INTEL OVERLAY */}
               {showInfoPanel && residentInfo?.profile && (
-                 <div className="absolute inset-x-0 top-[88px] bottom-0 z-[60] bg-background/95 backdrop-blur-3xl animate-in slide-in-from-top-10 duration-500 overflow-y-auto hide-scrollbar border-t border-border">
+                 <div className="absolute inset-x-0 top-[88px] bottom-0 z-[60] bg-primary/95 backdrop-blur-3xl animate-in slide-in-from-top-10 duration-500 overflow-y-auto hide-scrollbar border-t border-border">
                     <div className="p-8 space-y-10">
                        <div className="flex justify-between items-start">
                           <div className="space-y-1">

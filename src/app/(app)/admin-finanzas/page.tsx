@@ -12,9 +12,14 @@ export default function AdminFinanzasPage() {
   useEffect(() => {
     setTimeout(() => {
       setLoading(false);
-      gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
     }, 600);
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
+    }
+  }, [loading]);
 
   if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
 
