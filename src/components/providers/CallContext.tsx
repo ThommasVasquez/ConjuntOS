@@ -165,6 +165,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
           }
 
           incomingCallRef.current = call;
+
+          // Escuchar cierre o error de la llamada entrante antes de contestar
+          call.on("close", () => {
+            console.log("Citofonía: Llamada entrante cancelada/cerrada por el llamante.");
+            if (incomingCallRef.current === call) {
+              endCall();
+            }
+          });
+
+          call.on("error", (err: any) => {
+            console.error("Citofonía: Error en llamada entrante antes de contestar:", err);
+            if (incomingCallRef.current === call) {
+              endCall();
+            }
+          });
           
           // Find caller info based on Peer ID format
           let name = "Residente";
