@@ -75,6 +75,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     let activePeer: any = null;
     let isCancelled = false;
+    let retryTimeout: NodeJS.Timeout | null = null;
     const conjuntoId = profile.conjuntoId || "demo_id";
     const userId = profile.id;
     const role = profile.rol;
@@ -90,65 +91,94 @@ export function CallProvider({ children }: { children: ReactNode }) {
       myPeerId = `${conjuntoId}-APTO-${towerStr}${profile.unidad.numero}`;
     }
 
-    console.log("Initializing Citofonía PeerJS with ID:", myPeerId);
+    const initPeer = (retryCount = 0) => {
+      console.log(`Initializing Citofonía PeerJS with ID: ${myPeerId} (attempt ${retryCount + 1})`);
 
-    import("peerjs").then(({ default: Peer }) => {
-      if (isCancelled) return;
-
-      const p = new Peer(myPeerId, {
-        host: "0.peerjs.com",
-        port: 443,
-        secure: true,
-      });
-
-      activePeer = p;
-      peerRef.current = p;
-
-      p.on("open", (id) => {
-        if (isCancelled) {
-          p.destroy();
-          return;
-        }
-        console.log("Citofonía PeerJS connection open. Peer ID:", id);
-      });
-
-      p.on("call", (call: any) => {
+      import("peerjs").then(({ default: Peer }) => {
         if (isCancelled) return;
-        console.log("Citofonía: Recibiendo llamada WebRTC de:", call.peer);
-        incomingCallRef.current = call;
-        
-        // Find caller info based on Peer ID format
-        let name = "Residente";
-        if (call.peer.includes("VIGILANTE")) {
-          name = "Portería Principal";
-        } else if (call.peer.includes("ADMINISTRADOR")) {
-          name = "Administración";
-        } else {
-          const parts = call.peer.split("-APTO-");
-          if (parts.length > 1) {
-            name = `Apto ${parts[1]}`;
-          } else {
-            name = "Residente";
+
+        if (activePeer) {
+          try { activePeer.destroy(); } catch (e) {}
+        }
+
+        const p = new Peer(myPeerId, {
+          host: "0.peerjs.com",
+          port: 443,
+          secure: true,
+        });
+
+        activePeer = p;
+        peerRef.current = p;
+
+        p.on("open", (id) => {
+          if (isCancelled) {
+            p.destroy();
+            return;
           }
-        }
-        
-        setCallerName(name);
-        setCallState("RINGING");
-        
-        // Play local incoming call ringtone
-        playRingtone();
+          console.log("Citofonía PeerJS connection open. Peer ID:", id);
+        });
+
+        p.on("call", (call: any) => {
+          if (isCancelled) return;
+          console.log("Citofonía: Recibiendo llamada WebRTC de:", call.peer);
+          incomingCallRef.current = call;
+          
+          // Find caller info based on Peer ID format
+          let name = "Residente";
+          if (call.peer.includes("VIGILANTE")) {
+            name = "Portería Principal";
+          } else if (call.peer.includes("ADMINISTRADOR")) {
+            name = "Administración";
+          } else {
+            const parts = call.peer.split("-APTO-");
+            if (parts.length > 1) {
+              name = `Apto ${parts[1]}`;
+            } else {
+              name = "Residente";
+            }
+          }
+          
+          setCallerName(name);
+          setCallState("RINGING");
+          
+          // Play local incoming call ringtone
+          playRingtone();
+        });
+
+        p.on("error", (err: any) => {
+          if (isCancelled) return;
+          console.error("Citofonía PeerJS error:", err);
+
+          if (err.type === "unavailable-id" && retryCount < 2) {
+            console.log("ID is taken, retrying in 2 seconds...");
+            retryTimeout = setTimeout(() => {
+              if (!isCancelled) {
+                initPeer(retryCount + 1);
+              }
+            }, 2000);
+            return;
+          }
+
+          if (err.type === "peer-unavailable") {
+            toast.error("El destinatario se encuentra fuera de línea.");
+          } else {
+            toast.error(`Error de citofonía: ${err.message || err.type}`);
+          }
+          endCall();
+        });
       });
-      p.on("error", (err: any) => {
-        if (isCancelled) return;
-        console.error("Citofonía PeerJS error:", err);
-        if (err.type === "peer-unavailable") {
-          toast.error("El destinatario se encuentra fuera de línea.");
-        } else {
-          toast.error(`Error de citofonía: ${err.message || err.type}`);
-        }
-        endCall();
-      });
-    });
+    };
+
+    initPeer(0);
+
+    const handleUnload = () => {
+      if (activePeer) {
+        try { activePeer.destroy(); } catch (e) {}
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("beforeunload", handleUnload);
+    }
 
     // Create a hidden audio element in the DOM
     if (typeof window !== "undefined") {
@@ -160,9 +190,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isCancelled = true;
-      if (activePeer) activePeer.destroy();
+      if (retryTimeout) clearTimeout(retryTimeout);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("beforeunload", handleUnload);
+      }
+      if (activePeer) {
+        try { activePeer.destroy(); } catch (e) {}
+      }
       if (peerRef.current) {
-        peerRef.current.destroy();
+        try { peerRef.current.destroy(); } catch (e) {}
         peerRef.current = null;
       }
       if (remoteAudioRef.current) remoteAudioRef.current.remove();

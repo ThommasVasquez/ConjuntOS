@@ -330,71 +330,103 @@ export default function AsambleaPage() {
 
     let activePeer: any = null;
     let isCancelled = false;
+    let retryTimeout: NodeJS.Timeout | null = null;
 
-    import('peerjs').then(({ default: Peer }) => {
-      if (isCancelled) return;
-
-      const p = new Peer(myUserId, {
-        host: '0.peerjs.com',
-        port: 443,
-        secure: true,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            {
-              urls: 'turn:openrelay.metered.ca:80',
-              username: 'openrelayproject',
-              credential: 'openrelayproject'
-            },
-            {
-              urls: 'turn:openrelay.metered.ca:443',
-              username: 'openrelayproject',
-              credential: 'openrelayproject'
-            },
-            {
-              urls: 'turns:openrelay.metered.ca:443?transport=tcp',
-              username: 'openrelayproject',
-              credential: 'openrelayproject'
-            }
-          ]
-        }
-      });
-
-      activePeer = p;
-
-      p.on('open', (id) => {
-        if (isCancelled) {
-          p.destroy();
-          return;
-        }
-        console.log('PeerJS connection established with ID:', id);
-        setPeer(p);
-      });
-
-      p.on('call', (call: any) => {
+    const initPeer = (retryCount = 0) => {
+      import('peerjs').then(({ default: Peer }) => {
         if (isCancelled) return;
-        if (!call) return;
-        console.log('Incoming call from peer:', call.peer);
-        call.answer(localStream || new MediaStream());
-        call.on('stream', (remoteStream: MediaStream) => {
+
+        if (activePeer) {
+          try { activePeer.destroy(); } catch (e) {}
+        }
+
+        const p = new Peer(myUserId, {
+          host: '0.peerjs.com',
+          port: 443,
+          secure: true,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' },
+              {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+              },
+              {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+              },
+              {
+                urls: 'turns:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+              }
+            ]
+          }
+        });
+
+        activePeer = p;
+
+        p.on('open', (id) => {
+          if (isCancelled) {
+            p.destroy();
+            return;
+          }
+          console.log('PeerJS connection established with ID:', id);
+          setPeer(p);
+        });
+
+        p.on('call', (call: any) => {
           if (isCancelled) return;
-          console.log('Received stream from peer:', call.peer);
-          setRemoteStreams(prev => ({ ...prev, [call.peer]: remoteStream }));
+          if (!call) return;
+          console.log('Incoming call from peer:', call.peer);
+          call.answer(localStream || new MediaStream());
+          call.on('stream', (remoteStream: MediaStream) => {
+            if (isCancelled) return;
+            console.log('Received stream from peer:', call.peer);
+            setRemoteStreams(prev => ({ ...prev, [call.peer]: remoteStream }));
+          });
+        });
+        
+        p.on('error', (err) => {
+          if (isCancelled) return;
+          console.error('PeerJS connection error:', err);
+
+          if (err.type === 'unavailable-id' && retryCount < 2) {
+            console.log('Asamblea ID taken, retrying in 2 seconds...');
+            retryTimeout = setTimeout(() => {
+              if (!isCancelled) {
+                initPeer(retryCount + 1);
+              }
+            }, 2000);
+            return;
+          }
         });
       });
-      
-      p.on('error', (err) => {
-        if (isCancelled) return;
-        console.error('PeerJS connection error:', err);
-      });
-    });
+    };
+
+    initPeer(0);
+
+    const handleUnload = () => {
+      if (activePeer) {
+        try { activePeer.destroy(); } catch (e) {}
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("beforeunload", handleUnload);
+    }
 
     return () => {
       isCancelled = true;
+      if (retryTimeout) clearTimeout(retryTimeout);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("beforeunload", handleUnload);
+      }
       if (activePeer) {
-        activePeer.destroy();
+        try { activePeer.destroy(); } catch (e) {}
       }
       setPeer(null);
     };
