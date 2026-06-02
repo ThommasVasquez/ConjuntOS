@@ -190,7 +190,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
         p.on("error", (err: any) => {
           if (isCancelled) return;
-          console.error("Citofonía PeerJS error:", err);
 
           if (err.type === "unavailable-id" && retryCount < 2) {
             console.log("ID is taken, retrying in 2 seconds...");
@@ -206,6 +205,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
             (err.message && String(err.message).toLowerCase().includes("could not connect to peer"));
 
           if (isPeerUnavailable) {
+            console.warn("Citofonía PeerJS: Peer is offline. Sending Web Push wake notification...", err);
             peerUnavailableReceivedRef.current = true;
             if (pushStatusRef.current.checked) {
               if (pushStatusRef.current.sent) {
@@ -222,6 +222,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
             return;
           }
 
+          console.error("Citofonía PeerJS error:", err);
           toast.error(`Error de citofonía: ${err.message || err.type}`);
           endCall();
         });
