@@ -46,21 +46,39 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
-      // Intentar encontrar una pestaña de citofonía ya abierta
+      // 1. Intentar encontrar una pestaña de citofonía ya abierta
       for (let client of windowClients) {
         if (client.url.includes("/citofonia") && "focus" in client) {
           if (event.notification.data?.callerPeerId) {
             client.postMessage({ 
               type: "ANSWER_CALL", 
               callerPeerId: event.notification.data.callerPeerId,
-              callerName: event.notification.data.callerName
+              callerName: event.notification.data.callerName,
+              redirectToCallPage: true
+            });
+          }
+          return client.focus();
+        }
+      }
+
+      // 2. Si no hay pestaña de citofonía, buscar cualquier pestaña de la aplicación abierta
+      const selfUrl = new URL(self.registration.scope);
+      for (let client of windowClients) {
+        const clientUrl = new URL(client.url);
+        if (clientUrl.origin === selfUrl.origin && "focus" in client) {
+          if (event.notification.data?.callerPeerId) {
+            client.postMessage({ 
+              type: "ANSWER_CALL", 
+              callerPeerId: event.notification.data.callerPeerId,
+              callerName: event.notification.data.callerName,
+              redirectToCallPage: true
             });
           }
           return client.focus();
         }
       }
       
-      // Si no hay pestaña abierta, abrir una nueva
+      // 3. Si no hay pestaña abierta, abrir una nueva
       if (clients.openWindow) {
         let targetUrl = urlToOpen;
         if (event.notification.data?.callerPeerId) {

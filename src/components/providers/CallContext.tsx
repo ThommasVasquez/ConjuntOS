@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Phone, PhoneOff, X, ShieldAlert, Check } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ export function useCall() {
 export function CallProvider({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const [profile, setProfile] = useState<any>(null);
+  const router = useRouter();
   
   // Call States
   const [callState, setCallState] = useState<CallState>("IDLE");
@@ -356,6 +358,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
           if (event.data.callerName) {
             setCallerName(event.data.callerName);
           }
+
+          if (event.data.redirectToCallPage) {
+            router.push("/citofonia");
+          }
+
+          // Si ya tenemos una llamada sonando, la contestamos directamente en vez de iniciar una llamada de retorno
+          if (callStateRef.current === "RINGING" && incomingCallRef.current) {
+            console.log("Citofonía: Contestando llamada entrante activa en respuesta al mensaje del SW.");
+            if (answerCallRef.current) {
+              answerCallRef.current();
+            }
+            return;
+          }
+
           if (isPeerReady) {
             if (startCallRef.current) {
               startCallRef.current(event.data.callerPeerId);
@@ -369,7 +385,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       navigator.serviceWorker.addEventListener("message", handleMessage);
       return () => navigator.serviceWorker.removeEventListener("message", handleMessage);
     }
-  }, [profile, isPeerReady]);
+  }, [profile, isPeerReady, router]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !profile || !isPeerReady) return;
@@ -748,6 +764,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         });
 
         setCallState("CONNECTED");
+        router.push("/citofonia");
       }
     } catch (e) {
       console.error("Failed to answer call with mic:", e);
