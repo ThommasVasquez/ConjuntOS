@@ -623,9 +623,59 @@ function HomeAdmin() {
         </button>
       </div>
 
-      <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl text-text">
-        <h2 className="text-2xl font-bold mb-2">Panel Administrativo</h2>
-        <button onClick={() => router.push('/admin-novedades')} className="mt-4 bg-accent text-primary px-6 py-3 rounded-2xl font-bold">Gestionar Novedades</button>
+      {/* QUICK ACCESSIBLE ACTIONS */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* CITOFONÍA CARD */}
+        <div 
+          onClick={() => router.push('/citofonia')}
+          className="p-5 rounded-[28px] bg-linear-to-br from-purple-600/15 to-pink-600/15 border border-purple-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-purple-500/40 transition-all shadow-xl group active:scale-95"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-300 border border-purple-500/30">
+            <UserIcon size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-text mb-0.5">Citofonía</h4>
+            <p className="text-[9px] text-text/50">Llamar a unidades y portería</p>
+          </div>
+        </div>
+
+        {/* NOVEDADES CARD */}
+        <div 
+          onClick={() => router.push('/admin-novedades')}
+          className="p-5 rounded-[28px] bg-linear-to-br from-emerald-600/15 to-teal-600/15 border border-emerald-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-emerald-500/40 transition-all shadow-xl group active:scale-95"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-300 border border-emerald-500/30">
+            <Building2 size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-text mb-0.5">Novedades</h4>
+            <p className="text-[9px] text-text/50">Crear anuncios y circulares</p>
+          </div>
+        </div>
+      </div>
+
+      {/* GESTIÓN GENERAL CARD */}
+      <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl text-text">
+        <h2 className="text-base font-bold mb-2">Gestión del Conjunto</h2>
+        <p className="text-[11px] text-text/60 leading-relaxed mb-6">Accede a las herramientas de control de finanzas y parqueaderos.</p>
+        
+        <div className="flex flex-col gap-3">
+          <button 
+            onClick={() => router.push('/admin-finanzas')}
+            className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
+          >
+            <span>Ver Finanzas y Cartera</span>
+            <ArrowRight size={14} className="text-text/45 group-hover:text-accent group-hover:translate-x-1 transition-all" />
+          </button>
+          
+          <button 
+            onClick={() => router.push('/admin-parqueadero')}
+            className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
+          >
+            <span>Control de Parqueaderos</span>
+            <ArrowRight size={14} className="text-text/45 group-hover:text-accent group-hover:translate-x-1 transition-all" />
+          </button>
+        </div>
       </div>
     </div>
   );
