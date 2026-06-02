@@ -69,7 +69,8 @@ export default function SplashScreen() {
   return (
     <div 
       ref={containerRef} 
-      className="fixed inset-0 z-[9999] bg-[#05020a] flex flex-col items-center justify-center overflow-hidden"
+      className="fixed inset-0 bg-[#05020a] flex flex-col items-center justify-center overflow-hidden"
+      style={{ zIndex: 999999 }}
     >
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#D946EF]/10 blur-[100px] rounded-full" />
