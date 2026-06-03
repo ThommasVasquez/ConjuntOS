@@ -56,6 +56,10 @@ interface ResidentInfo {
 }
 
 export default function AdminMensajesPage() {
+  const { data: session, status } = useSession();
+  const role = (session?.user as any)?.role;
+  const router = useRouter();
+
   const containerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
