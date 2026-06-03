@@ -740,10 +740,34 @@ function HomeConsejo() {
 
 function HomeAdmin() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role;
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <ProfileHeader />
       
+      {/* 👑 SUPER ADMIN SPECIAL CARD */}
+      {role === "SUPER_ADMIN" && (
+        <div 
+          onClick={() => router.push('/superadmin')}
+          className="w-full bg-linear-to-r from-violet-950 via-indigo-950 to-purple-950 rounded-[28px] p-6 border border-violet-500/30 shadow-2xl text-white cursor-pointer hover:border-violet-500/50 transition-all flex justify-between items-center group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-violet-500/20 border border-violet-500/40 flex items-center justify-center text-violet-300">
+              <Building2 size={22} className="animate-pulse" />
+            </div>
+            <div>
+              <span className="text-[9px] text-violet-300 font-black uppercase tracking-widest block mb-0.5">Módulo de Plataforma</span>
+              <h3 className="text-lg font-display font-bold leading-tight text-white">Panel SuperAdmin</h3>
+              <p className="text-white/60 text-xs mt-0.5">Registrar copropiedades y personería jurídica bajo la Ley 675.</p>
+            </div>
+          </div>
+          <button className="bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 group-hover:bg-violet-500 cursor-pointer">
+            Gestionar <ArrowRight size={10} />
+          </button>
+        </div>
+      )}
+
       {/* 🔴 LIVE ASSEMBLY ADMIN CONTROL CARD */}
       <div 
         onClick={() => router.push('/asamblea')}

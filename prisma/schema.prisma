@@ -146,6 +146,14 @@ model Conjunto {
   plan          Plan     @default(BASICO)
   activo        Boolean  @default(true)
   creadoEn      DateTime @default(now())
+  
+  // Datos obligatorios bajo Ley 675 de 2001 (Colombia)
+  representanteLegal    String?
+  notariaEscritura      String?
+  numeroEscritura       String?
+  fechaEscritura        DateTime?
+  matriculaInmobiliaria String?
+  totalUnidades         Int?     @default(1)
 
   usuarios        Usuario[]
   unidades        Unidad[]
