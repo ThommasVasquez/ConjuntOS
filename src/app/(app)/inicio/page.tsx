@@ -6,7 +6,7 @@
  */
 
 import { 
-  ArrowRight, Bell, Building2, Calendar, Car, CreditCard, 
+  ArrowRight, Bell, Building2, Calendar, Car, CreditCard, DollarSign,
   Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, 
   Search, SlidersHorizontal, ShoppingBag, User as UserIcon
 } from "lucide-react";
@@ -592,6 +592,147 @@ function HomeVigilante() {
       <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
         <h2 className="text-2xl font-bold text-text mb-2">Central de Guardia</h2>
         <p className="text-text/50 text-sm mb-6">Módulo de control de acceso y paquetería.</p>
+        <div className="flex flex-col gap-3">
+          <button 
+            onClick={() => router.push('/control-visitas')}
+            className="w-full py-4 px-5 rounded-2xl bg-accent text-primary text-xs font-black uppercase tracking-widest text-center shadow-lg shadow-accent/20 cursor-pointer active:scale-98 transition-transform"
+          >
+            Registrar Visita
+          </button>
+          <button 
+            onClick={() => router.push('/paqueteria')}
+            className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-center text-xs font-bold text-text cursor-pointer active:scale-98 transition-all"
+          >
+            Recepción de Envíos
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeEstacionamiento() {
+  const router = useRouter();
+  const [stats, setStats] = useState({ ocupacion: 0, libres: 0, ocupados: 0 });
+
+  useEffect(() => {
+    fetch("/api/parqueadero/stats")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success) setStats(json.data);
+      })
+      .catch((err) => console.error("Error fetching parking stats:", err));
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <ProfileHeader />
+      <div 
+        onClick={() => router.push("/mapa-parqueadero")}
+        className="fade-up bg-linear-to-r from-blue-950 via-slate-900 to-blue-950 rounded-[28px] p-6 border border-blue-500/20 shadow-2xl text-white cursor-pointer hover:border-blue-500/40 transition-all flex justify-between items-center group active:scale-98"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-300">
+            <Car size={22} />
+          </div>
+          <div>
+            <span className="text-[9px] text-blue-400 font-black uppercase tracking-widest block mb-0.5">Control Operativo</span>
+            <h3 className="text-lg font-display font-bold leading-tight">Mapa de Parqueaderos</h3>
+            <p className="text-white/60 text-xs mt-0.5">Ver celdas libres, registrar ingresos/salidas y realizar rondas.</p>
+          </div>
+        </div>
+        <button className="bg-blue-500 text-primary text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all cursor-pointer">
+          Ingresar
+        </button>
+      </div>
+
+      {/* Estadísticas de Ocupación */}
+      <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
+        <h3 className="text-base font-bold text-text mb-4">Estado del Parqueadero</h3>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
+            <span className="text-2xl font-black text-text">{stats.ocupacion}%</span>
+            <p className="text-[9px] text-text/60 uppercase font-bold mt-1">Ocupación</p>
+          </div>
+          <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
+            <span className="text-2xl font-black text-emerald-500">{stats.libres}</span>
+            <p className="text-[9px] text-text/60 uppercase font-bold mt-1">Libres</p>
+          </div>
+          <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
+            <span className="text-2xl font-black text-amber-500">{stats.ocupados}</span>
+            <p className="text-[9px] text-text/60 uppercase font-bold mt-1">Ocupados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeConsejo() {
+  const router = useRouter();
+  const [stats, setStats] = useState({ recaudado: 0, novedadesPendientes: 0 });
+
+  useEffect(() => {
+    fetch("/api/admin/stats")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success) setStats(json.data);
+      })
+      .catch((err) => console.error("Error fetching council stats:", err));
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <ProfileHeader />
+      
+      <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
+        <h2 className="text-xl font-bold text-text mb-1">Mesa de Monitoreo</h2>
+        <p className="text-text/60 text-xs">Consejo de Administración (Órgano Consultor Ley 675/2001)</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {/* FINANZAS READ ONLY CARD */}
+        <div 
+          onClick={() => router.push('/admin-finanzas')}
+          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-emerald-600/10 to-teal-600/10 border border-emerald-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-emerald-500/40 transition-all shadow-xl group active:scale-95"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-300 border border-emerald-500/30">
+            <DollarSign size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-text mb-0.5">Finanzas</h4>
+            <p className="text-[9px] text-text/50">Cobros y reportes consolidados</p>
+          </div>
+        </div>
+
+        {/* ANUNCIOS/CIRCULARES */}
+        <div 
+          onClick={() => router.push('/cartelera')}
+          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-purple-600/10 to-pink-600/10 border border-purple-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-purple-500/40 transition-all shadow-xl group active:scale-95"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-300 border border-purple-500/30">
+            <Building2 size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-text mb-0.5">Cartelera</h4>
+            <p className="text-[9px] text-text/50">Ver circulares y anuncios generales</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Resumen Agregado */}
+      <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
+        <h3 className="text-base font-bold text-text mb-4">Informes de Gestión</h3>
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
+            <span className="text-xs text-text/70 uppercase font-bold">Recaudación General</span>
+            <span className="text-sm font-black text-emerald-500">${stats.recaudado.toLocaleString()} COP</span>
+          </div>
+          <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
+            <span className="text-xs text-text/70 uppercase font-bold">Novedades / Solicitudes</span>
+            <span className="text-sm font-black text-text">{stats.novedadesPendientes} Pendientes</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -685,7 +826,9 @@ export default function InicioDashboard() {
   const { data: session } = useSession();
   const role = (session?.user as { role?: string })?.role;
 
-  if (role === 'VIGILANTE') return <HomeVigilante />;
+  if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') return <HomeVigilante />;
+  if (role === 'ENCARGADO_PARQUEADERO') return <HomeEstacionamiento />;
+  if (role === 'CONCEJO') return <HomeConsejo />;
   if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN') return <HomeAdmin />;
   
   return <HomeResidente />;

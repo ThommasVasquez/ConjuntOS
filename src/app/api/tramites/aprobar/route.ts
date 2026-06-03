@@ -67,7 +67,7 @@ export async function PUT(request: Request) {
     const userId = (session.user as any)?.id;
     const userRole = (session.user as any)?.role;
 
-    const allowedRoles = ['ADMINISTRADOR', 'SUPER_ADMIN', 'CONCEJO'];
+    const allowedRoles = ['ADMINISTRADOR', 'SUPER_ADMIN'];
     if (!allowedRoles.includes(userRole)) {
       const dbUser = await db.usuario.findUnique({
         where: { id: userId },

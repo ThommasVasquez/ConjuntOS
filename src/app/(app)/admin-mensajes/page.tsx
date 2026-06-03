@@ -5,6 +5,7 @@ import { MessageCircle, Search, ArrowRight, User, ChevronLeft, Building2, CheckC
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/db";
 
 interface Conversation {
@@ -233,10 +234,23 @@ export default function AdminMensajesPage() {
   };
 
   useEffect(() => {
+    if (status === "loading") return;
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
+    const allowed = ['ADMINISTRADOR', 'SUPER_ADMIN'];
+    if (!allowed.includes(role)) {
+      toast.error("No tienes permisos para acceder a esta sección.");
+      router.push("/inicio");
+      return;
+    }
+
     fetchConversations();
     const interval = setInterval(fetchConversations, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [session, status, role, router]);
 
   useEffect(() => {
     let interval: any;

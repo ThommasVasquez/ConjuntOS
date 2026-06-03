@@ -4,7 +4,9 @@ import { auth } from '@/auth';
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user || (session.user as any).role !== 'ENCARGADO_PARQUEADERO') {
+  const role = (session.user as any)?.role;
+  const allowedRoles = ['ENCARGADO_PARQUEADERO', 'ADMINISTRADOR', 'SUPER_ADMIN'];
+  if (!session?.user || !allowedRoles.includes(role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

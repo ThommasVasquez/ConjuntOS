@@ -5,8 +5,14 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function AdminNovedadesPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const role = (session?.user as any)?.role;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [tramites, setTramites] = useState<any[]>([]);
@@ -51,9 +57,22 @@ export default function AdminNovedadesPage() {
   };
 
   useEffect(() => {
+    if (status === "loading") return;
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
+    const allowed = ['ADMINISTRADOR', 'SUPER_ADMIN'];
+    if (!allowed.includes(role)) {
+      toast.error("No tienes permisos para acceder a esta sección.");
+      router.push("/inicio");
+      return;
+    }
+
     fetchTramites();
     if (tab === 'PENDIENTE') fetchCells();
-  }, [tab]);
+  }, [tab, session, status, role, router]);
 
   useEffect(() => {
     if (!loading) {

@@ -5,8 +5,14 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { Users, Car, MapPin, Eye, PlusCircle, CheckCircle2, Search } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function ControlVisitas() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const role = (session?.user as any)?.role;
+
   const [visitas, setVisitas] = useState<any[]>([]);
   const [residentes, setResidentes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,18 +28,33 @@ export default function ControlVisitas() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (status === "loading") return;
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+    
+    const allowed = ['VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ADMINISTRADOR', 'SUPER_ADMIN'];
+    if (!allowed.includes(role)) {
+      toast.error("No tienes permisos para acceder a esta sección.");
+      router.push("/inicio");
+      return;
+    }
+
     async function loadData() {
        try {
-         const res = await fetch('/api/vigilancia/visitas');
-         const data = await res.json();
-         if(data.success) {
-            setVisitas(data.data);
-         }
-         
-         setResidentes([
-            { id: "demo_id_jorge", nombre: "Jorge Residente", unidad: { numero: "101", torre: "Torre A" } },
-            { id: "demo_id_maria", nombre: "Maria Lopez", unidad: { numero: "302", torre: "Torre B" } }
+         const [visRes, dirRes] = await Promise.all([
+           fetch('/api/vigilancia/visitas'),
+           fetch('/api/user/directory')
          ]);
+         const [visData, dirData] = await Promise.all([visRes.json(), dirRes.json()]);
+         
+         if(visData.success) {
+            setVisitas(visData.data);
+         }
+         if(dirData.success) {
+            setResidentes(dirData.data);
+         }
        } catch (e) {
          toast.error("Error al cargar datos");
        } finally {
@@ -41,7 +62,7 @@ export default function ControlVisitas() {
        }
     }
     loadData();
-  }, []);
+  }, [session, status, role, router]);
 
   useEffect(() => {
     if (!loading) {

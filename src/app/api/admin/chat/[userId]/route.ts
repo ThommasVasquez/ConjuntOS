@@ -8,8 +8,9 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request, props: { params: Promise<{ userId: string }> }) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
-       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
+    const role = (session?.user as { role?: string })?.role;
+    if (!session?.user?.id || !["ADMINISTRADOR", "SUPER_ADMIN"].includes(role || "")) {
+       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 });
     }
 
     const { userId } = await props.params;
@@ -87,8 +88,9 @@ export async function GET(req: Request, props: { params: Promise<{ userId: strin
 export async function POST(req: Request, props: { params: Promise<{ userId: string }> }) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
-       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
+    const role = (session?.user as { role?: string })?.role;
+    if (!session?.user?.id || !["ADMINISTRADOR", "SUPER_ADMIN"].includes(role || "")) {
+       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 });
     }
 
     const { userId } = await props.params;

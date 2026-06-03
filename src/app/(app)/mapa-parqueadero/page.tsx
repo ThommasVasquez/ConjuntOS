@@ -8,6 +8,8 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function MapaParqueaderoPage() {
   const [parqueaderos, setParqueaderos] = useState<any[]>([]);
@@ -21,10 +23,27 @@ export default function MapaParqueaderoPage() {
   const [obs, setObs] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const role = (session?.user as any)?.role;
+
   useEffect(() => {
+    if (status === "loading") return;
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
+    const allowed = ['ENCARGADO_PARQUEADERO', 'VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ADMINISTRADOR', 'SUPER_ADMIN'];
+    if (!allowed.includes(role)) {
+      toast.error("No tienes permisos para acceder a esta sección.");
+      router.push("/inicio");
+      return;
+    }
+
     loadData();
     loadExtra();
-  }, []);
+  }, [session, status, role, router]);
 
   async function loadData() {
     try {

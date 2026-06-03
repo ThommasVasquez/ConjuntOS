@@ -5,15 +5,31 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { DollarSign } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function AdminFinanzasPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const role = (session?.user as any)?.role;
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setLoading(false);
-    }, 600);
-  }, []);
+    if (status === "loading") return;
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
+    const allowed = ['ADMINISTRADOR', 'SUPER_ADMIN', 'CONCEJO'];
+    if (!allowed.includes(role)) {
+      toast.error("No tienes permisos para acceder a esta sección.");
+      router.push("/inicio");
+      return;
+    }
+
+    setLoading(false);
+  }, [session, status, role, router]);
 
   useEffect(() => {
     if (!loading) {

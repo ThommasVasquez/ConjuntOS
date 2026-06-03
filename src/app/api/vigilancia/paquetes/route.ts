@@ -4,7 +4,9 @@ import { auth } from '@/auth';
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user || ((session.user as any).role !== 'VIGILANTE' && (session.user as any).role !== 'SUPERVISOR_VIGILANCIA')) {
+  const role = (session?.user as any)?.role;
+  const allowedRoles = ['VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ADMINISTRADOR', 'SUPER_ADMIN'];
+  if (!session?.user || !allowedRoles.includes(role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
@@ -28,7 +30,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user || ((session.user as any).role !== 'VIGILANTE' && (session.user as any).role !== 'SUPERVISOR_VIGILANCIA')) {
+  const role = (session?.user as any)?.role;
+  const allowedRoles = ['VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ADMINISTRADOR', 'SUPER_ADMIN'];
+  if (!session?.user || !allowedRoles.includes(role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
@@ -62,7 +66,9 @@ export async function POST(req: Request) {
 // Para marcar como ENTREGADO
 export async function PUT(req: Request) {
   const session = await auth();
-  if (!session?.user || ((session.user as any).role !== 'VIGILANTE' && (session.user as any).role !== 'SUPERVISOR_VIGILANCIA')) {
+  const role = (session?.user as any)?.role;
+  const allowedRoles = ['VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ADMINISTRADOR', 'SUPER_ADMIN'];
+  if (!session?.user || !allowedRoles.includes(role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
