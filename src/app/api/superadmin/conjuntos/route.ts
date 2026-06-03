@@ -92,3 +92,73 @@ export async function GET() {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const session = await auth();
+    const role = (session?.user as any)?.role;
+
+    if (!session || role !== "SUPER_ADMIN") {
+      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const {
+      id,
+      nombre,
+      nit,
+      subdominio,
+      direccion,
+      ciudad,
+      representanteLegal,
+      notariaEscritura,
+      numeroEscritura,
+      fechaEscritura,
+      matriculaInmobiliaria,
+      totalUnidades,
+      logoUrl,
+      colorPrimario
+    } = body;
+
+    if (!id || !nombre || !subdominio || !direccion || !ciudad || !nit) {
+      return NextResponse.json({ success: false, error: "Faltan campos obligatorios" }, { status: 400 });
+    }
+
+    // Clean subdominio
+    const cleanSubdomain = subdominio.toLowerCase().trim().replace(/[^a-z0-9-]/g, "");
+
+    // Check if subdominio already exists for another conjunto (without NOT operator, for custom Edge DB proxy compatibility)
+    const existing = await db.conjunto.findUnique({
+      where: { subdominio: cleanSubdomain }
+    });
+
+    if (existing && existing.id !== id) {
+      return NextResponse.json({ success: false, error: "El subdominio ya está registrado por otra copropiedad" }, { status: 400 });
+    }
+
+    // Update the Conjunto
+    const updatedConjunto = await db.conjunto.update({
+      where: { id },
+      data: {
+        nombre,
+        nit,
+        subdominio: cleanSubdomain,
+        direccion,
+        ciudad,
+        representanteLegal: representanteLegal || null,
+        notariaEscritura: notariaEscritura || null,
+        numeroEscritura: numeroEscritura || null,
+        fechaEscritura: fechaEscritura ? new Date(fechaEscritura) : null,
+        matriculaInmobiliaria: matriculaInmobiliaria || null,
+        totalUnidades: totalUnidades ? parseInt(totalUnidades, 10) : 1,
+        logoUrl: logoUrl || null,
+        colorPrimario: colorPrimario || "#1E3A5F"
+      }
+    });
+
+    return NextResponse.json({ success: true, data: updatedConjunto });
+  } catch (error: any) {
+    console.error("❌ [API-SUPERADMIN-CONJUNTOS] PUT error:", error.message);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

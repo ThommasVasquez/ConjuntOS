@@ -3,13 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { 
   Building2, Plus, FileText, CheckCircle2, ShieldCheck, MapPin, 
-  User, Calendar, List, Layers, HelpCircle, Loader2, ArrowRight
+  User, Calendar, List, Layers, HelpCircle, Loader2, ArrowRight,
+  Upload, Edit3
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import { toast } from "sonner";
+import { supabase } from "@/lib/db";
 
 export default function SuperAdminPage() {
   const { data: session, status } = useSession();
@@ -21,7 +23,9 @@ export default function SuperAdminPage() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tab, setTab] = useState<"CREAR" | "LISTAR">("CREAR");
-
+  const [editingConjuntoId, setEditingConjuntoId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  
   // Form State
   const [formData, setFormData] = useState({
     nombre: "",
@@ -38,6 +42,78 @@ export default function SuperAdminPage() {
     logoUrl: "",
     colorPrimario: "#7C3AED" // Default premium violet
   });
+
+  const handleEditClick = (c: any) => {
+    setEditingConjuntoId(c.id);
+    setFormData({
+      nombre: c.nombre || "",
+      nit: c.nit || "",
+      subdominio: c.subdominio || "",
+      direccion: c.direccion || "",
+      ciudad: c.ciudad || "",
+      representanteLegal: c.representanteLegal || "",
+      notariaEscritura: c.notariaEscritura || "",
+      numeroEscritura: c.numeroEscritura || "",
+      fechaEscritura: c.fechaEscritura ? new Date(c.fechaEscritura).toISOString().split('T')[0] : "",
+      matriculaInmobiliaria: c.matriculaInmobiliaria || "",
+      totalUnidades: c.totalUnidades ? String(c.totalUnidades) : "1",
+      logoUrl: c.logoUrl || "",
+      colorPrimario: c.colorPrimario || "#7C3AED"
+    });
+    setTab("CREAR");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingConjuntoId(null);
+    setFormData({
+      nombre: "",
+      nit: "",
+      subdominio: "",
+      direccion: "",
+      ciudad: "",
+      representanteLegal: "",
+      notariaEscritura: "",
+      numeroEscritura: "",
+      fechaEscritura: "",
+      matriculaInmobiliaria: "",
+      totalUnidades: "1",
+      logoUrl: "",
+      colorPrimario: "#7C3AED"
+    });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      return toast.error("El tamaño de la imagen supera el límite de 5MB");
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      
+      const { error } = await supabase.storage
+        .from('logos')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('logos')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, logoUrl: publicUrl }));
+      toast.success("Logotipo subido correctamente");
+    } catch (err: any) {
+      console.error("Error uploading logo:", err);
+      toast.error("Error al subir imagen: " + err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const fetchConjuntos = async () => {
     try {
@@ -91,15 +167,19 @@ export default function SuperAdminPage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/superadmin/conjuntos", {
-        method: "POST",
+      const url = "/api/superadmin/conjuntos";
+      const method = editingConjuntoId ? "PUT" : "POST";
+      const payload = editingConjuntoId ? { id: editingConjuntoId, ...formData } : formData;
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
 
       if (data.success) {
-        toast.success("Conjunto de Propiedad Horizontal registrado con éxito");
+        toast.success(editingConjuntoId ? "Copropiedad actualizada con éxito" : "Conjunto de Propiedad Horizontal registrado con éxito");
         // Reset form
         setFormData({
           nombre: "",
@@ -116,10 +196,11 @@ export default function SuperAdminPage() {
           logoUrl: "",
           colorPrimario: "#7C3AED"
         });
+        setEditingConjuntoId(null);
         fetchConjuntos();
         setTab("LISTAR");
       } else {
-        toast.error(data.error || "Error al registrar conjunto");
+        toast.error(data.error || "Error al procesar la solicitud");
       }
     } catch {
       toast.error("Error de conexión al servidor");
@@ -168,6 +249,21 @@ export default function SuperAdminPage() {
 
       {tab === "CREAR" ? (
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          {editingConjuntoId && (
+            <div className="fade-up flex items-center justify-between bg-accent/15 border border-accent/20 rounded-2xl p-4 text-xs text-text shadow-lg">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-accent animate-ping" />
+                <span>Modo edición activo: Editando <strong>{formData.nombre || "copropiedad"}</strong></span>
+              </div>
+              <button 
+                type="button"
+                onClick={handleCancelEdit}
+                className="py-1.5 px-3 rounded-xl border border-border text-[9px] font-black uppercase tracking-wider bg-surface hover:bg-text/5 text-text cursor-pointer transition-all active:scale-95"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
           {/* SECCIÓN 1: IDENTIFICACIÓN GENERAL */}
           <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
             <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2">
@@ -336,14 +432,58 @@ export default function SuperAdminPage() {
             </h3>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">URL de Logotipo</label>
-              <input 
-                type="url" 
-                value={formData.logoUrl}
-                onChange={e => setFormData({...formData, logoUrl: e.target.value})}
-                placeholder="https://ejemplo.com/logo.png" 
-                className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
-              />
+              <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Logotipo de la Copropiedad</label>
+              
+              <div className="flex flex-col sm:flex-row gap-4 items-center bg-surface-2 border border-border rounded-2xl p-4">
+                {formData.logoUrl ? (
+                  <div className="w-16 h-16 rounded-xl bg-white border border-border overflow-hidden flex items-center justify-center p-1 relative group shrink-0">
+                    <img 
+                      src={formData.logoUrl} 
+                      alt="Logo preview" 
+                      className="w-full h-full object-contain" 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setFormData({...formData, logoUrl: ""})}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold uppercase tracking-wider transition-opacity cursor-pointer"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-surface/40 border border-dashed border-border flex items-center justify-center text-text/40 shrink-0">
+                    <Building2 size={24} />
+                  </div>
+                )}
+
+                <div className="flex-1 flex flex-col gap-2 w-full">
+                  <div className="relative">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      disabled={isUploading}
+                      id="logo-file-input"
+                      className="hidden"
+                    />
+                    <label 
+                      htmlFor="logo-file-input"
+                      className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border text-xs font-bold uppercase tracking-wider text-text bg-surface hover:bg-text/5 cursor-pointer active:scale-98 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 size={12} className="animate-spin" /> Subiendo...
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={12} className="text-accent" /> {formData.logoUrl ? 'Cambiar Logotipo' : 'Subir Logotipo'}
+                        </>
+                      )}
+                    </label>
+                  </div>
+                  <p className="text-[9px] text-text/40 leading-tight">Formatos permitidos: PNG, JPG, WebP, SVG. Max 5MB.</p>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -362,16 +502,16 @@ export default function SuperAdminPage() {
 
           <button 
             type="submit" 
-            disabled={isSubmitting} 
+            disabled={isSubmitting || isUploading} 
             className="fade-up w-full py-4 bg-linear-to-r from-accent to-violet-600 hover:from-accent/90 hover:to-violet-500 transition-all rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-xl shadow-accent/20 active:scale-[0.98] flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
               <>
-                <Loader2 size={16} className="animate-spin" /> Registrando Copropiedad...
+                <Loader2 size={16} className="animate-spin" /> {editingConjuntoId ? "Guardando Cambios..." : "Registrando Copropiedad..."}
               </>
             ) : (
               <>
-                <ShieldCheck size={18} /> Validar y Crear Personería Jurídica
+                <ShieldCheck size={18} /> {editingConjuntoId ? "Guardar Cambios de Personería" : "Validar y Crear Personería Jurídica"}
               </>
             )}
           </button>
@@ -387,13 +527,28 @@ export default function SuperAdminPage() {
                 <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl pointer-events-none translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/15 transition-all"></div>
                 
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-bold text-text">{c.nombre}</h3>
-                    <p className="text-accent font-mono text-[10px] tracking-widest uppercase font-black">{c.nit}</p>
+                  <div className="flex gap-3 items-center">
+                    {c.logoUrl && (
+                      <div className="w-10 h-10 rounded-lg bg-white border border-border overflow-hidden p-0.5 flex items-center justify-center shrink-0">
+                        <img src={c.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="text-lg font-bold text-text leading-tight">{c.nombre}</h3>
+                      <p className="text-accent font-mono text-[10px] tracking-widest uppercase font-black">{c.nit}</p>
+                    </div>
                   </div>
-                  <span className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[9px] font-black text-text/60 font-mono">
-                    {c.subdominio}.conjuntos.app
-                  </span>
+                  <div className="flex flex-col gap-2 items-end">
+                    <span className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[9px] font-black text-text/60 font-mono">
+                      {c.subdominio}.conjuntos.app
+                    </span>
+                    <button
+                      onClick={() => handleEditClick(c)}
+                      className="inline-flex items-center gap-1 py-1.5 px-3 rounded-xl border border-border text-[10px] font-black uppercase tracking-wider text-accent bg-accent/5 hover:bg-accent/10 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Edit3 size={10} /> Editar
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-1 text-xs text-text/75 border-t border-border/40 pt-3 mt-1">
