@@ -18,6 +18,36 @@ export async function GET(req: Request, props: { params: Promise<{ userId: strin
        return NextResponse.json({ success: false, error: "Falta userId" }, { status: 400 });
     }
 
+    const targetUser = await db.usuario.findUnique({
+      where: { id: userId },
+      select: { rol: true, conjuntoId: true }
+    });
+
+    if (!targetUser) {
+      return NextResponse.json({ success: false, error: "Destinatario no encontrado" }, { status: 404 });
+    }
+
+    // Role communication validation rules
+    if (targetUser.rol === "SUPER_ADMIN" && role !== "ADMINISTRADOR" && role !== "SUPER_ADMIN") {
+      return NextResponse.json({ success: false, error: "Solo administradores pueden comunicarse con un SuperAdmin" }, { status: 403 });
+    }
+    if (role === "SUPER_ADMIN" && targetUser.rol !== "ADMINISTRADOR") {
+      return NextResponse.json({ success: false, error: "Un SuperAdmin solo puede comunicarse con administradores de conjuntos" }, { status: 403 });
+    }
+    if (role === "ADMINISTRADOR") {
+      const loggedInUser = await db.usuario.findUnique({
+        where: { id: session.user.id },
+        select: { conjuntoId: true }
+      });
+      if (!loggedInUser || loggedInUser.conjuntoId !== targetUser.conjuntoId) {
+        return NextResponse.json({ success: false, error: "No autorizado para ver chats de otra copropiedad" }, { status: 403 });
+      }
+      const allowedRoles = ['PROPIETARIO', 'ARRENDATARIO', 'CONCEJO', 'VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ENCARGADO_PARQUEADERO'];
+      if (!allowedRoles.includes(targetUser.rol) && targetUser.rol !== "SUPER_ADMIN") {
+        return NextResponse.json({ success: false, error: "No tienes permiso para chatear con este usuario" }, { status: 403 });
+      }
+    }
+
     // 1. Fetch messages using standard DB client (Safe for missing columns)
     let messages = [];
     try {
@@ -94,6 +124,40 @@ export async function POST(req: Request, props: { params: Promise<{ userId: stri
     }
 
     const { userId } = await props.params;
+    if (!userId) {
+       return NextResponse.json({ success: false, error: "Falta userId" }, { status: 400 });
+    }
+
+    const targetUser = await db.usuario.findUnique({
+      where: { id: userId },
+      select: { rol: true, conjuntoId: true }
+    });
+
+    if (!targetUser) {
+      return NextResponse.json({ success: false, error: "Destinatario no encontrado" }, { status: 404 });
+    }
+
+    // Role communication validation rules
+    if (targetUser.rol === "SUPER_ADMIN" && role !== "ADMINISTRADOR" && role !== "SUPER_ADMIN") {
+      return NextResponse.json({ success: false, error: "Solo administradores pueden comunicarse con un SuperAdmin" }, { status: 403 });
+    }
+    if (role === "SUPER_ADMIN" && targetUser.rol !== "ADMINISTRADOR") {
+      return NextResponse.json({ success: false, error: "Un SuperAdmin solo puede comunicarse con administradores de conjuntos" }, { status: 403 });
+    }
+    if (role === "ADMINISTRADOR") {
+      const loggedInUser = await db.usuario.findUnique({
+        where: { id: session.user.id },
+        select: { conjuntoId: true }
+      });
+      if (!loggedInUser || loggedInUser.conjuntoId !== targetUser.conjuntoId) {
+        return NextResponse.json({ success: false, error: "No autorizado para ver chats de otra copropiedad" }, { status: 403 });
+      }
+      const allowedRoles = ['PROPIETARIO', 'ARRENDATARIO', 'CONCEJO', 'VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ENCARGADO_PARQUEADERO'];
+      if (!allowedRoles.includes(targetUser.rol) && targetUser.rol !== "SUPER_ADMIN") {
+        return NextResponse.json({ success: false, error: "No tienes permiso para chatear con este usuario" }, { status: 403 });
+      }
+    }
+
     const { mensaje, audioUrl, transcripcion } = await req.json();
 
     if (!mensaje && !audioUrl) {

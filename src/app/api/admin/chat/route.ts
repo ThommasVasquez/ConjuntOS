@@ -29,8 +29,13 @@ export async function GET() {
       )
     `);
 
-    // Simplified SQL to avoid CTE complexities for first test
-    const res = await pool.query(`
+    const userRes = await pool.query('SELECT "conjuntoId", rol FROM "Usuario" WHERE id = $1', [session.user.id]);
+    if (userRes.rows.length === 0) {
+      return NextResponse.json({ success: false, error: "Usuario no encontrado" }, { status: 404 });
+    }
+    const { conjuntoId, rol } = userRes.rows[0];
+
+    let queryStr = `
       SELECT 
         c."usuarioId",
         MAX(c.mensaje) as mensaje,
@@ -45,9 +50,22 @@ export async function GET() {
       FROM "ChatAdmin" c
       JOIN "Usuario" u ON c."usuarioId" = u.id
       LEFT JOIN "Unidad" un ON u."unidadId" = un.id
+    `;
+
+    const queryParams: any[] = [];
+    if (rol === "SUPER_ADMIN") {
+      queryStr += ` WHERE u.rol = 'ADMINISTRADOR' `;
+    } else {
+      queryStr += ` WHERE u."conjuntoId" = $1 AND u.rol IN ('PROPIETARIO', 'ARRENDATARIO', 'CONCEJO', 'VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ENCARGADO_PARQUEADERO') `;
+      queryParams.push(conjuntoId);
+    }
+
+    queryStr += `
       GROUP BY c."usuarioId", u.nombre, u.avatar, u.email, un.torre, un.numero
       ORDER BY MAX(c."creadoEn") DESC
-    `);
+    `;
+
+    const res = await pool.query(queryStr, queryParams);
 
     return NextResponse.json({ success: true, data: res.rows });
   } catch (error: any) {

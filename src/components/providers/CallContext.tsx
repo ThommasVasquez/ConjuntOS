@@ -709,8 +709,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
             setLastSpeechResponse("Enviando notificación push...");
           }
         } else {
-          pushStatusRef.current = { checked: true, sent: false, error: json.reason || "No subscriptions found" };
-          console.log(`[push] Push notification not sent:`, json.reason);
+          const errMsg = json.error || json.reason || "No subscriptions found";
+          pushStatusRef.current = { checked: true, sent: false, error: errMsg };
+          console.log(`[push] Push notification not sent:`, errMsg);
+          if (json.error) {
+            toast.error(json.error);
+            endCall();
+            return;
+          }
           if (callStateRef.current === "OUTGOING" && peerUnavailableReceivedRef.current) {
             toast.error("El residente no está activo y no tiene notificaciones configuradas.");
             endCall();

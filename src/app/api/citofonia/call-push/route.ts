@@ -27,23 +27,45 @@ export async function POST(req: Request) {
 
     console.log(`[call-push]: Iniciando push para peer ID ${targetPeerId} de parte de ${callerName} (${callerPeerId})`);
 
+    const callerId = session.user.id;
+    let callerRole: string | null = null;
+    try {
+      const callerUser = await db.usuario.findUnique({
+        where: { id: callerId },
+        select: { rol: true }
+      });
+      callerRole = callerUser?.rol || null;
+    } catch (e) {
+      const { supabase } = await import("@/lib/db");
+      const { data } = await supabase.from("Usuario").select("rol").eq("id", callerId).maybeSingle();
+      callerRole = data?.rol || null;
+    }
+
     let targetUsers: { id: string; notifPush: string | null }[] = [];
 
     // Parse targetPeerId:
     // Case 1: user-userId
     if (targetPeerId.startsWith("user-")) {
       const targetUserId = targetPeerId.replace("user-", "");
+      let targetUser: { id: string; notifPush: string | null; rol: string } | null = null;
       try {
         const usuarioDelegate = await db.usuario;
         const user = await usuarioDelegate.findUnique({
           where: { id: targetUserId },
-          select: { id: true, notifPush: true }
+          select: { id: true, notifPush: true, rol: true }
         });
-        if (user) targetUsers.push(user);
+        if (user) targetUser = user as any;
       } catch (e) {
         const { supabase } = await import("@/lib/db");
-        const { data } = await supabase.from("Usuario").select("id, notifPush").eq("id", targetUserId).maybeSingle();
-        if (data) targetUsers.push(data);
+        const { data } = await supabase.from("Usuario").select("id, notifPush, rol").eq("id", targetUserId).maybeSingle();
+        if (data) targetUser = data as any;
+      }
+
+      if (targetUser) {
+        if (targetUser.rol === "SUPER_ADMIN" && callerRole !== "ADMINISTRADOR" && callerRole !== "SUPER_ADMIN") {
+          return NextResponse.json({ success: false, error: "Solo los administradores de conjuntos pueden llamar a un SuperAdmin" }, { status: 403 });
+        }
+        targetUsers.push(targetUser);
       }
     }
     // Case 2: conjuntoId-VIGILANTE
