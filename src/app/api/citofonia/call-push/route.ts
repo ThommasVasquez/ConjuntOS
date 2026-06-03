@@ -89,14 +89,24 @@ export async function POST(req: Request) {
         numero = aptoParts[1];
       }
 
+      // Map sanitized "_" back to "/" for database unit matching
+      let dbTorre = torre;
+      let dbNumero = numero;
+      if (torre.includes("_")) {
+        dbTorre = torre.replace(/_/g, "/");
+      }
+      if (numero.includes("_")) {
+        dbNumero = numero.replace(/_/g, "/");
+      }
+
       try {
         const usuarioDelegate = await db.usuario;
         targetUsers = await usuarioDelegate.findMany({
           where: {
             conjuntoId,
             unidad: {
-              numero: numero,
-              torre: torre || undefined
+              numero: dbNumero,
+              torre: dbTorre || undefined
             }
           },
           select: { id: true, notifPush: true }
@@ -107,9 +117,9 @@ export async function POST(req: Request) {
           .from("Usuario")
           .select("id, notifPush, unidad:Unidad!inner(numero, torre)")
           .eq("conjuntoId", conjuntoId)
-          .eq("unidad.numero", numero);
-        if (torre) {
-          query = query.eq("unidad.torre", torre);
+          .eq("unidad.numero", dbNumero);
+        if (dbTorre) {
+          query = query.eq("unidad.torre", dbTorre);
         }
         const { data } = await query;
         if (data) targetUsers = data as any;

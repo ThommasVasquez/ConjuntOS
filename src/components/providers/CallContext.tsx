@@ -33,6 +33,11 @@ export function useCall() {
   return context;
 }
 
+const sanitizePeerId = (id: string): string => {
+  if (!id) return "";
+  return id.replace(/\//g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
+};
+
 export function CallProvider({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const [profile, setProfile] = useState<any>(null);
@@ -103,6 +108,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const towerStr = normalizedTorre ? `${normalizedTorre}-` : "";
       myPeerId = `${conjuntoId}-APTO-${towerStr}${profile.unidad.numero}`;
     }
+    
+    myPeerId = sanitizePeerId(myPeerId);
   }
 
   // Setup PeerJS connection when profile is loaded
@@ -644,6 +651,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    targetPeerId = sanitizePeerId(targetPeerId);
     setCallerName(name);
     setCallState("OUTGOING");
     setLastSpeechResponse("Marcando canal digital...");
