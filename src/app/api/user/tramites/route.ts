@@ -25,10 +25,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "Datos incompletos" }, { status: 400 });
     }
 
-    // 🏗️ Buscar conjuntoId del usuario
+    // 🏗️ Buscar conjuntoId y nombre del usuario
     const user = await db.usuario.findUnique({
         where: { id: userId },
-        select: { conjuntoId: true }
+        select: { conjuntoId: true, nombre: true }
     });
 
     if (!user) {
@@ -51,6 +51,37 @@ export async function POST(req: Request) {
             estado: "PENDIENTE"
         }
     });
+
+    // 🔔 Crear Notificaciones Reales para Administradores de la Copropiedad
+    try {
+      const admins = await db.usuario.findMany({
+        where: {
+          conjuntoId: user.conjuntoId,
+          rol: { in: ['ADMINISTRADOR', 'SUPER_ADMIN'] }
+        },
+        select: { id: true }
+      });
+
+      const typeLabel = tipo === 'MASCOTA' ? 'Mascota' : tipo === 'VEHICULO' ? 'Vehículo' : tipo === 'MUDANZA' ? 'Mudanza' : 'Trámite';
+      const senderName = user.nombre || "Un residente";
+
+      if (admins.length > 0) {
+        await Promise.all(
+          admins.map(admin => 
+            db.notificacion.create({
+              data: {
+                usuarioId: admin.id,
+                tipo: 'INFO',
+                titulo: `Nueva solicitud: ${typeLabel}`,
+                mensaje: `${senderName} ha enviado una solicitud de ${typeLabel.toLowerCase()} para revisión.`
+              }
+            })
+          )
+        );
+      }
+    } catch (notifErr: any) {
+      console.warn("⚠️ Error al notificar a administradores sobre trámite:", notifErr.message);
+    }
 
     return NextResponse.json({ 
         success: true, 

@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Bell, CheckCircle2, Package } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -23,6 +24,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   const [userData, setUserData] = useState({ name: "Cargando...", gender: "femenino" });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [hasStory, setHasStory] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     const MAX_RETRIES = 2;
@@ -65,6 +67,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         if (notifRes.ok) {
           const nData = await notifRes.json();
           if (nData.success) {
+            setNotifications(nData.data);
             pendingCount = nData.data.filter((n: { leida: boolean }) => !n.leida).length;
           }
         }
@@ -113,11 +116,68 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [status, userId]);
 
-  const notificationsList = [
-    { id: 1, title: "Pago Recibido", desc: "Administración Abril 2026 procesada.", time: "Hace 5m", icon: <CheckCircle2 size={14} />, color: "text-success", isUnread: true },
-    { id: 2, title: "Paquete en Portería", desc: "Tienes un envío esperando.", time: "Hace 1h", icon: <Package size={14} />, color: "text-warning", isUnread: true },
-    { id: 3, title: "Mantenimiento", desc: "Lavado de tanques mañana.", time: "Hace 2h", icon: <AlertTriangle size={14} />, color: "text-danger", isUnread: false },
-  ];
+  const getNotifIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'APROBACION':
+        return { icon: <CheckCircle2 size={14} />, color: "text-emerald-500 bg-emerald-500/10" };
+      case 'SISTEMA':
+        return { icon: <AlertTriangle size={14} />, color: "text-red-500 bg-red-500/10" };
+      case 'INFO':
+      default:
+        return { icon: <Bell size={14} />, color: "text-accent bg-accent/10" };
+    }
+  };
+
+  const formatTime = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return "";
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      const res = await fetch("/api/notificaciones", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, leida: true })
+      });
+      if (res.ok) {
+        setNotifications(prev =>
+          prev.map(n => (n.id === id ? { ...n, leida: true } : n))
+        );
+        const updated = notifications.map(n => (n.id === id ? { ...n, leida: true } : n));
+        const unreadCount = updated.filter(n => !n.leida).length;
+        setHasStory(unreadCount > 0);
+      }
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      const unread = notifications.filter(n => !n.leida);
+      if (unread.length === 0) return;
+      
+      await Promise.all(
+        unread.map(n => 
+          fetch("/api/notificaciones", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: n.id, leida: true })
+          })
+        )
+      );
+      setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
+      setHasStory(false);
+      toast.success("Notificaciones marcadas como leídas");
+    } catch (err) {
+      console.error("Error clearing notifications:", err);
+    }
+  };
 
   return (
     <header className={`flex justify-between items-center relative z-50 ${className}`}>
@@ -154,31 +214,46 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
           className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-border active:scale-95 ${isNotificationsOpen ? 'bg-accent text-white border-accent/50' : 'liquid-glass text-text/80 hover:text-text'}`}
         >
           <Bell size={22} />
-          <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-primary shadow-[0_0_10px_rgba(217,70,239,0.8)]"></span>
+          {notifications.some(n => !n.leida) && (
+            <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-primary shadow-[0_0_10px_rgba(217,70,239,0.8)]"></span>
+          )}
         </button>
 
         {isNotificationsOpen && (
           <div className="absolute top-14 right-0 w-[280px] liquid-glass backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-border overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
              <div className="p-4 border-b border-border bg-surface/50 flex justify-between items-center">
                 <span className="text-sm font-bold text-text tracking-wide">Notificaciones</span>
-                <button className="text-[10px] text-accent font-bold uppercase hover:underline">Limpiar</button>
+                <button onClick={clearAllNotifications} className="text-[10px] text-accent font-bold uppercase hover:underline">Limpiar</button>
              </div>
              <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar">
-                {notificationsList.map((notif) => (
-                   <div key={notif.id} className="w-full px-5 py-3.5 flex items-start gap-4 hover:bg-text/5 transition-colors border-b border-border last:border-0 relative">
-                      {notif.isUnread && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent"></span>}
-                      <div className={`mt-0.5 w-8 h-8 rounded-full bg-text/5 flex items-center justify-center ${notif.color}`}>
-                         {notif.icon}
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-text/50">
+                    No tienes notificaciones
+                  </div>
+                ) : (
+                  notifications.map((notif) => {
+                    const iconStyle = getNotifIcon(notif.tipo);
+                    return (
+                      <div 
+                        key={notif.id} 
+                        onClick={() => markAsRead(notif.id)}
+                        className={`w-full px-5 py-3.5 flex items-start gap-4 hover:bg-text/5 transition-colors border-b border-border last:border-0 relative cursor-pointer ${notif.leida ? 'opacity-60' : ''}`}
+                      >
+                        {!notif.leida && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent"></span>}
+                        <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center ${iconStyle.color}`}>
+                           {iconStyle.icon}
+                        </div>
+                        <div className="flex flex-col flex-1">
+                           <div className="flex justify-between items-center mb-0.5">
+                              <span className="text-[11px] font-bold text-text">{notif.titulo}</span>
+                              <span className="text-[8px] text-text/30">{formatTime(notif.creadoEn)}</span>
+                           </div>
+                           <p className="text-[10px] text-text/50 leading-tight">{notif.mensaje}</p>
+                        </div>
                       </div>
-                      <div className="flex flex-col flex-1">
-                         <div className="flex justify-between items-center mb-0.5">
-                            <span className="text-[11px] font-bold text-text">{notif.title}</span>
-                            <span className="text-[8px] text-text/30">{notif.time}</span>
-                         </div>
-                         <p className="text-[10px] text-text/50 leading-tight">{notif.desc}</p>
-                      </div>
-                   </div>
-                ))}
+                    );
+                  })
+                )}
              </div>
           </div>
         )}

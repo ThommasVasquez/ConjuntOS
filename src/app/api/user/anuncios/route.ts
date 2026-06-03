@@ -110,3 +110,131 @@ export async function GET() {
     return NextResponse.json({ success: false, error: "Error interno", details: err.message }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
+    }
+
+    const role = (session.user as any)?.role;
+    if (role !== "ADMINISTRADOR" && role !== "SUPER_ADMIN") {
+       return NextResponse.json({ success: false, error: "Permisos insuficientes" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { titulo, contenido, tipo, imagenUrl, archivosUrl, fijado } = body;
+
+    if (!titulo || !contenido || !tipo) {
+       return NextResponse.json({ success: false, error: "Campos obligatorios faltantes" }, { status: 400 });
+    }
+
+    // Obtener conjuntoId del administrador
+    const admin = await db.usuario.findUnique({
+      where: { id: session.user.id },
+      select: { conjuntoId: true }
+    });
+
+    if (!admin?.conjuntoId) {
+       return NextResponse.json({ success: false, error: "Administrador sin conjunto asignado" }, { status: 400 });
+    }
+
+    const nuevoAnuncio = await db.anuncio.create({
+      data: {
+        conjuntoId: admin.conjuntoId,
+        titulo,
+        contenido,
+        tipo, // TipoAnuncio enum
+        imagenUrl: imagenUrl || null,
+        archivosUrl: archivosUrl || "",
+        fijado: fijado || false,
+      }
+    });
+
+    // 🔔 Crear notificación automática para todos los residentes sobre la nueva circular / anuncio
+    try {
+      const residents = await db.usuario.findMany({
+        where: {
+          conjuntoId: admin.conjuntoId,
+          rol: { in: ['PROPIETARIO', 'ARRENDATARIO', 'CONCEJO', 'VIGILANTE', 'ENCARGADO_PARQUEADERO'] }
+        },
+        select: { id: true }
+      });
+
+      if (residents.length > 0) {
+        await Promise.all(
+          residents.map(r => 
+            db.notificacion.create({
+              data: {
+                usuarioId: r.id,
+                tipo: 'INFO',
+                titulo: `Nueva publicación: ${titulo}`,
+                mensaje: contenido.substring(0, 100) + (contenido.length > 100 ? "..." : "")
+              }
+            })
+          )
+        );
+      }
+    } catch (notifErr: any) {
+      console.warn("⚠️ Error al notificar a residentes sobre el anuncio:", notifErr.message);
+    }
+
+    return NextResponse.json({ success: true, data: nuevoAnuncio });
+  } catch (error: any) {
+    console.error("❌ [API-ANUNCIOS] POST error:", error.message);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+       return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
+    }
+
+    const role = (session.user as any)?.role;
+    if (role !== "ADMINISTRADOR" && role !== "SUPER_ADMIN") {
+       return NextResponse.json({ success: false, error: "Permisos insuficientes" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+       return NextResponse.json({ success: false, error: "ID del anuncio es requerido" }, { status: 400 });
+    }
+
+    // Validar que el anuncio pertenezca al conjunto del administrador
+    const admin = await db.usuario.findUnique({
+      where: { id: session.user.id },
+      select: { conjuntoId: true }
+    });
+
+    if (!admin?.conjuntoId) {
+       return NextResponse.json({ success: false, error: "Administrador sin conjunto asignado" }, { status: 400 });
+    }
+
+    const anuncio = await db.anuncio.findUnique({
+      where: { id }
+    });
+
+    if (!anuncio) {
+       return NextResponse.json({ success: false, error: "Anuncio no encontrado" }, { status: 404 });
+    }
+
+    if (anuncio.conjuntoId !== admin.conjuntoId) {
+       return NextResponse.json({ success: false, error: "No autorizado para eliminar este anuncio" }, { status: 403 });
+    }
+
+    await db.anuncio.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({ success: true, message: "Anuncio eliminado con éxito" });
+  } catch (error: any) {
+    console.error("❌ [API-ANUNCIOS] DELETE error:", error.message);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
