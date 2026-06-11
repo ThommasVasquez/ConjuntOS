@@ -79,24 +79,29 @@ impl StorageService for S3Storage {
     }
 }
 
-/// Test double — records uploads without I/O.
-pub struct FakeStorage;
+/// Fallback when object storage (MinIO/S3) is unconfigured or failed to init.
+/// There is intentionally NO fake/in-memory storage: per constitution Law 4 an
+/// upload must never fabricate a success. Uploads fail loudly so callers return
+/// 5xx instead of persisting a dangling URL to the DB.
+pub struct UnconfiguredStorage;
 
-impl StorageService for FakeStorage {
+impl StorageService for UnconfiguredStorage {
     fn upload(
         &self,
-        bucket: &str,
-        path: &str,
+        _bucket: &str,
+        _path: &str,
         _data: &[u8],
         _content_type: &str,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<String>> + Send + '_>>
     {
-        let url = format!("http://localhost:9000/{bucket}/{path}");
-        Box::pin(async move { Ok(url) })
+        Box::pin(async move {
+            anyhow::bail!("object storage is not configured (set S3_ENDPOINT/S3_BUCKET/S3_ACCESS_KEY/S3_SECRET_KEY)")
+        })
     }
 }
 
-/// Returns `S3Storage` when S3_ENDPOINT is configured, `FakeStorage` for tests.
+/// Returns `S3Storage` when S3 is configured, otherwise `UnconfiguredStorage`
+/// (uploads fail loudly — Law 4, no silent mock fallback in production).
 pub fn create_storage_service(config: &Config) -> Arc<dyn StorageService> {
     if let (Some(endpoint), Some(bucket), Some(access_key), Some(secret_key)) = (
         &config.s3_endpoint,
@@ -128,6 +133,8 @@ pub fn create_storage_service(config: &Config) -> Arc<dyn StorageService> {
         }
     }
 
-    tracing::warn!("storage: using FakeStorage (set S3_ENDPOINT to enable MinIO)");
-    Arc::new(FakeStorage)
+    tracing::warn!(
+        "storage: S3 not configured — uploads will return an error (set S3_ENDPOINT to enable)"
+    );
+    Arc::new(UnconfiguredStorage)
 }

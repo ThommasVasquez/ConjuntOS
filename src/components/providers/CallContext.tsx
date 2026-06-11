@@ -662,7 +662,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           callerPeerId: myPeerIdRef.current
         })
       .then(json => {
-        if (json.success && json.sent > 0) {
+        if (json.success && (json.sent ?? 0) > 0) {
           pushStatusRef.current = { checked: true, sent: true };
           if (callStateRef.current === "OUTGOING" && peerUnavailableReceivedRef.current) {
             toast.info("El residente no está activo en la app. Notificación enviada.");

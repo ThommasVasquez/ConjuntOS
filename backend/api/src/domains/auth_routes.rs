@@ -21,6 +21,7 @@ pub fn router() -> Router<AppState> {
         .route("/auth/me", get(me))
         .route("/auth/logout", post(logout))
         .route("/auth/password", put(change_password))
+        .route("/auth/ws-ticket", get(ws_ticket))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -161,6 +162,35 @@ pub async fn change_password(
     let new_hash = password::hash_password_blocking(req.new_password).await?;
     repo::update_password(&mut conn, user.id, &new_hash).await?;
     Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct WsTicketResponse {
+    /// Short-lived token to authenticate the WebSocket upgrade.
+    pub ticket: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/auth/ws-ticket",
+    tag = "auth",
+    responses(
+        (status = 200, description = "Short-lived WebSocket auth ticket", body = WsTicketResponse),
+        (status = 401, description = "Not authenticated")
+    )
+)]
+pub async fn ws_ticket(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<WsTicketResponse>> {
+    let ticket = jwt::issue_ws_ticket(
+        user.id,
+        user.conjunto_id,
+        user.rol,
+        &user.nombre,
+        &state.config.jwt_secret,
+    )?;
+    Ok(Json(WsTicketResponse { ticket }))
 }
 
 fn session_cookie(token: String, config: &Config) -> Cookie<'static> {

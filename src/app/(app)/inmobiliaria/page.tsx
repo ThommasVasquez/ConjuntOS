@@ -229,7 +229,7 @@ export default function InmobiliariaPage() {
 function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }) {
   const [isLiked, setIsLiked] = useState(false);
   const imagenes = item.imagenes || [];
-  const mainImage = imagenes[0] || "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800";
+  const mainImage = imagenes[0] || "/placeholder.svg";
 
   const formattedPrecio = new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -342,7 +342,7 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
   const [signed, setSigned] = useState(false);
   
   const imagenes = item.imagenes || [];
-  const mainImage = imagenes[0] || "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800";
+  const mainImage = imagenes[0] || "/placeholder.svg";
 
   const formattedPrecio = new Intl.NumberFormat("es-CO", {
     style: "currency",

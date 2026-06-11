@@ -8,6 +8,10 @@ use crate::error::{ApiError, ApiResult};
 
 pub const SESSION_COOKIE: &str = "ec_session";
 const SESSION_DAYS: i64 = 30;
+/// WebSocket auth tickets are short-lived: they ride in the connect URL (which can
+/// land in logs), so they must expire quickly. The client fetches a fresh one,
+/// authenticated by the httpOnly cookie, right before each connection.
+const WS_TICKET_SECONDS: i64 = 120;
 
 /// JWT claims (specs/001-auth-tenancy/spec.md). Tenant comes from here — never
 /// from client-supplied fields (Constitution Law 2).
@@ -28,6 +32,42 @@ pub fn issue(
     nombre: &str,
     secret: &str,
 ) -> ApiResult<String> {
+    issue_with_ttl(
+        user_id,
+        conjunto_id,
+        rol,
+        nombre,
+        secret,
+        Duration::days(SESSION_DAYS),
+    )
+}
+
+/// Mints a short-lived token for authenticating a WebSocket upgrade.
+pub fn issue_ws_ticket(
+    user_id: Uuid,
+    conjunto_id: Uuid,
+    rol: Rol,
+    nombre: &str,
+    secret: &str,
+) -> ApiResult<String> {
+    issue_with_ttl(
+        user_id,
+        conjunto_id,
+        rol,
+        nombre,
+        secret,
+        Duration::seconds(WS_TICKET_SECONDS),
+    )
+}
+
+fn issue_with_ttl(
+    user_id: Uuid,
+    conjunto_id: Uuid,
+    rol: Rol,
+    nombre: &str,
+    secret: &str,
+    ttl: Duration,
+) -> ApiResult<String> {
     let now = Utc::now();
     let claims = Claims {
         sub: user_id,
@@ -35,7 +75,7 @@ pub fn issue(
         rol,
         nombre: nombre.to_string(),
         iat: now.timestamp(),
-        exp: (now + Duration::days(SESSION_DAYS)).timestamp(),
+        exp: (now + ttl).timestamp(),
     };
     encode(
         &Header::default(),

@@ -26,8 +26,39 @@ async fn main() -> anyhow::Result<()> {
 
     let listener = tokio::net::TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;
     tracing::info!("enconjunto-api listening on {}", listener.local_addr()?);
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
     Ok(())
+}
+
+/// Resolves on SIGTERM (containers) or Ctrl-C so axum can drain in-flight
+/// requests and close DB connections cleanly instead of dropping them.
+async fn shutdown_signal() {
+    use tokio::signal;
+
+    let ctrl_c = async {
+        let _ = signal::ctrl_c().await;
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        match signal::unix::signal(signal::unix::SignalKind::terminate()) {
+            Ok(mut s) => {
+                s.recv().await;
+            }
+            Err(e) => tracing::error!("failed to install SIGTERM handler: {e}"),
+        }
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+    tracing::info!("shutdown signal received — draining connections");
 }
 
 fn init_tracing() {

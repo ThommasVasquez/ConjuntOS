@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { api, ApiError } from '@/lib/api/client';
+import { api, ApiError, setAuthToken } from '@/lib/api/client';
 import type { UserDto, LoginResponse } from '@/lib/api/types';
 
 interface AuthState {
@@ -26,10 +26,10 @@ export const useAuth = create<AuthState>((set) => ({
         email,
         password,
       });
-      // The Rust backend also sets an httpOnly ec_session cookie.
-      // Store token in localStorage as Bearer fallback for cross-site.
+      // The Rust backend also sets an httpOnly ec_session cookie (the primary,
+      // reload-surviving credential). Keep the Bearer token in memory only.
       if (res.token) {
-        localStorage.setItem('ec_token', res.token);
+        setAuthToken(res.token);
       }
       set({ user: res.user, loading: false });
     } catch (err) {
@@ -46,7 +46,9 @@ export const useAuth = create<AuthState>((set) => ({
     } catch {
       // Ignore errors on logout — clear local state regardless
     }
-    localStorage.removeItem('ec_token');
+    setAuthToken(null);
+    // Clear any token persisted by a previous app version.
+    if (typeof window !== 'undefined') localStorage.removeItem('ec_token');
     set({ user: null, loading: false });
   },
 

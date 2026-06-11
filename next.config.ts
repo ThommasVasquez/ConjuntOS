@@ -13,9 +13,12 @@ const nextConfig: NextConfig = {
     },
   },
   typescript: {
-    ignoreBuildErrors: true,
+    // Type errors now fail the build (the frontend↔backend contract is enforced).
+    ignoreBuildErrors: false,
   },
   eslint: {
+    // Lint runs in CI (`pnpm lint`), not as a build gate — style nits should not
+    // block a production deploy. Type errors (above) DO block it.
     ignoreDuringBuilds: true,
   },
   async rewrites() {

@@ -95,12 +95,22 @@ impl IntoResponse for ApiError {
 
 impl From<diesel::result::Error> for ApiError {
     fn from(err: diesel::result::Error) -> Self {
+        use diesel::result::DatabaseErrorKind;
         match err {
             diesel::result::Error::NotFound => ApiError::NotFound("resource not found".into()),
-            diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::UniqueViolation,
-                info,
-            ) => ApiError::Conflict(info.message().to_string()),
+            diesel::result::Error::DatabaseError(kind, info) => {
+                if matches!(kind, DatabaseErrorKind::UniqueViolation) {
+                    ApiError::Conflict(info.message().to_string())
+                } else if info.constraint_name() == Some("reservas_no_overlap") {
+                    // GiST exclusion violation (23P01) arrives as `Unknown`; it means
+                    // an overlapping reservation already exists for this area.
+                    ApiError::Conflict("el horario seleccionado ya está reservado".into())
+                } else {
+                    ApiError::Internal(anyhow::Error::new(
+                        diesel::result::Error::DatabaseError(kind, info),
+                    ))
+                }
+            }
             other => ApiError::Internal(anyhow::Error::new(other)),
         }
     }

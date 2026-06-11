@@ -1,25 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { DollarSign } from "lucide-react";
+import { DollarSign, CalendarClock, AlertCircle } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { api } from "@/lib/api/client";
+import type { AdminStatsDto } from "@/lib/api/types";
+
+const COP = (v: string | number) =>
+  new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 })
+    .format(Number(v || 0));
 
 export default function AdminFinanzasPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const role = user?.rol;
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<AdminStatsDto | null>(null);
+  const [error, setError] = useState(false);
 
-  // Real-time WebSocket subscription
-  useWsSubscription('pago', () => {
-    // Re-fetch financial stats when payment events arrive
-    // Currently a placeholder page; will trigger re-render when data is added
-  });
+  const loadStats = useCallback(async () => {
+    try {
+      const data = await api.get<AdminStatsDto>("/admin/stats");
+      setStats(data);
+      setError(false);
+    } catch {
+      setError(true);
+    }
+  }, []);
+
+  // Re-fetch consolidated finances when a payment event arrives over the socket.
+  useWsSubscription("pago", () => { loadStats(); });
 
   useEffect(() => {
     if (authLoading) return;
@@ -28,15 +43,15 @@ export default function AdminFinanzasPage() {
       return;
     }
 
-    const allowed = ['ADMINISTRADOR', 'SUPER_ADMIN', 'CONCEJO'];
+    const allowed = ["ADMINISTRADOR", "SUPER_ADMIN", "CONCEJO"];
     if (!role || !allowed.includes(role)) {
       toast.error("No tienes permisos para acceder a esta sección.");
       router.push("/inicio");
       return;
     }
 
-    setLoading(false);
-  }, [user, authLoading, role, router]);
+    loadStats().finally(() => setLoading(false));
+  }, [user, authLoading, role, router, loadStats]);
 
   useEffect(() => {
     if (!loading) {
@@ -44,12 +59,12 @@ export default function AdminFinanzasPage() {
     }
   }, [loading]);
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
        <ProfileHeader />
-       
+
        <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500">
@@ -57,11 +72,32 @@ export default function AdminFinanzasPage() {
              </div>
              <div>
                 <h2 className="text-xl font-bold text-text">Finanzas</h2>
-                <p className="text-xs text-text/70">Historial general de pagos</p>
+                <p className="text-xs text-text/70">Consolidado del conjunto · mes en curso</p>
              </div>
           </div>
-          
-          <p className="text-text/75 text-sm text-center py-6">Consolidado general protegido. No hay reportes este mes.</p>
+
+          {error ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <AlertCircle size={28} className="text-amber-500" />
+              <p className="text-text/75 text-sm">No se pudieron cargar los datos financieros.</p>
+              <button onClick={loadStats} className="text-xs font-bold text-accent underline">Reintentar</button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
+                 <span className="flex items-center gap-2 text-xs text-text/70 uppercase font-bold">
+                   <DollarSign size={14} className="text-emerald-500" /> Recaudación del mes
+                 </span>
+                 <span className="text-sm font-black text-emerald-500">{COP(stats?.recaudoMes ?? 0)}</span>
+              </div>
+              <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
+                 <span className="flex items-center gap-2 text-xs text-text/70 uppercase font-bold">
+                   <CalendarClock size={14} className="text-text/60" /> Reservas pendientes
+                 </span>
+                 <span className="text-sm font-black text-text">{stats?.reservasPendientes ?? 0}</span>
+              </div>
+            </div>
+          )}
        </div>
     </div>
   );

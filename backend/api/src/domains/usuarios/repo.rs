@@ -74,6 +74,8 @@ pub async fn update_password(
         .set((
             usuarios::password_hash.eq(password_hash),
             usuarios::must_change_password.eq(false),
+            // Invalidate every session token issued before this moment (revocation).
+            usuarios::password_changed_at.eq(chrono::Utc::now()),
         ))
         .execute(conn)
         .await?;

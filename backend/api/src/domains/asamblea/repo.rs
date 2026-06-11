@@ -36,6 +36,39 @@ pub async fn verify_asamblea_tenant(
         .map_err(Into::into)
 }
 
+/// True if `user_id` exists and belongs to `conjunto_id` (Law 2 membership check,
+/// used to reject cross-tenant references in poder creation).
+pub async fn user_in_conjunto(
+    conn: &mut DbConn,
+    user_id: Uuid,
+    conjunto_id: Uuid,
+) -> ApiResult<bool> {
+    let n: i64 = usuarios::table
+        .filter(usuarios::id.eq(user_id))
+        .filter(usuarios::conjunto_id.eq(conjunto_id))
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
+/// True if a verified poder names `otorgante_id` as grantor in this asamblea — i.e.
+/// their apoderado casts the vote, so the otorgante must not also vote (double-count).
+pub async fn otorgante_has_verified_poder(
+    conn: &mut DbConn,
+    asamblea_id: Uuid,
+    otorgante_id: Uuid,
+) -> ApiResult<bool> {
+    let n: i64 = asamblea_poderes::table
+        .filter(asamblea_poderes::asamblea_id.eq(asamblea_id))
+        .filter(asamblea_poderes::verificado.eq(true))
+        .filter(asamblea_poderes::otorgante_id.eq(otorgante_id))
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
 /// Returns (nombre, torre, apto) for denormalised opinion/turno fields.
 pub async fn get_user_info(
     conn: &mut DbConn,
@@ -238,14 +271,18 @@ pub async fn cast_voto(conn: &mut DbConn, nuevo: NuevoVoto) -> ApiResult<Asamble
 }
 
 /// Returns (user_unidad_id, effective coeficiente) including verified poderes.
+/// Every usuario/unidad lookup is scoped to `conjunto_id` (Law 2) so a poder that
+/// references a foreign-tenant otorgante can never contribute vote weight.
 pub async fn compute_effective_coeficiente(
     conn: &mut DbConn,
     asamblea_id: Uuid,
+    conjunto_id: Uuid,
     user_id: Uuid,
 ) -> ApiResult<(Option<Uuid>, BigDecimal)> {
-    // 1. User's own unidad_id
+    // 1. User's own unidad_id (scoped to the conjunto)
     let user_unidad_id: Option<Uuid> = usuarios::table
         .filter(usuarios::id.eq(user_id))
+        .filter(usuarios::conjunto_id.eq(conjunto_id))
         .select(usuarios::unidad_id)
         .first(conn)
         .await?;
@@ -254,6 +291,7 @@ pub async fn compute_effective_coeficiente(
     let base: BigDecimal = match user_unidad_id {
         Some(uid) => unidades::table
             .filter(unidades::id.eq(uid))
+            .filter(unidades::conjunto_id.eq(conjunto_id))
             .select(unidades::coeficiente)
             .first::<BigDecimal>(conn)
             .await
@@ -275,6 +313,7 @@ pub async fn compute_effective_coeficiente(
     } else {
         let otorgante_unit_ids: Vec<Uuid> = usuarios::table
             .filter(usuarios::id.eq_any(&otorgante_ids))
+            .filter(usuarios::conjunto_id.eq(conjunto_id))
             .filter(usuarios::unidad_id.is_not_null())
             .select(usuarios::unidad_id)
             .load::<Option<Uuid>>(conn)
@@ -288,6 +327,7 @@ pub async fn compute_effective_coeficiente(
         } else {
             unidades::table
                 .filter(unidades::id.eq_any(&otorgante_unit_ids))
+                .filter(unidades::conjunto_id.eq(conjunto_id))
                 .select(diesel::dsl::sum(unidades::coeficiente))
                 .first::<Option<BigDecimal>>(conn)
                 .await?
@@ -354,6 +394,7 @@ pub async fn get_quorum(
     // Their unit IDs
     let mut present_unit_ids: Vec<Uuid> = usuarios::table
         .filter(usuarios::id.eq_any(&attendee_ids))
+        .filter(usuarios::conjunto_id.eq(conjunto_id))
         .filter(usuarios::unidad_id.is_not_null())
         .select(usuarios::unidad_id)
         .load::<Option<Uuid>>(conn)
@@ -374,6 +415,7 @@ pub async fn get_quorum(
     if !otorgante_ids.is_empty() {
         let poder_unit_ids: Vec<Uuid> = usuarios::table
             .filter(usuarios::id.eq_any(&otorgante_ids))
+            .filter(usuarios::conjunto_id.eq(conjunto_id))
             .filter(usuarios::unidad_id.is_not_null())
             .select(usuarios::unidad_id)
             .load::<Option<Uuid>>(conn)
@@ -392,6 +434,7 @@ pub async fn get_quorum(
     } else {
         unidades::table
             .filter(unidades::id.eq_any(&present_unit_ids))
+            .filter(unidades::conjunto_id.eq(conjunto_id))
             .select(diesel::dsl::sum(unidades::coeficiente))
             .first::<Option<BigDecimal>>(conn)
             .await?

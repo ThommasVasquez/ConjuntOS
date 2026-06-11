@@ -45,6 +45,15 @@ async fn main() -> anyhow::Result<()> {
 
     // --seed-demo only needs the target DB, not legacy.
     if args.seed_demo {
+        // Guard: seeding injects demo tenants and accounts with hardcoded,
+        // loginable passwords. Refuse unless explicitly opted in, so a stray
+        // DATABASE_URL pointed at production cannot be seeded by accident.
+        if std::env::var("ENCONJUNTO_ALLOW_SEED").as_deref() != Ok("1") {
+            anyhow::bail!(
+                "refusing to --seed-demo: set ENCONJUNTO_ALLOW_SEED=1 to confirm the target is a \
+                 non-production database"
+            );
+        }
         let target = db::connect(&target_url).await?;
         seed::seed_demo(&target).await?;
         return Ok(());

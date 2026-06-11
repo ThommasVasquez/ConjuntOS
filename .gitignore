@@ -36,8 +36,28 @@ yarn-error.log*
 # vercel
 .vercel
 
+# cloudflare wrangler (local state / build cache — never commit)
+.wrangler/
+
+# stray build logs
+/build_log.txt
+/nop_log.txt
+
+# this project uses pnpm; npm's lockfile must not be committed
+package-lock.json
+
+# throwaway dev scratch / tmp scripts (never commit — past leaks lived here)
+/scratch/
+/tmp/
+
+# rust build output
+target/
+
+# agent/tooling state (claude-flow, ruflo, swarm) — not source
+.claude-flow/
+.swarm/
+**/.claude-flow/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-/src/generated/prisma

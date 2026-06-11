@@ -30,13 +30,16 @@ interface Clasificado {
   propietario: { nombre: string; telefono: string | null } | null;
 }
 
+// IDs must match the backend `CatLocal` enum / `locales_categoria_check`
+// constraint exactly (RESTAURANTE | TIENDA | LAVANDERIA | FARMACIA | OTRO),
+// otherwise POST /clasificados fails serde validation and the filter never matches.
 const CATEGORIES = [
-  { id: 'TODOS', label: 'Todos', icon: <ShoppingBag size={18} /> },
-  { id: 'GASTRONOMIA', label: 'Comida', icon: <Utensils size={18} /> },
-  { id: 'CUIDADO', label: 'Cuidado', icon: <Baby size={18} /> },
-  { id: 'SERVICIOS', label: 'Hogar', icon: <Wrench size={18} /> },
-  { id: 'MASCOTAS', label: 'Mascotas', icon: <Dog size={18} /> },
-  { id: 'TECNOLOGIA', label: 'Tecno', icon: <Laptop size={18} /> },
+  { id: 'TODOS', label: 'Todos', icon: <Sparkles size={18} /> },
+  { id: 'RESTAURANTE', label: 'Comida', icon: <Utensils size={18} /> },
+  { id: 'TIENDA', label: 'Tienda', icon: <ShoppingBag size={18} /> },
+  { id: 'LAVANDERIA', label: 'Lavandería', icon: <Wrench size={18} /> },
+  { id: 'FARMACIA', label: 'Salud', icon: <Heart size={18} /> },
+  { id: 'OTRO', label: 'Otros', icon: <Star size={18} /> },
 ];
 
 export default function ClasificadosPage() {
@@ -230,7 +233,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
        
        <div className="relative h-48 w-full group overflow-hidden">
           <Image 
-            src={item.imagenUrl || "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&q=80&w=800"} 
+            src={item.imagenUrl || "/placeholder.svg"} 
             alt={item.nombre} 
             fill 
             className="object-cover transition-transform duration-1000 group-hover:scale-110" 
@@ -290,7 +293,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
     nombre: "",
     descripcion: "",
     precio: "",
-    categoria: "GASTRONOMIA",
+    categoria: "RESTAURANTE",
     whatsapp: ""
   });
   const [loading, setLoading] = useState(false);
@@ -326,9 +329,9 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
           <label className="text-[9px] font-black text-text/60 uppercase tracking-[0.2em] ml-1">Título del anuncio</label>
           <input 
             type="text" 
-            placeholder="Ej: Empanadas de Pipian" 
+            placeholder="Ej: Empanadas de Pipian"
             value={form.nombre}
-            onChange={(e) => setForm({...form, titulo: e.target.value})}
+            onChange={(e) => setForm({...form, nombre: e.target.value})}
             className="w-full bg-surface-2 border border-border rounded-2xl px-5 py-4 text-sm text-text focus:outline-none focus:border-accent"
           />
         </div>
@@ -418,7 +421,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
          {/* IMAGE HEADER */}
          <div className="relative h-2/5 w-full shrink-0">
             <Image 
-              src={item.imagenUrl || "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&q=80&w=800"} 
+              src={item.imagenUrl || "/placeholder.svg"} 
               alt={item.nombre} 
               fill 
               className="object-cover" 

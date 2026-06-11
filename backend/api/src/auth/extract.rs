@@ -2,10 +2,14 @@ use axum::extract::FromRequestParts;
 use axum::http::header;
 use axum::http::request::Parts;
 use axum_extra::extract::cookie::CookieJar;
+use chrono::{DateTime, Utc};
+use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
 use crate::auth::jwt::{self, SESSION_COOKIE};
 use crate::db::enums::Rol;
+use crate::db::schema::usuarios;
 use crate::error::ApiError;
 use crate::state::AppState;
 
@@ -30,6 +34,21 @@ impl FromRequestParts<AppState> for AuthUser {
             .or_else(|| cookie_token(parts))
             .ok_or(ApiError::Unauthorized)?;
         let claims = jwt::verify(&token, &state.config.jwt_secret)?;
+
+        // Stateless-JWT revocation: reject any token issued before the user's last
+        // password change (set on password change / unknown user → 401). One indexed
+        // PK lookup per authenticated request.
+        let mut conn = state.pool.get().await?;
+        let changed_at: DateTime<Utc> = usuarios::table
+            .find(claims.sub)
+            .select(usuarios::password_changed_at)
+            .first(&mut conn)
+            .await
+            .map_err(|_| ApiError::Unauthorized)?;
+        if claims.iat < changed_at.timestamp() {
+            return Err(ApiError::Unauthorized);
+        }
+
         Ok(AuthUser {
             id: claims.sub,
             conjunto_id: claims.conjunto_id,

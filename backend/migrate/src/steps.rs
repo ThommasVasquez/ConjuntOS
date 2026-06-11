@@ -78,15 +78,26 @@ fn int_opt(row: &tokio_postgres::Row, idx: &str) -> Option<i32> {
     row.try_get::<_, i32>(idx).ok()
 }
 
-/// Decimal values come as strings from the legacy DB; we pass them as `CAST($n AS NUMERIC)` in SQL.
+/// Decode a legacy Postgres NUMERIC (money/coeficiente) column to its exact string
+/// form. These columns have the NUMERIC OID, which tokio-postgres can only decode
+/// with a decimal type — `try_get::<String>`/`<f64>` both fail on them and the old
+/// code silently coerced every value to "0", zeroing all financials and vote
+/// weights. `rust_decimal` (db-tokio-postgres feature) decodes it correctly; the
+/// text/float fallbacks remain for any column legacy stored differently.
 fn dec_str(row: &tokio_postgres::Row, idx: &str) -> String {
-    // tokio_postgres can return Decimal as a string representation
+    if let Ok(d) = row.try_get::<_, rust_decimal::Decimal>(idx) {
+        return d.to_string();
+    }
     row.try_get::<_, String>(idx)
         .or_else(|_| row.try_get::<_, f64>(idx).map(|f| f.to_string()))
         .unwrap_or_else(|_| "0".to_string())
 }
 
 fn dec_str_opt(row: &tokio_postgres::Row, idx: &str) -> Option<String> {
+    // `Option<Decimal>` yields Ok(None) for SQL NULL and Ok(Some(_)) for a value.
+    if let Ok(d) = row.try_get::<_, Option<rust_decimal::Decimal>>(idx) {
+        return d.map(|d| d.to_string());
+    }
     row.try_get::<_, String>(idx)
         .ok()
         .or_else(|| row.try_get::<_, f64>(idx).ok().map(|f| f.to_string()))

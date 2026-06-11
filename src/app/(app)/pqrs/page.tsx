@@ -150,7 +150,6 @@ export default function PQRSPage() {
         className="fade-up-pqrs group relative w-full h-[120px] rounded-[32px] overflow-hidden flex items-center justify-center transition-all active:scale-[0.98] shadow-2xl shadow-accent/20 cursor-pointer"
       >
          <div className="absolute inset-0 bg-linear-to-br from-[#1E1B4B] via-accent/20 to-[#4C1D95] group-hover:scale-105 transition-transform duration-700" />
-         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&q=80&w=1000')] bg-cover mix-blend-overlay opacity-30" />
          <div className="flex flex-col items-center gap-2 relative z-10">
             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#05020a] shadow-xl">
                <Plus size={24} />

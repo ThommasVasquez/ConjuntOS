@@ -34,25 +34,4 @@ impl AppState {
             ws_hub: WsHub::new(),
         }
     }
-
-    /// Test constructor with explicit services.
-    pub fn with_services(
-        config: Config,
-        pool: DbPool,
-        push_sender: Arc<dyn PushSender>,
-        storage: Arc<dyn StorageService>,
-    ) -> Self {
-        let gemini = config
-            .gemini_api_key
-            .as_ref()
-            .map(|key| GeminiClient::new(key.clone()));
-        Self {
-            pool,
-            config: Arc::new(config),
-            push_sender,
-            storage,
-            gemini,
-            ws_hub: WsHub::new(),
-        }
-    }
 }

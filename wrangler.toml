@@ -8,10 +8,12 @@ compatibility_flags = [ "nodejs_compat" ]
 [env.production]
 compatibility_flags = [ "nodejs_compat" ]
 
+# Public, build-time-safe vars only. Secrets (DATABASE_URL, GEMINI_API_KEY,
+# VAPID_PRIVATE_KEY) are NOT committed — those belong to the Rust backend now and,
+# where the frontend genuinely needs one, must be set via Cloudflare's encrypted
+# store (`wrangler secret put` / Pages dashboard), never in this file.
+# The frontend also needs NEXT_PUBLIC_API_URL pointed at the production backend.
 [env.production.vars]
-DATABASE_URL = "postgresql://postgres.zudntuczwfhmyqgzcvrc:Md5891129Ae$@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
-GEMINI_API_KEY = "AIzaSyDJVKbgOPJR9-659QgKgIyBKWOHGHmythc"
 NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BBlF7n0RF6TaCqZyByo9I5zZ7Y_RreTjmc2wtJ-i6ZQp-mnY4WgpAnn3u8eZewy1gk9TcjMwCiql1oyD-tySOMs"
 SKIP_INSTALL_COMMAND = "true"
-VAPID_PRIVATE_KEY = "x6sg_nRbglt4r_V0a6J5IKFOj9YOeknsY2-TzCiVVck"
 VAPID_SUBJECT = "mailto:soporte@conjuntos.app"

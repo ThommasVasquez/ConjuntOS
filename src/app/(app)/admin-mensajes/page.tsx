@@ -255,7 +255,7 @@ export default function AdminMensajesPage() {
     }
 
     const allowed = ['ADMINISTRADOR', 'SUPER_ADMIN'];
-    if (!allowed.includes(role)) {
+    if (!role || !allowed.includes(role)) {
       toast.error("No tienes permisos para acceder a esta sección.");
       router.push("/inicio");
       return;

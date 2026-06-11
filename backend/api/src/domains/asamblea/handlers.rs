@@ -1,7 +1,6 @@
 use axum::extract::{Path, Query, State};
 use axum::routing::{get, put};
 use axum::{Json, Router};
-use bigdecimal::BigDecimal;
 use chrono::Utc;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
@@ -327,27 +326,39 @@ async fn cast_voto(
         return Err(ApiError::BadRequest("opción de voto inválida".into()));
     }
 
-    // Effective coeficiente (own + poderes)
+    // Effective coeficiente (own + verified poderes), scoped to the caller's conjunto.
     let (unidad_id, coeficiente) =
-        repo::compute_effective_coeficiente(&mut conn, votacion.asamblea_id, user.id).await?;
+        repo::compute_effective_coeficiente(&mut conn, votacion.asamblea_id, user.conjunto_id, user.id)
+            .await?;
 
-    let coeficiente = if coeficiente == BigDecimal::default() {
-        // Fallback to a minimal coeficiente rather than zero
-        BigDecimal::from(1) / BigDecimal::from(100)
-    } else {
-        coeficiente
+    // A voter must own a unit. With a NULL unidad_id the unique (votacion_id,
+    // unidad_id) constraint does not dedupe (NULL != NULL in Postgres), which would
+    // let a unit-less account cast unlimited votes. Reject rather than fabricate weight.
+    let Some(unidad_id) = unidad_id else {
+        return Err(ApiError::BadRequest(
+            "no tienes una unidad asignada; no puedes votar".into(),
+        ));
     };
+
+    // If a verified poder names this user as otorgante, their apoderado votes on
+    // their behalf with the combined coeficiente — voting here too would count the
+    // unit twice.
+    if repo::otorgante_has_verified_poder(&mut conn, votacion.asamblea_id, user.id).await? {
+        return Err(ApiError::Conflict(
+            "tu voto será emitido por tu apoderado mediante poder".into(),
+        ));
+    }
 
     // Hash firma
     let timestamp = Utc::now().to_rfc3339();
-    let hash_firma = compute_hash_firma(votacion_id, unidad_id, &req.respuesta, &timestamp);
+    let hash_firma = compute_hash_firma(votacion_id, Some(unidad_id), &req.respuesta, &timestamp);
 
     let voto = repo::cast_voto(
         &mut conn,
         NuevoVoto {
             votacion_id,
             usuario_id: user.id,
-            unidad_id,
+            unidad_id: Some(unidad_id),
             respuesta: req.respuesta,
             coeficiente,
             es_virtual: req.es_virtual.unwrap_or(true),
@@ -599,6 +610,22 @@ async fn create_poder(
 
     if req.documento_url.trim().is_empty() {
         return Err(ApiError::BadRequest("documento_url es obligatorio".into()));
+    }
+
+    // Anti-IDOR / Law 2: only the grantor themselves (or an admin) may create a
+    // power-of-attorney, and both parties must belong to the caller's conjunto.
+    // Without this any resident could fabricate a poder naming an arbitrary — even
+    // cross-tenant — user as otorgante.
+    let is_admin = guard::require(&user, ADMIN_ROLES).is_ok();
+    if !is_admin && req.otorgante_id != user.id {
+        return Err(ApiError::Forbidden);
+    }
+    if !repo::user_in_conjunto(&mut conn, req.otorgante_id, user.conjunto_id).await?
+        || !repo::user_in_conjunto(&mut conn, req.apoderado_id, user.conjunto_id).await?
+    {
+        return Err(ApiError::BadRequest(
+            "otorgante y apoderado deben pertenecer al conjunto".into(),
+        ));
     }
 
     let poder = repo::create_poder(

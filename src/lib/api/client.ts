@@ -9,6 +9,22 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
+/**
+ * In-memory Bearer token (same-session fallback for when the httpOnly `ec_session`
+ * cookie is blocked). Deliberately NOT persisted to localStorage: a persisted JWT
+ * is exfiltratable by any XSS for its full lifetime. The httpOnly cookie is the
+ * source of truth across reloads; this in-memory copy is cleared on logout/reload.
+ */
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null): void {
+  authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
 export class ApiError extends Error {
   status: number;
   detail: string;
@@ -38,7 +54,7 @@ interface RequestOptions {
  *
  * - Prepends `/api/v1` to the path
  * - Sends credentials (ec_session cookie)
- * - Injects a Bearer token from localStorage as fallback
+ * - Injects an in-memory Bearer token as a same-session fallback
  * - Parses RFC-7807 problem+json errors
  */
 export async function apiFetch<T = unknown>(
@@ -62,13 +78,10 @@ export async function apiFetch<T = unknown>(
     fetchHeaders['Content-Type'] = 'application/json';
   }
 
-  // Bearer fallback for environments where the httpOnly cookie is blocked
-  // (e.g. cross-site during migration)
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('ec_token');
-    if (token && !fetchHeaders['Authorization']) {
-      fetchHeaders['Authorization'] = `Bearer ${token}`;
-    }
+  // Bearer fallback (in-memory only) for environments where the httpOnly cookie
+  // is blocked. The cookie remains the primary, reload-surviving credential.
+  if (authToken && !fetchHeaders['Authorization']) {
+    fetchHeaders['Authorization'] = `Bearer ${authToken}`;
   }
 
   const response = await fetch(url, {

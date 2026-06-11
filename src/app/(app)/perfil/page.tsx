@@ -38,7 +38,7 @@ function ProfileContent() {
   const userId = user?.id;
   const { theme, toggleTheme } = useTheme();
   
-  const defaultPlaceholder = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000";
+  const defaultPlaceholder = "/placeholder.svg";
   const [profilePic, setProfilePic] = useState<string>(defaultPlaceholder);
   const [hasMounted, setHasMounted] = useState(false);
   

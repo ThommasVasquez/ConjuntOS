@@ -16,6 +16,7 @@ use utoipa::OpenApi;
         crate::domains::auth_routes::me,
         crate::domains::auth_routes::logout,
         crate::domains::auth_routes::change_password,
+        crate::domains::auth_routes::ws_ticket,
         crate::domains::usuarios::handlers::get_profile,
         crate::domains::usuarios::handlers::update_profile,
         crate::domains::conjuntos::handlers::list_conjuntos,

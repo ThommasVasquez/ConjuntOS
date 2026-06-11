@@ -8,11 +8,15 @@ pub mod routes;
 pub mod services;
 pub mod state;
 
-use axum::http::{header, HeaderValue, Method};
+use std::time::Duration;
+
+use axum::http::{header, HeaderValue, Method, StatusCode};
 use axum::routing::get;
 use axum::Router;
+use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::state::AppState;
@@ -20,6 +24,11 @@ use crate::state::AppState;
 /// 2 MiB request cap — large enough for avatar/doc payloads carried over from the
 /// legacy app, small enough to keep base64 trámite documents bounded (specs/009).
 const MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
+
+/// Upper bound on any single request. Outbound calls (Gemini, S3, web-push,
+/// LiveKit) and DB queries that hang would otherwise pin a worker task and its
+/// pooled DB connection forever, cascading into pool exhaustion under load.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub fn build_router(state: AppState) -> Router {
     let cors = cors_layer(&state.config.allowed_origins);
@@ -53,7 +62,14 @@ pub fn build_router(state: AppState) -> Router {
         .with_state(state)
         .layer(cors)
         .layer(RequestBodyLimitLayer::new(MAX_BODY_BYTES))
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            REQUEST_TIMEOUT,
+        ))
         .layer(TraceLayer::new_for_http())
+        // Outermost: a panic in any handler becomes a 500 instead of dropping the
+        // connection (and killing the worker task).
+        .layer(CatchPanicLayer::new())
 }
 
 fn cors_layer(allowed_origins: &[String]) -> CorsLayer {

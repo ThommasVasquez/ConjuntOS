@@ -516,6 +516,7 @@ diesel::table! {
         genero -> Nullable<Text>,
         activo -> Bool,
         created_at -> Timestamptz,
+        password_changed_at -> Timestamptz,
     }
 }
 
