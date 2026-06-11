@@ -9,16 +9,34 @@ import {
 } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
+import { api } from "@/lib/api/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 export default function AdminParqueaderoPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const role = user?.rol;
+
   const [registros, setRegistros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [lastRound, setLastRound] = useState<any>(null);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    const allowed = ['VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ADMINISTRADOR', 'SUPER_ADMIN'];
+    if (!allowed.includes(role)) {
+      toast.error("No tienes permisos para acceder a esta sección.");
+      router.push("/inicio");
+      return;
+    }
     loadData();
-  }, []);
+  }, [user, authLoading, role, router]);
 
   useEffect(() => {
     if (!loading) {
@@ -31,14 +49,12 @@ export default function AdminParqueaderoPage() {
 
   async function loadData() {
     try {
-      const [regRes, rondRes] = await Promise.all([
-        fetch('/api/parqueadero/registros'),
-        fetch('/api/parqueadero/rondas')
+      const [regData, rondData] = await Promise.all([
+        api.get<any[]>('/parqueadero/registros'),
+        api.get<any>('/parqueadero/rondas')
       ]);
-      const [regData, rondData] = await Promise.all([regRes.json(), rondRes.json()]);
-      
-      if(regData.success) setRegistros(regData.data);
-      if(rondData.success) setLastRound(rondData.data);
+      setRegistros(regData);
+      setLastRound(rondData);
     } catch (e) {
       toast.error("Error cargando auditoría");
     } finally {

@@ -1,0 +1,52 @@
+[package]
+name = "enconjunto-api"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "enconjunto_api"
+path = "src/lib.rs"
+
+[[bin]]
+name = "enconjunto-api"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+argon2 = { version = "0.5", features = ["std"] }
+axum = { version = "0.8", features = ["ws"] }
+axum-extra = { version = "0.10", features = ["cookie"] }
+bigdecimal.workspace = true
+chrono.workspace = true
+diesel.workspace = true
+diesel-async.workspace = true
+diesel_migrations.workspace = true
+dotenvy = "0.15"
+futures-util.workspace = true
+jsonwebtoken = "9"
+rustls.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+time = "0.3"
+tokio.workspace = true
+tokio-postgres.workspace = true
+tokio-postgres-rustls.workspace = true
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "timeout", "limit"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+utoipa = { version = "5", features = ["axum_extras", "uuid", "chrono", "decimal"] }
+uuid.workspace = true
+webpki-roots.workspace = true
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+rust-s3 = { version = "0.35", default-features = false, features = ["tokio-rustls-tls"] }
+base64 = "0.22"
+sha2 = "0.10"
+
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }
+wiremock = "0.6"

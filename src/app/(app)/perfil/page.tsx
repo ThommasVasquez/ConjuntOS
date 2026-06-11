@@ -17,12 +17,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { signOut, useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import { useTheme } from "@/components/providers/ThemeContext";
-
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export default function PerfilPage() {
   return (
@@ -36,8 +34,8 @@ function ProfileContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const userId = session?.user?.id;
+  const { user, loading: authLoading, logout } = useAuth();
+  const userId = user?.id;
   const { theme, toggleTheme } = useTheme();
   
   const defaultPlaceholder = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000";
@@ -78,29 +76,15 @@ function ProfileContent() {
     async function loadData() {
       if (!userId) return;
       try {
-        const [paqRes] = await Promise.all([
-          fetch("/api/user/paquetes")
-        ]);
-        
-        let apiPackages = [];
-        if (paqRes.ok) {
-          const res = await paqRes.json();
-          if (res.success) apiPackages = res.data;
-        }
-
-        // LEER SIMULADOS DE LOCAL STORAGE (Stage 68.13)
-        const simPackages = JSON.parse(localStorage.getItem('conjuntos_sim_paquetes') || '[]');
-        setActivePaquetes([...simPackages, ...apiPackages]);
-
+        const apiPackages = await api.get<any[]>('/paquetes/mios');
+        setActivePaquetes(apiPackages);
       } catch (e) {
         console.error("Error loading packages", e);
-        // Fallback to purely local if API fails
-        const simPackages = JSON.parse(localStorage.getItem('conjuntos_sim_paquetes') || '[]');
-        setActivePaquetes(simPackages);
+        setActivePaquetes([]);
       }
     }
-    if (hasMounted && session) loadData();
-  }, [userId, hasMounted, session]);
+    if (hasMounted && user) loadData();
+  }, [userId, hasMounted, user]);
   const [financialTab, setFinancialTab] = useState<"pendientes" | "historial">("pendientes");
   const [financialData, setFinancialData] = useState<{pagos: Pago[], recibos: Recibo[], totalDebt: number}>({ pagos: [], recibos: [], totalDebt: 0 });
   const [isPaying, setIsPaying] = useState(false);
@@ -122,14 +106,14 @@ function ProfileContent() {
   // 🏗️ HYDRATION SYNC
   useEffect(() => {
     setHasMounted(true);
-    if (session?.user) {
+    if (user) {
         setUserData(prev => ({ 
             ...prev, 
-            name: (session.user?.name || prev.name) as string,
-            email: (session.user?.email || prev.email) as string
+            name: (user?.nombre || prev.name) as string,
+            email: (user?.email || prev.email) as string
         }));
     }
-  }, [session]);
+  }, [user]);
   useEffect(() => {
     if (userId && hasMounted) {
       const savedPic = localStorage.getItem(`conjuntos_profile_pic_${userId}`);
@@ -142,7 +126,7 @@ function ProfileContent() {
           setUserData(prev => ({ ...prev, ...parsed }));
           setEditForm(prev => ({ ...prev, ...parsed }));
         } catch {
-          console.warn("Error parsing local profile data");
+          // Ignore corrupt local data
         }
       }
     }
@@ -167,26 +151,24 @@ function ProfileContent() {
       const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       try {
-        const [profileRes, financeRes, resRes, paqRes] = await Promise.all([
-          fetch("/api/user/profile", { signal: controller.signal }),
-          fetch("/api/user/pagos", { signal: controller.signal }),
-          fetch("/api/user/reservas?filter=future", { signal: controller.signal }),
-          fetch("/api/user/paquetes", { signal: controller.signal })
-        ]);
-        
         clearTimeout(timeoutId);
         
-        if (profileRes.ok) {
-          const res = await profileRes.json();
-          if (res.success && res.data) {
-            const u = res.data;
+        const [profileData, financeData, reservasData, paquetesData] = await Promise.all([
+          api.get<any>('/usuarios/me/profile').catch(() => null),
+          api.get<any>('/pagos').catch(() => null),
+          api.get<any[]>('/reservas?filter=future').catch(() => null),
+          api.get<any[]>('/paquetes/mios').catch(() => null),
+        ]);
+        
+        if (profileData) {
+            const u = profileData;
             const mapped = {
-              name: u.nombre || session?.user?.name || userData.name,
+              name: u.nombre || user?.nombre || userData.name,
               apto: u.unidad?.numero || u.apto || "S/N",
               torre: u.unidad?.torre || u.torre || "S/T",
               phone: u.telefono || "",
               gender: u.genero || "neutro",
-              email: u.email || session?.user?.email || "",
+              email: u.email || user?.email || "",
               bio: u.bio || userData.bio
             };
             setUserData(mapped);
@@ -195,53 +177,24 @@ function ProfileContent() {
             setMascotas(u.mascotas || []);
             setTramites(u.tramitesSolicitados || []);
             if (u.avatar) setProfilePic(u.avatar);
-          }
         }
 
-        if (financeRes.ok) {
-          const fRes = await financeRes.json();
-          if (fRes.success) {
-            // Apply simulation filtering (Stage 72.8)
-            const paidIds = JSON.parse(localStorage.getItem('conjuntos_sim_paid_ids') || '[]');
-            const processedData = {
-              ...fRes.data,
-              pagos: fRes.data.pagos.map((p: any) => paidIds.includes(p.id) ? { ...p, estado: 'PAGADO' } : p),
-              recibos: fRes.data.recibos.map((r: any) => paidIds.includes(r.id) ? { ...r, pagado: true } : r)
-            };
-            
-            // Recalculate total debt after filtering
-            const realTotal = [...processedData.pagos, ...processedData.recibos]
-              .filter((p: any) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO' || p.pagado === false)
-              .reduce((acc: number, p: any) => acc + Number(p.monto), 0);
-            
-            setFinancialData({ ...processedData, totalDebt: realTotal });
-          }
+        if (financeData) {
+          const totalDebt = [...(financeData.pagos || []), ...(financeData.recibos || [])]
+            .filter((p: any) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO' || p.pagado === false)
+            .reduce((acc: number, p: any) => acc + Number(p.monto), 0);
+          setFinancialData({ ...financeData, totalDebt });
         }
 
-        if (resRes.ok) {
-          const rData = await resRes.json();
-          if (rData.success) setActiveReservas(rData.data);
-        }
+        if (reservasData) setActiveReservas(reservasData);
 
-        if (paqRes.ok) {
-          const pData = await paqRes.json();
-          if (pData.success) {
-            const apiPaqs = pData.data || [];
-            // LEER SIMULADOS DE LOCAL STORAGE (Stage 68.13)
-            const simPaqs = JSON.parse(localStorage.getItem('conjuntos_sim_paquetes') || '[]');
-            setActivePaquetes([...simPaqs, ...apiPaqs]);
-          }
-        } else {
-           // Fallback purely to local if API is hardened to empty but we want some data
-           const simPaqs = JSON.parse(localStorage.getItem('conjuntos_sim_paquetes') || '[]');
-           setActivePaquetes(simPaqs);
-        }
+        setActivePaquetes(paquetesData || []);
       } catch (error: unknown) {
-        console.warn("⚠️ API profile/finance fetch failed or timed out");
+        // Non-critical: API unavailable, using cached data
       }
     }
     
-    if (status === "authenticated") {
+    if (!authLoading && !!user) {
       loadData();
     }
 
@@ -252,7 +205,7 @@ function ProfileContent() {
         ctx.revert();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, userId, hasMounted]); 
+  }, [authLoading, userId, hasMounted]); 
 
   /**
    * 🖼️ COMPRESOR DE IMÁGENES
@@ -295,20 +248,13 @@ function ProfileContent() {
         }
         
         // Persistir en base de datos
-        const res = await fetch("/api/user/profile", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ avatar: compressed })
-        });
-        
-        if (res.ok) {
+        try {
+          await api.put('/usuarios/me/profile', { avatar: compressed });
           toast.success("Foto de perfil actualizada");
-        } else {
-          console.warn("No se pudo guardar la foto en la base de datos, usando almacenamiento local.");
+        } catch {
           toast.success("Foto cargada localmente");
         }
       } catch (err) {
-          console.error("Error saving avatar:", err);
           toast.error("Error al procesar la imagen");
       }
     };
@@ -319,18 +265,10 @@ function ProfileContent() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm)
-      });
-      if (res.ok) {
-        setUserData(editForm);
-        setShowEditModal(false);
-        toast.success("Perfil actualizado con éxito");
-      } else {
-        toast.error("Error al actualizar perfil");
-      }
+      await api.put('/usuarios/me/profile', editForm);
+      setUserData(editForm);
+      setShowEditModal(false);
+      toast.success("Perfil actualizado con éxito");
     } catch {
       toast.error("Fallo de conexión");
     } finally {
@@ -339,7 +277,7 @@ function ProfileContent() {
   };
 
   const handleLogout = async () => {
-    await signOut({ redirect: false });
+    await logout();
     router.push("/login");
     toast.success("Sesión cerrada");
   };
@@ -387,31 +325,21 @@ function ProfileContent() {
     setIsRegSubmitting(true);
     
     try {
-        const res = await fetch("/api/user/tramites", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+        await api.post('/tramites', {
                 tipo: regType,
-                data: regForm,
+                payload: regForm,
                 documentos: regDocs
-            })
-        });
-
-        if (res.ok) {
-            toast.success("Solicitud enviada. Sujeta a aprobación administrativa.");
-            setShowRegModal(false);
-            setRegDocs([]);
-            setRegForm({
-                nombre: "", tipo: "", raza: "",
-                placa: "", marca: "", modelo: "", ano: "", color: "", tipoVehiculo: ""
             });
-            // Recargar trámites
-            const profileRes = await fetch("/api/user/profile");
-            const profileData = await profileRes.json();
-            if (profileData.success) setTramites(profileData.data.tramitesSolicitados || []);
-        } else {
-            toast.error("Error al enviar solicitud");
-        }
+        toast.success("Solicitud enviada. Sujeta a aprobación administrativa.");
+        setShowRegModal(false);
+        setRegDocs([]);
+        setRegForm({
+            nombre: "", tipo: "", raza: "",
+            placa: "", marca: "", modelo: "", ano: "", color: "", tipoVehiculo: ""
+        });
+        // Recargar trámites
+        const refreshed = await api.get<any>('/usuarios/me/profile');
+        if (refreshed) setTramites(refreshed.tramitesSolicitados || []);
     } catch {
         toast.error("Error de conexión");
     } finally {
@@ -421,67 +349,38 @@ function ProfileContent() {
 
   const handlePay = async (id: string, type: 'PAGO' | 'RECIBO') => {
     setIsPaying(true);
-    
-    // Simular retraso de pasarela de pagos (Wompi/PSE)
-    await new Promise(resolve => setTimeout(resolve, 2500));
 
     try {
-      const res = await fetch("/api/user/pagos", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          id, 
-          type,
-          metodo: "PSE",
-          wompiRef: `REF-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
-        })
+      await api.put(`/pagos/${id}/pagar`, { metodo: 'PSE' });
+      toast.success("¡Pago confirmado por la entidad financiera!");
+      
+      // ✨ OPTIMISTIC UI (Stage 53): Update local state immediately
+      setFinancialData(prev => {
+        const updatedPagos = prev.pagos.map(p => 
+          p.id === id ? { ...p, estado: 'PAGADO', fechaPago: new Date().toISOString() } : p
+        );
+        const updatedRecibos = prev.recibos.map(r => 
+          r.id === id ? { ...r, pagado: true, fechaPago: new Date().toISOString() } : r
+        );
+        
+        // Recalculate total debt from non-paid items
+        const newTotal = [...updatedPagos, ...updatedRecibos]
+          .filter(item => {
+            const itemEstado = (item as any).estado || ((item as any).pagado ? 'PAGADO' : 'PENDIENTE');
+            return itemEstado === 'PENDIENTE' || itemEstado === 'VENCIDO' || (item as any).pagado === false;
+          })
+          .reduce((acc, item) => acc + Number(item.monto), 0);
+
+        return { ...prev, pagos: updatedPagos, recibos: updatedRecibos, totalDebt: newTotal };
       });
 
-      if (res.ok) {
-        toast.success("¡Pago confirmado por la entidad financiera!");
-        
-        // ✨ OPTIMISTIC UI (Stage 53): Update local state immediately
-        setFinancialData(prev => {
-          const updatedPagos = prev.pagos.map(p => 
-            p.id === id ? { ...p, estado: 'PAGADO', fechaPago: new Date().toISOString() } : p
-          );
-          const updatedRecibos = prev.recibos.map(r => 
-            r.id === id ? { ...r, pagado: true, fechaPago: new Date().toISOString() } : r
-          );
-          
-          // Persistent tracking for simulation (Stage 72)
-          const paidIds = JSON.parse(localStorage.getItem('conjuntos_sim_paid_ids') || '[]');
-          if (!paidIds.includes(id)) {
-            localStorage.setItem('conjuntos_sim_paid_ids', JSON.stringify([...paidIds, id]));
-          }
-
-          // Recalculate total debt from non-paid items
-          const newTotal = [...updatedPagos, ...updatedRecibos]
-            .filter(item => {
-              const itemEstado = (item as any).estado || ((item as any).pagado ? 'PAGADO' : 'PENDIENTE');
-              return itemEstado === 'PENDIENTE' || itemEstado === 'VENCIDO' || (item as any).pagado === false;
-            })
-            .reduce((acc, item) => acc + Number(item.monto), 0);
-
-          return { ...prev, pagos: updatedPagos, recibos: updatedRecibos, totalDebt: newTotal };
-        });
-
-        // Background sync with simulation filtering (Stage 72.5)
-        fetch("/api/user/pagos").then(r => r.json()).then(d => {
-          if (d.success) {
-            const paidIds = JSON.parse(localStorage.getItem('conjuntos_sim_paid_ids') || '[]');
-            const filteredData = {
-              ...d.data,
-              pagos: d.data.pagos.map((p: any) => paidIds.includes(p.id) ? { ...p, estado: 'PAGADO' } : p),
-              recibos: d.data.recibos.map((r: any) => paidIds.includes(r.id) ? { ...r, pagado: true } : r)
-            };
-            setFinancialData(filteredData);
-          }
-        });
-
-      } else {
-        toast.error("Error al procesar el pago con el banco");
-      }
+      // Background sync with API
+      api.get<any>('/pagos').then(d => {
+        const totalDebt = [...(d.pagos || []), ...(d.recibos || [])]
+          .filter((p: any) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO' || p.pagado === false)
+          .reduce((acc: number, p: any) => acc + Number(p.monto), 0);
+        setFinancialData({ ...d, totalDebt });
+      });
     } catch {
       toast.error("Fallo de conexión con la pasarela");
     } finally {
@@ -489,7 +388,7 @@ function ProfileContent() {
     }
   };
 
-  const userRole = (session?.user as any)?.role || "RESIDENTE";
+  const userRole = user?.rol || "RESIDENTE";
 
   const statusIcons = [
     { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, color: 'bg-linear-to-br from-yellow-300 to-amber-500 text-black ring-4 ring-yellow-400/20 shadow-yellow-500/10', icon: <CreditCard size={12}/>, view: 'deuda' },
@@ -1305,7 +1204,7 @@ function ProfileContent() {
         </div>
       )}
  
-      {/* 🔐 PSE PAYMENT GATEWAY SIMULATION (Stage 49) */}
+      {/* 🔐 PSE PAYMENT GATEWAY - PROCESSING */}
       {isPaying && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-3xl animate-in fade-in duration-500">
            <div className="w-full max-w-[380px] bg-white rounded-[40px] p-10 flex flex-col items-center text-center shadow-[0_0_100px_rgba(255,255,255,0.1)]">

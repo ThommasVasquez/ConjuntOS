@@ -7,16 +7,17 @@ import {
   Upload, Edit3
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { supabase } from "@/lib/db";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 export default function SuperAdminPage() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const role = (session?.user as any)?.role;
+  const role = user?.rol;
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [conjuntos, setConjuntos] = useState<any[]>([]);
@@ -92,36 +93,28 @@ export default function SuperAdminPage() {
 
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-      
-      const { error } = await supabase.storage
-        .from('logos')
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('logos')
-        .getPublicUrl(fileName);
-
-      setFormData(prev => ({ ...prev, logoUrl: publicUrl }));
-      toast.success("Logotipo subido correctamente");
+      // TODO: File upload endpoint pending on Rust backend. Using inline base64 for now.
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, logoUrl: reader.result as string }));
+        toast.success("Logotipo cargado correctamente");
+        setIsUploading(false);
+      };
+      reader.onerror = () => {
+        toast.error("Error al leer la imagen");
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
     } catch (err: any) {
-      console.error("Error uploading logo:", err);
-      toast.error("Error al subir imagen: " + err.message);
-    } finally {
+      toast.error("Error al cargar imagen: " + err.message);
       setIsUploading(false);
     }
   };
 
   const fetchConjuntos = async () => {
     try {
-      const res = await fetch("/api/superadmin/conjuntos");
-      const data = await res.json();
-      if (data.success) {
-        setConjuntos(data.data);
-      }
+      const data = await api.get<any[]>('/superadmin/conjuntos');
+      setConjuntos(data);
     } catch {
       toast.error("Error al cargar conjuntos registrados");
     } finally {
@@ -129,9 +122,12 @@ export default function SuperAdminPage() {
     }
   };
 
+  // Real-time WebSocket subscription
+  useWsSubscription('conjunto', () => fetchConjuntos());
+
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
+    if (authLoading) return;
+    if (!user) {
       router.push("/login");
       return;
     }
@@ -143,7 +139,7 @@ export default function SuperAdminPage() {
     }
 
     fetchConjuntos();
-  }, [session, status, role, router]);
+  }, [user, authLoading, role, router]);
 
   useEffect(() => {
     if (!loading) {
@@ -167,41 +163,31 @@ export default function SuperAdminPage() {
 
     setIsSubmitting(true);
     try {
-      const url = "/api/superadmin/conjuntos";
-      const method = editingConjuntoId ? "PUT" : "POST";
-      const payload = editingConjuntoId ? { id: editingConjuntoId, ...formData } : formData;
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        toast.success(editingConjuntoId ? "Copropiedad actualizada con éxito" : "Conjunto de Propiedad Horizontal registrado con éxito");
-        // Reset form
-        setFormData({
-          nombre: "",
-          nit: "",
-          subdominio: "",
-          direccion: "",
-          ciudad: "",
-          representanteLegal: "",
-          notariaEscritura: "",
-          numeroEscritura: "",
-          fechaEscritura: "",
-          matriculaInmobiliaria: "",
-          totalUnidades: "1",
-          logoUrl: "",
-          colorPrimario: "#7C3AED"
-        });
-        setEditingConjuntoId(null);
-        fetchConjuntos();
-        setTab("LISTAR");
+      if (editingConjuntoId) {
+        await api.put(`/superadmin/conjuntos/${editingConjuntoId}`, formData);
       } else {
-        toast.error(data.error || "Error al procesar la solicitud");
+        await api.post('/superadmin/conjuntos', formData);
       }
+      toast.success(editingConjuntoId ? "Copropiedad actualizada con éxito" : "Conjunto de Propiedad Horizontal registrado con éxito");
+      // Reset form
+      setFormData({
+        nombre: "",
+        nit: "",
+        subdominio: "",
+        direccion: "",
+        ciudad: "",
+        representanteLegal: "",
+        notariaEscritura: "",
+        numeroEscritura: "",
+        fechaEscritura: "",
+        matriculaInmobiliaria: "",
+        totalUnidades: "1",
+        logoUrl: "",
+        colorPrimario: "#7C3AED"
+      });
+      setEditingConjuntoId(null);
+      fetchConjuntos();
+      setTab("LISTAR");
     } catch {
       toast.error("Error de conexión al servidor");
     } finally {
@@ -209,7 +195,7 @@ export default function SuperAdminPage() {
     }
   };
 
-  if (loading || status === "loading") {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />

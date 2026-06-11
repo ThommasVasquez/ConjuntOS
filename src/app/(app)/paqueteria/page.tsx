@@ -5,13 +5,15 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { Package, CheckCircle2, ScanLine, Clock, MapPin } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 export default function PaqueteriaPage() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const role = (session?.user as any)?.role;
+  const role = user?.rol;
 
   const [paquetes, setPaquetes] = useState<any[]>([]);
   const [residentes, setResidentes] = useState<any[]>([]);
@@ -24,9 +26,19 @@ export default function PaqueteriaPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const refetchPaquetes = async () => {
+    try {
+      const data = await api.get<any[]>('/vigilancia/paquetes');
+      setPaquetes(data);
+    } catch {}
+  };
+
+  // Real-time WebSocket subscription
+  useWsSubscription('paquete', () => refetchPaquetes());
+
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
+    if (authLoading) return;
+    if (!user) {
       router.push("/login");
       return;
     }
@@ -40,18 +52,12 @@ export default function PaqueteriaPage() {
 
     async function loadData() {
        try {
-         const [paqRes, dirRes] = await Promise.all([
-           fetch('/api/vigilancia/paquetes'),
-           fetch('/api/user/directory')
+         const [paqData, dirData] = await Promise.all([
+           api.get<any[]>('/vigilancia/paquetes'),
+           api.get<any[]>('/directorio')
          ]);
-         const [paqData, dirData] = await Promise.all([paqRes.json(), dirRes.json()]);
-         
-         if(paqData.success) {
-            setPaquetes(paqData.data);
-         }
-         if(dirData.success) {
-            setResidentes(dirData.data);
-         }
+         setPaquetes(paqData);
+         setResidentes(dirData);
        } catch (e) {
          toast.error("Error al cargar datos");
        } finally {
@@ -59,7 +65,7 @@ export default function PaqueteriaPage() {
        }
     }
     loadData();
-  }, [session, status, role, router]);
+  }, [user, authLoading, role, router]);
 
   useEffect(() => {
     if (!loading) {
@@ -74,22 +80,12 @@ export default function PaqueteriaPage() {
 
      setIsSubmitting(true);
      try {
-       const res = await fetch('/api/vigilancia/paquetes', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(formData)
-       });
-       const data = await res.json();
-       if(data.success) {
-          toast.success("Paquete registrado y Residente notificado");
-          // Re-fetch to get the full joined object safely instead of manual push
-          const res2 = await fetch('/api/vigilancia/paquetes');
-          const data2 = await res2.json();
-          setPaquetes(data2.data);
-          setFormData({usuarioId: "", remitente: "", descripcion: ""});
-       } else {
-          toast.error("Error al registrar");
-       }
+       await api.post('/vigilancia/paquetes', formData);
+       toast.success("Paquete registrado y Residente notificado");
+       // Re-fetch to get the full joined object safely instead of manual push
+       const freshPaquetes = await api.get<any[]>('/vigilancia/paquetes');
+       setPaquetes(freshPaquetes);
+       setFormData({usuarioId: "", remitente: "", descripcion: ""});
      } catch {
        toast.error("Error de conexión");
      } finally {
@@ -99,18 +95,9 @@ export default function PaqueteriaPage() {
 
   const markAsDelivered = async (id: string) => {
     try {
-      const res = await fetch('/api/vigilancia/paquetes', {
-         method: 'PUT',
-         headers: {'Content-Type': 'application/json'},
-         body: JSON.stringify({ paqueteId: id })
-      });
-      const data = await res.json();
-      if(data.success) {
-         toast.success("Entrega confirmada");
-         setPaquetes(paquetes.filter(p => p.id !== id));
-      } else {
-         toast.error("Hubo un error del servidor");
-      }
+      await api.put(`/vigilancia/paquetes/${id}/entregar`);
+      toast.success("Entrega confirmada");
+      setPaquetes(paquetes.filter(p => p.id !== id));
     } catch {
       toast.error("Error de red");
     }

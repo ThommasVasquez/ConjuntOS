@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "ruflo": {
+      "type": "stdio",
+      "command": "pnpm",
+      "args": [
+        "dlx",
+        "ruflo@latest",
+        "mcp",
+        "start"
+      ],
+      "env": {}
+    }
+  }
+}

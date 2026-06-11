@@ -1,11 +1,14 @@
 "use client";
 
 import { AlertTriangle, Bell, CheckCircle2, Package } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
+import type { NotificacionDto, ProfileResponse } from "@/lib/api/types";
 import { toast } from "sonner";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface ProfileHeaderProps {
   className?: string;
@@ -13,11 +16,11 @@ interface ProfileHeaderProps {
 }
 
 export default function ProfileHeader({ className = "", showWelcome = true }: ProfileHeaderProps) {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const isProfilePage = pathname === "/perfil";
-  const userId = session?.user?.id;
+  const userId = user?.id;
   const notificationsRef = useRef<HTMLDivElement>(null);
   
   const [profilePic, setProfilePic] = useState<string>("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000");
@@ -25,6 +28,21 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [hasStory, setHasStory] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+
+  const refetchNotifications = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const notifData = await api.get<NotificacionDto[]>('/notificaciones');
+      if (notifData) {
+        setNotifications(notifData);
+        const unreadCount = notifData.filter((n) => !n.leida).length;
+        setHasStory(unreadCount > 0);
+      }
+    } catch {}
+  }, [userId]);
+
+  // Real-time WebSocket subscription
+  useWsSubscription('notification', () => refetchNotifications());
 
   useEffect(() => {
     const MAX_RETRIES = 2;
@@ -39,60 +57,51 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
       if (savedData) setUserData(JSON.parse(savedData));
 
       try {
-        const [profileRes, notifRes, reservaRes] = await Promise.all([
-          fetch("/api/user/profile", { cache: 'no-store' }),
-          fetch("/api/notificaciones", { cache: 'no-store' }),
-          fetch("/api/user/reservas", { cache: 'no-store' })
+        const [profileData, notifData, reservaData] = await Promise.all([
+          api.get<ProfileResponse>('/usuarios/me/profile').catch((e) => {
+            if (e instanceof ApiError && e.status === 401 && currentRetry < MAX_RETRIES) {
+              currentRetry++;
+              setTimeout(loadData, 1000);
+            }
+            return null;
+          }),
+          api.get<NotificacionDto[]>('/notificaciones').catch(() => null),
+          api.get<{ fechaInicio: string; fechaFin: string; estado: string }[]>('/reservas').catch(() => null),
         ]);
-        
-        if (profileRes.status === 401 && currentRetry < MAX_RETRIES) {
-          currentRetry++;
-          setTimeout(loadData, 1000);
-          return;
-        }
 
-        if (profileRes.ok) {
-          const res = await profileRes.json();
-          if (res.success && res.data) {
-            const u = res.data;
-            const mapped = { name: u.nombre || "Residente", gender: u.genero || "neutro" };
-            setUserData(mapped);
-            if (u.avatar) setProfilePic(u.avatar);
-            localStorage.setItem(`conjuntos_profile_data_${userId}`, JSON.stringify(mapped));
-            if (u.avatar) localStorage.setItem(`conjuntos_profile_pic_${userId}`, u.avatar);
-          }
+        if (profileData) {
+          const u = profileData;
+          const mapped = { name: u.nombre || "Residente", gender: u.genero || "neutro" };
+          setUserData(mapped);
+          if (u.avatar) setProfilePic(u.avatar);
+          localStorage.setItem(`conjuntos_profile_data_${userId}`, JSON.stringify(mapped));
+          if (u.avatar) localStorage.setItem(`conjuntos_profile_pic_${userId}`, u.avatar);
         }
 
         let pendingCount = 0;
-        if (notifRes.ok) {
-          const nData = await notifRes.json();
-          if (nData.success) {
-            setNotifications(nData.data);
-            pendingCount = nData.data.filter((n: { leida: boolean }) => !n.leida).length;
-          }
+        if (notifData) {
+          setNotifications(notifData);
+          pendingCount = notifData.filter((n) => !n.leida).length;
         }
 
         let activeReserva = false;
-        if (reservaRes.ok) {
-          const rData = await reservaRes.json();
-          if (rData.success) {
-            const now = new Date();
-            activeReserva = rData.data.some((r: { fechaInicio: string; fechaFin: string; estado: string }) => {
-              const start = new Date(r.fechaInicio);
-              const end = new Date(r.fechaFin);
-              return now >= start && now <= end && r.estado !== "CANCELADA";
-            });
-          }
+        if (reservaData) {
+          const now = new Date();
+          activeReserva = reservaData.some((r) => {
+            const start = new Date(r.fechaInicio);
+            const end = new Date(r.fechaFin);
+            return now >= start && now <= end && r.estado !== "CANCELADA";
+          });
         }
 
         setHasStory(pendingCount > 0 || activeReserva);
 
       } catch (error) {
-        console.warn("⚠️ API de perfil/estatus no disponible:", (error as Error).message);
+        // Non-critical: profile status API unavailable
       }
     }
 
-    if (status === "authenticated" && userId) {
+    if (!authLoading && userId) {
       loadData();
     }
 
@@ -102,8 +111,8 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
       try {
         const { createdAt } = JSON.parse(savedStory);
         if (Date.now() - createdAt < 24 * 60 * 60 * 1000) setHasStory(true);
-      } catch (e) {
-        console.warn("Error parsing story data", e);
+      } catch {
+        // Ignore corrupt story data
       }
     }
 
@@ -114,7 +123,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [status, userId]);
+  }, [authLoading, userId]);
 
   const getNotifIcon = (tipo: string) => {
     switch (tipo) {
@@ -139,19 +148,13 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
 
   const markAsRead = async (id: string) => {
     try {
-      const res = await fetch("/api/notificaciones", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, leida: true })
-      });
-      if (res.ok) {
-        setNotifications(prev =>
-          prev.map(n => (n.id === id ? { ...n, leida: true } : n))
-        );
-        const updated = notifications.map(n => (n.id === id ? { ...n, leida: true } : n));
-        const unreadCount = updated.filter(n => !n.leida).length;
-        setHasStory(unreadCount > 0);
-      }
+      await api.put('/notificaciones/marcar-leidas', { ids: [id] });
+      setNotifications(prev =>
+        prev.map(n => (n.id === id ? { ...n, leida: true } : n))
+      );
+      const updated = notifications.map(n => (n.id === id ? { ...n, leida: true } : n));
+      const unreadCount = updated.filter(n => !n.leida).length;
+      setHasStory(unreadCount > 0);
     } catch (err) {
       console.error("Error marking notification as read:", err);
     }
@@ -161,16 +164,8 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
     try {
       const unread = notifications.filter(n => !n.leida);
       if (unread.length === 0) return;
-      
-      await Promise.all(
-        unread.map(n => 
-          fetch("/api/notificaciones", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: n.id, leida: true })
-          })
-        )
-      );
+      const ids = unread.map(n => n.id);
+      await api.put('/notificaciones/marcar-leidas', { ids });
       setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
       setHasStory(false);
       toast.success("Notificaciones marcadas como leídas");

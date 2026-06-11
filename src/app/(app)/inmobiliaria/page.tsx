@@ -22,24 +22,28 @@ import {
   Zap
 } from "lucide-react";
 import { gsap } from "gsap";
+import { api, ApiError } from "@/lib/api/client";
 import BottomSheet from "@/components/shell/BottomSheet";
 import ProfileHeader from "@/components/shell/ProfileHeader";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface Inmueble {
   id: string;
   titulo: string;
   descripcion: string;
-  precio: number;
+  precio: string;
   tipoNegocio: "VENTA" | "ALQUILER";
   tipoUnidad: string;
   habitaciones: number;
   banos: number;
-  area: number;
-  imagenes: string; // JSON string
-  usuario_nombre: string;
-  usuario_avatar?: string;
-  usuario_telefono?: string;
-  creadoEn: string;
+  area: string | null;
+  imagenes: string[];
+  caracteristicas: string[];
+  estado: string;
+  destacado: boolean;
+  usuarioId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function InmobiliariaPage() {
@@ -53,29 +57,31 @@ export default function InmobiliariaPage() {
   
   const containerRef = useRef(null);
 
+  // Real-time WebSocket subscription
+  useWsSubscription('inmueble', () => {
+    const params = new URLSearchParams();
+    if (filterType !== "TODOS") params.set("tipo", filterType);
+    if (filterUnidad !== "TODOS") params.set("tipoUnidad", filterUnidad);
+    const qp = params.toString() ? `?${params.toString()}` : '';
+    api.get<Inmueble[]>(`/inmuebles${qp}`)
+      .then((data) => setInmuebles(data))
+      .catch(() => {});
+  });
+
   useEffect(() => {
     async function loadInmuebles() {
       try {
-        const url = new URL("/api/user/inmuebles", window.location.origin);
-        if (filterType !== "TODOS") url.searchParams.set("tipo", filterType);
-        if (filterUnidad !== "TODOS") url.searchParams.set("tipoUnidad", filterUnidad);
+        let qp = '';
+        const params = new URLSearchParams();
+        if (filterType !== "TODOS") params.set("tipo", filterType);
+        if (filterUnidad !== "TODOS") params.set("tipoUnidad", filterUnidad);
+        qp = params.toString() ? `?${params.toString()}` : '';
         
-        const res = await fetch(url.toString(), { cache: "no-store" });
-        const data = await res.json();
-        if (data.success) {
-          setInmuebles(data.data);
-        } else {
-          setInmuebles(DUMMY_DATA.filter(i => 
-            (filterType === "TODOS" || i.tipoNegocio === filterType) &&
-            (filterUnidad === "TODOS" || i.tipoUnidad === filterUnidad)
-          ));
-        }
+        const data = await api.get<Inmueble[]>(`/inmuebles${qp}`);
+        setInmuebles(data);
       } catch (err) {
         console.error("Error loading inmuebles:", err);
-        setInmuebles(DUMMY_DATA.filter(i => 
-          (filterType === "TODOS" || i.tipoNegocio === filterType) &&
-          (filterUnidad === "TODOS" || i.tipoUnidad === filterUnidad)
-        ));
+        setInmuebles([]);
       } finally {
         setIsLoading(false);
       }
@@ -207,7 +213,7 @@ export default function InmobiliariaPage() {
       </button>
 
       {selectedInmueble && (
-        <PropertyDetailSimulation 
+        <PropertyDetail 
           item={selectedInmueble} 
           onClose={() => setSelectedInmueble(null)} 
         />
@@ -222,15 +228,15 @@ export default function InmobiliariaPage() {
 
 function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }) {
   const [isLiked, setIsLiked] = useState(false);
-  const imagenes = JSON.parse(item.imagenes || "[]");
+  const imagenes = item.imagenes || [];
   const mainImage = imagenes[0] || "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800";
 
   const formattedPrecio = new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
     maximumFractionDigits: 0,
-    notation: item.precio >= 1000000 ? "compact" : "standard"
-  } as Intl.NumberFormatOptions).format(item.precio);
+    notation: Number(item.precio || 0) >= 1000000 ? "compact" : "standard"
+  } as Intl.NumberFormatOptions).format(Number(item.precio || 0));
 
   const isParking = item.tipoUnidad === "PARQUEADERO";
   const isRoom = item.tipoUnidad === "LOCAL";
@@ -278,7 +284,7 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
           {isParking ? (
             <>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
-                <Maximize2 size={11} className="text-accent/70" />{item.area}m2
+                <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
               </span>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
                 Parqueadero Cubierto
@@ -293,7 +299,7 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
                 <Bath size={11} className="text-accent/70" /> {item.banos === 1 ? "Propio" : "Compartido"}
               </span>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
-                <Maximize2 size={11} className="text-accent/70" />{item.area}m2
+                <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
               </span>
             </>
           ) : (
@@ -305,7 +311,7 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
                 <Bath size={11} className="text-accent/70" />{item.banos} banos
               </span>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
-                <Maximize2 size={11} className="text-accent/70" />{item.area}m2
+                <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
               </span>
             </>
           )}
@@ -313,34 +319,16 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
 
         <div className="mt-auto pt-3 border-t border-border flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-full border border-border overflow-hidden bg-surface-2 flex-shrink-0">
-              <Image
-                src={item.usuario_avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"}
-                alt={item.usuario_nombre}
-                width={28}
-                height={28}
-                className="w-full h-full object-cover"
-                unoptimized
-              />
+            <div className="w-7 h-7 rounded-full border border-border overflow-hidden bg-accent/10 flex-shrink-0 flex items-center justify-center">
+              <span className="text-[9px] font-black text-accent">P</span>
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] font-bold text-text truncate">{item.usuario_nombre}</p>
+              <p className="text-[10px] font-bold text-text truncate">{"Propietario"}</p>
               <p className="text-[9px] text-text/70">Verificado</p>
             </div>
           </div>
-          <div className="flex gap-1.5 flex-shrink-0">
-            <button
-              onClick={(e) => { e.stopPropagation(); window.open("tel:" + item.usuario_telefono, "_blank"); }}
-              className="w-8 h-8 rounded-xl bg-accent text-primary flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-            >
-              <Phone size={14} />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); window.open("https://wa.me/57" + item.usuario_telefono, "_blank"); }}
-              className="w-8 h-8 rounded-xl bg-[#25D366] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-            >
-              <MessageSquare size={14} />
-            </button>
+          <div className="px-2 py-1 rounded-lg bg-accent/10 border border-accent/20">
+            <span className="text-[9px] font-bold text-accent uppercase">{item.tipoNegocio}</span>
           </div>
         </div>
       </div>
@@ -348,19 +336,19 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
   );
 }
 
-function PropertyDetailSimulation({ item, onClose }: { item: Inmueble, onClose: () => void }) {
+function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void }) {
   const [step, setStep] = useState<"DETAILS" | "DOCS" | "SIGNING" | "SUCCESS">("DETAILS");
   const [docProgress, setDocProgress] = useState(0);
   const [signed, setSigned] = useState(false);
   
-  const imagenes = JSON.parse(item.imagenes || "[]");
+  const imagenes = item.imagenes || [];
   const mainImage = imagenes[0] || "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800";
 
   const formattedPrecio = new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
     maximumFractionDigits: 0
-  }).format(item.precio);
+  }).format(Number(item.precio || 0));
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -446,7 +434,7 @@ function PropertyDetailSimulation({ item, onClose }: { item: Inmueble, onClose: 
                    <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
                       <Maximize2 size={22} className="text-accent" />
                       <div>
-                        <p className="text-lg font-bold text-text leading-none">{item.area}</p>
+                        <p className="text-lg font-bold text-text leading-none">{item.area || "—"}</p>
                         <p className="text-[10px] text-text/70 font-black uppercase">m2</p>
                       </div>
                    </div>
@@ -602,25 +590,15 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
     habitaciones: 2,
     banos: 1,
     area: "",
-    imagenes: [
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=1000",
-      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=1000"
-    ]
+    imagenes: [] as string[]
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/user/inmuebles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-      });
-      const data = await res.json();
-      if (data.success) {
-        onSuccess();
-      }
+      await api.post('/inmuebles', formData);
+      onSuccess();
     } catch (err) {
       console.error(err);
     } finally {
@@ -733,53 +711,4 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-const DUMMY_DATA:Inmueble[] = [
-  {
-    id: "1",
-    titulo: "Bello Apartamento con Vista Panoramica",
-    descripcion: "Apartamento moderno con excelente iluminacion, 3 alcobas y balcon.",
-    precio: 450000000,
-    tipoNegocio: "VENTA",
-    tipoUnidad: "APARTAMENTO",
-    habitaciones: 3,
-    banos: 2,
-    area: 85,
-    imagenes: "[\"https://images.unsplash.com/photo-1524811967960-57ff6cd12356?auto=format&fit=crop&q=80&w=1000\"]",
-    usuario_nombre: "Diego Carrascoal",
-    usuario_avatar: "https://images.unsplash.com/photo-1500643752441-3ad77b06ca4f?auto=format&fit=crop&q=80&w=100",
-    usuario_telefono: "3109876543",
-    creadoEn: "now"
-   },
-  {
-    id: "2",
-    titulo: "Apartamento Familiar Enlo",
-    descripcion: "Spacioso apartamento ideal para familia, cerca a zonas verdes.",
-    precio: 370000000,
-    tipoNegocio: "VENTA",
-    tipoUnidad: "APARTAMENTO",
-    habitaciones: 3,
-    banos: 2,
-    area: 75,
-    imagenes: "[\"https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=1000\"]",
-    usuario_nombre: "Debora Osorio",
-    usuario_avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100",
-    usuario_telefono: "3123456789",
-    creadoEn: "now"
-  },
-  {
-    id: "3",
-    titulo: "Alquiler de PARQUEADERO exclusivo",
-    descripcion: "Parqueadero cubierto, vigilancia 24h, facil acceso",
-    precio: 150000,
-    tipoNegocio: "ALQUILER",
-    tipoUnidad: "PARQUEADERO",
-    habitaciones: 0,
-    banos: 0,
-    area: 12,
-    imagenes: "[\"https://images.unsplash.com/photo-1570797231467-2e6f10219531?auto=format&fit=crop&q=80&w=1000\"]",
-    usuario_nombre: "Colmana porcel",
-    usuario_avatar: "https://images.unsplash.com/photo-1500643752441-3ad77b06ca4f?auto=format&fit=crop&q=80&w=100",
-    usuario_telefono: "3001234567",
-    creadoEn: "now"
-  }
-];
+

@@ -5,31 +5,38 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { DollarSign } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 export default function AdminFinanzasPage() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const role = (session?.user as any)?.role;
+  const role = user?.rol;
   const [loading, setLoading] = useState(true);
 
+  // Real-time WebSocket subscription
+  useWsSubscription('pago', () => {
+    // Re-fetch financial stats when payment events arrive
+    // Currently a placeholder page; will trigger re-render when data is added
+  });
+
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
+    if (authLoading) return;
+    if (!user) {
       router.push("/login");
       return;
     }
 
     const allowed = ['ADMINISTRADOR', 'SUPER_ADMIN', 'CONCEJO'];
-    if (!allowed.includes(role)) {
+    if (!role || !allowed.includes(role)) {
       toast.error("No tienes permisos para acceder a esta sección.");
       router.push("/inicio");
       return;
     }
 
     setLoading(false);
-  }, [session, status, role, router]);
+  }, [user, authLoading, role, router]);
 
   useEffect(() => {
     if (!loading) {

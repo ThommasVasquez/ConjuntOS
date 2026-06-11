@@ -10,7 +10,9 @@ import {
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
 import { toast } from "sonner";
+import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface Vehiculo {
   id: string;
@@ -37,6 +39,19 @@ export default function ParqueaderoPage() {
   const [disponibilidad, setDisponibilidad] = useState({ total: 0, libres: 0, ocupadas: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
+  const refetchParking = async () => {
+    try {
+      const data = await api.get<{ vehiculos: Vehiculo[]; celdas?: Celda[]; misCeldas?: Celda[]; disponibilidadVisitantes?: { total: number; libres: number; ocupadas: number } }>('/parqueadero/mio');
+      setVehiculos(data.vehiculos ?? []);
+      setMisCeldas(data.celdas ?? data.misCeldas ?? []);
+      setDisponibilidad(data.disponibilidadVisitantes ?? { total: 0, libres: 0, ocupadas: 0 });
+    } catch {}
+  };
+
+  // Real-time WebSocket subscriptions
+  useWsSubscription('vehiculo', () => refetchParking());
+  useWsSubscription('parqueadero', () => refetchParking());
+
   // Modal y Forms
   const [showVehiculoModal, setShowVehiculoModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,23 +64,12 @@ export default function ParqueaderoPage() {
          return toast.error("Llena placa y marca al menos");
      }
      setIsSubmitting(true);
-     try {
-       const res = await fetch('/api/tramites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tipo: 'VEHICULO', descripcion: vehiculoForm })
-       });
-       const data = await res.json();
-       if(data.success){
-           toast.success("Solicitud enviada. Pendiente de aprobación.");
-           setShowVehiculoModal(false);
-           setVehiculoForm({ placa: '', marca: '', modelo: '', color: '', tipo: 'AUTOMOVIL' });
-       } else {
-           console.error("DEBUG_TRAMITE_ERROR", data);
-           toast.error(data.error || "No se pudo enviar");
-       }
+      try {
+        await api.post('/vehiculos', { tipo: 'VEHICULO', descripcion: vehiculoForm });
+        toast.success("Solicitud enviada. Pendiente de aprobación.");
+        setShowVehiculoModal(false);
+        setVehiculoForm({ placa: '', marca: '', modelo: '', color: '', tipo: 'AUTOMOVIL' });
      } catch (err) {
-       console.error("CONN_ERROR", err);
        toast.error("Error de conexión");
      } finally {
        setIsSubmitting(false);
@@ -75,13 +79,10 @@ export default function ParqueaderoPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/user/parqueadero");
-        const data = await res.json();
-        if (data.success) {
-          setVehiculos(data.data.vehiculos || []);
-          setMisCeldas(data.data.misCeldas || []);
-          setDisponibilidad(data.data.disponibilidadVisitantes || { total: 0, libres: 0, ocupadas: 0 });
-        }
+        const data = await api.get<{ vehiculos: Vehiculo[]; celdas?: Celda[]; misCeldas?: Celda[]; disponibilidadVisitantes?: { total: number; libres: number; ocupadas: number } }>('/parqueadero/mio');
+        setVehiculos(data.vehiculos ?? []);
+        setMisCeldas(data.celdas ?? data.misCeldas ?? []);
+        setDisponibilidad(data.disponibilidadVisitantes ?? { total: 0, libres: 0, ocupadas: 0 });
       } catch (error) {
         console.error("Error fetching parking data", error);
       } finally {

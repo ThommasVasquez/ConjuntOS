@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = ["api", "migrate"]
+
+[workspace.package]
+edition = "2021"
+license = "UNLICENSED"
+publish = false
+
+[workspace.dependencies]
+anyhow = "1"
+bigdecimal = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+diesel = { version = "2.2", default-features = false, features = [
+    "postgres_backend",
+    "uuid",
+    "chrono",
+    "numeric",
+    "serde_json",
+    "32-column-tables",
+] }
+diesel-async = { version = "0.6", features = [
+    "postgres",
+    "deadpool",
+    "async-connection-wrapper",
+    "tokio",
+] }
+diesel_migrations = "2.2"
+futures-util = "0.3"
+rustls = { version = "0.23", default-features = false, features = ["ring", "logging", "std", "tls12"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tokio-postgres = "0.7"
+tokio-postgres-rustls = "0.13"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+uuid = { version = "1", features = ["v4", "v5", "serde"] }
+webpki-roots = "0.26"
+
+[profile.release]
+lto = "thin"
+strip = "symbols"

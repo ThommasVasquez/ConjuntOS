@@ -1,0 +1,83 @@
+use axum::extract::{Path, State};
+use axum::routing::{get, put};
+use axum::{Json, Router};
+use uuid::Uuid;
+
+use crate::auth::extract::AuthUser;
+use crate::domains::pagos::dto::{PagarRequest, PagoDto, PagosResponse, ReciboDto};
+use crate::domains::pagos::repo;
+use crate::error::{ApiError, ApiResult};
+use crate::services::ws_hub::WsEvent;
+use crate::state::AppState;
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/pagos", get(listar_pagos))
+        .route("/pagos/{id}/pagar", put(pagar))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/pagos",
+    tag = "pagos",
+    responses(
+        (status = 200, description = "Own unit's fees (latest 24) and utility bills (latest 12); empty without a unit", body = PagosResponse),
+        (status = 401, description = "Not authenticated")
+    )
+)]
+pub async fn listar_pagos(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<PagosResponse>> {
+    let mut conn = state.pool.get().await?;
+    let Some(unidad_id) = repo::unidad_de_usuario(&mut conn, user.conjunto_id, user.id).await?
+    else {
+        return Ok(Json(PagosResponse {
+            pagos: vec![],
+            recibos: vec![],
+        }));
+    };
+    let pagos = repo::pagos_de_unidad(&mut conn, user.conjunto_id, unidad_id).await?;
+    let recibos = repo::recibos_de_unidad(&mut conn, user.conjunto_id, unidad_id).await?;
+    Ok(Json(PagosResponse {
+        pagos: pagos.into_iter().map(PagoDto::from).collect(),
+        recibos: recibos.into_iter().map(ReciboDto::from).collect(),
+    }))
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/v1/pagos/{id}/pagar",
+    tag = "pagos",
+    params(("id" = Uuid, Path, description = "Pago id")),
+    request_body = PagarRequest,
+    responses(
+        (status = 200, description = "Payment simulated and persisted", body = PagoDto),
+        (status = 404, description = "Pago not found or not owned by the caller")
+    )
+)]
+pub async fn pagar(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<PagarRequest>,
+) -> ApiResult<Json<PagoDto>> {
+    let mut conn = state.pool.get().await?;
+    let pago = repo::pagar(&mut conn, user.conjunto_id, user.id, id, req.metodo)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("pago no encontrado".into()))?;
+    let dto = PagoDto::from(pago);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "pago".into(),
+                action: "updated".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}

@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { MessageCircle, Search, ArrowRight, User, ChevronLeft, Building2, CheckCheck, Loader2, X, Phone, Car, Dog, ShieldCheck, Info, Mic, Play, Pause, Music, Trash2 } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/db";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface Conversation {
   usuarioId: string;
@@ -56,8 +57,8 @@ interface ResidentInfo {
 }
 
 export default function AdminMensajesPage() {
-  const { data: session, status } = useSession();
-  const role = (session?.user as any)?.role;
+  const { user, loading: authLoading } = useAuth();
+  const role = user?.rol;
   const router = useRouter();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -85,11 +86,8 @@ export default function AdminMensajesPage() {
 
   const fetchConversations = async () => {
     try {
-      const res = await fetch("/api/admin/chat");
-      const data = await res.json();
-      if (data.success) {
-        setConversations(data.data);
-      }
+      const data = await api.get<Conversation[]>('/admin/chat');
+      setConversations(data);
     } catch {
       toast.error("Error al sincronizar");
     } finally {
@@ -97,18 +95,19 @@ export default function AdminMensajesPage() {
     }
   };
 
+  // Real-time WebSocket subscription for chat messages
+  useWsSubscription('chat', (event) => {
+    fetchConversations();
+    if (event.action === 'message' && selectedUserId) {
+      fetchChatHistory(selectedUserId);
+    }
+  });
+
   const fetchChatHistory = async (userId: string) => {
     try {
-      const res = await fetch(`/api/admin/chat/${userId}`);
-      const data = await res.json();
-      if (data.success) {
-        setMessages(data.data);
-        setResidentInfo(data.residentInfo);
-      } else {
-        if (data.error?.includes("column") || data.error?.includes("audioUrl")) {
-            toast.info("Configuración de infraestructura pendiente.");
-        }
-      }
+      const data = await api.get<{ mensajes: Message[]; residentInfo: ResidentInfo }>(`/admin/chat/${userId}`);
+      setMessages(data.mensajes);
+      setResidentInfo(data.residentInfo);
     } catch {
       toast.error("Error de sincronización");
     }
@@ -132,16 +131,11 @@ export default function AdminMensajesPage() {
     if (!audioData) setNewMessage("");
 
     try {
-      const res = await fetch(`/api/admin/chat/${selectedUserId}`, {
-        method: "POST",
-        body: JSON.stringify({ 
+      await api.post(`/admin/chat/${selectedUserId}`, { 
           mensaje: temp.mensaje,
           audioUrl: temp.audioUrl,
           transcripcion: temp.transcripcion
-        })
-      });
-      const data = await res.json();
-      if (!data.success) toast.error("Error al enviar");
+        });
       fetchChatHistory(selectedUserId);
     } catch {
       toast.error("Fallo de red");
@@ -207,39 +201,55 @@ export default function AdminMensajesPage() {
   };
 
   const handleUploadAndSend = async (blob: Blob) => {
+    if (!selectedUserId) return;
+    setSending(true);
+
     try {
-      setSending(true);
-      const fileName = `${selectedUserId}_${Date.now()}.webm`;
-      
-      // Asegurar que el bucket existe (Supabase no tiene listBuckets accesible fácilmente en browser)
-      // Subimos directamente
-      const { data, error } = await supabase.storage
-        .from('chat-voice')
-        .upload(fileName, blob);
+      // Convert blob to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // Strip the data:audio/webm;base64, prefix
+          const b64 = result.split(",")[1] || result;
+          resolve(b64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
 
-      if (error) {
-        if (error.message.includes("not found")) {
-            toast.error("Error: Configure el bucket 'chat-voice' en Supabase Storage");
-            return;
-        }
-        throw error;
-      }
+      // Optimistic UI
+      const temp: typeof messages[0] = {
+        id: `temp_${Date.now()}`,
+        mensaje: "[audio]",
+        audioUrl: URL.createObjectURL(blob),
+        transcripcion: transcription || null,
+        esDeAdmin: true,
+        creadoEn: new Date().toISOString(),
+        leido: false,
+      };
+      setMessages((prev) => [...prev, temp]);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-voice')
-        .getPublicUrl(fileName);
+      await api.post(`/admin/chat/${selectedUserId}`, {
+        mensaje: transcription.trim() || undefined,
+        audioBase64: base64,
+        transcripcion: transcription.trim() || undefined,
+      });
 
-      sendMessage({ url: publicUrl, text: transcription });
-    } catch (err: any) {
-      toast.error("Error al subir audio: " + err.message);
+      toast.success("Nota de voz enviada");
+      setTranscription("");
+      setAudioBlob(null);
+      fetchChatHistory(selectedUserId);
+    } catch (err) {
+      toast.error("Error al enviar nota de voz");
     } finally {
       setSending(false);
     }
   };
 
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
+    if (authLoading) return;
+    if (!user) {
       router.push("/login");
       return;
     }
@@ -254,7 +264,7 @@ export default function AdminMensajesPage() {
     fetchConversations();
     const interval = setInterval(fetchConversations, 15000);
     return () => clearInterval(interval);
-  }, [session, status, role, router]);
+  }, [user, authLoading, role, router]);
 
   useEffect(() => {
     let interval: any;
@@ -313,28 +323,6 @@ export default function AdminMensajesPage() {
              className="w-full bg-surface-2 border border-border rounded-[28px] py-4 pl-14 pr-6 text-sm outline-none focus:bg-surface focus:border-emerald-500/30 transition-all placeholder:text-text/50"
            />
         </div>
-
-        {/* SOS Setup Button */}
-        <button 
-           onClick={async () => {
-             try {
-               const res = await fetch('/api/setup-voice');
-               const data = await res.json();
-               if (data.success) toast.success("¡Voz Configurada! Reiniciando...");
-               else toast.error("Error: " + (data.error || "Fallo en el puente"));
-             } catch (err) {
-               toast.error("Error de red");
-             }
-             setTimeout(() => window.location.reload(), 2000);
-           }}
-           className="w-full mb-8 p-4 rounded-3xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between group hover:bg-emerald-500/10 transition-all"
-        >
-          <div className="flex items-center gap-3 text-emerald-500/60 group-hover:text-emerald-500">
-             <ShieldCheck size={18} />
-             <span className="text-[10px] font-black uppercase tracking-widest">Activar Mensajes de Voz</span>
-          </div>
-          <ArrowRight size={14} className="text-emerald-500/30 group-hover:translate-x-1 transition-all" />
-        </button>
 
         <div className="space-y-3">
           {loading ? (

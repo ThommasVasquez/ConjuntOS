@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { Phone, PhoneOff, X, ShieldAlert, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -39,7 +40,7 @@ const sanitizePeerId = (id: string): string => {
 };
 
 export function CallProvider({ children }: { children: ReactNode }) {
-  const { data: session } = useSession();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const router = useRouter();
   
@@ -75,17 +76,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   // Load User Profile on start
   useEffect(() => {
-    if (session?.user) {
-      fetch("/api/user/profile")
-        .then((res) => res.json())
-        .then((json) => {
-          if (json.success) {
-            setProfile(json.data);
-          }
-        })
+    if (user) {
+      api.get('/usuarios/me/profile')
+        .then((data) => setProfile(data))
         .catch((err) => console.error("Error fetching profile for calling:", err));
     }
-  }, [session]);
+  }, [user]);
 
   // Predictable Peer ID depending on role
   let myPeerId = "";
@@ -123,8 +119,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     myPeerIdRef.current = myPeerId;
 
     const initPeer = (retryCount = 0) => {
-      console.log(`Initializing Citofonía PeerJS with ID: ${myPeerId} (attempt ${retryCount + 1})`);
-
       import("peerjs").then(({ default: Peer }) => {
         if (isCancelled) return;
 
@@ -146,27 +140,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
             p.destroy();
             return;
           }
-          console.log("Citofonía PeerJS connection open. Peer ID:", id);
           setIsPeerReady(true);
         });
 
         p.on("disconnected", () => {
-          console.log("Citofonía PeerJS connection disconnected.");
           setIsPeerReady(false);
         });
 
         p.on("close", () => {
-          console.log("Citofonía PeerJS connection closed.");
           setIsPeerReady(false);
         });
 
         p.on("call", (call: any) => {
           if (isCancelled) return;
-          console.log("Citofonía: Recibiendo llamada WebRTC de:", call.peer);
           
           // Si el estado es OUTGOING y el peer coincide con el que estamos llamando, contestamos automáticamente (llamada de retorno)
           if (callStateRef.current === "OUTGOING" && call.peer === targetPeerIdRef.current) {
-            console.log("Citofonía: Auto-contestando llamada de retorno del destinatario despertado.");
             incomingCallRef.current = call;
             if (answerCallRef.current) {
               answerCallRef.current();
@@ -178,7 +167,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
           // Escuchar cierre o error de la llamada entrante antes de contestar
           call.on("close", () => {
-            console.log("Citofonía: Llamada entrante cancelada/cerrada por el llamante.");
             if (incomingCallRef.current === call) {
               endCall();
             }
@@ -217,7 +205,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
           if (isCancelled) return;
 
           if (err.type === "unavailable-id" && retryCount < 2) {
-            console.log("ID is taken, retrying in 2 seconds...");
             retryTimeout = setTimeout(() => {
               if (!isCancelled) {
                 initPeer(retryCount + 1);
@@ -230,7 +217,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
             (err.message && String(err.message).toLowerCase().includes("could not connect to peer"));
 
           if (isPeerUnavailable) {
-            console.warn("Citofonía PeerJS: Peer is offline. Sending Web Push wake notification...", err);
             peerUnavailableReceivedRef.current = true;
             if (pushStatusRef.current.checked) {
               if (pushStatusRef.current.sent) {
@@ -247,7 +233,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          console.error("Citofonía PeerJS error:", err);
           toast.error(`Error de citofonía: ${err.message || err.type}`);
           endCall();
         });
@@ -302,7 +287,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const registerPush = async () => {
       try {
         const registration = await navigator.serviceWorker.register("/sw.js");
-        console.log("Service Worker registrado con éxito. Scope:", registration.scope);
 
         let permission = Notification.permission;
         if (permission === "default") {
@@ -310,13 +294,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
 
         if (permission !== "granted") {
-          console.warn("Permiso de notificaciones no concedido:", permission);
           return;
         }
 
         const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!vapidPublicKey) {
-          console.warn("NEXT_PUBLIC_VAPID_PUBLIC_KEY no configurado.");
           return;
         }
 
@@ -347,14 +329,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         // Re-registering an existing subscription on every profile render
         // causes duplicate push notifications per call.
         if (isNew) {
-          await fetch("/api/user/push-subscribe", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ subscription })
-          });
-          console.log("Suscripción push registrada en base de datos.");
-        } else {
-          console.log("Suscripción push ya registrada, sin cambios.");
+          await api.post('/usuarios/me/push-subscriptions', subscription);
         }
       } catch (err) {
         console.error("Error al registrar notificaciones push:", err);
@@ -371,7 +346,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if ("serviceWorker" in navigator) {
       const handleMessage = (event: MessageEvent) => {
         if (event.data?.type === "ANSWER_CALL" && event.data?.callerPeerId) {
-          console.log("Respondiendo llamada desde Service Worker message:", event.data);
           if (event.data.callerName) {
             setCallerName(event.data.callerName);
           }
@@ -386,7 +360,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
           // Si ya tenemos una llamada sonando, la contestamos directamente en vez de iniciar una llamada de retorno
           if (callStateRef.current === "RINGING" && incomingCallRef.current) {
-            console.log("Citofonía: Contestando llamada entrante activa en respuesta al mensaje del SW.");
             if (answerCallRef.current) {
               answerCallRef.current();
             }
@@ -398,7 +371,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
               startCallRef.current(event.data.callerPeerId);
             }
           } else {
-            console.log("PeerJS no listo. Encolando llamada de retorno.");
             pendingCallbackRef.current = event.data.callerPeerId;
           }
         }
@@ -417,8 +389,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const callerNameParam = params.get("callerName");
 
     if (hasIncomingCall && callerPeerId) {
-      console.log("Iniciando conexión/devolución de llamada a:", callerPeerId);
-      
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
 
@@ -436,7 +406,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if (isPeerReady && pendingCallbackRef.current) {
       const target = pendingCallbackRef.current;
       pendingCallbackRef.current = null;
-      console.log("Procesando llamada de retorno encolada para:", target);
       if (startCallRef.current) {
         startCallRef.current(target);
       }
@@ -675,7 +644,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = stream;
     } catch (e) {
-      console.warn("Micrófono no disponible en llamada saliente, usando stream vacío:", e);
       toast.info("Sin micrófono — realizando llamada sin audio de salida.");
       stream = new MediaStream();
       localStreamRef.current = stream;
@@ -686,24 +654,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
         throw new Error("PeerJS client is not initialized.");
       }
 
-      console.log("Citofonía: Realizando llamada a peer ID:", targetPeerId);
-      
       // Enviar notificación Push al destinatario para despertarlo / avisarle en su navegador
       const callerRoleName = profile.rol === "VIGILANTE" ? "Portería Principal" : (profile.rol === "ADMINISTRADOR" ? "Administración" : `Apto ${profile.unidad?.numero || ""}`);
-      fetch("/api/citofonia/call-push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      api.post<{ success: boolean; sent?: number; error?: string; reason?: string }>('/citofonia/call-push', {
           targetPeerId,
           callerName: callerRoleName,
           callerPeerId: myPeerIdRef.current
         })
-      })
-      .then(res => res.json())
       .then(json => {
         if (json.success && json.sent > 0) {
           pushStatusRef.current = { checked: true, sent: true };
-          console.log(`[push] Push notification sent successfully to ${json.sent} devices.`);
           if (callStateRef.current === "OUTGOING" && peerUnavailableReceivedRef.current) {
             toast.info("El residente no está activo en la app. Notificación enviada.");
             setLastSpeechResponse("Enviando notificación push...");
@@ -711,7 +671,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
         } else {
           const errMsg = json.error || json.reason || "No subscriptions found";
           pushStatusRef.current = { checked: true, sent: false, error: errMsg };
-          console.log(`[push] Push notification not sent:`, errMsg);
           if (json.error) {
             toast.error(json.error);
             endCall();
@@ -738,7 +697,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
         activeCallRef.current = call;
         
         call.on("stream", (remoteStream: MediaStream) => {
-          console.log("Citofonía: Recibida señal WebRTC de respuesta.");
           if (activeToneRef.current) activeToneRef.current.stop();
           playBeep();
           
@@ -750,12 +708,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         });
 
         call.on("close", () => {
-          console.log("Citofonía: Llamada remota cerrada.");
           endCall();
         });
 
         call.on("error", (err: any) => {
-          console.error("Citofonía: Error en llamada PeerJS:", err);
           toast.error("Error al establecer la conexión de voz.");
           endCall();
         });
@@ -764,7 +720,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setTimeout(() => {
           setCallState((current) => {
             if (current === "OUTGOING") {
-              console.log("Citofonía: Llamada no contestada.");
               toast.info("Llamada sin respuesta.");
               endCall();
             }
@@ -776,8 +731,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         toast.error("No se pudo iniciar la llamada.");
         endCall();
       }
-    } catch (e) {
-      console.warn("Error al iniciar la llamada PeerJS:", e);
+    } catch {
       toast.error("No se pudo iniciar la llamada.");
       endCall();
     }
@@ -803,7 +757,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       // Device has no mic, or permission was denied — answer silently so the
       // resident can still hear the caller (one-way audio).
-      console.warn("Micrófono no disponible, contestando sin audio de salida:", e);
       toast.info("Contestando sin micrófono — el dispositivo no tiene uno disponible.");
       stream = new MediaStream();
       localStreamRef.current = stream;
@@ -813,7 +766,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
       incomingCallRef.current.answer(stream);
 
       incomingCallRef.current.on("stream", (remoteStream: MediaStream) => {
-        console.log("Citofonía: Transmisión WebRTC establecida.");
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = remoteStream;
           remoteAudioRef.current.play().catch(e => console.error("Error playing WebRTC stream:", e));

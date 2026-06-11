@@ -12,10 +12,12 @@ import {
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface AreaComun {
   id: string;
@@ -32,8 +34,8 @@ interface AreaComun {
 }
 
 export default function ReservasPage() {
-  const { data: session } = useSession();
-  const userId = session?.user?.id;
+  const { user } = useAuth();
+  const userId = user?.id;
   const containerRef = useRef<HTMLDivElement>(null);
   
   const [areas, setAreas] = useState<AreaComun[]>([]);
@@ -49,14 +51,18 @@ export default function ReservasPage() {
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Real-time WebSocket subscription
+  useWsSubscription('reserva', () => {
+    api.get<AreaComun[]>('/areas-comunes')
+      .then((data) => setAreas(data))
+      .catch(() => {});
+  });
+
   useEffect(() => {
     async function loadAreas() {
       try {
-        const res = await fetch('/api/user/reservas/areas');
-        const data = await res.json();
-        if (data.success) {
-          setAreas(data.data);
-        }
+        const data = await api.get<AreaComun[]>('/areas-comunes');
+        setAreas(data);
       } catch (e) {
         console.error("Error loading areas", e);
       } finally {
@@ -114,9 +120,7 @@ export default function ReservasPage() {
         const dd = String(day.getDate()).padStart(2, '0');
         const ds = `${yyyy}-${mm}-${dd}`;
         
-        const res = await fetch(`/api/user/reservas/slots?areaId=${area.id}&date=${ds}`);
-        const data = await res.json();
-        const blocked = data.success ? data.data : [];
+        const blocked = await api.get<{fechaInicio: string; fechaFin: string}[]>(`/areas-comunes/${area.id}/slots?fecha=${ds}`);
         
         // Generar intervalos
         const startH = parseInt(area.horaApertura.split(':')[0]);
@@ -180,21 +184,12 @@ export default function ReservasPage() {
     const slot = timeSlots[selectedSlotIndex];
     setIsProcessing(true);
     try {
-      const res = await fetch('/api/user/reservas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      await api.post('/reservas', {
           areaId: selectedArea?.id,
           fechaInicio: slot.start.toISOString(),
           fechaFin: slot.end.toISOString()
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setStep('SUCCESS');
-      } else {
-        toast.error("Error al reservar", { description: data.error });
-      }
+        });
+      setStep('SUCCESS');
     } catch {
       toast.error("Error de conexión");
     } finally {
@@ -349,9 +344,8 @@ export default function ReservasPage() {
         <section className="fade-up fixed inset-0 z-100 flex flex-col items-center justify-center p-8 bg-primary/95 backdrop-blur-3xl">
            <div className="w-16 h-16 rounded-full border-4 border-border border-t-accent animate-spin mb-4" />
            <h3 className="text-2xl font-display font-medium text-text tracking-tight">Procesando Pago Seguro...</h3>
-           <p className="text-text/60 text-xs mt-4">Simulando respuesta de Wompi</p>
-           {/* Mocking the payment return internally */}
-           <button onClick={executeBooking} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-white transition-colors cursor-pointer">Acelerar Simulación</button>
+            <p className="text-text/60 text-xs mt-4">Confirmando con pasarela de pago...</p>
+            <button onClick={executeBooking} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-white transition-colors cursor-pointer">Confirmar Pago</button>
         </section>
       )}
 

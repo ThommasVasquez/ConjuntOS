@@ -5,14 +5,15 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText, Upload, Trash2, Megaphone, RefreshCw } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/db";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 export default function AdminNovedadesPage() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const role = (session?.user as any)?.role;
+  const role = user?.rol;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -43,10 +44,8 @@ export default function AdminNovedadesPage() {
     setLoading(true);
     try {
       const qs = tab === 'PENDIENTE' ? '?estado=PENDIENTE' : '';
-      const res = await fetch(`/api/tramites${qs}`, { cache: 'no-store' });
-      const data = await res.json();
-      if (data.success) {
-        const items = data.data;
+      const items = await api.get<any[]>(`/tramites${qs}`);
+      {
         if (tab === 'HISTORIAL') {
              setTramites(items.filter((t: any) => t.estado !== 'PENDIENTE'));
         } else {
@@ -62,28 +61,26 @@ export default function AdminNovedadesPage() {
 
   const fetchCells = async () => {
       try {
-          const res = await fetch('/api/parqueadero/mapa');
-          const data = await res.json();
-          if (data.success) {
-              setAvailableCells(data.data.filter((c: any) => c.estado === 'DISPONIBLE'));
-          }
+          const data = await api.get<any[]>('/parqueadero/mapa');
+          setAvailableCells(data.filter((c: any) => c.estado === 'DISPONIBLE'));
       } catch (e) { console.error("Error fetching cells", e); }
   };
 
   const fetchAnuncios = async () => {
     setLoadingAnuncios(true);
     try {
-      const res = await fetch("/api/user/anuncios", { cache: 'no-store' });
-      const data = await res.json();
-      if (data.success) {
-        setAnuncios(data.data);
-      }
+      const data = await api.get<any[]>('/anuncios');
+      setAnuncios(data);
     } catch {
       toast.error("Error al cargar anuncios");
     } finally {
       setLoadingAnuncios(false);
     }
   };
+
+  // Real-time WebSocket subscriptions
+  useWsSubscription('tramite', () => fetchTramites());
+  useWsSubscription('anuncio', () => fetchAnuncios());
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,25 +92,20 @@ export default function AdminNovedadesPage() {
 
     setIsUploadingImage(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `anuncio_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-      
-      const { error } = await supabase.storage
-        .from('logos') // Reutilizar el bucket público de logotipos
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('logos')
-        .getPublicUrl(fileName);
-
-      setAnuncioForm(prev => ({ ...prev, imagenUrl: publicUrl }));
-      toast.success("Imagen subida correctamente");
+      // TODO: File upload endpoint pending on Rust backend. Using inline base64 for now.
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAnuncioForm(prev => ({ ...prev, imagenUrl: reader.result as string }));
+        toast.success("Imagen cargada correctamente");
+        setIsUploadingImage(false);
+      };
+      reader.onerror = () => {
+        toast.error("Error al leer la imagen");
+        setIsUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
     } catch (err: any) {
-      console.error("Error uploading image:", err);
-      toast.error("Error al subir imagen: " + err.message);
-    } finally {
+      toast.error("Error al cargar imagen: " + err.message);
       setIsUploadingImage(false);
     }
   };
@@ -126,25 +118,16 @@ export default function AdminNovedadesPage() {
 
     setIsSubmittingAnuncio(true);
     try {
-      const res = await fetch("/api/user/anuncios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(anuncioForm)
+      await api.post('/anuncios', anuncioForm);
+      toast.success("Anuncio publicado exitosamente");
+      setAnuncioForm({
+        titulo: "",
+        contenido: "",
+        tipo: "GENERAL",
+        fijado: false,
+        imagenUrl: ""
       });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Anuncio publicado exitosamente");
-        setAnuncioForm({
-          titulo: "",
-          contenido: "",
-          tipo: "GENERAL",
-          fijado: false,
-          imagenUrl: ""
-        });
-        fetchAnuncios();
-      } else {
-        toast.error(data.error || "Error al publicar anuncio");
-      }
+      fetchAnuncios();
     } catch {
       toast.error("Error de conexión al publicar anuncio");
     } finally {
@@ -156,24 +139,17 @@ export default function AdminNovedadesPage() {
     if (!confirm("¿Estás seguro de que deseas eliminar este anuncio?")) return;
 
     try {
-      const res = await fetch(`/api/user/anuncios?id=${id}`, {
-        method: "DELETE"
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Anuncio eliminado correctamente");
-        fetchAnuncios();
-      } else {
-        toast.error(data.error || "Error al eliminar anuncio");
-      }
+      await api.delete(`/anuncios/${id}`);
+      toast.success("Anuncio eliminado correctamente");
+      fetchAnuncios();
     } catch {
       toast.error("Error de conexión al eliminar anuncio");
     }
   };
 
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
+    if (authLoading) return;
+    if (!user) {
       router.push("/login");
       return;
     }
@@ -191,7 +167,7 @@ export default function AdminNovedadesPage() {
     } else if (tab === 'PUBLICAR_ANUNCIO') {
       fetchAnuncios();
     }
-  }, [tab, session, status, role, router]);
+  }, [tab, user, authLoading, role, router]);
 
   useEffect(() => {
     if (!loading) {
@@ -248,26 +224,17 @@ export default function AdminNovedadesPage() {
       }
       setIsProcessing(true);
       try {
-          const res = await fetch('/api/tramites/aprobar', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
+          await api.put('/tramites/aprobar', { 
                   tramiteId: selectedTramite.id, 
                   accion, 
                   observacionAdmin: obs,
                   parqueaderoId: accion === 'APROBAR' && selectedTramite.tipo === 'VEHICULO' ? selectedCellId : undefined
-              })
-          });
-          const data = await res.json();
-          if (data.success) {
-              toast.success(`Trámite ${accion === 'APROBAR' ? 'aprobado' : 'rechazado'} con éxito.`);
-              setSelectedTramite(null);
-              setObs("");
-              setSelectedCellId("");
-              fetchTramites();
-          } else {
-              toast.error(data.error || 'Error al procesar.');
-          }
+              });
+          toast.success(`Trámite ${accion === 'APROBAR' ? 'aprobado' : 'rechazado'} con éxito.`);
+          setSelectedTramite(null);
+          setObs("");
+          setSelectedCellId("");
+          fetchTramites();
       } catch {
           toast.error('Error de conexión.');
       } finally {

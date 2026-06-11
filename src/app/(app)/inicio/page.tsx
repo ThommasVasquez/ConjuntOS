@@ -15,32 +15,22 @@ import CelebrationModal from "@/components/modals/CelebrationModal";
 import ContentActionModal from "@/components/modals/ContentActionModal";
 import SearchModal from "@/components/search/SearchModal";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
+import type { AnuncioDto } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import Image from "next/image";
 import { toast } from "sonner";
-
-interface FeedItem {
-  id: number;
-  type: 'POST' | 'AD';
-  category?: string;
-  brand?: string;
-  title: string;
-  content: string;
-  image?: string;
-  tag: string;
-  icon?: React.ReactNode;
-  cta?: string;
-}
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 function HomeResidente() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const [notificaciones, setNotificaciones] = useState<any[]>([]);
   const [showCelebration, setShowCelebration] = useState<any>(null);
-  const [selectedFeedItem, setSelectedFeedItem] = useState<FeedItem | null>(null);
+  const [selectedFeedItem, setSelectedFeedItem] = useState<AnuncioDto | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [financialData, setFinancialData] = useState<{ totalDebt: number; pagos: any[]; recibos: any[] }>({
     totalDebt: 0,
@@ -59,253 +49,97 @@ function HomeResidente() {
     { title: "Clasificados", icon: <ShoppingBag size={20}/>, color: "from-blue-400 to-indigo-500", path: "/clasificados" },
   ];
 
-  const allFeedItems: FeedItem[] = [
-    {
-      id: 1,
-      type: 'POST',
-      category: 'Administración',
-      title: 'Asamblea Extraordinaria',
-      content: 'Estimados copropietarios: Se les convoca a la reunión este domingo a las 9:00 AM en el lobby principal para tratar temas de seguridad y convivencia.',
-      image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Importante',
-      icon: <Megaphone className="text-yellow-400" size= {16} />
-    },
-    {
-      id: 2,
-      type: 'AD',
-      brand: 'Premium Car Wash',
-      title: 'Tu vehículo como nuevo',
-      content: 'Descuento especial del 20% para residentes de EnConjunto. ¡Agitá tu vida, no tu auto!',
-      image: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Patrocinado',
-      cta: 'Ver Oferta'
-    },
-    {
-      id: 8,
-      type: 'AD',
-      brand: 'Pizza Now',
-      title: 'Noche de Pizzas',
-      content: '2x1 en pizzas familiares solo para pedidos dentro del conjunto. ¡Llegamos en 20 minutos!',
-      image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Cena'
-    },
-    {
-      id: 3,
-      type: 'POST',
-      category: 'Seguridad',
-      title: 'Nuevos Refuerzos en Portería',
-      content: 'Damos la bienvenida al nuevo equipo de seguridad que estará apoyando las labores de vigilancia 24/7 desde el próximo lunes.',
-      image: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Informativo'
-    },
-    {
-      id: 4,
-      type: 'POST',
-      category: 'Eventos',
-      title: 'Cine bajo las Estrellas',
-      content: 'Acompañanos este viernes en la zona social para una noche de película familiar. Trae tu manta y nosotros ponemos las palomitas.',
-      image: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Social'
-    },
-    {
-      id: 5,
-      type: 'AD',
-      brand: 'FitHealth Gym',
-      title: 'Entrená cerca de casa',
-      content: 'Inscríbete hoy y recibe el primer mes gratis. Ubicados a solo 5 minutos del conjunto.',
-      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Patrocinado'
-    },
-    {
-      id: 6,
-      type: 'POST',
-      category: 'Mantenimiento',
-      title: 'Lavado de Tanques',
-      content: 'Se realizará el mantenimiento preventivo de los tanques de agua el próximo miércoles de 8:00 AM a 2:00 PM. Se recomienda almacenar agua.',
-      image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Mantenimiento'
-    },
-    {
-      id: 7,
-      type: 'POST',
-      category: 'Comunidad',
-      title: 'Mercadillo de Emprendedores',
-      content: 'Este sábado tendremos la feria de emprendimiento de vecinos en el parque central. ¡Ven a apoyar el talento local!',
-      image: 'https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Eventos'
-    },
-    {
-      id: 9,
-      type: 'POST',
-      category: 'Admin',
-      title: 'Actualización de Datos',
-      content: 'Por favor actualiza tu información de contacto en el perfil para recibir las circulares digitales y notificaciones de paquetería.',
-      image: 'https://images.unsplash.com/photo-1454165833767-0208170669f4?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Perfil'
-    },
-    {
-      id: 10,
-      type: 'POST',
-      category: 'Seguridad',
-      title: 'Control de Mascotas',
-      content: 'Recordamos a todos los dueños el uso obligatorio de correa en zonas comunes y la limpieza de desechos. Mantengamos el conjunto limpio.',
-      image: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=1000',
-      tag: 'Convivencia'
-    }
-  ];
-
-  const [visibleItems, setVisibleItems] = useState<FeedItem[]>(allFeedItems.slice(0, 5));
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [anuncios, setAnuncios] = useState<AnuncioDto[]>([]);
+  const [isLoadingAnuncios, setIsLoadingAnuncios] = useState(true);
   const [userData, setUserData] = useState<any>(null);
-  const loaderRef = useRef<HTMLDivElement>(null);
+  const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string } | null>(null);
 
-  const loadMoreItems = useCallback(() => {
-    if (isLoadingMore || visibleItems.length >= allFeedItems.length) return;
-    setIsLoadingMore(true);
-    
-    // Simular un retardo para mostrar la carga premium
-    setTimeout(() => {
-      const nextPage = currentPage + 1;
-      const nextBatch = allFeedItems.slice(0, nextPage * 5);
-      setVisibleItems(nextBatch);
-      setCurrentPage(nextBatch.length / 5); // Correct page calculation
-      setIsLoadingMore(false);
-    }, 1200);
-  }, [isLoadingMore, visibleItems.length, allFeedItems.length, currentPage]);
+  const fetchAnuncios = useCallback(async () => {
+    try {
+      setIsLoadingAnuncios(true);
+      const data = await api.get<AnuncioDto[]>('/anuncios');
+      setAnuncios(data);
+    } catch (e) {
+      
+    } finally {
+      setIsLoadingAnuncios(false);
+    }
+  }, []);
 
   const fetchNotificaciones = useCallback(async () => {
     try {
-      const res = await fetch('/api/notificaciones');
-      const data = await res.json();
-      if (data.success) {
-        setNotificaciones(data.data.filter((n: any) => !n.leida));
-      }
-    } catch (e) { console.error(e); }
+      const data = await api.get<import('@/lib/api/types').NotificacionDto[]>('/notificaciones');
+      setNotificaciones(data.filter((n) => !n.leida));
+    } catch {
+      // silently ignore
+    }
   }, []);
 
   const fetchUserData = useCallback(async () => {
     try {
-      const res = await fetch('/api/user/profile');
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-      if (data.success) setUserData(data.data);
+      const data = await api.get<import('@/lib/api/types').ProfileResponse>('/usuarios/me/profile');
+      setUserData(data);
     } catch (e) { 
-      console.error("Error fetching user data"); 
+       
     }
-  }, []);
-
-  const triggerMockDelivery = useCallback((itemName: string) => {
-     // 1. Guardar Notificación en el estado y LocalStorage
-     const mockNotif = {
-        id: `mock_${Date.now()}`,
-        tipo: 'SISTEMA',
-        titulo: '¡Pedido en Portería!',
-        mensaje: `Tu pedido de "${itemName}" ya está en la portería del conjunto.`,
-        creadoEn: new Date().toISOString(),
-        leida: false
-     };
-     setNotificaciones(prev => [mockNotif, ...prev]);
-
-     // 2. Guardar el PAQUETE en LocalStorage para persistencia
-     const mockPackage = {
-        id: `pkg_${Date.now()}`,
-        origen: itemName.includes("Pizza") ? "Pizza Now" : "Comercio Local",
-        remitente: itemName,
-        guia: `SIM-${Math.floor(Math.random()*9000)+1000}`,
-        estado: "EN_PORTERIA",
-        fechaLlegada: new Date().toISOString()
-     };
-     
-     const stored = JSON.parse(localStorage.getItem('conjuntos_sim_paquetes') || '[]');
-     localStorage.setItem('conjuntos_sim_paquetes', JSON.stringify([mockPackage, ...stored]));
-
-     toast.info("¡Nueva notificación en portería!");
-  }, []);
-
-  const triggerRandomServientrega = useCallback(() => {
-    const mockNotif = {
-      id: `servi_${Date.now()}`,
-      tipo: 'NORMAL',
-      titulo: '📦 Nuevo Paquete (Cali)',
-      mensaje: `Ha llegado un paquete de Cali vía Servientrega destinado a tu apartamento.`,
-      creadoEn: new Date().toISOString(),
-      leida: false
-    };
-    setNotificaciones(prev => [mockNotif, ...prev]);
-
-    const mockPackage = {
-      id: `pkg_servi_${Date.now()}`,
-      origen: "Cali",
-      remitente: "Servientrega",
-      guia: `7788${Math.floor(Math.random()*1000000)}`,
-      estado: "EN_PORTERIA",
-      fechaLlegada: new Date().toISOString()
-    };
-    const stored = JSON.parse(localStorage.getItem('conjuntos_sim_paquetes') || '[]');
-    localStorage.setItem('conjuntos_sim_paquetes', JSON.stringify([mockPackage, ...stored]));
-
-    toast.success("📦 ¡Acaba de llegar un paquete de Cali!", { duration: 5000 });
   }, []);
 
   const markAsRead = async (id: string) => {
       try {
-          await fetch('/api/notificaciones', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id, leida: true })
-          });
+          await api.put('/notificaciones/marcar-leidas', { ids: [id] });
           setNotificaciones(prev => prev.filter(n => n.id !== id));
-      } catch (e) { console.error("Error marking as read", e); }
+      } catch {
+          // silently ignore
+      }
   };
 
   const fetchFinance = useCallback(async () => {
     try {
-      const res = await fetch('/api/user/pagos');
-      if (!res.ok) throw new Error("Finance API error");
-      const data = await res.json();
-      if (data.success) setFinancialData(data.data);
+      const data = await api.get<{ pagos: any[]; recibos: any[] }>('/pagos');
+      const pagos = data?.pagos ?? [];
+      const recibos = data?.recibos ?? [];
+      const totalDebt = pagos
+        .filter((p: any) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
+        .reduce((sum: number, p: any) => sum + parseFloat(p.monto || '0'), 0);
+      setFinancialData({ totalDebt, pagos, recibos });
     } catch (e) {
-      console.error("Error fetching finance data", e);
+      
     }
   }, []);
 
+  // Real-time WebSocket subscriptions
+  useWsSubscription('notification', () => fetchNotificaciones());
+  useWsSubscription('pago', () => fetchFinance());
+  useWsSubscription('anuncio', () => fetchAnuncios());
+
+  const fetchActiveAsamblea = useCallback(async () => {
+    try {
+      const data = await api.get<any>('/asambleas/activa/session');
+      if (data?.id && data?.activa) {
+        setActiveAsamblea({ id: data.id, titulo: data.titulo, descripcion: data.descripcion });
+      } else {
+        setActiveAsamblea(null);
+      }
+    } catch {
+      setActiveAsamblea(null);
+    }
+  }, []);
+
+  useWsSubscription('asamblea', () => fetchActiveAsamblea());
+
   useEffect(() => {
-    if (session) {
+    if (user) {
       fetchNotificaciones();
       fetchFinance();
       fetchUserData();
-
-      // SIMULACIÓN ALEATORIA: Paquete de Cali
-      const timer = setTimeout(() => {
-        const alreadyHappened = sessionStorage.getItem('sim_servi_done');
-        if (!alreadyHappened) {
-           triggerRandomServientrega();
-           sessionStorage.setItem('sim_servi_done', 'true');
-        }
-      }, 30000); // 30 segundos de espera para el efecto sorpresa
-
-      return () => clearTimeout(timer);
+      fetchAnuncios();
+      fetchActiveAsamblea();
     }
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up-home", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 });
     }, containerRef);
     return () => ctx.revert();
-  }, [session, fetchNotificaciones, fetchFinance, fetchUserData, triggerRandomServientrega]);
-
-  useEffect(() => {
-    const loader = loaderRef.current;
-    if (!loader) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        loadMoreItems();
-      }
-    }, { threshold: 0.1 });
-
-    observer.observe(loader);
-    return () => observer.disconnect();
-  }, [loadMoreItems]);
+  }, [user, fetchNotificaciones, fetchFinance, fetchUserData, fetchAnuncios, fetchActiveAsamblea]);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-16 pb-32">
@@ -345,38 +179,42 @@ function HomeResidente() {
         </div>
       </header>
 
-      {/* 🔴 ASSEMBLY LIVE BANNER */}
-      <div 
-        onClick={() => router.push('/asamblea')}
-        className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[90px] shadow-[0_15px_30px_rgba(239,68,68,0.2)] border border-red-500/20 group cursor-pointer hover:border-red-500/40 transition-all"
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-red-950/80 via-purple-950/70 to-red-950/80 opacity-95" />
-        <div className="absolute inset-0 p-4 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/40 animate-pulse">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+      {/* ASSEMBLY LIVE BANNER — only shown when there's an active assembly */}
+      {activeAsamblea && (
+        <div 
+          onClick={() => router.push('/asamblea')}
+          className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[90px] shadow-[0_15px_30px_rgba(239,68,68,0.2)] border border-red-500/20 group cursor-pointer hover:border-red-500/40 transition-all"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-red-950/80 via-purple-950/70 to-red-950/80 opacity-95" />
+          <div className="absolute inset-0 p-4 flex items-center justify-between z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/40 animate-pulse">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+              </div>
+              <div>
+                <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest block">Sesion en Vivo</span>
+                <h3 className="text-sm font-display font-bold text-white tracking-tight">{activeAsamblea.titulo}</h3>
+                {activeAsamblea.descripcion && (
+                  <p className="text-white/60 text-[9px] mt-0.5 line-clamp-1">{activeAsamblea.descripcion}</p>
+                )}
+              </div>
             </div>
-            <div>
-              <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest block">Sesión en Vivo</span>
-              <h3 className="text-sm font-display font-bold text-white tracking-tight">Asamblea General Ordinaria</h3>
-              <p className="text-white/60 text-[9px] mt-0.5">Únete y participa en la votación del presupuesto 2026</p>
+            <div className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-1">
+              Entrar <ArrowRight size={10} />
             </div>
-          </div>
-          <div className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-1">
-            Entrar <ArrowRight size={10} />
           </div>
         </div>
-      </div>
+      )}
 
       {/* SEARCH MODAL */}
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         context={{
-          userName: userData?.nombre || session?.user?.name || undefined,
+          userName: userData?.nombre || user?.nombre || undefined,
           totalDebt: financialData.totalDebt,
           pagos: financialData.pagos,
-          anuncios: allFeedItems.filter(f => f.type === 'POST').map(f => ({ titulo: f.title, contenido: f.content }))
+          anuncios: anuncios.map(a => ({ titulo: a.titulo, contenido: a.contenido }))
         }}
       />
 
@@ -455,7 +293,7 @@ function HomeResidente() {
                 $ {financialData.totalDebt.toLocaleString()}
               </h2>
               <p className="text-white/60 text-[10px] mt-0.5">
-                {financialData.totalDebt > 0 ? "Vence en 4 days • Abril 2026" : "Corte al día • Abril 2026"}
+                {financialData.totalDebt > 0 ? "Saldo pendiente" : "Al dia con tus pagos"}
               </p>
             </div>
             <button 
@@ -484,101 +322,86 @@ function HomeResidente() {
               <ArrowRight size={14} />
           </button>
       </section>
-         {visibleItems.map((post) => (
-            <div key={post.id} onClick={() => setSelectedFeedItem(post)} className="cursor-pointer">
-              <PostCard post={post} />
+         {isLoadingAnuncios ? (
+           <div className="py-10 flex flex-col items-center justify-center gap-3">
+             <div className="w-8 h-8 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
+             <span className="text-[10px] font-bold text-text/30 uppercase tracking-widest animate-pulse">Cargando novedades...</span>
+           </div>
+         ) : anuncios.length === 0 ? (
+           <div className="py-10 flex flex-col items-center justify-center gap-3">
+             <Megaphone size={32} className="text-text/30" />
+             <span className="text-[10px] font-bold text-text/30 uppercase tracking-widest">Sin novedades por ahora</span>
+           </div>
+         ) : anuncios.map((anuncio) => (
+            <div key={anuncio.id} onClick={() => setSelectedFeedItem(anuncio)} className="cursor-pointer">
+              <AnuncioCard anuncio={anuncio} />
             </div>
           ))}
-          
-          {/* LOADER / SPINNER */}
-          <div ref={loaderRef} className="py-10 flex flex-col items-center justify-center gap-3">
-             {isLoadingMore ? (
-               <>
-                 <div className="w-8 h-8 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
-                 <span className="text-[10px] font-bold text-text/30 uppercase tracking-widest animate-pulse">Cargando novedades...</span>
-               </>
-             ) : (
-               <div className="w-1.5 h-1.5 rounded-full bg-border" />
-             )}
-          </div>
        </section>
 
        {selectedFeedItem && (
-         <ContentActionModal 
-           item={selectedFeedItem} 
-           userData={userData}
-           onClose={() => setSelectedFeedItem(null)} 
-           onActionComplete={(itemName) => triggerMockDelivery(itemName)}
-         />
+          <ContentActionModal 
+            item={{
+              title: selectedFeedItem.titulo,
+              content: selectedFeedItem.contenido,
+              image: selectedFeedItem.imagenUrl,
+              category: selectedFeedItem.tipo,
+              type: 'POST',
+            }} 
+            userData={userData}
+            onClose={() => setSelectedFeedItem(null)} 
+          />
        )}
     </div>
   );
 }
 
-function PostCard({ post }: { post: FeedItem }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setIsMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const hours = Math.floor(diff / 3600000);
+    if (hours < 1) return 'Hace un momento';
+    if (hours < 24) return `Hace ${hours}h`;
+    const days = Math.floor(hours / 24);
+    return `Hace ${days}d`;
+  };
 
   return (
     <div className="fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t border-border/20 transition-all active:scale-[0.98] relative overflow-hidden">
-      
-      {/* AD INDICATOR (Badge) */}
-      {post.type === 'AD' && (
-         <div className="absolute top-4 right-14 z-20 px-3 py-1 rounded-full bg-accent/20 border border-accent/30 text-[9px] font-black text-accent uppercase tracking-widest">
-            Patrocinado
-         </div>
-      )}
-
       <div className="p-5 flex justify-between items-center relative z-10">
          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs ${post.type === 'AD' ? 'bg-accent text-primary' : 'bg-linear-to-tr from-purple-500 to-pink-500 text-white'}`}>
-               {post.type === 'AD' ? 'AD' : (post.category?.[0] || 'A')}
+            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs bg-linear-to-tr from-purple-500 to-pink-500 text-white">
+               {anuncio.tipo?.[0] || 'A'}
             </div>
             <div>
-               <h4 className="text-sm font-bold text-text leading-none mb-1">{post.type === 'AD' ? post.brand : post.category}</h4>
+               <h4 className="text-sm font-bold text-text leading-none mb-1">{anuncio.tipo}</h4>
                <p className="text-[10px] text-text/60 flex items-center gap-1 font-medium">
-                  {post.type === 'AD' ? 'Publicidad' : `Hace ${post.id} horas`} • {post.tag}
+                  {timeAgo(anuncio.publicadoEn)} {anuncio.fijado && '• Fijado'}
                </p>
             </div>
          </div>
-         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-8 h-8 rounded-full flex items-center justify-center text-text/60 hover:text-text">
-            <MoreHorizontal size={18} />
-         </button>
+         <MoreHorizontal size={18} className="text-text/60" />
       </div>
 
       <div className="px-5 pb-2">
-         <h2 className="text-xl font-display font-semibold text-text mb-2 leading-tight">{post.title}</h2>
-         <p className="text-sm text-text/80 leading-relaxed font-normal mb-4">{post.content}</p>
-         
-         {post.type === 'AD' && post.cta && (
-            <button className="mb-4 px-6 py-2.5 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-accent/20">
-               {post.cta}
-            </button>
-         )}
+         <h2 className="text-xl font-display font-semibold text-text mb-2 leading-tight">{anuncio.titulo}</h2>
+         <p className="text-sm text-text/80 leading-relaxed font-normal mb-4 line-clamp-3">{anuncio.contenido}</p>
       </div>
 
-      {post.image && (
+      {anuncio.imagenUrl && (
          <div className="relative h-56 w-full group overflow-hidden">
-            <Image src={post.image} alt={post.title} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
+            <Image src={anuncio.imagenUrl} alt={anuncio.titulo} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
             <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-60" />
          </div>
       )}
 
       <div className="p-4 flex items-center justify-between border-t border-border bg-surface/40 backdrop-blur-xl mt-auto rounded-b-[32px]">
-         <button className="text-text/60 text-[11px] flex items-center gap-1.5 hover:text-text transition-colors font-semibold uppercase tracking-wider">
-            {post.type === 'AD' ? 'Más Info' : '¿Dudas?'} <Bell size={12} />
-         </button>
-         <button className="text-accent text-[11px] font-bold flex items-center gap-1.5 hover:accent-glow transition-all uppercase tracking-widest">
-            {post.type === 'AD' ? 'Contactar' : 'Ver Circular'} <ChevronLeft size={14} className="rotate-180" />
-         </button>
+         <span className="text-text/60 text-[11px] flex items-center gap-1.5 font-semibold uppercase tracking-wider">
+            <Megaphone size={12} /> {anuncio.tipo}
+         </span>
+         <span className="text-accent text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-widest">
+            Ver más <ChevronLeft size={14} className="rotate-180" />
+         </span>
       </div>
     </div>
   );
@@ -616,12 +439,9 @@ function HomeEstacionamiento() {
   const [stats, setStats] = useState({ ocupacion: 0, libres: 0, ocupados: 0 });
 
   useEffect(() => {
-    fetch("/api/parqueadero/stats")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setStats(json.data);
-      })
-      .catch((err) => console.error("Error fetching parking stats:", err));
+    api.get<{ ocupacion: number; libres: number; ocupados: number }>('/parqueadero/stats')
+      .then((data) => setStats(data))
+      .catch(() => {});
   }, []);
 
   return (
@@ -670,15 +490,12 @@ function HomeEstacionamiento() {
 
 function HomeConsejo() {
   const router = useRouter();
-  const [stats, setStats] = useState({ recaudado: 0, novedadesPendientes: 0 });
+  const [stats, setStats] = useState({ recaudoMes: '0', reservasPendientes: 0 });
 
   useEffect(() => {
-    fetch("/api/admin/stats")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setStats(json.data);
-      })
-      .catch((err) => console.error("Error fetching council stats:", err));
+    api.get<{ recaudoMes: string; reservasPendientes: number }>('/admin/stats')
+      .then((data) => setStats(data))
+      .catch(() => {});
   }, []);
 
   return (
@@ -726,11 +543,11 @@ function HomeConsejo() {
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
             <span className="text-xs text-text/70 uppercase font-bold">Recaudación General</span>
-            <span className="text-sm font-black text-emerald-500">${stats.recaudado.toLocaleString()} COP</span>
+            <span className="text-sm font-black text-emerald-500">${Number(stats.recaudoMes || 0).toLocaleString()} COP</span>
           </div>
           <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
             <span className="text-xs text-text/70 uppercase font-bold">Novedades / Solicitudes</span>
-            <span className="text-sm font-black text-text">{stats.novedadesPendientes} Pendientes</span>
+            <span className="text-sm font-black text-text">{stats.reservasPendientes} Pendientes</span>
           </div>
         </div>
       </div>
@@ -740,13 +557,25 @@ function HomeConsejo() {
 
 function HomeAdmin() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const role = (session?.user as any)?.role;
+  const { user } = useAuth();
+  const role = user?.rol;
+  const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string } | null>(null);
+
+  useEffect(() => {
+    api.get<any>('/asambleas/activa/session')
+      .then((data) => {
+        if (data?.id && data?.activa) {
+          setActiveAsamblea({ id: data.id, titulo: data.titulo, descripcion: data.descripcion });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <ProfileHeader />
       
-      {/* 👑 SUPER ADMIN SPECIAL CARD */}
+      {/* SUPER ADMIN SPECIAL CARD */}
       {role === "SUPER_ADMIN" && (
         <div 
           onClick={() => router.push('/superadmin')}
@@ -754,12 +583,12 @@ function HomeAdmin() {
         >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-violet-500/20 border border-violet-500/40 flex items-center justify-center text-violet-300">
-              <Building2 size={22} className="animate-pulse" />
+              <Building2 size={22} />
             </div>
             <div>
-              <span className="text-[9px] text-violet-300 font-black uppercase tracking-widest block mb-0.5">Módulo de Plataforma</span>
+              <span className="text-[9px] text-violet-300 font-black uppercase tracking-widest block mb-0.5">Modulo de Plataforma</span>
               <h3 className="text-lg font-display font-bold leading-tight text-white">Panel SuperAdmin</h3>
-              <p className="text-white/60 text-xs mt-0.5">Registrar copropiedades y personería jurídica bajo la Ley 675.</p>
+              <p className="text-white/60 text-xs mt-0.5">Registrar copropiedades y gestionar conjuntos.</p>
             </div>
           </div>
           <button className="bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 group-hover:bg-violet-500 cursor-pointer">
@@ -768,25 +597,29 @@ function HomeAdmin() {
         </div>
       )}
 
-      {/* 🔴 LIVE ASSEMBLY ADMIN CONTROL CARD */}
-      <div 
-        onClick={() => router.push('/asamblea')}
-        className="w-full bg-linear-to-r from-purple-950 via-purple-900 to-purple-950 rounded-[28px] p-6 border border-accent/20 shadow-2xl text-white cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent">
-            <span className="w-3.5 h-3.5 rounded-full bg-accent animate-ping" />
+      {/* LIVE ASSEMBLY ADMIN CONTROL — only when active */}
+      {activeAsamblea && (
+        <div 
+          onClick={() => router.push('/asamblea')}
+          className="w-full bg-linear-to-r from-purple-950 via-purple-900 to-purple-950 rounded-[28px] p-6 border border-accent/20 shadow-2xl text-white cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent">
+              <span className="w-3.5 h-3.5 rounded-full bg-accent animate-ping" />
+            </div>
+            <div>
+              <span className="text-[9px] text-fuchsia-400 font-black uppercase tracking-widest block mb-0.5">En Vivo</span>
+              <h3 className="text-lg font-display font-bold leading-tight text-white">{activeAsamblea.titulo}</h3>
+              {activeAsamblea.descripcion && (
+                <p className="text-white/60 text-xs mt-0.5 line-clamp-1">{activeAsamblea.descripcion}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <span className="text-[9px] text-fuchsia-400 font-black uppercase tracking-widest block mb-0.5">Control de Reunión</span>
-            <h3 className="text-lg font-display font-bold leading-tight text-white">Asamblea General Activa</h3>
-            <p className="text-white/60 text-xs mt-0.5">Abre la mesa de discusión, administra turnos y lee sugerencias de la IA.</p>
-          </div>
+          <button className="bg-accent text-primary text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 group-hover:bg-accent/80 cursor-pointer">
+            Moderar <ArrowRight size={10} />
+          </button>
         </div>
-        <button className="bg-accent text-primary text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 group-hover:bg-accent/80 cursor-pointer">
-          Moderar <ArrowRight size={10} />
-        </button>
-      </div>
+      )}
 
       {/* QUICK ACCESSIBLE ACTIONS */}
       <div className="grid grid-cols-2 gap-4">
@@ -847,8 +680,8 @@ function HomeAdmin() {
 }
 
 export default function InicioDashboard() {
-  const { data: session } = useSession();
-  const role = (session?.user as { role?: string })?.role;
+  const { user } = useAuth();
+  const role = user?.rol;
 
   if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') return <HomeVigilante />;
   if (role === 'ENCARGADO_PARQUEADERO') return <HomeEstacionamiento />;

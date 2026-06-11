@@ -12,19 +12,22 @@ import { gsap } from "gsap";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import BottomSheet from "@/components/shell/BottomSheet";
 import { toast } from "sonner";
+import { api, ApiError } from "@/lib/api/client";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface Clasificado {
   id: string;
-  titulo: string;
-  descripcion: string;
-  precio: number;
+  nombre: string;
+  descripcion: string | null;
+  precio: number | string | null;
   categoria: string;
-  usuario_nombre: string;
-  usuario_torre?: string;
-  usuario_apto?: string;
-  usuario_avatar?: string;
-  whatsapp?: string;
-  imagenUrl?: string;
+  imagenUrl: string | null;
+  activo: boolean;
+  telefono: string | null;
+  whatsapp: string | null;
+  propietarioId: string | null;
+  createdAt: string;
+  propietario: { nombre: string; telefono: string | null } | null;
 }
 
 const CATEGORIES = [
@@ -50,17 +53,17 @@ export default function ClasificadosPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/user/clasificados");
-      const data = await res.json();
-      if (data.success) {
-        setItems(data.data);
-      }
+      const data = await api.get<Clasificado[]>('/clasificados');
+      setItems(data);
     } catch (e) {
       console.error("Error fetching classifieds", e);
     } finally {
       setLoading(false);
     }
   };
+
+  // Real-time WebSocket subscription
+  useWsSubscription('clasificado', () => fetchData());
 
   useEffect(() => {
     fetchData();
@@ -76,7 +79,7 @@ export default function ClasificadosPage() {
 
   const filteredItems = items.filter(item => {
     const matchesCat = selectedCat === 'TODOS' || item.categoria === selectedCat;
-    const matchesSearch = (item.titulo || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = (item.nombre || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
                          (item.descripcion || "").toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCat && matchesSearch;
   });
@@ -211,11 +214,11 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0
-  }).format(item.precio);
+  }).format(Number(item.precio || 0));
 
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const text = `Hola ${item.usuario_nombre}, vi tu anuncio de "${item.titulo}" en el Mercadillo de EnConjunto y me interesa más información.`;
+    const text = `Hola ${item.propietario?.nombre || "Vendedor"}, vi tu anuncio de "${item.nombre}" en el Mercadillo de EnConjunto y me interesa más información.`;
     window.open(`https://wa.me/57${item.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -228,7 +231,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
        <div className="relative h-48 w-full group overflow-hidden">
           <Image 
             src={item.imagenUrl || "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&q=80&w=800"} 
-            alt={item.titulo} 
+            alt={item.nombre} 
             fill 
             className="object-cover transition-transform duration-1000 group-hover:scale-110" 
             unoptimized 
@@ -249,29 +252,25 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
 
           <div className="absolute bottom-4 left-4">
              <div className="px-3 py-1.5 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20">
-                <p className="text-[18px] font-black text-white leading-none">${item.precio.toLocaleString()}</p>
+                <p className="text-[18px] font-black text-white leading-none">${item.precio ? Number(item.precio).toLocaleString() : 'Consultar'}</p>
              </div>
           </div>
        </div>
 
        <div className="p-5 flex flex-col gap-4 flex-1">
           <div className="space-y-1">
-             <h4 className="text-lg font-bold text-text leading-tight group-hover:text-accent transition-colors duration-300">{item.titulo}</h4>
+             <h4 className="text-lg font-bold text-text leading-tight group-hover:text-accent transition-colors duration-300">{item.nombre}</h4>
              <p className="text-text/75 text-[11px] line-clamp-2 leading-relaxed font-medium">{item.descripcion}</p>
           </div>
 
           <div className="pt-4 border-t border-border flex items-center justify-between mt-auto">
              <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full border border-accent/30 overflow-hidden bg-accent/10 flex items-center justify-center">
-                   {item.usuario_avatar ? (
-                     <Image src={item.usuario_avatar} alt="" width={32} height={32} unoptimized />
-                   ) : (
-                     <span className="text-[10px] font-black text-accent">{item.usuario_nombre[0]}</span>
-                   )}
+                     <span className="text-[10px] font-black text-accent">{(item.propietario?.nombre || "V")[0]}</span>
                 </div>
                 <div>
-                   <p className="text-[10px] font-bold text-text leading-none mb-0.5">{item.usuario_nombre}</p>
-                   <p className="text-[9px] text-text/75 font-bold uppercase tracking-tighter">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
+                   <p className="text-[10px] font-bold text-text leading-none mb-0.5">{item.propietario?.nombre || "Vendedor"}</p>
+                   {item.propietario?.telefono && <p className="text-[9px] text-text/75 font-bold uppercase tracking-tighter">Tel: {item.propietario.telefono}</p>}
                 </div>
              </div>
              <button 
@@ -288,7 +287,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
 
 function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
   const [form, setForm] = useState({
-    titulo: "",
+    nombre: "",
     descripcion: "",
     precio: "",
     categoria: "GASTRONOMIA",
@@ -297,23 +296,14 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!form.titulo || !form.precio || !form.descripcion) {
+    if (!form.nombre || !form.precio || !form.descripcion) {
       return toast.error("Por favor completa los campos obligatorios");
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/user/clasificados", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("¡Publicado con éxito!");
-        onSuccess();
-      } else {
-        toast.error(data.error || "Error al publicar");
-      }
+      await api.post('/clasificados', form);
+      toast.success("¡Publicado con éxito!");
+      onSuccess();
     } catch (e) {
       toast.error("Error de conexión");
     } finally {
@@ -324,7 +314,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="space-y-4">
-        {/* IMAGE PLACEHOLDER SIMULATION */}
+        {/* Image placeholder when no image provided */}
         <div className="w-full h-44 rounded-3xl bg-surface-2 border-2 border-dashed border-border flex flex-col items-center justify-center gap-3 group hover:border-accent/40 hover:bg-surface-2/80 transition-all cursor-pointer">
            <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-text/60 group-hover:text-accent group-hover:scale-110 transition-all">
               <Camera size={24} />
@@ -337,7 +327,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
           <input 
             type="text" 
             placeholder="Ej: Empanadas de Pipian" 
-            value={form.titulo}
+            value={form.nombre}
             onChange={(e) => setForm({...form, titulo: e.target.value})}
             className="w-full bg-surface-2 border border-border rounded-2xl px-5 py-4 text-sm text-text focus:outline-none focus:border-accent"
           />
@@ -416,7 +406,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
   }, []);
 
   const handleWhatsApp = () => {
-    const text = `Hola ${item.usuario_nombre}, vi tu anuncio de "${item.titulo}" en el Mercadillo de EnConjunto y me interesa más información.`;
+    const text = `Hola ${item.propietario?.nombre || "Vendedor"}, vi tu anuncio de "${item.nombre}" en el Mercadillo de EnConjunto y me interesa más información.`;
     window.open(`https://wa.me/57${item.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -429,7 +419,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
          <div className="relative h-2/5 w-full shrink-0">
             <Image 
               src={item.imagenUrl || "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&q=80&w=800"} 
-              alt={item.titulo} 
+              alt={item.nombre} 
               fill 
               className="object-cover" 
               unoptimized 
@@ -448,24 +438,20 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
          <div className="p-8 flex flex-col gap-6 overflow-y-auto">
             <div className="space-y-3">
                <div className="flex justify-between items-start">
-                  <h2 className="text-3xl font-black text-text leading-tight flex-1">{item.titulo}</h2>
+                  <h2 className="text-3xl font-black text-text leading-tight flex-1">{item.nombre}</h2>
                   <div className="text-right">
-                     <p className="text-[28px] font-black text-accent tracking-tighter leading-none">${item.precio.toLocaleString()}</p>
+                     <p className="text-[28px] font-black text-accent tracking-tighter leading-none">${item.precio ? Number(item.precio).toLocaleString() : 'Consultar'}</p>
                      <p className="text-[10px] text-text/75 font-bold uppercase tracking-widest mt-1">Precio sugerido</p>
                   </div>
                </div>
                
                <div className="flex items-center gap-3 py-4 border-y border-border">
-                  <div className="w-12 h-12 rounded-full border-2 border-accent/20 overflow-hidden">
-                     {item.usuario_avatar ? (
-                       <Image src={item.usuario_avatar} alt="" width={48} height={48} unoptimized />
-                     ) : (
-                       <div className="w-full h-full bg-accent/10 flex items-center justify-center text-accent font-black">{item.usuario_nombre[0]}</div>
-                     )}
+                   <div className="w-12 h-12 rounded-full border-2 border-accent/20 overflow-hidden">
+                       <div className="w-full h-full bg-accent/10 flex items-center justify-center text-accent font-black">{(item.propietario?.nombre || "V")[0]}</div>
                   </div>
                   <div>
-                    <h4 className="text-text font-bold">{item.usuario_nombre}</h4>
-                    <p className="text-xs text-text/75">Torre {item.usuario_torre || '?'} • Apto {item.usuario_apto || '?'}</p>
+                    <h4 className="text-text font-bold">{item.propietario?.nombre || "Vendedor"}</h4>
+                    {item.propietario?.telefono && <p className="text-xs text-text/75">Tel: {item.propietario.telefono}</p>}
                   </div>
                </div>
             </div>
