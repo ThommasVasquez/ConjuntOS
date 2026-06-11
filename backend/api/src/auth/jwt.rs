@@ -1,0 +1,100 @@
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::db::enums::Rol;
+use crate::error::{ApiError, ApiResult};
+
+pub const SESSION_COOKIE: &str = "ec_session";
+const SESSION_DAYS: i64 = 30;
+
+/// JWT claims (specs/001-auth-tenancy/spec.md). Tenant comes from here — never
+/// from client-supplied fields (Constitution Law 2).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: Uuid,
+    pub conjunto_id: Uuid,
+    pub rol: Rol,
+    pub nombre: String,
+    pub iat: i64,
+    pub exp: i64,
+}
+
+pub fn issue(
+    user_id: Uuid,
+    conjunto_id: Uuid,
+    rol: Rol,
+    nombre: &str,
+    secret: &str,
+) -> ApiResult<String> {
+    let now = Utc::now();
+    let claims = Claims {
+        sub: user_id,
+        conjunto_id,
+        rol,
+        nombre: nombre.to_string(),
+        iat: now.timestamp(),
+        exp: (now + Duration::days(SESSION_DAYS)).timestamp(),
+    };
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
+    .map_err(|e| ApiError::Internal(anyhow::anyhow!("jwt encoding failed: {e}")))
+}
+
+pub fn verify(token: &str, secret: &str) -> ApiResult<Claims> {
+    decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(secret.as_bytes()),
+        &Validation::default(),
+    )
+    .map(|data| data.claims)
+    .map_err(|_| ApiError::Unauthorized)
+}
+
+pub fn session_max_age_seconds() -> i64 {
+    SESSION_DAYS * 24 * 60 * 60
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn issue_and_verify_round_trip() {
+        let user = Uuid::new_v4();
+        let conjunto = Uuid::new_v4();
+        let token = issue(user, conjunto, Rol::Administrador, "Milo", "secret").unwrap();
+        let claims = verify(&token, "secret").unwrap();
+        assert_eq!(claims.sub, user);
+        assert_eq!(claims.conjunto_id, conjunto);
+        assert_eq!(claims.rol, Rol::Administrador);
+    }
+
+    #[test]
+    fn wrong_secret_is_unauthorized() {
+        let token = issue(
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Rol::Propietario,
+            "x",
+            "secret-a",
+        )
+        .unwrap();
+        assert!(matches!(
+            verify(&token, "secret-b"),
+            Err(ApiError::Unauthorized)
+        ));
+    }
+
+    #[test]
+    fn garbage_token_is_unauthorized() {
+        assert!(matches!(
+            verify("not.a.jwt", "secret"),
+            Err(ApiError::Unauthorized)
+        ));
+    }
+}

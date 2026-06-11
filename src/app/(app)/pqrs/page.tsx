@@ -14,9 +14,11 @@ import {
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import { gsap } from "gsap";
 import { toast } from "sonner";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface Solicitud {
   id: string;
@@ -37,8 +39,8 @@ const TIPO_CONFIG = {
 };
 
 export default function PQRSPage() {
-  const { data: session } = useSession();
-  const userId = session?.user?.id;
+  const { user } = useAuth();
+  const userId = user?.id;
   const containerRef = useRef<HTMLDivElement>(null);
   
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
@@ -54,12 +56,23 @@ export default function PQRSPage() {
     urgente: false
   });
 
+  const refetchSolicitudes = async () => {
+    try {
+      const data = await api.get<Solicitud[]>('/solicitudes');
+      setSolicitudes(data);
+    } catch (error) {
+      console.error("❌ Error loading solicitudes:", error);
+    }
+  };
+
+  // Real-time WebSocket subscription
+  useWsSubscription('solicitud', () => refetchSolicitudes());
+
   useEffect(() => {
     async function fetchSolicitudes() {
       try {
-        const res = await fetch("/api/user/solicitudes", { cache: 'no-store' });
-        const json = await res.json();
-        if (json.success) setSolicitudes(json.data);
+        const data = await api.get<Solicitud[]>('/solicitudes');
+        setSolicitudes(data);
       } catch (error) {
         console.error("❌ Error loading solicitudes:", error);
       } finally {
@@ -67,8 +80,8 @@ export default function PQRSPage() {
       }
     }
 
-    if (session) fetchSolicitudes();
-  }, [session, userId]);
+    if (user) fetchSolicitudes();
+  }, [user, userId]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -85,19 +98,13 @@ export default function PQRSPage() {
     
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/user/solicitudes", {
-        method: "POST",
-        body: JSON.stringify(formData),
+      const newSolicitud = await api.post<Solicitud>('/solicitudes', formData);
+      setSolicitudes([newSolicitud, ...solicitudes]);
+      setIsFormOpen(false);
+      setFormData({ tipo: 'PETICION', categoria: 'OTRO', descripcion: '', urgente: false });
+      toast.success("Solicitud radicada con éxito", {
+        description: `Radicado #: ${newSolicitud.id.slice(-6).toUpperCase()}`
       });
-      const json = await res.json();
-      if (json.success) {
-        setSolicitudes([json.data, ...solicitudes]);
-        setIsFormOpen(false);
-        setFormData({ tipo: 'PETICION', categoria: 'OTRO', descripcion: '', urgente: false });
-        toast.success("Solicitud radicada con éxito", {
-          description: `Radicado #: ${json.data.id.slice(-6).toUpperCase()}`
-        });
-      }
     } catch {
       toast.error("Hubo un error al radicar la solicitud");
     } finally {

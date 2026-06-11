@@ -1,5 +1,6 @@
 "use client";
 
+import { api } from "@/lib/api/client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { 
@@ -111,7 +112,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
 
   const [query, setQuery] = useState("");
   const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [aiAnswer, setAiAnswer] = useState<{ text: string; source: "gemini" | "mock" } | null>(null);
+  const [aiAnswer, setAiAnswer] = useState<{ text: string } | null>(null);
   const [filteredModules, setFilteredModules] = useState<typeof MODULES>([]);
 
   // ── Animation ──────────────────────────────────────────────────────────────
@@ -161,17 +162,10 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
     setIsLoadingAI(true);
     setAiAnswer(null);
     try {
-      const res = await fetch("/api/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, context })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAiAnswer({ text: data.data.answer, source: data.data.source });
-      }
+      const data = await api.post<{ answer: string }>("/search", { query: q, context });
+      setAiAnswer({ text: data.answer });
     } catch {
-      setAiAnswer({ text: "No pude procesar tu pregunta. Intenta de nuevo.", source: "mock" });
+      setAiAnswer({ text: "No pude procesar tu pregunta. Intenta de nuevo." });
     } finally {
       setIsLoadingAI(false);
     }
@@ -249,7 +243,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
               <div className="px-5 py-3 flex items-center gap-2 border-b border-white/5">
                 <Sparkles size={14} className="text-accent" />
                 <span className="text-[10px] font-black text-accent uppercase tracking-widest">
-                  {aiAnswer?.source === "gemini" ? "Asistente IA (Gemini)" : "Asistente ConjuntOS"}
+Asistente IA
                 </span>
               </div>
               <div className="p-5">

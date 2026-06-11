@@ -1,0 +1,9 @@
+# Build artifacts and local state — not part of the source architecture
+.wrangler/
+.next/
+node_modules/
+out/
+coverage/
+.claude/
+.claude-flow/
+.swarm/

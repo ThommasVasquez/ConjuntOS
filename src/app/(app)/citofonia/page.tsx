@@ -10,6 +10,8 @@ import {
   X, Loader2, Car, Bike
 } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@/lib/api/client";
+import { useAuth } from "@/hooks/useAuth";
 import { gsap } from "gsap";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 
@@ -79,7 +81,6 @@ export default function CitofoniaPage() {
   useEffect(() => {
     // Regresar a la pantalla anterior cuando finalice la llamada
     if (prevCallStateRef.current !== "IDLE" && callState === "IDLE") {
-      console.log("Llamada finalizada. Regresando a la pantalla en que estaba...");
       if (typeof window !== "undefined") {
         if (window.history.state && window.history.state.idx > 0) {
           router.back();
@@ -94,16 +95,13 @@ export default function CitofoniaPage() {
   async function fetchData() {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/user/comunicaciones");
-      const json = await res.json();
-      if (json.success) {
-        setVisitas(json.data.visitas);
-        setPaquetes(json.data.paquetes);
-        setParking({ 
-          carros: json.data.parqueadero.carrosDisponibles, 
-          motos: json.data.parqueadero.motosDisponibles 
-        });
-      }
+      const json = await api.get<{ visitas: IVisita[]; paquetes: IPaquete[]; parqueadero?: { carrosDisponibles: number; motosDisponibles: number } }>('/comunicaciones');
+      setVisitas(json.visitas ?? []);
+      setPaquetes(json.paquetes ?? []);
+      setParking({ 
+        carros: json.parqueadero?.carrosDisponibles ?? 0, 
+        motos: json.parqueadero?.motosDisponibles ?? 0 
+      });
     } catch (err) {
       console.error("Error fetching communications:", err);
     } finally {
@@ -445,7 +443,7 @@ export default function CitofoniaPage() {
         )}
       </main>
 
-      {/* MODAL: ADD VISITA (Mock) */}
+      {/* MODAL: ADD VISITA */}
       {isAddingVisita && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-0 animate-in fade-in duration-300">
            <div className="absolute inset-0 bg-primary/95 backdrop-blur-xl" onClick={() => setIsAddingVisita(false)} />

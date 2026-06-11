@@ -8,16 +8,17 @@
 import { 
   Megaphone, ShieldAlert, Wrench, Calendar, Info, 
   Clock, ArrowRight, X, Download, Share2, Building2,
-  Play, Users, MessageSquare, Vote, FileText, MessageCircle
+  FileText, MessageCircle
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { Anuncio } from "@prisma/client";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface Notice {
   id: string;
@@ -32,18 +33,14 @@ interface Notice {
 }
 
 export default function CarteleraPage() {
-  const { data: session } = useSession();
-  const userId = session?.user?.id;
+  const { user } = useAuth();
+  const userId = user?.id;
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('TODOS');
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [isLoadingNotices, setIsLoadingNotices] = useState(true);
-  const [showLiveSession, setShowLiveSession] = useState(false);
-  const [isLiveActive, setIsLiveActive] = useState(true); // Always active for simulation
-  const [simulatedChat, setSimulatedChat] = useState<{user: string, msg: string, time: string}[]>([]);
-  const [userMsg, setUserMsg] = useState("");
-  const [isAdminOnline, setIsAdminOnline] = useState(true);
+  const [isAdminOnline] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<{mensaje: string, esDeAdmin: boolean, creadoEn: string}[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -51,20 +48,31 @@ export default function CarteleraPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const isInitialLoad = useRef(false);
 
-  // Random Admin Status Simulation
-  useEffect(() => {
-    const statusInterval = setInterval(() => {
-      setIsAdminOnline(prev => Math.random() > 0.4);
-    }, 12000);
-    return () => clearInterval(statusInterval);
-  }, []);
+  // Real-time WebSocket subscription for anuncios
+  useWsSubscription('anuncio', () => {
+    api.get<any[]>('/anuncios').then((anunciosData) => {
+      if (anunciosData) {
+        const apiMapped = anunciosData.map((a: any) => ({
+          id: a.id,
+          title: a.titulo,
+          content: a.contenido,
+          category: a.tipo,
+          priority: a.tipo === 'URGENTE' ? 'ALTA' as const : (a.tipo === 'MANTENIMIENTO' ? 'MEDIA' as const : 'BAJA' as const),
+          date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+          author: "Administración",
+          image: a.imagenUrl || undefined,
+          fijado: a.fijado
+        }));
+        setNotices(apiMapped);
+      }
+    }).catch(() => {});
+  });
 
   // Fetch Chat History
   const fetchChat = async () => {
     try {
-      const res = await fetch("/api/user/chat");
-      const data = await res.json();
-      if (data.success) setChatMessages(data.data);
+      const data = await api.get<{mensaje: string, esDeAdmin: boolean, creadoEn: string}[]>('/chat');
+      setChatMessages(data);
     } catch (err) {
       console.error("Error fetching chat:", err);
     }
@@ -91,14 +99,7 @@ export default function CarteleraPage() {
     setNewMessage("");
 
     try {
-      const res = await fetch("/api/user/chat", {
-        method: "POST",
-        body: JSON.stringify({ mensaje: tempMsg.mensaje })
-      });
-      const data = await res.json();
-      if (!data.success) {
-        toast.error("Error al enviar mensaje");
-      }
+      await api.post('/chat', { mensaje: tempMsg.mensaje });
     } catch (err) {
       toast.error("Error de conexión");
     } finally {
@@ -112,137 +113,40 @@ export default function CarteleraPage() {
       isInitialLoad.current = true;
 
       try {
-        const mockNotices: Notice[] = [
-          {
-            id: "mock-1",
-            title: "Reunión de Consejo de Administración",
-            content: "Sesión mensual para la revisión del presupuesto operacional y seguimiento a proyectos de mantenimiento del segundo trimestre. Los copropietarios pueden enviar sus inquietudes previas al correo de administración.",
-            category: "ADMINISTRACION",
-            priority: "ALTA",
-            date: "18 Jun, 2024",
-            author: "Consejo de Admón.",
-            image: "https://images.unsplash.com/photo-1577416414929-7a7c850e816a?auto=format&fit=crop&q=80&w=1000",
-            fijado: true
-          },
-          {
-            id: "mock-2",
-            title: "Asamblea Extraordinaria Presencial",
-            content: "Citación obligatoria para tratar la aprobación de la cuota extraordinaria para la modernización de los sistemas de seguridad y CCTV. Se requiere quórum del 51%.",
-            category: "EVENTO",
-            priority: "ALTA",
-            date: "25 May, 2024",
+        const anunciosData = await api.get<any[]>('/anuncios');
+
+        let apiMapped: Notice[] = [];
+        if (anunciosData) {
+          apiMapped = anunciosData.map((a: any) => ({
+            id: a.id,
+            title: a.titulo,
+            content: a.contenido,
+            category: a.tipo,
+            priority: a.tipo === 'URGENTE' ? 'ALTA' : (a.tipo === 'MANTENIMIENTO' ? 'MEDIA' : 'BAJA'),
+            date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
             author: "Administración",
-            image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=1000"
-          },
-          {
-            id: "licit-1",
-            title: "Licitación: Mantenimiento de Piscinas",
-            content: "Invitación pública para empresas especializadas en el tratamiento físico-químico y mantenimiento técnico de piscinas y zonas húmedas. Pliegos disponibles en oficina.",
-            category: "LICITACION",
-            priority: "MEDIA",
-            date: "Cierre: 30 Mayo",
-            author: "Admón. ConjuntOS",
-            image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=1000"
-          },
-          {
-            id: "licit-2",
-            title: "Licitación: Servicio de Aseo y Cafetería",
-            content: "Convocatoria para la prestación integral de servicios de limpieza, desinfección y mantenimiento de áreas comunes. Se evaluará certificación en procesos bioseguros.",
-            category: "LICITACION",
-            priority: "MEDIA",
-            date: "Abierta",
-            author: "Admón. ConjuntOS",
-            image: "https://images.unsplash.com/photo-1581578731548-c64695cc6954?auto=format&fit=crop&q=80&w=1000"
-          },
-          {
-            id: "licit-3",
-            title: "Convocatoria: Contaduría General",
-            content: "Se requiere Contador(a) Público con experiencia mínima de 5 años en propiedad horizontal para el manejo integral de la contabilidad bajo normas NIIF.",
-            category: "LICITACION",
-            priority: "MEDIA",
-            date: "En curso",
-            author: "Consejo de Admón."
-          },
-          {
-            id: "licit-4",
-            title: "Convocatoria: Revisoría Fiscal",
-            content: "Búsqueda de Revisor Fiscal para el periodo 2024-2025. Los candidatos deben presentar su propuesta técnica y económica detallando el alcance de sus auditorías.",
-            category: "LICITACION",
-            priority: "MEDIA",
-            date: "En curso",
-            author: "Consejo de Admón."
-          },
-          {
-            id: "licit-5",
-            title: "Licitación: Administración de PH",
-            content: "Convocatoria pública para la prestación de servicios de Administración de Propiedad Horizontal para el ConjuntOS®. Se busca gestión orientada a resultados y transparencia.",
-            category: "LICITACION",
-            priority: "ALTA",
-            date: "Urgente",
-            author: "Asamblea General",
-            image: "https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&q=80&w=1000"
-          }
-        ];
-
-        try {
-          const anunciosFetch = await fetch("/api/user/anuncios", { cache: 'no-store' });
-          const anunciosRes = await anunciosFetch.json();
-
-          let apiMapped: Notice[] = [];
-          if (anunciosRes.success && anunciosRes.data) {
-            apiMapped = anunciosRes.data.map((a: any) => ({
-              id: a.id,
-              title: a.titulo,
-              content: a.contenido,
-              category: a.tipo,
-              priority: a.tipo === 'URGENTE' ? 'ALTA' : (a.tipo === 'MANTENIMIENTO' ? 'MEDIA' : 'BAJA'),
-              date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
-              author: "Administración",
-              image: a.imagenUrl || undefined,
-              fijado: a.fijado
-            }));
-          }
-          setNotices([...mockNotices, ...apiMapped]);
-        } catch (apiErr) {
-          console.warn("API fallida, usando mocks únicamente");
-          setNotices(mockNotices);
+            image: a.imagenUrl || undefined,
+            fijado: a.fijado
+          }));
         }
+        setNotices(apiMapped);
       } catch (error) {
-        console.error("❌ Error initializing Cartelera:", error);
+        console.error("Error initializing Cartelera:", error);
+        setNotices([]);
       } finally {
         setIsLoadingNotices(false);
       }
     }
 
-    if (session) initData();
-
-    // SIMULATED CHAT FEED
-    const chatInterval = setInterval(() => {
-      const msgs = [
-        "¿Cuándo se vota el punto 3?",
-        "Buenas tardes a todos los vecinos.",
-        "Yo estoy de acuerdo con el presupuesto propuesto.",
-        "¿Habrá cuota extraordinaria este año?",
-        "¡Qué buena iniciativa esta asamblea virtual!",
-        "La conexión se ve excelente, gracias admin.",
-        "Torre 4 Apto 102 presente."
-      ];
-      if (showLiveSession) {
-        const rand = msgs[Math.floor(Math.random() * msgs.length)];
-        setSimulatedChat(prev => [...prev.slice(-15), { user: `Residente ${Math.floor(Math.random()*900)+100}`, msg: rand, time: "Ahora" }]);
-      }
-    }, 4000);
-
-    if (session) initData();
+    if (user) initData();
 
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: "back.out(1.2)" });
     }, containerRef);
     return () => {
       ctx.revert();
-      clearInterval(chatInterval);
     };
-  }, [session, userId]);
+  }, [user, userId]);
 
   const filteredNotices = selectedCategory === 'TODOS' ? notices : notices.filter((n: Notice) => n.category === selectedCategory);
 
@@ -269,39 +173,6 @@ export default function CarteleraPage() {
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-8">
       <ProfileHeader className="fade-up" />
-
-      {/* LIVE SESSION BANNER (Simulated) */}
-      {isLiveActive && (
-        <section className="fade-up w-full">
-           <div className="liquid-glass-card rounded-[32px] p-6 border border-emerald-500/20 bg-linear-to-br from-emerald-500/5 to-transparent relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500" />
-              <div className="flex justify-between items-center mb-4">
-                 <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">
-                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> EN VIVO
-                    </div>
-                    <span className="text-[10px] text-text/80 font-bold uppercase tracking-widest">Asamblea General 2024</span>
-                 </div>
-                 <div className="flex items-center gap-1.5 text-text">
-                    <Users size={12} />
-                    <span className="text-[10px] font-mono">154</span>
-                 </div>
-              </div>
- 
-              <div className="flex flex-col gap-1 mb-5">
-                 <h2 className="text-xl font-display font-bold text-text tracking-tight">Decisiones Conjuntas: Presupuesto Anual</h2>
-                 <p className="text-xs text-text/75">Participa en tiempo real y ejerce tu voto.</p>
-              </div>
-
-              <button 
-                onClick={() => setShowLiveSession(true)}
-                className="w-full bg-emerald-500 py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-bold text-white shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                 <Play size={18} fill="currentColor" /> Unirse a la Sesión
-              </button>
-           </div>
-        </section>
-      )}
 
       {/* FILTER TABS */}
       <section className="fade-up flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
@@ -356,95 +227,6 @@ export default function CarteleraPage() {
            </div>
          ))}
       </section>
-
-      {/* MODAL: LIVE ASSEMBLY SIMULATION */}
-      {showLiveSession && (
-        <div className="fixed inset-0 z-[9999] bg-black flex flex-col animate-in fade-in duration-500 overflow-hidden items-center isolate">
-           {/* Header Sesión */}
-           <div className="p-6 flex justify-between items-center border-b border-white/10 bg-linear-to-b from-black/80 to-transparent fixed top-0 w-full max-w-[430px] z-10">
-              <div className="flex items-center gap-3">
-                 <div className="px-2 py-0.5 rounded bg-emerald-500 text-[8px] font-black text-white uppercase tracking-tighter">LIVE</div>
-                 <h3 className="text-sm font-bold text-white tracking-tight">Asamblea General</h3>
-              </div>
-              <button 
-                onClick={() => setShowLiveSession(false)}
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/50 hover:bg-white/20 transition-all"
-              >
-                 <X size={20} />
-              </button>
-           </div>
-
-           {/* Video Mockup (Cinematric Gradient Animation) */}
-           <div className="flex-1 w-full max-w-[430px] relative flex items-center justify-center bg-[#050110]">
-              <div className="absolute inset-0 bg-linear-to-br from-indigo-900/40 via-purple-900/40 to-black/80 animate-pulse" />
-              <div className="relative z-10 flex flex-col items-center gap-6 p-8 text-center max-w-sm">
-                 <div className="w-24 h-24 rounded-full bg-accent/20 flex items-center justify-center text-accent ring-4 ring-accent/20 animate-bounce">
-                    <Users size={40} />
-                 </div>
-                 <div className="space-y-2">
-                    <h4 className="text-lg font-bold text-white">Administrador en Línea</h4>
-                    <p className="text-xs text-white/60 leading-relaxed italic">"Presentando el informe de gestión 2023 y proyecciones presupuestarias para el periodo 2024..."</p>
-                 </div>
-                 <div className="grid grid-cols-2 gap-3 w-full">
-                    <div className="p-3 rounded-2xl bg-surface-2 border border-border flex flex-col items-center">
-                       <span className="text-[8px] text-text/70 uppercase font-black">Quórum</span>
-                       <span className="text-lg font-bold text-emerald-400">84.2%</span>
-                    </div>
-                    <div className="p-3 rounded-2xl bg-surface-2 border border-border flex flex-col items-center text-accent">
-                        <Vote size={14} className="mb-1" />
-                        <span className="text-[10px] font-black uppercase">Votar</span>
-                    </div>
-                 </div>
-              </div>
-
-              {/* Bottom UI Controls */}
-              <div className="absolute bottom-40 left-6 right-6 flex items-center gap-3">
-                  <div className="flex-1 h-12 bg-surface-2 rounded-2xl flex items-center px-4 border border-border">
-                    <span className="text-xs text-white/60 italic">Enlace a documento adjunto...</span>
-                  </div>
-                  <button className="w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center text-text/80"><MessageSquare size={18} /></button>
-              </div>
-           </div>
-
-           {/* Live Chat Overlay (Simulated) */}
-           <div className="h-[35vh] bg-black/40 backdrop-blur-3xl border-t border-white/10 flex flex-col w-full max-w-[430px]">
-              <div className="px-6 py-3 border-b border-white/5 flex items-center justify-between">
-                 <span className="text-[10px] text-white/60 uppercase font-black tracking-widest">Participación en Vivo</span>
-                 <span className="text-[10px] text-emerald-400/60 font-mono">Chat Activado</span>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                 {simulatedChat.map((chat, i) => (
-                   <div key={i} className="flex flex-col gap-1 animate-in fade-in slide-in-from-left duration-300">
-                      <div className="flex items-center gap-2">
-                         <span className="text-[10px] font-black text-accent/80 uppercase">{chat.user}</span>
-                         <span className="text-[8px] text-white/40 font-mono">{chat.time}</span>
-                      </div>
-                      <p className="text-xs text-white/70 leading-relaxed">{chat.msg}</p>
-                   </div>
-                 ))}
-                 <div className="h-4" />
-              </div>
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!userMsg) return;
-                  setSimulatedChat(prev => [...prev, { user: session?.user?.name || "Tú", msg: userMsg, time: "Ahora" }]);
-                  setUserMsg("");
-                }}
-                className="p-4 border-t border-white/5 flex gap-3 bg-black"
-              >
-                 <input 
-                   type="text" 
-                   value={userMsg}
-                   onChange={(e) => setUserMsg(e.target.value)}
-                   placeholder="Escribe un mensaje..."
-                   className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-accent placeholder:text-white/40" 
-                 />
-                 <button type="submit" className="px-6 bg-accent rounded-xl text-[10px] font-black text-white uppercase tracking-widest active:scale-95 transition-all">Enviar</button>
-              </form>
-           </div>
-        </div>
-      )}
 
       {selectedNotice && (
         <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center animate-in fade-in duration-300 isolate">

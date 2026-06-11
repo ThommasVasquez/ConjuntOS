@@ -1,0 +1,61 @@
+'use client';
+
+import { create } from 'zustand';
+import { api, ApiError } from '@/lib/api/client';
+import type { UserDto, LoginResponse } from '@/lib/api/types';
+
+interface AuthState {
+  user: UserDto | null;
+  loading: boolean;
+  error: string | null;
+
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+}
+
+export const useAuth = create<AuthState>((set) => ({
+  user: null,
+  loading: true,
+  error: null,
+
+  login: async (email: string, password: string) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await api.post<LoginResponse>('/auth/login', {
+        email,
+        password,
+      });
+      // The Rust backend also sets an httpOnly ec_session cookie.
+      // Store token in localStorage as Bearer fallback for cross-site.
+      if (res.token) {
+        localStorage.setItem('ec_token', res.token);
+      }
+      set({ user: res.user, loading: false });
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.detail : 'Error de conexion';
+      set({ error: message, loading: false });
+      throw err;
+    }
+  },
+
+  logout: async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Ignore errors on logout — clear local state regardless
+    }
+    localStorage.removeItem('ec_token');
+    set({ user: null, loading: false });
+  },
+
+  checkAuth: async () => {
+    try {
+      const user = await api.get<UserDto>('/auth/me');
+      set({ user, loading: false });
+    } catch {
+      set({ user: null, loading: false });
+    }
+  },
+}));

@@ -8,8 +8,10 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 export default function MapaParqueaderoPage() {
   const [parqueaderos, setParqueaderos] = useState<any[]>([]);
@@ -23,13 +25,19 @@ export default function MapaParqueaderoPage() {
   const [obs, setObs] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const role = (session?.user as any)?.role;
+  const role = user?.rol;
+
+  // Real-time WebSocket subscription
+  useWsSubscription('parqueadero', () => {
+    loadData();
+    loadExtra();
+  });
 
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
+    if (authLoading) return;
+    if (!user) {
       router.push("/login");
       return;
     }
@@ -43,15 +51,12 @@ export default function MapaParqueaderoPage() {
 
     loadData();
     loadExtra();
-  }, [session, status, role, router]);
+  }, [user, authLoading, role, router]);
 
   async function loadData() {
     try {
-      const res = await fetch('/api/parqueadero/mapa');
-      const data = await res.json();
-      if(data.success) {
-         setParqueaderos(data.data);
-      }
+      const data = await api.get<any[]>('/parqueadero/mapa');
+      setParqueaderos(data);
     } catch (e) {
       toast.error("Error al cargar mapa");
     } finally {
@@ -67,16 +72,14 @@ export default function MapaParqueaderoPage() {
 
   async function loadExtra() {
     try {
-      const [regRes, rondRes] = await Promise.all([
-        fetch('/api/parqueadero/registros'),
-        fetch('/api/parqueadero/rondas')
+      const [regData, rondData] = await Promise.all([
+        api.get<any[]>('/parqueadero/registros'),
+        api.get<any>('/parqueadero/rondas')
       ]);
-      const [regData, rondData] = await Promise.all([regRes.json(), rondRes.json()]);
-      
-      if(regData.success) setRegistros(regData.data);
-      if(rondData.success) setLastRound(rondData.data);
-    } catch (e) {
-      console.warn("Error cargando históricos");
+      setRegistros(regData);
+      setLastRound(rondData);
+    } catch {
+      // Non-critical: historic data unavailable
     }
   }
 
@@ -95,18 +98,12 @@ export default function MapaParqueaderoPage() {
     setParqueaderos(prev => prev.map(p => p.id === id ? { ...p, estado: newEstado } : p));
     
     try {
-      const res = await fetch('/api/parqueadero/mapa', {
-         method: 'PUT',
-         headers: {'Content-Type': 'application/json'},
-         body: JSON.stringify({ 
-           parqueaderoId: id, 
+      await api.put(`/parqueadero/celdas/${id}`, { 
            estado: newEstado,
            placa: plate,
            observacion: notes
-         })
-      });
-      const data = await res.json();
-      if (data.success) {
+         });
+      {
         toast.success(newEstado === 'OCUPADO' ? `Ingreso registrado en celda ${selectedCell?.numero || ""}` : "Celda liberada");
         loadExtra();
       }
@@ -128,12 +125,8 @@ export default function MapaParqueaderoPage() {
   const handlePerformRound = async () => {
     const toastId = toast.loading("Registrando ronda de verificación...");
     try {
-      const res = await fetch('/api/parqueadero/rondas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completada: true, hallazgos: "Verificación de rutina completada sin novedades." })
-      });
-      if (res.ok) {
+      await api.post('/parqueadero/rondas', { completada: true, hallazgos: [] });
+      {
         toast.success("Ronda registrada correctamente", { id: toastId });
         loadExtra();
       }

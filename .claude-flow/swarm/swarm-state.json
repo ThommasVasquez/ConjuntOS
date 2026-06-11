@@ -1,0 +1,24 @@
+{
+  "swarms": {
+    "swarm-1781108266747-wcndv1": {
+      "swarmId": "swarm-1781108266747-wcndv1",
+      "topology": "hierarchical",
+      "maxAgents": 17,
+      "status": "running",
+      "agents": [],
+      "tasks": [],
+      "config": {
+        "topology": "hierarchical",
+        "maxAgents": 17,
+        "strategy": "specialized",
+        "communicationProtocol": "message-bus",
+        "autoScaling": true,
+        "consensusMechanism": "majority"
+      },
+      "createdAt": "2026-06-10T16:17:46.747Z",
+      "updatedAt": "2026-06-10T16:17:46.747Z",
+      "pid": 96637
+    }
+  },
+  "version": "3.0.0"
+}

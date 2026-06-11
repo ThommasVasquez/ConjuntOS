@@ -7,11 +7,13 @@ import { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import { Shield, Mail, Lock, ArrowRight, Loader2, Star } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -19,6 +21,14 @@ export default function LoginPage() {
     email: "",
     password: ""
   });
+
+  // Already logged in → redirect to dashboard
+  useEffect(() => {
+    if (user) {
+      const params = new URLSearchParams(window.location.search);
+      router.replace(params.get("callbackUrl") || "/inicio");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -49,30 +59,20 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      let result;
-      try {
-        result = await response.json();
-      } catch (e) {
-        throw new Error("El servidor no respondió correctamente.");
-      }
-
-      if (result && result.ok) {
-        toast.success("¡Bienvenido! Sesión iniciada con éxito.");
-        setTimeout(() => {
-          router.push("/inicio");
-          router.refresh();
-        }, 1000);
-      } else {
-        toast.error(result?.error || "Error al iniciar sesión. Inténtalo de nuevo.");
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Error al conectar con la comunidad.");
+      await login(formData.email, formData.password);
+      toast.success("¡Bienvenido! Sesión iniciada con éxito.");
+      const params = new URLSearchParams(window.location.search);
+      const dest = params.get("callbackUrl") || "/inicio";
+      setTimeout(() => {
+        router.push(dest);
+        router.refresh();
+      }, 1000);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Error al conectar con la comunidad.";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

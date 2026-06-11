@@ -4,11 +4,13 @@ import { useViewTransition } from "@/components/providers/ViewTransitionContext"
 import { Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { useAuth } from "@/hooks/useAuth";
 
 import Image from "next/image";
 
 export default function Navbar() {
   const { navigate } = useViewTransition();
+  const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
@@ -105,14 +107,14 @@ export default function Navbar() {
           </button>
           <div className="h-4 w-[1px] bg-white/10 mx-1" />
           <button 
-            onClick={() => navigate("/login")} 
+            onClick={() => navigate(user ? "/inicio" : "/login")} 
             className={`transition-all duration-300 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase whitespace-nowrap hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(217,70,239,0.15)] ${
               scrolled 
                 ? "text-white bg-white/5 border border-white/10 hover:bg-accent" 
                 : "text-white border border-white/20 hover:bg-accent hover:border-accent"
             }`}
           >
-            Ingresar
+            {user ? "Mi Panel" : "Ingresar"}
           </button>
         </div>
 

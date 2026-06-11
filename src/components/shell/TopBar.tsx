@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { signOut } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { 
   ChevronLeft, Bell, Search, MoreHorizontal,
@@ -13,6 +13,7 @@ import {
 export default function TopBar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { logout } = useAuth();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -102,13 +103,11 @@ export default function TopBar() {
                   <button onClick={() => setDropdownOpen(false)} className="w-full text-left px-4 py-3 text-sm text-text hover:bg-text/10 transition-colors border-b border-border flex items-center gap-2">
                     Privacidad
                   </button>
-                  <button onClick={() => {
+                  <button onClick={async () => {
                     setDropdownOpen(false);
-                    toast.promise(signOut({ callbackUrl: "/login" }), {
-                      loading: "Cerrando sesión...",
-                      success: "¡Hasta pronto!",
-                      error: "Error al cerrar sesión"
-                    });
+                    await logout();
+                    router.push("/login");
+                    toast.success("¡Hasta pronto!");
                   }} className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-text/10 transition-colors flex items-center gap-2">
                     <LogOut size={14} /> Cerrar Sesión
                   </button>

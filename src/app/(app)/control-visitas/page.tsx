@@ -5,13 +5,15 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { Users, Car, MapPin, Eye, PlusCircle, CheckCircle2, Search } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
+import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 export default function ControlVisitas() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const role = (session?.user as any)?.role;
+  const role = user?.rol;
 
   const [visitas, setVisitas] = useState<any[]>([]);
   const [residentes, setResidentes] = useState<any[]>([]);
@@ -27,9 +29,20 @@ export default function ControlVisitas() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const refetchVisitas = async () => {
+    try {
+      const data = await api.get<any[]>('/vigilancia/visitas');
+      setVisitas(data);
+    } catch {}
+  };
+
+  // Real-time WebSocket subscriptions
+  useWsSubscription('visita', () => refetchVisitas());
+  useWsSubscription('paquete', () => refetchVisitas());
+
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
+    if (authLoading) return;
+    if (!user) {
       router.push("/login");
       return;
     }
@@ -43,18 +56,12 @@ export default function ControlVisitas() {
 
     async function loadData() {
        try {
-         const [visRes, dirRes] = await Promise.all([
-           fetch('/api/vigilancia/visitas'),
-           fetch('/api/user/directory')
+         const [visData, dirData] = await Promise.all([
+           api.get<any[]>('/vigilancia/visitas'),
+           api.get<any[]>('/directorio')
          ]);
-         const [visData, dirData] = await Promise.all([visRes.json(), dirRes.json()]);
-         
-         if(visData.success) {
-            setVisitas(visData.data);
-         }
-         if(dirData.success) {
-            setResidentes(dirData.data);
-         }
+         setVisitas(visData);
+         setResidentes(dirData);
        } catch (e) {
          toast.error("Error al cargar datos");
        } finally {
@@ -62,7 +69,7 @@ export default function ControlVisitas() {
        }
     }
     loadData();
-  }, [session, status, role, router]);
+  }, [user, authLoading, role, router]);
 
   useEffect(() => {
     if (!loading) {
@@ -77,19 +84,10 @@ export default function ControlVisitas() {
 
      setIsSubmitting(true);
      try {
-       const res = await fetch('/api/vigilancia/visitas', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(formData)
-       });
-       const data = await res.json();
-       if(data.success) {
-          toast.success("Visita registrada exitosamente");
-          setVisitas([data.data, ...visitas]);
-          setFormData({...formData, nombre: "", placa: "", observacion: ""});
-       } else {
-          toast.error("Error al registrar");
-       }
+       const newVisita = await api.post<any>('/vigilancia/visitas', formData);
+       toast.success("Visita registrada exitosamente");
+       setVisitas([newVisita, ...visitas]);
+       setFormData({...formData, nombre: "", placa: "", observacion: ""});
      } catch {
        toast.error("Error de conexión");
      } finally {

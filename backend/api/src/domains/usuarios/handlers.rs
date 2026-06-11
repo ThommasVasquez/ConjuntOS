@@ -1,0 +1,115 @@
+use axum::extract::State;
+use axum::routing::get;
+use axum::{Json, Router};
+
+use crate::auth::extract::AuthUser;
+use crate::domains::usuarios::dto::{ProfileResponse, UnidadDto, UpdateProfileRequest, UserDto};
+use crate::domains::usuarios::repo::{self, ProfileChanges};
+use crate::error::{ApiError, ApiResult};
+use crate::state::AppState;
+
+/// Legacy /api/user/profile-save skipped avatars over 150 KB; we reject instead
+/// of silently dropping (Constitution Law 4).
+const MAX_AVATAR_BYTES: usize = 150 * 1024;
+
+pub fn router() -> Router<AppState> {
+    Router::new().route("/usuarios/me/profile", get(get_profile).put(update_profile))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/usuarios/me/profile",
+    tag = "usuarios",
+    responses(
+        (status = 200, description = "Own profile with unit", body = ProfileResponse),
+        (status = 401, description = "Not authenticated")
+    )
+)]
+pub async fn get_profile(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<ProfileResponse>> {
+    let mut conn = state.pool.get().await?;
+    let usuario = repo::find_by_id(&mut conn, user.id)
+        .await?
+        .ok_or(ApiError::Unauthorized)?;
+    let unidad = match usuario.unidad_id {
+        Some(id) => repo::find_unidad(&mut conn, id).await?.map(UnidadDto::from),
+        None => None,
+    };
+    Ok(Json(ProfileResponse {
+        user: UserDto::from(usuario),
+        unidad,
+    }))
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/v1/usuarios/me/profile",
+    tag = "usuarios",
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, description = "Updated profile", body = ProfileResponse),
+        (status = 400, description = "Avatar too large or invalid fields")
+    )
+)]
+pub async fn update_profile(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<UpdateProfileRequest>,
+) -> ApiResult<Json<ProfileResponse>> {
+    if let Some(avatar) = &req.avatar {
+        if avatar.len() > MAX_AVATAR_BYTES {
+            return Err(ApiError::BadRequest(format!(
+                "el avatar supera el límite de {} KB",
+                MAX_AVATAR_BYTES / 1024
+            )));
+        }
+    }
+    if let Some(nombre) = &req.nombre {
+        if nombre.trim().is_empty() {
+            return Err(ApiError::BadRequest(
+                "el nombre no puede estar vacío".into(),
+            ));
+        }
+    }
+
+    let mut conn = state.pool.get().await?;
+    let usuario = repo::find_by_id(&mut conn, user.id)
+        .await?
+        .ok_or(ApiError::Unauthorized)?;
+
+    // Resident filled in their unit before administration registered one.
+    let bootstrapped_unidad = match (&req.apto, usuario.unidad_id) {
+        (Some(apto), None) if !apto.trim().is_empty() => Some(
+            repo::bootstrap_unidad(
+                &mut conn,
+                user.conjunto_id,
+                req.torre.as_deref(),
+                apto.trim(),
+            )
+            .await?,
+        ),
+        _ => None,
+    };
+
+    let changes = ProfileChanges {
+        nombre: req.nombre,
+        telefono: req.telefono,
+        genero: req.genero,
+        avatar: req.avatar,
+        torre: req.torre,
+        apto: req.apto,
+        unidad_id: bootstrapped_unidad.as_ref().map(|u| u.id),
+    };
+    let updated = repo::update_profile(&mut conn, user.id, changes).await?;
+
+    let unidad = match updated.unidad_id {
+        Some(id) => repo::find_unidad(&mut conn, id).await?.map(UnidadDto::from),
+        None => None,
+    };
+    Ok(Json(ProfileResponse {
+        user: UserDto::from(updated),
+        unidad,
+    }))
+}
