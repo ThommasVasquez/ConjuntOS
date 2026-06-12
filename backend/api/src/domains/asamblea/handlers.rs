@@ -98,10 +98,10 @@ fn compute_hash_firma(
 async fn get_session(
     State(state): State<AppState>,
     user: AuthUser,
-) -> ApiResult<Json<AsambleaDto>> {
+) -> ApiResult<Json<Option<AsambleaDto>>> {
     let mut conn = state.pool.get().await?;
-    let asamblea = repo::get_active_session(&mut conn, user.conjunto_id).await?;
-    Ok(Json(AsambleaDto::from(asamblea)))
+    let asamblea = repo::get_active_session_opt(&mut conn, user.conjunto_id).await?;
+    Ok(Json(asamblea.map(AsambleaDto::from)))
 }
 
 async fn update_session(

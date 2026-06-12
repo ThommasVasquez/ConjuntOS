@@ -94,6 +94,24 @@ pub async fn get_active_session(conn: &mut DbConn, conjunto_id: Uuid) -> ApiResu
         .map_err(Into::into)
 }
 
+/// Like `get_active_session` but returns `None` instead of erroring when there
+/// is no active assembly. Used by the GET endpoint so "no hay asamblea activa"
+/// is a normal 200 (null) response rather than a 404 (which the browser logs
+/// as a console error even when handled gracefully).
+pub async fn get_active_session_opt(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+) -> ApiResult<Option<Asamblea>> {
+    asambleas::table
+        .filter(asambleas::conjunto_id.eq(conjunto_id))
+        .filter(asambleas::activa.eq(true))
+        .select(Asamblea::as_select())
+        .first(conn)
+        .await
+        .optional()
+        .map_err(Into::into)
+}
+
 /// CAS update — returns the number of rows affected (0 if version mismatch).
 pub async fn update_session(
     conn: &mut DbConn,
