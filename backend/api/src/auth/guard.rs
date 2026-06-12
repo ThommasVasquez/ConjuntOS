@@ -4,8 +4,12 @@ use crate::error::{ApiError, ApiResult};
 
 /// Role gate at the handler boundary (specs/constitution.md Law 3) —
 /// explicit and greppable: `guard::require(&user, &[Rol::Administrador])?`.
+///
+/// `SUPER_ADMIN` bypasses every gate: it is the highest privilege level and
+/// must be able to reach any tenant surface without being enumerated in each
+/// per-endpoint role list.
 pub fn require(user: &AuthUser, allowed: &[Rol]) -> ApiResult<()> {
-    if allowed.contains(&user.rol) {
+    if user.rol == Rol::SuperAdmin || allowed.contains(&user.rol) {
         Ok(())
     } else {
         Err(ApiError::Forbidden)
