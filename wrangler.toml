@@ -14,6 +14,7 @@ compatibility_flags = [ "nodejs_compat" ]
 # store (`wrangler secret put` / Pages dashboard), never in this file.
 # The frontend also needs NEXT_PUBLIC_API_URL pointed at the production backend.
 [env.production.vars]
+NEXT_PUBLIC_API_URL = "https://api.conjuntos.app"
 NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BBlF7n0RF6TaCqZyByo9I5zZ7Y_RreTjmc2wtJ-i6ZQp-mnY4WgpAnn3u8eZewy1gk9TcjMwCiql1oyD-tySOMs"
 SKIP_INSTALL_COMMAND = "true"
 VAPID_SUBJECT = "mailto:soporte@conjuntos.app"

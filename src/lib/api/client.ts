@@ -7,7 +7,9 @@
  * so API_BASE can stay empty.  In production it should point to the API host.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'production' ? 'https://api.conjuntos.app' : '');
 
 /**
  * In-memory Bearer token (same-session fallback for when the httpOnly `ec_session`

@@ -7,7 +7,9 @@ import { api, ApiError } from '@/lib/api/client';
 
 const WS_RECONNECT_BASE = 3000;
 const WS_RECONNECT_MAX = 30000;
-const WS_URL_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+const WS_URL_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'production' ? 'https://api.conjuntos.app' : '');
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const user = useAuth((s) => s.user);

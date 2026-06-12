@@ -1,7 +1,7 @@
 # Build
-FROM rust:1.85-slim AS builder
+FROM rust:1.90-slim AS builder
 WORKDIR /build
-COPY Cargo.toml ./
+COPY Cargo.toml Cargo.lock ./
 COPY api/Cargo.toml api/Cargo.toml
 COPY migrate/Cargo.toml migrate/Cargo.toml
 # Pre-build dependencies against stub sources so they cache across code changes.
