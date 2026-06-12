@@ -51,7 +51,7 @@ export default function SplashScreen() {
         ease: "power3.out"
       }, "-=0.4")
       .to(logoRef.current, {
-        filter: "drop-shadow(0 0 20px rgba(217, 70, 239, 0.4))",
+        filter: "drop-shadow(0 0 20px rgba(59, 130, 246, 0.4))",
         duration: 1.5,
         repeat: 0,
         yoyo: true
@@ -73,7 +73,7 @@ export default function SplashScreen() {
       style={{ zIndex: 999999 }}
     >
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#D946EF]/10 blur-[100px] rounded-full" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#3b82f6]/10 blur-[100px] rounded-full" />
       
       <div className="relative flex flex-col items-center">
         {/* Precise Official Logo (Paths matched to provided image) */}
@@ -112,7 +112,7 @@ export default function SplashScreen() {
           className="mt-4 flex flex-col items-center"
         >
           <div className="w-16 h-[1px] bg-white/10 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[#D946EF] animate-loading-bar" />
+            <div className="absolute inset-0 bg-[#3b82f6] animate-loading-bar" />
           </div>
         </div>
       </div>

@@ -39,7 +39,7 @@ export default function CraftsmanshipSection() {
         
         <div className="craft-text flex-1 space-y-6">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#D946EF]"></div>
+            <div className="w-2 h-2 rounded-full bg-[#3b82f6]"></div>
             <span className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Nuestra esencia</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-montserrat)]">

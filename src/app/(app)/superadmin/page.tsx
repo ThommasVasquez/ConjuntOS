@@ -41,7 +41,7 @@ export default function SuperAdminPage() {
     matriculaInmobiliaria: "",
     totalUnidades: "1",
     logoUrl: "",
-    colorPrimario: "#7C3AED" // Default premium violet
+    colorPrimario: "#2563eb" // Default premium blue
   });
 
   const handleEditClick = (c: any) => {
@@ -59,7 +59,7 @@ export default function SuperAdminPage() {
       matriculaInmobiliaria: c.matriculaInmobiliaria || "",
       totalUnidades: c.totalUnidades ? String(c.totalUnidades) : "1",
       logoUrl: c.logoUrl || "",
-      colorPrimario: c.colorPrimario || "#7C3AED"
+      colorPrimario: c.colorPrimario || "#2563eb"
     });
     setTab("CREAR");
   };
@@ -79,7 +79,7 @@ export default function SuperAdminPage() {
       matriculaInmobiliaria: "",
       totalUnidades: "1",
       logoUrl: "",
-      colorPrimario: "#7C3AED"
+      colorPrimario: "#2563eb"
     });
   };
 
@@ -183,7 +183,7 @@ export default function SuperAdminPage() {
         matriculaInmobiliaria: "",
         totalUnidades: "1",
         logoUrl: "",
-        colorPrimario: "#7C3AED"
+        colorPrimario: "#2563eb"
       });
       setEditingConjuntoId(null);
       fetchConjuntos();
@@ -489,7 +489,7 @@ export default function SuperAdminPage() {
           <button 
             type="submit" 
             disabled={isSubmitting || isUploading} 
-            className="fade-up w-full py-4 bg-linear-to-r from-accent to-violet-600 hover:from-accent/90 hover:to-violet-500 transition-all rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-xl shadow-accent/20 active:scale-[0.98] flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="fade-up w-full py-4 bg-linear-to-r from-accent to-blue-600 hover:from-accent/90 hover:to-blue-500 transition-all rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-xl shadow-accent/20 active:scale-[0.98] flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
               <>

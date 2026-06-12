@@ -8,7 +8,7 @@ export default function Footer() {
   return (
     <footer className="bg-[#05020a] text-white pt-24 overflow-hidden relative border-t border-white/5">
       {/* Background Orbs */}
-      <div className="absolute bottom-0 right-[-10%] w-[500px] h-[500px] bg-[#4C1D95]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-[-10%] w-[500px] h-[500px] bg-[#1e3a8a]/5 blur-[120px] rounded-full pointer-events-none" />
       
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-24 relative z-10">
         
@@ -23,7 +23,7 @@ export default function Footer() {
               placeholder="tu@email.com" 
               className="bg-white/5 border border-white/10 rounded-full px-6 py-3.5 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 w-64 shadow-inner placeholder:text-white/20"
             />
-            <button className="bg-accent text-white px-6 py-3.5 rounded-full text-sm font-bold hover:bg-accent/80 hover:shadow-[0_0_15px_rgba(217,70,239,0.3)] transition-all active:scale-95 cursor-pointer">
+            <button className="bg-accent text-white px-6 py-3.5 rounded-full text-sm font-bold hover:bg-accent/80 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all active:scale-95 cursor-pointer">
               Suscribirse
             </button>
           </div>

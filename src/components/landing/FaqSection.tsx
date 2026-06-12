@@ -63,10 +63,10 @@ export default function FaqSection() {
                 onClick={() => setOpenIdx(openIdx === idx ? null : idx)}
               >
                 <div className="flex items-center justify-between gap-4">
-                  <h4 className={`text-lg font-bold transition-colors ${openIdx === idx ? "text-[#D946EF]" : "text-white"}`}>
+                  <h4 className={`text-lg font-bold transition-colors ${openIdx === idx ? "text-[#3b82f6]" : "text-white"}`}>
                     {faq.q}
                   </h4>
-                  {openIdx === idx ? <Minus className="w-5 h-5 flex-shrink-0 text-[#D946EF]" /> : <Plus className="w-5 h-5 flex-shrink-0 text-white" />}
+                  {openIdx === idx ? <Minus className="w-5 h-5 flex-shrink-0 text-[#3b82f6]" /> : <Plus className="w-5 h-5 flex-shrink-0 text-white" />}
                 </div>
                 {openIdx === idx && (
                   <p className="mt-4 text-gray-400 leading-relaxed pr-8 animate-in fade-in slide-in-from-top-2 duration-300">

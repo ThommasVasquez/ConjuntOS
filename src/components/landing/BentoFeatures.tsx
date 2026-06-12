@@ -14,8 +14,8 @@ const features = [
     title: "Citofonía Inteligente",
     description: "Mensajes de voz con transcripción automática en tiempo real.",
     icon: Mic,
-    className: "md:col-span-2 md:row-span-2 bg-[#D946EF]/10 border-[#D946EF]/20",
-    iconColor: "text-[#D946EF]"
+    className: "md:col-span-2 md:row-span-2 bg-[#3b82f6]/10 border-[#3b82f6]/20",
+    iconColor: "text-[#3b82f6]"
   },
   {
     title: "Pagos Transparentes",
@@ -28,8 +28,8 @@ const features = [
     title: "Control de Accesos",
     description: "Pre-registro de visitantes y seguridad proactiva.",
     icon: Shield,
-    className: "bg-purple-500/10 border-purple-500/20",
-    iconColor: "text-purple-500"
+    className: "bg-blue-500/10 border-blue-500/20",
+    iconColor: "text-blue-500"
   },
   {
     title: "Paquetería Digital",
@@ -80,7 +80,7 @@ export default function BentoFeatures() {
       <div className="max-w-6xl mx-auto space-y-16">
         <div className="space-y-4 text-center md:text-left">
           <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
-            Todo lo que tu <span className="text-[#D946EF]">Conjunto</span> necesita
+            Todo lo que tu <span className="text-[#3b82f6]">Conjunto</span> necesita
           </h2>
           <p className="text-white/40 max-w-xl font-medium">
             Módulos integrados bajo una misma identidad visual. Eficiencia operativa envuelta en diseño de clase mundial.

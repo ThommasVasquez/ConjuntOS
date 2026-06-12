@@ -87,7 +87,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-linear-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
         
         <div className="text-center mb-10 flex flex-col items-center">
-          <div className="fade-in-element w-16 h-16 bg-accent rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(217,70,239,0.5)] border border-accent/50 rotate-6 hover:rotate-0 transition-transform duration-500">
+          <div className="fade-in-element w-16 h-16 bg-accent rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(59,130,246,0.5)] border border-accent/50 rotate-6 hover:rotate-0 transition-transform duration-500">
              <Shield className="text-white" size={32} />
           </div>
           <h1 className="fade-in-element text-4xl font-display font-bold text-white tracking-tight text-glow mb-2">ConjuntOS</h1>
@@ -132,7 +132,7 @@ export default function LoginPage() {
              <button 
                type="submit" 
                disabled={isLoading}
-               className="relative w-full bg-linear-to-r from-accent to-primary hover:scale-[1.02] active:scale-95 text-white font-bold py-5 rounded-3xl flex items-center justify-center gap-3 transition-all shadow-[0_15px_30px_rgba(217,70,239,0.3)] group cursor-pointer"
+               className="relative w-full bg-linear-to-r from-accent to-primary hover:scale-[1.02] active:scale-95 text-white font-bold py-5 rounded-3xl flex items-center justify-center gap-3 transition-all shadow-[0_15px_30px_rgba(59,130,246,0.3)] group cursor-pointer"
              >
                 {isLoading ? (
                   <Loader2 className="animate-spin" size={22} />
@@ -164,7 +164,7 @@ export default function LoginPage() {
       </div>
       
       <style dangerouslySetInnerHTML={{__html: `
-        .text-glow { text-shadow: 0 0 30px rgba(217,70,239,0.5); }
+        .text-glow { text-shadow: 0 0 30px rgba(59,130,246,0.5); }
       `}} />
     </div>
   );

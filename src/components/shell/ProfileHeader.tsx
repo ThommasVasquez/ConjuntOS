@@ -210,7 +210,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         >
           <Bell size={22} />
           {notifications.some(n => !n.leida) && (
-            <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-primary shadow-[0_0_10px_rgba(217,70,239,0.8)]"></span>
+            <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-primary shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
           )}
         </button>
 

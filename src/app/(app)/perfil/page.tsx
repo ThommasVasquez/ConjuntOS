@@ -656,10 +656,10 @@ function ProfileContent() {
           {viewMode === "pets" && (
             <div className="space-y-4">
                <div className="flex justify-between items-center px-2">
-                 <h3 className="text-text text-lg font-bold flex items-center gap-2">Mis Mascotas <PawPrint size={18} className="text-purple-400" /></h3>
+                 <h3 className="text-text text-lg font-bold flex items-center gap-2">Mis Mascotas <PawPrint size={18} className="text-blue-400" /></h3>
                  <button 
                     onClick={() => { setRegType("MASCOTA"); setShowRegModal(true); }}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-[11px] font-bold uppercase tracking-wider hover:bg-purple-500/30 transition-all active:scale-95 border border-purple-500/20"
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-blue-500/20 text-blue-400 text-[11px] font-bold uppercase tracking-wider hover:bg-blue-500/30 transition-all active:scale-95 border border-blue-500/20"
                  >
                    <Plus size={14} /> Solicitar Vinculación
                  </button>
@@ -1047,7 +1047,7 @@ function ProfileContent() {
                  <div>
                     <h2 className="text-2xl font-display font-bold text-text tracking-tight flex items-center gap-3">
                        {regType === "VEHICULO" ? <><Car className="text-accent" /> Registrar Vehículo</> : 
-                        regType === "MASCOTA" ? <><PawPrint className="text-purple-400" /> Registrar Mascota</> :
+                        regType === "MASCOTA" ? <><PawPrint className="text-blue-400" /> Registrar Mascota</> :
                         <><ClipboardList className="text-blue-400" /> Solicitud de Trámite</>}
                     </h2>
                     <p className="text-[10px] text-text/60 uppercase tracking-[0.2em] mt-1 font-black">
@@ -1106,7 +1106,7 @@ function ProfileContent() {
                     <>
                        <div className="space-y-1.5">
                           <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Nombre de la Mascota</label>
-                          <input required placeholder="Ej: Toby" type="text" value={regForm.nombre} onChange={(e) => setRegForm({...regForm, nombre: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-purple-400/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
+                          <input required placeholder="Ej: Toby" type="text" value={regForm.nombre} onChange={(e) => setRegForm({...regForm, nombre: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-blue-400/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
                        </div>
                        <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-1.5">
@@ -1195,7 +1195,7 @@ function ProfileContent() {
                  <button 
                     type="submit"
                     disabled={isRegSubmitting}
-                    className={`w-full ${regType === "VEHICULO" ? "bg-accent" : "bg-purple-500"} text-primary font-bold py-5 rounded-[24px] shadow-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
+                    className={`w-full ${regType === "VEHICULO" ? "bg-accent" : "bg-blue-500"} text-primary font-bold py-5 rounded-[24px] shadow-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
                  >
                     {isRegSubmitting ? "Enviando..." : "Enviar Solicitud"}
                  </button>

@@ -35,7 +35,7 @@ const TIPO_CONFIG = {
   QUEJA: { icon: <AlertTriangle size={18}/>, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
   RECLAMO: { icon: <Megaphone size={18}/>, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
   SUGERENCIA: { icon: <Info size={18}/>, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  MANTENIMIENTO: { icon: <Wrench size={18}/>, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+  MANTENIMIENTO: { icon: <Wrench size={18}/>, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
 };
 
 export default function PQRSPage() {
@@ -149,7 +149,7 @@ export default function PQRSPage() {
         onClick={() => setIsFormOpen(true)}
         className="fade-up-pqrs group relative w-full h-[120px] rounded-[32px] overflow-hidden flex items-center justify-center transition-all active:scale-[0.98] shadow-2xl shadow-accent/20 cursor-pointer"
       >
-         <div className="absolute inset-0 bg-linear-to-br from-[#1E1B4B] via-accent/20 to-[#4C1D95] group-hover:scale-105 transition-transform duration-700" />
+         <div className="absolute inset-0 bg-linear-to-br from-[#172554] via-accent/20 to-[#1e3a8a] group-hover:scale-105 transition-transform duration-700" />
          <div className="flex flex-col items-center gap-2 relative z-10">
             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#05020a] shadow-xl">
                <Plus size={24} />

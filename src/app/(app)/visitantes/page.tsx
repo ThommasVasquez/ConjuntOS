@@ -196,7 +196,7 @@ export default function VisitantesPage() {
          
          <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
-               <div className="w-12 h-12 rounded-[18px] bg-accent flex items-center justify-center text-white shadow-[0_8px_20px_rgba(217,70,239,0.4)]">
+               <div className="w-12 h-12 rounded-[18px] bg-accent flex items-center justify-center text-white shadow-[0_8px_20px_rgba(59,130,246,0.4)]">
                   <UserPlus size={24} />
                </div>
                <div>
@@ -239,7 +239,7 @@ export default function VisitantesPage() {
                <button 
                  onClick={handleCreateInvitation}
                  disabled={submitting}
-                 className="w-full bg-linear-to-r from-accent to-purple-600 py-4 rounded-[22px] font-bold text-white shadow-xl shadow-accent/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60"
+                 className="w-full bg-linear-to-r from-accent to-blue-600 py-4 rounded-[22px] font-bold text-white shadow-xl shadow-accent/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60"
                >
                  {submitting ? <Loader2 size={20} className="animate-spin" /> : <><QrCode size={20} /> Programar Visita</>}
                </button>

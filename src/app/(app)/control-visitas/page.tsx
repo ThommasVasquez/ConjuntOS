@@ -166,7 +166,7 @@ export default function ControlVisitas() {
                 )}
              </div>
 
-             <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-accent hover:bg-accent/80 transition-colors rounded-2xl font-bold text-primary shadow-[0_0_20px_rgba(217,70,239,0.3)] flex justify-center items-center gap-2">
+             <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-accent hover:bg-accent/80 transition-colors rounded-2xl font-bold text-primary shadow-[0_0_20px_rgba(59,130,246,0.3)] flex justify-center items-center gap-2">
                 {isSubmitting ? "Registrando..." : <><PlusCircle size={18}/> Registrar Ingreso</>}
              </button>
           </form>

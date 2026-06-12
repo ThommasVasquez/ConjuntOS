@@ -15,14 +15,14 @@
 }
 
 :root {
-  /* Paleta Vibrante Deep Purple / Magenta (Liquid Glass ref) */
-  --color-primary: #05020a;       /* Pitch black-purple background */
-  --color-primary-light: #4c1d95; /* Deep Violet */
-  --color-accent: #D946EF;        /* Magenta / Fuchsia para CTAs */
+  /* Paleta Vibrante Deep Blue (Liquid Glass ref) */
+  --color-primary: #02050a;       /* Pitch black-blue background */
+  --color-primary-light: #1e3a8a; /* Deep Blue */
+  --color-accent: #3b82f6;        /* Blue para CTAs */
   --color-surface: rgba(20, 10, 35, 0.4); /* Glass surface darker */
   --color-surface-2: rgba(255, 255, 255, 0.05); /* Lighter glass */
   --color-text: #F8FAFC;          /* White/slate */
-  --color-text-muted: #A78BFA;    /* Light purple text for muting */
+  --color-text-muted: #93c5fd;    /* Light blue text for muting */
   --color-success: #10B981;
   --color-danger: #EF4444;
   --color-warning: #F59E0B;
@@ -33,9 +33,9 @@
 .light {
   --color-primary: #F8FAFC;       /* Slate 50 limpio */
   --color-primary-light: #EEF2F6; /* Slate/Indigo muy claro para fondos de tarjetas */
-  --color-accent: #6366F1;        /* Indigo/Azul Real */
+  --color-accent: #3b82f6;        /* Indigo/Azul Real */
   --color-surface: rgba(255, 255, 255, 0.7); /* Vidrio blanco translúcido */
-  --color-surface-2: rgba(99, 102, 241, 0.05); /* Fondo de entrada o botón sutil */
+  --color-surface-2: rgba(59, 130, 246, 0.05); /* Fondo de entrada o botón sutil */
   --color-text: #0F172A;          /* Slate 900 */
   --color-text-muted: #475569;    /* Slate 600 */
   --color-border: rgba(15, 23, 42, 0.08); /* Bordes sutiles en modo claro */
@@ -92,7 +92,7 @@ html, body {
 }
 
 .liquid-glass-card {
-  background: linear-gradient(135deg, rgba(88, 28, 135, 0.4) 0%, rgba(30, 27, 75, 0.6) 100%);
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.4) 0%, rgba(23, 37, 84, 0.6) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -103,16 +103,16 @@ html, body {
 /* Light mode overrides for glass styles */
 .light .liquid-glass {
   background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.1);
   box-shadow: 
-    0 10px 40px -10px rgba(99, 102, 241, 0.05),
+    0 10px 40px -10px rgba(59, 130, 246, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .light .liquid-glass-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(238, 242, 246, 0.8) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.03);
+  border: 1px solid rgba(59, 130, 246, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.03);
 }
 
 /* Glowing text */
@@ -145,9 +145,9 @@ html, body {
 
 .light .liquid-glass-toast {
   background: rgba(255, 255, 255, 0.85) !important;
-  border: 1px solid rgba(99, 102, 241, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.15) !important;
   color: #0f172a !important;
-  box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.1) !important;
+  box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.1) !important;
 }
 
 [data-type='success'].liquid-glass-toast {
@@ -170,7 +170,7 @@ html, body {
 
 .liquid-story-ring {
   position: relative;
-  background: linear-gradient(45deg, #D946EF, #8B5CF6, #D946EF);
+  background: linear-gradient(45deg, #3b82f6, #60a5fa, #3b82f6);
   background-size: 200% 200%;
   animation: story-bg 5s infinite linear;
   padding: 3px;
@@ -187,7 +187,7 @@ html, body {
   position: absolute;
   inset: -4px;
   border-radius: 9999px;
-  background: conic-gradient(from 0deg, transparent, #D946EF, #06b6d4, transparent);
+  background: conic-gradient(from 0deg, transparent, #3b82f6, #06b6d4, transparent);
   animation: rotate-halo 3s linear infinite;
   opacity: 0.6;
   filter: blur(8px);
@@ -198,7 +198,7 @@ html, body {
   position: absolute;
   inset: 0px;
   border-radius: 9999px;
-  background: #D946EF;
+  background: #3b82f6;
   opacity: 0.4;
   animation: breathe-halo 2s ease-in-out infinite;
   filter: blur(4px);
@@ -221,5 +221,5 @@ html, body {
 }
 
 .text-glow {
-  text-shadow: 0 0 12px rgba(217,70,239,0.3);
+  text-shadow: 0 0 12px rgba(59,130,246,0.3);
 }

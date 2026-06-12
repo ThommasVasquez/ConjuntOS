@@ -174,7 +174,7 @@ export default function PagosPage() {
 
       {/* WALLET HERO CARD */}
       <section className="fade-up w-full relative group">
-         <div className="absolute inset-0 bg-linear-to-br from-[#4C1D95] via-[#1E1B4B] to-[#701A75] rounded-[40px] shadow-2xl opacity-90" />
+         <div className="absolute inset-0 bg-linear-to-br from-[#1e3a8a] via-[#172554] to-[#701A75] rounded-[40px] shadow-2xl opacity-90" />
          <div className="absolute -top-4 -right-4 w-32 h-32 bg-white/5 blur-2xl rounded-full group-hover:bg-white/10 transition-all duration-700" />
          
          <div className="relative p-8 flex flex-col justify-between min-h-[220px]">
@@ -358,7 +358,7 @@ export default function PagosPage() {
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .text-glow { text-shadow: 0 0 20px rgba(217,70,239,0.5); }
+        .text-glow { text-shadow: 0 0 20px rgba(59,130,246,0.5); }
       `}} />
     </div>
   );

@@ -177,7 +177,7 @@ export default function Hero() {
         ))}
         
         {/* Ambient Orbs - Matching the App's UI style */}
-        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[70%] bg-[#4C1D95]/15 blur-[130px] rounded-full pointer-events-none z-10" />
+        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[70%] bg-[#1e3a8a]/15 blur-[130px] rounded-full pointer-events-none z-10" />
         <div className="absolute bottom-[-15%] left-[-15%] w-[80%] h-[70%] bg-[#BE185D]/10 blur-[130px] rounded-full pointer-events-none z-10" />
         
         {/* Dark Glass Overlay */}
@@ -192,7 +192,7 @@ export default function Hero() {
                   key={slide.id}
                   onClick={() => handleSlideChange(idx)}
                   className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all duration-300 ${
-                    activeSlide === idx ? "bg-accent text-white shadow-[0_0_15px_rgba(217,70,239,0.4)]" : "text-white/60 hover:text-white"
+                    activeSlide === idx ? "bg-accent text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]" : "text-white/60 hover:text-white"
                   }`}
                 >
                   {slide.label}
@@ -217,7 +217,7 @@ export default function Hero() {
             <div className="flex items-center gap-8">
               <button 
                 onClick={() => navigate("/login")}
-                className="bg-linear-to-r from-accent to-purple-600 text-white px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:scale-[1.03] active:scale-95 transition-all shadow-[0_0_20px_rgba(217,70,239,0.3)] hover:shadow-[0_0_30px_rgba(217,70,239,0.5)] cursor-pointer"
+                className="bg-linear-to-r from-accent to-blue-600 text-white px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:scale-[1.03] active:scale-95 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] cursor-pointer"
               >
                 Comenzar Ahora
               </button>
@@ -258,7 +258,7 @@ export default function Hero() {
                 {[0, 1, 2].map((i) => (
                   <div 
                     key={i} 
-                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent shadow-[0_0_10px_rgba(217,70,239,0.8)]" : "bg-white/20"}`}
+                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent shadow-[0_0_10px_rgba(59,130,246,0.8)]" : "bg-white/20"}`}
                   />
                 ))}
               </div>

@@ -170,7 +170,7 @@ export default function AdminParqueaderoPage() {
                          <div className="flex flex-col sm:items-end">
                             <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest mb-0.5">Operador</span>
                             <div className="flex items-center gap-2">
-                               <div className="w-6 h-6 rounded-full bg-linear-to-tr from-accent to-purple-600 flex items-center justify-center text-white text-[8px] font-bold">
+                               <div className="w-6 h-6 rounded-full bg-linear-to-tr from-accent to-blue-600 flex items-center justify-center text-white text-[8px] font-bold">
                                   {reg.usuario.nombre[0]}
                                </div>
                                <span className="text-xs font-bold text-text">{reg.usuario.nombre}</span>

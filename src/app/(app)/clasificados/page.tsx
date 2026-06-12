@@ -387,7 +387,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
       <button 
         disabled={loading}
         onClick={handleSubmit}
-        className="w-full h-14 bg-linear-to-r from-accent to-purple-600 rounded-2xl flex items-center justify-center gap-3 text-sm font-black text-white uppercase tracking-widest shadow-xl shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50"
+        className="w-full h-14 bg-linear-to-r from-accent to-blue-600 rounded-2xl flex items-center justify-center gap-3 text-sm font-black text-white uppercase tracking-widest shadow-xl shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50"
       >
         {loading ? <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <><Send size={18} /> Publicar Ahora</>}
       </button>

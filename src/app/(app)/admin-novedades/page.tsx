@@ -212,7 +212,7 @@ export default function AdminNovedadesPage() {
           case 'VEHICULO': return <Car size={16} className="text-blue-400" />;
           case 'MASCOTA': return <Dog size={16} className="text-orange-400" />;
           case 'ARRENDAMIENTO': return <Briefcase size={16} className="text-emerald-400" />;
-          case 'MUDANZA': return <Info size={16} className="text-purple-400" />;
+          case 'MUDANZA': return <Info size={16} className="text-blue-400" />;
           default: return <AlertCircle size={16} className="text-white/50" />;
       }
   };
@@ -426,7 +426,7 @@ export default function AdminNovedadesPage() {
                     <button 
                       type="submit"
                       disabled={isSubmittingAnuncio || isUploadingImage}
-                      className="w-full py-4 bg-linear-to-r from-accent to-purple-600 rounded-2xl font-bold text-xs uppercase tracking-widest text-white shadow-xl shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
+                      className="w-full py-4 bg-linear-to-r from-accent to-blue-600 rounded-2xl font-bold text-xs uppercase tracking-widest text-white shadow-xl shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
                     >
                         {isSubmittingAnuncio ? "Publicando..." : "Publicar Anuncio"}
                     </button>

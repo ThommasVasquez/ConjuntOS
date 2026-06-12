@@ -12,7 +12,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* GLOBAL BACKGROUND ELEMENTS (PREMIUM DESIGN SYSTEM) */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-primary transition-colors duration-300">
         {/* Ambient Orbs - Extremely Subtle */}
-        <div className="absolute top-[-10%] right-[-10%] w-full h-[70%] bg-primary-light/5 dark:bg-[#4C1D95]/5 blur-[120px] rounded-full transition-colors duration-300" />
+        <div className="absolute top-[-10%] right-[-10%] w-full h-[70%] bg-primary-light/5 dark:bg-[#1e3a8a]/5 blur-[120px] rounded-full transition-colors duration-300" />
         <div className="absolute bottom-[-15%] left-[-15%] w-full h-[70%] bg-accent/5 dark:bg-[#BE185D]/5 blur-[120px] rounded-full transition-colors duration-300" />
         
         {/* Decorative Watermark Text - Minimal visibility (1%) */}
