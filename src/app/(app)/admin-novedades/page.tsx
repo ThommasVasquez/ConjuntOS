@@ -93,20 +93,27 @@ export default function AdminNovedadesPage() {
 
     setIsUploadingImage(true);
     try {
-      // TODO: File upload endpoint pending on Rust backend. Using inline base64 for now.
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAnuncioForm(prev => ({ ...prev, imagenUrl: reader.result as string }));
-        toast.success("Imagen cargada correctamente");
-        setIsUploadingImage(false);
-      };
-      reader.onerror = () => {
-        toast.error("Error al leer la imagen");
-        setIsUploadingImage(false);
-      };
-      reader.readAsDataURL(file);
+      // Read the file as a base64 data URL, then offload it to object storage
+      // (MinIO) via the backend. We persist only the returned short URL — never
+      // the base64 blob — so the announcement payload stays small and never hits
+      // the request-body size cap.
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("No se pudo leer la imagen"));
+        reader.readAsDataURL(file);
+      });
+
+      const res = await api.post<{ url: string }>("/uploads/imagen", {
+        data: dataUrl,
+        carpeta: "anuncios",
+      });
+      setAnuncioForm(prev => ({ ...prev, imagenUrl: res.url }));
+      toast.success("Imagen cargada correctamente");
     } catch (err: any) {
-      toast.error("Error al cargar imagen: " + err.message);
+      const msg = err instanceof ApiError ? err.detail : (err?.message || "Error al cargar imagen");
+      toast.error("Error al cargar imagen: " + msg);
+    } finally {
       setIsUploadingImage(false);
     }
   };

@@ -10,6 +10,7 @@ pub mod state;
 
 use std::time::Duration;
 
+use axum::extract::DefaultBodyLimit;
 use axum::http::{header, HeaderValue, Method, StatusCode};
 use axum::routing::get;
 use axum::Router;
@@ -21,9 +22,11 @@ use tower_http::trace::TraceLayer;
 
 use crate::state::AppState;
 
-/// 2 MiB request cap — large enough for avatar/doc payloads carried over from the
-/// legacy app, small enough to keep base64 trámite documents bounded (specs/009).
-const MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
+/// 12 MiB request cap — large enough for an image upload carried as base64
+/// (the frontend caps images at 5 MB; base64 inflates ~33% → ~6.7 MB) plus
+/// avatar/doc payloads from the legacy app. Images themselves are offloaded to
+/// MinIO via /uploads/imagen, so persisted bodies stay small.
+const MAX_BODY_BYTES: usize = 12 * 1024 * 1024;
 
 /// Upper bound on any single request. Outbound calls (Gemini, S3, web-push,
 /// LiveKit) and DB queries that hang would otherwise pin a worker task and its
@@ -45,6 +48,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(domains::comunicaciones::router())
         .merge(domains::solicitudes::router())
         .merge(domains::tramites::router())
+        .merge(domains::uploads::router())
         .merge(domains::clasificados::router())
         .merge(domains::inmuebles::router())
         .merge(domains::admin_stats::router())
@@ -62,6 +66,10 @@ pub fn build_router(state: AppState) -> Router {
         .with_state(state)
         .layer(cors)
         .layer(RequestBodyLimitLayer::new(MAX_BODY_BYTES))
+        // axum enforces its OWN 2 MiB DefaultBodyLimit on the Json/body
+        // extractors, independent of tower_http's RequestBodyLimitLayer above.
+        // Raise it to match so image uploads (base64) aren't rejected with 413.
+        .layer(DefaultBodyLimit::max(MAX_BODY_BYTES))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             REQUEST_TIMEOUT,

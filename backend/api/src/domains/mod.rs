@@ -14,6 +14,7 @@ pub mod parqueadero;
 pub mod reservas;
 pub mod solicitudes;
 pub mod tramites;
+pub mod uploads;
 pub mod usuarios;
 pub mod vigilancia;
 pub mod ws;
