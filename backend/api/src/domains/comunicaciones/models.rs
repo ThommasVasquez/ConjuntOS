@@ -34,3 +34,20 @@ pub struct NuevoAnuncio {
     pub fijado: bool,
     pub expires_en: Option<DateTime<Utc>>,
 }
+
+/// Partial update for an announcement. Only `Some` fields are written; `None`
+/// leaves the existing column untouched. `imagen_url`/`expires_en` use a
+/// double Option so that "set to NULL" vs "leave unchanged" stay distinct at
+/// the column level — here we only ever pass through the outer Some(...) when
+/// the caller actually wants to change them.
+#[derive(AsChangeset, Debug, Default)]
+#[diesel(table_name = anuncios)]
+pub struct AnuncioCambios {
+    pub titulo: Option<String>,
+    pub contenido: Option<String>,
+    pub tipo: Option<TipoAnuncio>,
+    pub imagen_url: Option<Option<String>>,
+    pub archivos_url: Option<serde_json::Value>,
+    pub fijado: Option<bool>,
+    pub expires_en: Option<Option<DateTime<Utc>>>,
+}

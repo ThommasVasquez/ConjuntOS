@@ -1,5 +1,5 @@
 use axum::extract::{Path, State};
-use axum::routing::{delete, get};
+use axum::routing::{get, put};
 use axum::{Json, Router};
 use uuid::Uuid;
 
@@ -8,8 +8,9 @@ use crate::auth::guard;
 use crate::db::enums::Rol;
 use crate::domains::comunicaciones::dto::{
     AnuncioDto, CreateAnuncioRequest, DeleteAnuncioResponse, DirectorioEntradaDto,
+    UpdateAnuncioRequest,
 };
-use crate::domains::comunicaciones::models::NuevoAnuncio;
+use crate::domains::comunicaciones::models::{AnuncioCambios, NuevoAnuncio};
 use crate::domains::comunicaciones::repo;
 use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
@@ -29,7 +30,7 @@ const ROLES_DIRECTORIO: &[Rol] = &[
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/anuncios", get(listar_anuncios).post(crear_anuncio))
-        .route("/anuncios/{id}", delete(eliminar_anuncio))
+        .route("/anuncios/{id}", put(actualizar_anuncio).delete(eliminar_anuncio))
         .route("/directorio", get(directorio))
 }
 
@@ -141,6 +142,79 @@ pub async fn eliminar_anuncio(
         )
         .await;
     Ok(Json(DeleteAnuncioResponse { deleted }))
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/v1/anuncios/{id}",
+    tag = "comunicaciones",
+    params(("id" = Uuid, Path, description = "Announcement id")),
+    request_body = UpdateAnuncioRequest,
+    responses(
+        (status = 200, description = "Announcement updated", body = AnuncioDto),
+        (status = 400, description = "Invalid fields"),
+        (status = 403, description = "Requires ADMINISTRADOR or CONCEJO role"),
+        (status = 404, description = "Announcement not found in this conjunto")
+    )
+)]
+pub async fn actualizar_anuncio(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateAnuncioRequest>,
+) -> ApiResult<Json<AnuncioDto>> {
+    guard::require(&user, ROLES_PUBLICAR)?;
+
+    // Validate non-empty when the field is being changed.
+    if let Some(ref t) = req.titulo {
+        if t.trim().is_empty() {
+            return Err(ApiError::BadRequest("titulo no puede estar vacío".into()));
+        }
+    }
+    if let Some(ref c) = req.contenido {
+        if c.trim().is_empty() {
+            return Err(ApiError::BadRequest(
+                "contenido no puede estar vacío".into(),
+            ));
+        }
+    }
+
+    let archivos_url = match req.archivos_url {
+        Some(v) => Some(
+            serde_json::to_value(v)
+                .map_err(|e| ApiError::BadRequest(format!("archivosUrl inválido: {e}")))?,
+        ),
+        None => None,
+    };
+
+    let cambios = AnuncioCambios {
+        titulo: req.titulo.map(|t| t.trim().to_string()),
+        contenido: req.contenido.map(|c| c.trim().to_string()),
+        tipo: req.tipo,
+        imagen_url: req.imagen_url.map(Some),
+        archivos_url,
+        fijado: req.fijado,
+        expires_en: req.expires_en.map(Some),
+    };
+
+    let mut conn = state.pool.get().await?;
+    let anuncio = repo::update_anuncio(&mut conn, user.conjunto_id, id, cambios)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("anuncio no encontrado".into()))?;
+    let dto = AnuncioDto::from(anuncio);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "anuncio".into(),
+                action: "updated".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
 }
 
 #[utoipa::path(

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText, Upload, Trash2, Megaphone, RefreshCw } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText, Upload, Trash2, Megaphone, RefreshCw, Pencil, X } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +32,7 @@ export default function AdminNovedadesPage() {
   });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSubmittingAnuncio, setIsSubmittingAnuncio] = useState(false);
+  const [editingAnuncioId, setEditingAnuncioId] = useState<string | null>(null);
 
   // Modal State
   const [selectedTramite, setSelectedTramite] = useState<any>(null);
@@ -118,8 +119,13 @@ export default function AdminNovedadesPage() {
 
     setIsSubmittingAnuncio(true);
     try {
-      await api.post('/anuncios', anuncioForm);
-      toast.success("Anuncio publicado exitosamente");
+      if (editingAnuncioId) {
+        await api.put(`/anuncios/${editingAnuncioId}`, anuncioForm);
+        toast.success("Anuncio actualizado exitosamente");
+      } else {
+        await api.post('/anuncios', anuncioForm);
+        toast.success("Anuncio publicado exitosamente");
+      }
       setAnuncioForm({
         titulo: "",
         contenido: "",
@@ -127,12 +133,37 @@ export default function AdminNovedadesPage() {
         fijado: false,
         imagenUrl: ""
       });
+      setEditingAnuncioId(null);
       fetchAnuncios();
     } catch {
-      toast.error("Error de conexión al publicar anuncio");
+      toast.error(editingAnuncioId ? "Error de conexión al actualizar anuncio" : "Error de conexión al publicar anuncio");
     } finally {
       setIsSubmittingAnuncio(false);
     }
+  };
+
+  const startEditAnuncio = (anuncio: any) => {
+    setEditingAnuncioId(anuncio.id);
+    setAnuncioForm({
+      titulo: anuncio.titulo || "",
+      contenido: anuncio.contenido || "",
+      tipo: anuncio.tipo || "GENERAL",
+      fijado: !!anuncio.fijado,
+      imagenUrl: anuncio.imagenUrl || ""
+    });
+    // Scroll to the form at the top of the panel.
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEditAnuncio = () => {
+    setEditingAnuncioId(null);
+    setAnuncioForm({
+      titulo: "",
+      contenido: "",
+      tipo: "GENERAL",
+      fijado: false,
+      imagenUrl: ""
+    });
   };
 
   const handleDeleteAnuncio = async (id: string) => {
@@ -343,7 +374,18 @@ export default function AdminNovedadesPage() {
           <div className="fade-up flex flex-col gap-8">
                {/* Formulario */}
                <form onSubmit={handleSubmitAnuncio} className="liquid-glass-card rounded-[28px] p-6 border border-border flex flex-col gap-4">
-                    <h2 className="text-base font-bold text-text mb-2 pb-2 border-b border-border">Crear Publicación / Circular</h2>
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-border">
+                        <h2 className="text-base font-bold text-text">{editingAnuncioId ? "Editar Publicación / Circular" : "Crear Publicación / Circular"}</h2>
+                        {editingAnuncioId && (
+                            <button
+                              type="button"
+                              onClick={cancelEditAnuncio}
+                              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-text/60 hover:text-text bg-surface-2 border border-border rounded-full px-3 py-1.5 transition-all active:scale-95"
+                            >
+                                <X size={12} /> Cancelar
+                            </button>
+                        )}
+                    </div>
                     
                     <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Título del Anuncio *</label>
@@ -428,7 +470,7 @@ export default function AdminNovedadesPage() {
                       disabled={isSubmittingAnuncio || isUploadingImage}
                       className="w-full py-4 bg-linear-to-r from-accent to-blue-600 rounded-2xl font-bold text-xs uppercase tracking-widest text-white shadow-xl shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
                     >
-                        {isSubmittingAnuncio ? "Publicando..." : "Publicar Anuncio"}
+                        {isSubmittingAnuncio ? (editingAnuncioId ? "Guardando..." : "Publicando...") : (editingAnuncioId ? "Guardar Cambios" : "Publicar Anuncio")}
                     </button>
                </form>
 
@@ -453,13 +495,22 @@ export default function AdminNovedadesPage() {
                                         <span className="text-[9px] text-text/50 uppercase tracking-wider">{anuncio.tipo} • {new Date(anuncio.publicadoEn).toLocaleDateString()}</span>
                                     </div>
                                 </div>
-                                <button 
-                                  type="button"
-                                  onClick={() => handleDeleteAnuncio(anuncio.id)}
-                                  className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/25 flex items-center justify-center text-red-400 hover:bg-red-500/20 active:scale-95 transition-all shrink-0"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button 
+                                      type="button"
+                                      onClick={() => startEditAnuncio(anuncio)}
+                                      className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${editingAnuncioId === anuncio.id ? "bg-accent/20 border-accent/40 text-accent" : "bg-accent/10 border-accent/25 text-accent hover:bg-accent/20"}`}
+                                    >
+                                        <Pencil size={16} />
+                                    </button>
+                                    <button 
+                                      type="button"
+                                      onClick={() => handleDeleteAnuncio(anuncio.id)}
+                                      className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/25 flex items-center justify-center text-red-400 hover:bg-red-500/20 active:scale-95 transition-all"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </div>
                         ))
                     )}

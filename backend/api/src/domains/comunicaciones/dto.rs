@@ -51,6 +51,20 @@ pub struct CreateAnuncioRequest {
     pub expires_en: Option<DateTime<Utc>>,
 }
 
+/// Partial update of an existing announcement. Every field is optional; only
+/// the provided ones are changed (PATCH-like semantics over PUT).
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateAnuncioRequest {
+    pub titulo: Option<String>,
+    pub contenido: Option<String>,
+    pub tipo: Option<TipoAnuncio>,
+    pub imagen_url: Option<String>,
+    pub archivos_url: Option<Vec<String>>,
+    pub fijado: Option<bool>,
+    pub expires_en: Option<DateTime<Utc>>,
+}
+
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteAnuncioResponse {

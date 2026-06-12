@@ -92,6 +92,28 @@ pub async fn eliminar_anuncio(
     Ok(deleted)
 }
 
+/// Apply a partial update to an announcement, scoped to its conjunto (Law 2:
+/// tenant isolation — an admin can only edit announcements of their own
+/// conjunto). Returns the updated row, or None if it doesn't exist here.
+pub async fn update_anuncio(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    anuncio_id: Uuid,
+    cambios: crate::domains::comunicaciones::models::AnuncioCambios,
+) -> ApiResult<Option<Anuncio>> {
+    let row = diesel::update(
+        anuncios::table
+            .filter(anuncios::id.eq(anuncio_id))
+            .filter(anuncios::conjunto_id.eq(conjunto_id)),
+    )
+    .set(cambios)
+    .returning(Anuncio::as_returning())
+    .get_result(conn)
+    .await
+    .optional()?;
+    Ok(row)
+}
+
 pub async fn directorio_residentes(
     conn: &mut DbConn,
     conjunto_id: Uuid,

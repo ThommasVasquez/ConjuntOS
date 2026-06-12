@@ -52,6 +52,7 @@ use utoipa::OpenApi;
         crate::domains::pagos::handlers::pagar,
         crate::domains::comunicaciones::handlers::listar_anuncios,
         crate::domains::comunicaciones::handlers::crear_anuncio,
+        crate::domains::comunicaciones::handlers::actualizar_anuncio,
         crate::domains::comunicaciones::handlers::eliminar_anuncio,
         crate::domains::comunicaciones::handlers::directorio,
         crate::domains::solicitudes::handlers::listar_solicitudes,
