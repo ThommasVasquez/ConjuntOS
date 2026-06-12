@@ -32,6 +32,24 @@ Password: 123456789
 Every account also has a demo phone number (`+57 300 000 00NN`) and `genero`
 set, so user profiles render fully in the UI.
 
+## Seeded demo content
+
+`--seed-demo` also populates a full resident-facing content layer (idempotent —
+re-running clears and re-inserts, scoped to the demo conjunto):
+
+- **Anuncios / Novedades:** 6 (2 fijados) — asamblea, corte de agua, reciclaje, ascensores, fiesta, recordatorio de pago.
+- **Mascotas:** 5 (Max, Michi, Rocky, Pepa, Kiwi) across residents.
+- **Vehículos:** 4 (carros + moto) linked to residents.
+- **Pagos:** 5 — pagado, pendiente, vencido states.
+- **Áreas comunes:** 4 (Salón Social, Piscina, Zona BBQ, Gimnasio).
+- **Reservas:** 3 (confirmada + pendiente).
+- **Visitas:** 3 · **Paquetes:** 3 (en portería + entregado).
+- **Notificaciones:** 4 (2 sin leer para el residente).
+- **Documentos:** 4 · **Gastos:** 4 · **Recibos públicos:** 3.
+
+The primary showcase account is **residente@demo.conjuntos.app** (2 mascotas,
+2 pagos, 2 notificaciones sin leer, reservas activas).
+
 ## How to seed
 
 Local Docker stack:

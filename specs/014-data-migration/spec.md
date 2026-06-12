@@ -1,5 +1,7 @@
 # 014 — Data migration (legacy PascalCase → new snake_case)
 
+Status: **implemented** — one-time Prisma→snake_case/UUID migrate tool; decimal fix applied. `--verify` is count-only (richer FK checks deferred). migrate unit tests passing.
+
 > SKELETON — complete the table-by-table mapping before implementing M8.
 
 ## Purpose

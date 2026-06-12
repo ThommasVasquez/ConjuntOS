@@ -1,5 +1,7 @@
 # 000 — Foundation
 
+Status: **implemented** — `/api/v1` base, `/healthz`, RFC-7807 errors, CORS, timeout, panic-catch, graceful shutdown all live.
+
 ## Purpose
 
 Cross-cutting requirements every domain inherits: API conventions, auth model, tenancy,

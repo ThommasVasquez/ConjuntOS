@@ -1,5 +1,7 @@
 # 015 — Frontend cutover
 
+Status: **implemented** — Next.js frontend on real Rust API via centralized client; in-memory token + ws-ticket; 21 pages live.
+
 > SKELETON — flesh out during M9. See parity.md for the route checklist.
 
 ## Purpose

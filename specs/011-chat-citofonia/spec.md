@@ -1,6 +1,6 @@
 # 011 — Chat (user↔admin) & Citofonía
 
-Status: **M5b — pending implementation**.
+Status: **implemented+tested** (M5b). 9 integration tests passing.
 
 ## Purpose
 

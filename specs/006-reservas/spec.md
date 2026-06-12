@@ -1,5 +1,7 @@
 # 006 — Reservas & áreas comunes
 
+Status: **implemented+tested** (M4) — areas-comunes, slots, reservas with GiST no-overlap constraint (409). Test passing.
+
 > IMPLEMENTED (M4) — `backend/api/src/domains/reservas/`.
 
 ## Purpose

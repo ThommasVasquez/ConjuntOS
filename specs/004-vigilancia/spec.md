@@ -1,5 +1,7 @@
 # 004 — Vigilancia: visitas, paquetes, stats, comunicaciones
 
+Status: **implemented+tested** (M4) — visitas, paquetes, comunicaciones, stats. 13 M4 tests passing.
+
 > IMPLEMENTED (M4) — `backend/api/src/domains/vigilancia/`.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # 003 — Notificaciones & Web Push
 
+Status: **partial** — in-app notifications implemented+tested; web-push (VAPID) deferred (log-only, deps removed in M9).
+
 > IMPLEMENTED (M4) — `backend/api/src/domains/notificaciones/`.
 
 ## Purpose

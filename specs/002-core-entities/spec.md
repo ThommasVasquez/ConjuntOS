@@ -1,5 +1,7 @@
 # 002 — Core entities: conjuntos, usuarios, unidades, superadmin, profile
 
+Status: **implemented+tested** — conjuntos, unidades, usuarios; profile bootstrap test passing.
+
 ## Purpose
 
 Tenant root (`conjuntos`), people (`usuarios`), property units (`unidades`), the superadmin

@@ -1,5 +1,7 @@
 # 013 — AI: copilot, translate, consensuar, acta, search (Gemini)
 
+Status: **implemented** (M7) — semantic search, asamblea copilot, acta generation, translate, subtitulos (Gemini). No dedicated integration tests yet.
+
 > SKELETON — flesh out before implementing M7.
 
 ## Purpose

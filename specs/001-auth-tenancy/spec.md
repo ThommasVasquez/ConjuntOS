@@ -1,5 +1,7 @@
 # 001 — Auth & Tenancy
 
+Status: **implemented+tested** — login/logout/me/password, JWT, httpOnly cookie, password_changed_at revocation, tenant guards. 7 auth + role-gate tests passing.
+
 ## Purpose
 
 Rust owns authentication: credential login, Argon2id verification, JWT issuance/validation,

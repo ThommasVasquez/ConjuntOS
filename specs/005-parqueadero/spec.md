@@ -1,5 +1,7 @@
 # 005 — Parqueadero: mapa, registros, rondas, stats, vehiculos
 
+Status: **implemented+tested** (M4) — mapa, celdas, vehiculos, rondas, registros, stats. Covered by M4 tests.
+
 > IMPLEMENTED (M4) — `backend/api/src/domains/parqueadero/`.
 
 ## Purpose

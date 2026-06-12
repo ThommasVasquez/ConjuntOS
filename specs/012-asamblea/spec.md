@@ -1,5 +1,7 @@
 # 012 — Asamblea (state machine, votaciones, quorum, poderes)
 
+Status: **implemented** (M6) — full assembly lifecycle (sessions, asistencias, poderes, turnos, votaciones, votos, pairing, LiveKit token). Security-hardened (IDOR/cross-tenant/double-count fixes). No dedicated integration tests yet.
+
 > SKELETON — largest domain. Write state-machine.md (from src/app/api/asamblea/session/route.ts)
 > and full request/response shapes before implementing M6.
 

@@ -1,5 +1,7 @@
 # 007 — Pagos & recibos públicos
 
+Status: **implemented+tested** (M4) — pagos list + pagar (simulated). admin/stats wired to real data. Test passing.
+
 > IMPLEMENTED (M4) — `backend/api/src/domains/pagos/` + `domains/admin_stats.rs`.
 
 ## Purpose
