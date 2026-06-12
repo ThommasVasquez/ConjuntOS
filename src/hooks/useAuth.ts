@@ -12,6 +12,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  switchRole: (rol: string) => Promise<void>;
 }
 
 export const useAuth = create<AuthState>((set) => ({
@@ -59,5 +60,15 @@ export const useAuth = create<AuthState>((set) => ({
     } catch {
       set({ user: null, loading: false });
     }
+  },
+
+  switchRole: async (rol: string) => {
+    // Persisted, real role change. Backend re-issues the session cookie and
+    // returns a fresh Bearer token reflecting the new role.
+    const res = await api.post<LoginResponse>('/auth/switch-role', { rol });
+    if (res.token) {
+      setAuthToken(res.token);
+    }
+    set({ user: res.user });
   },
 }));

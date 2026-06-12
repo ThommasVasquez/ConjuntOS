@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::OnceLock;
 
 use axum::extract::State;
@@ -10,6 +11,7 @@ use utoipa::ToSchema;
 use crate::auth::extract::AuthUser;
 use crate::auth::{jwt, password};
 use crate::config::Config;
+use crate::db::enums::Rol;
 use crate::domains::usuarios::dto::UserDto;
 use crate::domains::usuarios::repo;
 use crate::error::{ApiError, ApiResult};
@@ -21,7 +23,14 @@ pub fn router() -> Router<AppState> {
         .route("/auth/me", get(me))
         .route("/auth/logout", post(logout))
         .route("/auth/password", put(change_password))
+        .route("/auth/switch-role", post(switch_role))
         .route("/auth/ws-ticket", get(ws_ticket))
+}
+
+/// Case-insensitive check against the configured tester whitelist.
+fn is_tester(config: &Config, email: &str) -> bool {
+    let email = email.to_lowercase();
+    config.tester_emails.iter().any(|e| e == &email)
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -79,12 +88,12 @@ pub async fn login(
         &state.config.jwt_secret,
     )?;
     let cookie = session_cookie(token.clone(), &state.config);
+    let tester = is_tester(&state.config, &user.email);
+    let mut dto: UserDto = user.into();
+    dto.is_tester = tester;
     Ok((
         jar.add(cookie),
-        Json(LoginResponse {
-            user: user.into(),
-            token,
-        }),
+        Json(LoginResponse { user: dto, token }),
     ))
 }
 
@@ -102,7 +111,66 @@ pub async fn me(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json
     let usuario = repo::find_by_id(&mut conn, user.id)
         .await?
         .ok_or(ApiError::Unauthorized)?;
-    Ok(Json(usuario.into()))
+    let tester = is_tester(&state.config, &usuario.email);
+    let mut dto: UserDto = usuario.into();
+    dto.is_tester = tester;
+    Ok(Json(dto))
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct SwitchRoleRequest {
+    /// Target role as the UPPER_SNAKE string (e.g. "PROPIETARIO").
+    pub rol: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/switch-role",
+    tag = "auth",
+    request_body = SwitchRoleRequest,
+    responses(
+        (status = 200, description = "Role switched; session re-issued", body = LoginResponse),
+        (status = 400, description = "Invalid role"),
+        (status = 403, description = "Account is not a tester")
+    )
+)]
+pub async fn switch_role(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    user: AuthUser,
+    Json(req): Json<SwitchRoleRequest>,
+) -> ApiResult<(CookieJar, Json<LoginResponse>)> {
+    let mut conn = state.pool.get().await?;
+    let usuario = repo::find_by_id(&mut conn, user.id)
+        .await?
+        .ok_or(ApiError::Unauthorized)?;
+
+    // Only whitelisted tester accounts may switch their own role.
+    if !is_tester(&state.config, &usuario.email) {
+        return Err(ApiError::Forbidden);
+    }
+
+    let nuevo_rol = Rol::from_str(req.rol.trim())
+        .map_err(|_| ApiError::BadRequest(format!("rol inválido: {}", req.rol)))?;
+
+    // Persist the role change — the new role is fully real (DB + JWT), not simulated.
+    let actualizado = repo::update_rol(&mut conn, usuario.id, nuevo_rol).await?;
+
+    let token = jwt::issue(
+        actualizado.id,
+        actualizado.conjunto_id,
+        actualizado.rol,
+        &actualizado.nombre,
+        &state.config.jwt_secret,
+    )?;
+    let cookie = session_cookie(token.clone(), &state.config);
+    let mut dto: UserDto = actualizado.into();
+    dto.is_tester = true;
+    Ok((
+        jar.add(cookie),
+        Json(LoginResponse { user: dto, token }),
+    ))
 }
 
 #[utoipa::path(

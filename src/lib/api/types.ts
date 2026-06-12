@@ -110,6 +110,8 @@ export interface UserDto {
   genero: string | null;
   mustChangePassword: boolean;
   activo: boolean;
+  /** True when this account may switch its own role at runtime (tester). */
+  isTester?: boolean;
 }
 
 export interface UpdateProfileRequest {

@@ -40,6 +40,21 @@ pub async fn find_unidad(conn: &mut DbConn, unidad_id: Uuid) -> ApiResult<Option
     Ok(unidad)
 }
 
+/// Updates a user's role and returns the refreshed row. Used by the tester
+/// role-switch endpoint — the change is persisted, so the role is fully real.
+pub async fn update_rol(
+    conn: &mut DbConn,
+    user_id: Uuid,
+    rol: crate::db::enums::Rol,
+) -> ApiResult<Usuario> {
+    let user = diesel::update(usuarios::table.find(user_id))
+        .set(usuarios::rol.eq(rol))
+        .returning(Usuario::as_returning())
+        .get_result(conn)
+        .await?;
+    Ok(user)
+}
+
 #[derive(AsChangeset, Default)]
 #[diesel(table_name = usuarios)]
 pub struct ProfileChanges {

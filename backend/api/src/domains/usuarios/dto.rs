@@ -21,6 +21,10 @@ pub struct UserDto {
     pub genero: Option<String>,
     pub must_change_password: bool,
     pub activo: bool,
+    /// True when this account may switch its own role at runtime (tester).
+    /// Set by handlers from the configured tester whitelist; defaults to false.
+    #[serde(default)]
+    pub is_tester: bool,
 }
 
 impl From<Usuario> for UserDto {
@@ -39,6 +43,7 @@ impl From<Usuario> for UserDto {
             genero: u.genero,
             must_change_password: u.must_change_password,
             activo: u.activo,
+            is_tester: false,
         }
     }
 }

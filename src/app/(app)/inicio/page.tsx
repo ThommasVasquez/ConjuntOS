@@ -11,6 +11,7 @@ import {
   Search, SlidersHorizontal, ShoppingBag, User as UserIcon
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
+import RoleSwitcher from "@/components/shell/RoleSwitcher";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import ContentActionModal from "@/components/modals/ContentActionModal";
 import SearchModal from "@/components/search/SearchModal";
@@ -411,6 +412,7 @@ function HomeVigilante() {
   const router = useRouter();
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <RoleSwitcher />
       <ProfileHeader />
       <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
         <h2 className="text-2xl font-bold text-text mb-2">Central de Guardia</h2>
@@ -446,6 +448,7 @@ function HomeEstacionamiento() {
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <RoleSwitcher />
       <ProfileHeader />
       <div 
         onClick={() => router.push("/mapa-parqueadero")}
@@ -500,6 +503,7 @@ function HomeConsejo() {
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <RoleSwitcher />
       <ProfileHeader />
       
       <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
@@ -573,6 +577,7 @@ function HomeAdmin() {
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <RoleSwitcher />
       <ProfileHeader />
       
       {/* SUPER ADMIN SPECIAL CARD */}
