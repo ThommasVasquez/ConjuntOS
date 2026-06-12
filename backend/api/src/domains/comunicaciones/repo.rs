@@ -98,8 +98,16 @@ pub async fn directorio_residentes(
 ) -> ApiResult<Vec<DirectorioRow>> {
     let rows = usuarios::table
         .filter(usuarios::conjunto_id.eq(conjunto_id))
-        .filter(usuarios::rol.eq_any(vec![Rol::Arrendatario, Rol::Propietario]))
         .filter(usuarios::activo.eq(true))
+        .filter(
+            // A resident is anyone with a Propietario/Arrendatario role, OR
+            // anyone who actually has an apartment assigned (torre + apto).
+            // The latter covers testers and admins who really live in a unit
+            // (e.g. SUPER_ADMIN assigned to apt 1410), so they can receive visits.
+            usuarios::rol
+                .eq_any(vec![Rol::Arrendatario, Rol::Propietario])
+                .or(usuarios::torre.is_not_null().and(usuarios::apto.is_not_null())),
+        )
         .order((usuarios::torre.asc(), usuarios::apto.asc()))
         .select((
             usuarios::id,

@@ -123,7 +123,7 @@ export default function ControlVisitas() {
                    <option value="">Seleccione residente...</option>
                    {residentes.map(r => (
                      <option key={r.id} value={r.id} className="bg-primary text-text">
-                       {r.unidad ? `${r.unidad.torre} - Apto ${r.unidad.numero}` : "Sin unidad"} ({r.nombre})
+                       {r.torre && r.apto ? `Torre ${r.torre} - Apto ${r.apto}` : "Sin unidad"} ({r.nombre})
                      </option>
                    ))}
                 </select>
