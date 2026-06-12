@@ -144,6 +144,7 @@ function HomeResidente() {
 
   return (
     <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-16 pb-32">
+      <RoleSwitcher />
       {showCelebration && (
         <CelebrationModal 
           tipo={showCelebration.tipo}
