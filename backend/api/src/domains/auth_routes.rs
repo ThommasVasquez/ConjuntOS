@@ -198,6 +198,11 @@ fn session_cookie(token: String, config: &Config) -> Cookie<'static> {
     cookie.set_path("/");
     cookie.set_http_only(true);
     cookie.set_max_age(time::Duration::seconds(jwt::session_max_age_seconds()));
+    if let Some(domain) = &config.cookie_domain {
+        // Shared parent domain (e.g. `.conjuntos.app`) so the cookie set by the
+        // API host is also sent to the frontend host (app.conjuntos.app).
+        cookie.set_domain(domain.clone());
+    }
     if config.cookie_cross_site {
         // pages.dev frontend ↔ API host are cross-site until the shared domain lands.
         cookie.set_same_site(SameSite::None);

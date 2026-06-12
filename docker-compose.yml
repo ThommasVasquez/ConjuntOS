@@ -28,7 +28,8 @@ services:
       DATABASE_URL: postgresql://enconjunto:enconjunto123@db:5432/enconjunto
       RUN_MIGRATIONS: "true"
       JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me}
-      ALLOWED_ORIGINS: http://localhost:3000,https://conjuntos.app,https://www.conjuntos.app
+      ALLOWED_ORIGINS: http://localhost:3000,https://conjuntos.app,https://www.conjuntos.app,https://app.conjuntos.app
+      COOKIE_DOMAIN: .conjuntos.app
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1
       S3_BUCKET: enconjunto

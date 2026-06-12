@@ -38,6 +38,9 @@ pub struct Config {
     pub s3_public_url: Option<String>,
     /// `SameSite=None` is needed while the frontend lives on pages.dev (cross-site).
     pub cookie_cross_site: bool,
+    /// Optional cookie `Domain` attribute (e.g. `.conjuntos.app`) so the session
+    /// cookie is shared across subdomains (api.* sets it, app.* reads it).
+    pub cookie_domain: Option<String>,
     /// LiveKit server configuration for video rooms.
     pub livekit_api_key: Option<String>,
     pub livekit_api_secret: Option<String>,
@@ -84,6 +87,7 @@ impl Config {
             s3_secret_key: env::var("S3_SECRET_KEY").ok().filter(|v| !v.is_empty()),
             s3_public_url: env::var("S3_PUBLIC_URL").ok().filter(|v| !v.is_empty()),
             cookie_cross_site: env::var("COOKIE_CROSS_SITE").is_ok_and(|v| v == "true" || v == "1"),
+            cookie_domain: env::var("COOKIE_DOMAIN").ok().filter(|v| !v.is_empty()),
             livekit_api_key: env::var("LIVEKIT_API_KEY").ok().filter(|v| !v.is_empty()),
             livekit_api_secret: env::var("LIVEKIT_API_SECRET")
                 .ok()

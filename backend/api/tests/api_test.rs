@@ -55,6 +55,7 @@ async fn test_state() -> AppState {
         s3_secret_key: None,
         s3_public_url: None,
         cookie_cross_site: false,
+        cookie_domain: None,
         livekit_api_key: None,
         livekit_api_secret: None,
         livekit_url: None,

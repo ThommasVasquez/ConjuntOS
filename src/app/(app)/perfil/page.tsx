@@ -265,8 +265,22 @@ function ProfileContent() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.put('/usuarios/me/profile', editForm);
+      // El API espera nombres en español (nombre/telefono/genero), no los
+      // del estado local (name/phone/gender). Mapear antes de enviar.
+      await api.put('/usuarios/me/profile', {
+        nombre: editForm.name,
+        telefono: editForm.phone,
+        genero: editForm.gender,
+        torre: editForm.torre,
+        apto: editForm.apto,
+      });
       setUserData(editForm);
+      if (userId) {
+        localStorage.setItem(
+          `conjuntos_profile_data_${userId}`,
+          JSON.stringify(editForm)
+        );
+      }
       setShowEditModal(false);
       toast.success("Perfil actualizado con éxito");
     } catch {
