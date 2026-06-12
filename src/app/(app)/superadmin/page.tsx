@@ -163,10 +163,26 @@ export default function SuperAdminPage() {
 
     setIsSubmitting(true);
     try {
+      // Sanitize before sending: the Rust backend expects typed fields, not the
+      // raw string-only form state. totalUnidades must be a number (i32), and
+      // optional fields left blank must be omitted (so serde sees them as None)
+      // instead of being sent as "" — an empty string fails to deserialize into
+      // Option<DateTime>/Option<i32> and triggers a 422.
+      const payload: Record<string, unknown> = {};
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value === "" || value === null || value === undefined) return;
+        if (key === "totalUnidades") {
+          const n = parseInt(String(value), 10);
+          if (!Number.isNaN(n)) payload[key] = n;
+        } else {
+          payload[key] = value;
+        }
+      });
+
       if (editingConjuntoId) {
-        await api.put(`/superadmin/conjuntos/${editingConjuntoId}`, formData);
+        await api.put(`/superadmin/conjuntos/${editingConjuntoId}`, payload);
       } else {
-        await api.post('/superadmin/conjuntos', formData);
+        await api.post('/superadmin/conjuntos', payload);
       }
       toast.success(editingConjuntoId ? "Copropiedad actualizada con éxito" : "Conjunto de Propiedad Horizontal registrado con éxito");
       // Reset form
