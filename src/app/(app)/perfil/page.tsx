@@ -524,7 +524,7 @@ function ProfileContent() {
             <span className="text-xs font-bold text-text/80 uppercase tracking-widest">Torre {userData.torre}</span>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-full liquid-glass border border-border">
-            <div className="w-2 h-2 rounded-full bg-zinc-400 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-neutral-400 animate-pulse" />
             <span className="text-xs font-bold text-text/80 uppercase tracking-widest">Apto {userData.apto}</span>
           </div>
         </div>
@@ -670,10 +670,10 @@ function ProfileContent() {
           {viewMode === "pets" && (
             <div className="space-y-4">
                <div className="flex justify-between items-center px-2">
-                 <h3 className="text-text text-lg font-bold flex items-center gap-2">Mis Mascotas <PawPrint size={18} className="text-zinc-400" /></h3>
+                 <h3 className="text-text text-lg font-bold flex items-center gap-2">Mis Mascotas <PawPrint size={18} className="text-neutral-400" /></h3>
                  <button 
                     onClick={() => { setRegType("MASCOTA"); setShowRegModal(true); }}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-zinc-500/20 text-zinc-400 text-[11px] font-bold uppercase tracking-wider hover:bg-zinc-500/30 transition-all active:scale-95 border border-zinc-500/20"
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-neutral-500/20 text-neutral-400 text-[11px] font-bold uppercase tracking-wider hover:bg-neutral-500/30 transition-all active:scale-95 border border-neutral-500/20"
                  >
                    <Plus size={14} /> Solicitar Vinculación
                  </button>
@@ -799,9 +799,9 @@ function ProfileContent() {
                       ))}
                       {/* RECIBOS PÚBLICOS PENDIENTES */}
                       {financialData.recibos.filter(r => !r.pagado).map((r, i) => (
-                        <div key={i} className="liquid-glass-card rounded-2xl p-5 border border-border flex justify-between items-center bg-primary-light/50 border-zinc-500/20">
+                        <div key={i} className="liquid-glass-card rounded-2xl p-5 border border-border flex justify-between items-center bg-primary-light/50 border-neutral-500/20">
                            <div className="flex flex-col">
-                              <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-black mb-1">Servicios Públicos</span>
+                              <span className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Servicios Públicos</span>
                               <span className="text-sm font-bold text-text">{r.servicio}</span>
                               <span className="text-[10px] text-text/60 uppercase mt-1">Vence: {new Date(r.vencimiento).toLocaleDateString()}</span>
                            </div>
@@ -809,7 +809,7 @@ function ProfileContent() {
                                <span className="text-lg font-black text-text">${Number(r.monto).toLocaleString()}</span>
                                <button 
                                  onClick={() => handlePay(r.id, 'RECIBO')}
-                                 className="px-4 py-1.5 rounded-full bg-zinc-500/20 text-zinc-400 text-[10px] font-black uppercase hover:bg-zinc-500 hover:text-white transition-all active:scale-90"
+                                 className="px-4 py-1.5 rounded-full bg-neutral-500/20 text-neutral-400 text-[10px] font-black uppercase hover:bg-neutral-500 hover:text-white transition-all active:scale-90"
                                >
                                  Pagar Ahora
                                </button>
@@ -892,8 +892,8 @@ function ProfileContent() {
                   ))
                 )}
 
-                <div className="mt-8 p-4 rounded-3xl bg-zinc-500/5 border border-zinc-500/20 flex gap-3 items-center">
-                   <Info size={16} className="text-zinc-400 shrink-0" />
+                <div className="mt-8 p-4 rounded-3xl bg-neutral-500/5 border border-neutral-500/20 flex gap-3 items-center">
+                   <Info size={16} className="text-neutral-400 shrink-0" />
                    <p className="text-[10px] text-text/60 leading-relaxed uppercase tracking-tighter italic">Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.</p>
                 </div>
               </div>
@@ -1061,8 +1061,8 @@ function ProfileContent() {
                  <div>
                     <h2 className="text-2xl font-display font-bold text-text tracking-tight flex items-center gap-3">
                        {regType === "VEHICULO" ? <><Car className="text-accent" /> Registrar Vehículo</> : 
-                        regType === "MASCOTA" ? <><PawPrint className="text-zinc-400" /> Registrar Mascota</> :
-                        <><ClipboardList className="text-zinc-400" /> Solicitud de Trámite</>}
+                        regType === "MASCOTA" ? <><PawPrint className="text-neutral-400" /> Registrar Mascota</> :
+                        <><ClipboardList className="text-neutral-400" /> Solicitud de Trámite</>}
                     </h2>
                     <p className="text-[10px] text-text/60 uppercase tracking-[0.2em] mt-1 font-black">
                        {regType === "OTRO" ? "Actualización de Datos Sensibles" : "Solicitud de Vinculación Oficial"}
@@ -1120,7 +1120,7 @@ function ProfileContent() {
                     <>
                        <div className="space-y-1.5">
                           <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Nombre de la Mascota</label>
-                          <input required placeholder="Ej: Toby" type="text" value={regForm.nombre} onChange={(e) => setRegForm({...regForm, nombre: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-zinc-400/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
+                          <input required placeholder="Ej: Toby" type="text" value={regForm.nombre} onChange={(e) => setRegForm({...regForm, nombre: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-neutral-400/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" />
                        </div>
                        <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-1.5">
@@ -1152,7 +1152,7 @@ function ProfileContent() {
                             type={regForm.tipo === "PASSWORD" ? "password" : "text"} 
                             value={regForm.nombre} 
                             onChange={(e) => setRegForm({...regForm, nombre: e.target.value})} 
-                            className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-zinc-500/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" 
+                            className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-neutral-500/40 focus:bg-primary-light/80 transition-all placeholder:text-text/50" 
                           />
                        </div>
                        <div className="p-4 rounded-2xl bg-primary-light/30 border border-border">
@@ -1194,10 +1194,10 @@ function ProfileContent() {
                  </div>
  
                  {/* COEXISTENCE NOTICE (Stage 36) */}
-                 <div className="p-5 rounded-3xl bg-zinc-500/5 border border-zinc-500/20 flex gap-4 mt-2">
-                    <Info size={20} className="text-zinc-400 shrink-0 mt-0.5" />
+                 <div className="p-5 rounded-3xl bg-neutral-500/5 border border-neutral-500/20 flex gap-4 mt-2">
+                    <Info size={20} className="text-neutral-400 shrink-0 mt-0.5" />
                     <div className="space-y-2">
-                       <h4 className="text-[11px] font-black text-zinc-300 uppercase tracking-widest">Aviso de Reglas y Convivencia</h4>
+                       <h4 className="text-[11px] font-black text-neutral-300 uppercase tracking-widest">Aviso de Reglas y Convivencia</h4>
                        <p className="text-[10px] text-text/60 leading-relaxed">
                           La vinculación está sujeta a **aprobación administrativa y disponibilidad**. Es indispensable estar **a paz y salvo**. 
                           Queda prohibido el lavado o reparaciones de vehículos en áreas comunes. 
@@ -1209,7 +1209,7 @@ function ProfileContent() {
                  <button 
                     type="submit"
                     disabled={isRegSubmitting}
-                    className={`w-full ${regType === "VEHICULO" ? "bg-accent" : "bg-zinc-500"} text-primary font-bold py-5 rounded-[24px] shadow-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
+                    className={`w-full ${regType === "VEHICULO" ? "bg-accent" : "bg-neutral-500"} text-primary font-bold py-5 rounded-[24px] shadow-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
                  >
                     {isRegSubmitting ? "Enviando..." : "Enviar Solicitud"}
                  </button>
@@ -1222,18 +1222,18 @@ function ProfileContent() {
       {isPaying && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-3xl animate-in fade-in duration-500">
            <div className="w-full max-w-[380px] bg-white rounded-[40px] p-10 flex flex-col items-center text-center shadow-[0_0_100px_rgba(255,255,255,0.1)]">
-              <div className="w-20 h-20 rounded-full bg-zinc-600 flex items-center justify-center mb-8 relative">
-                 <div className="absolute inset-0 rounded-full border-4 border-zinc-200 border-t-white animate-spin" />
+              <div className="w-20 h-20 rounded-full bg-neutral-600 flex items-center justify-center mb-8 relative">
+                 <div className="absolute inset-0 rounded-full border-4 border-neutral-200 border-t-white animate-spin" />
                  <ShieldCheck size={40} className="text-white" />
               </div>
-              <h3 className="text-[#0A0A0B] text-2xl font-black mb-3">Procesando Pago</h3>
-              <p className="text-gray-500 text-sm leading-relaxed mb-8">
+              <h3 className="text-[#000000] text-2xl font-black mb-3">Procesando Pago</h3>
+              <p className="text-neutral-500 text-sm leading-relaxed mb-8">
                  Estamos conectando de forma segura con tu entidad financiera a través de <b>PSE</b>. Por favor, no cierres esta ventana.
               </p>
-              <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                 <div className="h-full bg-zinc-600 transition-all duration-[2500ms] ease-out" style={{ width: isPaying ? '100%' : '0%' }} />
+              <div className="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden">
+                 <div className="h-full bg-neutral-600 transition-all duration-[2500ms] ease-out" style={{ width: isPaying ? '100%' : '0%' }} />
               </div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-4">Transacción Encriptada 256-bit</p>
+              <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-bold mt-4">Transacción Encriptada 256-bit</p>
            </div>
         </div>
       )}

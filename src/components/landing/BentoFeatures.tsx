@@ -14,22 +14,22 @@ const features = [
     title: "Citofonía Inteligente",
     description: "Mensajes de voz con transcripción automática en tiempo real.",
     icon: Mic,
-    className: "md:col-span-2 md:row-span-2 bg-[#FAFAFA]/10 border-[#FAFAFA]/20",
-    iconColor: "text-[#FAFAFA]"
+    className: "md:col-span-2 md:row-span-2 bg-[#FFFFFF]/10 border-[#FFFFFF]/20",
+    iconColor: "text-[#FFFFFF]"
   },
   {
     title: "Pagos Transparentes",
     description: "Trazabilidad total de cuotas y certificados automáticos.",
     icon: CreditCard,
-    className: "bg-zinc-500/10 border-zinc-500/20",
-    iconColor: "text-zinc-500"
+    className: "bg-neutral-500/10 border-neutral-500/20",
+    iconColor: "text-neutral-500"
   },
   {
     title: "Control de Accesos",
     description: "Pre-registro de visitantes y seguridad proactiva.",
     icon: Shield,
-    className: "bg-zinc-500/10 border-zinc-500/20",
-    iconColor: "text-zinc-500"
+    className: "bg-neutral-500/10 border-neutral-500/20",
+    iconColor: "text-neutral-500"
   },
   {
     title: "Paquetería Digital",
@@ -42,15 +42,15 @@ const features = [
     title: "Reservas de Áreas",
     description: "Disponibilidad en tiempo real para tus zonas comunes.",
     icon: Calendar,
-    className: "bg-zinc-500/10 border-zinc-500/20",
-    iconColor: "text-zinc-500"
+    className: "bg-neutral-500/10 border-neutral-500/20",
+    iconColor: "text-neutral-500"
   },
   {
     title: "Comunidad Conectada",
     description: "Clasificados y comunicaciones oficiales en HD.",
     icon: MessageSquare,
-    className: "md:col-span-2 bg-zinc-500/10 border-zinc-500/20",
-    iconColor: "text-zinc-500"
+    className: "md:col-span-2 bg-neutral-500/10 border-neutral-500/20",
+    iconColor: "text-neutral-500"
   }
 ];
 
@@ -76,11 +76,11 @@ export default function BentoFeatures() {
   }, []);
 
   return (
-    <section ref={containerRef} className="py-24 px-6 bg-[#0A0A0B]">
+    <section ref={containerRef} className="py-24 px-6 bg-[#000000]">
       <div className="max-w-6xl mx-auto space-y-16">
         <div className="space-y-4 text-center md:text-left">
           <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
-            Todo lo que tu <span className="text-[#FAFAFA]">Conjunto</span> necesita
+            Todo lo que tu <span className="text-[#FFFFFF]">Conjunto</span> necesita
           </h2>
           <p className="text-white/40 max-w-xl font-medium">
             Módulos integrados bajo una misma identidad visual. Eficiencia operativa envuelta en diseño de clase mundial.

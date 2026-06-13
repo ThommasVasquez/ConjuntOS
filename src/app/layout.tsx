@@ -47,7 +47,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0A0A0B",
+  themeColor: "#000000",
 };
 
 import { Providers } from "@/components/Providers";

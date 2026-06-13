@@ -39,7 +39,7 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
 
   const createConfetti = () => {
     if (!canvasRef.current) return;
-    const colors = ["#FAFAFA", "#A1A1AA", "#FAFAFA", "#10B981", "#F59E0B"];
+    const colors = ["#FFFFFF", "#A3A3A3", "#FFFFFF", "#10B981", "#F59E0B"];
     const container = canvasRef.current;
     
     for (let i = 0; i < 60; i++) {

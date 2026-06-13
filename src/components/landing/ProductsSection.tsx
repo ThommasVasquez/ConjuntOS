@@ -38,7 +38,7 @@ export default function ProductsSection() {
       component: (
         <div className="w-full h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-500/10 border border-zinc-500/20 flex items-center justify-center text-zinc-400">
+            <div className="w-12 h-12 rounded-2xl bg-neutral-500/10 border border-neutral-500/20 flex items-center justify-center text-neutral-400">
               <CreditCard size={20} />
             </div>
             <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold uppercase px-2.5 py-1 rounded-full border border-emerald-500/30 tracking-wider">Al día</span>
@@ -57,10 +57,10 @@ export default function ProductsSection() {
       component: (
         <div className="w-full h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-500/10 border border-zinc-500/20 flex items-center justify-center text-zinc-400">
+            <div className="w-12 h-12 rounded-2xl bg-neutral-500/10 border border-neutral-500/20 flex items-center justify-center text-neutral-400">
               <Calendar size={20} />
             </div>
-            <span className="text-[9px] bg-zinc-500/20 text-zinc-400 font-bold uppercase px-2.5 py-1 rounded-full border border-zinc-500/30 tracking-wider">Aprobado</span>
+            <span className="text-[9px] bg-neutral-500/20 text-neutral-400 font-bold uppercase px-2.5 py-1 rounded-full border border-neutral-500/30 tracking-wider">Aprobado</span>
           </div>
           <div>
             <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Zona Común</h5>
@@ -103,10 +103,10 @@ export default function ProductsSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#0A0A0B] relative">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#000000] relative">
       {/* Background orbs for depth */}
-      <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-[#FAFAFA]/5 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[20%] right-[-10%] w-[500px] h-[500px] bg-[#3f3f46]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-[#FFFFFF]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[20%] right-[-10%] w-[500px] h-[500px] bg-[#262626]/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16 max-w-2xl mx-auto">
@@ -123,7 +123,7 @@ export default function ProductsSection() {
           {products.map((p, i) => (
             <div key={i} className="product-card group cursor-pointer flex flex-col justify-between h-full">
               <div className="w-full h-64 bg-white/5 border border-white/5 rounded-[32px] overflow-hidden p-6 flex flex-col mb-4 transition-all duration-500 group-hover:scale-[1.02] group-hover:border-accent/30 group-hover:shadow-[0_15px_35px_rgba(0,0,0,0.3)] relative">
-                <div className="absolute inset-0 bg-linear-to-b from-[#27272A]/20 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-b from-[#171717]/20 to-transparent" />
                 <div className="relative z-10 w-full h-full">
                   {p.component}
                 </div>

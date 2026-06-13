@@ -34,18 +34,18 @@ export default function CraftsmanshipSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#0A0A0B]">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#000000]">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
         
         <div className="craft-text flex-1 space-y-6">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#FAFAFA]"></div>
-            <span className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Nuestra esencia</span>
+            <div className="w-2 h-2 rounded-full bg-[#FFFFFF]"></div>
+            <span className="text-sm font-semibold text-neutral-500 uppercase tracking-widest">Nuestra esencia</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-montserrat)]">
             Innovación<br/>y Calidad
           </h2>
-          <p className="text-gray-400 text-lg max-w-sm">
+          <p className="text-neutral-400 text-lg max-w-sm">
             El detalle de cada función está cuidadosamente pensado por nuestro equipo para brindarte la máxima fiabilidad, como una obra de arte creada para perdurar.
           </p>
         </div>

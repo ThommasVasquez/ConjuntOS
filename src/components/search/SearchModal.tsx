@@ -30,12 +30,12 @@ interface SearchModalProps {
 // ─── Platform Modules (searchable) ───────────────────────────────────────────
 
 const MODULES = [
-  { title: "Pagos", desc: "Cuotas, recibos y sanciones", icon: <CreditCard size={18} />, color: "from-[#FAFAFA] to-[#52525B]", path: "/pagos", keywords: ["pago", "cuota", "administración", "deuda", "recibo", "energía", "gas", "agua"] },
-  { title: "Reservas", desc: "Salón, cancha, gimnasio y más", icon: <Calendar size={18} />, color: "from-zinc-500 to-zinc-400", path: "/reservas", keywords: ["reserva", "salón", "salon", "cancha", "gimnasio", "piscina", "bbq", "área", "area"] },
+  { title: "Pagos", desc: "Cuotas, recibos y sanciones", icon: <CreditCard size={18} />, color: "from-[#FFFFFF] to-[#404040]", path: "/pagos", keywords: ["pago", "cuota", "administración", "deuda", "recibo", "energía", "gas", "agua"] },
+  { title: "Reservas", desc: "Salón, cancha, gimnasio y más", icon: <Calendar size={18} />, color: "from-neutral-500 to-neutral-400", path: "/reservas", keywords: ["reserva", "salón", "salon", "cancha", "gimnasio", "piscina", "bbq", "área", "area"] },
   { title: "Parqueadero", desc: "Estado y asignación de cupos", icon: <Car size={18} />, color: "from-emerald-500 to-emerald-700", path: "/parqueadero", keywords: ["parqueo", "parqueadero", "carro", "moto", "vehículo", "vehiculo", "cupo"] },
   { title: "Paquetería", desc: "Paquetes en portería", icon: <Package size={18} />, color: "from-amber-500 to-orange-400", path: "/paqueteria", keywords: ["paquete", "encomienda", "portería", "porteria", "llegó", "llego", "domicilio", "envío"] },
-  { title: "PQRS", desc: "Peticiones, quejas y reclamos", icon: <MessageSquare size={18} />, color: "from-zinc-500 to-zinc-600", path: "/pqrs", keywords: ["pqr", "queja", "petición", "peticion", "problema", "reclamo", "solicitud"] },
-  { title: "Visitantes", desc: "Autorización de ingresos", icon: <Users size={18} />, color: "from-zinc-500 to-zinc-500", path: "/visitantes", keywords: ["visita", "visitante", "invitado", "ingreso", "acceso", "autoriza"] },
+  { title: "PQRS", desc: "Peticiones, quejas y reclamos", icon: <MessageSquare size={18} />, color: "from-neutral-500 to-neutral-600", path: "/pqrs", keywords: ["pqr", "queja", "petición", "peticion", "problema", "reclamo", "solicitud"] },
+  { title: "Visitantes", desc: "Autorización de ingresos", icon: <Users size={18} />, color: "from-neutral-500 to-neutral-500", path: "/visitantes", keywords: ["visita", "visitante", "invitado", "ingreso", "acceso", "autoriza"] },
   { title: "Cartelera", desc: "Anuncios y novedades", icon: <Megaphone size={18} />, color: "from-red-500 to-orange-500", path: "/cartelera", keywords: ["anuncio", "novedad", "asamblea", "reunión", "reunion", "circular", "cartelera"] },
   { title: "Inmobiliaria", desc: "Venta y arriendo en el conjunto", icon: <Building2 size={18} />, color: "from-amber-500 to-orange-400", path: "/inmobiliaria", keywords: ["venta", "arriendo", "alquiler", "inmueble", "apartamento", "apto"] },
 ];

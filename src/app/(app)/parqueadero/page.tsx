@@ -108,7 +108,7 @@ export default function ParqueaderoPage() {
       <section className="fade-up w-full grid grid-cols-2 gap-4">
         <div className="liquid-glass-card rounded-[32px] p-5 border border-border flex flex-col gap-3 group hover:bg-text/10 transition-all duration-300">
           <div className="flex justify-between items-center">
-            <div className="p-2.5 rounded-full bg-zinc-500/20 border border-zinc-500/30 text-zinc-400 group-hover:scale-110 transition-transform">
+            <div className="p-2.5 rounded-full bg-neutral-500/20 border border-neutral-500/30 text-neutral-400 group-hover:scale-110 transition-transform">
               <Car size={18} />
             </div>
             <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest bg-emerald-400/10 px-2.5 py-1 rounded-full border border-emerald-400/20">Mis Celdas</span>
@@ -154,7 +154,7 @@ export default function ParqueaderoPage() {
                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-accent/10 rounded-full blur-2xl group-hover:bg-accent/20 transition-all duration-700" />
                  
                  <div className="flex justify-between items-start mb-6">
-                    <div className={`p-3 rounded-2xl bg-linear-to-br ${v.tipo === 'CARRO' ? 'from-zinc-500/20 to-zinc-600/20 text-zinc-400' : 'from-orange-500/20 to-amber-600/20 text-orange-400'} border border-border`}>
+                    <div className={`p-3 rounded-2xl bg-linear-to-br ${v.tipo === 'CARRO' ? 'from-neutral-500/20 to-neutral-600/20 text-neutral-400' : 'from-orange-500/20 to-amber-600/20 text-orange-400'} border border-border`}>
                        {v.tipo === 'CARRO' ? <Car size={24} /> : <Bike size={24} />}
                     </div>
                     <div className="flex flex-col items-end">
@@ -199,8 +199,8 @@ export default function ParqueaderoPage() {
           </button>
 
           {[
-            { icon: Clock, title: "Historial de Accesos", sub: "Ver registros de entrada y salida", color: "text-zinc-400", action: () => setShowHistorialModal(true) },
-            { icon: FileText, title: "Reglamento Completo", sub: "Normas y sanciones de parqueo", color: "text-zinc-400", action: () => setShowReglamentoModal(true) }
+            { icon: Clock, title: "Historial de Accesos", sub: "Ver registros de entrada y salida", color: "text-neutral-400", action: () => setShowHistorialModal(true) },
+            { icon: FileText, title: "Reglamento Completo", sub: "Normas y sanciones de parqueo", color: "text-neutral-400", action: () => setShowReglamentoModal(true) }
           ].map((item, idx) => (
             <button 
               key={idx}
@@ -264,7 +264,7 @@ export default function ParqueaderoPage() {
             <div className="flex justify-between items-center mb-8 shrink-0">
                <div>
                    <h3 className="text-2xl font-display font-bold text-text tracking-tight">Historial de Accesos</h3>
-                   <p className="text-[11px] text-zinc-400 uppercase tracking-widest font-black mt-1">Registros Recientes</p>
+                   <p className="text-[11px] text-neutral-400 uppercase tracking-widest font-black mt-1">Registros Recientes</p>
                </div>
                <button onClick={() => setShowHistorialModal(false)} className="w-12 h-12 rounded-full bg-text/5 flex items-center justify-center text-text/50 hover:text-text hover:bg-text/10 transition-all cursor-pointer">
                   <X size={20} />
@@ -299,8 +299,8 @@ export default function ParqueaderoPage() {
                ))}
             </div>
 
-            <div className="mt-8 p-4 rounded-3xl bg-zinc-500/5 border border-zinc-500/20 flex gap-3 items-center shrink-0">
-               <Info size={16} className="text-zinc-400" />
+            <div className="mt-8 p-4 rounded-3xl bg-neutral-500/5 border border-neutral-500/20 flex gap-3 items-center shrink-0">
+               <Info size={16} className="text-neutral-400" />
                <p className="text-[10px] text-text/60 leading-relaxed uppercase tracking-tighter font-black">Registros generados automáticamente por el sistema de reconocimiento de placas.</p>
             </div>
           </div>
@@ -316,7 +316,7 @@ export default function ParqueaderoPage() {
             <div className="flex justify-between items-center mb-8 shrink-0">
                <div className="flex flex-col">
                   <h3 className="text-2xl font-display font-bold text-text tracking-tight">Reglamento Oficial</h3>
-                  <p className="text-[11px] text-zinc-400 uppercase tracking-[0.2em] mt-1 font-black">Normas de Parqueo y Movilidad v2.1</p>
+                  <p className="text-[11px] text-neutral-400 uppercase tracking-[0.2em] mt-1 font-black">Normas de Parqueo y Movilidad v2.1</p>
                </div>
                <button onClick={() => setShowReglamentoModal(false)} className="w-12 h-12 rounded-full bg-text/5 flex items-center justify-center text-text/50 hover:bg-text/10 transition-colors cursor-pointer">
                   <X size={20} />
@@ -326,7 +326,7 @@ export default function ParqueaderoPage() {
             <div className="flex-1 overflow-y-auto pr-2 space-y-8 scrollbar-hide text-text/90">
                <section className="space-y-4 pb-4 border-b border-border">
                   <h4 className="text-sm font-black text-text/60 uppercase tracking-[0.15em] flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" /> I. Disposiciones Generales
+                     <div className="w-1.5 h-1.5 rounded-full bg-neutral-500" /> I. Disposiciones Generales
                   </h4>
                   <p className="text-sm leading-relaxed font-light">
                      El uso de las zonas de parqueo está restringido exclusivamente a los vehículos registrados y vinculados a las unidades residenciales. Queda prohibido el estacionamiento de vehículos no autorizados en celdas privadas.
@@ -335,7 +335,7 @@ export default function ParqueaderoPage() {
 
                <section className="space-y-4 pb-4 border-b border-border">
                   <h4 className="text-sm font-black text-text/60 uppercase tracking-[0.15em] flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" /> II. Velocidad y Seguridad
+                     <div className="w-1.5 h-1.5 rounded-full bg-neutral-500" /> II. Velocidad y Seguridad
                   </h4>
                   <ul className="space-y-3">
                      {[
@@ -345,7 +345,7 @@ export default function ParqueaderoPage() {
                        "Los menores de edad no podrán conducir vehículos dentro del conjunto."
                      ].map((item, i) => (
                        <li key={i} className="text-sm font-light flex gap-3">
-                          <span className="text-zinc-400 font-bold shrink-0">•</span>
+                          <span className="text-neutral-400 font-bold shrink-0">•</span>
                           {item}
                        </li>
                      ))}
@@ -354,7 +354,7 @@ export default function ParqueaderoPage() {
 
                <section className="space-y-4 pb-4 border-b border-border">
                   <h4 className="text-sm font-black text-text/60 uppercase tracking-[0.15em] flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" /> III. Parqueo de Visitantes
+                     <div className="w-1.5 h-1.5 rounded-full bg-neutral-500" /> III. Parqueo de Visitantes
                   </h4>
                   <p className="text-sm leading-relaxed font-light">
                      Los visitantes tienen derecho a un maximum de 12 horas continuas de parqueo gratuito. A partir de la hora 13, se aplicará el cobro de la tarifa vigente establecida por la asamblea.

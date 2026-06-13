@@ -16,32 +16,32 @@
 }
 
 :root {
-  /* Paleta Grafito Monocromo (escala de grises neutra, Liquid Glass) */
-  --color-primary: #0A0A0B;       /* Casi negro neutro (fondo) */
-  --color-primary-light: #27272A; /* Grafito (zinc 800) */
-  --color-accent: #FAFAFA;        /* Blanco como acento (CTAs/detalles) en oscuro */
-  --color-on-accent: #0A0A0B;     /* Texto/icono SOBRE el acento (negro sobre blanco) */
-  --color-surface: rgba(24, 24, 27, 0.4);       /* Glass grafito */
-  --color-surface-2: rgba(255, 255, 255, 0.05); /* Glass más claro */
-  --color-text: #FAFAFA;          /* Casi blanco (zinc 50) */
-  --color-text-muted: #A1A1AA;    /* Gris medio (zinc 400) */
+  /* Paleta Blanco y Negro PURO (sin tinte, alto contraste, Liquid Glass) */
+  --color-primary: #000000;       /* Negro puro (fondo) */
+  --color-primary-light: #141414; /* Negro elevado neutro (tarjetas) */
+  --color-accent: #FFFFFF;        /* Blanco puro como acento (CTAs/detalles) */
+  --color-on-accent: #000000;     /* Texto/icono SOBRE el acento (negro sobre blanco) */
+  --color-surface: rgba(255, 255, 255, 0.045);  /* Glass: blanco puro translúcido */
+  --color-surface-2: rgba(255, 255, 255, 0.07); /* Glass más claro */
+  --color-text: #FFFFFF;          /* Blanco puro */
+  --color-text-muted: rgba(255, 255, 255, 0.55); /* Texto tenue = blanco con opacidad (sin gris con tinte) */
   --color-success: #10B981;
   --color-danger: #EF4444;
   --color-warning: #F59E0B;
-  --color-border: rgba(255, 255, 255, 0.1); /* Borde sutil para glass */
+  --color-border: rgba(255, 255, 255, 0.14); /* Borde sutil para glass */
 }
 
-/* Modo Claro override variables — mismo grafito invertido */
+/* Modo Claro override variables — blanco y negro puro invertido */
 .light {
-  --color-primary: #F4F4F5;       /* Gris muy claro neutro (zinc 100) */
+  --color-primary: #FFFFFF;       /* Blanco puro (fondo) */
   --color-primary-light: #FFFFFF; /* Blanco para tarjetas */
-  --color-accent: #18181B;        /* Negro como acento (CTAs/detalles) en claro */
+  --color-accent: #000000;        /* Negro puro como acento (CTAs/detalles) */
   --color-on-accent: #FFFFFF;     /* Texto/icono SOBRE el acento (blanco sobre negro) */
-  --color-surface: rgba(255, 255, 255, 0.7);    /* Vidrio blanco translúcido */
-  --color-surface-2: rgba(24, 24, 27, 0.04);    /* Fondo sutil de input/botón */
-  --color-text: #18181B;          /* Zinc 900 */
-  --color-text-muted: #71717A;    /* Zinc 500 */
-  --color-border: rgba(24, 24, 27, 0.08); /* Bordes sutiles en claro */
+  --color-surface: rgba(255, 255, 255, 0.72);   /* Vidrio blanco translúcido */
+  --color-surface-2: rgba(0, 0, 0, 0.04);       /* Fondo sutil de input/botón */
+  --color-text: #000000;          /* Negro puro */
+  --color-text-muted: rgba(0, 0, 0, 0.55); /* Texto tenue = negro con opacidad */
+  --color-border: rgba(0, 0, 0, 0.1); /* Bordes sutiles en claro */
 }
 
 /* Base resets & view transitions */
@@ -95,7 +95,7 @@ html, body {
 }
 
 .liquid-glass-card {
-  background: linear-gradient(135deg, rgba(39, 39, 42, 0.5) 0%, rgba(24, 24, 27, 0.65) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -173,7 +173,7 @@ html, body {
 
 .liquid-story-ring {
   position: relative;
-  background: linear-gradient(45deg, #FAFAFA, #A1A1AA, #FAFAFA);
+  background: linear-gradient(45deg, #FFFFFF, #555555, #FFFFFF);
   background-size: 200% 200%;
   animation: story-bg 5s infinite linear;
   padding: 3px;
@@ -190,7 +190,7 @@ html, body {
   position: absolute;
   inset: -4px;
   border-radius: 9999px;
-  background: conic-gradient(from 0deg, transparent, #FAFAFA, #A1A1AA, transparent);
+  background: conic-gradient(from 0deg, transparent, #FFFFFF, #888888, transparent);
   animation: rotate-halo 3s linear infinite;
   opacity: 0.6;
   filter: blur(8px);
@@ -201,7 +201,7 @@ html, body {
   position: absolute;
   inset: 0px;
   border-radius: 9999px;
-  background: #FAFAFA;
+  background: #FFFFFF;
   opacity: 0.4;
   animation: breathe-halo 2s ease-in-out infinite;
   filter: blur(4px);
@@ -224,5 +224,5 @@ html, body {
 }
 
 .text-glow {
-  text-shadow: 0 0 12px rgba(0,157,242,0.35);
+  text-shadow: 0 0 12px rgba(255,255,255,0.35);
 }

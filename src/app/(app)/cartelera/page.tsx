@@ -165,7 +165,7 @@ export default function CarteleraPage() {
     switch(priority) {
       case 'ALTA': return 'bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30';
       case 'MEDIA': return 'bg-orange-500/10 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30';
-      case 'BAJA': return 'bg-zinc-500/10 dark:bg-zinc-500/20 text-zinc-700 dark:text-zinc-400 border-zinc-500/20 dark:border-zinc-500/30';
+      case 'BAJA': return 'bg-neutral-500/10 dark:bg-neutral-500/20 text-neutral-700 dark:text-neutral-400 border-neutral-500/20 dark:border-neutral-500/30';
       default: return 'bg-surface-2 text-text/70 border-border';
     }
   };
@@ -231,12 +231,12 @@ export default function CarteleraPage() {
       {selectedNotice && (
         <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center animate-in fade-in duration-300 isolate">
            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedNotice(null)} />
-           <div className="relative w-full max-w-[430px] bg-primary dark:bg-[#0A0A0B] rounded-t-[40px] sm:rounded-[40px] border-t sm:border border-border shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-400">
+           <div className="relative w-full max-w-[430px] bg-primary dark:bg-[#000000] rounded-t-[40px] sm:rounded-[40px] border-t sm:border border-border shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-400">
               <div className="max-h-[85vh] overflow-y-auto hide-scrollbar">
                  {selectedNotice.image && (
                    <div className="h-56 w-full relative">
                       <Image src={selectedNotice.image} alt="" fill className="w-full h-full object-cover" unoptimized />
-                      <div className="absolute inset-0 bg-linear-to-t from-primary dark:from-[#0A0A0B] to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-t from-primary dark:from-[#000000] to-transparent" />
                       <button onClick={() => setSelectedNotice(null)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white"><X size={20} /></button>
                    </div>
                  )}

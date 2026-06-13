@@ -11,7 +11,7 @@ const features = [
     name: "MATEO",
     role: "RESIDENTE",
     img: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600",
-    color: "bg-zinc-500",
+    color: "bg-neutral-500",
     details: "Torre A • Apartamento 402",
     quote: "SOLICITO MI PARQUEADERO EN SEGUNDOS"
   },
@@ -19,7 +19,7 @@ const features = [
     name: "VALENTINA",
     role: "ADMINISTRADORA",
     img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=600",
-    color: "bg-zinc-500",
+    color: "bg-neutral-500",
     details: "Gestión General de Asamblea",
     quote: "ORGANIZO ASAMBLEAS SIN CAOS NI PAPELEO"
   },
@@ -51,7 +51,7 @@ const features = [
     name: "SARA",
     role: "RESIDENTE",
     img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600",
-    color: "bg-zinc-500",
+    color: "bg-neutral-500",
     details: "Reserva de Zonas Comunes",
     quote: "RESERVO EL GIMNASIO DESDE MI CELULAR"
   }
@@ -148,7 +148,7 @@ export default function FeaturesCollage() {
   const activeItem = features[activeIndex];
 
   return (
-    <section ref={containerRef} className="relative py-16 bg-[#0A0A0B] overflow-hidden">
+    <section ref={containerRef} className="relative py-16 bg-[#000000] overflow-hidden">
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
@@ -192,9 +192,9 @@ export default function FeaturesCollage() {
 
         {/* The Fixed Phone Mockup - Focal Point */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
-          <div className="relative w-[300px] md:w-[380px] aspect-[9/19.5] bg-[#0A0A0B] rounded-[3.5rem] border-[10px] border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.3)] overflow-hidden">
+          <div className="relative w-[300px] md:w-[380px] aspect-[9/19.5] bg-[#000000] rounded-[3.5rem] border-[10px] border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.3)] overflow-hidden">
              {/* Notch */}
-             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-7 bg-[#0A0A0B] rounded-b-3xl z-30" />
+             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-7 bg-[#000000] rounded-b-3xl z-30" />
              
              {/* Dynamic Content */}
              <div className="absolute inset-0 testimonial-content" key={activeIndex}>
@@ -203,7 +203,7 @@ export default function FeaturesCollage() {
                   className="w-full h-full object-cover opacity-80" 
                   alt="App Preview" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0B] via-[#0A0A0B]/40 to-[#0A0A0B]/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#000000] via-[#000000]/40 to-[#000000]/20" />
                 <div className="absolute bottom-12 left-8 right-8 text-white text-center">
                    <h4 className="text-3xl font-black italic tracking-tighter mb-1 uppercase animate-in slide-in-from-bottom-2 duration-500 text-glow">
                      {activeItem.name}
@@ -254,7 +254,7 @@ export default function FeaturesCollage() {
       </div>
 
       {/* Marquee Ticker */}
-      <div className="mt-10 bg-[#18181B] py-3 scale-105 border-y border-accent/20 z-50 relative shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+      <div className="mt-10 bg-[#0A0A0A] py-3 scale-105 border-y border-accent/20 z-50 relative shadow-[0_0_30px_rgba(0,0,0,0.3)]">
         <div className="flex whitespace-nowrap overflow-hidden">
           <div className="flex whitespace-nowrap animate-marquee items-center">
             {[1,2,3,4,5,6,7,8].map(i => (

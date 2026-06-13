@@ -85,13 +85,13 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
       <div 
         ref={overlayRef} 
         onClick={onClose}
-        className="absolute inset-0 bg-[#0A0A0B]/90 backdrop-blur-md" 
+        className="absolute inset-0 bg-[#000000]/90 backdrop-blur-md" 
       />
 
       {/* MODAL CONTAINER */}
       <div 
         ref={modalRef}
-        className="relative w-full max-w-lg bg-[#27272A] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg bg-[#171717] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden"
       >
         <button 
           onClick={onClose}
@@ -105,7 +105,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
             {item.image && (
               <div className="relative h-64 w-full">
                 <Image src={item.image} alt="" fill className="object-cover" unoptimized />
-                <div className="absolute inset-0 bg-linear-to-t from-[#27272A] to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-[#171717] to-transparent" />
                 <div className="absolute bottom-6 left-8 bg-accent/20 border border-accent/30 px-4 py-1.5 rounded-full text-[10px] font-black text-accent uppercase tracking-widest">
                   {item.type === 'AD' ? 'OFERTA ESPECIAL' : item.category}
                 </div>
@@ -200,7 +200,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
             <div className="space-y-4">
                <div className="p-5 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-500/20 flex items-center justify-center text-zinc-400">
+                    <div className="w-10 h-10 rounded-xl bg-neutral-500/20 flex items-center justify-center text-neutral-400">
                        <MapPin size={20} />
                     </div>
                     <div className="flex flex-col">
@@ -212,7 +212,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
 
                <div className="p-5 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-500/20 flex items-center justify-center text-zinc-400">
+                    <div className="w-10 h-10 rounded-xl bg-neutral-500/20 flex items-center justify-center text-neutral-400">
                        <CreditCard size={20} />
                     </div>
                     <div className="flex flex-col">

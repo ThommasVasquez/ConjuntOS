@@ -31,11 +31,11 @@ interface Solicitud {
 }
 
 const TIPO_CONFIG = {
-  PETICION: { icon: <FileText size={18}/>, color: "text-zinc-400", bg: "bg-zinc-500/10 border-zinc-500/20" },
+  PETICION: { icon: <FileText size={18}/>, color: "text-neutral-400", bg: "bg-neutral-500/10 border-neutral-500/20" },
   QUEJA: { icon: <AlertTriangle size={18}/>, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
   RECLAMO: { icon: <Megaphone size={18}/>, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
   SUGERENCIA: { icon: <Info size={18}/>, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  MANTENIMIENTO: { icon: <Wrench size={18}/>, color: "text-zinc-400", bg: "bg-zinc-500/10 border-zinc-500/20" },
+  MANTENIMIENTO: { icon: <Wrench size={18}/>, color: "text-neutral-400", bg: "bg-neutral-500/10 border-neutral-500/20" },
 };
 
 export default function PQRSPage() {
@@ -115,8 +115,8 @@ export default function PQRSPage() {
   const getStatusLabel = (status: string) => {
     switch(status) {
       case 'COMPLETADA': return { text: "Resuelto", color: "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10" };
-      case 'EN_PROGRESO': return { text: "En Proceso", color: "text-zinc-700 dark:text-zinc-400 bg-zinc-500/10" };
-      case 'ASIGNADA': return { text: "Asignado", color: "text-zinc-700 dark:text-zinc-400 bg-zinc-500/10" };
+      case 'EN_PROGRESO': return { text: "En Proceso", color: "text-neutral-700 dark:text-neutral-400 bg-neutral-500/10" };
+      case 'ASIGNADA': return { text: "Asignado", color: "text-neutral-700 dark:text-neutral-400 bg-neutral-500/10" };
       default: return { text: "Pendiente", color: "text-amber-700 dark:text-amber-400 bg-amber-500/10" };
     }
   };
@@ -149,9 +149,9 @@ export default function PQRSPage() {
         onClick={() => setIsFormOpen(true)}
         className="fade-up-pqrs group relative w-full h-[120px] rounded-[32px] overflow-hidden flex items-center justify-center transition-all active:scale-[0.98] shadow-2xl shadow-accent/20 cursor-pointer"
       >
-         <div className="absolute inset-0 bg-linear-to-br from-[#18181B] via-accent/20 to-[#FAFAFA] group-hover:scale-105 transition-transform duration-700" />
+         <div className="absolute inset-0 bg-linear-to-br from-[#0A0A0A] via-accent/20 to-[#FFFFFF] group-hover:scale-105 transition-transform duration-700" />
          <div className="flex flex-col items-center gap-2 relative z-10">
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#0A0A0B] shadow-xl">
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#000000] shadow-xl">
                <Plus size={24} />
             </div>
             <span className="text-white font-display font-bold text-sm tracking-tight">Radicar nueva PQRS</span>

@@ -26,9 +26,9 @@ type Tab = "video" | "agenda" | "votos" | "chat" | "info";
 function voteColor(op: string): string {
   const n = op.toUpperCase().trim();
   if (["SI", "SÍ", "APROBAR"].includes(n)) return "bg-emerald-600";
-  if (["NO", "RECHAZAR"].includes(n)) return "bg-zinc-600";
+  if (["NO", "RECHAZAR"].includes(n)) return "bg-neutral-600";
   if (["ABSTENCION", "ABSTENCIÓN", "BLANCO"].includes(n)) return "bg-amber-600";
-  return "bg-zinc-600";
+  return "bg-neutral-600";
 }
 
 function tally(votes: any[], options: string[]) {
@@ -160,13 +160,13 @@ export default function AsambleaPage() {
   };
 
   if (authLoading || loading) return (
-    <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center">
+    <div className="min-h-screen bg-[#000000] flex items-center justify-center">
       <Loader2 className="w-10 h-10 animate-spin text-accent" />
     </div>
   );
 
   if (!asamblea) return (
-    <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
       <div className="text-center">
         <Video className="w-16 h-16 text-white/20 mx-auto mb-4" />
         <h1 className="text-xl font-bold text-white mb-2">No hay asamblea activa</h1>
@@ -189,7 +189,7 @@ export default function AsambleaPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white flex flex-col">
+    <div className="min-h-screen bg-[#000000] text-white flex flex-col">
       {/* Header */}
       <header className="px-4 pt-4 pb-2 shrink-0">
         <h1 className="text-lg font-bold truncate">{asamblea.titulo}</h1>
@@ -509,7 +509,7 @@ export default function AsambleaPage() {
                       className={`text-[10px] font-bold uppercase shrink-0 ${
                         a.tipo === "PRESENCIAL"
                           ? "text-green-400"
-                          : "text-zinc-400"
+                          : "text-neutral-400"
                       }`}
                     >
                       {a.tipo}
@@ -552,7 +552,7 @@ export default function AsambleaPage() {
 
       {/* Chat input */}
       {activeTab === "chat" && (
-        <div className="fixed bottom-16 inset-x-0 bg-[#0A0A0B] border-t border-white/10 p-3 flex gap-2 z-10">
+        <div className="fixed bottom-16 inset-x-0 bg-[#000000] border-t border-white/10 p-3 flex gap-2 z-10">
           <input
             value={newOpinion}
             onChange={(e) => setNewOpinion(e.target.value)}
@@ -571,7 +571,7 @@ export default function AsambleaPage() {
       )}
 
       {/* Bottom tabs */}
-      <nav className="fixed bottom-0 inset-x-0 bg-[#0A0A0B]/95 backdrop-blur-lg border-t border-white/10 flex z-20 pb-[env(safe-area-inset-bottom)]">
+      <nav className="fixed bottom-0 inset-x-0 bg-[#000000]/95 backdrop-blur-lg border-t border-white/10 flex z-20 pb-[env(safe-area-inset-bottom)]">
         {tabs.map((tab) => (
           <button
             key={tab.id}

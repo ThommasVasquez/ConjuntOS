@@ -164,7 +164,7 @@ export default function MapaParqueaderoPage() {
        <div className="liquid-glass rounded-3xl p-6 border border-border/40 shadow-2xl relative overflow-hidden">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-3">
-               <div className="w-12 h-12 rounded-2xl bg-zinc-500/10 border border-zinc-500/30 flex items-center justify-center text-zinc-600 dark:text-zinc-400">
+               <div className="w-12 h-12 rounded-2xl bg-neutral-500/10 border border-neutral-500/30 flex items-center justify-center text-neutral-600 dark:text-neutral-400">
                   <Map size={24} />
                </div>
                <div>
@@ -180,7 +180,7 @@ export default function MapaParqueaderoPage() {
           <div className="flex gap-4 mb-6 pt-2 pb-4 border-b border-border/10 overflow-x-auto hide-scrollbar">
              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-text/15 border border-text/30"></div><span className="text-[10px] text-text/60 uppercase font-bold tracking-widest">Libre</span></div>
              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-accent/25 border border-accent"></div><span className="text-[10px] text-text/60 uppercase font-bold tracking-widest">Ocupado</span></div>
-             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-zinc-500/25 border border-zinc-500"></div><span className="text-[10px] text-text/60 uppercase font-bold tracking-widest">Reservado</span></div>
+             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-neutral-500/25 border border-neutral-500"></div><span className="text-[10px] text-text/60 uppercase font-bold tracking-widest">Reservado</span></div>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -198,7 +198,7 @@ export default function MapaParqueaderoPage() {
                       ${isLibre ? 'bg-text/5 border-border/40 hover:bg-text/10 text-text/70' : 'bg-accent/10 border-accent/40 shadow-[0_0_15px_rgba(0,0,0,0.3)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] text-accent'}
                     `}
                   >
-                     {isResident ? <ShieldCheck size={20} className={isLibre ? 'text-text/30' : 'text-accent/60'} /> : <HelpCircle size={20} className={isLibre ? 'text-zinc-500/30 dark:text-zinc-400/30' : 'text-zinc-600 dark:text-zinc-400' }/>}
+                     {isResident ? <ShieldCheck size={20} className={isLibre ? 'text-text/30' : 'text-accent/60'} /> : <HelpCircle size={20} className={isLibre ? 'text-neutral-500/30 dark:text-neutral-400/30' : 'text-neutral-600 dark:text-neutral-400' }/>}
                      <span className="font-display font-bold text-xl">{p.numero}</span>
                      
                      {!isLibre && (
