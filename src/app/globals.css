@@ -226,3 +226,21 @@ html, body {
 .text-glow {
   text-shadow: 0 0 12px rgba(255,255,255,0.35);
 }
+
+/* —————————————————————————————————————————————————————————————————————————
+   ICONOS GLOBALES — acento azul (reposo) / verde (hover), como el navbar.
+   Pinta de azul TODO ícono lucide, incluidos los "neutros" (text-text /
+   text-white / text-accent). EXCEPCIONES que conservan su color (contraste
+   sobre botones sólidos / fondos claros): text-on-accent, text-black, y
+   hex oscuros explícitos. El rojo de notificación son spans, no íconos.
+   ——————————————————————————————————————————————————————————————————————— */
+svg.lucide:not(.text-on-accent):not(.text-black):not([class*="#171717"]) {
+  color: #009df2;
+  transition: color 0.3s ease;
+}
+svg.lucide:not(.text-on-accent):not(.text-black):hover,
+a:hover svg.lucide:not(.text-on-accent):not(.text-black),
+button:hover svg.lucide:not(.text-on-accent):not(.text-black),
+.group:hover svg.lucide:not(.text-on-accent):not(.text-black) {
+  color: #57bf00;
+}
