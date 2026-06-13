@@ -101,7 +101,7 @@ function ProfileContent() {
     nombre: "", tipo: "", raza: "", // Pets
     placa: "", marca: "", modelo: "", ano: "", color: "", tipoVehiculo: "" // Vehicles
   });
-  const [regDocs, setRegDocs] = useState<{nombre: string, base64: string, type: string}[]>([]);
+  const [regDocs, setRegDocs] = useState<{nombre: string, base64: string, mimeType: string}[]>([]);
 
   // 🏗️ HYDRATION SYNC
   useEffect(() => {
@@ -312,18 +312,17 @@ function ProfileContent() {
         reader.onload = async (event) => {
             const rawBase64 = event.target?.result as string;
             let finalBase = rawBase64;
-            let type = "image";
+            // mimeType real del archivo; el backend lo exige (DocumentoAdjuntoDto.mimeType)
+            const mimeType = file.type || "application/octet-stream";
 
-            if (file.type === "application/pdf") {
-                type = "pdf";
-            } else if (file.type.startsWith("image/")) {
+            if (file.type.startsWith("image/")) {
                 finalBase = await compressImage(rawBase64);
             }
 
             setRegDocs(prev => [...prev, { 
                 nombre: file.name, 
                 base64: finalBase, 
-                type 
+                mimeType 
             }]);
         };
         reader.readAsDataURL(file);
@@ -1169,7 +1168,7 @@ function ProfileContent() {
                     <div className="grid grid-cols-3 gap-2">
                        {regDocs.map((doc, idx) => (
                           <div key={idx} className="relative aspect-square rounded-2xl bg-text/5 border border-border flex flex-col items-center justify-center p-2 group overflow-hidden">
-                             {doc.type === "pdf" ? (
+                             {doc.mimeType === "application/pdf" ? (
                                 <FileText size={20} className="text-red-400 opacity-60" />
                              ) : (
                                 <Image src={doc.base64} alt="" fill className="object-cover opacity-60" />
