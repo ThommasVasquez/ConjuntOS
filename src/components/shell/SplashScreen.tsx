@@ -73,7 +73,7 @@ export default function SplashScreen() {
       style={{ zIndex: 999999 }}
     >
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#009df2]/10 blur-[100px] rounded-full" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#FAFAFA]/10 blur-[100px] rounded-full" />
       
       <div className="relative flex flex-col items-center">
         {/* Precise Official Logo (Paths matched to provided image) */}
@@ -112,7 +112,7 @@ export default function SplashScreen() {
           className="mt-4 flex flex-col items-center"
         >
           <div className="w-16 h-[1px] bg-white/10 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[#009df2] animate-loading-bar" />
+            <div className="absolute inset-0 bg-[#FAFAFA] animate-loading-bar" />
           </div>
         </div>
       </div>

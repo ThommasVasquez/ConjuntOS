@@ -40,14 +40,14 @@ function HomeResidente() {
   });
 
   const categories = [
-    { title: "Citofonía", icon: <UserIcon size={20}/>, color: "from-blue-500 to-pink-500", path: "/citofonia" },
-    { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-[#009df2] to-[#007ac2]", path: "/pagos" },
+    { title: "Citofonía", icon: <UserIcon size={20}/>, color: "from-zinc-500 to-zinc-500", path: "/citofonia" },
+    { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-[#FAFAFA] to-[#52525B]", path: "/pagos" },
     { title: "Parqueo", icon: <Car size={20}/>, color: "from-emerald-500 to-emerald-700", path: "/parqueadero" },
-    { title: "Reservas", icon: <Calendar size={20}/>, color: "from-blue-500 to-cyan-400", path: "/reservas" },
+    { title: "Reservas", icon: <Calendar size={20}/>, color: "from-zinc-500 to-zinc-400", path: "/reservas" },
     { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-red-500 to-orange-500", path: "/cartelera" },
-    { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-blue-500 to-indigo-600", path: "/pqrs" },
+    { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-zinc-500 to-zinc-600", path: "/pqrs" },
     { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-amber-500 to-orange-400", path: "/inmobiliaria" },
-    { title: "Clasificados", icon: <ShoppingBag size={20}/>, color: "from-blue-400 to-indigo-500", path: "/clasificados" },
+    { title: "Clasificados", icon: <ShoppingBag size={20}/>, color: "from-zinc-400 to-zinc-500", path: "/clasificados" },
   ];
 
   const [anuncios, setAnuncios] = useState<AnuncioDto[]>([]);
@@ -187,7 +187,7 @@ function HomeResidente() {
           onClick={() => router.push('/asamblea')}
           className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[90px] shadow-[0_15px_30px_rgba(239,68,68,0.2)] border border-red-500/20 group cursor-pointer hover:border-red-500/40 transition-all"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-red-950/80 via-blue-950/70 to-red-950/80 opacity-95" />
+          <div className="absolute inset-0 bg-gradient-to-r from-red-950/80 via-zinc-950/70 to-red-950/80 opacity-95" />
           <div className="absolute inset-0 p-4 flex items-center justify-between z-10">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/40 animate-pulse">
@@ -372,7 +372,7 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
     <div className="fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t border-border/20 transition-all active:scale-[0.98] relative overflow-hidden">
       <div className="p-5 flex justify-between items-center relative z-10">
          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs bg-linear-to-tr from-blue-500 to-pink-500 text-white">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs bg-linear-to-tr from-zinc-500 to-zinc-500 text-white">
                {anuncio.tipo?.[0] || 'A'}
             </div>
             <div>
@@ -453,19 +453,19 @@ function HomeEstacionamiento() {
       <ProfileHeader />
       <div 
         onClick={() => router.push("/mapa-parqueadero")}
-        className="fade-up bg-linear-to-r from-blue-950 via-slate-900 to-blue-950 rounded-[28px] p-6 border border-blue-500/20 shadow-2xl text-white cursor-pointer hover:border-blue-500/40 transition-all flex justify-between items-center group active:scale-98"
+        className="fade-up bg-linear-to-r from-zinc-950 via-zinc-900 to-zinc-950 rounded-[28px] p-6 border border-zinc-500/20 shadow-2xl text-white cursor-pointer hover:border-zinc-500/40 transition-all flex justify-between items-center group active:scale-98"
       >
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-300">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-500/20 border border-zinc-500/40 flex items-center justify-center text-zinc-300">
             <Car size={22} />
           </div>
           <div>
-            <span className="text-[9px] text-blue-400 font-black uppercase tracking-widest block mb-0.5">Control Operativo</span>
+            <span className="text-[9px] text-zinc-400 font-black uppercase tracking-widest block mb-0.5">Control Operativo</span>
             <h3 className="text-lg font-display font-bold leading-tight">Mapa de Parqueaderos</h3>
             <p className="text-white/60 text-xs mt-0.5">Ver celdas libres, registrar ingresos/salidas y realizar rondas.</p>
           </div>
         </div>
-        <button className="bg-blue-500 text-primary text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all cursor-pointer">
+        <button className="bg-zinc-500 text-primary text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all cursor-pointer">
           Ingresar
         </button>
       </div>
@@ -530,9 +530,9 @@ function HomeConsejo() {
         {/* ANUNCIOS/CIRCULARES */}
         <div 
           onClick={() => router.push('/cartelera')}
-          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-blue-600/10 to-pink-600/10 border border-blue-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-blue-500/40 transition-all shadow-xl group active:scale-95"
+          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-zinc-600/10 to-zinc-600/10 border border-zinc-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-zinc-500/40 transition-all shadow-xl group active:scale-95"
         >
-          <div className="w-10 h-10 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-300 border border-blue-500/30">
+          <div className="w-10 h-10 rounded-2xl bg-zinc-500/20 flex items-center justify-center text-zinc-300 border border-zinc-500/30">
             <Building2 size={20} />
           </div>
           <div>
@@ -585,19 +585,19 @@ function HomeAdmin() {
       {role === "SUPER_ADMIN" && (
         <div 
           onClick={() => router.push('/superadmin')}
-          className="w-full bg-linear-to-r from-blue-950 via-indigo-950 to-blue-950 rounded-[28px] p-6 border border-blue-500/30 shadow-2xl text-white cursor-pointer hover:border-blue-500/50 transition-all flex justify-between items-center group"
+          className="w-full bg-linear-to-r from-zinc-950 via-zinc-950 to-zinc-950 rounded-[28px] p-6 border border-zinc-500/30 shadow-2xl text-white cursor-pointer hover:border-zinc-500/50 transition-all flex justify-between items-center group"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-300">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-500/20 border border-zinc-500/40 flex items-center justify-center text-zinc-300">
               <Building2 size={22} />
             </div>
             <div>
-              <span className="text-[9px] text-blue-300 font-black uppercase tracking-widest block mb-0.5">Modulo de Plataforma</span>
+              <span className="text-[9px] text-zinc-300 font-black uppercase tracking-widest block mb-0.5">Modulo de Plataforma</span>
               <h3 className="text-lg font-display font-bold leading-tight text-white">Panel SuperAdmin</h3>
               <p className="text-white/60 text-xs mt-0.5">Registrar copropiedades y gestionar conjuntos.</p>
             </div>
           </div>
-          <button className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 group-hover:bg-blue-500 cursor-pointer">
+          <button className="bg-zinc-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 group-hover:bg-zinc-500 cursor-pointer">
             Gestionar <ArrowRight size={10} />
           </button>
         </div>
@@ -607,14 +607,14 @@ function HomeAdmin() {
       {activeAsamblea && (
         <div 
           onClick={() => router.push('/asamblea')}
-          className="w-full bg-linear-to-r from-blue-950 via-blue-900 to-blue-950 rounded-[28px] p-6 border border-accent/20 shadow-2xl text-white cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
+          className="w-full bg-linear-to-r from-zinc-950 via-zinc-900 to-zinc-950 rounded-[28px] p-6 border border-accent/20 shadow-2xl text-white cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
         >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent">
               <span className="w-3.5 h-3.5 rounded-full bg-accent animate-ping" />
             </div>
             <div>
-              <span className="text-[9px] text-blue-400 font-black uppercase tracking-widest block mb-0.5">En Vivo</span>
+              <span className="text-[9px] text-zinc-400 font-black uppercase tracking-widest block mb-0.5">En Vivo</span>
               <h3 className="text-lg font-display font-bold leading-tight text-white">{activeAsamblea.titulo}</h3>
               {activeAsamblea.descripcion && (
                 <p className="text-white/60 text-xs mt-0.5 line-clamp-1">{activeAsamblea.descripcion}</p>
@@ -632,9 +632,9 @@ function HomeAdmin() {
         {/* CITOFONÍA CARD */}
         <div 
           onClick={() => router.push('/citofonia')}
-          className="p-5 rounded-[28px] bg-linear-to-br from-blue-600/15 to-pink-600/15 border border-blue-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-blue-500/40 transition-all shadow-xl group active:scale-95"
+          className="p-5 rounded-[28px] bg-linear-to-br from-zinc-600/15 to-zinc-600/15 border border-zinc-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-zinc-500/40 transition-all shadow-xl group active:scale-95"
         >
-          <div className="w-10 h-10 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-300 border border-blue-500/30">
+          <div className="w-10 h-10 rounded-2xl bg-zinc-500/20 flex items-center justify-center text-zinc-300 border border-zinc-500/30">
             <UserIcon size={20} />
           </div>
           <div>

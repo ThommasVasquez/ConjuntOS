@@ -19,8 +19,8 @@
   /* Paleta Grafito Monocromo (escala de grises neutra, Liquid Glass) */
   --color-primary: #0A0A0B;       /* Casi negro neutro (fondo) */
   --color-primary-light: #27272A; /* Grafito (zinc 800) */
-  --color-accent: #009df2;        /* Azul vivo para CTAs y detalles */
-  --color-on-accent: #FFFFFF;     /* Texto/icono SOBRE el acento azul */
+  --color-accent: #FAFAFA;        /* Blanco como acento (CTAs/detalles) en oscuro */
+  --color-on-accent: #0A0A0B;     /* Texto/icono SOBRE el acento (negro sobre blanco) */
   --color-surface: rgba(24, 24, 27, 0.4);       /* Glass grafito */
   --color-surface-2: rgba(255, 255, 255, 0.05); /* Glass más claro */
   --color-text: #FAFAFA;          /* Casi blanco (zinc 50) */
@@ -35,8 +35,8 @@
 .light {
   --color-primary: #F4F4F5;       /* Gris muy claro neutro (zinc 100) */
   --color-primary-light: #FFFFFF; /* Blanco para tarjetas */
-  --color-accent: #009df2;        /* Azul vivo (mismo acento en claro) */
-  --color-on-accent: #FFFFFF;     /* Texto/icono SOBRE el acento azul */
+  --color-accent: #18181B;        /* Negro como acento (CTAs/detalles) en claro */
+  --color-on-accent: #FFFFFF;     /* Texto/icono SOBRE el acento (blanco sobre negro) */
   --color-surface: rgba(255, 255, 255, 0.7);    /* Vidrio blanco translúcido */
   --color-surface-2: rgba(24, 24, 27, 0.04);    /* Fondo sutil de input/botón */
   --color-text: #18181B;          /* Zinc 900 */
@@ -173,7 +173,7 @@ html, body {
 
 .liquid-story-ring {
   position: relative;
-  background: linear-gradient(45deg, #009df2, #5ec1f8, #009df2);
+  background: linear-gradient(45deg, #FAFAFA, #A1A1AA, #FAFAFA);
   background-size: 200% 200%;
   animation: story-bg 5s infinite linear;
   padding: 3px;
@@ -190,7 +190,7 @@ html, body {
   position: absolute;
   inset: -4px;
   border-radius: 9999px;
-  background: conic-gradient(from 0deg, transparent, #009df2, #5ec1f8, transparent);
+  background: conic-gradient(from 0deg, transparent, #FAFAFA, #A1A1AA, transparent);
   animation: rotate-halo 3s linear infinite;
   opacity: 0.6;
   filter: blur(8px);
@@ -201,7 +201,7 @@ html, body {
   position: absolute;
   inset: 0px;
   border-radius: 9999px;
-  background: #009df2;
+  background: #FAFAFA;
   opacity: 0.4;
   animation: breathe-halo 2s ease-in-out infinite;
   filter: blur(4px);

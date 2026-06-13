@@ -272,7 +272,7 @@ export default function VisitantesPage() {
                    <div>
                      <h4 className="text-text font-bold text-base leading-none mb-1.5">{visitor.nombre}</h4>
                      <div className="flex items-center gap-3">
-                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${visitor.tipo === 'VEHICULAR' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${visitor.tipo === 'VEHICULAR' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>
                            {visitor.tipo}
                         </span>
                         <div className="flex items-center gap-1 text-text/60 text-[10px]">

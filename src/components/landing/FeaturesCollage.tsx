@@ -11,7 +11,7 @@ const features = [
     name: "MATEO",
     role: "RESIDENTE",
     img: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600",
-    color: "bg-blue-500",
+    color: "bg-zinc-500",
     details: "Torre A • Apartamento 402",
     quote: "SOLICITO MI PARQUEADERO EN SEGUNDOS"
   },
@@ -19,7 +19,7 @@ const features = [
     name: "VALENTINA",
     role: "ADMINISTRADORA",
     img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=600",
-    color: "bg-blue-500",
+    color: "bg-zinc-500",
     details: "Gestión General de Asamblea",
     quote: "ORGANIZO ASAMBLEAS SIN CAOS NI PAPELEO"
   },
@@ -51,7 +51,7 @@ const features = [
     name: "SARA",
     role: "RESIDENTE",
     img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600",
-    color: "bg-pink-500",
+    color: "bg-zinc-500",
     details: "Reserva de Zonas Comunes",
     quote: "RESERVO EL GIMNASIO DESDE MI CELULAR"
   }

@@ -26,9 +26,9 @@ type Tab = "video" | "agenda" | "votos" | "chat" | "info";
 function voteColor(op: string): string {
   const n = op.toUpperCase().trim();
   if (["SI", "SÍ", "APROBAR"].includes(n)) return "bg-emerald-600";
-  if (["NO", "RECHAZAR"].includes(n)) return "bg-rose-600";
+  if (["NO", "RECHAZAR"].includes(n)) return "bg-zinc-600";
   if (["ABSTENCION", "ABSTENCIÓN", "BLANCO"].includes(n)) return "bg-amber-600";
-  return "bg-blue-600";
+  return "bg-zinc-600";
 }
 
 function tally(votes: any[], options: string[]) {
@@ -509,7 +509,7 @@ export default function AsambleaPage() {
                       className={`text-[10px] font-bold uppercase shrink-0 ${
                         a.tipo === "PRESENCIAL"
                           ? "text-green-400"
-                          : "text-blue-400"
+                          : "text-zinc-400"
                       }`}
                     >
                       {a.tipo}

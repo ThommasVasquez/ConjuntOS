@@ -50,8 +50,8 @@ export default function ShowcaseSection() {
                 <p className="text-sm text-gray-500 mb-1">Integración Directa</p>
                 <h4 className="font-bold text-white text-lg">Pagos Automatizados PSE</h4>
               </div>
-              <div className="w-12 h-12 bg-[#009df2]/10 rounded-full flex items-center justify-center">
-                <CheckCircle2 className="text-[#009df2] w-6 h-6" />
+              <div className="w-12 h-12 bg-[#FAFAFA]/10 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="text-[#FAFAFA] w-6 h-6" />
               </div>
             </div>
           </div>

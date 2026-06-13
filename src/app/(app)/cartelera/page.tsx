@@ -165,7 +165,7 @@ export default function CarteleraPage() {
     switch(priority) {
       case 'ALTA': return 'bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30';
       case 'MEDIA': return 'bg-orange-500/10 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30';
-      case 'BAJA': return 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30';
+      case 'BAJA': return 'bg-zinc-500/10 dark:bg-zinc-500/20 text-zinc-700 dark:text-zinc-400 border-zinc-500/20 dark:border-zinc-500/30';
       default: return 'bg-surface-2 text-text/70 border-border';
     }
   };

@@ -14,22 +14,22 @@ const features = [
     title: "Citofonía Inteligente",
     description: "Mensajes de voz con transcripción automática en tiempo real.",
     icon: Mic,
-    className: "md:col-span-2 md:row-span-2 bg-[#009df2]/10 border-[#009df2]/20",
-    iconColor: "text-[#009df2]"
+    className: "md:col-span-2 md:row-span-2 bg-[#FAFAFA]/10 border-[#FAFAFA]/20",
+    iconColor: "text-[#FAFAFA]"
   },
   {
     title: "Pagos Transparentes",
     description: "Trazabilidad total de cuotas y certificados automáticos.",
     icon: CreditCard,
-    className: "bg-blue-500/10 border-blue-500/20",
-    iconColor: "text-blue-500"
+    className: "bg-zinc-500/10 border-zinc-500/20",
+    iconColor: "text-zinc-500"
   },
   {
     title: "Control de Accesos",
     description: "Pre-registro de visitantes y seguridad proactiva.",
     icon: Shield,
-    className: "bg-blue-500/10 border-blue-500/20",
-    iconColor: "text-blue-500"
+    className: "bg-zinc-500/10 border-zinc-500/20",
+    iconColor: "text-zinc-500"
   },
   {
     title: "Paquetería Digital",
@@ -42,15 +42,15 @@ const features = [
     title: "Reservas de Áreas",
     description: "Disponibilidad en tiempo real para tus zonas comunes.",
     icon: Calendar,
-    className: "bg-rose-500/10 border-rose-500/20",
-    iconColor: "text-rose-500"
+    className: "bg-zinc-500/10 border-zinc-500/20",
+    iconColor: "text-zinc-500"
   },
   {
     title: "Comunidad Conectada",
     description: "Clasificados y comunicaciones oficiales en HD.",
     icon: MessageSquare,
-    className: "md:col-span-2 bg-indigo-500/10 border-indigo-500/20",
-    iconColor: "text-indigo-500"
+    className: "md:col-span-2 bg-zinc-500/10 border-zinc-500/20",
+    iconColor: "text-zinc-500"
   }
 ];
 
@@ -80,7 +80,7 @@ export default function BentoFeatures() {
       <div className="max-w-6xl mx-auto space-y-16">
         <div className="space-y-4 text-center md:text-left">
           <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
-            Todo lo que tu <span className="text-[#009df2]">Conjunto</span> necesita
+            Todo lo que tu <span className="text-[#FAFAFA]">Conjunto</span> necesita
           </h2>
           <p className="text-white/40 max-w-xl font-medium">
             Módulos integrados bajo una misma identidad visual. Eficiencia operativa envuelta en diseño de clase mundial.

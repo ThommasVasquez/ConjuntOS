@@ -174,7 +174,7 @@ export default function PagosPage() {
 
       {/* WALLET HERO CARD */}
       <section className="fade-up w-full relative group">
-         <div className="absolute inset-0 bg-linear-to-br from-[#009df2] via-[#172554] to-[#701A75] rounded-[40px] shadow-2xl opacity-90" />
+         <div className="absolute inset-0 bg-linear-to-br from-[#FAFAFA] via-[#18181B] to-[#27272A] rounded-[40px] shadow-2xl opacity-90" />
          <div className="absolute -top-4 -right-4 w-32 h-32 bg-white/5 blur-2xl rounded-full group-hover:bg-white/10 transition-all duration-700" />
          
          <div className="relative p-8 flex flex-col justify-between min-h-[220px]">

@@ -178,7 +178,7 @@ export default function InmobiliariaPage() {
         </div>
         
         <div className="absolute -top-20 -right-20 w-80 h-80 bg-accent/20 rounded-full blur-[120px] pointer-events-none opacity-30 dark:opacity-100" />
-        <div className="absolute top-40 -left-20 w-60 h-60 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none opacity-30 dark:opacity-100" />
+        <div className="absolute top-40 -left-20 w-60 h-60 bg-zinc-500/10 rounded-full blur-[100px] pointer-events-none opacity-30 dark:opacity-100" />
       </div>
 
       <div className="px-6 max-w-6xl mx-auto">

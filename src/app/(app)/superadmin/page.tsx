@@ -41,7 +41,7 @@ export default function SuperAdminPage() {
     matriculaInmobiliaria: "",
     totalUnidades: "1",
     logoUrl: "",
-    colorPrimario: "#007ac2" // Default premium blue
+    colorPrimario: "#52525B" // Default premium blue
   });
 
   const handleEditClick = (c: any) => {
@@ -59,7 +59,7 @@ export default function SuperAdminPage() {
       matriculaInmobiliaria: c.matriculaInmobiliaria || "",
       totalUnidades: c.totalUnidades ? String(c.totalUnidades) : "1",
       logoUrl: c.logoUrl || "",
-      colorPrimario: c.colorPrimario || "#007ac2"
+      colorPrimario: c.colorPrimario || "#52525B"
     });
     setTab("CREAR");
   };
@@ -79,7 +79,7 @@ export default function SuperAdminPage() {
       matriculaInmobiliaria: "",
       totalUnidades: "1",
       logoUrl: "",
-      colorPrimario: "#007ac2"
+      colorPrimario: "#52525B"
     });
   };
 
@@ -199,7 +199,7 @@ export default function SuperAdminPage() {
         matriculaInmobiliaria: "",
         totalUnidades: "1",
         logoUrl: "",
-        colorPrimario: "#007ac2"
+        colorPrimario: "#52525B"
       });
       setEditingConjuntoId(null);
       fetchConjuntos();

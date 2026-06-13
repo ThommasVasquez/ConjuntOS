@@ -8,7 +8,7 @@ export default function Footer() {
   return (
     <footer className="bg-[#0A0A0B] text-white pt-24 overflow-hidden relative border-t border-white/5">
       {/* Background Orbs */}
-      <div className="absolute bottom-0 right-[-10%] w-[500px] h-[500px] bg-[#009df2]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-[-10%] w-[500px] h-[500px] bg-[#FAFAFA]/5 blur-[120px] rounded-full pointer-events-none" />
       
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-24 relative z-10">
         

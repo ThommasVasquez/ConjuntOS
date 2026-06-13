@@ -247,10 +247,10 @@ export default function AdminNovedadesPage() {
 
   const getTipoIcon = (tipo: string) => {
       switch (tipo) {
-          case 'VEHICULO': return <Car size={16} className="text-blue-400" />;
+          case 'VEHICULO': return <Car size={16} className="text-zinc-400" />;
           case 'MASCOTA': return <Dog size={16} className="text-orange-400" />;
           case 'ARRENDAMIENTO': return <Briefcase size={16} className="text-emerald-400" />;
-          case 'MUDANZA': return <Info size={16} className="text-blue-400" />;
+          case 'MUDANZA': return <Info size={16} className="text-zinc-400" />;
           default: return <AlertCircle size={16} className="text-white/50" />;
       }
   };
@@ -558,7 +558,7 @@ export default function AdminNovedadesPage() {
                                {parseDesc(selectedTramite.descripcion).documentos.map((doc: any, i: number) => (
                                   <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-surface-2 border border-border group">
                                      <div className="flex items-center gap-2 overflow-hidden">
-                                        <FileText size={14} className={doc.type === 'pdf' ? 'text-red-400' : 'text-blue-400'} />
+                                        <FileText size={14} className={doc.type === 'pdf' ? 'text-red-400' : 'text-zinc-400'} />
                                         <span className="text-[10px] text-text/70 truncate">{doc.nombre}</span>
                                      </div>
                                      <button 

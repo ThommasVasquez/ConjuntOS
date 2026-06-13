@@ -38,7 +38,7 @@ export default function ProductsSection() {
       component: (
         <div className="w-full h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-500/10 border border-zinc-500/20 flex items-center justify-center text-zinc-400">
               <CreditCard size={20} />
             </div>
             <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold uppercase px-2.5 py-1 rounded-full border border-emerald-500/30 tracking-wider">Al día</span>
@@ -57,10 +57,10 @@ export default function ProductsSection() {
       component: (
         <div className="w-full h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-500/10 border border-zinc-500/20 flex items-center justify-center text-zinc-400">
               <Calendar size={20} />
             </div>
-            <span className="text-[9px] bg-blue-500/20 text-blue-400 font-bold uppercase px-2.5 py-1 rounded-full border border-blue-500/30 tracking-wider">Aprobado</span>
+            <span className="text-[9px] bg-zinc-500/20 text-zinc-400 font-bold uppercase px-2.5 py-1 rounded-full border border-zinc-500/30 tracking-wider">Aprobado</span>
           </div>
           <div>
             <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Zona Común</h5>
@@ -105,7 +105,7 @@ export default function ProductsSection() {
   return (
     <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#0A0A0B] relative">
       {/* Background orbs for depth */}
-      <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-[#009df2]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-[#FAFAFA]/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[20%] right-[-10%] w-[500px] h-[500px] bg-[#3f3f46]/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto">

@@ -177,7 +177,7 @@ export default function Hero() {
         ))}
         
         {/* Ambient Orbs - Matching the App's UI style */}
-        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[70%] bg-[#009df2]/15 blur-[130px] rounded-full pointer-events-none z-10" />
+        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[70%] bg-[#FAFAFA]/15 blur-[130px] rounded-full pointer-events-none z-10" />
         <div className="absolute bottom-[-15%] left-[-15%] w-[80%] h-[70%] bg-[#3f3f46]/10 blur-[130px] rounded-full pointer-events-none z-10" />
         
         {/* Dark Glass Overlay */}
