@@ -358,7 +358,7 @@ export default function PagosPage() {
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .text-glow { text-shadow: 0 0 20px rgba(59,130,246,0.5); }
+        .text-glow { text-shadow: 0 0 20px rgba(0,0,0,0.3); }
       `}} />
     </div>
   );

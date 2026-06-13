@@ -192,7 +192,7 @@ export default function FeaturesCollage() {
 
         {/* The Fixed Phone Mockup - Focal Point */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
-          <div className="relative w-[300px] md:w-[380px] aspect-[9/19.5] bg-[#05020a] rounded-[3.5rem] border-[10px] border-white/10 shadow-[0_40px_100px_rgba(59,130,246,0.2)] overflow-hidden">
+          <div className="relative w-[300px] md:w-[380px] aspect-[9/19.5] bg-[#05020a] rounded-[3.5rem] border-[10px] border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.3)] overflow-hidden">
              {/* Notch */}
              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-7 bg-[#05020a] rounded-b-3xl z-30" />
              
@@ -211,7 +211,7 @@ export default function FeaturesCollage() {
                    <p className="text-[10px] text-accent font-bold tracking-widest uppercase mb-4">
                      {activeItem.role}
                    </p>
-                   <div className="h-[1px] w-12 bg-accent mx-auto mb-4 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                   <div className="h-[1px] w-12 bg-accent mx-auto mb-4 shadow-[0_0_10px_rgba(0,0,0,0.3)]" />
                    <p className="text-[11px] text-white/50 italic leading-tight">
                      {activeItem.details}
                    </p>
@@ -242,7 +242,7 @@ export default function FeaturesCollage() {
                   </div>
                   <div className="px-4 pb-3 flex items-center justify-between">
                      <h4 className="font-black text-sm text-white tracking-tight uppercase italic">{f.name}</h4>
-                     <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]">
+                     <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-on-accent shadow-[0_0_15px_rgba(0,0,0,0.3)]">
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3"><path d="M2 6H10M10 6L6 2M10 6L6 10"/></svg>
                      </div>
                   </div>
@@ -254,17 +254,17 @@ export default function FeaturesCollage() {
       </div>
 
       {/* Marquee Ticker */}
-      <div className="mt-10 bg-[#160a2b] py-3 scale-105 border-y border-accent/20 z-50 relative shadow-[0_0_30px_rgba(59,130,246,0.15)]">
+      <div className="mt-10 bg-[#160a2b] py-3 scale-105 border-y border-accent/20 z-50 relative shadow-[0_0_30px_rgba(0,0,0,0.3)]">
         <div className="flex whitespace-nowrap overflow-hidden">
           <div className="flex whitespace-nowrap animate-marquee items-center">
             {[1,2,3,4,5,6,7,8].map(i => (
               <div key={i} className="flex items-center gap-10 px-5">
                 <span className="text-accent font-black italic text-sm uppercase tracking-widest text-glow">PRUEBA CONJUNTOS</span>
-                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(0,0,0,0.3)]" />
                 <span className="text-accent font-black italic text-sm uppercase tracking-widest text-glow">GESTIÓN INTELIGENTE</span>
-                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(0,0,0,0.3)]" />
                 <span className="text-accent font-black italic text-sm uppercase tracking-widest text-glow">COMUNIDAD ACTIVA</span>
-                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(0,0,0,0.3)]" />
               </div>
             ))}
           </div>

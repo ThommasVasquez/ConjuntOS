@@ -4,6 +4,7 @@
   --color-primary: var(--color-primary);
   --color-primary-light: var(--color-primary-light);
   --color-accent: var(--color-accent);
+  --color-on-accent: var(--color-on-accent);
   --color-surface: var(--color-surface);
   --color-surface-2: var(--color-surface-2);
   --color-text: var(--color-text);
@@ -15,30 +16,32 @@
 }
 
 :root {
-  /* Paleta Vibrante Deep Blue (Liquid Glass ref) */
-  --color-primary: #02050a;       /* Pitch black-blue background */
-  --color-primary-light: #1e3a8a; /* Deep Blue */
-  --color-accent: #3b82f6;        /* Blue para CTAs */
-  --color-surface: rgba(20, 10, 35, 0.4); /* Glass surface darker */
-  --color-surface-2: rgba(255, 255, 255, 0.05); /* Lighter glass */
-  --color-text: #F8FAFC;          /* White/slate */
-  --color-text-muted: #93c5fd;    /* Light blue text for muting */
+  /* Paleta Grafito Monocromo (escala de grises neutra, Liquid Glass) */
+  --color-primary: #0A0A0B;       /* Casi negro neutro (fondo) */
+  --color-primary-light: #27272A; /* Grafito (zinc 800) */
+  --color-accent: #009df2;        /* Azul vivo para CTAs y detalles */
+  --color-on-accent: #FFFFFF;     /* Texto/icono SOBRE el acento azul */
+  --color-surface: rgba(24, 24, 27, 0.4);       /* Glass grafito */
+  --color-surface-2: rgba(255, 255, 255, 0.05); /* Glass más claro */
+  --color-text: #FAFAFA;          /* Casi blanco (zinc 50) */
+  --color-text-muted: #A1A1AA;    /* Gris medio (zinc 400) */
   --color-success: #10B981;
   --color-danger: #EF4444;
   --color-warning: #F59E0B;
-  --color-border: rgba(255, 255, 255, 0.1); /* Subtle white border for glass */
+  --color-border: rgba(255, 255, 255, 0.1); /* Borde sutil para glass */
 }
 
-/* Modo Claro override variables */
+/* Modo Claro override variables — mismo grafito invertido */
 .light {
-  --color-primary: #F8FAFC;       /* Slate 50 limpio */
-  --color-primary-light: #EEF2F6; /* Slate/Indigo muy claro para fondos de tarjetas */
-  --color-accent: #3b82f6;        /* Indigo/Azul Real */
-  --color-surface: rgba(255, 255, 255, 0.7); /* Vidrio blanco translúcido */
-  --color-surface-2: rgba(59, 130, 246, 0.05); /* Fondo de entrada o botón sutil */
-  --color-text: #0F172A;          /* Slate 900 */
-  --color-text-muted: #475569;    /* Slate 600 */
-  --color-border: rgba(15, 23, 42, 0.08); /* Bordes sutiles en modo claro */
+  --color-primary: #F4F4F5;       /* Gris muy claro neutro (zinc 100) */
+  --color-primary-light: #FFFFFF; /* Blanco para tarjetas */
+  --color-accent: #009df2;        /* Azul vivo (mismo acento en claro) */
+  --color-on-accent: #FFFFFF;     /* Texto/icono SOBRE el acento azul */
+  --color-surface: rgba(255, 255, 255, 0.7);    /* Vidrio blanco translúcido */
+  --color-surface-2: rgba(24, 24, 27, 0.04);    /* Fondo sutil de input/botón */
+  --color-text: #18181B;          /* Zinc 900 */
+  --color-text-muted: #71717A;    /* Zinc 500 */
+  --color-border: rgba(24, 24, 27, 0.08); /* Bordes sutiles en claro */
 }
 
 /* Base resets & view transitions */
@@ -92,7 +95,7 @@ html, body {
 }
 
 .liquid-glass-card {
-  background: linear-gradient(135deg, rgba(30, 58, 138, 0.4) 0%, rgba(23, 37, 84, 0.6) 100%);
+  background: linear-gradient(135deg, rgba(39, 39, 42, 0.5) 0%, rgba(24, 24, 27, 0.65) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -103,16 +106,16 @@ html, body {
 /* Light mode overrides for glass styles */
 .light .liquid-glass {
   background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(24, 24, 27, 0.08);
   box-shadow: 
-    0 10px 40px -10px rgba(59, 130, 246, 0.05),
+    0 10px 40px -10px rgba(0, 0, 0, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .light .liquid-glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(238, 242, 246, 0.8) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.03);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(244, 244, 245, 0.85) 100%);
+  border: 1px solid rgba(24, 24, 27, 0.06);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04);
 }
 
 /* Glowing text */
@@ -145,9 +148,9 @@ html, body {
 
 .light .liquid-glass-toast {
   background: rgba(255, 255, 255, 0.85) !important;
-  border: 1px solid rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(24, 24, 27, 0.12) !important;
   color: #0f172a !important;
-  box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.1) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.12) !important;
 }
 
 [data-type='success'].liquid-glass-toast {
@@ -170,7 +173,7 @@ html, body {
 
 .liquid-story-ring {
   position: relative;
-  background: linear-gradient(45deg, #3b82f6, #60a5fa, #3b82f6);
+  background: linear-gradient(45deg, #009df2, #5ec1f8, #009df2);
   background-size: 200% 200%;
   animation: story-bg 5s infinite linear;
   padding: 3px;
@@ -187,7 +190,7 @@ html, body {
   position: absolute;
   inset: -4px;
   border-radius: 9999px;
-  background: conic-gradient(from 0deg, transparent, #3b82f6, #06b6d4, transparent);
+  background: conic-gradient(from 0deg, transparent, #009df2, #5ec1f8, transparent);
   animation: rotate-halo 3s linear infinite;
   opacity: 0.6;
   filter: blur(8px);
@@ -198,7 +201,7 @@ html, body {
   position: absolute;
   inset: 0px;
   border-radius: 9999px;
-  background: #3b82f6;
+  background: #009df2;
   opacity: 0.4;
   animation: breathe-halo 2s ease-in-out infinite;
   filter: blur(4px);
@@ -221,5 +224,5 @@ html, body {
 }
 
 .text-glow {
-  text-shadow: 0 0 12px rgba(59,130,246,0.3);
+  text-shadow: 0 0 12px rgba(0,157,242,0.35);
 }

@@ -30,7 +30,7 @@ interface SearchModalProps {
 // ─── Platform Modules (searchable) ───────────────────────────────────────────
 
 const MODULES = [
-  { title: "Pagos", desc: "Cuotas, recibos y sanciones", icon: <CreditCard size={18} />, color: "from-[#3b82f6] to-[#2563eb]", path: "/pagos", keywords: ["pago", "cuota", "administración", "deuda", "recibo", "energía", "gas", "agua"] },
+  { title: "Pagos", desc: "Cuotas, recibos y sanciones", icon: <CreditCard size={18} />, color: "from-[#009df2] to-[#007ac2]", path: "/pagos", keywords: ["pago", "cuota", "administración", "deuda", "recibo", "energía", "gas", "agua"] },
   { title: "Reservas", desc: "Salón, cancha, gimnasio y más", icon: <Calendar size={18} />, color: "from-blue-500 to-cyan-400", path: "/reservas", keywords: ["reserva", "salón", "salon", "cancha", "gimnasio", "piscina", "bbq", "área", "area"] },
   { title: "Parqueadero", desc: "Estado y asignación de cupos", icon: <Car size={18} />, color: "from-emerald-500 to-emerald-700", path: "/parqueadero", keywords: ["parqueo", "parqueadero", "carro", "moto", "vehículo", "vehiculo", "cupo"] },
   { title: "Paquetería", desc: "Paquetes en portería", icon: <Package size={18} />, color: "from-amber-500 to-orange-400", path: "/paqueteria", keywords: ["paquete", "encomienda", "portería", "porteria", "llegó", "llego", "domicilio", "envío"] },
@@ -239,7 +239,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
           {/* ─── AI Answer ─── */}
           {(isLoadingAI || aiAnswer) && (
             <div className="rounded-[24px] overflow-hidden border border-accent/20"
-              style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.05) 100%)" }}>
+              style={{ background: "linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(139,92,246,0.05) 100%)" }}>
               <div className="px-5 py-3 flex items-center gap-2 border-b border-white/5">
                 <Sparkles size={14} className="text-accent" />
                 <span className="text-[10px] font-black text-accent uppercase tracking-widest">

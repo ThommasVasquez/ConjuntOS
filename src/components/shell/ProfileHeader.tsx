@@ -206,11 +206,11 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
       <div className="relative" ref={notificationsRef}>
         <button 
           onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-          className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-border active:scale-95 ${isNotificationsOpen ? 'bg-accent text-white border-accent/50' : 'liquid-glass text-text/80 hover:text-text'}`}
+          className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-border active:scale-95 ${isNotificationsOpen ? 'bg-accent text-on-accent border-accent/50' : 'liquid-glass text-text/80 hover:text-text'}`}
         >
           <Bell size={22} />
           {notifications.some(n => !n.leida) && (
-            <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-primary shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
+            <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-primary shadow-[0_0_10px_rgba(0,0,0,0.3)]"></span>
           )}
         </button>
 

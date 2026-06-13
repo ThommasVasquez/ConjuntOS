@@ -195,7 +195,7 @@ export default function MapaParqueaderoPage() {
                     key={p.id}
                     onClick={() => handleCellClick(p)}
                     className={`fade-up relative flex flex-col items-center justify-center gap-2 py-6 rounded-2xl border transition-all active:scale-95
-                      ${isLibre ? 'bg-text/5 border-border/40 hover:bg-text/10 text-text/70' : 'bg-accent/10 border-accent/40 shadow-[0_0_15px_rgba(59,130,246,0.1)] dark:shadow-[0_0_15px_rgba(59,130,246,0.15)] text-accent'}
+                      ${isLibre ? 'bg-text/5 border-border/40 hover:bg-text/10 text-text/70' : 'bg-accent/10 border-accent/40 shadow-[0_0_15px_rgba(0,0,0,0.3)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] text-accent'}
                     `}
                   >
                      {isResident ? <ShieldCheck size={20} className={isLibre ? 'text-text/30' : 'text-accent/60'} /> : <HelpCircle size={20} className={isLibre ? 'text-blue-500/30 dark:text-blue-400/30' : 'text-blue-600 dark:text-blue-400' }/>}
@@ -304,7 +304,7 @@ export default function MapaParqueaderoPage() {
                    <button 
                      disabled={isSubmitting}
                      type="submit" 
-                     className="w-full bg-linear-to-r from-accent to-blue-600 rounded-2xl py-4 font-bold text-white shadow-xl shadow-accent/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                     className="w-full bg-accent rounded-2xl py-4 font-bold text-on-accent shadow-xl shadow-accent/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                    >
                      {isSubmitting ? "Procesando..." : <><Car size={18} /> Confirmar Ingreso</>}
                    </button>

@@ -60,7 +60,7 @@ export default function BottomNav() {
               key={tab.path} 
               href={tab.path}
               className={`relative flex items-center justify-center transition-all duration-300 rounded-full h-[52px] group
-                ${isActive ? 'w-[120px] bg-linear-to-r from-accent to-blue-600 shadow-lg shadow-accent/45 px-4' : 'w-[52px] bg-text/5 border border-border/30 hover:bg-text/10 mx-1'}
+                ${isActive ? 'w-[120px] bg-accent shadow-lg shadow-accent/45 px-4' : 'w-[52px] bg-text/5 border border-border/30 hover:bg-text/10 mx-1'}
               `}
             >
               <div className="flex items-center gap-2 relative z-10 w-full justify-center">

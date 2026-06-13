@@ -475,7 +475,7 @@ export default function AdminNovedadesPage() {
                     <button 
                       type="submit"
                       disabled={isSubmittingAnuncio || isUploadingImage}
-                      className="w-full py-4 bg-linear-to-r from-accent to-blue-600 rounded-2xl font-bold text-xs uppercase tracking-widest text-white shadow-xl shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
+                      className="w-full py-4 bg-accent rounded-2xl font-bold text-xs uppercase tracking-widest text-on-accent shadow-xl shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
                     >
                         {isSubmittingAnuncio ? (editingAnuncioId ? "Guardando..." : "Publicando...") : (editingAnuncioId ? "Guardar Cambios" : "Publicar Anuncio")}
                     </button>

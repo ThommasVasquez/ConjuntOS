@@ -226,7 +226,7 @@ export default function ParqueaderoPage() {
         
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center border border-accent/30">
-            <Info size={18} className="text-accent shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+            <Info size={18} className="text-accent shadow-[0_0_10px_rgba(0,0,0,0.3)]" />
           </div>
           <div>
             <h3 className="text-lg font-display font-bold text-text tracking-tight">Reglamento</h3>
@@ -250,7 +250,7 @@ export default function ParqueaderoPage() {
 
         <button 
           onClick={() => router.push('/citofonia?tab=VISITAS')}
-          className="w-full bg-linear-to-r from-accent to-blue-600 rounded-2xl py-4 flex items-center justify-center gap-3 text-sm font-bold text-white hover:scale-[1.02] active:scale-95 transition-all shadow-[0_10px_25px_rgba(59,130,246,0.3)] cursor-pointer"
+          className="w-full bg-accent rounded-2xl py-4 flex items-center justify-center gap-3 text-sm font-bold text-on-accent hover:scale-[1.02] active:scale-95 transition-all shadow-[0_10px_25px_rgba(0,0,0,0.3)] cursor-pointer"
         >
           Pedir Parqueo para Visita <ArrowRight size={18} />
         </button>

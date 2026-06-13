@@ -310,7 +310,7 @@ export default function AsambleaPage() {
               <button
                 onClick={advanceAgenda}
                 disabled={asamblea.itemActivoIndex >= ordenDia.length - 1}
-                className="w-full bg-accent text-white font-bold py-3 rounded-2xl text-xs uppercase tracking-wider disabled:opacity-30 mt-2 active:scale-95 transition-transform"
+                className="w-full bg-accent text-on-accent font-bold py-3 rounded-2xl text-xs uppercase tracking-wider disabled:opacity-30 mt-2 active:scale-95 transition-transform"
               >
                 Avanzar al siguiente punto
               </button>
@@ -563,7 +563,7 @@ export default function AsambleaPage() {
           <button
             onClick={postOpinion}
             disabled={!newOpinion.trim()}
-            className="bg-accent text-white w-12 rounded-xl flex items-center justify-center disabled:opacity-30 active:scale-95 transition-transform"
+            className="bg-accent text-on-accent w-12 rounded-xl flex items-center justify-center disabled:opacity-30 active:scale-95 transition-transform"
           >
             <Send size={18} />
           </button>
@@ -583,7 +583,7 @@ export default function AsambleaPage() {
             {tab.icon}
             <span className="text-[10px] font-bold">{tab.label}</span>
             {tab.badge != null && tab.badge > 0 && (
-              <span className="absolute top-1 right-1/4 w-4 h-4 bg-accent text-[8px] text-white rounded-full flex items-center justify-center font-bold">
+              <span className="absolute top-1 right-1/4 w-4 h-4 bg-accent text-[8px] text-on-accent rounded-full flex items-center justify-center font-bold">
                 {tab.badge > 9 ? "9+" : tab.badge}
               </span>
             )}

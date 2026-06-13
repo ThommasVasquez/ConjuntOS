@@ -192,7 +192,7 @@ export default function Hero() {
                   key={slide.id}
                   onClick={() => handleSlideChange(idx)}
                   className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all duration-300 ${
-                    activeSlide === idx ? "bg-accent text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]" : "text-white/60 hover:text-white"
+                    activeSlide === idx ? "bg-accent text-on-accent shadow-[0_0_15px_rgba(0,0,0,0.3)]" : "text-on-accent/60 hover:text-on-accent"
                   }`}
                 >
                   {slide.label}
@@ -217,7 +217,7 @@ export default function Hero() {
             <div className="flex items-center gap-8">
               <button 
                 onClick={() => navigate("/login")}
-                className="bg-linear-to-r from-accent to-blue-600 text-white px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:scale-[1.03] active:scale-95 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] cursor-pointer"
+                className="bg-accent text-on-accent px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:scale-[1.03] active:scale-95 transition-all shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_30px_rgba(0,0,0,0.3)] cursor-pointer"
               >
                 Comenzar Ahora
               </button>
@@ -247,7 +247,7 @@ export default function Hero() {
                   <h3 className="text-3xl font-medium text-white font-[family-name:var(--font-montserrat)] mb-4">{currentFeature.title}</h3>
                   <p className="text-base text-white/70 leading-relaxed mb-8 h-20">{currentFeature.desc}</p>
                   
-                  <button className="w-full py-4 rounded-full border border-white/10 text-white text-xs font-bold tracking-widest uppercase hover:bg-accent hover:border-accent transition-all duration-300">
+                  <button className="w-full py-4 rounded-full border border-white/10 text-on-accent text-xs font-bold tracking-widest uppercase hover:bg-accent hover:border-accent transition-all duration-300">
                     Ver cómo funciona
                   </button>
                 </div>
@@ -258,7 +258,7 @@ export default function Hero() {
                 {[0, 1, 2].map((i) => (
                   <div 
                     key={i} 
-                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent shadow-[0_0_10px_rgba(59,130,246,0.8)]" : "bg-white/20"}`}
+                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent shadow-[0_0_10px_rgba(0,0,0,0.3)]" : "bg-white/20"}`}
                   />
                 ))}
               </div>

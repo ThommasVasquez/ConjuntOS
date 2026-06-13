@@ -17,7 +17,7 @@ export default function ProductsSection() {
       component: (
         <div className="w-full h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+            <div className="w-12 h-12 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(0,0,0,0.3)]">
               <PhoneCall size={20} className="animate-pulse" />
             </div>
             <span className="text-[9px] bg-accent/20 text-accent font-bold uppercase px-2.5 py-1 rounded-full border border-accent/30 tracking-wider">Llamando</span>
@@ -122,7 +122,7 @@ export default function ProductsSection() {
         <div className="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {products.map((p, i) => (
             <div key={i} className="product-card group cursor-pointer flex flex-col justify-between h-full">
-              <div className="w-full h-64 bg-white/5 border border-white/5 rounded-[32px] overflow-hidden p-6 flex flex-col mb-4 transition-all duration-500 group-hover:scale-[1.02] group-hover:border-accent/30 group-hover:shadow-[0_15px_35px_rgba(59,130,246,0.1)] relative">
+              <div className="w-full h-64 bg-white/5 border border-white/5 rounded-[32px] overflow-hidden p-6 flex flex-col mb-4 transition-all duration-500 group-hover:scale-[1.02] group-hover:border-accent/30 group-hover:shadow-[0_15px_35px_rgba(0,0,0,0.3)] relative">
                 <div className="absolute inset-0 bg-linear-to-b from-[#1a1333]/20 to-transparent" />
                 <div className="relative z-10 w-full h-full">
                   {p.component}

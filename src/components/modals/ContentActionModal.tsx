@@ -161,7 +161,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
                    <span className="text-xs font-bold text-white/50">Sabor</span>
                    <div className="grid grid-cols-3 gap-2">
                       {["Pepperoni", "Hawaiana", "Pollo Champ"].map(f => (
-                        <button key={f} onClick={() => setFlavor(f)} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-tighter border transition-all ${flavor === f ? 'bg-accent text-primary border-accent' : 'bg-white/5 text-white/40 border-white/5 hover:border-white/20'}`}>{f}</button>
+                        <button key={f} onClick={() => setFlavor(f)} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-tighter border transition-all ${flavor === f ? 'bg-accent text-primary border-accent' : 'bg-white/5 text-on-accent/40 border-white/5 hover:border-white/20'}`}>{f}</button>
                       ))}
                    </div>
                  </div>
@@ -170,7 +170,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
                    <span className="text-xs font-bold text-white/50">Tamaño</span>
                    <div className="grid grid-cols-2 gap-2">
                       {["Mediana", "Familiar"].map(s => (
-                        <button key={s} onClick={() => setSize(s)} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-tighter border transition-all ${size === s ? 'bg-accent text-primary border-accent' : 'bg-white/5 text-white/40 border-white/5 hover:border-white/20'}`}>{s}</button>
+                        <button key={s} onClick={() => setSize(s)} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-tighter border transition-all ${size === s ? 'bg-accent text-primary border-accent' : 'bg-white/5 text-on-accent/40 border-white/5 hover:border-white/20'}`}>{s}</button>
                       ))}
                    </div>
                  </div>

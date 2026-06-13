@@ -39,7 +39,7 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
 
   const createConfetti = () => {
     if (!canvasRef.current) return;
-    const colors = ["#3b82f6", "#60a5fa", "#3B82F6", "#10B981", "#F59E0B"];
+    const colors = ["#009df2", "#5ec1f8", "#009df2", "#10B981", "#F59E0B"];
     const container = canvasRef.current;
     
     for (let i = 0; i < 60; i++) {
@@ -115,7 +115,7 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
 
           <button 
             onClick={handleClose}
-            className={`w-full py-4 rounded-2xl font-bold text-sm tracking-widest uppercase transition-all active:scale-95 shadow-xl ${isApprove ? 'bg-accent text-primary accent-glow-strong' : 'bg-white/10 text-white border border-white/20 hover:bg-white/20'}`}
+            className={`w-full py-4 rounded-2xl font-bold text-sm tracking-widest uppercase transition-all active:scale-95 shadow-xl ${isApprove ? 'bg-accent text-primary accent-glow-strong' : 'bg-white/10 text-on-accent border border-white/20 hover:bg-white/20'}`}
           >
             {isApprove ? "¡Excelente!" : "Entendido"}
           </button>

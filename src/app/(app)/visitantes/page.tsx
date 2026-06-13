@@ -196,7 +196,7 @@ export default function VisitantesPage() {
          
          <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
-               <div className="w-12 h-12 rounded-[18px] bg-accent flex items-center justify-center text-white shadow-[0_8px_20px_rgba(59,130,246,0.4)]">
+               <div className="w-12 h-12 rounded-[18px] bg-accent flex items-center justify-center text-on-accent shadow-[0_8px_20px_rgba(0,0,0,0.3)]">
                   <UserPlus size={24} />
                </div>
                <div>
@@ -219,7 +219,7 @@ export default function VisitantesPage() {
                     <button 
                       key={tipo}
                       onClick={() => setNewVisitForm({...newVisitForm, tipo})}
-                      className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer ${newVisitForm.tipo === tipo ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text/60 hover:bg-text/10'}`}
+                      className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer ${newVisitForm.tipo === tipo ? 'bg-accent border-accent text-on-accent shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text/60 hover:bg-text/10'}`}
                     >
                       {tipo}
                     </button>
@@ -239,7 +239,7 @@ export default function VisitantesPage() {
                <button 
                  onClick={handleCreateInvitation}
                  disabled={submitting}
-                 className="w-full bg-linear-to-r from-accent to-blue-600 py-4 rounded-[22px] font-bold text-white shadow-xl shadow-accent/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60"
+                 className="w-full bg-accent py-4 rounded-[22px] font-bold text-on-accent shadow-xl shadow-accent/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60"
                >
                  {submitting ? <Loader2 size={20} className="animate-spin" /> : <><QrCode size={20} /> Programar Visita</>}
                </button>
@@ -318,7 +318,7 @@ export default function VisitantesPage() {
                   {status === 'PROGRAMADO' ? (
                      <button 
                        onClick={() => { setIsQRModalOpen(true); }}
-                       className="px-4 py-2 rounded-full bg-text/5 border border-border text-text/70 text-[10px] font-bold hover:bg-accent hover:text-white hover:border-accent transition-all cursor-pointer"
+                       className="px-4 py-2 rounded-full bg-text/5 border border-border text-text/70 text-[10px] font-bold hover:bg-accent hover:text-on-accent hover:border-accent transition-all cursor-pointer"
                      >
                        REENVIAR QR
                      </button>

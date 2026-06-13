@@ -289,7 +289,7 @@ export default function ReservasPage() {
                                 key={idx} 
                                 onClick={() => setSelectedDay(date)}
                                 className={`min-w-[70px] snap-center py-3 rounded-2xl border transition-all flex flex-col items-center gap-1 shrink-0 cursor-pointer 
-                                ${isSelected ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text hover:bg-text/10'}`}
+                                ${isSelected ? 'bg-accent border-accent text-on-accent shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text hover:bg-text/10'}`}
                              >
                                <span className="text-[10px] font-medium uppercase tracking-widest">{dow}</span>
                                <span className="text-xl font-display font-bold">{date.getDate()}</span>
@@ -316,7 +316,7 @@ export default function ReservasPage() {
                                className={`
                                  py-3 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border cursor-pointer
                                  ${!slot.available ? 'opacity-30 bg-text/5 border-transparent cursor-not-allowed text-text/40' : 
-                                   selectedSlotIndex === index ? 'bg-accent text-white border-accent shadow-xl' : 'bg-text/5 border-border text-text hover:bg-text/10'}
+                                   selectedSlotIndex === index ? 'bg-accent text-on-accent border-accent shadow-xl' : 'bg-text/5 border-border text-text hover:bg-text/10'}
                                `}
                              >
                                 <span className={selectedSlotIndex === index ? 'opacity-50 text-[10px]' : 'text-accent/70 text-[10px]'}>MIE {selectedDay?.getDate()}</span>
@@ -331,7 +331,7 @@ export default function ReservasPage() {
               <button 
                   disabled={selectedSlotIndex === null || isProcessing}
                   onClick={proceedToBook} 
-                  className="w-full py-5 bg-gradient-to-r from-accent to-blue-600 rounded-[24px] font-bold text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100 cursor-pointer"
+                  className="w-full py-5 bg-accent rounded-[24px] font-bold text-on-accent shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100 cursor-pointer"
                >
                   {isProcessing ? 'Procesando...' : selectedArea.requiereDeposito ? 'Pagar Depósito' : 'Confirmar Reserva'} 
                   <ArrowRight size={18} />
@@ -345,7 +345,7 @@ export default function ReservasPage() {
            <div className="w-16 h-16 rounded-full border-4 border-border border-t-accent animate-spin mb-4" />
            <h3 className="text-2xl font-display font-medium text-text tracking-tight">Procesando Pago Seguro...</h3>
             <p className="text-text/60 text-xs mt-4">Confirmando con pasarela de pago...</p>
-            <button onClick={executeBooking} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-white transition-colors cursor-pointer">Confirmar Pago</button>
+            <button onClick={executeBooking} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-on-accent transition-colors cursor-pointer">Confirmar Pago</button>
         </section>
       )}
 

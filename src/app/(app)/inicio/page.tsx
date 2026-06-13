@@ -41,7 +41,7 @@ function HomeResidente() {
 
   const categories = [
     { title: "Citofonía", icon: <UserIcon size={20}/>, color: "from-blue-500 to-pink-500", path: "/citofonia" },
-    { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-[#3b82f6] to-[#2563eb]", path: "/pagos" },
+    { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-[#009df2] to-[#007ac2]", path: "/pagos" },
     { title: "Parqueo", icon: <Car size={20}/>, color: "from-emerald-500 to-emerald-700", path: "/parqueadero" },
     { title: "Reservas", icon: <Calendar size={20}/>, color: "from-blue-500 to-cyan-400", path: "/reservas" },
     { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-red-500 to-orange-500", path: "/cartelera" },
@@ -256,7 +256,7 @@ function HomeResidente() {
                       <div 
                         key={n.id} 
                         onClick={() => markAsRead(n.id)}
-                        className="min-w-[280px] bg-linear-to-r from-accent/20 to-blue-500/10 border border-accent/30 rounded-[22px] p-4 flex flex-col gap-2 cursor-pointer hover:bg-text/5 transition-all shadow-lg shadow-accent/5 group"
+                        className="min-w-[280px] bg-linear-to-r from-accent/20 to-accent/5 border border-accent/30 rounded-[22px] p-4 flex flex-col gap-2 cursor-pointer hover:bg-text/5 transition-all shadow-lg shadow-accent/5 group"
                       >
                           <div className="flex justify-between items-start">
                               <span className="text-[10px] font-black text-accent uppercase tracking-tighter">{n.tipo}</span>

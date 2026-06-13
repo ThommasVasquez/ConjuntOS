@@ -41,7 +41,7 @@ export default function SuperAdminPage() {
     matriculaInmobiliaria: "",
     totalUnidades: "1",
     logoUrl: "",
-    colorPrimario: "#2563eb" // Default premium blue
+    colorPrimario: "#007ac2" // Default premium blue
   });
 
   const handleEditClick = (c: any) => {
@@ -59,7 +59,7 @@ export default function SuperAdminPage() {
       matriculaInmobiliaria: c.matriculaInmobiliaria || "",
       totalUnidades: c.totalUnidades ? String(c.totalUnidades) : "1",
       logoUrl: c.logoUrl || "",
-      colorPrimario: c.colorPrimario || "#2563eb"
+      colorPrimario: c.colorPrimario || "#007ac2"
     });
     setTab("CREAR");
   };
@@ -79,7 +79,7 @@ export default function SuperAdminPage() {
       matriculaInmobiliaria: "",
       totalUnidades: "1",
       logoUrl: "",
-      colorPrimario: "#2563eb"
+      colorPrimario: "#007ac2"
     });
   };
 
@@ -199,7 +199,7 @@ export default function SuperAdminPage() {
         matriculaInmobiliaria: "",
         totalUnidades: "1",
         logoUrl: "",
-        colorPrimario: "#2563eb"
+        colorPrimario: "#007ac2"
       });
       setEditingConjuntoId(null);
       fetchConjuntos();
@@ -505,7 +505,7 @@ export default function SuperAdminPage() {
           <button 
             type="submit" 
             disabled={isSubmitting || isUploading} 
-            className="fade-up w-full py-4 bg-linear-to-r from-accent to-blue-600 hover:from-accent/90 hover:to-blue-500 transition-all rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-xl shadow-accent/20 active:scale-[0.98] flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="fade-up w-full py-4 bg-accent hover:bg-accent/90 transition-all rounded-2xl font-black uppercase text-xs tracking-widest text-on-accent shadow-xl shadow-accent/20 active:scale-[0.98] flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
               <>

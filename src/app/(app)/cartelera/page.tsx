@@ -288,7 +288,7 @@ export default function CarteleraPage() {
                            toast.success("Link copiado al portapapeles");
                          }
                       }}
-                      className="w-full bg-accent py-4 rounded-2xl font-bold text-white shadow-xl shadow-accent/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                      className="w-full bg-accent py-4 rounded-2xl font-bold text-on-accent shadow-xl shadow-accent/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
                     >
                       <Share2 size={18} /> Compartir
                     </button>

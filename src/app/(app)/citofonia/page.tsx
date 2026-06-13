@@ -360,7 +360,7 @@ export default function CitofoniaPage() {
               {/* ACTION BUTTON */}
               <button 
                 onClick={() => setIsAddingVisita(true)}
-                className="w-full py-4 rounded-[22px] bg-accent text-white font-black text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+                className="w-full py-4 rounded-[22px] bg-accent text-on-accent font-black text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
               >
                  <Plus size={18} /> AGENDAR NUEVA VISITA
               </button>
@@ -400,7 +400,7 @@ export default function CitofoniaPage() {
                <div className="bg-linear-to-r from-accent/20 to-secondary/20 border border-border rounded-3xl p-6 flex flex-col gap-2 relative overflow-hidden group">
                   <div className="absolute -top-4 -right-4 w-20 h-20 bg-accent/20 blur-xl rounded-full" />
                   <div className="flex items-center gap-3">
-                     <div className="p-2 bg-accent rounded-xl text-white"><Package size={20} /></div>
+                     <div className="p-2 bg-accent rounded-xl text-on-accent"><Package size={20} /></div>
                      <h3 className="text-text font-bold">¡Paquete en Portería!</h3>
                   </div>
                   <p className="text-text/60 text-xs leading-relaxed">Tienes {paquetes.length} entrega(s) pendiente(s) por retirar en la recepción principal.</p>
@@ -487,7 +487,7 @@ export default function CitofoniaPage() {
                         setIsAddingVisita(false);
                         fetchData();
                       }}
-                      className="w-full py-5 rounded-2xl bg-accent text-white font-black text-base shadow-xl shadow-accent/20 active:scale-95 transition-all mt-4 cursor-pointer"
+                      className="w-full py-5 rounded-2xl bg-accent text-on-accent font-black text-base shadow-xl shadow-accent/20 active:scale-95 transition-all mt-4 cursor-pointer"
                     >
                       PROGRAMAR AHORA
                     </button>

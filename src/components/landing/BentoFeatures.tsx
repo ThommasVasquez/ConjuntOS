@@ -14,8 +14,8 @@ const features = [
     title: "Citofonía Inteligente",
     description: "Mensajes de voz con transcripción automática en tiempo real.",
     icon: Mic,
-    className: "md:col-span-2 md:row-span-2 bg-[#3b82f6]/10 border-[#3b82f6]/20",
-    iconColor: "text-[#3b82f6]"
+    className: "md:col-span-2 md:row-span-2 bg-[#009df2]/10 border-[#009df2]/20",
+    iconColor: "text-[#009df2]"
   },
   {
     title: "Pagos Transparentes",
@@ -80,7 +80,7 @@ export default function BentoFeatures() {
       <div className="max-w-6xl mx-auto space-y-16">
         <div className="space-y-4 text-center md:text-left">
           <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
-            Todo lo que tu <span className="text-[#3b82f6]">Conjunto</span> necesita
+            Todo lo que tu <span className="text-[#009df2]">Conjunto</span> necesita
           </h2>
           <p className="text-white/40 max-w-xl font-medium">
             Módulos integrados bajo una misma identidad visual. Eficiencia operativa envuelta en diseño de clase mundial.

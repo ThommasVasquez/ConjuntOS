@@ -23,7 +23,7 @@ export default function Footer() {
               placeholder="tu@email.com" 
               className="bg-white/5 border border-white/10 rounded-full px-6 py-3.5 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 w-64 shadow-inner placeholder:text-white/20"
             />
-            <button className="bg-accent text-white px-6 py-3.5 rounded-full text-sm font-bold hover:bg-accent/80 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all active:scale-95 cursor-pointer">
+            <button className="bg-accent text-on-accent px-6 py-3.5 rounded-full text-sm font-bold hover:bg-accent/80 hover:shadow-[0_0_15px_rgba(0,0,0,0.3)] transition-all active:scale-95 cursor-pointer">
               Suscribirse
             </button>
           </div>

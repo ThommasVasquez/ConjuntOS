@@ -16,7 +16,7 @@ export default function AppError({
         </p>
         <button
           onClick={reset}
-          className="bg-accent text-white px-6 py-3 rounded-2xl font-bold text-sm"
+          className="bg-accent text-on-accent px-6 py-3 rounded-2xl font-bold text-sm"
         >
           Reintentar
         </button>
