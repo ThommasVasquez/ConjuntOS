@@ -67,32 +67,32 @@ export default function AdminFinanzasPage() {
 
        <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
-             <div className="w-12 h-12 rounded-2xl bg-neutral-500/20 border border-neutral-500/30 flex items-center justify-center text-neutral-500">
+             <div className="w-12 h-12 rounded-2xl bg-text/20 border border-text/30 flex items-center justify-center text-text">
                 <DollarSign size={24} />
              </div>
              <div>
                 <h2 className="text-xl font-bold text-text">Finanzas</h2>
-                <p className="text-xs text-text/70">Consolidado del conjunto · mes en curso</p>
+                <p className="text-xs text-text">Consolidado del conjunto · mes en curso</p>
              </div>
           </div>
 
           {error ? (
             <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <AlertCircle size={28} className="text-neutral-500" />
-              <p className="text-text/75 text-sm">No se pudieron cargar los datos financieros.</p>
+              <AlertCircle size={28} className="text-text" />
+              <p className="text-text text-sm">No se pudieron cargar los datos financieros.</p>
               <button onClick={loadStats} className="text-xs font-bold text-accent underline">Reintentar</button>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
               <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
-                 <span className="flex items-center gap-2 text-xs text-text/70 uppercase font-bold">
-                   <DollarSign size={14} className="text-neutral-500" /> Recaudación del mes
+                 <span className="flex items-center gap-2 text-xs text-text uppercase font-bold">
+                   <DollarSign size={14} className="text-text" /> Recaudación del mes
                  </span>
-                 <span className="text-sm font-black text-neutral-500">{COP(stats?.recaudoMes ?? 0)}</span>
+                 <span className="text-sm font-black text-text">{COP(stats?.recaudoMes ?? 0)}</span>
               </div>
               <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
-                 <span className="flex items-center gap-2 text-xs text-text/70 uppercase font-bold">
-                   <CalendarClock size={14} className="text-text/60" /> Reservas pendientes
+                 <span className="flex items-center gap-2 text-xs text-text uppercase font-bold">
+                   <CalendarClock size={14} className="text-text" /> Reservas pendientes
                  </span>
                  <span className="text-sm font-black text-text">{stats?.reservasPendientes ?? 0}</span>
               </div>

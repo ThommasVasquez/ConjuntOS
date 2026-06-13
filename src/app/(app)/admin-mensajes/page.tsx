@@ -306,22 +306,22 @@ export default function AdminMensajesPage() {
       <div className="flex-1 w-full max-w-[430px] mx-auto px-6 pt-24 pb-32">
         <div className="flex justify-between items-end mb-8">
            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500 italic">Administración</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-text italic">Administración</span>
               <h1 className="text-4xl font-black tracking-tight text-text uppercase italic leading-none">Mensajes</h1>
            </div>
-           <div className="w-12 h-12 rounded-2xl bg-surface-2 border border-border flex items-center justify-center text-neutral-500 shadow-glow">
+           <div className="w-12 h-12 rounded-2xl bg-surface-2 border border-border flex items-center justify-center text-text shadow-glow">
               <MessageCircle size={20} />
            </div>
         </div>
 
         <div className="relative mb-8 group">
-           <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-neutral-500 transition-colors" />
+           <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-text transition-colors" />
            <input 
              type="text" 
              placeholder="Buscar unidad o nombre..."
              value={search}
              onChange={(e) => setSearch(e.target.value)}
-             className="w-full bg-surface-2 border border-border rounded-[28px] py-4 pl-14 pr-6 text-sm outline-none focus:bg-surface focus:border-neutral-500/30 transition-all placeholder:text-text/50"
+             className="w-full bg-surface-2 border border-border rounded-[28px] py-4 pl-14 pr-6 text-sm outline-none focus:bg-surface focus:border-text/30 transition-all placeholder:text-text"
            />
         </div>
 
@@ -341,11 +341,11 @@ export default function AdminMensajesPage() {
                key={c.usuarioId}
                onClick={() => setSelectedUserId(c.usuarioId)}
                className={`conv-card w-full p-5 rounded-[32px] flex items-center gap-4 transition-all active:scale-[0.97] border relative group
-                 ${selectedUserId === c.usuarioId ? 'bg-neutral-500 border-neutral-400 text-white' : 'bg-surface-2 border-border hover:bg-surface'}`}
+                 ${selectedUserId === c.usuarioId ? 'bg-text/10 border-border text-white' : 'bg-surface-2 border-border hover:bg-surface'}`}
              >
                 <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center border border-border relative overflow-hidden flex-shrink-0">
-                   {c.residente?.avatar ? <img src={c.residente.avatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-text/60" />}
-                   {c.noLeidos > 0 && <div className="absolute top-1 right-1 w-3 h-3 bg-neutral-500 border-2 border-primary rounded-full animate-pulse" />}
+                   {c.residente?.avatar ? <img src={c.residente.avatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-text" />}
+                   {c.noLeidos > 0 && <div className="absolute top-1 right-1 w-3 h-3 bg-text/10 border-2 border-primary rounded-full animate-pulse" />}
                 </div>
                 <div className="flex-1 text-left min-w-0">
                    <div className="flex justify-between items-center mb-1.5">
@@ -357,7 +357,7 @@ export default function AdminMensajesPage() {
                          {c.ultimoMensaje}
                       </p>
                       {c.residente?.torre && c.residente?.apto && (
-                        <span className="text-[9px] px-2 py-0.5 rounded-lg bg-surface font-black text-text/80 bg-text/10 tracking-tighter">T{c.residente.torre}-{c.residente.apto}</span>
+                        <span className="text-[9px] px-2 py-0.5 rounded-lg bg-surface font-black text-text bg-text/10 tracking-tighter">T{c.residente.torre}-{c.residente.apto}</span>
                       )}
                    </div>
                 </div>
@@ -380,18 +380,18 @@ export default function AdminMensajesPage() {
                     >
                        <ChevronLeft size={22} />
                     </button>
-                    <div className="w-12 h-12 rounded-2xl bg-neutral-500/10 flex items-center justify-center border border-neutral-500/20 relative overflow-hidden shadow-inner group-hover:border-neutral-500/40 transition-all">
-                       {activeConv?.residente?.avatar ? <img src={activeConv.residente.avatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-neutral-500" />}
-                       <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-primary bg-neutral-500 shadow-[0_0_10px_rgba(128,128,128,0.5)]" />
+                    <div className="w-12 h-12 rounded-2xl bg-text/10 flex items-center justify-center border border-text/20 relative overflow-hidden shadow-inner group-hover:border-text/40 transition-all">
+                       {activeConv?.residente?.avatar ? <img src={activeConv.residente.avatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-text" />}
+                       <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-primary bg-text/10 shadow-[0_0_10px_rgba(128,128,128,0.5)]" />
                     </div>
                     <div className="flex flex-col">
-                       <h3 className="text-sm font-black text-text tracking-tight leading-none group-hover:text-neutral-400 transition-colors uppercase italic flex items-center gap-2">
+                       <h3 className="text-sm font-black text-text tracking-tight leading-none group-hover:text-text transition-colors uppercase italic flex items-center gap-2">
                          {activeConv?.residente?.nombre || "Residente"}
-                         <Info size={12} className="text-text/60 group-hover:text-neutral-500 transition-colors" />
+                         <Info size={12} className="text-text group-hover:text-text transition-colors" />
                        </h3>
                        <div className="flex items-center gap-2 mt-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-pulse outline outline-2 outline-neutral-500/20" />
-                          <span className="text-[9px] text-text/70 font-black uppercase tracking-[0.1em]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-text/10 animate-pulse outline outline-2 outline-text/20" />
+                          <span className="text-[9px] text-text font-black uppercase tracking-[0.1em]">
                              {activeConv?.residente?.torre && activeConv?.residente?.apto ? `Apto ${activeConv.residente.torre}-${activeConv.residente.apto} • ` : ""}En Línea
                           </span>
                        </div>
@@ -416,7 +416,7 @@ export default function AdminMensajesPage() {
                     <div key={idx} className={`flex ${m.esDeAdmin ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-400`}>
                        <div className={`max-w-[82%] px-5 py-4 rounded-[28px] text-[14px] leading-relaxed shadow-2xl relative
                          ${m.esDeAdmin 
-                           ? 'bg-neutral-500 text-white rounded-tr-none shadow-neutral-500/20 font-medium' 
+                           ? 'bg-text/10 text-white rounded-tr-none shadow-black/20 font-medium' 
                            : 'bg-surface-2 border border-border text-text rounded-tl-none backdrop-blur-xl'
                          }`}>
                           
@@ -427,7 +427,7 @@ export default function AdminMensajesPage() {
                           )}
                           
                           <div className={`text-[8px] mt-2.5 font-bold uppercase tracking-widest flex items-center gap-1.5 
-                            ${m.esDeAdmin ? 'justify-end text-white/50' : 'justify-start text-text/70'}`}>
+                            ${m.esDeAdmin ? 'justify-end text-white' : 'justify-start text-text'}`}>
                              {new Date(m.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                              {m.esDeAdmin && <CheckCheck size={11} className="text-white ml-1" />}
                           </div>
@@ -443,11 +443,11 @@ export default function AdminMensajesPage() {
                     <div className="p-8 space-y-10">
                        <div className="flex justify-between items-start">
                           <div className="space-y-1">
-                             <div className="flex items-center gap-2 text-neutral-500 font-black text-[10px] uppercase tracking-widest italic mb-2">
+                             <div className="flex items-center gap-2 text-text font-black text-[10px] uppercase tracking-widest italic mb-2">
                                 <ShieldCheck size={14} /> Inteligencia Residencial
                              </div>
                              <h2 className="text-3xl font-black text-text italic leading-tight uppercase">{residentInfo.profile.nombre}</h2>
-                             <p className="text-xs font-medium text-text/75">{residentInfo.profile.email}</p>
+                             <p className="text-xs font-medium text-text">{residentInfo.profile.email}</p>
                           </div>
                           <button 
                             onClick={() => setShowInfoPanel(false)}
@@ -460,21 +460,21 @@ export default function AdminMensajesPage() {
                        {/* DOSSIER CARDS */}
                        <div className="grid grid-cols-2 gap-4">
                           <div className="p-5 rounded-3xl bg-surface border border-border group hover:bg-surface-2 transition-all">
-                             <Building2 size={18} className="text-text/60 mb-3" />
-                             <span className="text-[9px] font-black uppercase tracking-widest text-text/60">Identificación Unidad</span>
+                             <Building2 size={18} className="text-text mb-3" />
+                             <span className="text-[9px] font-black uppercase tracking-widest text-text">Identificación Unidad</span>
                              <p className="text-sm font-black text-text uppercase italic mt-1">Torre {residentInfo.profile.torre} • Apto {residentInfo.profile.apto}</p>
                           </div>
                           <div className="p-5 rounded-3xl bg-surface border border-border group hover:bg-surface-2 transition-all">
-                             <ShieldCheck size={18} className="text-text/60 mb-3" />
-                             <span className="text-[9px] font-black uppercase tracking-widest text-text/60">Estado Jurídico</span>
-                             <p className="text-sm font-black text-neutral-700 dark:text-neutral-400 uppercase italic mt-1">{residentInfo.profile.rol}</p>
+                             <ShieldCheck size={18} className="text-text mb-3" />
+                             <span className="text-[9px] font-black uppercase tracking-widest text-text">Estado Jurídico</span>
+                             <p className="text-sm font-black text-text dark:text-text uppercase italic mt-1">{residentInfo.profile.rol}</p>
                           </div>
-                          <a href={`tel:${residentInfo.profile.telefono}`} className="col-span-full p-5 rounded-3xl bg-neutral-500/10 border border-neutral-500/20 active:scale-95 transition-all flex items-center justify-between">
+                          <a href={`tel:${residentInfo.profile.telefono}`} className="col-span-full p-5 rounded-3xl bg-text/10 border border-text/20 active:scale-95 transition-all flex items-center justify-between">
                              <div className="flex flex-col gap-1">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-neutral-700 dark:text-neutral-400 leading-none mb-1">Contacto Directo</span>
-                                <p className="text-[20px] font-black text-neutral-700 dark:text-neutral-400 italic leading-none">{residentInfo.profile.telefono || "CONSULTAR..."}</p>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-text dark:text-text leading-none mb-1">Contacto Directo</span>
+                                <p className="text-[20px] font-black text-text dark:text-text italic leading-none">{residentInfo.profile.telefono || "CONSULTAR..."}</p>
                              </div>
-                             <div className="w-12 h-12 rounded-2xl bg-neutral-500 flex items-center justify-center text-white shadow-xl shadow-neutral-500/40">
+                             <div className="w-12 h-12 rounded-2xl bg-text/10 flex items-center justify-center text-white shadow-xl shadow-black/40">
                                 <Phone size={22} fill="currentColor" />
                              </div>
                           </a>
@@ -487,8 +487,8 @@ export default function AdminMensajesPage() {
                              {residentInfo.vehicles.length === 0 ? <DashedEmpty label="Sin registros vehiculares" /> : residentInfo.vehicles.map((v, i) => (
                                <div key={i} className="p-4 bg-surface border border-border rounded-2xl flex justify-between items-center group hover:bg-surface-2 transition-all">
                                   <div className="flex items-center gap-4">
-                                     <div className="w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center text-text/60 font-black text-sm uppercase italic border border-border">{v.placa.slice(0,2)}</div>
-                                     <div><p className="text-base font-black text-text tracking-widest">{v.placa}</p><p className="text-[10px] font-bold text-text/70 uppercase tracking-[0.15em]">{v.marca} {v.modelo}</p></div>
+                                     <div className="w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center text-text font-black text-sm uppercase italic border border-border">{v.placa.slice(0,2)}</div>
+                                     <div><p className="text-base font-black text-text tracking-widest">{v.placa}</p><p className="text-[10px] font-bold text-text uppercase tracking-[0.15em]">{v.marca} {v.modelo}</p></div>
                                   </div>
                                </div>
                              ))}
@@ -499,11 +499,11 @@ export default function AdminMensajesPage() {
                           <div className="flex items-center gap-3 opacity-70"><Dog size={20} className="text-text" /><h5 className="text-[11px] text-text font-black uppercase tracking-[0.2em]">Mascotas ({residentInfo.pets.length})</h5></div>
                           <div className="grid gap-4">
                              {residentInfo.pets.length === 0 ? <DashedEmpty label="Sin mascotas registradas" /> : residentInfo.pets.map((p, i) => (
-                               <div key={i} className="p-5 bg-surface rounded-[32px] border border-border flex gap-5 items-center group hover:border-neutral-500/30 transition-all">
-                                  <div className="w-14 h-14 rounded-2xl bg-neutral-500/10 flex items-center justify-center text-neutral-500 border border-neutral-500/20 shadow-inner"><Dog size={24} /></div>
+                               <div key={i} className="p-5 bg-surface rounded-[32px] border border-border flex gap-5 items-center group hover:border-text/30 transition-all">
+                                  <div className="w-14 h-14 rounded-2xl bg-text/10 flex items-center justify-center text-text border border-text/20 shadow-inner"><Dog size={24} /></div>
                                   <div className="min-w-0">
                                      <p className="text-lg font-black text-text leading-none uppercase italic mb-1.5">{p.nombre}</p>
-                                     <span className="text-[10px] px-3 py-1 rounded-full bg-surface-2 text-text/80 font-black uppercase tracking-widest">{p.tipo} • {p.raza || "Cruce"}</span>
+                                     <span className="text-[10px] px-3 py-1 rounded-full bg-surface-2 text-text font-black uppercase tracking-widest">{p.tipo} • {p.raza || "Cruce"}</span>
                                   </div>
                                </div>
                              ))}
@@ -517,36 +517,36 @@ export default function AdminMensajesPage() {
               <div className="p-6 bg-surface/50 border-t border-border pb-11 backdrop-blur-3xl pt-6">
                 <div className="max-w-[700px] mx-auto flex items-center gap-4 relative">
                     {isRecording ? (
-                      <div className="flex-1 h-16 bg-neutral-500/10 border border-neutral-500/20 rounded-[32px] flex items-center px-8 gap-4 animate-in slide-in-from-bottom-4 duration-300">
-                        <div className="w-3 h-3 rounded-full bg-neutral-500 animate-pulse shadow-[0_0_10px_rgba(119,119,119,0.5)]" />
-                        <span className="text-sm font-black text-neutral-400 tabular-nums">
+                      <div className="flex-1 h-16 bg-text/10 border border-text/20 rounded-[32px] flex items-center px-8 gap-4 animate-in slide-in-from-bottom-4 duration-300">
+                        <div className="w-3 h-3 rounded-full bg-text/10 animate-pulse shadow-[0_0_10px_rgba(119,119,119,0.5)]" />
+                        <span className="text-sm font-black text-text tabular-nums">
                           {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
                         </span>
                         <div className="flex-1 flex items-center gap-1.5 overflow-hidden">
                           {[...Array(12)].map((_, i) => (
-                            <div key={i} className="w-1 bg-neutral-500/30 rounded-full animate-bounce" style={{ height: `${Math.random() * 20 + 10}px`, animationDelay: `${i * 0.1}s`, animationDuration: '0.6s' }} />
+                            <div key={i} className="w-1 bg-text/30 rounded-full animate-bounce" style={{ height: `${Math.random() * 20 + 10}px`, animationDelay: `${i * 0.1}s`, animationDuration: '0.6s' }} />
                           ))}
                         </div>
                         <button 
                           onClick={stopRecording}
-                          className="w-10 h-10 rounded-xl bg-neutral-500 flex items-center justify-center text-white shadow-lg active:scale-90 transition-all"
+                          className="w-10 h-10 rounded-xl bg-text/10 flex items-center justify-center text-white shadow-lg active:scale-90 transition-all"
                         >
                           <X size={20} />
                         </button>
                       </div>
                     ) : (
-                      <div className="flex-1 min-h-[64px] bg-surface border border-border rounded-[32px] flex items-center px-8 transition-all focus-within:border-neutral-500/40 focus-within:bg-surface-2 shadow-2xl group">
+                      <div className="flex-1 min-h-[64px] bg-surface border border-border rounded-[32px] flex items-center px-8 transition-all focus-within:border-text/40 focus-within:bg-surface-2 shadow-2xl group">
                          <input 
                            type="text"
                            value={newMessage}
                            onChange={(e) => setNewMessage(e.target.value)}
                            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                            placeholder="Emitir respuesta administrativa..."
-                           className="flex-1 bg-transparent border-none text-text text-sm focus:ring-0 placeholder:text-text/50 font-medium"
+                           className="flex-1 bg-transparent border-none text-text text-sm focus:ring-0 placeholder:text-text font-medium"
                          />
                          <button 
                            onClick={startRecording}
-                           className="w-10 h-10 rounded-2xl bg-surface-2 flex items-center justify-center text-text/80 hover:text-neutral-500 hover:bg-neutral-500/10 transition-all border border-transparent hover:border-neutral-500/20"
+                           className="w-10 h-10 rounded-2xl bg-surface-2 flex items-center justify-center text-text hover:text-text hover:bg-text/10 transition-all border border-transparent hover:border-text/20"
                          >
                             <Mic size={20} />
                          </button>
@@ -557,14 +557,14 @@ export default function AdminMensajesPage() {
                       <button 
                         onClick={sendMessage as any}
                         disabled={(!newMessage.trim() && !audioBlob) || sending}
-                        className="w-16 h-16 rounded-full bg-neutral-500 flex items-center justify-center text-white shadow-[0_20px_50px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100 group flex-shrink-0 border-[6px] border-surface-2"
+                        className="w-16 h-16 rounded-full bg-text/10 flex items-center justify-center text-white shadow-[0_20px_50px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100 group flex-shrink-0 border-[6px] border-surface-2"
                       >
                          {sending ? <Loader2 size={28} className="animate-spin" /> : <ArrowRight size={32} className="group-hover:translate-x-1 transition-transform" />}
                       </button>
                     )}
                  </div>
                  <div className="mt-6 flex items-center justify-center gap-3 opacity-70 select-none">
-                    <ShieldCheck size={14} className="text-neutral-500" />
+                    <ShieldCheck size={14} className="text-text" />
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text italic">Comunicación Segura • ConjuntOS Engine</p>
                  </div>
               </div>
@@ -585,7 +585,7 @@ export default function AdminMensajesPage() {
 function DashedEmpty({ label }: { label: string }) {
   return (
     <div className="p-8 rounded-[32px] bg-surface border border-dashed border-border flex flex-col items-center justify-center gap-4">
-       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text/65 italic">{label}</span>
+       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text italic">{label}</span>
     </div>
   );
 }
@@ -613,7 +613,7 @@ function AudioMessage({ url, transcription }: { url: string, transcription?: str
           {isPlaying ? <Pause size={18} /> : <Play size={18} className="translate-x-0.5" />}
         </button>
         <div className="flex-1 h-1.5 bg-surface-3 rounded-full overflow-hidden relative">
-           <div className={`absolute inset-y-0 left-0 bg-neutral-500 transition-all duration-300 ${isPlaying ? 'w-full animate-pulse' : 'w-0'}`} />
+           <div className={`absolute inset-y-0 left-0 bg-text/10 transition-all duration-300 ${isPlaying ? 'w-full animate-pulse' : 'w-0'}`} />
         </div>
         <Music size={14} className="opacity-40" />
       </div>
@@ -623,7 +623,7 @@ function AudioMessage({ url, transcription }: { url: string, transcription?: str
           {!showTranscription ? (
             <button 
               onClick={() => setShowTranscription(true)}
-              className="text-[9px] font-black uppercase tracking-widest text-text/85 hover:text-text transition-colors"
+              className="text-[9px] font-black uppercase tracking-widest text-text hover:text-text transition-colors"
             >
               Ver transcripción
             </button>

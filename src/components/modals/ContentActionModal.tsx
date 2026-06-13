@@ -95,7 +95,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
       >
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors"
+          className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:text-white transition-colors"
         >
           <X size={20} />
         </button>
@@ -117,7 +117,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
                 <h2 className="text-3xl font-display font-bold text-white leading-tight">
                   {item.title}
                 </h2>
-                <p className="text-white/50 text-sm leading-relaxed">
+                <p className="text-white text-sm leading-relaxed">
                   {item.content}
                 </p>
               </div>
@@ -125,8 +125,8 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
               {item.type === 'AD' ? (
                  <div className="liquid-glass rounded-3xl p-6 border border-white/5 flex justify-between items-center">
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-white/30 uppercase tracking-widest font-black">Precio Residente</span>
-                      <span className="text-2xl font-black text-white">$15.900 <span className="text-xs text-white/20 line-through ml-2">$22.000</span></span>
+                      <span className="text-[10px] text-white uppercase tracking-widest font-black">Precio Residente</span>
+                      <span className="text-2xl font-black text-white">$15.900 <span className="text-xs text-white line-through ml-2">$22.000</span></span>
                     </div>
                     <button 
                       onClick={handleAction}
@@ -153,12 +153,12 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
            <div className="p-8 space-y-8">
               <div className="space-y-1">
                  <h3 className="text-2xl font-display font-bold text-white">Personaliza tu Pizza</h3>
-                 <p className="text-[10px] text-white/30 uppercase font-black tracking-widest">Elige tus sabores favoritos</p>
+                 <p className="text-[10px] text-white uppercase font-black tracking-widest">Elige tus sabores favoritos</p>
               </div>
 
               <div className="space-y-6">
                  <div className="space-y-3">
-                   <span className="text-xs font-bold text-white/50">Sabor</span>
+                   <span className="text-xs font-bold text-white">Sabor</span>
                    <div className="grid grid-cols-3 gap-2">
                       {["Pepperoni", "Hawaiana", "Pollo Champ"].map(f => (
                         <button key={f} onClick={() => setFlavor(f)} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-tighter border transition-all ${flavor === f ? 'bg-accent text-primary border-accent' : 'bg-white/5 text-on-accent/40 border-white/5 hover:border-white/20'}`}>{f}</button>
@@ -167,7 +167,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
                  </div>
 
                  <div className="space-y-3">
-                   <span className="text-xs font-bold text-white/50">Tamaño</span>
+                   <span className="text-xs font-bold text-white">Tamaño</span>
                    <div className="grid grid-cols-2 gap-2">
                       {["Mediana", "Familiar"].map(s => (
                         <button key={s} onClick={() => setSize(s)} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-tighter border transition-all ${size === s ? 'bg-accent text-primary border-accent' : 'bg-white/5 text-on-accent/40 border-white/5 hover:border-white/20'}`}>{s}</button>
@@ -193,18 +193,18 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
                </div>
                <div>
                   <h3 className="text-xl font-bold text-white">Finalizar Pedido</h3>
-                  <p className="text-[10px] text-white/30 uppercase tracking-widest font-black">Entrega Prioritaria</p>
+                  <p className="text-[10px] text-white uppercase tracking-widest font-black">Entrega Prioritaria</p>
                </div>
             </div>
 
             <div className="space-y-4">
                <div className="p-5 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-neutral-500/20 flex items-center justify-center text-neutral-400">
+                    <div className="w-10 h-10 rounded-xl bg-text/20 flex items-center justify-center text-text">
                        <MapPin size={20} />
                     </div>
                     <div className="flex flex-col">
-                       <span className="text-[10px] text-white/30 uppercase font-black">Entrega en</span>
+                       <span className="text-[10px] text-white uppercase font-black">Entrega en</span>
                        <span className="text-white font-bold">Torre {userData?.torre || '...'} • Apto {userData?.apartamento || '...'}</span>
                     </div>
                   </div>
@@ -212,11 +212,11 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
 
                <div className="p-5 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-neutral-500/20 flex items-center justify-center text-neutral-400">
+                    <div className="w-10 h-10 rounded-xl bg-text/20 flex items-center justify-center text-text">
                        <CreditCard size={20} />
                     </div>
                     <div className="flex flex-col">
-                       <span className="text-[10px] text-white/30 uppercase font-black">Tarjeta Guardada</span>
+                       <span className="text-[10px] text-white uppercase font-black">Tarjeta Guardada</span>
                        <span className="text-white font-bold">Visa Débito **** 9012</span>
                     </div>
                   </div>
@@ -225,11 +225,11 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
             </div>
 
             <div className="pt-4 border-t border-white/5 space-y-2">
-               <div className="flex justify-between text-xs text-white/40">
+               <div className="flex justify-between text-xs text-white">
                   <span>Subtotal ({flavor} {size})</span>
                   <span>$15.900</span>
                </div>
-               <div className="flex justify-between text-xs text-neutral-400">
+               <div className="flex justify-between text-xs text-text">
                   <span>Envío Prioritario</span>
                   <span>GRATIS</span>
                </div>
@@ -260,7 +260,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
               <div className="space-y-4">
                  <div className="flex flex-col gap-1">
                     <h3 className="text-2xl font-display font-bold text-white">Rastreando Pedido</h3>
-                    <p className="text-sm text-white/40 italic">Preparando tu pizza de {flavor} sabor artesanal...</p>
+                    <p className="text-sm text-white italic">Preparando tu pizza de {flavor} sabor artesanal...</p>
                  </div>
 
                  <div className="flex justify-center gap-2">

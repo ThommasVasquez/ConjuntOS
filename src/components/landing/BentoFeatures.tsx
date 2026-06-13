@@ -21,36 +21,36 @@ const features = [
     title: "Pagos Transparentes",
     description: "Trazabilidad total de cuotas y certificados automáticos.",
     icon: CreditCard,
-    className: "bg-neutral-500/10 border-neutral-500/20",
-    iconColor: "text-neutral-500"
+    className: "bg-text/10 border-text/20",
+    iconColor: "text-black"
   },
   {
     title: "Control de Accesos",
     description: "Pre-registro de visitantes y seguridad proactiva.",
     icon: Shield,
-    className: "bg-neutral-500/10 border-neutral-500/20",
-    iconColor: "text-neutral-500"
+    className: "bg-text/10 border-text/20",
+    iconColor: "text-black"
   },
   {
     title: "Paquetería Digital",
     description: "Notificaciones instantáneas de tus entregas.",
     icon: Box,
-    className: "bg-neutral-500/10 border-neutral-500/20",
-    iconColor: "text-neutral-500"
+    className: "bg-text/10 border-text/20",
+    iconColor: "text-black"
   },
   {
     title: "Reservas de Áreas",
     description: "Disponibilidad en tiempo real para tus zonas comunes.",
     icon: Calendar,
-    className: "bg-neutral-500/10 border-neutral-500/20",
-    iconColor: "text-neutral-500"
+    className: "bg-text/10 border-text/20",
+    iconColor: "text-black"
   },
   {
     title: "Comunidad Conectada",
     description: "Clasificados y comunicaciones oficiales en HD.",
     icon: MessageSquare,
-    className: "md:col-span-2 bg-neutral-500/10 border-neutral-500/20",
-    iconColor: "text-neutral-500"
+    className: "md:col-span-2 bg-text/10 border-text/20",
+    iconColor: "text-black"
   }
 ];
 
@@ -82,7 +82,7 @@ export default function BentoFeatures() {
           <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
             Todo lo que tu <span className="text-[#FFFFFF]">Conjunto</span> necesita
           </h2>
-          <p className="text-white/40 max-w-xl font-medium">
+          <p className="text-white max-w-xl font-medium">
             Módulos integrados bajo una misma identidad visual. Eficiencia operativa envuelta en diseño de clase mundial.
           </p>
         </div>
@@ -97,7 +97,7 @@ export default function BentoFeatures() {
                 <f.icon className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">{f.title}</h3>
-              <p className="text-white/40 text-sm font-medium leading-relaxed">{f.description}</p>
+              <p className="text-white text-sm font-medium leading-relaxed">{f.description}</p>
             </div>
           ))}
         </div>

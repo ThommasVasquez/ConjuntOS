@@ -40,12 +40,12 @@ export default function CraftsmanshipSection() {
         <div className="craft-text flex-1 space-y-6">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-[#FFFFFF]"></div>
-            <span className="text-sm font-semibold text-neutral-500 uppercase tracking-widest">Nuestra esencia</span>
+            <span className="text-sm font-semibold text-black uppercase tracking-widest">Nuestra esencia</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-montserrat)]">
             Innovación<br/>y Calidad
           </h2>
-          <p className="text-neutral-400 text-lg max-w-sm">
+          <p className="text-black text-lg max-w-sm">
             El detalle de cada función está cuidadosamente pensado por nuestro equipo para brindarte la máxima fiabilidad, como una obra de arte creada para perdurar.
           </p>
         </div>

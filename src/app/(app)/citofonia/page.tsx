@@ -140,7 +140,7 @@ export default function CitofoniaPage() {
                  {callState === "RINGING" ? "LLAMADA ENTRANTE..." : (callState === "OUTGOING" ? "LLAMANDO..." : "CONEXIÓN SEGURA")}
               </span>
               <h2 className="text-3xl font-display font-black text-text text-center mt-2">{callerName}</h2>
-              <span className="text-text/60 text-xs font-bold mt-1">
+              <span className="text-text text-xs font-bold mt-1">
                  {callState === "RINGING" ? "Recibiendo llamada entrante..." : (callState === "OUTGOING" ? "Marcando canal digital..." : `${formatTime(callTime)} • EN LÍNEA`)}
               </span>
            </div>
@@ -155,11 +155,11 @@ export default function CitofoniaPage() {
                    </>
                  ) : (
                    <>
-                     <div className="absolute -inset-2 rounded-full bg-neutral-500/10 animate-ping duration-1000 scale-125" />
-                     <div className="absolute inset-2 rounded-full bg-neutral-500/20 animate-pulse duration-700" />
+                     <div className="absolute -inset-2 rounded-full bg-text/10 animate-ping duration-1000 scale-125" />
+                     <div className="absolute inset-2 rounded-full bg-text/20 animate-pulse duration-700" />
                    </>
                  )}
-                 <div className={`w-24 h-24 rounded-full flex items-center justify-center shadow-2xl border border-white/10 ${callState === "RINGING" || callState === "OUTGOING" ? "bg-linear-to-tr from-accent to-secondary animate-pulse" : "bg-linear-to-tr from-neutral-500 to-neutral-400"}`}>
+                 <div className={`w-24 h-24 rounded-full flex items-center justify-center shadow-2xl border border-white/10 ${callState === "RINGING" || callState === "OUTGOING" ? "bg-linear-to-tr from-accent to-secondary animate-pulse" : "bg-linear-to-tr from-text to-text"}`}>
                     <Phone size={36} className="text-white" />
                  </div>
               </div>
@@ -181,7 +181,7 @@ export default function CitofoniaPage() {
            {(callState === "CONNECTED" || callState === "FALLBACK") && (
               <div className="w-full max-w-sm bg-text/5 border border-border rounded-3xl p-6 text-center my-2 animate-in zoom-in-95 duration-300">
                  <p className="text-[10px] font-black uppercase text-accent tracking-widest mb-2">RESPUESTA RECIBIDA</p>
-                 <p className="text-xs text-text/80 italic font-medium leading-relaxed">
+                 <p className="text-xs text-text italic font-medium leading-relaxed">
                     "{lastSpeechResponse || (callState === "CONNECTED" ? "Habla por el micrófono..." : "Escuchando...")}"
                  </p>
               </div>
@@ -190,7 +190,7 @@ export default function CitofoniaPage() {
            {/* Interactive speech options */}
            {callState === "FALLBACK" && (
               <div className="w-full max-w-md flex flex-col gap-3 px-4 my-2">
-                 <span className="text-[9px] font-black text-text/50 uppercase tracking-widest text-center mb-1">
+                 <span className="text-[9px] font-black text-text uppercase tracking-widest text-center mb-1">
                     OPCIONES DE DIÁLOGO
                  </span>
                  <div className="flex flex-col gap-2.5 max-h-[160px] overflow-y-auto pr-1">
@@ -214,13 +214,13 @@ export default function CitofoniaPage() {
                <>
                  <button
                     onClick={rejectCall}
-                    className="w-16 h-16 rounded-full bg-neutral-500/20 hover:bg-neutral-500/30 border border-neutral-500/40 flex items-center justify-center text-neutral-500 shadow-2xl active:scale-90 transition-all cursor-pointer"
+                    className="w-16 h-16 rounded-full bg-text/20 hover:bg-text/30 border border-text/40 flex items-center justify-center text-text shadow-2xl active:scale-90 transition-all cursor-pointer"
                  >
                     <PhoneOff size={28} />
                  </button>
                  <button
                     onClick={answerCall}
-                    className="w-16 h-16 rounded-full bg-neutral-500 hover:bg-neutral-600 flex items-center justify-center text-white shadow-2xl hover:shadow-neutral-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                    className="w-16 h-16 rounded-full bg-text/10 hover:bg-text/10 flex items-center justify-center text-white shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
                     style={{ animationDuration: '2s' }}
                  >
                     <Phone size={28} />
@@ -229,7 +229,7 @@ export default function CitofoniaPage() {
              ) : (
                <button
                   onClick={endCall}
-                  className="w-16 h-16 rounded-full bg-neutral-500 hover:bg-neutral-600 flex items-center justify-center text-white shadow-2xl hover:shadow-neutral-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                  className="w-16 h-16 rounded-full bg-text/10 hover:bg-text/10 flex items-center justify-center text-white shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
                   style={{ animationDuration: '3s' }}
                >
                   <PhoneOff size={28} />
@@ -244,9 +244,9 @@ export default function CitofoniaPage() {
          <div className="flex justify-between items-center px-2">
             <h2 className="text-xl font-display font-bold text-text tracking-tight">Centro de Control</h2>
             <div className="flex gap-2">
-               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-neutral-500/10 rounded-full border border-neutral-500/20">
-                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-pulse" />
-                  <span className="text-[10px] text-neutral-400 font-black uppercase tracking-widest">En Línea</span>
+               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-text/10 rounded-full border border-text/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-text/10 animate-pulse" />
+                  <span className="text-[10px] text-text font-black uppercase tracking-widest">En Línea</span>
                </div>
             </div>
          </div>
@@ -261,7 +261,7 @@ export default function CitofoniaPage() {
               <button 
                 key={t.id}
                 onClick={() => setActiveTab(t.id as Tab)}
-                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-text/10 text-text border border-border shadow-lg' : 'text-text/60 hover:text-text/80'}`}
+                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-text/10 text-text border border-border shadow-lg' : 'text-text hover:text-text'}`}
               >
                 <t.icon size={16} strokeWidth={activeTab === t.id ? 2.5 : 1.5} />
                 <span className="text-[9px] font-bold uppercase tracking-wider">{t.label}</span>
@@ -326,7 +326,7 @@ export default function CitofoniaPage() {
                    </button>
                    <button 
                      onClick={() => handleCall()}
-                     className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black cursor-pointer ${callState !== "IDLE" ? 'bg-neutral-500' : 'bg-neutral-500'}`}
+                     className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black cursor-pointer ${callState !== "IDLE" ? 'bg-text/10' : 'bg-text/10'}`}
                    >
                      {callState !== "IDLE" ? <PhoneOff size={18} /> : <Phone size={18} />}
                      {callState !== "IDLE" ? 'COLGAR' : 'LLAMAR'}
@@ -342,14 +342,14 @@ export default function CitofoniaPage() {
               {/* PARKING STATUS */}
               <div className="grid grid-cols-2 gap-3">
                  <div className="liquid-glass-card rounded-[24px] p-4 border border-border flex flex-col">
-                    <span className="text-text/60 text-[9px] font-black uppercase tracking-widest mb-1">Cupos Carros</span>
+                    <span className="text-text text-[9px] font-black uppercase tracking-widest mb-1">Cupos Carros</span>
                     <div className="flex items-center gap-2">
                        <Car size={16} className="text-accent" />
                        <span className="text-lg font-display font-bold text-text">{parking.carros} Disponibles</span>
                     </div>
                  </div>
                  <div className="liquid-glass-card rounded-[24px] p-4 border border-border flex flex-col">
-                    <span className="text-text/60 text-[9px] font-black uppercase tracking-widest mb-1">Cupos Motos</span>
+                    <span className="text-text text-[9px] font-black uppercase tracking-widest mb-1">Cupos Motos</span>
                     <div className="flex items-center gap-2">
                        <Bike size={16} className="text-secondary" />
                        <span className="text-lg font-display font-bold text-text">{parking.motos} Disponibles</span>
@@ -367,11 +367,11 @@ export default function CitofoniaPage() {
 
               {/* LIST */}
               <div className="space-y-4">
-                 <h4 className="text-[10px] font-black text-text/60 uppercase tracking-widest px-2">Visitas Recientes</h4>
+                 <h4 className="text-[10px] font-black text-text uppercase tracking-widest px-2">Visitas Recientes</h4>
                  {isLoading ? (
                    <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-accent" /></div>
                  ) : visitas.length === 0 ? (
-                   <div className="py-12 flex flex-col items-center bg-text/5 rounded-3xl border border-dashed border-border text-text/50">
+                   <div className="py-12 flex flex-col items-center bg-text/5 rounded-3xl border border-dashed border-border text-text">
                       <Users size={40} strokeWidth={1} />
                       <p className="text-[10px] font-bold mt-2">No has programado visitas aún</p>
                    </div>
@@ -379,14 +379,14 @@ export default function CitofoniaPage() {
                    <div key={v.id} className="liquid-glass-card rounded-3xl p-4 border border-border flex items-center justify-between">
                       <div className="flex items-center gap-4">
                          <div className="w-12 h-12 rounded-2xl bg-text/5 flex items-center justify-center border border-border">
-                            {v.tipo === "VEHICULAR" ? <Car size={20} className="text-text/60" /> : <Users size={20} className="text-text/60" />}
+                            {v.tipo === "VEHICULAR" ? <Car size={20} className="text-text" /> : <Users size={20} className="text-text" />}
                          </div>
                          <div className="flex flex-col">
                             <span className="text-text font-bold text-sm">{v.nombre}</span>
-                            <span className="text-text/50 text-[10px]">{v.placa ? `Placa: ${v.placa}` : 'Personal'} • {new Date(v.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
+                            <span className="text-text text-[10px]">{v.placa ? `Placa: ${v.placa}` : 'Personal'} • {new Date(v.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
                          </div>
                       </div>
-                      <div className="px-2 py-1 bg-text/5 border border-border rounded-lg text-[8px] font-black uppercase text-text/60">PROGRAMADA</div>
+                      <div className="px-2 py-1 bg-text/5 border border-border rounded-lg text-[8px] font-black uppercase text-text">PROGRAMADA</div>
                    </div>
                  ))}
               </div>
@@ -403,16 +403,16 @@ export default function CitofoniaPage() {
                      <div className="p-2 bg-accent rounded-xl text-on-accent"><Package size={20} /></div>
                      <h3 className="text-text font-bold">¡Paquete en Portería!</h3>
                   </div>
-                  <p className="text-text/60 text-xs leading-relaxed">Tienes {paquetes.length} entrega(s) pendiente(s) por retirar en la recepción principal.</p>
+                  <p className="text-text text-xs leading-relaxed">Tienes {paquetes.length} entrega(s) pendiente(s) por retirar en la recepción principal.</p>
                </div>
              )}
 
              <div className="space-y-4">
-                <h4 className="text-[10px] font-black text-text/60 uppercase tracking-widest px-2">Historial de Entregas</h4>
+                <h4 className="text-[10px] font-black text-text uppercase tracking-widest px-2">Historial de Entregas</h4>
                 {isLoading ? (
                   <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-accent" /></div>
                 ) : paquetes.length === 0 ? (
-                  <div className="py-20 flex flex-col items-center text-text/50">
+                  <div className="py-20 flex flex-col items-center text-text">
                      <Package size={60} strokeWidth={1} />
                      <p className="font-bold text-sm mt-4">Sin paquetes pendientes</p>
                      <p className="text-[10px] uppercase tracking-widest mt-1">Todo está entregado</p>
@@ -422,17 +422,17 @@ export default function CitofoniaPage() {
                      <div className="flex justify-between items-start">
                         <div className="flex flex-col">
                            <span className="text-text font-bold text-base">{p.descripcion}</span>
-                           <span className="text-text/50 text-[10px] uppercase tracking-widest font-bold">De: {p.remitente}</span>
+                           <span className="text-text text-[10px] uppercase tracking-widest font-bold">De: {p.remitente}</span>
                         </div>
                         <div className="p-2 rounded-xl bg-accent/10 border border-accent/20 text-accent">
                            <Package size={18} />
                         </div>
                      </div>
                      <div className="flex items-center gap-6 pt-2 border-t border-border">
-                        <div className="flex items-center gap-1.5 text-text/60 text-[9px] font-bold">
+                        <div className="flex items-center gap-1.5 text-text text-[9px] font-bold">
                            <Clock size={12} /> Llegó: {new Date(p.fechaLlegada).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                         </div>
-                        <div className="flex items-center gap-1.5 text-text/60 text-[9px] font-bold">
+                        <div className="flex items-center gap-1.5 text-text text-[9px] font-bold">
                            <MapPin size={12} /> Portería 1
                         </div>
                      </div>
@@ -452,18 +452,18 @@ export default function CitofoniaPage() {
                  <div className="w-12 h-1.5 bg-text/20 rounded-full mx-auto" />
                  <div className="flex justify-between items-center">
                     <h3 className="text-2xl font-display font-bold text-text">Programar Visita</h3>
-                    <button onClick={() => setIsAddingVisita(false)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text/45 cursor-pointer"><X size={20} /></button>
+                    <button onClick={() => setIsAddingVisita(false)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text cursor-pointer"><X size={20} /></button>
                  </div>
 
                  <div className="space-y-6">
                     <div className="space-y-2">
-                       <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Nombre del Invitado</label>
-                       <input type="text" placeholder="Ej: Diana Prince" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text placeholder:text-text/55 focus:border-accent outline-none transition-all" />
+                       <label className="text-[10px] font-black text-text uppercase tracking-widest">Nombre del Invitado</label>
+                       <input type="text" placeholder="Ej: Diana Prince" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text placeholder:text-text focus:border-accent outline-none transition-all" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Tipo de Vehículo</label>
+                          <label className="text-[10px] font-black text-text uppercase tracking-widest">Tipo de Vehículo</label>
                           <select className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none">
                              <option className="bg-primary text-text" value="NINGUNO">Peatonal</option>
                              <option className="bg-primary text-text" value="CARRO">Carro</option>
@@ -471,14 +471,14 @@ export default function CitofoniaPage() {
                           </select>
                        </div>
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Placa (Si aplica)</label>
-                          <input type="text" placeholder="ABC-123" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none placeholder:text-text/55 uppercase" />
+                          <label className="text-[10px] font-black text-text uppercase tracking-widest">Placa (Si aplica)</label>
+                          <input type="text" placeholder="ABC-123" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none placeholder:text-text uppercase" />
                        </div>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-accent/10 border border-accent/20 flex gap-4 items-center">
                        <Info size={20} className="text-accent shrink-0" />
-                       <p className="text-[10px] text-text/60 font-medium leading-relaxed">Al activar el parqueadero, se reservará un cupo automáticamente por 2 horas desde la llegada.</p>
+                       <p className="text-[10px] text-text font-medium leading-relaxed">Al activar el parqueadero, se reservará un cupo automáticamente por 2 horas desde la llegada.</p>
                     </div>
 
                     <button 

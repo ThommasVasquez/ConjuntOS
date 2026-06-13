@@ -112,7 +112,7 @@ export default function InmobiliariaPage() {
 
       <div className="pt-8 pb-10 px-6 relative overflow-hidden bg-linear-to-b from-accent/10 to-transparent">
         <div className="max-w-4xl mx-auto relative z-10">
-          <div className="flex items-center gap-3 mb-2 text-text/70">
+          <div className="flex items-center gap-3 mb-2 text-text">
             <Building2 size={18} className="text-accent" />
             <span className="text-xs font-semibold tracking-widest uppercase">Inmobiliaria Interna</span>
           </div>
@@ -120,13 +120,13 @@ export default function InmobiliariaPage() {
           
           <div className="flex flex-col gap-4">
             <div className="relative group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-text/60 group-focus-within:text-accent transition-colors">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-text group-focus-within:text-accent transition-colors">
                 <Search size={20} />
               </div>
               <input 
                 type="text"
                 placeholder="Que buscas? (ej. Apartamento 3 alcobas)"
-                className="w-full h-14 pl-12 pr-6 rounded-xl bg-surface-2 border border-border focus:border-accent/50 outline-none transition-all focus:bg-surface-2/80 text-text placeholder:text-text/60 text-lg"
+                className="w-full h-14 pl-12 pr-6 rounded-xl bg-surface-2 border border-border focus:border-accent/50 outline-none transition-all focus:bg-surface-2/80 text-text placeholder:text-text text-lg"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -146,7 +146,7 @@ export default function InmobiliariaPage() {
                   className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                     filterType === type 
                       ? "bg-accent text-primary shadow-lg shadow-accent/20 scale-105" 
-                      : "text-text/70 hover:text-text hover:bg-surface-2"
+                      : "text-text hover:text-text hover:bg-surface-2"
                   }`}
                 >
                   {type === "TODOS" ? "Todos" : type === "VENTA" ? "En Venta" : "En Arriendo"}
@@ -167,7 +167,7 @@ export default function InmobiliariaPage() {
                   className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 border ${
                     filterUnidad === key
                       ? "bg-text text-primary border-border shadow-lg"
-                      : "border-border text-text/70 hover:text-text hover:border-accent"
+                      : "border-border text-text hover:text-text hover:border-accent"
                   }`}
                 >
                   {label}
@@ -178,7 +178,7 @@ export default function InmobiliariaPage() {
         </div>
         
         <div className="absolute -top-20 -right-20 w-80 h-80 bg-accent/20 rounded-full blur-[120px] pointer-events-none opacity-30 dark:opacity-100" />
-        <div className="absolute top-40 -left-20 w-60 h-60 bg-neutral-500/10 rounded-full blur-[100px] pointer-events-none opacity-30 dark:opacity-100" />
+        <div className="absolute top-40 -left-20 w-60 h-60 bg-text/10 rounded-full blur-[100px] pointer-events-none opacity-30 dark:opacity-100" />
       </div>
 
       <div className="px-6 max-w-6xl mx-auto">
@@ -197,10 +197,10 @@ export default function InmobiliariaPage() {
         ) : (
           <div className="text-center py-20 bg-surface-2 rounded-3xl border border-dashed border-border">
              <div className="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center mx-auto mb-4">
-               <Search size={32} className="text-text/60" />
+               <Search size={32} className="text-text" />
              </div>
              <h3 className="text-lg font-bold text-text mb-2">No se encontraron resultados</h3>
-             <p className="text-text/70 max-w-xs mx-auto">Intenta con otros filtros o palabras clave.</p>
+             <p className="text-text max-w-xs mx-auto">Intenta con otros filtros o palabras clave.</p>
           </div>
         )}
       </div>
@@ -242,7 +242,7 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
   const isRoom = item.tipoUnidad === "LOCAL";
 
   const negocioColor = item.tipoNegocio === "VENTA"
-    ? "bg-neutral-500/90 text-white"
+    ? "bg-text/90 text-white"
     : "bg-accent/90 text-primary";
 
   return (
@@ -265,13 +265,13 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); setIsLiked(!isLiked); }}
-            className={`w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${isLiked ? "bg-neutral-500 border-neutral-500" : "bg-black/30 border-white/20"}`}
+            className={`w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${isLiked ? "bg-text/10 border-border" : "bg-black/30 border-white/20"}`}
           >
             <Heart size={14} className="text-white" fill={isLiked ? "white" : "none"} />
           </button>
         </div>
         <div className="absolute bottom-3 left-3">
-          <p className="text-[9px] text-white/85 mb-0.5 uppercase tracking-widest font-bold">{item.tipoNegocio === "VENTA" ? "Precio" : "/ mes"}</p>
+          <p className="text-[9px] text-white mb-0.5 uppercase tracking-widest font-bold">{item.tipoNegocio === "VENTA" ? "Precio" : "/ mes"}</p>
           <p className="text-lg font-black text-white drop-shadow-lg">{formattedPrecio}</p>
         </div>
       </div>
@@ -283,34 +283,34 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
         <div className="flex flex-wrap gap-1.5">
           {isParking ? (
             <>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 Parqueadero Cubierto
               </span>
             </>
           ) : isRoom ? (
             <>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 <Bed size={11} className="text-accent/70" /> Privada
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 <Bath size={11} className="text-accent/70" /> {item.banos === 1 ? "Propio" : "Compartido"}
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
               </span>
             </>
           ) : (
             <>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 <Bed size={11} className="text-accent/70" />{item.habitaciones} hab.
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 <Bath size={11} className="text-accent/70" />{item.banos} banos
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/75 text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
               </span>
             </>
@@ -324,7 +324,7 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-bold text-text truncate">{"Propietario"}</p>
-              <p className="text-[9px] text-text/70">Verificado</p>
+              <p className="text-[9px] text-text">Verificado</p>
             </div>
           </div>
           <div className="px-2 py-1 rounded-lg bg-accent/10 border border-accent/20">
@@ -404,15 +404,15 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
               <div className="p-6 space-y-8">
                 <div className="flex items-center justify-between pb-6 border-b border-border">
                    <div>
-                     <p className="text-text/70 text-xs font-bold uppercase tracking-widest mb-1">Precio solicitado</p>
-                     <p className="text-3xl font-black text-accent">{formattedPrecio} <span className="text-sm font-medium text-text/75">{item.tipoNegocio === "ALQUILER" ? "/ mes" : ""}</span></p>
+                     <p className="text-text text-xs font-bold uppercase tracking-widest mb-1">Precio solicitado</p>
+                     <p className="text-3xl font-black text-accent">{formattedPrecio} <span className="text-sm font-medium text-text">{item.tipoNegocio === "ALQUILER" ? "/ mes" : ""}</span></p>
                    </div>
                    <div className="flex flex-col items-end">
                       <div className="flex items-center gap-1.5 text-accent/80 text-xs font-bold">
                          <ShieldCheck size={14} />
                          <span>Publicacion Verificada</span>
                       </div>
-                      <p className="text-text/70 text-[10px]">Puesto de control verificada</p>
+                      <p className="text-text text-[10px]">Puesto de control verificada</p>
                    </div>
                 </div>
 
@@ -421,21 +421,21 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
                       <Bed size={22} className="text-accent" />
                       <div>
                         <p className="text-lg font-bold text-text leading-none">{item.habitaciones}</p>
-                        <p className="text-[10px] text-text/70 font-bold uppercase">Hab.</p>
+                        <p className="text-[10px] text-text font-bold uppercase">Hab.</p>
                       </div>
                    </div>
                    <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
                       <Bath size={22} className="text-accent" />
                       <div>
                         <p className="text-lg font-bold text-text leading-none">{item.banos}</p>
-                        <p className="text-[10px] text-text/70 font-bold uppercase">Banos</p>
+                        <p className="text-[10px] text-text font-bold uppercase">Banos</p>
                       </div>
                    </div>
                    <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
                       <Maximize2 size={22} className="text-accent" />
                       <div>
                         <p className="text-lg font-bold text-text leading-none">{item.area || "—"}</p>
-                        <p className="text-[10px] text-text/70 font-black uppercase">m2</p>
+                        <p className="text-[10px] text-text font-black uppercase">m2</p>
                       </div>
                    </div>
                 </div>
@@ -443,11 +443,11 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
                 <div className="space-y-4">
                    <div className="flex items-center gap-2">
                       <MapPin size={18} className="text-accent" />
-                      <span className="text-sm font-bold text-text/80">Conjunto Residencial Interno</span>
+                      <span className="text-sm font-bold text-text">Conjunto Residencial Interno</span>
                    </div>
                    <div className="p-5 rounded-3xl bg-surface-2 border border-dashed border-border">
-                      <h4 className="text-xs font-bold text-text/75 uppercase mb-3">Descripcion</h4>
-                      <p className="text-text/70 text-sm leading-relaxed">{item.descripcion}</p>
+                      <h4 className="text-xs font-bold text-text uppercase mb-3">Descripcion</h4>
+                      <p className="text-text text-sm leading-relaxed">{item.descripcion}</p>
                    </div>
                 </div>
               </div>
@@ -486,18 +486,18 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
              </div>
              <div className="space-y-3">
                 <h2 className="text-2xl font-bold text-text">Verificando Antecedentes...</h2>
-                <p className="text-text/75 leading-relaxed max-w-xs mx-auto">
+                <p className="text-text leading-relaxed max-w-xs mx-auto">
                     Validando vinculacion con la copropiedad y capacidad financiera en tiempo real.
                 </p>
              </div>
              <div className="w-full space-y-2">
-                <div className="flex justify-between text-[10px] font-bold text-text/75 uppercase px-2">
+                <div className="flex justify-between text-[10px] font-bold text-text uppercase px-2">
                   <span>Documento de Identidad</span>
-                  <CheckCircle2 size={12} className={docProgress > 30 ? "text-neutral-500" : "text-border"} />
+                  <CheckCircle2 size={12} className={docProgress > 30 ? "text-text" : "text-border"} />
                 </div>
-                <div className="flex justify-between text-[10px] font-bold text-text/75 uppercase px-2">
+                <div className="flex justify-between text-[10px] font-bold text-text uppercase px-2">
                   <span>Certificacion Laboral</span>
-                  <CheckCircle2 size={12} className={docProgress > 70 ? "text-neutral-500" : "text-border"} />
+                  <CheckCircle2 size={12} className={docProgress > 70 ? "text-text" : "text-border"} />
                 </div>
              </div>
           </div>
@@ -507,7 +507,7 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
            <div className="flex-1 flex flex-col p-8 space-y-8 animate-in fade-in duration-500">
               <div className="mt-12 text-center">
                  <h2 className="text-2xl font-bold text-text mb-2">Firma del Contrato Digital</h2>
-                 <p className="text-text/75 text-sm">Cierra el acuerdo formal aceptando los terminos.</p>
+                 <p className="text-text text-sm">Cierra el acuerdo formal aceptando los terminos.</p>
               </div>
 
               <div className="flex-1 bg-surface-2 border-2 border-dashed border-border rounded-[40px] relative overflow-hidden flex items-center justify-center group">
@@ -536,7 +536,7 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
               </div>
 
               <div className="p-4 rounded-2xl bg-surface-2 text-center">
-                 <p className="text-[10px] text-text/75 uppercase font-medium leading-relaxed">
+                 <p className="text-[10px] text-text uppercase font-medium leading-relaxed">
                    Al firmar, aceptas el reglamento de propiedad horizontal y las clausulas de pago establecidas para el inmueble.
                  </p>
               </div>
@@ -545,24 +545,24 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
 
         {step === "SUCCESS" && (
           <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-10 animate-in zoom-in duration-500">
-             <div className="w-32 h-32 rounded-full bg-neutral-500 flex items-center justify-center shadow-2xl shadow-neutral-500/40 relative">
+             <div className="w-32 h-32 rounded-full bg-text/10 flex items-center justify-center shadow-2xl shadow-black/40 relative">
                 <CheckCircle2 size={64} className="text-white" />
-                <div className="absolute -inset-4 border border-neutral-500/50 rounded-full animate-ping" />
+                <div className="absolute -inset-4 border border-text/50 rounded-full animate-ping" />
              </div>
              <div className="space-y-4">
                 <h2 className="text-3xl font-black text-text">Bienvenido a tu nueva unidad!</h2>
-                <p className="text-lg text-text/75 leading-relaxed">
+                <p className="text-lg text-text leading-relaxed">
                   El proceso de {item.tipoNegocio === "ALQUILER" ? "arriendo" : "compra"} se ha completado. 
                   Ahora puedes gestionar tu nueva unidad desde el panel principal.
                 </p>
              </div>
              <div className="w-full p-6 rounded-3xl bg-surface-2 border border-border space-y-3">
                 <div className="flex justify-between text-sm">
-                   <span className="text-text/75">Unidad:</span>
+                   <span className="text-text">Unidad:</span>
                    <span className="text-text font-bold">{item.titulo}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                   <span className="text-text/75">Contrato No:</span>
+                   <span className="text-text">Contrato No:</span>
                    <span className="text-accent font-mono font-bold">#CON-{ Math.floor(Math.random() * 90000) + 10000 }</span>
                 </div>
              </div>
@@ -618,7 +618,7 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
                  className={`py-3 rounded-2xl border text-sm font-bold transition-all ${
                    formData.tipoNegocio === type 
                    ? "bg-accent border-accent text-primary" 
-                   : "border-border bg-surface-2 text-text/70"
+                   : "border-border bg-surface-2 text-text"
                  }`}
                >
                  {type === "ALQUILER" ? "Arrendar" : "Vender"}
@@ -627,10 +627,10 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-text/60 uppercase pl-1">Titulo del Anuncio</label>
+            <label className="text-[10px] font-bold text-text uppercase pl-1">Titulo del Anuncio</label>
             <input 
               required
-              className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none transition-all placeholder:text-text/50"
+              className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none transition-all placeholder:text-text"
               placeholder="Ej: Apartamento remodelado Torre 2"
               value={formData.titulo}
               onChange={e => setFormData({...formData, titulo: e.target.value})}
@@ -639,7 +639,7 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-text/60 uppercase pl-1">Precio</label>
+              <label className="text-[10px] font-bold text-text uppercase pl-1">Precio</label>
               <input 
                 required
                 type="number"
@@ -650,7 +650,7 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-text/60 uppercase pl-1">Area (m2)</label>
+              <label className="text-[10px] font-bold text-text uppercase pl-1">Area (m2)</label>
               <input 
                 type="number"
                 className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none"
@@ -663,7 +663,7 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-               <label className="text-[10px] font-bold text-text/60 uppercase pl-1">Alcobas</label>
+               <label className="text-[10px] font-bold text-text uppercase pl-1">Alcobas</label>
                <div className="flex items-center bg-surface-2 rounded-2xl border border-border overflow-hidden">
                   <button type="button" onClick={() => setFormData({...formData, habitaciones: Math.max(0, formData.habitaciones-1)})} className="flex-1 h-14 hover:bg-surface-2/80">-</button>
                   <span className="flex-1 text-center font-bold text-accent">{formData.habitaciones}</span>
@@ -671,7 +671,7 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
                </div>
             </div>
             <div className="space-y-1.5">
-               <label className="text-[10px] font-bold text-text/60 uppercase pl-1">Banos</label>
+               <label className="text-[10px] font-bold text-text uppercase pl-1">Banos</label>
                <div className="flex items-center bg-surface-2 rounded-2xl border border-border overflow-hidden">
                   <button type="button" onClick={() => setFormData({...formData, banos: Math.max(0, formData.banos-1)})} className="flex-1 h-14 hover:bg-surface-2/80">-</button>
                   <span className="flex-1 text-center font-bold text-accent">{formData.banos}</span>
@@ -681,11 +681,11 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-text/60 uppercase pl-1">Descripcion</label>
+            <label className="text-[10px] font-bold text-text uppercase pl-1">Descripcion</label>
             <textarea 
               required
               rows={3}
-              className="w-full rounded-2xl bg-surface-2 border border-border p-4 focus:border-accent text-text outline-none transition-all placeholder:text-text/50"
+              className="w-full rounded-2xl bg-surface-2 border border-border p-4 focus:border-accent text-text outline-none transition-all placeholder:text-text"
               placeholder="Cuentanos mas sobre el inmueble..."
               value={formData.descripcion}
               onChange={e => setFormData({...formData, descripcion: e.target.value})}

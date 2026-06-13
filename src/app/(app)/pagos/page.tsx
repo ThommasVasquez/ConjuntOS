@@ -156,9 +156,9 @@ export default function PagosPage() {
 
   const getStatusStyle = (status: string) => {
     switch(status) {
-      case 'PAGADO': return 'bg-neutral-500/10 text-neutral-700 dark:text-neutral-400 border-neutral-500/20';
-      case 'VENCIDO': return 'bg-neutral-500/10 text-neutral-700 dark:text-neutral-400 border-neutral-500/20';
-      case 'PENDIENTE': return 'bg-neutral-500/10 text-neutral-800 dark:text-neutral-400 border-neutral-500/20';
+      case 'PAGADO': return 'bg-text/10 text-text dark:text-text border-text/20';
+      case 'VENCIDO': return 'bg-text/10 text-text dark:text-text border-text/20';
+      case 'PENDIENTE': return 'bg-text/10 text-text dark:text-text border-text/20';
       default: return 'bg-text/5 text-text border-border';
     }
   };
@@ -180,17 +180,17 @@ export default function PagosPage() {
          <div className="relative p-8 flex flex-col justify-between min-h-[220px]">
              <div className="flex justify-between items-start">
                 <div className="flex flex-col gap-1">
-                   <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest ">Estado de Cuenta</span>
+                   <span className="text-white text-[10px] font-bold uppercase tracking-widest ">Estado de Cuenta</span>
                    <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
-                        <CreditCard size={14} className="text-white/70" />
+                        <CreditCard size={14} className="text-white" />
                       </div>
                       <span className="text-white text-sm font-bold lowercase">{user?.torre ? `Torre ${user.torre} • Apto ${user.apto}` : 'Mi unidad'}</span>
                    </div>
                 </div>
                 <div className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-                   <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-pulse"></span>
-                   <span className="text-white/80 text-[10px] font-bold uppercase tracking-widest">Al día</span>
+                   <span className="w-1.5 h-1.5 rounded-full bg-text/10 animate-pulse"></span>
+                   <span className="text-white text-[10px] font-bold uppercase tracking-widest">Al día</span>
                 </div>
              </div>
 
@@ -199,7 +199,7 @@ export default function PagosPage() {
                    <h2 className="text-4xl font-display font-bold text-white tracking-tighter text-glow">
                       $ {data.totalDebt.toLocaleString()}
                    </h2>
-                   <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">Saldo Total Pendiente</p>
+                   <p className="text-white text-[10px] font-bold uppercase tracking-widest mt-1">Saldo Total Pendiente</p>
                 </div>
                 <button 
                   onClick={() => {
@@ -317,9 +317,9 @@ export default function PagosPage() {
                            <CheckCircle2 size={16} className="text-accent" />
                         </div>
                         
-                        <div className="flex items-center gap-2 p-3 rounded-xl bg-neutral-500/10 border border-neutral-500/20">
-                           <Info size={14} className="text-neutral-700 dark:text-neutral-400" />
-                           <p className="text-neutral-800 dark:text-neutral-300 text-[9px] font-bold leading-tight">Este pago incluye el descuento por pronto pago si se realiza antes del vencimiento.</p>
+                        <div className="flex items-center gap-2 p-3 rounded-xl bg-text/10 border border-text/20">
+                           <Info size={14} className="text-text dark:text-text" />
+                           <p className="text-text dark:text-text text-[9px] font-bold leading-tight">Este pago incluye el descuento por pronto pago si se realiza antes del vencimiento.</p>
                         </div>
                      </div>
 

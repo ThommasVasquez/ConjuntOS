@@ -79,13 +79,13 @@ export default function TopBar() {
       
       {/* Botones Flotantes Circulares Liquid Glass */}
       <div className="flex items-center gap-3">
-        <button className="w-10 h-10 rounded-full liquid-glass flex items-center justify-center text-text/90 hover:text-text hover:scale-105 active:scale-95 transition-all shadow-accent/20">
+        <button className="w-10 h-10 rounded-full liquid-glass flex items-center justify-center text-text hover:text-text hover:scale-105 active:scale-95 transition-all shadow-accent/20">
           <Search size={18} />
         </button>
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="relative w-10 h-10 rounded-full liquid-glass flex items-center justify-center text-text/90 hover:text-text hover:scale-105 active:scale-95 transition-all shadow-accent/20"
+            className="relative w-10 h-10 rounded-full liquid-glass flex items-center justify-center text-text hover:text-text hover:scale-105 active:scale-95 transition-all shadow-accent/20"
           >
             <MoreHorizontal size={20} />
             {/* Badge sutil */}
@@ -108,7 +108,7 @@ export default function TopBar() {
                     await logout();
                     router.push("/login");
                     toast.success("¡Hasta pronto!");
-                  }} className="w-full text-left px-4 py-3 text-sm text-neutral-500 hover:bg-text/10 transition-colors flex items-center gap-2">
+                  }} className="w-full text-left px-4 py-3 text-sm text-text hover:bg-text/10 transition-colors flex items-center gap-2">
                     <LogOut size={14} /> Cerrar Sesión
                   </button>
                 </>

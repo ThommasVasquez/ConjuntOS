@@ -913,13 +913,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
           <div className="flex gap-3">
              <button
                 onClick={rejectCall}
-                className="flex-1 py-3 bg-neutral-500/10 hover:bg-neutral-500/25 border border-neutral-500/35 text-neutral-500 rounded-2xl font-bold text-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 bg-text/10 hover:bg-text/25 border border-text/35 text-text rounded-2xl font-bold text-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
              >
                 <PhoneOff size={14} /> Rechazar
              </button>
              <button
                 onClick={answerCall}
-                className="flex-1 py-3 bg-neutral-500 hover:bg-neutral-600 text-white rounded-2xl font-black text-xs shadow-xl shadow-neutral-500/20 cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 bg-text/10 hover:bg-text/10 text-white rounded-2xl font-black text-xs shadow-xl shadow-black/20 cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
              >
                 <Check size={14} /> Contestar
              </button>
@@ -929,15 +929,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       {/* ACTIVE CALL HUD OVERLAY */}
       {callState === "CONNECTED" && !isCitofoniaPage && (
-        <div className="fixed bottom-24 right-6 z-50 p-5 bg-primary/95 border border-neutral-500/35 rounded-3xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom duration-300">
-           <div className="w-2.5 h-2.5 rounded-full bg-neutral-500 animate-ping" />
+        <div className="fixed bottom-24 right-6 z-50 p-5 bg-primary/95 border border-text/35 rounded-3xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom duration-300">
+           <div className="w-2.5 h-2.5 rounded-full bg-text/10 animate-ping" />
            <div className="flex flex-col">
-              <span className="text-[9px] font-black text-text/50 uppercase tracking-widest">En Línea</span>
+              <span className="text-[9px] font-black text-text uppercase tracking-widest">En Línea</span>
               <span className="text-xs font-bold text-text">{callerName}</span>
            </div>
            <button
               onClick={endCall}
-              className="w-10 h-10 rounded-full bg-neutral-500 hover:bg-neutral-600 flex items-center justify-center text-white cursor-pointer active:scale-95 transition-all shadow-lg"
+              className="w-10 h-10 rounded-full bg-text/10 hover:bg-text/10 flex items-center justify-center text-white cursor-pointer active:scale-95 transition-all shadow-lg"
            >
               <PhoneOff size={16} />
            </button>

@@ -16,7 +16,7 @@ const LiveRoom = dynamic(() => import("@/components/asamblea/LiveRoom"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full">
-      <Loader2 className="w-8 h-8 animate-spin text-white/40" />
+      <Loader2 className="w-8 h-8 animate-spin text-white" />
     </div>
   ),
 });
@@ -25,10 +25,10 @@ type Tab = "video" | "agenda" | "votos" | "chat" | "info";
 
 function voteColor(op: string): string {
   const n = op.toUpperCase().trim();
-  if (["SI", "SÍ", "APROBAR"].includes(n)) return "bg-neutral-600";
-  if (["NO", "RECHAZAR"].includes(n)) return "bg-neutral-600";
-  if (["ABSTENCION", "ABSTENCIÓN", "BLANCO"].includes(n)) return "bg-neutral-600";
-  return "bg-neutral-600";
+  if (["SI", "SÍ", "APROBAR"].includes(n)) return "bg-text/10";
+  if (["NO", "RECHAZAR"].includes(n)) return "bg-text/10";
+  if (["ABSTENCION", "ABSTENCIÓN", "BLANCO"].includes(n)) return "bg-text/10";
+  return "bg-text/10";
 }
 
 function tally(votes: any[], options: string[]) {
@@ -168,9 +168,9 @@ export default function AsambleaPage() {
   if (!asamblea) return (
     <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
       <div className="text-center">
-        <Video className="w-16 h-16 text-white/20 mx-auto mb-4" />
+        <Video className="w-16 h-16 text-white mx-auto mb-4" />
         <h1 className="text-xl font-bold text-white mb-2">No hay asamblea activa</h1>
-        <p className="text-white/60 text-sm">Cuando un administrador inicie una asamblea, aparecerá aquí.</p>
+        <p className="text-white text-sm">Cuando un administrador inicie una asamblea, aparecerá aquí.</p>
       </div>
     </div>
   );
@@ -219,7 +219,7 @@ export default function AsambleaPage() {
                 </p>
                 <p className="font-bold text-sm">{currentItem.titulo}</p>
                 {currentItem.descripcion && (
-                  <p className="text-white/60 text-xs mt-1">
+                  <p className="text-white text-xs mt-1">
                     {currentItem.descripcion}
                   </p>
                 )}
@@ -235,22 +235,22 @@ export default function AsambleaPage() {
 
             {pendingTurnos.length > 0 && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-                <p className="text-[10px] text-white/40 font-bold uppercase tracking-wide">
+                <p className="text-[10px] text-white font-bold uppercase tracking-wide">
                   Turnos de habla
                 </p>
                 {pendingTurnos.map((t: any) => (
                   <div key={t.id} className="flex items-center gap-2 text-sm">
                     <span className="font-bold truncate">{t.nombre}</span>
                     {t.apto && (
-                      <span className="text-white/40 text-xs shrink-0">
+                      <span className="text-white text-xs shrink-0">
                         {t.apto}
                       </span>
                     )}
                     <span
                       className={`ml-auto text-[10px] font-bold uppercase shrink-0 ${
                         t.estado === "HABLANDO"
-                          ? "text-neutral-400"
-                          : "text-white/40"
+                          ? "text-text"
+                          : "text-white"
                       }`}
                     >
                       {t.estado === "HABLANDO" ? "Hablando" : "Espera"}
@@ -273,7 +273,7 @@ export default function AsambleaPage() {
         {/* AGENDA */}
         {activeTab === "agenda" && (
           <div className="flex flex-col gap-3">
-            <h2 className="text-xs font-bold text-white/60 uppercase tracking-widest">
+            <h2 className="text-xs font-bold text-white uppercase tracking-widest">
               Orden del día
             </h2>
             {ordenDia.map((item: any, i: number) => (
@@ -289,16 +289,16 @@ export default function AsambleaPage() {
               >
                 <div className="flex items-start gap-3">
                   {i < asamblea.itemActivoIndex ? (
-                    <CheckCircle size={20} className="text-neutral-400 shrink-0 mt-0.5" />
+                    <CheckCircle size={20} className="text-text shrink-0 mt-0.5" />
                   ) : i === asamblea.itemActivoIndex ? (
                     <Play size={20} className="text-accent shrink-0 mt-0.5" />
                   ) : (
-                    <Circle size={20} className="text-white/20 shrink-0 mt-0.5" />
+                    <Circle size={20} className="text-white shrink-0 mt-0.5" />
                   )}
                   <div className="min-w-0">
                     <p className="font-bold text-sm">{item.titulo}</p>
                     {item.descripcion && (
-                      <p className="text-white/60 text-xs mt-0.5">
+                      <p className="text-white text-xs mt-0.5">
                         {item.descripcion}
                       </p>
                     )}
@@ -321,12 +321,12 @@ export default function AsambleaPage() {
         {/* VOTOS */}
         {activeTab === "votos" && (
           <div className="flex flex-col gap-4">
-            <h2 className="text-xs font-bold text-white/60 uppercase tracking-widest">
+            <h2 className="text-xs font-bold text-white uppercase tracking-widest">
               Votaciones
             </h2>
 
             {votaciones.length === 0 ? (
-              <p className="text-white/40 text-sm text-center py-8">
+              <p className="text-white text-sm text-center py-8">
                 No hay votaciones creadas aún.
               </p>
             ) : (
@@ -343,14 +343,14 @@ export default function AsambleaPage() {
                     <div className="min-w-0">
                       <p className="font-bold text-sm truncate">{v.titulo}</p>
                       {v.descripcion && (
-                        <p className="text-white/60 text-xs">{v.descripcion}</p>
+                        <p className="text-white text-xs">{v.descripcion}</p>
                       )}
                     </div>
                     <span
                       className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full shrink-0 ml-2 ${
                         v.activa
-                          ? "bg-neutral-500/20 text-neutral-400"
-                          : "bg-white/10 text-white/40"
+                          ? "bg-text/20 text-text"
+                          : "bg-white/10 text-white"
                       }`}
                     >
                       {v.activa ? "Abierta" : "Cerrada"}
@@ -392,7 +392,7 @@ export default function AsambleaPage() {
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
-                            <span className="text-[10px] text-white/60 w-16 text-right">
+                            <span className="text-[10px] text-white w-16 text-right">
                               {count} ({pct}%)
                             </span>
                           </div>
@@ -404,7 +404,7 @@ export default function AsambleaPage() {
                   {isAdmin && (
                     <button
                       onClick={() => toggleVotacion(v.id, !v.activa)}
-                      className="mt-3 w-full text-xs font-bold py-2 rounded-xl border border-white/10 text-white/60 active:scale-95 transition-transform"
+                      className="mt-3 w-full text-xs font-bold py-2 rounded-xl border border-white/10 text-white active:scale-95 transition-transform"
                     >
                       {v.activa ? "Cerrar votación" : "Reabrir votación"}
                     </button>
@@ -418,11 +418,11 @@ export default function AsambleaPage() {
         {/* CHAT */}
         {activeTab === "chat" && (
           <div className="flex flex-col gap-3 pb-16">
-            <h2 className="text-xs font-bold text-white/60 uppercase tracking-widest">
+            <h2 className="text-xs font-bold text-white uppercase tracking-widest">
               Opiniones
             </h2>
             {opiniones.length === 0 ? (
-              <p className="text-white/40 text-sm text-center py-8">
+              <p className="text-white text-sm text-center py-8">
                 No hay opiniones aún. Sé el primero en opinar.
               </p>
             ) : (
@@ -438,14 +438,14 @@ export default function AsambleaPage() {
                     <div className="min-w-0">
                       <p className="text-xs font-bold truncate">{o.nombre}</p>
                       {o.apto && (
-                        <p className="text-[10px] text-white/40">{o.apto}</p>
+                        <p className="text-[10px] text-white">{o.apto}</p>
                       )}
                     </div>
-                    <span className="text-[10px] text-white/30 ml-auto shrink-0">
+                    <span className="text-[10px] text-white ml-auto shrink-0">
                       {fmtTime(o.createdAt)}
                     </span>
                   </div>
-                  <p className="text-sm text-white/80 pl-9">{o.contenido}</p>
+                  <p className="text-sm text-white pl-9">{o.contenido}</p>
                 </div>
               ))
             )}
@@ -457,7 +457,7 @@ export default function AsambleaPage() {
           <div className="flex flex-col gap-4">
             {/* Quorum card */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
                 <Users size={14} /> Quórum
               </h3>
               {quorum && (
@@ -493,7 +493,7 @@ export default function AsambleaPage() {
 
             {/* Asistencias */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
                 <Shield size={14} /> Asistencias ({asistencias.length})
               </h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -508,8 +508,8 @@ export default function AsambleaPage() {
                     <span
                       className={`text-[10px] font-bold uppercase shrink-0 ${
                         a.tipo === "PRESENCIAL"
-                          ? "text-neutral-400"
-                          : "text-neutral-400"
+                          ? "text-text"
+                          : "text-text"
                       }`}
                     >
                       {a.tipo}
@@ -522,7 +522,7 @@ export default function AsambleaPage() {
             {/* Poderes */}
             {poderes.length > 0 && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
                   <FileCheck size={14} /> Poderes ({poderes.length})
                 </h3>
                 <div className="space-y-2">
@@ -536,7 +536,7 @@ export default function AsambleaPage() {
                       </span>
                       <span
                         className={`text-[10px] font-bold shrink-0 ${
-                          p.verificado ? "text-neutral-400" : "text-neutral-400"
+                          p.verificado ? "text-text" : "text-text"
                         }`}
                       >
                         {p.verificado ? "Verificado" : "Pendiente"}
@@ -558,7 +558,7 @@ export default function AsambleaPage() {
             onChange={(e) => setNewOpinion(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && postOpinion()}
             placeholder="Escribe tu opinión..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-accent/40"
+            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white focus:outline-none focus:border-accent/40"
           />
           <button
             onClick={postOpinion}
@@ -577,7 +577,7 @@ export default function AsambleaPage() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 relative transition-colors ${
-              activeTab === tab.id ? "text-accent" : "text-white/40"
+              activeTab === tab.id ? "text-accent" : "text-white"
             }`}
           >
             {tab.icon}

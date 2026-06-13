@@ -24,7 +24,7 @@
   --color-surface: rgba(255, 255, 255, 0.045);  /* Glass: blanco puro translúcido */
   --color-surface-2: rgba(255, 255, 255, 0.07); /* Glass más claro */
   --color-text: #FFFFFF;          /* Blanco puro */
-  --color-text-muted: rgba(255, 255, 255, 0.55); /* Texto tenue = blanco con opacidad (sin gris con tinte) */
+  --color-text-muted: rgba(255, 255, 255, 0.92); /* Casi blanco puro (sin gris) */
   --color-success: #FFFFFF;
   --color-danger: #FFFFFF;
   --color-warning: #FFFFFF;
@@ -40,7 +40,7 @@
   --color-surface: rgba(255, 255, 255, 0.72);   /* Vidrio blanco translúcido */
   --color-surface-2: rgba(0, 0, 0, 0.04);       /* Fondo sutil de input/botón */
   --color-text: #000000;          /* Negro puro */
-  --color-text-muted: rgba(0, 0, 0, 0.55); /* Texto tenue = negro con opacidad */
+  --color-text-muted: rgba(0, 0, 0, 0.92); /* Casi negro puro (sin gris) */
   --color-border: rgba(0, 0, 0, 0.1); /* Bordes sutiles en claro */
 }
 
@@ -173,7 +173,7 @@ html, body {
 
 .liquid-story-ring {
   position: relative;
-  background: linear-gradient(45deg, #FFFFFF, #555555, #FFFFFF);
+  background: linear-gradient(45deg, #FFFFFF, #FFFFFF, #FFFFFF);
   background-size: 200% 200%;
   animation: story-bg 5s infinite linear;
   padding: 3px;

@@ -44,7 +44,7 @@ export default function FaqSection() {
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16 items-start">
         
         <div className="faq-left flex-1 relative pb-20 lg:pb-0">
-          <p className="text-sm font-semibold text-neutral-500 uppercase tracking-widest mb-4">FAQ</p>
+          <p className="text-sm font-semibold text-black uppercase tracking-widest mb-4">FAQ</p>
           <h2 className="text-3xl md:text-5xl font-bold text-white font-[family-name:var(--font-montserrat)] max-w-md leading-tight mb-8">
             Si tienes alguna duda sobre el proceso de implementación, estamos listos para ayudarte en cada paso.
           </h2>
@@ -69,7 +69,7 @@ export default function FaqSection() {
                   {openIdx === idx ? <Minus className="w-5 h-5 flex-shrink-0 text-[#FFFFFF]" /> : <Plus className="w-5 h-5 flex-shrink-0 text-white" />}
                 </div>
                 {openIdx === idx && (
-                  <p className="mt-4 text-neutral-400 leading-relaxed pr-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <p className="mt-4 text-black leading-relaxed pr-8 animate-in fade-in slide-in-from-top-2 duration-300">
                     {faq.a}
                   </p>
                 )}

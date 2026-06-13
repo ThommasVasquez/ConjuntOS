@@ -37,17 +37,17 @@ export default function ShowcaseSection() {
         
         <div className="showcase-left flex-1 flex flex-col justify-between">
           <div className="mb-12 max-w-md">
-            <p className="text-sm font-semibold text-neutral-500 uppercase tracking-widest mb-4">Integraciones</p>
+            <p className="text-sm font-semibold text-black uppercase tracking-widest mb-4">Integraciones</p>
             <h2 className="text-2xl md:text-4xl font-bold text-white font-[family-name:var(--font-montserrat)] leading-tight">
               Nuestra plataforma está definida por ecosistemas perfectamente conectados que irradian eficiencia, seguridad y confianza.
             </h2>
           </div>
 
-          <div className="relative rounded-[32px] overflow-hidden bg-neutral-200 shadow-xl h-[400px]">
+          <div className="relative rounded-[32px] overflow-hidden bg-text/10 shadow-xl h-[400px]">
             <img src="https://images.unsplash.com/photo-1556910103-1c02745a872f?auto=format&fit=crop&w=800&q=80" alt="Lobby System" className="w-full h-full object-cover" />
             <div className="absolute bottom-0 inset-x-0 bg-[#000000]/90 backdrop-blur-md p-6 flex items-center justify-between border-t border-white/5">
               <div>
-                <p className="text-sm text-neutral-500 mb-1">Integración Directa</p>
+                <p className="text-sm text-black mb-1">Integración Directa</p>
                 <h4 className="font-bold text-white text-lg">Pagos Automatizados PSE</h4>
               </div>
               <div className="w-12 h-12 bg-[#FFFFFF]/10 rounded-full flex items-center justify-center">
@@ -58,7 +58,7 @@ export default function ShowcaseSection() {
         </div>
 
         <div className="showcase-right flex-1 relative">
-          <div className="rounded-[32px] overflow-hidden h-full min-h-[600px] bg-neutral-200 shadow-xl">
+          <div className="rounded-[32px] overflow-hidden h-full min-h-[600px] bg-text/10 shadow-xl">
             <img src="https://images.unsplash.com/photo-1542181961-9590d0c79227?auto=format&fit=crop&w=800&q=80" alt="Smart Access" className="w-full h-full object-cover" />
           </div>
           
@@ -68,7 +68,7 @@ export default function ShowcaseSection() {
             </div>
             <div>
               <p className="font-bold text-white text-sm">Control de Accesos</p>
-              <p className="text-xs text-neutral-500">20+ Opciones configurables</p>
+              <p className="text-xs text-black">20+ Opciones configurables</p>
             </div>
           </div>
         </div>

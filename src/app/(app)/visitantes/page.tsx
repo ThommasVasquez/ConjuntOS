@@ -163,7 +163,7 @@ export default function VisitantesPage() {
       <ProfileHeader className="fade-up" />
 
       {error && (
-        <div className="fade-up bg-neutral-500/10 border border-neutral-500/20 text-neutral-400 text-xs font-bold p-4 rounded-2xl text-center">
+        <div className="fade-up bg-text/10 border border-text/20 text-text text-xs font-bold p-4 rounded-2xl text-center">
           {error}
         </div>
       )}
@@ -171,11 +171,11 @@ export default function VisitantesPage() {
       {/* 2. SUMMARY CARDS */}
       <section className="grid grid-cols-2 gap-4 fade-up">
         <div className="liquid-glass-card p-5 rounded-[28px] border-t border-border flex flex-col gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-neutral-500/10 flex items-center justify-center text-neutral-400">
+          <div className="w-10 h-10 rounded-2xl bg-text/10 flex items-center justify-center text-text">
             <User size={20} />
           </div>
           <div>
-            <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest">Hoy</span>
+            <span className="text-[10px] text-text font-bold uppercase tracking-widest">Hoy</span>
             <p className="text-2xl font-bold text-text tracking-tight">{String(activeVisitors.length).padStart(2, '0')}</p>
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function VisitantesPage() {
             <Calendar size={20} />
           </div>
           <div>
-            <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest">Agendadas</span>
+            <span className="text-[10px] text-text font-bold uppercase tracking-widest">Agendadas</span>
             <p className="text-2xl font-bold text-text tracking-tight">{String(scheduledVisitors.length).padStart(2, '0')}</p>
           </div>
         </div>
@@ -201,7 +201,7 @@ export default function VisitantesPage() {
                </div>
                <div>
                   <h3 className="text-text font-bold text-lg leading-tight">Nueva Invitacion</h3>
-                  <p className="text-text/60 text-xs">Programa una visita y genera un pase digital.</p>
+                  <p className="text-text text-xs">Programa una visita y genera un pase digital.</p>
                </div>
             </div>
 
@@ -209,7 +209,7 @@ export default function VisitantesPage() {
                <input 
                  type="text" 
                  placeholder="Nombre del Invitado"
-                 className="w-full bg-text/5 border border-border rounded-2xl py-4 px-5 text-sm text-text focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none placeholder:text-text/55"
+                 className="w-full bg-text/5 border border-border rounded-2xl py-4 px-5 text-sm text-text focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none placeholder:text-text"
                  value={newVisitForm.name}
                  onChange={(e) => setNewVisitForm({...newVisitForm, name: e.target.value})}
                />
@@ -219,7 +219,7 @@ export default function VisitantesPage() {
                     <button 
                       key={tipo}
                       onClick={() => setNewVisitForm({...newVisitForm, tipo})}
-                      className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer ${newVisitForm.tipo === tipo ? 'bg-accent border-accent text-on-accent shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text/60 hover:bg-text/10'}`}
+                      className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer ${newVisitForm.tipo === tipo ? 'bg-accent border-accent text-on-accent shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text hover:bg-text/10'}`}
                     >
                       {tipo}
                     </button>
@@ -230,7 +230,7 @@ export default function VisitantesPage() {
                  <input 
                    type="text" 
                    placeholder="Placa del vehiculo (ej. ABC123)"
-                   className="w-full bg-text/5 border border-border rounded-2xl py-3 px-5 text-sm text-text focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none placeholder:text-text/55"
+                   className="w-full bg-text/5 border border-border rounded-2xl py-3 px-5 text-sm text-text focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none placeholder:text-text"
                    value={newVisitForm.placa}
                    onChange={(e) => setNewVisitForm({...newVisitForm, placa: e.target.value.toUpperCase()})}
                  />
@@ -251,38 +251,38 @@ export default function VisitantesPage() {
       <section className="fade-up flex flex-col gap-6">
          <div className="flex justify-between items-center px-1">
             <h2 className="text-text font-display text-lg font-bold tracking-tight">Visitas de Hoy</h2>
-            <div className="flex items-center gap-1.5 text-neutral-400 text-[10px] font-bold uppercase tracking-widest border border-neutral-500/20 bg-neutral-500/5 px-3 py-1.5 rounded-full">
-               <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-pulse" />
+            <div className="flex items-center gap-1.5 text-text text-[10px] font-bold uppercase tracking-widest border border-text/20 bg-text/5 px-3 py-1.5 rounded-full">
+               <span className="w-1.5 h-1.5 rounded-full bg-text/10 animate-pulse" />
                Tiempo Real
             </div>
          </div>
 
          <div className="flex flex-col gap-4">
             {activeVisitors.length === 0 ? (
-              <p className="text-text/40 text-xs text-center py-6 italic">No hay visitas activas hoy.</p>
+              <p className="text-text text-xs text-center py-6 italic">No hay visitas activas hoy.</p>
             ) : activeVisitors.map((visitor) => (
               <div key={visitor.id} className="liquid-glass-card rounded-[28px] p-5 flex items-center justify-between border border-border hover:border-accent/20 transition-all">
                 <div className="flex items-center gap-4">
                    <div className="w-14 h-14 rounded-full bg-text/5 border border-border flex items-center justify-center relative">
-                      <User size={28} className="text-text/50" />
-                      <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-neutral-500 rounded-full border-2 border-primary flex items-center justify-center">
+                      <User size={28} className="text-text" />
+                      <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-text/10 rounded-full border-2 border-primary flex items-center justify-center">
                          <CheckCircle2 size={12} className="text-white" />
                       </div>
                    </div>
                    <div>
                      <h4 className="text-text font-bold text-base leading-none mb-1.5">{visitor.nombre}</h4>
                      <div className="flex items-center gap-3">
-                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${visitor.tipo === 'VEHICULAR' ? 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20' : 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20'}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${visitor.tipo === 'VEHICULAR' ? 'bg-text/10 text-text border-text/20' : 'bg-text/10 text-text border-text/20'}`}>
                            {visitor.tipo}
                         </span>
-                        <div className="flex items-center gap-1 text-text/60 text-[10px]">
+                        <div className="flex items-center gap-1 text-text text-[10px]">
                            <Clock size={12} />
                            <span>Programada {formatTime(visitor.fecha)}</span>
                         </div>
                      </div>
                    </div>
                 </div>
-                <button className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text/60 hover:text-text transition-all ring-1 ring-border cursor-pointer">
+                <button className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text hover:text-text transition-all ring-1 ring-border cursor-pointer">
                    <MoreHorizontal size={20} />
                 </button>
               </div>
@@ -294,23 +294,23 @@ export default function VisitantesPage() {
       <section className="fade-up flex flex-col gap-6">
          <div className="flex justify-between items-center px-1">
             <h2 className="text-text font-display text-lg font-bold tracking-tight">Programadas & Historial</h2>
-            <button className="text-text/60 text-[10px] font-bold uppercase tracking-widest hover:text-text transition-colors cursor-pointer">Ver Todo</button>
+            <button className="text-text text-[10px] font-bold uppercase tracking-widest hover:text-text transition-colors cursor-pointer">Ver Todo</button>
          </div>
 
          <div className="flex flex-col gap-3">
             {nonActiveVisitors.length === 0 ? (
-              <p className="text-text/40 text-xs text-center py-4 italic">No hay visitas programadas ni historial.</p>
+              <p className="text-text text-xs text-center py-4 italic">No hay visitas programadas ni historial.</p>
             ) : nonActiveVisitors.map((visitor) => {
               const status = getVisitStatus(visitor);
               return (
                 <div key={visitor.id} className="liquid-glass-card rounded-[24px] p-4 flex items-center justify-between border border-border opacity-85 hover:opacity-100 transition-all">
                   <div className="flex items-center gap-4">
-                     <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${status === 'PROGRAMADO' ? 'bg-accent/10 text-accent' : 'bg-text/5 text-text/60'}`}>
+                     <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${status === 'PROGRAMADO' ? 'bg-accent/10 text-accent' : 'bg-text/5 text-text'}`}>
                        {status === 'PROGRAMADO' ? <Calendar size={20} /> : <Clock size={20} />}
                      </div>
                      <div>
                        <h4 className="text-text font-semibold text-sm leading-tight">{visitor.nombre}</h4>
-                       <p className="text-text/60 text-[10px] mt-0.5">
+                       <p className="text-text text-[10px] mt-0.5">
                          {status === 'PROGRAMADO' ? `Llega ${formatScheduledDate(visitor.fecha)}` : `Visita ${formatScheduledDate(visitor.fecha)}`}
                        </p>
                      </div>
@@ -318,12 +318,12 @@ export default function VisitantesPage() {
                   {status === 'PROGRAMADO' ? (
                      <button 
                        onClick={() => { setIsQRModalOpen(true); }}
-                       className="px-4 py-2 rounded-full bg-text/5 border border-border text-text/70 text-[10px] font-bold hover:bg-accent hover:text-on-accent hover:border-accent transition-all cursor-pointer"
+                       className="px-4 py-2 rounded-full bg-text/5 border border-border text-text text-[10px] font-bold hover:bg-accent hover:text-on-accent hover:border-accent transition-all cursor-pointer"
                      >
                        REENVIAR QR
                      </button>
                   ) : (
-                     <button className="w-9 h-9 rounded-full bg-text/5 flex items-center justify-center text-text/50 cursor-pointer">
+                     <button className="w-9 h-9 rounded-full bg-text/5 flex items-center justify-center text-text cursor-pointer">
                         <ArrowRight size={16} />
                      </button>
                   )}
@@ -342,33 +342,33 @@ export default function VisitantesPage() {
               <div className="p-8 flex flex-col items-center gap-6">
                  <div className="w-full flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
-                       <ShieldCheck size={18} className="text-neutral-400" />
-                       <span className="text-text/60 text-[10px] font-bold uppercase tracking-widest">Acceso Seguro</span>
+                       <ShieldCheck size={18} className="text-text" />
+                       <span className="text-text text-[10px] font-bold uppercase tracking-widest">Acceso Seguro</span>
                     </div>
-                    <button onClick={() => setIsQRModalOpen(false)} className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/70 hover:bg-text/10 cursor-pointer">
+                    <button onClick={() => setIsQRModalOpen(false)} className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text hover:bg-text/10 cursor-pointer">
                        <Plus className="rotate-45" size={20} />
                     </button>
                  </div>
 
                  <div className="flex flex-col items-center text-center gap-2">
                     <h3 className="text-2xl font-display font-bold text-text tracking-tight">Invitacion Digital</h3>
-                    <p className="text-text/50 text-xs px-4">Comparte este codigo con tu invitado para agilizar su ingreso.</p>
+                    <p className="text-text text-xs px-4">Comparte este codigo con tu invitado para agilizar su ingreso.</p>
                  </div>
 
                  <div className="relative p-6 bg-white rounded-3xl shadow-[0_0_40px_rgba(255,255,255,0.1)] group">
-                    <div className="w-48 h-48 bg-neutral-50 flex items-center justify-center rounded-2xl border-4 border-white overflow-hidden">
+                    <div className="w-48 h-48 bg-text/10 flex items-center justify-center rounded-2xl border-4 border-white overflow-hidden">
                        <QrCode size={160} className="text-[#171717]" />
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                        <div className="w-12 h-12 bg-[#171717] rounded-xl flex items-center justify-center text-white shadow-xl">
-                          <CheckCircle2 size={24} className="text-neutral-400" />
+                          <CheckCircle2 size={24} className="text-text" />
                        </div>
                     </div>
                  </div>
 
                  <div className="w-full flex flex-col gap-4">
                     <div className="bg-text/5 rounded-2xl p-4 border border-border">
-                       <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest">Invitado</span>
+                       <span className="text-[10px] text-text font-bold uppercase tracking-widest">Invitado</span>
                        <p className="text-text font-bold text-lg">{newVisitForm.name || "Invitado Especial"}</p>
                        <div className="flex items-center gap-2 mt-1">
                           <CheckCircle2 size={14} className="text-accent" />

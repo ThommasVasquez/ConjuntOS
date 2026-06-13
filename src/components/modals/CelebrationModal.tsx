@@ -95,7 +95,7 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
         
         <div className="relative z-10 flex flex-col items-center text-center gap-6">
           {/* ICON */}
-          <div className={`w-20 h-20 rounded-[32px] flex items-center justify-center border-2 ${isApprove ? 'bg-accent/10 border-accent/40 text-accent accent-glow' : 'bg-neutral-500/10 border-neutral-500/40 text-neutral-400 shadow-[0_0_20px_rgba(153,153,153,0.2)]'}`}>
+          <div className={`w-20 h-20 rounded-[32px] flex items-center justify-center border-2 ${isApprove ? 'bg-accent/10 border-accent/40 text-accent accent-glow' : 'bg-text/10 border-text/40 text-text shadow-[0_0_20px_rgba(153,153,153,0.2)]'}`}>
             {isApprove ? <CheckCircle2 size={40} /> : <AlertCircle size={40} />}
           </div>
 
@@ -103,14 +103,14 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
             <h2 className="text-2xl font-display font-black text-white leading-tight tracking-tight">
               {isApprove ? <span className="flex items-center justify-center gap-2">¡Solicitud Aprobada! <Sparkles className="animate-pulse" size={24} /></span> : "Estado de tu Trámite"}
             </h2>
-            <p className="text-white/60 text-sm leading-relaxed font-medium">
+            <p className="text-white text-sm leading-relaxed font-medium">
               {mensaje}
             </p>
           </div>
 
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full">
-            <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-1">Motivo / Mensaje</p>
-            <p className="text-xs text-white/80 italic">"{titulo}"</p>
+            <p className="text-[10px] text-white font-bold uppercase tracking-widest mb-1">Motivo / Mensaje</p>
+            <p className="text-xs text-white italic">"{titulo}"</p>
           </div>
 
           <button 
@@ -124,7 +124,7 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
         {/* CLOSE BUTTON (Corner) */}
         <button 
           onClick={handleClose}
-          className="absolute top-6 right-6 text-white/20 hover:text-white transition-colors"
+          className="absolute top-6 right-6 text-white hover:text-white transition-colors"
         >
           <X size={20} />
         </button>

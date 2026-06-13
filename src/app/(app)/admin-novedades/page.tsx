@@ -258,11 +258,11 @@ export default function AdminNovedadesPage() {
 
   const getTipoIcon = (tipo: string) => {
       switch (tipo) {
-          case 'VEHICULO': return <Car size={16} className="text-neutral-400" />;
-          case 'MASCOTA': return <Dog size={16} className="text-neutral-400" />;
-          case 'ARRENDAMIENTO': return <Briefcase size={16} className="text-neutral-400" />;
-          case 'MUDANZA': return <Info size={16} className="text-neutral-400" />;
-          default: return <AlertCircle size={16} className="text-white/50" />;
+          case 'VEHICULO': return <Car size={16} className="text-text" />;
+          case 'MASCOTA': return <Dog size={16} className="text-text" />;
+          case 'ARRENDAMIENTO': return <Briefcase size={16} className="text-text" />;
+          case 'MUDANZA': return <Info size={16} className="text-text" />;
+          default: return <AlertCircle size={16} className="text-white" />;
       }
   };
 
@@ -302,11 +302,11 @@ export default function AdminNovedadesPage() {
        <div className="fade-up flex items-center justify-between">
             <div>
                 <h1 className="text-2xl font-display font-medium text-text tracking-wide">Trámites</h1>
-                <p className="text-sm text-text/70">Solicitudes de residentes</p>
+                <p className="text-sm text-text">Solicitudes de residentes</p>
             </div>
             {tab === 'PENDIENTE' && (
                 <button onClick={fetchTramites} className="p-2 rounded-full hover:bg-surface-2 transition-colors">
-                    <RefreshCw size={18} className="text-text/70" />
+                    <RefreshCw size={18} className="text-text" />
                 </button>
             )}
        </div>
@@ -315,19 +315,19 @@ export default function AdminNovedadesPage() {
        <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
             <button 
               onClick={() => setTab('PENDIENTE')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-accent text-primary shadow-md' : 'text-text/70 hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-accent text-primary shadow-md' : 'text-text hover:text-text'}`}
             >
                Pendientes
             </button>
             <button 
               onClick={() => setTab('HISTORIAL')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-accent text-primary shadow-md' : 'text-text/70 hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-accent text-primary shadow-md' : 'text-text hover:text-text'}`}
             >
                Historial
             </button>
             <button 
               onClick={() => setTab('PUBLICAR_ANUNCIO')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PUBLICAR_ANUNCIO' ? 'bg-accent text-primary shadow-md' : 'text-text/70 hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PUBLICAR_ANUNCIO' ? 'bg-accent text-primary shadow-md' : 'text-text hover:text-text'}`}
             >
                Publicar Anuncio
             </button>
@@ -340,9 +340,9 @@ export default function AdminNovedadesPage() {
                  <div className="w-full py-12 flex justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>
                ) : tramites.length === 0 ? (
                    <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
-                       <CheckCircle2 size={40} className="mx-auto text-neutral-500/50 mb-3" />
-                       <p className="text-text/80 font-medium">Bandeja al día</p>
-                       <p className="text-xs text-text/70 mt-1">No hay trámites en esta sección.</p>
+                       <CheckCircle2 size={40} className="mx-auto text-text/50 mb-3" />
+                       <p className="text-text font-medium">Bandeja al día</p>
+                       <p className="text-xs text-text mt-1">No hay trámites en esta sección.</p>
                    </div>
                ) : (
                    tramites.map((t) => {
@@ -355,16 +355,16 @@ export default function AdminNovedadesPage() {
                                     <span className="p-2 rounded-full bg-surface-2 border border-border text-xl">{getTipoIcon(t.tipo)}</span>
                                     <div className="flex flex-col">
                                        <span className="text-xs font-bold text-text uppercase tracking-wider">{t.tipo}</span>
-                                       <span className="text-[10px] text-text/70">{new Date(t.createdAt || t.creadoEn).toLocaleString()}</span>
+                                       <span className="text-[10px] text-text">{new Date(t.createdAt || t.creadoEn).toLocaleString()}</span>
                                     </div>
                                  </div>
-                                 {t.estado === 'PENDIENTE' && <span className="bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/20 dark:border-neutral-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock size={10}/> Pendiente</span>}
-                                 {t.estado === 'APROBADO' && <span className="bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/20 dark:border-neutral-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10}/> Aprobado</span>}
-                                 {t.estado === 'RECHAZADO' && <span className="bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/20 dark:border-neutral-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><XCircle size={10}/> Rechazado</span>}
+                                 {t.estado === 'PENDIENTE' && <span className="bg-text/10 text-text dark:text-text border border-text/20 dark:border-text/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock size={10}/> Pendiente</span>}
+                                 {t.estado === 'APROBADO' && <span className="bg-text/10 text-text dark:text-text border border-text/20 dark:border-text/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10}/> Aprobado</span>}
+                                 {t.estado === 'RECHAZADO' && <span className="bg-text/10 text-text dark:text-text border border-text/20 dark:border-text/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><XCircle size={10}/> Rechazado</span>}
                              </div>
 
                              <div className="flex bg-surface-2 rounded-xl p-3 items-center gap-3">
-                                <User size={16} className="text-text/60" />
+                                <User size={16} className="text-text" />
                                 <div className="flex flex-col">
                                     <span className="text-sm font-medium text-text">
                                        {u?.nombre || 'Solicitante'} 
@@ -376,14 +376,14 @@ export default function AdminNovedadesPage() {
                              </div>
                              
                              {/* Desc Preview */}
-                             <div className="text-xs text-text/70 line-clamp-2 italic">
+                             <div className="text-xs text-text line-clamp-2 italic">
                                 &quot;{t.tipo === 'VEHICULO' ? `${desc.metadatos?.marca || 'Vehículo'} - Placa: ${desc.metadatos?.placa || '?'}` : 
                                   t.tipo === 'MASCOTA' ? `Mascota: ${desc.metadatos?.nombre || 'Pet'} (${desc.metadatos?.tipo || '?'})` : 
                                   t.tipo === 'MUDANZA' ? `Fecha Mudanza: ${desc.metadatos?.fecha || '?'}` : 'Solicitud pendiente...'}&quot;
                              </div>
 
                              {tab === 'HISTORIAL' && (t.aprobadoPor || t.aprobadoPorId) && (
-                                 <div className="text-[10px] text-text/60 border-t border-border pt-2 mt-1">
+                                 <div className="text-[10px] text-text border-t border-border pt-2 mt-1">
                                     Procesado{t.aprobadoPor?.nombre ? `: ${t.aprobadoPor.nombre}` : ''}
                                  </div>
                              )}
@@ -402,7 +402,7 @@ export default function AdminNovedadesPage() {
                             <button
                               type="button"
                               onClick={cancelEditAnuncio}
-                              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-text/60 hover:text-text bg-surface-2 border border-border rounded-full px-3 py-1.5 transition-all active:scale-95"
+                              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-text hover:text-text bg-surface-2 border border-border rounded-full px-3 py-1.5 transition-all active:scale-95"
                             >
                                 <X size={12} /> Cancelar
                             </button>
@@ -410,7 +410,7 @@ export default function AdminNovedadesPage() {
                     </div>
                     
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Título del Anuncio *</label>
+                        <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Título del Anuncio *</label>
                         <input 
                           type="text"
                           required
@@ -423,7 +423,7 @@ export default function AdminNovedadesPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Categoría / Tipo *</label>
+                            <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Categoría / Tipo *</label>
                             <select 
                               value={anuncioForm.tipo}
                               onChange={(e) => setAnuncioForm(prev => ({ ...prev, tipo: e.target.value }))}
@@ -443,12 +443,12 @@ export default function AdminNovedadesPage() {
                               onChange={(e) => setAnuncioForm(prev => ({ ...prev, fijado: e.target.checked }))}
                               className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
                             />
-                            <label htmlFor="fijado" className="text-[10px] text-text/85 uppercase tracking-widest font-black cursor-pointer">Fijar Anuncio (Top)</label>
+                            <label htmlFor="fijado" className="text-[10px] text-text uppercase tracking-widest font-black cursor-pointer">Fijar Anuncio (Top)</label>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Contenido / Circular *</label>
+                        <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Contenido / Circular *</label>
                         <textarea 
                           required
                           rows={5}
@@ -460,22 +460,22 @@ export default function AdminNovedadesPage() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-text/60 uppercase tracking-[0.2em] font-black ml-1">Fotografía / Imagen (Opcional)</label>
+                        <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Fotografía / Imagen (Opcional)</label>
                         {anuncioForm.imagenUrl ? (
                             <div className="relative rounded-2xl overflow-hidden border border-border h-40 group">
                                 <img src={anuncioForm.imagenUrl} alt="Anuncio Preview" className="w-full h-full object-cover" />
                                 <button 
                                   type="button"
                                   onClick={() => setAnuncioForm(prev => ({ ...prev, imagenUrl: "" }))}
-                                  className="absolute top-3 right-3 bg-neutral-500 text-white rounded-full p-2 hover:bg-neutral-600 transition-all shadow-md active:scale-90"
+                                  className="absolute top-3 right-3 bg-text/10 text-white rounded-full p-2 hover:bg-text/10 transition-all shadow-md active:scale-90"
                                 >
                                     <XCircle size={16} />
                                 </button>
                             </div>
                         ) : (
                             <label className="border-2 border-dashed border-border hover:border-accent/50 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-surface-2/20 hover:bg-surface-2/40">
-                                <Upload className="text-text/40" size={24} />
-                                <span className="text-[10px] font-bold text-text/60 uppercase tracking-wider">{isUploadingImage ? "Subiendo..." : "Seleccionar Archivo (PNG, JPG, max 5MB)"}</span>
+                                <Upload className="text-text" size={24} />
+                                <span className="text-[10px] font-bold text-text uppercase tracking-wider">{isUploadingImage ? "Subiendo..." : "Seleccionar Archivo (PNG, JPG, max 5MB)"}</span>
                                 <input 
                                   type="file" 
                                   accept="image/*" 
@@ -498,11 +498,11 @@ export default function AdminNovedadesPage() {
 
                {/* Historial de Publicaciones */}
                <div className="flex flex-col gap-4">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-text/50 px-1">Anuncios Activos</h3>
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-text px-1">Anuncios Activos</h3>
                     {loadingAnuncios ? (
                         <div className="w-full py-8 flex justify-center"><div className="w-6 h-6 border-2 border-border border-t-accent rounded-full animate-spin" /></div>
                     ) : anuncios.length === 0 ? (
-                        <div className="liquid-glass rounded-3xl p-8 border border-border text-center text-text/50 text-xs italic">
+                        <div className="liquid-glass rounded-3xl p-8 border border-border text-center text-text text-xs italic">
                             No hay anuncios publicados por ti en esta copropiedad.
                         </div>
                     ) : (
@@ -514,7 +514,7 @@ export default function AdminNovedadesPage() {
                                     </div>
                                     <div className="flex flex-col overflow-hidden">
                                         <span className="text-xs font-bold text-text truncate">{anuncio.titulo}</span>
-                                        <span className="text-[9px] text-text/50 uppercase tracking-wider">{anuncio.tipo} • {new Date(anuncio.publicadoEn).toLocaleDateString()}</span>
+                                        <span className="text-[9px] text-text uppercase tracking-wider">{anuncio.tipo} • {new Date(anuncio.publicadoEn).toLocaleDateString()}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
@@ -528,7 +528,7 @@ export default function AdminNovedadesPage() {
                                     <button 
                                       type="button"
                                       onClick={() => handleDeleteAnuncio(anuncio.id)}
-                                      className="w-10 h-10 rounded-xl bg-neutral-500/10 border border-neutral-500/25 flex items-center justify-center text-neutral-400 hover:bg-neutral-500/20 active:scale-95 transition-all"
+                                      className="w-10 h-10 rounded-xl bg-text/10 border border-text/25 flex items-center justify-center text-text hover:bg-text/20 active:scale-95 transition-all"
                                     >
                                         <Trash2 size={16} />
                                     </button>
@@ -547,18 +547,18 @@ export default function AdminNovedadesPage() {
                <div className="liquid-glass-card rounded-[32px] p-6 w-full max-w-[400px] border border-border relative z-10 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
                    <h3 className="text-lg font-bold text-text mb-2 pb-2 border-b border-border">Resolver Trámite</h3>
                    <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface-2 border border-border">
-                       <span className="text-xs text-text/70 uppercase tracking-widest font-bold">Solicitante</span>
+                       <span className="text-xs text-text uppercase tracking-widest font-bold">Solicitante</span>
                        <span className="text-sm text-text">{selectedTramite.solicitante?.nombre || selectedTramite.usuario?.nombre || 'Solicitante'}</span>
                    </div>
                    
                    <div className="flex flex-col gap-3">
                        {/* Metadatos - Stage 39 Grid Fix */}
                        <div className="p-4 rounded-2xl bg-surface-2 border border-border">
-                          <span className="text-[10px] text-text/70 uppercase tracking-[0.2em] font-black mb-3 block">Detalles del Activo</span>
+                          <span className="text-[10px] text-text uppercase tracking-[0.2em] font-black mb-3 block">Detalles del Activo</span>
                           <div className="grid grid-cols-2 gap-3">
                              {Object.entries(getMeta(selectedTramite).metadatos || {}).map(([k, v]: any) => (
                                  <div key={k} className="flex flex-col">
-                                    <span className="text-[9px] text-text/60 uppercase font-bold">{k}</span>
+                                    <span className="text-[9px] text-text uppercase font-bold">{k}</span>
                                     <span className="text-xs text-text font-mono">{String(v)}</span>
                                  </div>
                              ))}
@@ -568,13 +568,13 @@ export default function AdminNovedadesPage() {
                        {/* Documentación - Stage 39 Document Viewer */}
                        {getMeta(selectedTramite).documentos?.length > 0 && (
                          <div className="p-4 rounded-2xl bg-surface-2 border border-border">
-                            <span className="text-[10px] text-text/70 uppercase tracking-[0.2em] font-black mb-3 block">Documentación Adjunta</span>
+                            <span className="text-[10px] text-text uppercase tracking-[0.2em] font-black mb-3 block">Documentación Adjunta</span>
                             <div className="flex flex-col gap-2">
                                {getMeta(selectedTramite).documentos.map((doc: any, i: number) => (
                                   <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-surface-2 border border-border group">
                                      <div className="flex items-center gap-2 overflow-hidden">
-                                        <FileText size={14} className={doc.type === 'pdf' ? 'text-neutral-400' : 'text-neutral-400'} />
-                                        <span className="text-[10px] text-text/70 truncate">{doc.nombre}</span>
+                                        <FileText size={14} className={doc.type === 'pdf' ? 'text-text' : 'text-text'} />
+                                        <span className="text-[10px] text-text truncate">{doc.nombre}</span>
                                      </div>
                                      <button 
                                        onClick={() => downloadFile(doc.base64, doc.nombre)}
@@ -616,7 +616,7 @@ export default function AdminNovedadesPage() {
                                         <option value="24" className="bg-primary text-text">24 meses (2 años)</option>
                                         <option value="0" className="bg-primary text-text">Sin vencimiento</option>
                                     </select>
-                                    <span className="text-[9px] text-text/50">
+                                    <span className="text-[9px] text-text">
                                         {mesesAsignacion === "0"
                                           ? "La celda quedará asignada indefinidamente."
                                           : `La asignación vencerá automáticamente en ${mesesAsignacion} meses. El vigilante verá la fecha.`}
@@ -627,7 +627,7 @@ export default function AdminNovedadesPage() {
                     )}
 
                    <div className="flex flex-col gap-2 mt-2">
-                       <label className="text-xs text-text/70 uppercase tracking-widest font-bold">Observaciones (Opcional si aprueba)</label>
+                       <label className="text-xs text-text uppercase tracking-widest font-bold">Observaciones (Opcional si aprueba)</label>
                        <textarea 
                          value={obs}
                          onChange={(e) => setObs(e.target.value)}
@@ -640,14 +640,14 @@ export default function AdminNovedadesPage() {
                        <button 
                          disabled={isProcessing}
                          onClick={() => handleResolve('RECHAZAR')}
-                         className="w-full py-3 rounded-full border border-neutral-500/30 dark:border-neutral-500/50 text-neutral-600 dark:text-neutral-400 font-bold text-sm tracking-wide hover:bg-neutral-500/10 transition-colors disabled:opacity-50"
+                         className="w-full py-3 rounded-full border border-text/30 dark:border-text/50 text-text dark:text-text font-bold text-sm tracking-wide hover:bg-text/10 transition-colors disabled:opacity-50"
                        >
                            Rechazar
                        </button>
                        <button 
                          disabled={isProcessing}
                          onClick={() => handleResolve('APROBAR')}
-                         className="w-full py-3 rounded-full bg-linear-to-r from-neutral-500 to-neutral-500 text-white shadow-xl shadow-neutral-500/20 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                         className="w-full py-3 rounded-full bg-linear-to-r from-text to-text text-white shadow-xl shadow-black/20 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
                        >
                            {isProcessing ? '...' : 'Aprobar'}
                        </button>

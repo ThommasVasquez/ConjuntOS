@@ -45,7 +45,7 @@ export default function StorySection() {
           <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight font-[family-name:var(--font-montserrat)] tracking-tight max-w-xl">
             Una historia de comunidad, seguridad y tecnología — <span className="text-accent text-glow">creamos tranquilidad.</span>
           </h2>
-          <p className="text-white/50 text-base md:text-lg max-w-lg leading-relaxed font-light">
+          <p className="text-white text-base md:text-lg max-w-lg leading-relaxed font-light">
             Cada módulo está diseñado con técnicas probadas para asegurar que cada interacción sea no solo eficiente, sino construida para mejorar tu calidad de vida. Con cada línea de código, llevamos calidez, tradición y sostenibilidad a tu hogar.
           </p>
         </div>

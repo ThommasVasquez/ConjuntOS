@@ -237,13 +237,13 @@ export default function SuperAdminPage() {
       <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
         <button 
           onClick={() => setTab("CREAR")} 
-          className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === "CREAR" ? "bg-accent/10 text-accent shadow-inner" : "text-text/70 hover:text-text"}`}
+          className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === "CREAR" ? "bg-accent/10 text-accent shadow-inner" : "text-text hover:text-text"}`}
         >
           Nuevo Registro
         </button>
         <button 
           onClick={() => setTab("LISTAR")} 
-          className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === "LISTAR" ? "bg-surface text-text border border-border shadow-md" : "text-text/70 hover:text-text"}`}
+          className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === "LISTAR" ? "bg-surface text-text border border-border shadow-md" : "text-text hover:text-text"}`}
         >
           Ver Registrados ({conjuntos.length})
         </button>
@@ -274,7 +274,7 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Nombre Comercial *</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Nombre Comercial *</label>
                 <input 
                   required
                   type="text" 
@@ -286,7 +286,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">NIT *</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">NIT *</label>
                 <input 
                   required
                   type="text" 
@@ -300,7 +300,7 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Dirección de Ubicación *</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Dirección de Ubicación *</label>
                 <input 
                   required
                   type="text" 
@@ -312,7 +312,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Municipio / Ciudad *</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Municipio / Ciudad *</label>
                 <input 
                   required
                   type="text" 
@@ -325,7 +325,7 @@ export default function SuperAdminPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Subdominio Único (Tenant ID) *</label>
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Subdominio Único (Tenant ID) *</label>
               <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3 focus-within:border-accent transition-colors">
                 <input 
                   required
@@ -335,9 +335,9 @@ export default function SuperAdminPage() {
                   placeholder="clubdelsol" 
                   className="bg-transparent border-none outline-none text-sm text-text flex-1"
                 />
-                <span className="text-xs text-text/40 font-mono">.conjuntos.app</span>
+                <span className="text-xs text-text font-mono">.conjuntos.app</span>
               </div>
-              <p className="text-[9px] text-text/50 pl-1 mt-0.5">Identificador de URL único para acceso directo al portal de residentes.</p>
+              <p className="text-[9px] text-text pl-1 mt-0.5">Identificador de URL único para acceso directo al portal de residentes.</p>
             </div>
           </div>
 
@@ -349,9 +349,9 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Representante Legal (Administrador)</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Representante Legal (Administrador)</label>
                 <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
-                  <User size={16} className="text-text/40 mr-2" />
+                  <User size={16} className="text-text mr-2" />
                   <input 
                     type="text" 
                     value={formData.representanteLegal}
@@ -363,7 +363,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Notaría del Reglamento H.P.</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Notaría del Reglamento H.P.</label>
                 <input 
                   type="text" 
                   value={formData.notariaEscritura}
@@ -376,7 +376,7 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Número Escritura Pública</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Número Escritura Pública</label>
                 <input 
                   type="text" 
                   value={formData.numeroEscritura}
@@ -387,9 +387,9 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Fecha de la Escritura</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Fecha de la Escritura</label>
                 <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
-                  <Calendar size={16} className="text-text/40 mr-2" />
+                  <Calendar size={16} className="text-text mr-2" />
                   <input 
                     type="date" 
                     value={formData.fechaEscritura}
@@ -400,7 +400,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Matrícula Principal Oficina Registro</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Matrícula Principal Oficina Registro</label>
                 <input 
                   type="text" 
                   value={formData.matriculaInmobiliaria}
@@ -412,9 +412,9 @@ export default function SuperAdminPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Total Unidades Privadas (Aptos / Casas)</label>
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Total Unidades Privadas (Aptos / Casas)</label>
               <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
-                <Layers size={16} className="text-text/40 mr-2" />
+                <Layers size={16} className="text-text mr-2" />
                 <input 
                   type="number" 
                   min="1"
@@ -423,7 +423,7 @@ export default function SuperAdminPage() {
                   className="bg-transparent border-none outline-none text-sm text-text flex-1"
                 />
               </div>
-              <p className="text-[9px] text-text/50 pl-1 mt-0.5">Define la cantidad de inmuebles que componen la asamblea general de copropietarios.</p>
+              <p className="text-[9px] text-text pl-1 mt-0.5">Define la cantidad de inmuebles que componen la asamblea general de copropietarios.</p>
             </div>
           </div>
 
@@ -434,7 +434,7 @@ export default function SuperAdminPage() {
             </h3>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Logotipo de la Copropiedad</label>
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Logotipo de la Copropiedad</label>
               
               <div className="flex flex-col sm:flex-row gap-4 items-center bg-surface-2 border border-border rounded-2xl p-4">
                 {formData.logoUrl ? (
@@ -453,7 +453,7 @@ export default function SuperAdminPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="w-16 h-16 rounded-xl bg-surface/40 border border-dashed border-border flex items-center justify-center text-text/40 shrink-0">
+                  <div className="w-16 h-16 rounded-xl bg-surface/40 border border-dashed border-border flex items-center justify-center text-text shrink-0">
                     <Building2 size={24} />
                   </div>
                 )}
@@ -483,13 +483,13 @@ export default function SuperAdminPage() {
                       )}
                     </label>
                   </div>
-                  <p className="text-[9px] text-text/40 leading-tight">Formatos permitidos: PNG, JPG, WebP, SVG. Max 5MB.</p>
+                  <p className="text-[9px] text-text leading-tight">Formatos permitidos: PNG, JPG, WebP, SVG. Max 5MB.</p>
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Color de Marca Primario</label>
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Color de Marca Primario</label>
               <div className="flex items-center gap-4 bg-surface-2 border border-border rounded-xl px-4 py-2">
                 <input 
                   type="color" 
@@ -522,7 +522,7 @@ export default function SuperAdminPage() {
         /* LISTADO DE CONJUNTOS REGISTRADOS */
         <div className="flex flex-col gap-4">
           {conjuntos.length === 0 ? (
-            <p className="text-center text-text/50 text-sm py-12">No hay conjuntos registrados en el sistema.</p>
+            <p className="text-center text-text text-sm py-12">No hay conjuntos registrados en el sistema.</p>
           ) : (
             conjuntos.map((c, idx) => (
               <div key={c.id || idx} className="fade-up liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 relative overflow-hidden group hover:border-accent/40 transition-all">
@@ -541,7 +541,7 @@ export default function SuperAdminPage() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 items-end">
-                    <span className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[9px] font-black text-text/60 font-mono">
+                    <span className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[9px] font-black text-text font-mono">
                       {c.subdominio}.conjuntos.app
                     </span>
                     <button
@@ -553,31 +553,31 @@ export default function SuperAdminPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1 text-xs text-text/75 border-t border-border/40 pt-3 mt-1">
+                <div className="flex flex-col gap-1 text-xs text-text border-t border-border/40 pt-3 mt-1">
                   <div className="flex items-center gap-2">
-                    <MapPin size={12} className="text-text/40" />
+                    <MapPin size={12} className="text-text" />
                     <span>{c.direccion}, {c.ciudad}</span>
                   </div>
                   {c.representanteLegal && (
                     <div className="flex items-center gap-2">
-                      <User size={12} className="text-text/40" />
+                      <User size={12} className="text-text" />
                       <span>Rep. Legal: <strong>{c.representanteLegal}</strong></span>
                     </div>
                   )}
                   {c.matriculaInmobiliaria && (
                     <div className="flex items-center gap-2">
-                      <FileText size={12} className="text-text/40" />
+                      <FileText size={12} className="text-text" />
                       <span>F. Matrícula: <strong className="font-mono text-[11px]">{c.matriculaInmobiliaria}</strong></span>
                     </div>
                   )}
                   {c.numeroEscritura && (
                     <div className="flex items-center gap-2">
-                      <ShieldCheck size={12} className="text-text/40" />
+                      <ShieldCheck size={12} className="text-text" />
                       <span>{c.notariaEscritura || "Deed"}: {c.numeroEscritura} ({c.fechaEscritura ? new Date(c.fechaEscritura).toLocaleDateString() : "N/A"})</span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
-                    <Layers size={12} className="text-text/40" />
+                    <Layers size={12} className="text-text" />
                     <span>Unidades Totales: <strong>{c.totalUnidades || 1} celdas/unidades</strong></span>
                   </div>
                 </div>

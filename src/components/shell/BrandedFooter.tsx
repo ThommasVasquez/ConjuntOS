@@ -63,12 +63,12 @@ export function BrandedFooter({ className = "", isFixed = false, isInternal = fa
           </svg>
        </div>
        <div className="flex flex-col items-center gap-0.5">
-          <div className="text-[8.5px] font-black text-text/45 tracking-[0.45em] drop-shadow-sm uppercase">
-             Conjunt<span className="text-text/70">OS</span> v.1.01.0
+          <div className="text-[8.5px] font-black text-text tracking-[0.45em] drop-shadow-sm uppercase">
+             Conjunt<span className="text-text">OS</span> v.1.01.0
           </div>
-          <div className="text-[6.5px] text-text/40 font-bold text-center tracking-widest uppercase">
+          <div className="text-[6.5px] text-text font-bold text-center tracking-widest uppercase">
              Powered by ENERGYSOFTmedia® ⚡️ | 
-             <span className="ml-1 text-neutral-600 dark:text-neutral-400 font-black">
+             <span className="ml-1 text-text dark:text-text font-black">
                Software con Energía!
              </span>
           </div>

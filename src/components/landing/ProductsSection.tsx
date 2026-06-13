@@ -38,15 +38,15 @@ export default function ProductsSection() {
       component: (
         <div className="w-full h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-neutral-500/10 border border-neutral-500/20 flex items-center justify-center text-neutral-400">
+            <div className="w-12 h-12 rounded-2xl bg-text/10 border border-text/20 flex items-center justify-center text-black">
               <CreditCard size={20} />
             </div>
-            <span className="text-[9px] bg-neutral-500/20 text-neutral-400 font-bold uppercase px-2.5 py-1 rounded-full border border-neutral-500/30 tracking-wider">Al día</span>
+            <span className="text-[9px] bg-text/20 text-black font-bold uppercase px-2.5 py-1 rounded-full border border-text/30 tracking-wider">Al día</span>
           </div>
           <div>
-            <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Tu Residencia</h5>
+            <h5 className="text-[9px] text-white uppercase tracking-widest font-bold">Tu Residencia</h5>
             <p className="text-white text-lg font-bold truncate mt-1">$ 0 Pendiente</p>
-            <p className="text-[9px] text-white/30 mt-1">Mes de Abril • Pago Exitoso</p>
+            <p className="text-[9px] text-white mt-1">Mes de Abril • Pago Exitoso</p>
           </div>
         </div>
       )
@@ -57,15 +57,15 @@ export default function ProductsSection() {
       component: (
         <div className="w-full h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-neutral-500/10 border border-neutral-500/20 flex items-center justify-center text-neutral-400">
+            <div className="w-12 h-12 rounded-2xl bg-text/10 border border-text/20 flex items-center justify-center text-black">
               <Calendar size={20} />
             </div>
-            <span className="text-[9px] bg-neutral-500/20 text-neutral-400 font-bold uppercase px-2.5 py-1 rounded-full border border-neutral-500/30 tracking-wider">Aprobado</span>
+            <span className="text-[9px] bg-text/20 text-black font-bold uppercase px-2.5 py-1 rounded-full border border-text/30 tracking-wider">Aprobado</span>
           </div>
           <div>
-            <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Zona Común</h5>
+            <h5 className="text-[9px] text-white uppercase tracking-widest font-bold">Zona Común</h5>
             <p className="text-white text-lg font-bold truncate mt-1">Piscina & BBQ</p>
-            <p className="text-[9px] text-white/30 mt-1">Hoy, 18:00 - 20:00</p>
+            <p className="text-[9px] text-white mt-1">Hoy, 18:00 - 20:00</p>
           </div>
         </div>
       )
@@ -76,15 +76,15 @@ export default function ProductsSection() {
       component: (
         <div className="w-full h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-neutral-500/10 border border-neutral-500/20 flex items-center justify-center text-neutral-400">
+            <div className="w-12 h-12 rounded-2xl bg-text/10 border border-text/20 flex items-center justify-center text-black">
               <ShieldCheck size={20} />
             </div>
-            <span className="text-[9px] bg-neutral-500/20 text-neutral-400 font-bold uppercase px-2.5 py-1 rounded-full border border-neutral-500/30 tracking-wider">Autorizado</span>
+            <span className="text-[9px] bg-text/20 text-black font-bold uppercase px-2.5 py-1 rounded-full border border-text/30 tracking-wider">Autorizado</span>
           </div>
           <div>
-            <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Invitado Activo</h5>
+            <h5 className="text-[9px] text-white uppercase tracking-widest font-bold">Invitado Activo</h5>
             <p className="text-white text-lg font-bold truncate mt-1">Carlos Rodríguez</p>
-            <p className="text-[9px] text-white/30 mt-1">Acceso Vehicular • Placa KJS-092</p>
+            <p className="text-[9px] text-white mt-1">Acceso Vehicular • Placa KJS-092</p>
           </div>
         </div>
       )
@@ -114,7 +114,7 @@ export default function ProductsSection() {
           <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight font-[family-name:var(--font-montserrat)]">
             La potencia de la app web en tu escritorio
           </h2>
-          <p className="text-white/50 text-sm md:text-base mt-4 leading-relaxed font-[family-name:var(--font-inter)]">
+          <p className="text-white text-sm md:text-base mt-4 leading-relaxed font-[family-name:var(--font-inter)]">
             Cada sección de nuestra plataforma replica la robustez de las herramientas de gestión del conjunto residencial para darte control absoluto.
           </p>
         </div>
@@ -129,7 +129,7 @@ export default function ProductsSection() {
                 </div>
               </div>
               <h4 className="font-bold text-white text-lg tracking-tight group-hover:text-accent transition-colors duration-300">{p.name}</h4>
-              <p className="text-sm text-white/50 mt-1 font-light leading-relaxed">{p.desc}</p>
+              <p className="text-sm text-white mt-1 font-light leading-relaxed">{p.desc}</p>
             </div>
           ))}
         </div>

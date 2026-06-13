@@ -210,7 +210,7 @@ export default function Hero() {
               {current.title}
             </h1>
             
-            <p className="text-white/70 text-base md:text-lg mb-10 max-w-lg font-[family-name:var(--font-inter)] leading-relaxed">
+            <p className="text-white text-base md:text-lg mb-10 max-w-lg font-[family-name:var(--font-inter)] leading-relaxed">
               {current.description}
             </p>
 
@@ -221,7 +221,7 @@ export default function Hero() {
               >
                 Comenzar Ahora
               </button>
-              <button className="text-white/70 flex items-center gap-2 text-xs font-bold tracking-widest uppercase hover:text-white transition-colors">
+              <button className="text-white flex items-center gap-2 text-xs font-bold tracking-widest uppercase hover:text-white transition-colors">
                 <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors">
                   <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10 6L0.25 11.1962L0.25 0.803848L10 6Z" fill="currentColor"/>
@@ -245,7 +245,7 @@ export default function Hero() {
                 </div>
                 <div>
                   <h3 className="text-3xl font-medium text-white font-[family-name:var(--font-montserrat)] mb-4">{currentFeature.title}</h3>
-                  <p className="text-base text-white/70 leading-relaxed mb-8 h-20">{currentFeature.desc}</p>
+                  <p className="text-base text-white leading-relaxed mb-8 h-20">{currentFeature.desc}</p>
                   
                   <button className="w-full py-4 rounded-full border border-white/10 text-on-accent text-xs font-bold tracking-widest uppercase hover:bg-accent hover:border-accent transition-all duration-300">
                     Ver cómo funciona

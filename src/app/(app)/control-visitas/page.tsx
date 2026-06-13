@@ -108,13 +108,13 @@ export default function ControlVisitas() {
              </div>
              <div>
                <h2 className="text-xl font-bold text-text">Ingreso Visitas</h2>
-               <p className="text-xs text-text/70">Control peatonal y vehicular</p>
+               <p className="text-xs text-text">Control peatonal y vehicular</p>
              </div>
           </div>
           
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Residente Destino</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Residente Destino</label>
                 <select 
                    value={formData.usuarioId} 
                    onChange={e => setFormData({...formData, usuarioId: e.target.value})}
@@ -130,7 +130,7 @@ export default function ControlVisitas() {
              </div>
              
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Ocupante Principal</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Ocupante Principal</label>
                 <input 
                    required
                    type="text" 
@@ -143,7 +143,7 @@ export default function ControlVisitas() {
 
              <div className="flex gap-4">
                 <div className="flex-1 flex flex-col gap-1.5">
-                   <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Tipo de Ingreso</label>
+                   <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Tipo de Ingreso</label>
                    <select 
                       value={formData.tipo}
                       onChange={e => setFormData({...formData, tipo: e.target.value, vehiculoTipo: e.target.value === 'PEATONAL' ? 'NINGUNO' : formData.vehiculoTipo})}
@@ -155,7 +155,7 @@ export default function ControlVisitas() {
                 </div>
                 {formData.tipo === 'VEHICULAR' && (
                   <div className="flex-1 flex flex-col gap-1.5">
-                     <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Placa</label>
+                     <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Placa</label>
                      <input 
                         required
                         type="text" 
@@ -177,23 +177,23 @@ export default function ControlVisitas() {
        {/* Bitácora de Hoy */}
        <div className="fade-up flex flex-col gap-4">
           <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2"><Eye size={16} className="text-accent"/> Bitácora Reciente</h3>
-          {visitas.length === 0 && <p className="text-text/60 text-sm text-center py-6">No hay visitas registradas hoy.</p>}
+          {visitas.length === 0 && <p className="text-text text-sm text-center py-6">No hay visitas registradas hoy.</p>}
           {visitas.map((v, i) => (
              <div key={i} className="liquid-glass p-4 rounded-3xl border border-border/50 flex flex-col gap-3">
                 <div className="flex justify-between items-start">
                    <div>
                      <p className="text-text font-bold">{v.nombre}</p>
-                     <p className="text-text/60 text-xs">Visita a: {v.usuario?.unidad?.torre} - {v.usuario?.unidad?.numero}</p>
+                     <p className="text-text text-xs">Visita a: {v.usuario?.unidad?.torre} - {v.usuario?.unidad?.numero}</p>
                    </div>
-                   <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text/60">
+                   <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
                       {new Date(v.creadoEn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                    </div>
                 </div>
                 <div className="flex bg-surface/50 p-2 rounded-xl gap-4 items-center border border-border/30">
-                   <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${v.tipo === 'VEHICULAR' ? 'text-neutral-400' : 'text-accent'}`}>
+                   <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${v.tipo === 'VEHICULAR' ? 'text-text' : 'text-accent'}`}>
                       {v.tipo === 'VEHICULAR' ? <Car size={14}/> : <Users size={14}/>} {v.tipo}
                    </div>
-                   {v.placa && <div className="text-xs text-text/70 bg-text/5 px-2 py-0.5 rounded border border-border font-mono tracking-widest">{v.placa}</div>}
+                   {v.placa && <div className="text-xs text-text bg-text/5 px-2 py-0.5 rounded border border-border font-mono tracking-widest">{v.placa}</div>}
                 </div>
              </div>
           ))}

@@ -129,9 +129,9 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   const getNotifIcon = (tipo: string) => {
     switch (tipo) {
       case 'APROBACION':
-        return { icon: <CheckCircle2 size={14} />, color: "text-neutral-500 bg-neutral-500/10" };
+        return { icon: <CheckCircle2 size={14} />, color: "text-text bg-text/10" };
       case 'SISTEMA':
-        return { icon: <AlertTriangle size={14} />, color: "text-neutral-500 bg-neutral-500/10" };
+        return { icon: <AlertTriangle size={14} />, color: "text-text bg-text/10" };
       case 'PAQUETE':
         return { icon: <Package size={14} />, color: "text-accent bg-accent/10" };
       case 'INFO':
@@ -205,7 +205,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         <div className="flex flex-col">
           {showWelcome && (
             <div className="flex items-center gap-1.5 leading-none mb-1">
-              <span className="text-text/60 text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-text text-[10px] font-bold uppercase tracking-widest">
                 {userData.gender === 'masculino' ? 'Bienvenido' : userData.gender === 'neutro' ? 'Bienvenide' : 'Bienvenida'} 👋
               </span>
             </div>
@@ -217,7 +217,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
       <div className="relative" ref={notificationsRef}>
         <button 
           onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-          className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-border active:scale-95 ${isNotificationsOpen ? 'bg-accent text-on-accent border-accent/50' : 'liquid-glass text-text/80 hover:text-text'}`}
+          className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-border active:scale-95 ${isNotificationsOpen ? 'bg-accent text-on-accent border-accent/50' : 'liquid-glass text-text hover:text-text'}`}
         >
           <Bell size={22} />
           {notifications.some(n => !n.leida) && (
@@ -233,7 +233,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
              </div>
              <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar">
                 {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-text/50">
+                  <div className="p-6 text-center text-xs text-text">
                     No tienes notificaciones
                   </div>
                 ) : (
@@ -252,9 +252,9 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
                         <div className="flex flex-col flex-1">
                            <div className="flex justify-between items-center mb-0.5">
                               <span className="text-[11px] font-bold text-text">{notif.titulo}</span>
-                              <span className="text-[8px] text-text/30">{formatTime(notif.createdAt)}</span>
+                              <span className="text-[8px] text-text">{formatTime(notif.createdAt)}</span>
                            </div>
-                           <p className="text-[10px] text-text/50 leading-tight">{notif.mensaje}</p>
+                           <p className="text-[10px] text-text leading-tight">{notif.mensaje}</p>
                         </div>
                       </div>
                     );

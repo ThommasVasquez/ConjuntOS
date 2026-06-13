@@ -91,14 +91,14 @@ export default function LoginPage() {
              <Shield className="text-white" size={32} />
           </div>
           <h1 className="fade-in-element text-4xl font-display font-bold text-white tracking-tight text-glow mb-2">ConjuntOS</h1>
-          <p className="fade-in-element text-white/50 text-sm font-medium tracking-wide">Tu comunidad, sincronizada en la nube.</p>
+          <p className="fade-in-element text-white text-sm font-medium tracking-wide">Tu comunidad, sincronizada en la nube.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="fade-in-element space-y-2">
-            <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest ml-1">Email Residencial</label>
+            <label className="text-[11px] font-bold text-white uppercase tracking-widest ml-1">Email Residencial</label>
             <div className="relative group">
-              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-accent transition-colors" size={20} />
+              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white group-focus-within:text-accent transition-colors" size={20} />
               <input 
                 type="text" 
                 required
@@ -106,15 +106,15 @@ export default function LoginPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 placeholder="ej: thommy" 
-                className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-6 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white/10"
+                className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-6 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white"
               />
             </div>
           </div>
 
           <div className="fade-in-element space-y-2">
-            <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest ml-1 text-right">Contraseña</label>
+            <label className="text-[11px] font-bold text-white uppercase tracking-widest ml-1 text-right">Contraseña</label>
             <div className="relative group">
-              <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-accent transition-colors" size={20} />
+              <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white group-focus-within:text-accent transition-colors" size={20} />
               <input 
                 type="password" 
                 required
@@ -122,7 +122,7 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 placeholder="••••••••" 
-                className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-6 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white/10"
+                className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-6 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white"
               />
             </div>
           </div>
@@ -147,11 +147,11 @@ export default function LoginPage() {
         </form>
 
         <div className="fade-in-element mt-10 text-center space-y-4">
-           <p className="text-white/30 text-[11px] flex items-center justify-center gap-2">
+           <p className="text-white text-[11px] flex items-center justify-center gap-2">
              <Star size={12} className="text-accent" /> Acceso exclusivo para residentes autorizados
            </p>
            <div className="flex justify-center gap-6">
-              <button className="text-[10px] text-white/40 font-bold uppercase transition-colors tracking-widest">¿Olvidaste tu contraseña?</button>
+              <button className="text-[10px] text-white font-bold uppercase transition-colors tracking-widest">¿Olvidaste tu contraseña?</button>
            </div>
         </div>
 

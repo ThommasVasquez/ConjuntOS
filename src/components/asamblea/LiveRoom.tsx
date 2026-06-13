@@ -46,8 +46,8 @@ export default function LiveRoom({ asambleaId, onDisconnect }: LiveRoomProps) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center p-8">
-          <p className="text-neutral-400 font-bold mb-2">Error de conexion</p>
-          <p className="text-white/60 text-sm">{error}</p>
+          <p className="text-text font-bold mb-2">Error de conexion</p>
+          <p className="text-white text-sm">{error}</p>
         </div>
       </div>
     );
@@ -56,7 +56,7 @@ export default function LiveRoom({ asambleaId, onDisconnect }: LiveRoomProps) {
   if (!token || !url) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-white/60 text-sm animate-pulse">
+        <div className="text-white text-sm animate-pulse">
           Conectando a la sala...
         </div>
       </div>

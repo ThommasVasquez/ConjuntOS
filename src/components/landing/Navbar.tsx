@@ -91,7 +91,7 @@ export default function Navbar() {
                   if (item === "Asambleas") navigate("/asamblea");
                 }}
                 className={`transition-all duration-500 text-[11px] font-bold tracking-widest uppercase hover:text-accent cursor-pointer ${
-                  scrolled ? "text-white/60" : "text-white/80"
+                  scrolled ? "text-white" : "text-white"
                 }`}
               >
                 {item}
@@ -102,7 +102,7 @@ export default function Navbar() {
 
         {/* 3. Actions Container (Fixed width to balance left side) */}
         <div className={`transition-all duration-700 flex items-center justify-end gap-6 ${scrolled ? "w-[120px]" : "w-[180px]"}`}>
-          <button className="text-white/50 hover:text-accent transition-colors duration-300">
+          <button className="text-white hover:text-accent transition-colors duration-300">
             <Search size={16} strokeWidth={2.5} />
           </button>
           <div className="h-4 w-[1px] bg-white/10 mx-1" />

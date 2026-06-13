@@ -11,7 +11,7 @@ const features = [
     name: "MATEO",
     role: "RESIDENTE",
     img: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600",
-    color: "bg-neutral-500",
+    color: "bg-text/10",
     details: "Torre A • Apartamento 402",
     quote: "SOLICITO MI PARQUEADERO EN SEGUNDOS"
   },
@@ -19,7 +19,7 @@ const features = [
     name: "VALENTINA",
     role: "ADMINISTRADORA",
     img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=600",
-    color: "bg-neutral-500",
+    color: "bg-text/10",
     details: "Gestión General de Asamblea",
     quote: "ORGANIZO ASAMBLEAS SIN CAOS NI PAPELEO"
   },
@@ -27,7 +27,7 @@ const features = [
     name: "CARLOS",
     role: "SEGURIDAD",
     img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600",
-    color: "bg-neutral-500",
+    color: "bg-text/10",
     details: "Control de Acceso Vehicular",
     quote: "SÉ EXACTAMENTE QUIÉN ENTRA Y SALE"
   },
@@ -35,7 +35,7 @@ const features = [
     name: "ELENA",
     role: "CONTADORA",
     img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600",
-    color: "bg-neutral-500",
+    color: "bg-text/10",
     details: "Módulo de Cartera y Pagos",
     quote: "CARTERA AL DÍA CON PAGOS AUTOMÁTICOS"
   },
@@ -43,7 +43,7 @@ const features = [
     name: "JULIÁN",
     role: "VISITANTE",
     img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=600",
-    color: "bg-neutral-500",
+    color: "bg-text/10",
     details: "Autorización QR Invitados",
     quote: "INGRESO RÁPIDO CON MI CÓDIGO QR"
   },
@@ -51,7 +51,7 @@ const features = [
     name: "SARA",
     role: "RESIDENTE",
     img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600",
-    color: "bg-neutral-500",
+    color: "bg-text/10",
     details: "Reserva de Zonas Comunes",
     quote: "RESERVO EL GIMNASIO DESDE MI CELULAR"
   }
@@ -212,7 +212,7 @@ export default function FeaturesCollage() {
                      {activeItem.role}
                    </p>
                    <div className="h-[1px] w-12 bg-accent mx-auto mb-4 shadow-[0_0_10px_rgba(0,0,0,0.3)]" />
-                   <p className="text-[11px] text-white/50 italic leading-tight">
+                   <p className="text-[11px] text-white italic leading-tight">
                      {activeItem.details}
                    </p>
                 </div>

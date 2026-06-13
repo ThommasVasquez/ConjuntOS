@@ -14,14 +14,14 @@ export default function Footer() {
         
         {/* Left Col */}
         <div className="col-span-1 md:col-span-2">
-          <p className="text-white/50 max-w-sm mb-8 text-sm leading-relaxed font-light">
+          <p className="text-white max-w-sm mb-8 text-sm leading-relaxed font-light">
             Gestión residencial de alta definición. Transparencia, seguridad y comunidad perfectamente integradas en un ecosistema que eleva tu calidad de vida.
           </p>
           <div className="flex gap-2 max-w-md">
             <input 
               type="email" 
               placeholder="tu@email.com" 
-              className="bg-white/5 border border-white/10 rounded-full px-6 py-3.5 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 w-64 shadow-inner placeholder:text-white/20"
+              className="bg-white/5 border border-white/10 rounded-full px-6 py-3.5 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 w-64 shadow-inner placeholder:text-white"
             />
             <button className="bg-accent text-on-accent px-6 py-3.5 rounded-full text-sm font-bold hover:bg-accent/80 hover:shadow-[0_0_15px_rgba(0,0,0,0.3)] transition-all active:scale-95 cursor-pointer">
               Suscribirse
@@ -31,8 +31,8 @@ export default function Footer() {
 
         {/* Links */}
         <div>
-          <h4 className="font-bold mb-6 font-[family-name:var(--font-montserrat)] text-white/90">Plataforma</h4>
-          <ul className="space-y-4 text-sm text-white/50 font-light">
+          <h4 className="font-bold mb-6 font-[family-name:var(--font-montserrat)] text-white">Plataforma</h4>
+          <ul className="space-y-4 text-sm text-white font-light">
             <li><button onClick={() => navigate("/")} className="hover:text-accent transition-colors cursor-pointer">Inicio</button></li>
             <li><button onClick={() => navigate("/login")} className="hover:text-accent transition-colors cursor-pointer">Acceso Residentes</button></li>
             <li><button onClick={() => navigate("/login")} className="hover:text-accent transition-colors cursor-pointer">Panel Admin</button></li>
@@ -40,8 +40,8 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="font-bold mb-6 font-[family-name:var(--font-montserrat)] text-white/90">Compañía</h4>
-          <ul className="space-y-4 text-sm text-white/50 font-light">
+          <h4 className="font-bold mb-6 font-[family-name:var(--font-montserrat)] text-white">Compañía</h4>
+          <ul className="space-y-4 text-sm text-white font-light">
             <li><a href="#" className="hover:text-accent transition-colors">Acerca de</a></li>
             <li><a href="#" className="hover:text-accent transition-colors">Contacto</a></li>
             <li><a href="#" className="hover:text-accent transition-colors">Privacidad</a></li>
@@ -61,7 +61,7 @@ export default function Footer() {
 
       {/* Very bottom bar */}
       <div className="border-t border-white/5 py-6 px-6 relative z-10 bg-[#000000]">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs text-white/30">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs text-white">
           <p>© {new Date().getFullYear()} ENERGYSOFTmedia. All rights reserved.</p>
           <div className="flex gap-4 mt-4 md:mt-0 font-light">
             <a href="#" className="hover:text-white transition-colors">Terms</a>

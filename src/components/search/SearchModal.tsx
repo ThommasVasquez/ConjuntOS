@@ -31,13 +31,13 @@ interface SearchModalProps {
 
 const MODULES = [
   { title: "Pagos", desc: "Cuotas, recibos y sanciones", icon: <CreditCard size={18} />, color: "from-[#FFFFFF] to-[#404040]", path: "/pagos", keywords: ["pago", "cuota", "administración", "deuda", "recibo", "energía", "gas", "agua"] },
-  { title: "Reservas", desc: "Salón, cancha, gimnasio y más", icon: <Calendar size={18} />, color: "from-neutral-500 to-neutral-400", path: "/reservas", keywords: ["reserva", "salón", "salon", "cancha", "gimnasio", "piscina", "bbq", "área", "area"] },
-  { title: "Parqueadero", desc: "Estado y asignación de cupos", icon: <Car size={18} />, color: "from-neutral-500 to-neutral-700", path: "/parqueadero", keywords: ["parqueo", "parqueadero", "carro", "moto", "vehículo", "vehiculo", "cupo"] },
-  { title: "Paquetería", desc: "Paquetes en portería", icon: <Package size={18} />, color: "from-neutral-500 to-neutral-400", path: "/paqueteria", keywords: ["paquete", "encomienda", "portería", "porteria", "llegó", "llego", "domicilio", "envío"] },
-  { title: "PQRS", desc: "Peticiones, quejas y reclamos", icon: <MessageSquare size={18} />, color: "from-neutral-500 to-neutral-600", path: "/pqrs", keywords: ["pqr", "queja", "petición", "peticion", "problema", "reclamo", "solicitud"] },
-  { title: "Visitantes", desc: "Autorización de ingresos", icon: <Users size={18} />, color: "from-neutral-500 to-neutral-500", path: "/visitantes", keywords: ["visita", "visitante", "invitado", "ingreso", "acceso", "autoriza"] },
-  { title: "Cartelera", desc: "Anuncios y novedades", icon: <Megaphone size={18} />, color: "from-neutral-500 to-neutral-500", path: "/cartelera", keywords: ["anuncio", "novedad", "asamblea", "reunión", "reunion", "circular", "cartelera"] },
-  { title: "Inmobiliaria", desc: "Venta y arriendo en el conjunto", icon: <Building2 size={18} />, color: "from-neutral-500 to-neutral-400", path: "/inmobiliaria", keywords: ["venta", "arriendo", "alquiler", "inmueble", "apartamento", "apto"] },
+  { title: "Reservas", desc: "Salón, cancha, gimnasio y más", icon: <Calendar size={18} />, color: "from-text to-text", path: "/reservas", keywords: ["reserva", "salón", "salon", "cancha", "gimnasio", "piscina", "bbq", "área", "area"] },
+  { title: "Parqueadero", desc: "Estado y asignación de cupos", icon: <Car size={18} />, color: "from-text to-text", path: "/parqueadero", keywords: ["parqueo", "parqueadero", "carro", "moto", "vehículo", "vehiculo", "cupo"] },
+  { title: "Paquetería", desc: "Paquetes en portería", icon: <Package size={18} />, color: "from-text to-text", path: "/paqueteria", keywords: ["paquete", "encomienda", "portería", "porteria", "llegó", "llego", "domicilio", "envío"] },
+  { title: "PQRS", desc: "Peticiones, quejas y reclamos", icon: <MessageSquare size={18} />, color: "from-text to-text", path: "/pqrs", keywords: ["pqr", "queja", "petición", "peticion", "problema", "reclamo", "solicitud"] },
+  { title: "Visitantes", desc: "Autorización de ingresos", icon: <Users size={18} />, color: "from-text to-text", path: "/visitantes", keywords: ["visita", "visitante", "invitado", "ingreso", "acceso", "autoriza"] },
+  { title: "Cartelera", desc: "Anuncios y novedades", icon: <Megaphone size={18} />, color: "from-text to-text", path: "/cartelera", keywords: ["anuncio", "novedad", "asamblea", "reunión", "reunion", "circular", "cartelera"] },
+  { title: "Inmobiliaria", desc: "Venta y arriendo en el conjunto", icon: <Building2 size={18} />, color: "from-text to-text", path: "/inmobiliaria", keywords: ["venta", "arriendo", "alquiler", "inmueble", "apartamento", "apto"] },
 ];
 
 const SUGGESTIONS = [
@@ -222,12 +222,12 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
               value={query}
               onChange={e => handleQueryChange(e.target.value)}
               placeholder="Buscar o preguntar algo..."
-              className="w-full bg-transparent text-white text-base font-medium placeholder:text-white/30 focus:outline-none"
+              className="w-full bg-transparent text-white text-base font-medium placeholder:text-white focus:outline-none"
             />
           </form>
           <button
             onClick={handleClose}
-            className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all flex-shrink-0"
+            className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-white hover:text-white hover:bg-white/10 transition-all flex-shrink-0"
           >
             <X size={18} />
           </button>
@@ -248,12 +248,12 @@ Asistente IA
               </div>
               <div className="p-5">
                 {isLoadingAI ? (
-                  <div className="flex items-center gap-3 text-white/40">
+                  <div className="flex items-center gap-3 text-white">
                     <Loader2 size={16} className="animate-spin text-accent" />
                     <span className="text-sm">Analizando tu pregunta...</span>
                   </div>
                 ) : aiAnswer ? (
-                  <p className="text-sm text-white/80 leading-relaxed">
+                  <p className="text-sm text-white leading-relaxed">
                     <TypingText text={aiAnswer.text} />
                   </p>
                 ) : null}
@@ -264,7 +264,7 @@ Asistente IA
           {/* ─── Module Results ─── */}
           {filteredModules.length > 0 && (
             <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 px-1">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white px-1">
                 Módulos
               </span>
               {filteredModules.map((mod) => (
@@ -278,9 +278,9 @@ Asistente IA
                   </div>
                   <div className="flex-1">
                     <p className="text-white font-bold text-sm">{mod.title}</p>
-                    <p className="text-white/40 text-[11px]">{mod.desc}</p>
+                    <p className="text-white text-[11px]">{mod.desc}</p>
                   </div>
-                  <ChevronRight size={16} className="text-white/20 group-hover:text-accent transition-colors" />
+                  <ChevronRight size={16} className="text-white group-hover:text-accent transition-colors" />
                 </button>
               ))}
             </div>
@@ -290,7 +290,7 @@ Asistente IA
           {!query && !aiAnswer && (
             <>
               <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 px-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white px-1">
                   Preguntas frecuentes
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -298,7 +298,7 @@ Asistente IA
                     <button
                       key={s.label}
                       onClick={() => handleSuggestion(s.label)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/5 border border-white/8 text-white/60 text-xs font-semibold hover:bg-white/10 hover:text-white hover:border-accent/30 transition-all active:scale-95"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/5 border border-white/8 text-white text-xs font-semibold hover:bg-white/10 hover:text-white hover:border-accent/30 transition-all active:scale-95"
                     >
                       <span className="text-accent">{s.icon}</span>
                       {s.label}
@@ -308,7 +308,7 @@ Asistente IA
               </div>
 
               <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 px-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white px-1">
                   Accesos Directos
                 </span>
                 <div className="grid grid-cols-2 gap-3">
@@ -324,7 +324,7 @@ Asistente IA
                       </div>
                       <div>
                         <p className="text-white font-bold text-xs">{mod.title}</p>
-                        <ArrowRight size={10} className="text-white/30 group-hover:text-accent mt-0.5 transition-colors" />
+                        <ArrowRight size={10} className="text-white group-hover:text-accent mt-0.5 transition-colors" />
                       </div>
                     </button>
                   ))}
@@ -336,8 +336,8 @@ Asistente IA
           {/* No results */}
           {query.trim().length >= 2 && filteredModules.length === 0 && !aiAnswer && !isLoadingAI && (
             <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <Search size={32} className="text-white/10" />
-              <p className="text-white/30 text-sm">Sin resultados para <strong className="text-white/50">&quot;{query}&quot;</strong></p>
+              <Search size={32} className="text-white" />
+              <p className="text-white text-sm">Sin resultados para <strong className="text-white">&quot;{query}&quot;</strong></p>
               <button
                 onClick={() => askAI(query)}
                 className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold hover:bg-accent/20 transition-all active:scale-95"
@@ -350,10 +350,10 @@ Asistente IA
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
-          <span className="text-[10px] text-white/20 font-medium">ConjuntOS Search</span>
+          <span className="text-[10px] text-white font-medium">ConjuntOS Search</span>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-accent/60 animate-pulse" />
-            <span className="text-[10px] text-white/20">IA disponible</span>
+            <span className="text-[10px] text-white">IA disponible</span>
           </div>
         </div>
       </div>

@@ -163,10 +163,10 @@ export default function CarteleraPage() {
 
   const getPriorityColor = (priority: string) => {
     switch(priority) {
-      case 'ALTA': return 'bg-neutral-500/10 dark:bg-neutral-500/20 text-neutral-700 dark:text-neutral-400 border-neutral-500/20 dark:border-neutral-500/30';
-      case 'MEDIA': return 'bg-neutral-500/10 dark:bg-neutral-500/20 text-neutral-700 dark:text-neutral-400 border-neutral-500/20 dark:border-neutral-500/30';
-      case 'BAJA': return 'bg-neutral-500/10 dark:bg-neutral-500/20 text-neutral-700 dark:text-neutral-400 border-neutral-500/20 dark:border-neutral-500/30';
-      default: return 'bg-surface-2 text-text/70 border-border';
+      case 'ALTA': return 'bg-text/10 dark:bg-text/20 text-text dark:text-text border-text/20 dark:border-text/30';
+      case 'MEDIA': return 'bg-text/10 dark:bg-text/20 text-text dark:text-text border-text/20 dark:border-text/30';
+      case 'BAJA': return 'bg-text/10 dark:bg-text/20 text-text dark:text-text border-text/20 dark:border-text/30';
+      default: return 'bg-surface-2 text-text border-border';
     }
   };
 
@@ -177,7 +177,7 @@ export default function CarteleraPage() {
       {/* FILTER TABS */}
       <section className="fade-up flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
          {['TODOS', 'ADMINISTRACION', 'LICITACION', 'SEGURIDAD', 'EVENTO', 'MANTENIMIENTO'].map((cat) => (
-           <button key={cat} onClick={() => setSelectedCategory(cat)} className={`shrink-0 px-5 py-2.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-accent border-accent text-primary shadow-lg' : 'bg-surface-2 border-border text-text/70 hover:bg-surface-2/80'}`}>
+           <button key={cat} onClick={() => setSelectedCategory(cat)} className={`shrink-0 px-5 py-2.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-accent border-accent text-primary shadow-lg' : 'bg-surface-2 border-border text-text hover:bg-surface-2/80'}`}>
               {cat}
            </button>
          ))}
@@ -188,12 +188,12 @@ export default function CarteleraPage() {
          {isLoadingNotices ? (
            <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-10 h-10 text-accent animate-spin" />
-              <p className="text-text/75 text-xs font-bold uppercase tracking-widest">Sincronizando Cartelera...</p>
+              <p className="text-text text-xs font-bold uppercase tracking-widest">Sincronizando Cartelera...</p>
            </div>
          ) : filteredNotices.length === 0 ? (
            <div className="flex flex-col items-center justify-center py-20 gap-4 liquid-glass-card rounded-[32px] border border-border p-10">
-              <Megaphone size={32} className="text-text/60 mb-2" />
-              <p className="text-text/80 text-sm font-bold">No hay avisos publicados</p>
+              <Megaphone size={32} className="text-text mb-2" />
+              <p className="text-text text-sm font-bold">No hay avisos publicados</p>
            </div>
          ) : filteredNotices.map((notice: Notice) => (
            <div key={notice.id} onClick={() => setSelectedNotice(notice)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden border border-border hover:border-accent/30 transition-all active:scale-[0.98] cursor-pointer group shadow-2xl">
@@ -206,7 +206,7 @@ export default function CarteleraPage() {
               <div className="p-6 flex flex-col gap-4">
                  <div className="flex justify-between items-start">
                     <div className={`px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${getPriorityColor(notice.priority)}`}>Prioridad {notice.priority}</div>
-                    <span className="text-[10px] text-text/70 font-bold">{notice.date}</span>
+                    <span className="text-[10px] text-text font-bold">{notice.date}</span>
                  </div>
                  <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-accent">
@@ -214,12 +214,12 @@ export default function CarteleraPage() {
                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{notice.category}</span>
                     </div>
                     <h3 className="text-text text-lg font-bold leading-snug group-hover:text-accent transition-colors">{notice.title}</h3>
-                    <p className="text-text/75 text-xs line-clamp-2 leading-relaxed">{notice.content}</p>
+                    <p className="text-text text-xs line-clamp-2 leading-relaxed">{notice.content}</p>
                  </div>
                  <div className="flex justify-between items-center pt-2 border-t border-border">
                     <div className="flex items-center gap-2">
-                       <Megaphone size={12} className="text-text/60" />
-                       <span className="text-[10px] text-text/75">{notice.author}</span>
+                       <Megaphone size={12} className="text-text" />
+                       <span className="text-[10px] text-text">{notice.author}</span>
                     </div>
                     <div className="flex items-center gap-1 text-accent text-[10px] font-bold uppercase group-hover:gap-2 transition-all">Leer más <ArrowRight size={14} /></div>
                  </div>
@@ -241,7 +241,7 @@ export default function CarteleraPage() {
                    </div>
                  )}
                  <div className="p-8 flex flex-col gap-6">
-                    {!selectedNotice.image && <div className="flex justify-end"><button onClick={() => setSelectedNotice(null)} className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text/65"><X size={20} /></button></div>}
+                    {!selectedNotice.image && <div className="flex justify-end"><button onClick={() => setSelectedNotice(null)} className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text"><X size={20} /></button></div>}
                     <div className="flex flex-col gap-3">
                        <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center text-primary">{getNoticeIcon(selectedNotice.category)}</div>
@@ -250,14 +250,14 @@ export default function CarteleraPage() {
                              <h2 className="text-2xl font-display font-bold text-text tracking-tight leading-none mt-1">{selectedNotice.title}</h2>
                           </div>
                        </div>
-                       <div className="flex items-center gap-4 text-text/70 text-[10px] font-bold uppercase tracking-widest mt-2">
+                       <div className="flex items-center gap-4 text-text text-[10px] font-bold uppercase tracking-widest mt-2">
                           <div className="flex items-center gap-1.5"><Clock size={12} /> {selectedNotice.date}</div>
                           <div className="flex items-center gap-1.5"><Megaphone size={12} /> {selectedNotice.author}</div>
                        </div>
                     </div>
-                    <p className="text-text/70 text-base leading-relaxed">{selectedNotice.content}</p>
+                    <p className="text-text text-base leading-relaxed">{selectedNotice.content}</p>
                     <div className="flex flex-col gap-4 pt-6 border-t border-border">
-                       <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-text/70 text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
+                       <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-text text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
                        <button 
                          onClick={() => {
                             toast.loading("Generando descarga...");
@@ -266,13 +266,13 @@ export default function CarteleraPage() {
                          className="w-full bg-surface-2 border border-border rounded-2xl p-4 flex items-center justify-between hover:bg-surface-2/85 transition-all text-left group"
                        >
                           <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-xl bg-neutral-500/10 flex items-center justify-center text-neutral-400"><ShieldAlert size={18} /></div>
+                             <div className="w-10 h-10 rounded-xl bg-text/10 flex items-center justify-center text-text"><ShieldAlert size={18} /></div>
                              <div>
                                  <p className="text-text text-sm font-bold">Circular_Informativa.pdf</p>
-                                 <p className="text-text/70 text-[10px] uppercase font-bold tracking-tighter">PDF • 1.2 MB</p>
+                                 <p className="text-text text-[10px] uppercase font-bold tracking-tighter">PDF • 1.2 MB</p>
                              </div>
                           </div>
-                          <Download size={18} className="text-text/60 group-hover:text-accent transition-all" />
+                          <Download size={18} className="text-text group-hover:text-accent transition-all" />
                        </button>
                     </div>
                     <button 
@@ -303,13 +303,13 @@ export default function CarteleraPage() {
          <div className="flex justify-end w-full">
             <button 
               onClick={() => setIsChatOpen(true)}
-              className="pointer-events-auto w-16 h-16 rounded-full bg-neutral-500 shadow-[0_15px_40px_rgba(128,128,128,0.3)] flex items-center justify-center text-white relative active:scale-95 hover:scale-105 transition-all group overflow-visible"
+              className="pointer-events-auto w-16 h-16 rounded-full bg-text/10 shadow-[0_15px_40px_rgba(128,128,128,0.3)] flex items-center justify-center text-white relative active:scale-95 hover:scale-105 transition-all group overflow-visible"
             >
                <MessageCircle size={28} />
                
                {/* Status Indicator Dot */}
-               <div className={`absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full border-4 border-primary flex items-center justify-center ${isAdminOnline ? 'bg-neutral-500' : 'bg-neutral-500'}`}>
-                  {isAdminOnline && <div className="absolute inset-0 rounded-full bg-neutral-500 animate-ping opacity-40" />}
+               <div className={`absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full border-4 border-primary flex items-center justify-center ${isAdminOnline ? 'bg-text/10' : 'bg-text/10'}`}>
+                  {isAdminOnline && <div className="absolute inset-0 rounded-full bg-text/10 animate-ping opacity-40" />}
                </div>
                
                {/* Floating Label (Appears on Hover) */}
@@ -328,16 +328,16 @@ export default function CarteleraPage() {
               {/* Chat Header */}
               <div className="p-6 flex justify-between items-center border-b border-border bg-surface-2 backdrop-blur-2xl">
                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-neutral-500/20 flex items-center justify-center border border-neutral-500/30 relative">
-                       <Building2 size={24} className="text-neutral-500" />
-                       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-primary dark:border-[#0B0B0B] ${isAdminOnline ? 'bg-neutral-500 shadow-[0_0_10px_rgba(128,128,128,0.5)]' : 'bg-neutral-500'}`} />
+                    <div className="w-12 h-12 rounded-full bg-text/20 flex items-center justify-center border border-text/30 relative">
+                       <Building2 size={24} className="text-text" />
+                       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-primary dark:border-[#0B0B0B] ${isAdminOnline ? 'bg-text/10 shadow-[0_0_10px_rgba(128,128,128,0.5)]' : 'bg-text/10'}`} />
                     </div>
                     <div className="flex flex-col">
                        <h3 className="text-sm font-bold text-text tracking-tight">Atención al Copropietario</h3>
-                       <span className="text-[10px] text-text/70 font-medium uppercase tracking-widest flex items-center gap-1.5">
+                       <span className="text-[10px] text-text font-medium uppercase tracking-widest flex items-center gap-1.5">
                           {isAdminOnline ? (
                             <>
-                              <span className="w-1 h-1 rounded-full bg-neutral-500 animate-pulse" />
+                              <span className="w-1 h-1 rounded-full bg-text/10 animate-pulse" />
                               Disponible
                             </>
                           ) : 'Ausente'}
@@ -346,7 +346,7 @@ export default function CarteleraPage() {
                  </div>
                  <button 
                    onClick={() => setIsChatOpen(false)}
-                   className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-text/70 hover:bg-surface-2/80 transition-all active:scale-90"
+                   className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-text hover:bg-surface-2/80 transition-all active:scale-90"
                  >
                     <X size={20} />
                  </button>
@@ -355,8 +355,8 @@ export default function CarteleraPage() {
               {/* Chat Body (Messages) */}
               <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scroll-smooth hide-scrollbar bg-linear-to-b from-transparent to-black/20">
                  {chatMessages.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text/60">
-                       <MessageCircle size={48} className="text-neutral-500/50" />
+                    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text">
+                       <MessageCircle size={48} className="text-text/50" />
                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-center max-w-[200px] leading-relaxed">
                           Envía un mensaje para iniciar una conversación directa con la administración
                        </p>
@@ -366,10 +366,10 @@ export default function CarteleraPage() {
                        <div className={`max-w-[85%] p-4 rounded-3xl text-sm leading-relaxed ${
                          m.esDeAdmin 
                            ? 'bg-surface-2 border border-border text-text rounded-tl-none shadow-sm' 
-                           : 'bg-neutral-500 text-white rounded-tr-none shadow-lg shadow-neutral-500/10 font-medium'
+                           : 'bg-text/10 text-white rounded-tr-none shadow-lg shadow-black/10 font-medium'
                        }`}>
                           {m.mensaje}
-                          <div className={`text-[8px] mt-2 opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-start text-text/65' : 'justify-end font-normal text-white'}`}>
+                          <div className={`text-[8px] mt-2 opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-start text-text' : 'justify-end font-normal text-white'}`}>
                              {new Date(m.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                        </div>
@@ -381,25 +381,25 @@ export default function CarteleraPage() {
               {/* Chat Input */}
               <div className="p-6 bg-surface-2 border-t border-border pb-10">
                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-h-[56px] bg-primary border border-border rounded-[28px] flex items-center px-6 transition-all focus-within:border-neutral-500/50 focus-within:bg-primary/80 shadow-inner">
+                    <div className="flex-1 min-h-[56px] bg-primary border border-border rounded-[28px] flex items-center px-6 transition-all focus-within:border-text/50 focus-within:bg-primary/80 shadow-inner">
                        <input 
                          type="text"
                          value={newMessage}
                          onChange={(e) => setNewMessage(e.target.value)}
                          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                          placeholder="Describe tu solicitud o duda..."
-                         className="w-full bg-transparent border-none text-text text-sm focus:ring-0 placeholder:text-text/50"
+                         className="w-full bg-transparent border-none text-text text-sm focus:ring-0 placeholder:text-text"
                        />
                     </div>
                     <button 
                       onClick={sendMessage}
                       disabled={!newMessage.trim() || isSending}
-                      className="w-14 h-14 rounded-full bg-neutral-500 flex items-center justify-center text-white shadow-[0_10px_25px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-50 disabled:scale-100 group"
+                      className="w-14 h-14 rounded-full bg-text/10 flex items-center justify-center text-white shadow-[0_10px_25px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-50 disabled:scale-100 group"
                     >
                        {isSending ? <Loader2 size={24} className="animate-spin" /> : <ArrowRight size={24} className="group-hover:translate-x-0.5 transition-transform" />}
                     </button>
                  </div>
-                 <div className="mt-4 flex items-center justify-center gap-2 text-text/70">
+                 <div className="mt-4 flex items-center justify-center gap-2 text-text">
                     <ShieldAlert size={10} />
                     <p className="text-[9px] font-bold uppercase tracking-widest">Conexión Segura & Encriptada</p>
                  </div>
