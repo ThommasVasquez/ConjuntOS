@@ -39,7 +39,7 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
 
   const createConfetti = () => {
     if (!canvasRef.current) return;
-    const colors = ["#FFFFFF", "#A3A3A3", "#FFFFFF", "#10B981", "#F59E0B"];
+    const colors = ["#FFFFFF", "#A3A3A3", "#FFFFFF", "#808080", "#A7A7A7"];
     const container = canvasRef.current;
     
     for (let i = 0; i < 60; i++) {
@@ -95,7 +95,7 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
         
         <div className="relative z-10 flex flex-col items-center text-center gap-6">
           {/* ICON */}
-          <div className={`w-20 h-20 rounded-[32px] flex items-center justify-center border-2 ${isApprove ? 'bg-accent/10 border-accent/40 text-accent accent-glow' : 'bg-red-500/10 border-red-500/40 text-red-400 shadow-[0_0_20px_rgba(248,113,113,0.2)]'}`}>
+          <div className={`w-20 h-20 rounded-[32px] flex items-center justify-center border-2 ${isApprove ? 'bg-accent/10 border-accent/40 text-accent accent-glow' : 'bg-neutral-500/10 border-neutral-500/40 text-neutral-400 shadow-[0_0_20px_rgba(153,153,153,0.2)]'}`}>
             {isApprove ? <CheckCircle2 size={40} /> : <AlertCircle size={40} />}
           </div>
 

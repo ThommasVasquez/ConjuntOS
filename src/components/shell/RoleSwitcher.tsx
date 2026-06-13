@@ -62,14 +62,14 @@ export default function RoleSwitcher() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={busy}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-linear-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 text-text shadow-lg hover:border-amber-500/50 transition-all active:scale-[0.99] disabled:opacity-60"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-linear-to-r from-neutral-500/15 to-neutral-500/15 border border-neutral-500/30 text-text shadow-lg hover:border-neutral-500/50 transition-all active:scale-[0.99] disabled:opacity-60"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+          <div className="w-9 h-9 rounded-xl bg-neutral-500/20 border border-neutral-500/40 flex items-center justify-center text-neutral-400">
             <FlaskConical size={18} />
           </div>
           <div className="flex flex-col items-start leading-tight">
-            <span className="text-[9px] text-amber-500 font-black uppercase tracking-widest">
+            <span className="text-[9px] text-neutral-500 font-black uppercase tracking-widest">
               Modo Tester · Rol activo
             </span>
             <span className="text-sm font-bold text-text">{currentLabel}</span>
@@ -93,11 +93,11 @@ export default function RoleSwitcher() {
                   onClick={() => handleSelect(r.value)}
                   disabled={busy}
                   className={`w-full px-4 py-3 flex items-center justify-between text-left text-sm transition-colors border-b border-border last:border-0 hover:bg-text/5 disabled:opacity-50 ${
-                    active ? "text-amber-400 font-bold" : "text-text/80"
+                    active ? "text-neutral-400 font-bold" : "text-text/80"
                   }`}
                 >
                   <span>{r.label}</span>
-                  {active && <Check size={16} className="text-amber-400" />}
+                  {active && <Check size={16} className="text-neutral-400" />}
                 </button>
               );
             })}

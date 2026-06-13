@@ -32,9 +32,9 @@ interface Solicitud {
 
 const TIPO_CONFIG = {
   PETICION: { icon: <FileText size={18}/>, color: "text-neutral-400", bg: "bg-neutral-500/10 border-neutral-500/20" },
-  QUEJA: { icon: <AlertTriangle size={18}/>, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
-  RECLAMO: { icon: <Megaphone size={18}/>, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
-  SUGERENCIA: { icon: <Info size={18}/>, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  QUEJA: { icon: <AlertTriangle size={18}/>, color: "text-neutral-400", bg: "bg-neutral-500/10 border-neutral-500/20" },
+  RECLAMO: { icon: <Megaphone size={18}/>, color: "text-neutral-400", bg: "bg-neutral-500/10 border-neutral-500/20" },
+  SUGERENCIA: { icon: <Info size={18}/>, color: "text-neutral-400", bg: "bg-neutral-500/10 border-neutral-500/20" },
   MANTENIMIENTO: { icon: <Wrench size={18}/>, color: "text-neutral-400", bg: "bg-neutral-500/10 border-neutral-500/20" },
 };
 
@@ -114,17 +114,17 @@ export default function PQRSPage() {
 
   const getStatusLabel = (status: string) => {
     switch(status) {
-      case 'COMPLETADA': return { text: "Resuelto", color: "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10" };
+      case 'COMPLETADA': return { text: "Resuelto", color: "text-neutral-700 dark:text-neutral-400 bg-neutral-500/10" };
       case 'EN_PROGRESO': return { text: "En Proceso", color: "text-neutral-700 dark:text-neutral-400 bg-neutral-500/10" };
       case 'ASIGNADA': return { text: "Asignado", color: "text-neutral-700 dark:text-neutral-400 bg-neutral-500/10" };
-      default: return { text: "Pendiente", color: "text-amber-700 dark:text-amber-400 bg-amber-500/10" };
+      default: return { text: "Pendiente", color: "text-neutral-700 dark:text-neutral-400 bg-neutral-500/10" };
     }
   };
 
   const stats = [
     { label: "Total", value: solicitudes.length, icon: <MessageSquare size={16} />, color: "text-text" },
-    { label: "Abiertas", value: solicitudes.filter(s => s.estado !== 'COMPLETADA').length, icon: <Clock size={16} />, color: "text-amber-400" },
-    { label: "Resueltas", value: solicitudes.filter(s => s.estado === 'COMPLETADA').length, icon: <CheckCircle2 size={16} />, color: "text-emerald-400" },
+    { label: "Abiertas", value: solicitudes.filter(s => s.estado !== 'COMPLETADA').length, icon: <Clock size={16} />, color: "text-neutral-400" },
+    { label: "Resueltas", value: solicitudes.filter(s => s.estado === 'COMPLETADA').length, icon: <CheckCircle2 size={16} />, color: "text-neutral-400" },
   ];
 
   return (
@@ -210,7 +210,7 @@ export default function PQRSPage() {
                    </div>
                    <div className="flex items-center gap-2">
                       <span className="text-[8px] font-black uppercase tracking-widest text-text/50">ID: {s.id.slice(-6).toUpperCase()}</span>
-                      {s.urgente && <span className="bg-red-500/20 text-red-400 text-[8px] font-black uppercase px-2 py-0.5 rounded-full">Urgente</span>}
+                      {s.urgente && <span className="bg-neutral-500/20 text-neutral-400 text-[8px] font-black uppercase px-2 py-0.5 rounded-full">Urgente</span>}
                    </div>
                 </div>
              </div>
@@ -273,12 +273,12 @@ export default function PQRSPage() {
                        <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest">Vincular Foto</span>
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                       <span className={`text-[10px] font-bold uppercase transition-colors ${formData.urgente ? 'text-red-500' : 'text-text/60 group-hover:text-text/80'}`}>¡Urgente!</span>
+                       <span className={`text-[10px] font-bold uppercase transition-colors ${formData.urgente ? 'text-neutral-500' : 'text-text/60 group-hover:text-text/80'}`}>¡Urgente!</span>
                        <input 
                          type="checkbox" 
                          checked={formData.urgente} 
                          onChange={(e) => setFormData({ ...formData, urgente: e.target.checked })} 
-                         className="w-5 h-5 accent-red-500 rounded-lg cursor-pointer" 
+                         className="w-5 h-5 accent-neutral-500 rounded-lg cursor-pointer" 
                        />
                     </label>
                  </div>

@@ -25,9 +25,9 @@ type Tab = "video" | "agenda" | "votos" | "chat" | "info";
 
 function voteColor(op: string): string {
   const n = op.toUpperCase().trim();
-  if (["SI", "SÍ", "APROBAR"].includes(n)) return "bg-emerald-600";
+  if (["SI", "SÍ", "APROBAR"].includes(n)) return "bg-neutral-600";
   if (["NO", "RECHAZAR"].includes(n)) return "bg-neutral-600";
-  if (["ABSTENCION", "ABSTENCIÓN", "BLANCO"].includes(n)) return "bg-amber-600";
+  if (["ABSTENCION", "ABSTENCIÓN", "BLANCO"].includes(n)) return "bg-neutral-600";
   return "bg-neutral-600";
 }
 
@@ -249,7 +249,7 @@ export default function AsambleaPage() {
                     <span
                       className={`ml-auto text-[10px] font-bold uppercase shrink-0 ${
                         t.estado === "HABLANDO"
-                          ? "text-green-400"
+                          ? "text-neutral-400"
                           : "text-white/40"
                       }`}
                     >
@@ -289,7 +289,7 @@ export default function AsambleaPage() {
               >
                 <div className="flex items-start gap-3">
                   {i < asamblea.itemActivoIndex ? (
-                    <CheckCircle size={20} className="text-green-400 shrink-0 mt-0.5" />
+                    <CheckCircle size={20} className="text-neutral-400 shrink-0 mt-0.5" />
                   ) : i === asamblea.itemActivoIndex ? (
                     <Play size={20} className="text-accent shrink-0 mt-0.5" />
                   ) : (
@@ -349,7 +349,7 @@ export default function AsambleaPage() {
                     <span
                       className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full shrink-0 ml-2 ${
                         v.activa
-                          ? "bg-green-500/20 text-green-400"
+                          ? "bg-neutral-500/20 text-neutral-400"
                           : "bg-white/10 text-white/40"
                       }`}
                     >
@@ -508,7 +508,7 @@ export default function AsambleaPage() {
                     <span
                       className={`text-[10px] font-bold uppercase shrink-0 ${
                         a.tipo === "PRESENCIAL"
-                          ? "text-green-400"
+                          ? "text-neutral-400"
                           : "text-neutral-400"
                       }`}
                     >
@@ -536,7 +536,7 @@ export default function AsambleaPage() {
                       </span>
                       <span
                         className={`text-[10px] font-bold shrink-0 ${
-                          p.verificado ? "text-green-400" : "text-yellow-400"
+                          p.verificado ? "text-neutral-400" : "text-neutral-400"
                         }`}
                       >
                         {p.verificado ? "Verificado" : "Pendiente"}

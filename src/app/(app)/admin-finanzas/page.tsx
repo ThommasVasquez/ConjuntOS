@@ -67,7 +67,7 @@ export default function AdminFinanzasPage() {
 
        <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
-             <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500">
+             <div className="w-12 h-12 rounded-2xl bg-neutral-500/20 border border-neutral-500/30 flex items-center justify-center text-neutral-500">
                 <DollarSign size={24} />
              </div>
              <div>
@@ -78,7 +78,7 @@ export default function AdminFinanzasPage() {
 
           {error ? (
             <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <AlertCircle size={28} className="text-amber-500" />
+              <AlertCircle size={28} className="text-neutral-500" />
               <p className="text-text/75 text-sm">No se pudieron cargar los datos financieros.</p>
               <button onClick={loadStats} className="text-xs font-bold text-accent underline">Reintentar</button>
             </div>
@@ -86,9 +86,9 @@ export default function AdminFinanzasPage() {
             <div className="flex flex-col gap-3">
               <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
                  <span className="flex items-center gap-2 text-xs text-text/70 uppercase font-bold">
-                   <DollarSign size={14} className="text-emerald-500" /> Recaudación del mes
+                   <DollarSign size={14} className="text-neutral-500" /> Recaudación del mes
                  </span>
-                 <span className="text-sm font-black text-emerald-500">{COP(stats?.recaudoMes ?? 0)}</span>
+                 <span className="text-sm font-black text-neutral-500">{COP(stats?.recaudoMes ?? 0)}</span>
               </div>
               <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
                  <span className="flex items-center gap-2 text-xs text-text/70 uppercase font-bold">

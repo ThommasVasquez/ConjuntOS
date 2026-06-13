@@ -190,7 +190,7 @@ export default function ControlVisitas() {
                    </div>
                 </div>
                 <div className="flex bg-surface/50 p-2 rounded-xl gap-4 items-center border border-border/30">
-                   <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${v.tipo === 'VEHICULAR' ? 'text-emerald-400' : 'text-accent'}`}>
+                   <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${v.tipo === 'VEHICULAR' ? 'text-neutral-400' : 'text-accent'}`}>
                       {v.tipo === 'VEHICULAR' ? <Car size={14}/> : <Users size={14}/>} {v.tipo}
                    </div>
                    {v.placa && <div className="text-xs text-text/70 bg-text/5 px-2 py-0.5 rounded border border-border font-mono tracking-widest">{v.placa}</div>}

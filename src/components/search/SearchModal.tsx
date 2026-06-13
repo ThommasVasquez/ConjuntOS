@@ -32,12 +32,12 @@ interface SearchModalProps {
 const MODULES = [
   { title: "Pagos", desc: "Cuotas, recibos y sanciones", icon: <CreditCard size={18} />, color: "from-[#FFFFFF] to-[#404040]", path: "/pagos", keywords: ["pago", "cuota", "administración", "deuda", "recibo", "energía", "gas", "agua"] },
   { title: "Reservas", desc: "Salón, cancha, gimnasio y más", icon: <Calendar size={18} />, color: "from-neutral-500 to-neutral-400", path: "/reservas", keywords: ["reserva", "salón", "salon", "cancha", "gimnasio", "piscina", "bbq", "área", "area"] },
-  { title: "Parqueadero", desc: "Estado y asignación de cupos", icon: <Car size={18} />, color: "from-emerald-500 to-emerald-700", path: "/parqueadero", keywords: ["parqueo", "parqueadero", "carro", "moto", "vehículo", "vehiculo", "cupo"] },
-  { title: "Paquetería", desc: "Paquetes en portería", icon: <Package size={18} />, color: "from-amber-500 to-orange-400", path: "/paqueteria", keywords: ["paquete", "encomienda", "portería", "porteria", "llegó", "llego", "domicilio", "envío"] },
+  { title: "Parqueadero", desc: "Estado y asignación de cupos", icon: <Car size={18} />, color: "from-neutral-500 to-neutral-700", path: "/parqueadero", keywords: ["parqueo", "parqueadero", "carro", "moto", "vehículo", "vehiculo", "cupo"] },
+  { title: "Paquetería", desc: "Paquetes en portería", icon: <Package size={18} />, color: "from-neutral-500 to-neutral-400", path: "/paqueteria", keywords: ["paquete", "encomienda", "portería", "porteria", "llegó", "llego", "domicilio", "envío"] },
   { title: "PQRS", desc: "Peticiones, quejas y reclamos", icon: <MessageSquare size={18} />, color: "from-neutral-500 to-neutral-600", path: "/pqrs", keywords: ["pqr", "queja", "petición", "peticion", "problema", "reclamo", "solicitud"] },
   { title: "Visitantes", desc: "Autorización de ingresos", icon: <Users size={18} />, color: "from-neutral-500 to-neutral-500", path: "/visitantes", keywords: ["visita", "visitante", "invitado", "ingreso", "acceso", "autoriza"] },
-  { title: "Cartelera", desc: "Anuncios y novedades", icon: <Megaphone size={18} />, color: "from-red-500 to-orange-500", path: "/cartelera", keywords: ["anuncio", "novedad", "asamblea", "reunión", "reunion", "circular", "cartelera"] },
-  { title: "Inmobiliaria", desc: "Venta y arriendo en el conjunto", icon: <Building2 size={18} />, color: "from-amber-500 to-orange-400", path: "/inmobiliaria", keywords: ["venta", "arriendo", "alquiler", "inmueble", "apartamento", "apto"] },
+  { title: "Cartelera", desc: "Anuncios y novedades", icon: <Megaphone size={18} />, color: "from-neutral-500 to-neutral-500", path: "/cartelera", keywords: ["anuncio", "novedad", "asamblea", "reunión", "reunion", "circular", "cartelera"] },
+  { title: "Inmobiliaria", desc: "Venta y arriendo en el conjunto", icon: <Building2 size={18} />, color: "from-neutral-500 to-neutral-400", path: "/inmobiliaria", keywords: ["venta", "arriendo", "alquiler", "inmueble", "apartamento", "apto"] },
 ];
 
 const SUGGESTIONS = [
@@ -193,7 +193,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
     <div
       ref={overlayRef}
       className="fixed inset-0 z-[200] flex flex-col justify-end sm:justify-center sm:items-center p-0 sm:p-6"
-      style={{ background: "rgba(10, 4, 26, 0.92)", backdropFilter: "blur(20px)" }}
+      style={{ background: "rgba(8,8,8,0.92)", backdropFilter: "blur(20px)" }}
     >
       {/* Overlay tap-to-close */}
       <div className="absolute inset-0" onClick={handleClose} />
@@ -202,7 +202,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
       <div
         ref={cardRef}
         className="relative w-full sm:max-w-lg flex flex-col rounded-t-[40px] sm:rounded-[40px] overflow-hidden"
-        style={{ background: "linear-gradient(180deg, #1a0d35 0%, #110828 100%)", border: "1px solid rgba(255,255,255,0.08)", maxHeight: "90vh" }}
+        style={{ background: "linear-gradient(180deg, #151515 0%, #0E0E0E 100%)", border: "1px solid rgba(255,255,255,0.08)", maxHeight: "90vh" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle bar (mobile) */}
@@ -239,7 +239,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
           {/* ─── AI Answer ─── */}
           {(isLoadingAI || aiAnswer) && (
             <div className="rounded-[24px] overflow-hidden border border-accent/20"
-              style={{ background: "linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(139,92,246,0.05) 100%)" }}>
+              style={{ background: "linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(124,124,124,0.05) 100%)" }}>
               <div className="px-5 py-3 flex items-center gap-2 border-b border-white/5">
                 <Sparkles size={14} className="text-accent" />
                 <span className="text-[10px] font-black text-accent uppercase tracking-widest">

@@ -26,8 +26,8 @@ export function BrandedFooter({ className = "", isFixed = false, isInternal = fa
             <rect x="300.667" y="38.496" width="234.332" height="102.75" fill="currentColor" fillOpacity="0.05"/>
             
             {/* Energy Icon - Original Colors */}
-            <path fill="#FFED00" d="M303.925,140.576c1.449-3.941,4.086-7.605,6.354-11.049c1.604-2.438,3.226-5.012,5.146-7.207c0.08-21.631,0.197-83.094,0.197-83.094H27v104.252c0,0,244.372-0.652,276.723-0.959C303.639,141.875,303.691,141.210,303.925,140.576z"/>
-            <polygon fill="#E98007" points="356.313,70.848 315.867,73.234 336.031,10 275.421,96.143 315.748,94.232 293.556,157.705"/>
+            <path fill="#D7D7D7" d="M303.925,140.576c1.449-3.941,4.086-7.605,6.354-11.049c1.604-2.438,3.226-5.012,5.146-7.207c0.08-21.631,0.197-83.094,0.197-83.094H27v104.252c0,0,244.372-0.652,276.723-0.959C303.639,141.875,303.691,141.210,303.925,140.576z"/>
+            <polygon fill="#929292" points="356.313,70.848 315.867,73.234 336.031,10 275.421,96.143 315.748,94.232 293.556,157.705"/>
             
             {/* ENERGY - White text paths */}
             <g fill="currentColor">
@@ -68,7 +68,7 @@ export function BrandedFooter({ className = "", isFixed = false, isInternal = fa
           </div>
           <div className="text-[6.5px] text-text/40 font-bold text-center tracking-widest uppercase">
              Powered by ENERGYSOFTmedia® ⚡️ | 
-             <span className="ml-1 text-amber-600 dark:text-yellow-400 font-black">
+             <span className="ml-1 text-neutral-600 dark:text-neutral-400 font-black">
                Software con Energía!
              </span>
           </div>

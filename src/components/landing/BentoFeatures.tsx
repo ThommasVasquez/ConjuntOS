@@ -35,8 +35,8 @@ const features = [
     title: "Paquetería Digital",
     description: "Notificaciones instantáneas de tus entregas.",
     icon: Box,
-    className: "bg-orange-500/10 border-orange-500/20",
-    iconColor: "text-orange-500"
+    className: "bg-neutral-500/10 border-neutral-500/20",
+    iconColor: "text-neutral-500"
   },
   {
     title: "Reservas de Áreas",

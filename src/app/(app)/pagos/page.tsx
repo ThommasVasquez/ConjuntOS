@@ -156,9 +156,9 @@ export default function PagosPage() {
 
   const getStatusStyle = (status: string) => {
     switch(status) {
-      case 'PAGADO': return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20';
-      case 'VENCIDO': return 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20';
-      case 'PENDIENTE': return 'bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/20';
+      case 'PAGADO': return 'bg-neutral-500/10 text-neutral-700 dark:text-neutral-400 border-neutral-500/20';
+      case 'VENCIDO': return 'bg-neutral-500/10 text-neutral-700 dark:text-neutral-400 border-neutral-500/20';
+      case 'PENDIENTE': return 'bg-neutral-500/10 text-neutral-800 dark:text-neutral-400 border-neutral-500/20';
       default: return 'bg-text/5 text-text border-border';
     }
   };
@@ -189,7 +189,7 @@ export default function PagosPage() {
                    </div>
                 </div>
                 <div className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                   <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-pulse"></span>
                    <span className="text-white/80 text-[10px] font-bold uppercase tracking-widest">Al día</span>
                 </div>
              </div>
@@ -317,9 +317,9 @@ export default function PagosPage() {
                            <CheckCircle2 size={16} className="text-accent" />
                         </div>
                         
-                        <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                           <Info size={14} className="text-amber-700 dark:text-amber-400" />
-                           <p className="text-amber-800 dark:text-amber-300 text-[9px] font-bold leading-tight">Este pago incluye el descuento por pronto pago si se realiza antes del vencimiento.</p>
+                        <div className="flex items-center gap-2 p-3 rounded-xl bg-neutral-500/10 border border-neutral-500/20">
+                           <Info size={14} className="text-neutral-700 dark:text-neutral-400" />
+                           <p className="text-neutral-800 dark:text-neutral-300 text-[9px] font-bold leading-tight">Este pago incluye el descuento por pronto pago si se realiza antes del vencimiento.</p>
                         </div>
                      </div>
 

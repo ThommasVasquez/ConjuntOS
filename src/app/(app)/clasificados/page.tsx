@@ -239,7 +239,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
             className="object-cover transition-transform duration-1000 group-hover:scale-110" 
             unoptimized 
           />
-          <div className="absolute inset-0 bg-linear-to-t from-primary/80 dark:from-[#120a2e]/80 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-primary/80 dark:from-[#101010]/80 via-transparent to-transparent" />
           
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
              <div className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[9px] font-black text-white uppercase tracking-widest">
@@ -247,7 +247,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
              </div>
              <button 
               onClick={(e) => { e.stopPropagation(); setIsLiked(!isLiked); }}
-              className={`w-9 h-9 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${isLiked ? 'bg-red-500 border-red-500' : 'bg-black/30 border-white/20 hover:bg-black/50'}`}
+              className={`w-9 h-9 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${isLiked ? 'bg-neutral-500 border-neutral-500' : 'bg-black/30 border-white/20 hover:bg-black/50'}`}
              >
                 <Heart size={16} className="text-white" fill={isLiked ? "white" : "none"} />
              </button>
@@ -278,7 +278,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
              </div>
              <button 
                 onClick={handleWhatsApp}
-                className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all active:scale-90"
+                className="w-10 h-10 rounded-2xl bg-neutral-500/10 border border-neutral-500/20 text-neutral-600 dark:text-neutral-400 flex items-center justify-center hover:bg-neutral-500 hover:text-white transition-all active:scale-90"
              >
                 <MessageCircle size={18} />
              </button>
@@ -467,7 +467,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
             <div className="mt-auto py-8">
                <button 
                  onClick={handleWhatsApp}
-                 className="w-full py-5 bg-emerald-500 rounded-3xl flex items-center justify-center gap-4 text-white font-black text-lg shadow-xl shadow-emerald-500/20 active:scale-95 transition-all"
+                 className="w-full py-5 bg-neutral-500 rounded-3xl flex items-center justify-center gap-4 text-white font-black text-lg shadow-xl shadow-neutral-500/20 active:scale-95 transition-all"
                >
                  <MessageCircle size={24} /> Contactar por WhatsApp
                </button>

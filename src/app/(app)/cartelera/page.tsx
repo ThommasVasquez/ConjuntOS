@@ -163,8 +163,8 @@ export default function CarteleraPage() {
 
   const getPriorityColor = (priority: string) => {
     switch(priority) {
-      case 'ALTA': return 'bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30';
-      case 'MEDIA': return 'bg-orange-500/10 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30';
+      case 'ALTA': return 'bg-neutral-500/10 dark:bg-neutral-500/20 text-neutral-700 dark:text-neutral-400 border-neutral-500/20 dark:border-neutral-500/30';
+      case 'MEDIA': return 'bg-neutral-500/10 dark:bg-neutral-500/20 text-neutral-700 dark:text-neutral-400 border-neutral-500/20 dark:border-neutral-500/30';
       case 'BAJA': return 'bg-neutral-500/10 dark:bg-neutral-500/20 text-neutral-700 dark:text-neutral-400 border-neutral-500/20 dark:border-neutral-500/30';
       default: return 'bg-surface-2 text-text/70 border-border';
     }
@@ -266,7 +266,7 @@ export default function CarteleraPage() {
                          className="w-full bg-surface-2 border border-border rounded-2xl p-4 flex items-center justify-between hover:bg-surface-2/85 transition-all text-left group"
                        >
                           <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400"><ShieldAlert size={18} /></div>
+                             <div className="w-10 h-10 rounded-xl bg-neutral-500/10 flex items-center justify-center text-neutral-400"><ShieldAlert size={18} /></div>
                              <div>
                                  <p className="text-text text-sm font-bold">Circular_Informativa.pdf</p>
                                  <p className="text-text/70 text-[10px] uppercase font-bold tracking-tighter">PDF • 1.2 MB</p>
@@ -303,13 +303,13 @@ export default function CarteleraPage() {
          <div className="flex justify-end w-full">
             <button 
               onClick={() => setIsChatOpen(true)}
-              className="pointer-events-auto w-16 h-16 rounded-full bg-emerald-500 shadow-[0_15px_40px_rgba(16,185,129,0.3)] flex items-center justify-center text-white relative active:scale-95 hover:scale-105 transition-all group overflow-visible"
+              className="pointer-events-auto w-16 h-16 rounded-full bg-neutral-500 shadow-[0_15px_40px_rgba(128,128,128,0.3)] flex items-center justify-center text-white relative active:scale-95 hover:scale-105 transition-all group overflow-visible"
             >
                <MessageCircle size={28} />
                
                {/* Status Indicator Dot */}
-               <div className={`absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full border-4 border-primary flex items-center justify-center ${isAdminOnline ? 'bg-emerald-500' : 'bg-red-500'}`}>
-                  {isAdminOnline && <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-40" />}
+               <div className={`absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full border-4 border-primary flex items-center justify-center ${isAdminOnline ? 'bg-neutral-500' : 'bg-neutral-500'}`}>
+                  {isAdminOnline && <div className="absolute inset-0 rounded-full bg-neutral-500 animate-ping opacity-40" />}
                </div>
                
                {/* Floating Label (Appears on Hover) */}
@@ -323,21 +323,21 @@ export default function CarteleraPage() {
       {/* MODAL: ADMINISTRATIVE CHAT */}
       {isChatOpen && (
         <div className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-md flex items-end justify-center animate-in fade-in duration-300 isolate">
-           <div className="w-full max-w-[430px] h-[90vh] bg-primary dark:bg-[#0c0816] rounded-t-[40px] border-t border-border flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500 shadow-2xl">
+           <div className="w-full max-w-[430px] h-[90vh] bg-primary dark:bg-[#0B0B0B] rounded-t-[40px] border-t border-border flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500 shadow-2xl">
               
               {/* Chat Header */}
               <div className="p-6 flex justify-between items-center border-b border-border bg-surface-2 backdrop-blur-2xl">
                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 relative">
-                       <Building2 size={24} className="text-emerald-500" />
-                       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-primary dark:border-[#0c0816] ${isAdminOnline ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
+                    <div className="w-12 h-12 rounded-full bg-neutral-500/20 flex items-center justify-center border border-neutral-500/30 relative">
+                       <Building2 size={24} className="text-neutral-500" />
+                       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-primary dark:border-[#0B0B0B] ${isAdminOnline ? 'bg-neutral-500 shadow-[0_0_10px_rgba(128,128,128,0.5)]' : 'bg-neutral-500'}`} />
                     </div>
                     <div className="flex flex-col">
                        <h3 className="text-sm font-bold text-text tracking-tight">Atención al Copropietario</h3>
                        <span className="text-[10px] text-text/70 font-medium uppercase tracking-widest flex items-center gap-1.5">
                           {isAdminOnline ? (
                             <>
-                              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                              <span className="w-1 h-1 rounded-full bg-neutral-500 animate-pulse" />
                               Disponible
                             </>
                           ) : 'Ausente'}
@@ -356,7 +356,7 @@ export default function CarteleraPage() {
               <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scroll-smooth hide-scrollbar bg-linear-to-b from-transparent to-black/20">
                  {chatMessages.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text/60">
-                       <MessageCircle size={48} className="text-emerald-500/50" />
+                       <MessageCircle size={48} className="text-neutral-500/50" />
                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-center max-w-[200px] leading-relaxed">
                           Envía un mensaje para iniciar una conversación directa con la administración
                        </p>
@@ -366,7 +366,7 @@ export default function CarteleraPage() {
                        <div className={`max-w-[85%] p-4 rounded-3xl text-sm leading-relaxed ${
                          m.esDeAdmin 
                            ? 'bg-surface-2 border border-border text-text rounded-tl-none shadow-sm' 
-                           : 'bg-emerald-500 text-white rounded-tr-none shadow-lg shadow-emerald-500/10 font-medium'
+                           : 'bg-neutral-500 text-white rounded-tr-none shadow-lg shadow-neutral-500/10 font-medium'
                        }`}>
                           {m.mensaje}
                           <div className={`text-[8px] mt-2 opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-start text-text/65' : 'justify-end font-normal text-white'}`}>
@@ -381,7 +381,7 @@ export default function CarteleraPage() {
               {/* Chat Input */}
               <div className="p-6 bg-surface-2 border-t border-border pb-10">
                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-h-[56px] bg-primary border border-border rounded-[28px] flex items-center px-6 transition-all focus-within:border-emerald-500/50 focus-within:bg-primary/80 shadow-inner">
+                    <div className="flex-1 min-h-[56px] bg-primary border border-border rounded-[28px] flex items-center px-6 transition-all focus-within:border-neutral-500/50 focus-within:bg-primary/80 shadow-inner">
                        <input 
                          type="text"
                          value={newMessage}
@@ -394,7 +394,7 @@ export default function CarteleraPage() {
                     <button 
                       onClick={sendMessage}
                       disabled={!newMessage.trim() || isSending}
-                      className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-[0_10px_25px_rgba(16,185,129,0.3)] active:scale-90 transition-all disabled:opacity-50 disabled:scale-100 group"
+                      className="w-14 h-14 rounded-full bg-neutral-500 flex items-center justify-center text-white shadow-[0_10px_25px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-50 disabled:scale-100 group"
                     >
                        {isSending ? <Loader2 size={24} className="animate-spin" /> : <ArrowRight size={24} className="group-hover:translate-x-0.5 transition-transform" />}
                     </button>

@@ -42,11 +42,11 @@ function HomeResidente() {
   const categories = [
     { title: "Citofonía", icon: <UserIcon size={20}/>, color: "from-neutral-500 to-neutral-500", path: "/citofonia" },
     { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-[#FFFFFF] to-[#404040]", path: "/pagos" },
-    { title: "Parqueo", icon: <Car size={20}/>, color: "from-emerald-500 to-emerald-700", path: "/parqueadero" },
+    { title: "Parqueo", icon: <Car size={20}/>, color: "from-neutral-500 to-neutral-700", path: "/parqueadero" },
     { title: "Reservas", icon: <Calendar size={20}/>, color: "from-neutral-500 to-neutral-400", path: "/reservas" },
-    { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-red-500 to-orange-500", path: "/cartelera" },
+    { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-neutral-500 to-neutral-500", path: "/cartelera" },
     { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-neutral-500 to-neutral-600", path: "/pqrs" },
-    { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-amber-500 to-orange-400", path: "/inmobiliaria" },
+    { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-neutral-500 to-neutral-400", path: "/inmobiliaria" },
     { title: "Clasificados", icon: <ShoppingBag size={20}/>, color: "from-neutral-400 to-neutral-500", path: "/clasificados" },
   ];
 
@@ -185,23 +185,23 @@ function HomeResidente() {
       {activeAsamblea && (
         <div 
           onClick={() => router.push('/asamblea')}
-          className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[90px] shadow-[0_15px_30px_rgba(239,68,68,0.2)] border border-red-500/20 group cursor-pointer hover:border-red-500/40 transition-all"
+          className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[90px] shadow-[0_15px_30px_rgba(119,119,119,0.2)] border border-neutral-500/20 group cursor-pointer hover:border-neutral-500/40 transition-all"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-red-950/80 via-neutral-950/70 to-red-950/80 opacity-95" />
+          <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/80 via-neutral-950/70 to-neutral-950/80 opacity-95" />
           <div className="absolute inset-0 p-4 flex items-center justify-between z-10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/40 animate-pulse">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+              <div className="w-10 h-10 rounded-full bg-neutral-500/20 flex items-center justify-center border border-neutral-500/40 animate-pulse">
+                <span className="w-2.5 h-2.5 rounded-full bg-neutral-500" />
               </div>
               <div>
-                <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest block">Sesion en Vivo</span>
+                <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest block">Sesion en Vivo</span>
                 <h3 className="text-sm font-display font-bold text-white tracking-tight">{activeAsamblea.titulo}</h3>
                 {activeAsamblea.descripcion && (
                   <p className="text-white/60 text-[9px] mt-0.5 line-clamp-1">{activeAsamblea.descripcion}</p>
                 )}
               </div>
             </div>
-            <div className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-1">
+            <div className="bg-neutral-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-1">
               Entrar <ArrowRight size={10} />
             </div>
           </div>
@@ -274,7 +274,7 @@ function HomeResidente() {
       <section 
         className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[120px] shadow-[0_15px_40px_rgba(0,0,0,0.6)] border border-white/10 group overflow-hidden transition-all"
       >
-        <div className={`absolute inset-0 bg-linear-to-br ${financialData.totalDebt > 0 ? 'from-[#262626] via-[#171717] to-[#0A0A0A]' : 'from-[#065F46] via-[#064E3B] to-[#047857]'} opacity-90`} />
+        <div className={`absolute inset-0 bg-linear-to-br ${financialData.totalDebt > 0 ? 'from-[#262626] via-[#171717] to-[#0A0A0A]' : 'from-[#424242] via-[#363636] to-[#525252]'} opacity-90`} />
         <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -286,7 +286,7 @@ function HomeResidente() {
             {financialData.totalDebt > 0 ? (
               <div className="px-2.5 py-1 rounded-full bg-accent/20 border border-accent/40 text-[10px] text-accent font-bold uppercase animate-pulse">Pendiente</div>
             ) : (
-              <div className="px-2.5 py-1 rounded-full bg-green-500/20 border border-green-500/40 text-[10px] text-green-400 font-bold uppercase">Paz y Salvo</div>
+              <div className="px-2.5 py-1 rounded-full bg-neutral-500/20 border border-neutral-500/40 text-[10px] text-neutral-400 font-bold uppercase">Paz y Salvo</div>
             )}
           </div>
           <div className="flex justify-between items-end">
@@ -479,11 +479,11 @@ function HomeEstacionamiento() {
             <p className="text-[9px] text-text/60 uppercase font-bold mt-1">Ocupación</p>
           </div>
           <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
-            <span className="text-2xl font-black text-emerald-500">{stats.libres}</span>
+            <span className="text-2xl font-black text-neutral-500">{stats.libres}</span>
             <p className="text-[9px] text-text/60 uppercase font-bold mt-1">Libres</p>
           </div>
           <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
-            <span className="text-2xl font-black text-amber-500">{stats.ocupados}</span>
+            <span className="text-2xl font-black text-neutral-500">{stats.ocupados}</span>
             <p className="text-[9px] text-text/60 uppercase font-bold mt-1">Ocupados</p>
           </div>
         </div>
@@ -516,9 +516,9 @@ function HomeConsejo() {
         {/* FINANZAS READ ONLY CARD */}
         <div 
           onClick={() => router.push('/admin-finanzas')}
-          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-emerald-600/10 to-teal-600/10 border border-emerald-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-emerald-500/40 transition-all shadow-xl group active:scale-95"
+          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-neutral-600/10 to-neutral-600/10 border border-neutral-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-neutral-500/40 transition-all shadow-xl group active:scale-95"
         >
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-300 border border-emerald-500/30">
+          <div className="w-10 h-10 rounded-2xl bg-neutral-500/20 flex items-center justify-center text-neutral-300 border border-neutral-500/30">
             <DollarSign size={20} />
           </div>
           <div>
@@ -548,7 +548,7 @@ function HomeConsejo() {
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
             <span className="text-xs text-text/70 uppercase font-bold">Recaudación General</span>
-            <span className="text-sm font-black text-emerald-500">${Number(stats.recaudoMes || 0).toLocaleString()} COP</span>
+            <span className="text-sm font-black text-neutral-500">${Number(stats.recaudoMes || 0).toLocaleString()} COP</span>
           </div>
           <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
             <span className="text-xs text-text/70 uppercase font-bold">Novedades / Solicitudes</span>
@@ -646,9 +646,9 @@ function HomeAdmin() {
         {/* NOVEDADES CARD */}
         <div 
           onClick={() => router.push('/admin-novedades')}
-          className="p-5 rounded-[28px] bg-linear-to-br from-emerald-600/15 to-teal-600/15 border border-emerald-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-emerald-500/40 transition-all shadow-xl group active:scale-95"
+          className="p-5 rounded-[28px] bg-linear-to-br from-neutral-600/15 to-neutral-600/15 border border-neutral-500/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-neutral-500/40 transition-all shadow-xl group active:scale-95"
         >
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-300 border border-emerald-500/30">
+          <div className="w-10 h-10 rounded-2xl bg-neutral-500/20 flex items-center justify-center text-neutral-300 border border-neutral-500/30">
             <Building2 size={20} />
           </div>
           <div>

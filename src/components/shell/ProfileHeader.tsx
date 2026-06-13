@@ -128,9 +128,9 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   const getNotifIcon = (tipo: string) => {
     switch (tipo) {
       case 'APROBACION':
-        return { icon: <CheckCircle2 size={14} />, color: "text-emerald-500 bg-emerald-500/10" };
+        return { icon: <CheckCircle2 size={14} />, color: "text-neutral-500 bg-neutral-500/10" };
       case 'SISTEMA':
-        return { icon: <AlertTriangle size={14} />, color: "text-red-500 bg-red-500/10" };
+        return { icon: <AlertTriangle size={14} />, color: "text-neutral-500 bg-neutral-500/10" };
       case 'INFO':
       default:
         return { icon: <Bell size={14} />, color: "text-accent bg-accent/10" };

@@ -41,7 +41,7 @@ export default function ProductsSection() {
             <div className="w-12 h-12 rounded-2xl bg-neutral-500/10 border border-neutral-500/20 flex items-center justify-center text-neutral-400">
               <CreditCard size={20} />
             </div>
-            <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold uppercase px-2.5 py-1 rounded-full border border-emerald-500/30 tracking-wider">Al día</span>
+            <span className="text-[9px] bg-neutral-500/20 text-neutral-400 font-bold uppercase px-2.5 py-1 rounded-full border border-neutral-500/30 tracking-wider">Al día</span>
           </div>
           <div>
             <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Tu Residencia</h5>
@@ -76,10 +76,10 @@ export default function ProductsSection() {
       component: (
         <div className="w-full h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <div className="w-12 h-12 rounded-2xl bg-neutral-500/10 border border-neutral-500/20 flex items-center justify-center text-neutral-400">
               <ShieldCheck size={20} />
             </div>
-            <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold uppercase px-2.5 py-1 rounded-full border border-emerald-500/30 tracking-wider">Autorizado</span>
+            <span className="text-[9px] bg-neutral-500/20 text-neutral-400 font-bold uppercase px-2.5 py-1 rounded-full border border-neutral-500/30 tracking-wider">Autorizado</span>
           </div>
           <div>
             <h5 className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Invitado Activo</h5>

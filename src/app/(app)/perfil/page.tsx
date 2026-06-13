@@ -404,7 +404,7 @@ function ProfileContent() {
   const userRole = user?.rol || "RESIDENTE";
 
   const statusIcons = [
-    { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, color: 'bg-linear-to-br from-yellow-300 to-amber-500 text-black ring-4 ring-yellow-400/20 shadow-yellow-500/10', icon: <CreditCard size={12}/>, view: 'deuda' },
+    { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, color: 'bg-linear-to-br from-neutral-300 to-neutral-500 text-black ring-4 ring-neutral-400/20 shadow-neutral-500/10', icon: <CreditCard size={12}/>, view: 'deuda' },
     { label: 'Trámites', val: tramites.length.toString(), color: 'bg-text/5 text-text', icon: <ClipboardList size={12}/>, view: 'requests' },
     { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-text/5 text-text', icon: <PawPrint size={12}/>, view: 'pets' },
     { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-text/5 text-text', icon: <Car size={12}/>, view: 'vehicles' },
@@ -461,7 +461,7 @@ function ProfileContent() {
                   handleLogout();
                   setShowMenu(false);
                 }}
-                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-red-500 hover:bg-red-500/10 transition-colors text-left cursor-pointer"
+                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-neutral-500 hover:bg-neutral-500/10 transition-colors text-left cursor-pointer"
               >
                 <LogOut size={18} /> Cerrar Sesión
               </button>
@@ -519,7 +519,7 @@ function ProfileContent() {
         {/* PILLS */}
         <div className="fade-up flex flex-wrap items-center justify-center gap-3 mb-10">
           <div className="flex items-center gap-2 px-4 py-2 rounded-full liquid-glass border border-border">
-            <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-neutral-400 animate-pulse" />
             <span className="text-xs font-bold text-text/80 uppercase tracking-widest">Torre {userData.torre}</span>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-full liquid-glass border border-border">
@@ -614,7 +614,7 @@ function ProfileContent() {
                                 <div className="flex justify-between items-start mb-1">
                                   <span className="text-[10px] font-black text-accent uppercase tracking-widest">{res.area?.nombre || "Cargando..."}</span>
                                   <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                                    res.estado === "CONFIRMADA" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-500"
+                                    res.estado === "CONFIRMADA" ? "bg-neutral-500/20 text-neutral-400" : "bg-neutral-500/20 text-neutral-500"
                                   }`}>
                                     {res.estado === "PENDIENTE" ? "En Proceso" : res.estado}
                                   </div>
@@ -744,9 +744,9 @@ function ProfileContent() {
                           <span className="text-[10px] text-text/60 uppercase tracking-tighter">{new Date(t.creadoEn).toLocaleDateString()}</span>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                          t.estado === "APROBADO" ? "bg-green-500/20 text-green-400" : 
-                          t.estado === "RECHAZADO" ? "bg-red-500/20 text-red-400" : 
-                          "bg-yellow-500/20 text-yellow-500"
+                          t.estado === "APROBADO" ? "bg-neutral-500/20 text-neutral-400" : 
+                          t.estado === "RECHAZADO" ? "bg-neutral-500/20 text-neutral-400" : 
+                          "bg-neutral-500/20 text-neutral-500"
                         }`}>
                           {t.estado}
                         </div>
@@ -840,7 +840,7 @@ function ProfileContent() {
                                   </span>
                                </div>
                                <div className="flex flex-col items-end">
-                                  <span className="text-sm font-black text-green-400">${Number((item as any).monto).toLocaleString()}</span>
+                                  <span className="text-sm font-black text-neutral-400">${Number((item as any).monto).toLocaleString()}</span>
                                   <div className="flex items-center gap-1 text-[8px] text-text/50 uppercase font-black">
                                      <CheckCircle2 size={10} /> Conciliado
                                   </div>
@@ -884,8 +884,8 @@ function ProfileContent() {
                         <p className="text-[10px] text-text/65 uppercase tracking-tighter">Recibido: {new Date(pkg.fechaLlegada).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                       <div className="flex flex-col items-center gap-1">
-                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                         <span className="text-[8px] font-black text-green-400 uppercase tracking-tighter">Listo</span>
+                         <div className="w-2 h-2 rounded-full bg-neutral-500 animate-pulse shadow-[0_0_10px_rgba(137,137,137,0.5)]"></div>
+                         <span className="text-[8px] font-black text-neutral-400 uppercase tracking-tighter">Listo</span>
                       </div>
                     </div>
                   ))
@@ -923,17 +923,17 @@ function ProfileContent() {
              <ArrowRight className="text-text-muted group-hover:text-accent group-hover:translate-x-2 transition-all" size={18} />
           </button>
 
-          <button onClick={handleLogout} className="w-full p-6 liquid-glass rounded-[32px] flex items-center justify-between group border border-red-500/10 active:scale-95 shadow-xl shadow-red-500/5">
+          <button onClick={handleLogout} className="w-full p-6 liquid-glass rounded-[32px] flex items-center justify-between group border border-neutral-500/10 active:scale-95 shadow-xl shadow-neutral-500/5">
              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500/60 group-hover:text-red-400 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-neutral-500/10 flex items-center justify-center text-neutral-500/60 group-hover:text-neutral-400 transition-colors">
                   <LogOut size={20} />
                 </div>
                 <div className="flex flex-col text-left">
-                  <span className="text-sm font-bold text-red-400/80 leading-none group-hover:text-red-400 transition-colors">Cerrar Sesión</span>
-                  <span className="text-[10px] text-red-400/30 mt-1 uppercase tracking-widest font-black">Desvincular dispositivo</span>
+                  <span className="text-sm font-bold text-neutral-400/80 leading-none group-hover:text-neutral-400 transition-colors">Cerrar Sesión</span>
+                  <span className="text-[10px] text-neutral-400/30 mt-1 uppercase tracking-widest font-black">Desvincular dispositivo</span>
                 </div>
              </div>
-             <ArrowRight className="text-red-400/20 group-hover:text-red-400 group-hover:translate-x-2 transition-all" size={18} />
+             <ArrowRight className="text-neutral-400/20 group-hover:text-neutral-400 group-hover:translate-x-2 transition-all" size={18} />
           </button>
         </section>
 
@@ -1169,12 +1169,12 @@ function ProfileContent() {
                        {regDocs.map((doc, idx) => (
                           <div key={idx} className="relative aspect-square rounded-2xl bg-text/5 border border-border flex flex-col items-center justify-center p-2 group overflow-hidden">
                              {doc.mimeType === "application/pdf" ? (
-                                <FileText size={20} className="text-red-400 opacity-60" />
+                                <FileText size={20} className="text-neutral-400 opacity-60" />
                              ) : (
                                 <Image src={doc.base64} alt="" fill className="object-cover opacity-60" />
                              )}
                              <span className="text-[8px] text-text/60 truncate w-full text-center mt-1 px-1">{doc.nombre}</span>
-                             <button type="button" onClick={() => setRegDocs(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500/80 text-white flex items-center justify-center scale-0 group-hover:scale-100 transition-transform">
+                             <button type="button" onClick={() => setRegDocs(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-neutral-500/80 text-white flex items-center justify-center scale-0 group-hover:scale-100 transition-transform">
                                 <X size={12} />
                              </button>
                           </div>
@@ -1200,7 +1200,7 @@ function ProfileContent() {
                        <p className="text-[10px] text-text/60 leading-relaxed">
                           La vinculación está sujeta a **aprobación administrativa y disponibilidad**. Es indispensable estar **a paz y salvo**. 
                           Queda prohibido el lavado o reparaciones de vehículos en áreas comunes. 
-                          <span className="text-yellow-600 dark:text-yellow-400 font-bold block mt-1">⚠️ El incumplimiento de las normas de convivencia puede generar multas pecuniarias.</span>
+                          <span className="text-neutral-600 dark:text-neutral-400 font-bold block mt-1">⚠️ El incumplimiento de las normas de convivencia puede generar multas pecuniarias.</span>
                        </p>
                     </div>
                  </div>

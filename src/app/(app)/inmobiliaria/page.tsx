@@ -242,7 +242,7 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
   const isRoom = item.tipoUnidad === "LOCAL";
 
   const negocioColor = item.tipoNegocio === "VENTA"
-    ? "bg-emerald-500/90 text-white"
+    ? "bg-neutral-500/90 text-white"
     : "bg-accent/90 text-primary";
 
   return (
@@ -265,7 +265,7 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); setIsLiked(!isLiked); }}
-            className={`w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${isLiked ? "bg-red-500 border-red-500" : "bg-black/30 border-white/20"}`}
+            className={`w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${isLiked ? "bg-neutral-500 border-neutral-500" : "bg-black/30 border-white/20"}`}
           >
             <Heart size={14} className="text-white" fill={isLiked ? "white" : "none"} />
           </button>
@@ -493,11 +493,11 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
              <div className="w-full space-y-2">
                 <div className="flex justify-between text-[10px] font-bold text-text/75 uppercase px-2">
                   <span>Documento de Identidad</span>
-                  <CheckCircle2 size={12} className={docProgress > 30 ? "text-emerald-500" : "text-border"} />
+                  <CheckCircle2 size={12} className={docProgress > 30 ? "text-neutral-500" : "text-border"} />
                 </div>
                 <div className="flex justify-between text-[10px] font-bold text-text/75 uppercase px-2">
                   <span>Certificacion Laboral</span>
-                  <CheckCircle2 size={12} className={docProgress > 70 ? "text-emerald-500" : "text-border"} />
+                  <CheckCircle2 size={12} className={docProgress > 70 ? "text-neutral-500" : "text-border"} />
                 </div>
              </div>
           </div>
@@ -545,9 +545,9 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
 
         {step === "SUCCESS" && (
           <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-10 animate-in zoom-in duration-500">
-             <div className="w-32 h-32 rounded-full bg-emerald-500 flex items-center justify-center shadow-2xl shadow-emerald-500/40 relative">
+             <div className="w-32 h-32 rounded-full bg-neutral-500 flex items-center justify-center shadow-2xl shadow-neutral-500/40 relative">
                 <CheckCircle2 size={64} className="text-white" />
-                <div className="absolute -inset-4 border border-emerald-500/50 rounded-full animate-ping" />
+                <div className="absolute -inset-4 border border-neutral-500/50 rounded-full animate-ping" />
              </div>
              <div className="space-y-4">
                 <h2 className="text-3xl font-black text-text">Bienvenido a tu nueva unidad!</h2>

@@ -229,7 +229,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
                   <span>Subtotal ({flavor} {size})</span>
                   <span>$15.900</span>
                </div>
-               <div className="flex justify-between text-xs text-green-400">
+               <div className="flex justify-between text-xs text-neutral-400">
                   <span>Envío Prioritario</span>
                   <span>GRATIS</span>
                </div>

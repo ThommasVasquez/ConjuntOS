@@ -248,8 +248,8 @@ export default function AdminNovedadesPage() {
   const getTipoIcon = (tipo: string) => {
       switch (tipo) {
           case 'VEHICULO': return <Car size={16} className="text-neutral-400" />;
-          case 'MASCOTA': return <Dog size={16} className="text-orange-400" />;
-          case 'ARRENDAMIENTO': return <Briefcase size={16} className="text-emerald-400" />;
+          case 'MASCOTA': return <Dog size={16} className="text-neutral-400" />;
+          case 'ARRENDAMIENTO': return <Briefcase size={16} className="text-neutral-400" />;
           case 'MUDANZA': return <Info size={16} className="text-neutral-400" />;
           default: return <AlertCircle size={16} className="text-white/50" />;
       }
@@ -325,7 +325,7 @@ export default function AdminNovedadesPage() {
                  <div className="w-full py-12 flex justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>
                ) : tramites.length === 0 ? (
                    <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
-                       <CheckCircle2 size={40} className="mx-auto text-emerald-500/50 mb-3" />
+                       <CheckCircle2 size={40} className="mx-auto text-neutral-500/50 mb-3" />
                        <p className="text-text/80 font-medium">Bandeja al día</p>
                        <p className="text-xs text-text/70 mt-1">No hay trámites en esta sección.</p>
                    </div>
@@ -343,9 +343,9 @@ export default function AdminNovedadesPage() {
                                        <span className="text-[10px] text-text/70">{new Date(t.creadoEn).toLocaleString()}</span>
                                     </div>
                                  </div>
-                                 {t.estado === 'PENDIENTE' && <span className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20 dark:border-yellow-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock size={10}/> Pendiente</span>}
-                                 {t.estado === 'APROBADO' && <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 dark:border-emerald-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10}/> Aprobado</span>}
-                                 {t.estado === 'RECHAZADO' && <span className="bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 dark:border-red-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><XCircle size={10}/> Rechazado</span>}
+                                 {t.estado === 'PENDIENTE' && <span className="bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/20 dark:border-neutral-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock size={10}/> Pendiente</span>}
+                                 {t.estado === 'APROBADO' && <span className="bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/20 dark:border-neutral-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10}/> Aprobado</span>}
+                                 {t.estado === 'RECHAZADO' && <span className="bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/20 dark:border-neutral-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><XCircle size={10}/> Rechazado</span>}
                              </div>
 
                              <div className="flex bg-surface-2 rounded-xl p-3 items-center gap-3">
@@ -452,7 +452,7 @@ export default function AdminNovedadesPage() {
                                 <button 
                                   type="button"
                                   onClick={() => setAnuncioForm(prev => ({ ...prev, imagenUrl: "" }))}
-                                  className="absolute top-3 right-3 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-all shadow-md active:scale-90"
+                                  className="absolute top-3 right-3 bg-neutral-500 text-white rounded-full p-2 hover:bg-neutral-600 transition-all shadow-md active:scale-90"
                                 >
                                     <XCircle size={16} />
                                 </button>
@@ -513,7 +513,7 @@ export default function AdminNovedadesPage() {
                                     <button 
                                       type="button"
                                       onClick={() => handleDeleteAnuncio(anuncio.id)}
-                                      className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/25 flex items-center justify-center text-red-400 hover:bg-red-500/20 active:scale-95 transition-all"
+                                      className="w-10 h-10 rounded-xl bg-neutral-500/10 border border-neutral-500/25 flex items-center justify-center text-neutral-400 hover:bg-neutral-500/20 active:scale-95 transition-all"
                                     >
                                         <Trash2 size={16} />
                                     </button>
@@ -558,7 +558,7 @@ export default function AdminNovedadesPage() {
                                {parseDesc(selectedTramite.descripcion).documentos.map((doc: any, i: number) => (
                                   <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-surface-2 border border-border group">
                                      <div className="flex items-center gap-2 overflow-hidden">
-                                        <FileText size={14} className={doc.type === 'pdf' ? 'text-red-400' : 'text-neutral-400'} />
+                                        <FileText size={14} className={doc.type === 'pdf' ? 'text-neutral-400' : 'text-neutral-400'} />
                                         <span className="text-[10px] text-text/70 truncate">{doc.nombre}</span>
                                      </div>
                                      <button 
@@ -604,14 +604,14 @@ export default function AdminNovedadesPage() {
                        <button 
                          disabled={isProcessing}
                          onClick={() => handleResolve('RECHAZAR')}
-                         className="w-full py-3 rounded-full border border-red-500/30 dark:border-red-500/50 text-red-600 dark:text-red-400 font-bold text-sm tracking-wide hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                         className="w-full py-3 rounded-full border border-neutral-500/30 dark:border-neutral-500/50 text-neutral-600 dark:text-neutral-400 font-bold text-sm tracking-wide hover:bg-neutral-500/10 transition-colors disabled:opacity-50"
                        >
                            Rechazar
                        </button>
                        <button 
                          disabled={isProcessing}
                          onClick={() => handleResolve('APROBAR')}
-                         className="w-full py-3 rounded-full bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-xl shadow-emerald-500/20 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                         className="w-full py-3 rounded-full bg-linear-to-r from-neutral-500 to-neutral-500 text-white shadow-xl shadow-neutral-500/20 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
                        >
                            {isProcessing ? '...' : 'Aprobar'}
                        </button>

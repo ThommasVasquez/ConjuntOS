@@ -351,7 +351,7 @@ export default function ReservasPage() {
 
       {step === 'SUCCESS' && selectedArea && selectedSlotIndex !== null && (
         <section className="fade-up fixed inset-0 z-100 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-primary to-primary-light animate-in slide-in-from-bottom-20 duration-700">
-           <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.3)] mb-8 animate-bounce delay-100"><CheckCircle2 size={40} className="text-white" /></div>
+           <div className="w-20 h-20 rounded-full bg-neutral-500 flex items-center justify-center shadow-[0_0_50px_rgba(128,128,128,0.3)] mb-8 animate-bounce delay-100"><CheckCircle2 size={40} className="text-white" /></div>
            <h2 className="text-3xl font-display font-bold text-text tracking-tight mb-2 text-glow">¡Reserva Confirmada!</h2>
            <p className="text-text/50 text-sm mb-10 text-center font-light">Tu espacio ha sido separado exitosamente.</p>
            

@@ -89,8 +89,8 @@ export default function AdminParqueaderoPage() {
        {/* STATUS CARD RONDAS */}
        <section className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-xl flex flex-col sm:flex-row gap-6 items-center justify-between">
           <div className="flex items-center gap-5">
-             <div className={`w-14 h-14 rounded-full flex items-center justify-center border-4 transition-all ${lastRound ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-orange-500/10 border-orange-500/20 text-orange-400 animate-pulse'}`}>
-                {lastRound ? <ClipboardCheck size={28} /> : <AlertCircle size={28} className="text-orange-500" />}
+             <div className={`w-14 h-14 rounded-full flex items-center justify-center border-4 transition-all ${lastRound ? 'bg-neutral-500/10 border-neutral-500/20 text-neutral-400' : 'bg-neutral-500/10 border-neutral-500/20 text-neutral-400 animate-pulse'}`}>
+                {lastRound ? <ClipboardCheck size={28} /> : <AlertCircle size={28} className="text-neutral-500" />}
              </div>
              <div className="flex flex-col">
                 <span className="text-text font-bold text-lg mb-1">Estatus de Vigilancia</span>
@@ -102,9 +102,9 @@ export default function AdminParqueaderoPage() {
              </div>
           </div>
           {lastRound && (
-            <div className="shrink-0 bg-emerald-500/20 px-4 py-2 rounded-full border border-emerald-500/30 flex items-center gap-2">
-               <CheckCircle size={14} className="text-emerald-400" />
-               <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Cumplido</span>
+            <div className="shrink-0 bg-neutral-500/20 px-4 py-2 rounded-full border border-neutral-500/30 flex items-center gap-2">
+               <CheckCircle size={14} className="text-neutral-400" />
+               <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Cumplido</span>
             </div>
           )}
        </section>
@@ -146,7 +146,7 @@ export default function AdminParqueaderoPage() {
                 <div key={idx} className="liquid-glass p-5 rounded-3xl border border-border/50 group hover:border-border transition-all shadow-xl">
                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${reg.tipo === 'INGRESO' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-orange-500/10 border-orange-500/20 text-orange-400'}`}>
+                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${reg.tipo === 'INGRESO' ? 'bg-neutral-500/10 border-neutral-500/20 text-neutral-400' : 'bg-neutral-500/10 border-neutral-500/20 text-neutral-400'}`}>
                             {reg.tipo === 'INGRESO' ? <ArrowRight size={22} className="rotate-45" /> : <ArrowRight size={22} className="-rotate-135" />}
                          </div>
                          <div className="flex flex-col">

@@ -163,7 +163,7 @@ export default function VisitantesPage() {
       <ProfileHeader className="fade-up" />
 
       {error && (
-        <div className="fade-up bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold p-4 rounded-2xl text-center">
+        <div className="fade-up bg-neutral-500/10 border border-neutral-500/20 text-neutral-400 text-xs font-bold p-4 rounded-2xl text-center">
           {error}
         </div>
       )}
@@ -171,7 +171,7 @@ export default function VisitantesPage() {
       {/* 2. SUMMARY CARDS */}
       <section className="grid grid-cols-2 gap-4 fade-up">
         <div className="liquid-glass-card p-5 rounded-[28px] border-t border-border flex flex-col gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-400">
+          <div className="w-10 h-10 rounded-2xl bg-neutral-500/10 flex items-center justify-center text-neutral-400">
             <User size={20} />
           </div>
           <div>
@@ -251,8 +251,8 @@ export default function VisitantesPage() {
       <section className="fade-up flex flex-col gap-6">
          <div className="flex justify-between items-center px-1">
             <h2 className="text-text font-display text-lg font-bold tracking-tight">Visitas de Hoy</h2>
-            <div className="flex items-center gap-1.5 text-green-400 text-[10px] font-bold uppercase tracking-widest border border-green-500/20 bg-green-500/5 px-3 py-1.5 rounded-full">
-               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <div className="flex items-center gap-1.5 text-neutral-400 text-[10px] font-bold uppercase tracking-widest border border-neutral-500/20 bg-neutral-500/5 px-3 py-1.5 rounded-full">
+               <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-pulse" />
                Tiempo Real
             </div>
          </div>
@@ -265,14 +265,14 @@ export default function VisitantesPage() {
                 <div className="flex items-center gap-4">
                    <div className="w-14 h-14 rounded-full bg-text/5 border border-border flex items-center justify-center relative">
                       <User size={28} className="text-text/50" />
-                      <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-green-500 rounded-full border-2 border-primary flex items-center justify-center">
+                      <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-neutral-500 rounded-full border-2 border-primary flex items-center justify-center">
                          <CheckCircle2 size={12} className="text-white" />
                       </div>
                    </div>
                    <div>
                      <h4 className="text-text font-bold text-base leading-none mb-1.5">{visitor.nombre}</h4>
                      <div className="flex items-center gap-3">
-                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${visitor.tipo === 'VEHICULAR' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20'}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${visitor.tipo === 'VEHICULAR' ? 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20' : 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20'}`}>
                            {visitor.tipo}
                         </span>
                         <div className="flex items-center gap-1 text-text/60 text-[10px]">
@@ -342,7 +342,7 @@ export default function VisitantesPage() {
               <div className="p-8 flex flex-col items-center gap-6">
                  <div className="w-full flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
-                       <ShieldCheck size={18} className="text-green-400" />
+                       <ShieldCheck size={18} className="text-neutral-400" />
                        <span className="text-text/60 text-[10px] font-bold uppercase tracking-widest">Acceso Seguro</span>
                     </div>
                     <button onClick={() => setIsQRModalOpen(false)} className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/70 hover:bg-text/10 cursor-pointer">
@@ -361,7 +361,7 @@ export default function VisitantesPage() {
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                        <div className="w-12 h-12 bg-[#171717] rounded-xl flex items-center justify-center text-white shadow-xl">
-                          <CheckCircle2 size={24} className="text-green-400" />
+                          <CheckCircle2 size={24} className="text-neutral-400" />
                        </div>
                     </div>
                  </div>
@@ -380,7 +380,7 @@ export default function VisitantesPage() {
                        <button className="flex-1 bg-text/10 hover:bg-text/20 py-4 rounded-2xl font-bold text-text text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
                           <Download size={18} /> Guardar
                        </button>
-                       <button className="flex-1 bg-[#25D366] hover:brightness-110 py-4 rounded-2xl font-bold text-white text-sm transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+                       <button className="flex-1 bg-[#939393] hover:brightness-110 py-4 rounded-2xl font-bold text-white text-sm transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer">
                           <Share2 size={18} /> WhatsApp
                        </button>
                     </div>

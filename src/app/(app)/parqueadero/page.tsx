@@ -111,7 +111,7 @@ export default function ParqueaderoPage() {
             <div className="p-2.5 rounded-full bg-neutral-500/20 border border-neutral-500/30 text-neutral-400 group-hover:scale-110 transition-transform">
               <Car size={18} />
             </div>
-            <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest bg-emerald-400/10 px-2.5 py-1 rounded-full border border-emerald-400/20">Mis Celdas</span>
+            <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest bg-neutral-400/10 px-2.5 py-1 rounded-full border border-neutral-400/20">Mis Celdas</span>
           </div>
           <div>
             <h3 className="text-2xl font-display font-bold text-text tracking-tight">{misCeldas[0]?.numero || 'N/A'}</h3>
@@ -154,7 +154,7 @@ export default function ParqueaderoPage() {
                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-accent/10 rounded-full blur-2xl group-hover:bg-accent/20 transition-all duration-700" />
                  
                  <div className="flex justify-between items-start mb-6">
-                    <div className={`p-3 rounded-2xl bg-linear-to-br ${v.tipo === 'CARRO' ? 'from-neutral-500/20 to-neutral-600/20 text-neutral-400' : 'from-orange-500/20 to-amber-600/20 text-orange-400'} border border-border`}>
+                    <div className={`p-3 rounded-2xl bg-linear-to-br ${v.tipo === 'CARRO' ? 'from-neutral-500/20 to-neutral-600/20 text-neutral-400' : 'from-neutral-500/20 to-neutral-600/20 text-neutral-400'} border border-border`}>
                        {v.tipo === 'CARRO' ? <Car size={24} /> : <Bike size={24} />}
                     </div>
                     <div className="flex flex-col items-end">
@@ -188,7 +188,7 @@ export default function ParqueaderoPage() {
             onClick={() => setShowVehiculoModal(true)}
             className="w-full liquid-glass-card rounded-3xl p-4 border border-border flex items-center gap-4 hover:bg-text/10 transition-all active:scale-[0.99] group overflow-hidden cursor-pointer"
           >
-            <div className={`p-3 rounded-2xl bg-text/5 border border-border text-emerald-400 group-hover:scale-110 transition-transform`}>
+            <div className={`p-3 rounded-2xl bg-text/5 border border-border text-neutral-400 group-hover:scale-110 transition-transform`}>
               <ShieldCheck size={20} />
             </div>
             <div className="flex-1 text-left">
@@ -359,14 +359,14 @@ export default function ParqueaderoPage() {
                   <p className="text-sm leading-relaxed font-light">
                      Los visitantes tienen derecho a un maximum de 12 horas continuas de parqueo gratuito. A partir de la hora 13, se aplicará el cobro de la tarifa vigente establecida por la asamblea.
                   </p>
-                  <p className="text-[11px] text-yellow-600 dark:text-yellow-400 font-bold bg-yellow-500/5 p-3 rounded-2xl border border-yellow-500/20 italic">
+                  <p className="text-[11px] text-neutral-600 dark:text-neutral-400 font-bold bg-neutral-500/5 p-3 rounded-2xl border border-neutral-500/20 italic">
                      * El mal uso de las celdas de visitantes (parqueo recurrente) será causal de sanción administrativa.
                   </p>
                </section>
 
                <section className="space-y-4">
-                  <h4 className="text-sm font-black text-red-600 dark:text-red-400 uppercase tracking-[0.15em] flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-red-500" /> IV. Sanciones Económicas
+                  <h4 className="text-sm font-black text-neutral-600 dark:text-neutral-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                     <div className="w-1.5 h-1.5 rounded-full bg-neutral-500" /> IV. Sanciones Económicas
                   </h4>
                   <p className="text-sm leading-relaxed font-light">
                      El incumplimiento de las normas anteriores generará sanciones que van desde el 20% hasta el 100% de la cuota de administración ordinaria, según la gravedad de la falta.
@@ -413,7 +413,7 @@ export default function ParqueaderoPage() {
                     <option className="bg-primary text-text" value="BICICLETA">Bicicleta / Patineta</option>
                 </select>
                 
-                <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-linear-to-r from-emerald-500 to-teal-500 rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white shadow-xl active:scale-95 transition-transform disabled:opacity-50 cursor-pointer">
+                <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-linear-to-r from-neutral-500 to-neutral-500 rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white shadow-xl active:scale-95 transition-transform disabled:opacity-50 cursor-pointer">
                     <ShieldCheck size={20} /> {isSubmitting ? 'Enviando...' : 'Pedir Aprobación'}
                 </button>
             </div>

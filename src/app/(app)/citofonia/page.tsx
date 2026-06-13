@@ -155,11 +155,11 @@ export default function CitofoniaPage() {
                    </>
                  ) : (
                    <>
-                     <div className="absolute -inset-2 rounded-full bg-emerald-500/10 animate-ping duration-1000 scale-125" />
-                     <div className="absolute inset-2 rounded-full bg-emerald-500/20 animate-pulse duration-700" />
+                     <div className="absolute -inset-2 rounded-full bg-neutral-500/10 animate-ping duration-1000 scale-125" />
+                     <div className="absolute inset-2 rounded-full bg-neutral-500/20 animate-pulse duration-700" />
                    </>
                  )}
-                 <div className={`w-24 h-24 rounded-full flex items-center justify-center shadow-2xl border border-white/10 ${callState === "RINGING" || callState === "OUTGOING" ? "bg-linear-to-tr from-accent to-secondary animate-pulse" : "bg-linear-to-tr from-emerald-500 to-teal-400"}`}>
+                 <div className={`w-24 h-24 rounded-full flex items-center justify-center shadow-2xl border border-white/10 ${callState === "RINGING" || callState === "OUTGOING" ? "bg-linear-to-tr from-accent to-secondary animate-pulse" : "bg-linear-to-tr from-neutral-500 to-neutral-400"}`}>
                     <Phone size={36} className="text-white" />
                  </div>
               </div>
@@ -214,13 +214,13 @@ export default function CitofoniaPage() {
                <>
                  <button
                     onClick={rejectCall}
-                    className="w-16 h-16 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 flex items-center justify-center text-red-500 shadow-2xl active:scale-90 transition-all cursor-pointer"
+                    className="w-16 h-16 rounded-full bg-neutral-500/20 hover:bg-neutral-500/30 border border-neutral-500/40 flex items-center justify-center text-neutral-500 shadow-2xl active:scale-90 transition-all cursor-pointer"
                  >
                     <PhoneOff size={28} />
                  </button>
                  <button
                     onClick={answerCall}
-                    className="w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-600 flex items-center justify-center text-white shadow-2xl hover:shadow-emerald-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                    className="w-16 h-16 rounded-full bg-neutral-500 hover:bg-neutral-600 flex items-center justify-center text-white shadow-2xl hover:shadow-neutral-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
                     style={{ animationDuration: '2s' }}
                  >
                     <Phone size={28} />
@@ -229,7 +229,7 @@ export default function CitofoniaPage() {
              ) : (
                <button
                   onClick={endCall}
-                  className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white shadow-2xl hover:shadow-red-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                  className="w-16 h-16 rounded-full bg-neutral-500 hover:bg-neutral-600 flex items-center justify-center text-white shadow-2xl hover:shadow-neutral-500/20 active:scale-90 transition-all cursor-pointer animate-bounce"
                   style={{ animationDuration: '3s' }}
                >
                   <PhoneOff size={28} />
@@ -244,9 +244,9 @@ export default function CitofoniaPage() {
          <div className="flex justify-between items-center px-2">
             <h2 className="text-xl font-display font-bold text-text tracking-tight">Centro de Control</h2>
             <div className="flex gap-2">
-               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">En Línea</span>
+               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-neutral-500/10 rounded-full border border-neutral-500/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-pulse" />
+                  <span className="text-[10px] text-neutral-400 font-black uppercase tracking-widest">En Línea</span>
                </div>
             </div>
          </div>
@@ -326,7 +326,7 @@ export default function CitofoniaPage() {
                    </button>
                    <button 
                      onClick={() => handleCall()}
-                     className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black cursor-pointer ${callState !== "IDLE" ? 'bg-red-500' : 'bg-emerald-500'}`}
+                     className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black cursor-pointer ${callState !== "IDLE" ? 'bg-neutral-500' : 'bg-neutral-500'}`}
                    >
                      {callState !== "IDLE" ? <PhoneOff size={18} /> : <Phone size={18} />}
                      {callState !== "IDLE" ? 'COLGAR' : 'LLAMAR'}

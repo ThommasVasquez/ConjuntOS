@@ -143,7 +143,7 @@ export default function MapaParqueaderoPage() {
        
        <section className="fade-up liquid-glass rounded-3xl p-5 border border-border/40 shadow-xl flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
-             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors ${lastRound ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400 animate-pulse'}`}>
+             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors ${lastRound ? 'bg-neutral-500/10 border-neutral-500/30 text-neutral-600 dark:text-neutral-400' : 'bg-neutral-500/10 border-neutral-500/30 text-neutral-600 dark:text-neutral-400 animate-pulse'}`}>
                 {lastRound ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
              </div>
              <div>
@@ -236,7 +236,7 @@ export default function MapaParqueaderoPage() {
              {registros.map((reg, idx) => (
                 <div key={idx} className="liquid-glass p-4 rounded-3xl border border-border/20 flex items-center justify-between group hover:border-border/55 transition-all">
                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${reg.tipo === 'INGRESO' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400'}`}>
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${reg.tipo === 'INGRESO' ? 'bg-neutral-500/10 border-neutral-500/20 text-neutral-600 dark:text-neutral-400' : 'bg-neutral-500/10 border-neutral-500/20 text-neutral-600 dark:text-neutral-400'}`}>
                          {reg.tipo === 'INGRESO' ? <ArrowRight size={18} className="rotate-45" /> : <ArrowRight size={18} className="-rotate-135" />}
                       </div>
                       <div className="flex flex-col">

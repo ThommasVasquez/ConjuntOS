@@ -27,7 +27,7 @@ const features = [
     name: "CARLOS",
     role: "SEGURIDAD",
     img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600",
-    color: "bg-red-500",
+    color: "bg-neutral-500",
     details: "Control de Acceso Vehicular",
     quote: "SÉ EXACTAMENTE QUIÉN ENTRA Y SALE"
   },
@@ -35,7 +35,7 @@ const features = [
     name: "ELENA",
     role: "CONTADORA",
     img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600",
-    color: "bg-green-500",
+    color: "bg-neutral-500",
     details: "Módulo de Cartera y Pagos",
     quote: "CARTERA AL DÍA CON PAGOS AUTOMÁTICOS"
   },
@@ -43,7 +43,7 @@ const features = [
     name: "JULIÁN",
     role: "VISITANTE",
     img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=600",
-    color: "bg-yellow-500",
+    color: "bg-neutral-500",
     details: "Autorización QR Invitados",
     quote: "INGRESO RÁPIDO CON MI CÓDIGO QR"
   },
@@ -172,7 +172,7 @@ export default function FeaturesCollage() {
         <div className="hidden md:flex absolute left-10 top-1/2 -translate-y-1/2 z-40">
           <button 
             onClick={() => scrollRef.current?.scrollBy({ left: -400, behavior: 'smooth' })}
-            className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-[#FF00E5] transition-all duration-300 group shadow-2xl"
+            className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-[#666666] transition-all duration-300 group shadow-2xl"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="group-hover:-translate-x-1 transition-transform">
               <path d="M15 18l-6-6 6-6" />
@@ -182,7 +182,7 @@ export default function FeaturesCollage() {
         <div className="hidden md:flex absolute right-10 top-1/2 -translate-y-1/2 z-40">
           <button 
             onClick={() => scrollRef.current?.scrollBy({ left: 400, behavior: 'smooth' })}
-            className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-[#FF00E5] transition-all duration-300 group shadow-2xl"
+            className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-[#666666] transition-all duration-300 group shadow-2xl"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="group-hover:translate-x-1 transition-transform">
               <path d="M9 18l6-6-6-6" />
