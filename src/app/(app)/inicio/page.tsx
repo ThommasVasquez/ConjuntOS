@@ -234,7 +234,7 @@ function HomeResidente() {
               onClick={() => router.push(cat.path)}
               className="flex flex-col items-center gap-2"
             >
-              <div className={`relative hover:z-10 w-[84px] h-[106px] rounded-[32px] bg-primary border-2 border-white hover:border-white flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-2xl cursor-pointer p-4`}>
+              <div className={`relative hover:z-10 w-[84px] h-[106px] rounded-[32px] bg-primary border border-[#009df2] hover:border-[#57bf00] flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-2xl cursor-pointer p-4`}>
                   <div className="[&_svg]:!text-[#57bf00] scale-125 mb-1">{cat.icon}</div>
                   <span className="text-[10px] font-bold text-[#009df2] uppercase text-center block w-full truncate tracking-tighter">{cat.title}</span>
               </div>
