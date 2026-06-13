@@ -234,9 +234,9 @@ function HomeResidente() {
               onClick={() => router.push(cat.path)}
               className="flex flex-col items-center gap-2"
             >
-              <div className={`w-[84px] h-[106px] rounded-[32px] bg-gradient-to-br ${cat.color} flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-2xl cursor-pointer p-4`}>
-                  <div className="text-white scale-125 mb-1">{cat.icon}</div>
-                  <span className="text-[10px] font-bold text-white uppercase text-center block w-full truncate tracking-tighter opacity-90">{cat.title}</span>
+              <div className={`w-[84px] h-[106px] rounded-[32px] bg-primary border-2 border-white flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-2xl cursor-pointer p-4`}>
+                  <div className="text-[#009df2] scale-125 mb-1">{cat.icon}</div>
+                  <span className="text-[10px] font-bold text-[#009df2] uppercase text-center block w-full truncate tracking-tighter">{cat.title}</span>
               </div>
             </div>
           ))}
