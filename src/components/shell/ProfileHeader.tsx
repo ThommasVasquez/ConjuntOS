@@ -197,7 +197,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
             <div className="absolute inset-0 border border-border rounded-full pointer-events-none" />
           </div>
           {hasStory && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-primary z-30 flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#EF4444] rounded-full border-2 border-primary z-30 flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.8)]">
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
             </div>
           )}
@@ -221,7 +221,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         >
           <Bell size={22} />
           {notifications.some(n => !n.leida) && (
-            <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-primary shadow-[0_0_10px_rgba(0,0,0,0.3)]"></span>
+            <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2 border-primary shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></span>
           )}
         </button>
 
@@ -245,7 +245,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
                         onClick={() => handleNotifClick(notif)}
                         className={`w-full px-5 py-3.5 flex items-start gap-4 hover:bg-text/5 transition-colors border-b border-border last:border-0 relative cursor-pointer ${notif.leida ? 'opacity-60' : ''}`}
                       >
-                        {!notif.leida && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent"></span>}
+                        {!notif.leida && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#EF4444] shadow-[0_0_6px_rgba(239,68,68,0.7)]"></span>}
                         <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center ${iconStyle.color}`}>
                            {iconStyle.icon}
                         </div>
