@@ -60,19 +60,19 @@ export default function BottomNav() {
               key={tab.path} 
               href={tab.path}
               className={`relative flex items-center justify-center transition-all duration-300 rounded-full h-[52px] group
-                ${isActive ? 'w-[120px] bg-accent shadow-lg shadow-accent/45 px-4' : 'w-[52px] bg-text/5 border border-border/30 hover:bg-text/10 mx-1'}
+                ${isActive ? 'w-[120px] nav-active-glass px-4' : 'w-[52px] bg-text/5 border border-border/30 hover:bg-text/10 mx-1'}
               `}
             >
               <div className="flex items-center gap-2 relative z-10 w-full justify-center">
                 <Icon 
                   size={20} 
-                  className={`transition-colors duration-300 ${isActive ? 'text-on-accent' : 'text-[#009df2] group-hover:text-[#57bf00]'}`} 
+                  className={`transition-colors duration-300 ${isActive ? '!text-white' : 'text-[#009df2] group-hover:text-[#57bf00]'}`} 
                   strokeWidth={isActive ? 2.5 : 2}
                 />
                 
                 {/* Text only for active state */}
                 {isActive && (
-                  <span className="text-[13px] font-bold text-on-accent whitespace-nowrap overflow-hidden">
+                  <span className="text-[13px] font-bold text-white whitespace-nowrap overflow-hidden">
                     {tab.name}
                   </span>
                 )}
