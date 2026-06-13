@@ -190,7 +190,7 @@ html, body {
   position: absolute;
   inset: -4px;
   border-radius: 9999px;
-  background: conic-gradient(from 0deg, transparent, #EC4899, #8B5CF6, transparent);
+  background: conic-gradient(from 0deg, transparent, #009df2, #57bf00, transparent);
   animation: rotate-halo 3s linear infinite;
   opacity: 0.6;
   filter: blur(8px);
@@ -201,7 +201,7 @@ html, body {
   position: absolute;
   inset: 0px;
   border-radius: 9999px;
-  background: #D946EF;
+  background: #009df2;
   opacity: 0.4;
   animation: breathe-halo 2s ease-in-out infinite;
   filter: blur(4px);

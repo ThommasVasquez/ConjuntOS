@@ -66,7 +66,7 @@ export default function BottomNav() {
               <div className="flex items-center gap-2 relative z-10 w-full justify-center">
                 <Icon 
                   size={20} 
-                  className={`transition-colors duration-300 ${isActive ? 'text-on-accent' : 'text-[#A855F7] group-hover:text-[#EC4899]'}`} 
+                  className={`transition-colors duration-300 ${isActive ? 'text-on-accent' : 'text-[#009df2] group-hover:text-[#57bf00]'}`} 
                   strokeWidth={isActive ? 2.5 : 2}
                 />
                 
