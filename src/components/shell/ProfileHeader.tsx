@@ -241,7 +241,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
                         <div className="flex flex-col flex-1">
                            <div className="flex justify-between items-center mb-0.5">
                               <span className="text-[11px] font-bold text-text">{notif.titulo}</span>
-                              <span className="text-[8px] text-text/30">{formatTime(notif.creadoEn)}</span>
+                              <span className="text-[8px] text-text/30">{formatTime(notif.createdAt)}</span>
                            </div>
                            <p className="text-[10px] text-text/50 leading-tight">{notif.mensaje}</p>
                         </div>
