@@ -87,7 +87,7 @@ function HomeResidente() {
 
   const markAsRead = async (id: string) => {
       try {
-          await api.put('/notificaciones/marcar-leidas', { ids: [id] });
+          await api.put('/notificaciones/leidas', { ids: [id] });
           setNotificaciones(prev => prev.filter(n => n.id !== id));
       } catch {
           // silently ignore

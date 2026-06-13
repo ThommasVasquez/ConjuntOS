@@ -148,7 +148,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
 
   const markAsRead = async (id: string) => {
     try {
-      await api.put('/notificaciones/marcar-leidas', { ids: [id] });
+      await api.put('/notificaciones/leidas', { ids: [id] });
       setNotifications(prev =>
         prev.map(n => (n.id === id ? { ...n, leida: true } : n))
       );
@@ -165,7 +165,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
       const unread = notifications.filter(n => !n.leida);
       if (unread.length === 0) return;
       const ids = unread.map(n => n.id);
-      await api.put('/notificaciones/marcar-leidas', { ids });
+      await api.put('/notificaciones/leidas', { ids });
       setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
       setHasStory(false);
       toast.success("Notificaciones marcadas como leídas");
