@@ -66,13 +66,13 @@ export default function BottomNav() {
               <div className="flex items-center gap-2 relative z-10 w-full justify-center">
                 <Icon 
                   size={20} 
-                  className={`transition-colors duration-300 ${isActive ? 'text-white' : 'text-text/70 group-hover:text-text'}`} 
+                  className={`transition-colors duration-300 ${isActive ? 'text-on-accent' : 'text-text/70 group-hover:text-text'}`} 
                   strokeWidth={isActive ? 2.5 : 2}
                 />
                 
                 {/* Text only for active state */}
                 {isActive && (
-                  <span className="text-[13px] font-bold text-white whitespace-nowrap overflow-hidden">
+                  <span className="text-[13px] font-bold text-on-accent whitespace-nowrap overflow-hidden">
                     {tab.name}
                   </span>
                 )}
