@@ -11,14 +11,15 @@ import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface Conversation {
   usuarioId: string;
-  usuarioNombre: string;
-  usuarioAvatar: string | null;
-  usuarioTorre: string | null;
-  usuarioApto: string | null;
-  mensaje: string;
-  creadoEn: string;
-  leido: boolean;
-  esDeAdmin: boolean;
+  ultimoMensaje: string;
+  ultimoTimestamp: string;
+  noLeidos: number;
+  residente: {
+    nombre: string | null;
+    avatar: string | null;
+    torre: string | null;
+    apto: string | null;
+  };
 }
 
 interface Message {
@@ -292,9 +293,9 @@ export default function AdminMensajesPage() {
   }, [loading]);
 
   const filteredConversations = conversations.filter(c => 
-    c.usuarioNombre?.toLowerCase().includes(search.toLowerCase()) ||
-    c.usuarioApto?.includes(search)
-  ).sort((a,b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime());
+    c.residente?.nombre?.toLowerCase().includes(search.toLowerCase()) ||
+    c.residente?.apto?.includes(search)
+  ).sort((a,b) => new Date(b.ultimoTimestamp).getTime() - new Date(a.ultimoTimestamp).getTime());
 
   const activeConv = conversations.find(c => c.usuarioId === selectedUserId);
 
@@ -343,19 +344,21 @@ export default function AdminMensajesPage() {
                  ${selectedUserId === c.usuarioId ? 'bg-emerald-500 border-emerald-400 text-white' : 'bg-surface-2 border-border hover:bg-surface'}`}
              >
                 <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center border border-border relative overflow-hidden flex-shrink-0">
-                   {c.usuarioAvatar ? <img src={c.usuarioAvatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-text/60" />}
-                   {!c.leido && !c.esDeAdmin && <div className="absolute top-1 right-1 w-3 h-3 bg-red-500 border-2 border-primary rounded-full animate-pulse" />}
+                   {c.residente?.avatar ? <img src={c.residente.avatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-text/60" />}
+                   {c.noLeidos > 0 && <div className="absolute top-1 right-1 w-3 h-3 bg-red-500 border-2 border-primary rounded-full animate-pulse" />}
                 </div>
                 <div className="flex-1 text-left min-w-0">
                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-[13px] font-black uppercase tracking-tight truncate max-w-[140px] italic">{c.usuarioNombre}</span>
-                      <span className="text-[9px] font-bold opacity-70">{new Date(c.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-[13px] font-black uppercase tracking-tight truncate max-w-[140px] italic">{c.residente?.nombre || "Residente"}</span>
+                      <span className="text-[9px] font-bold opacity-70">{new Date(c.ultimoTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                    </div>
                    <div className="flex items-center justify-between gap-2">
-                      <p className={`text-[11px] truncate leading-none ${!c.leido && !c.esDeAdmin ? 'text-text font-bold' : 'opacity-80'}`}>
-                         {c.esDeAdmin && <span className="opacity-70">Tú: </span>}{c.mensaje}
+                      <p className={`text-[11px] truncate leading-none ${c.noLeidos > 0 ? 'text-text font-bold' : 'opacity-80'}`}>
+                         {c.ultimoMensaje}
                       </p>
-                      <span className="text-[9px] px-2 py-0.5 rounded-lg bg-surface font-black text-text/80 bg-text/10 tracking-tighter">T{c.usuarioTorre}-{c.usuarioApto}</span>
+                      {c.residente?.torre && c.residente?.apto && (
+                        <span className="text-[9px] px-2 py-0.5 rounded-lg bg-surface font-black text-text/80 bg-text/10 tracking-tighter">T{c.residente.torre}-{c.residente.apto}</span>
+                      )}
                    </div>
                 </div>
              </button>
@@ -378,18 +381,18 @@ export default function AdminMensajesPage() {
                        <ChevronLeft size={22} />
                     </button>
                     <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 relative overflow-hidden shadow-inner group-hover:border-emerald-500/40 transition-all">
-                       {activeConv?.usuarioAvatar ? <img src={activeConv.usuarioAvatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-emerald-500" />}
+                       {activeConv?.residente?.avatar ? <img src={activeConv.residente.avatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-emerald-500" />}
                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-primary bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                     </div>
                     <div className="flex flex-col">
                        <h3 className="text-sm font-black text-text tracking-tight leading-none group-hover:text-emerald-400 transition-colors uppercase italic flex items-center gap-2">
-                         {activeConv?.usuarioNombre}
+                         {activeConv?.residente?.nombre || "Residente"}
                          <Info size={12} className="text-text/60 group-hover:text-emerald-500 transition-colors" />
                        </h3>
                        <div className="flex items-center gap-2 mt-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse outline outline-2 outline-emerald-500/20" />
                           <span className="text-[9px] text-text/70 font-black uppercase tracking-[0.1em]">
-                             Apto {activeConv?.usuarioTorre}-{activeConv?.usuarioApto} • En Línea
+                             {activeConv?.residente?.torre && activeConv?.residente?.apto ? `Apto ${activeConv.residente.torre}-${activeConv.residente.apto} • ` : ""}En Línea
                           </span>
                        </div>
                     </div>
