@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
 import type { AnuncioDto } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
+import { getNotifTarget } from "@/lib/notif-routing";
 import { gsap } from "gsap";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -255,7 +256,7 @@ function HomeResidente() {
                   {notificaciones.map((n) => (
                       <div 
                         key={n.id} 
-                        onClick={() => markAsRead(n.id)}
+                        onClick={() => { markAsRead(n.id); router.push(getNotifTarget(n, user?.rol)); }}
                         className="min-w-[280px] bg-linear-to-r from-accent/20 to-accent/5 border border-accent/30 rounded-[22px] p-4 flex flex-col gap-2 cursor-pointer hover:bg-text/5 transition-all shadow-lg shadow-accent/5 group"
                       >
                           <div className="flex justify-between items-start">

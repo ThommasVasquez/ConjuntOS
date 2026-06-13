@@ -9,6 +9,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { getNotifTarget } from "@/lib/notif-routing";
 
 interface ProfileHeaderProps {
   className?: string;
@@ -131,10 +132,20 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         return { icon: <CheckCircle2 size={14} />, color: "text-neutral-500 bg-neutral-500/10" };
       case 'SISTEMA':
         return { icon: <AlertTriangle size={14} />, color: "text-neutral-500 bg-neutral-500/10" };
+      case 'PAQUETE':
+        return { icon: <Package size={14} />, color: "text-accent bg-accent/10" };
       case 'INFO':
       default:
         return { icon: <Bell size={14} />, color: "text-accent bg-accent/10" };
     }
+  };
+
+  // Marca como leída y navega al destino correspondiente.
+  const handleNotifClick = async (notif: any) => {
+    const destino = getNotifTarget(notif, user?.rol);
+    markAsRead(notif.id);
+    setIsNotificationsOpen(false);
+    router.push(destino);
   };
 
   const formatTime = (dateStr: string) => {
@@ -231,7 +242,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
                     return (
                       <div 
                         key={notif.id} 
-                        onClick={() => markAsRead(notif.id)}
+                        onClick={() => handleNotifClick(notif)}
                         className={`w-full px-5 py-3.5 flex items-start gap-4 hover:bg-text/5 transition-colors border-b border-border last:border-0 relative cursor-pointer ${notif.leida ? 'opacity-60' : ''}`}
                       >
                         {!notif.leida && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent"></span>}
