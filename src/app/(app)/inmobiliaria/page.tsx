@@ -378,9 +378,9 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-primary/95 dark:bg-[#05020e]/95 backdrop-blur-xl" onClick={onClose} />
+      <div className="absolute inset-0 bg-primary/95 dark:bg-[#0A0A0B]/95 backdrop-blur-xl" onClick={onClose} />
       
-      <div className="relative w-full h-full max-w-xl bg-primary dark:bg-[#05020e] overflow-hidden md:rounded-[40px] border border-border flex flex-col shadow-2xl">
+      <div className="relative w-full h-full max-w-xl bg-primary dark:bg-[#0A0A0B] overflow-hidden md:rounded-[40px] border border-border flex flex-col shadow-2xl">
         <div className="absolute top-6 left-6 z-50">
           <button onClick={onClose} className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all">
             <X size={20} />

@@ -159,8 +159,8 @@ export default function Hero() {
   const currentFeature = current.features[activeFeature];
 
   return (
-    <section ref={heroRef} className="relative w-full h-screen p-6 bg-[#05020a]">
-      <div className="relative w-full h-full rounded-[48px] overflow-hidden bg-[#05020a] isolate">
+    <section ref={heroRef} className="relative w-full h-screen p-6 bg-[#0A0A0B]">
+      <div className="relative w-full h-full rounded-[48px] overflow-hidden bg-[#0A0A0B] isolate">
         {/* Background Layers for Crossfade */}
         {slides.map((slide, idx) => (
           <div 
@@ -177,11 +177,11 @@ export default function Hero() {
         ))}
         
         {/* Ambient Orbs - Matching the App's UI style */}
-        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[70%] bg-[#1e3a8a]/15 blur-[130px] rounded-full pointer-events-none z-10" />
-        <div className="absolute bottom-[-15%] left-[-15%] w-[80%] h-[70%] bg-[#BE185D]/10 blur-[130px] rounded-full pointer-events-none z-10" />
+        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[70%] bg-[#009df2]/15 blur-[130px] rounded-full pointer-events-none z-10" />
+        <div className="absolute bottom-[-15%] left-[-15%] w-[80%] h-[70%] bg-[#3f3f46]/10 blur-[130px] rounded-full pointer-events-none z-10" />
         
         {/* Dark Glass Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#05020a]/95 via-[#05020a]/80 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0A0A0B]/95 via-[#0A0A0B]/80 to-transparent z-10" />
 
         <div className="relative z-20 w-full h-full flex items-center justify-between px-8 md:px-20">
           <div className="hero-text max-w-2xl text-white">

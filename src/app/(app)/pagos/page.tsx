@@ -174,7 +174,7 @@ export default function PagosPage() {
 
       {/* WALLET HERO CARD */}
       <section className="fade-up w-full relative group">
-         <div className="absolute inset-0 bg-linear-to-br from-[#1e3a8a] via-[#172554] to-[#701A75] rounded-[40px] shadow-2xl opacity-90" />
+         <div className="absolute inset-0 bg-linear-to-br from-[#009df2] via-[#172554] to-[#701A75] rounded-[40px] shadow-2xl opacity-90" />
          <div className="absolute -top-4 -right-4 w-32 h-32 bg-white/5 blur-2xl rounded-full group-hover:bg-white/10 transition-all duration-700" />
          
          <div className="relative p-8 flex flex-col justify-between min-h-[220px]">
@@ -207,7 +207,7 @@ export default function PagosPage() {
                     if (firstPending) setSelectedPayment(firstPending);
                     else toast.info("No tienes pagos pendientes");
                   }}
-                  className="bg-white text-[#1a0b2e] px-6 py-3 rounded-2xl font-bold text-sm shadow-xl active:scale-95 transition-all flex items-center gap-2"
+                  className="bg-white text-[#27272A] px-6 py-3 rounded-2xl font-bold text-sm shadow-xl active:scale-95 transition-all flex items-center gap-2"
                 >
                   Pagar Ahora <ChevronRight size={16} />
                 </button>
@@ -273,7 +273,7 @@ export default function PagosPage() {
       {/* MODAL: PAYMENT PROCESSING */}
       {selectedPayment && (
         <div className="fixed inset-0 z-200 flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="absolute inset-0 bg-primary/95 dark:bg-[#0d041a]/95 backdrop-blur-3xl" onClick={() => !isProcessing && setSelectedPayment(null)} />
+           <div className="absolute inset-0 bg-primary/95 dark:bg-[#0A0A0B]/95 backdrop-blur-3xl" onClick={() => !isProcessing && setSelectedPayment(null)} />
            
            <div className="relative w-full max-w-sm liquid-glass-card rounded-[40px] border border-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-400">
               <div className="p-8 flex flex-col gap-8">
@@ -308,7 +308,7 @@ export default function PagosPage() {
                      </div>
 
                      <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-3 p-4 rounded-2xl bg-surface-2 dark:bg-[#1a1333] border border-accent/20">
+                        <div className="flex items-center gap-3 p-4 rounded-2xl bg-surface-2 dark:bg-[#27272A] border border-accent/20">
                            <CreditCard size={18} className="text-accent" />
                            <div className="flex-1">
                               <p className="text-text text-xs font-bold">Tarjeta de Crédito / PSE</p>

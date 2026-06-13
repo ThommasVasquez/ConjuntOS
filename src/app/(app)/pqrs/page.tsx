@@ -149,9 +149,9 @@ export default function PQRSPage() {
         onClick={() => setIsFormOpen(true)}
         className="fade-up-pqrs group relative w-full h-[120px] rounded-[32px] overflow-hidden flex items-center justify-center transition-all active:scale-[0.98] shadow-2xl shadow-accent/20 cursor-pointer"
       >
-         <div className="absolute inset-0 bg-linear-to-br from-[#172554] via-accent/20 to-[#1e3a8a] group-hover:scale-105 transition-transform duration-700" />
+         <div className="absolute inset-0 bg-linear-to-br from-[#172554] via-accent/20 to-[#009df2] group-hover:scale-105 transition-transform duration-700" />
          <div className="flex flex-col items-center gap-2 relative z-10">
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#05020a] shadow-xl">
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#0A0A0B] shadow-xl">
                <Plus size={24} />
             </div>
             <span className="text-white font-display font-bold text-sm tracking-tight">Radicar nueva PQRS</span>

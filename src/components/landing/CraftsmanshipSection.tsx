@@ -34,7 +34,7 @@ export default function CraftsmanshipSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#05020a]">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#0A0A0B]">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
         
         <div className="craft-text flex-1 space-y-6">

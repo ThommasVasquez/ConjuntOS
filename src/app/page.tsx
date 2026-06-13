@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[#05020a] text-white selection:bg-[#009df2]/30 selection:text-white overflow-hidden">
+    <main className="min-h-screen bg-[#0A0A0B] text-white selection:bg-[#009df2]/30 selection:text-white overflow-hidden">
       <Navbar />
       <Hero />
       <FeaturesCollage />

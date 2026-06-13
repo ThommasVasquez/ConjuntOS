@@ -34,10 +34,10 @@ export default function StorySection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#05020a] relative overflow-hidden">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#0A0A0B] relative overflow-hidden">
       {/* Background orbs */}
-      <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#BE185D]/5 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-[#1e3a8a]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#3f3f46]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-[#009df2]/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 relative z-10">
         

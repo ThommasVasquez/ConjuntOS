@@ -417,7 +417,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
     <div ref={modalRef} className="fixed inset-0 z-[70] flex items-end justify-center px-0">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
       
-      <div className="modal-content relative w-full max-w-[430px] h-[85vh] bg-primary dark:bg-[#0c061a] rounded-t-[40px] overflow-hidden flex flex-col border-t border-border">
+      <div className="modal-content relative w-full max-w-[430px] h-[85vh] bg-primary dark:bg-[#0A0A0B] rounded-t-[40px] overflow-hidden flex flex-col border-t border-border">
          {/* IMAGE HEADER */}
          <div className="relative h-2/5 w-full shrink-0">
             <Image 
@@ -427,7 +427,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
               className="object-cover" 
               unoptimized 
             />
-            <div className="absolute inset-0 bg-linear-to-t from-primary dark:from-[#0c061a] via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-primary dark:from-[#0A0A0B] via-transparent to-transparent" />
             <button 
               onClick={onClose}
               className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white"

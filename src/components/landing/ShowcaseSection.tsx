@@ -32,7 +32,7 @@ export default function ShowcaseSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#05020a]">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#0A0A0B]">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16">
         
         <div className="showcase-left flex-1 flex flex-col justify-between">
@@ -45,7 +45,7 @@ export default function ShowcaseSection() {
 
           <div className="relative rounded-[32px] overflow-hidden bg-gray-200 shadow-xl h-[400px]">
             <img src="https://images.unsplash.com/photo-1556910103-1c02745a872f?auto=format&fit=crop&w=800&q=80" alt="Lobby System" className="w-full h-full object-cover" />
-            <div className="absolute bottom-0 inset-x-0 bg-[#05020a]/90 backdrop-blur-md p-6 flex items-center justify-between border-t border-white/5">
+            <div className="absolute bottom-0 inset-x-0 bg-[#0A0A0B]/90 backdrop-blur-md p-6 flex items-center justify-between border-t border-white/5">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Integración Directa</p>
                 <h4 className="font-bold text-white text-lg">Pagos Automatizados PSE</h4>
@@ -62,7 +62,7 @@ export default function ShowcaseSection() {
             <img src="https://images.unsplash.com/photo-1542181961-9590d0c79227?auto=format&fit=crop&w=800&q=80" alt="Smart Access" className="w-full h-full object-cover" />
           </div>
           
-          <div className="showcase-float absolute bottom-8 right-8 bg-[#05020a]/80 border border-white/10 backdrop-blur-xl p-4 rounded-2xl shadow-2xl flex items-center gap-4 w-72">
+          <div className="showcase-float absolute bottom-8 right-8 bg-[#0A0A0B]/80 border border-white/10 backdrop-blur-xl p-4 rounded-2xl shadow-2xl flex items-center gap-4 w-72">
             <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center overflow-hidden border border-white/5">
               <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=100&q=80" alt="Avatar" className="w-full h-full object-cover opacity-80" />
             </div>

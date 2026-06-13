@@ -292,7 +292,7 @@ export default function AdminMensajesPage() {
   }, [loading]);
 
   const filteredConversations = conversations.filter(c => 
-    c.usuarioNombre.toLowerCase().includes(search.toLowerCase()) ||
+    c.usuarioNombre?.toLowerCase().includes(search.toLowerCase()) ||
     c.usuarioApto?.includes(search)
   ).sort((a,b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime());
 

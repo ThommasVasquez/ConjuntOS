@@ -40,7 +40,7 @@ export default function FaqSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#05020a]">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#0A0A0B]">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16 items-start">
         
         <div className="faq-left flex-1 relative pb-20 lg:pb-0">

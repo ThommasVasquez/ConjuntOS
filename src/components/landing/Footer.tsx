@@ -6,9 +6,9 @@ export default function Footer() {
   const { navigate } = useViewTransition();
 
   return (
-    <footer className="bg-[#05020a] text-white pt-24 overflow-hidden relative border-t border-white/5">
+    <footer className="bg-[#0A0A0B] text-white pt-24 overflow-hidden relative border-t border-white/5">
       {/* Background Orbs */}
-      <div className="absolute bottom-0 right-[-10%] w-[500px] h-[500px] bg-[#1e3a8a]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-[-10%] w-[500px] h-[500px] bg-[#009df2]/5 blur-[120px] rounded-full pointer-events-none" />
       
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-24 relative z-10">
         
@@ -60,7 +60,7 @@ export default function Footer() {
       </div>
 
       {/* Very bottom bar */}
-      <div className="border-t border-white/5 py-6 px-6 relative z-10 bg-[#05020a]">
+      <div className="border-t border-white/5 py-6 px-6 relative z-10 bg-[#0A0A0B]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs text-white/30">
           <p>© {new Date().getFullYear()} ENERGYSOFTmedia. All rights reserved.</p>
           <div className="flex gap-4 mt-4 md:mt-0 font-light">

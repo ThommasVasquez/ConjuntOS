@@ -1226,7 +1226,7 @@ function ProfileContent() {
                  <div className="absolute inset-0 rounded-full border-4 border-blue-200 border-t-white animate-spin" />
                  <ShieldCheck size={40} className="text-white" />
               </div>
-              <h3 className="text-[#0a0514] text-2xl font-black mb-3">Procesando Pago</h3>
+              <h3 className="text-[#0A0A0B] text-2xl font-black mb-3">Procesando Pago</h3>
               <p className="text-gray-500 text-sm leading-relaxed mb-8">
                  Estamos conectando de forma segura con tu entidad financiera a través de <b>PSE</b>. Por favor, no cierres esta ventana.
               </p>

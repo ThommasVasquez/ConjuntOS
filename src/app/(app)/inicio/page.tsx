@@ -274,7 +274,7 @@ function HomeResidente() {
       <section 
         className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[120px] shadow-[0_15px_40px_rgba(0,0,0,0.6)] border border-white/10 group overflow-hidden transition-all"
       >
-        <div className={`absolute inset-0 bg-linear-to-br ${financialData.totalDebt > 0 ? 'from-[#1e3a8a] via-[#331A4D] to-[#BE185D]' : 'from-[#065F46] via-[#064E3B] to-[#047857]'} opacity-90`} />
+        <div className={`absolute inset-0 bg-linear-to-br ${financialData.totalDebt > 0 ? 'from-[#3f3f46] via-[#27272A] to-[#18181B]' : 'from-[#065F46] via-[#064E3B] to-[#047857]'} opacity-90`} />
         <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -300,7 +300,7 @@ function HomeResidente() {
             </div>
             <button 
               onClick={(e) => { e.stopPropagation(); router.push('/pagos'); }}
-              className="bg-white text-[#05020a] text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all relative z-20"
+              className="bg-white text-[#0A0A0B] text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all relative z-20"
             >
               {financialData.totalDebt > 0 ? "Pagar Ahora" : "Ver Estado"}
             </button>

@@ -357,10 +357,10 @@ export default function VisitantesPage() {
 
                  <div className="relative p-6 bg-white rounded-3xl shadow-[0_0_40px_rgba(255,255,255,0.1)] group">
                     <div className="w-48 h-48 bg-gray-50 flex items-center justify-center rounded-2xl border-4 border-white overflow-hidden">
-                       <QrCode size={160} className="text-[#1a0b2e]" />
+                       <QrCode size={160} className="text-[#27272A]" />
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                       <div className="w-12 h-12 bg-[#1a0b2e] rounded-xl flex items-center justify-center text-white shadow-xl">
+                       <div className="w-12 h-12 bg-[#27272A] rounded-xl flex items-center justify-center text-white shadow-xl">
                           <CheckCircle2 size={24} className="text-green-400" />
                        </div>
                     </div>

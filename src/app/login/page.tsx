@@ -79,7 +79,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#0D041A] flex items-center justify-center p-6 relative overflow-hidden font-sans">
+    <div ref={containerRef} className="min-h-screen bg-primary flex items-center justify-center p-6 relative overflow-hidden font-sans">
       <div className="bg-glow-1 absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="bg-glow-2 absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
       

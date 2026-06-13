@@ -32,7 +32,7 @@ export default function TeamSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#05020a]">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#0A0A0B]">
       <div className="max-w-7xl mx-auto">
         
         <div className="team-header mb-16">
@@ -46,7 +46,7 @@ export default function TeamSection() {
           {modules.map((mod, i) => (
             <div key={i} className="team-card relative h-[450px] rounded-[32px] overflow-hidden group">
               <img src={mod.img} alt={mod.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#05020a] via-[#05020a]/80 to-transparent flex flex-col justify-end p-8">
+              <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#0A0A0B] via-[#0A0A0B]/80 to-transparent flex flex-col justify-end p-8">
                 <h3 className="text-xl font-bold text-white">{mod.title}</h3>
                 <p className="text-sm text-gray-500">{mod.subtitle}</p>
               </div>

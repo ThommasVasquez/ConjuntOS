@@ -85,13 +85,13 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
       <div 
         ref={overlayRef} 
         onClick={onClose}
-        className="absolute inset-0 bg-[#0a0514]/90 backdrop-blur-md" 
+        className="absolute inset-0 bg-[#0A0A0B]/90 backdrop-blur-md" 
       />
 
       {/* MODAL CONTAINER */}
       <div 
         ref={modalRef}
-        className="relative w-full max-w-lg bg-[#1a1333] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg bg-[#27272A] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden"
       >
         <button 
           onClick={onClose}
@@ -105,7 +105,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
             {item.image && (
               <div className="relative h-64 w-full">
                 <Image src={item.image} alt="" fill className="object-cover" unoptimized />
-                <div className="absolute inset-0 bg-linear-to-t from-[#1a1333] to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-[#27272A] to-transparent" />
                 <div className="absolute bottom-6 left-8 bg-accent/20 border border-accent/30 px-4 py-1.5 rounded-full text-[10px] font-black text-accent uppercase tracking-widest">
                   {item.type === 'AD' ? 'OFERTA ESPECIAL' : item.category}
                 </div>

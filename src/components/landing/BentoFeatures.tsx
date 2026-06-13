@@ -76,7 +76,7 @@ export default function BentoFeatures() {
   }, []);
 
   return (
-    <section ref={containerRef} className="py-24 px-6 bg-[#05020a]">
+    <section ref={containerRef} className="py-24 px-6 bg-[#0A0A0B]">
       <div className="max-w-6xl mx-auto space-y-16">
         <div className="space-y-4 text-center md:text-left">
           <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">

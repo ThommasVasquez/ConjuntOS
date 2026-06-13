@@ -64,8 +64,8 @@ export default function AdminParqueaderoPage() {
 
   const filteredRegistros = registros.filter(reg => 
     reg.placa?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reg.parqueadero.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reg.usuario.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    reg.parqueadero?.numero?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    reg.usuario?.nombre?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
