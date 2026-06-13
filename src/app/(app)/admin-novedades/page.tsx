@@ -231,6 +231,16 @@ export default function AdminNovedadesPage() {
       }
   };
 
+  // Normaliza un trámite al shape { metadatos, documentos } sea cual sea el
+  // contrato: nuevo backend (payload objeto + documentos array) o el viejo
+  // (descripcion string JSON). Evita el crash cuando no hay 'descripcion'.
+  const getMeta = (t: any) => {
+      if (t && typeof t === 'object' && (t.payload !== undefined || t.documentos !== undefined)) {
+          return { metadatos: t.payload || {}, documentos: t.documentos || [] };
+      }
+      return parseDesc(t?.descripcion);
+  };
+
   const downloadFile = (base64: string, filename: string) => {
       try {
           const link = document.createElement('a');
@@ -331,8 +341,8 @@ export default function AdminNovedadesPage() {
                    </div>
                ) : (
                    tramites.map((t) => {
-                       const u = t.usuario;
-                       const desc = parseDesc(t.descripcion);
+                       const u = t.solicitante || t.usuario;
+                       const desc = getMeta(t);
                        return (
                          <div key={t.id} onClick={() => tab === 'PENDIENTE' ? setSelectedTramite(t) : null} className="fade-up liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer">
                              <div className="flex justify-between items-start">
@@ -340,7 +350,7 @@ export default function AdminNovedadesPage() {
                                     <span className="p-2 rounded-full bg-surface-2 border border-border text-xl">{getTipoIcon(t.tipo)}</span>
                                     <div className="flex flex-col">
                                        <span className="text-xs font-bold text-text uppercase tracking-wider">{t.tipo}</span>
-                                       <span className="text-[10px] text-text/70">{new Date(t.creadoEn).toLocaleString()}</span>
+                                       <span className="text-[10px] text-text/70">{new Date(t.createdAt || t.creadoEn).toLocaleString()}</span>
                                     </div>
                                  </div>
                                  {t.estado === 'PENDIENTE' && <span className="bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/20 dark:border-neutral-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock size={10}/> Pendiente</span>}
@@ -352,9 +362,9 @@ export default function AdminNovedadesPage() {
                                 <User size={16} className="text-text/60" />
                                 <div className="flex flex-col">
                                     <span className="text-sm font-medium text-text">
-                                       {u.nombre} 
+                                       {u?.nombre || 'Solicitante'} 
                                        <span className="ml-2 text-[10px] bg-accent/20 text-accent px-2 py-0.5 rounded-md font-black uppercase">
-                                          T{u.unidad?.torre || '?'} - A{u.unidad?.numero || '?'}
+                                          T{u?.torre || u?.unidad?.torre || '?'} - A{u?.apto || u?.unidad?.numero || '?'}
                                        </span>
                                     </span>
                                 </div>
@@ -367,9 +377,9 @@ export default function AdminNovedadesPage() {
                                   t.tipo === 'MUDANZA' ? `Fecha Mudanza: ${desc.metadatos?.fecha || '?'}` : 'Solicitud pendiente...'}&quot;
                              </div>
 
-                             {tab === 'HISTORIAL' && t.aprobadoPor && (
+                             {tab === 'HISTORIAL' && (t.aprobadoPor || t.aprobadoPorId) && (
                                  <div className="text-[10px] text-text/60 border-t border-border pt-2 mt-1">
-                                    Procesado por: {t.aprobadoPor.nombre}
+                                    Procesado{t.aprobadoPor?.nombre ? `: ${t.aprobadoPor.nombre}` : ''}
                                  </div>
                              )}
                          </div>
@@ -533,7 +543,7 @@ export default function AdminNovedadesPage() {
                    <h3 className="text-lg font-bold text-text mb-2 pb-2 border-b border-border">Resolver Trámite</h3>
                    <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface-2 border border-border">
                        <span className="text-xs text-text/70 uppercase tracking-widest font-bold">Solicitante</span>
-                       <span className="text-sm text-text">{selectedTramite.usuario.nombre}</span>
+                       <span className="text-sm text-text">{selectedTramite.solicitante?.nombre || selectedTramite.usuario?.nombre || 'Solicitante'}</span>
                    </div>
                    
                    <div className="flex flex-col gap-3">
@@ -541,7 +551,7 @@ export default function AdminNovedadesPage() {
                        <div className="p-4 rounded-2xl bg-surface-2 border border-border">
                           <span className="text-[10px] text-text/70 uppercase tracking-[0.2em] font-black mb-3 block">Detalles del Activo</span>
                           <div className="grid grid-cols-2 gap-3">
-                             {Object.entries(parseDesc(selectedTramite.descripcion).metadatos || {}).map(([k, v]: any) => (
+                             {Object.entries(getMeta(selectedTramite).metadatos || {}).map(([k, v]: any) => (
                                  <div key={k} className="flex flex-col">
                                     <span className="text-[9px] text-text/60 uppercase font-bold">{k}</span>
                                     <span className="text-xs text-text font-mono">{String(v)}</span>
@@ -551,11 +561,11 @@ export default function AdminNovedadesPage() {
                        </div>
 
                        {/* Documentación - Stage 39 Document Viewer */}
-                       {parseDesc(selectedTramite.descripcion).documentos?.length > 0 && (
+                       {getMeta(selectedTramite).documentos?.length > 0 && (
                          <div className="p-4 rounded-2xl bg-surface-2 border border-border">
                             <span className="text-[10px] text-text/70 uppercase tracking-[0.2em] font-black mb-3 block">Documentación Adjunta</span>
                             <div className="flex flex-col gap-2">
-                               {parseDesc(selectedTramite.descripcion).documentos.map((doc: any, i: number) => (
+                               {getMeta(selectedTramite).documentos.map((doc: any, i: number) => (
                                   <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-surface-2 border border-border group">
                                      <div className="flex items-center gap-2 overflow-hidden">
                                         <FileText size={14} className={doc.type === 'pdf' ? 'text-neutral-400' : 'text-neutral-400'} />
