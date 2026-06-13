@@ -357,6 +357,8 @@ diesel::table! {
         estado -> Text,
         usuario_id -> Nullable<Uuid>,
         created_at -> Timestamptz,
+        asignado_en -> Nullable<Timestamptz>,
+        asignado_hasta -> Nullable<Timestamptz>,
     }
 }
 

@@ -40,6 +40,7 @@ export default function AdminNovedadesPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [availableCells, setAvailableCells] = useState<any[]>([]);
   const [selectedCellId, setSelectedCellId] = useState("");
+  const [mesesAsignacion, setMesesAsignacion] = useState("12");
 
   const fetchTramites = async () => {
     setLoading(true);
@@ -272,19 +273,23 @@ export default function AdminNovedadesPage() {
       }
       setIsProcessing(true);
       try {
-          await api.put('/tramites/aprobar', { 
-                  tramiteId: selectedTramite.id, 
-                  accion, 
-                  observacionAdmin: obs,
-                  parqueaderoId: accion === 'APROBAR' && selectedTramite.tipo === 'VEHICULO' ? selectedCellId : undefined
+          // Contrato real del backend: PUT /tramites/{id}/resolver
+          // { decision: 'APROBADO'|'RECHAZADO', observacion?, parqueaderoId?, meses? }
+          const asignaCelda = accion === 'APROBAR' && selectedTramite.tipo === 'VEHICULO' && selectedCellId;
+          await api.put(`/tramites/${selectedTramite.id}/resolver`, {
+                  decision: accion === 'APROBAR' ? 'APROBADO' : 'RECHAZADO',
+                  observacion: obs || undefined,
+                  parqueaderoId: asignaCelda ? selectedCellId : undefined,
+                  meses: asignaCelda ? (parseInt(mesesAsignacion, 10) || 0) : undefined,
               });
           toast.success(`Trámite ${accion === 'APROBAR' ? 'aprobado' : 'rechazado'} con éxito.`);
           setSelectedTramite(null);
           setObs("");
           setSelectedCellId("");
+          setMesesAsignacion("12");
           fetchTramites();
-      } catch {
-          toast.error('Error de conexión.');
+      } catch (e: any) {
+          toast.error(e?.message || 'Error al procesar el trámite.');
       } finally {
           setIsProcessing(false);
       }
@@ -597,6 +602,27 @@ export default function AdminNovedadesPage() {
                                     <option key={c.id} value={c.id} className="bg-primary text-text">Celda {c.numero} ({c.torre || 'N/A'})</option>
                                 ))}
                             </select>
+                            {selectedCellId && (
+                                <div className="flex flex-col gap-1.5 mt-1">
+                                    <label className="text-[10px] text-accent uppercase tracking-widest font-bold">Cláusula de tiempo (asignación permanente)</label>
+                                    <select
+                                      value={mesesAsignacion}
+                                      onChange={(e) => setMesesAsignacion(e.target.value)}
+                                      className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
+                                    >
+                                        <option value="3" className="bg-primary text-text">3 meses</option>
+                                        <option value="6" className="bg-primary text-text">6 meses</option>
+                                        <option value="12" className="bg-primary text-text">12 meses (1 año)</option>
+                                        <option value="24" className="bg-primary text-text">24 meses (2 años)</option>
+                                        <option value="0" className="bg-primary text-text">Sin vencimiento</option>
+                                    </select>
+                                    <span className="text-[9px] text-text/50">
+                                        {mesesAsignacion === "0"
+                                          ? "La celda quedará asignada indefinidamente."
+                                          : `La asignación vencerá automáticamente en ${mesesAsignacion} meses. El vigilante verá la fecha.`}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     )}
 

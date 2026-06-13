@@ -4,8 +4,8 @@ use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use uuid::Uuid;
 
-use crate::db::enums::{EstadoTramite, Rol, TipoTramite};
-use crate::db::schema::{mascotas, tramites, usuarios, vehiculos};
+use crate::db::enums::{EstadoParqueadero, EstadoTramite, Rol, TipoTramite};
+use crate::db::schema::{mascotas, parqueaderos, tramites, usuarios, vehiculos};
 use crate::db::DbConn;
 use crate::domains::notificaciones::repo::create_notificacion;
 use crate::domains::tramites::dto::{MascotaPayload, VehiculoPayload};
@@ -115,11 +115,18 @@ pub async fn resolver_tramite(
     observacion: Option<String>,
     vehiculo: Option<VehiculoPayload>,
     mascota: Option<MascotaPayload>,
+    parqueadero_id: Option<Uuid>,
+    meses: Option<i32>,
 ) -> ApiResult<Tramite> {
     let nuevo_estado = if aprobado {
         EstadoTramite::Aprobado
     } else {
         EstadoTramite::Rechazado
+    };
+    // Cláusula temporal de la asignación de celda (si aplica).
+    let asignado_hasta = match meses {
+        Some(m) if m > 0 => Some(Utc::now() + chrono::Months::new(m as u32)),
+        _ => None,
     };
     conn.transaction(|conn| {
         async move {
@@ -162,6 +169,44 @@ pub async fn resolver_tramite(
                             ))
                             .execute(conn)
                             .await?;
+
+                        // Asignación permanente de celda (opcional) con cláusula
+                        // temporal, en la misma transacción que la aprobación.
+                        if let Some(celda_id) = parqueadero_id {
+                            let celda_libre: Option<EstadoParqueadero> = parqueaderos::table
+                                .filter(parqueaderos::id.eq(celda_id))
+                                .filter(parqueaderos::conjunto_id.eq(tramite.conjunto_id))
+                                .select(parqueaderos::estado)
+                                .first(conn)
+                                .await
+                                .optional()?;
+                            match celda_libre {
+                                None => {
+                                    return Err(ApiError::NotFound(
+                                        "la celda seleccionada no existe".into(),
+                                    ));
+                                }
+                                Some(EstadoParqueadero::Ocupado) => {
+                                    return Err(ApiError::Conflict(
+                                        "la celda seleccionada ya está ocupada".into(),
+                                    ));
+                                }
+                                _ => {}
+                            }
+                            diesel::update(
+                                parqueaderos::table
+                                    .filter(parqueaderos::id.eq(celda_id))
+                                    .filter(parqueaderos::conjunto_id.eq(tramite.conjunto_id)),
+                            )
+                            .set((
+                                parqueaderos::usuario_id.eq(Some(tramite.usuario_id)),
+                                parqueaderos::estado.eq(EstadoParqueadero::Ocupado),
+                                parqueaderos::asignado_en.eq(Some(Utc::now())),
+                                parqueaderos::asignado_hasta.eq(asignado_hasta),
+                            ))
+                            .execute(conn)
+                            .await?;
+                        }
                     }
                     TipoTramite::Mascota => {
                         let m = mascota.ok_or_else(|| {

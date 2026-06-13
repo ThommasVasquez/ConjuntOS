@@ -44,6 +44,8 @@ pub struct Parqueadero {
     pub estado: EstadoParqueadero,
     pub usuario_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
+    pub asignado_en: Option<DateTime<Utc>>,
+    pub asignado_hasta: Option<DateTime<Utc>>,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]

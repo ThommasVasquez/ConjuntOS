@@ -164,6 +164,8 @@ pub async fn resolver_tramite(
         req.observacion,
         vehiculo,
         mascota,
+        req.parqueadero_id,
+        req.meses,
     )
     .await?;
     let dto = TramiteDto::from(resuelto);

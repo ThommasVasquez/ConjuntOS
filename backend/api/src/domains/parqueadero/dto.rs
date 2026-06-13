@@ -54,6 +54,8 @@ pub struct CeldaDto {
     pub estado: EstadoParqueadero,
     pub usuario_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
+    pub asignado_en: Option<DateTime<Utc>>,
+    pub asignado_hasta: Option<DateTime<Utc>>,
 }
 
 impl From<Parqueadero> for CeldaDto {
@@ -66,8 +68,19 @@ impl From<Parqueadero> for CeldaDto {
             estado: p.estado,
             usuario_id: p.usuario_id,
             created_at: p.created_at,
+            asignado_en: p.asignado_en,
+            asignado_hasta: p.asignado_hasta,
         }
     }
+}
+
+/// Asignación permanente de una celda a un residente con cláusula de tiempo.
+/// `meses = None` o 0 → asignación sin fecha de vencimiento.
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AsignarCeldaRequest {
+    pub usuario_id: Uuid,
+    pub meses: Option<i32>,
 }
 
 /// Permanent occupant summary joined from `usuarios`.

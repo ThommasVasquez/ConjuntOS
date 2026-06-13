@@ -1,3 +1,4 @@
+use chrono::Utc;
 use diesel::prelude::*;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
@@ -112,6 +113,127 @@ pub async fn actualizar_celda(
                     registros_parqueadero::tipo.eq(TipoRegistroParqueadero::Verificacion),
                     registros_parqueadero::observacion
                         .eq(format!("cambio estado {anterior}->{nuevo_estado}")),
+                ))
+                .execute(conn)
+                .await?;
+
+            Ok::<_, ApiError>(updated)
+        }
+        .scope_boxed()
+    })
+    .await
+}
+
+/// Asignación permanente de una celda a un residente con cláusula temporal.
+/// Setea usuario_id, estado=OCUPADO, asignado_en=now, asignado_hasta=now+meses
+/// (NULL si meses es None/0). Deja traza VERIFICACION. Una transacción.
+pub async fn asignar_celda(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    celda_id: Uuid,
+    staff_id: Uuid,
+    residente_id: Uuid,
+    meses: Option<i32>,
+) -> ApiResult<Parqueadero> {
+    let ahora = Utc::now();
+    let hasta = match meses {
+        Some(m) if m > 0 => Some(ahora + chrono::Months::new(m as u32)),
+        _ => None,
+    };
+    conn.transaction(|conn| {
+        async move {
+            let celda: Parqueadero = parqueaderos::table
+                .filter(parqueaderos::id.eq(celda_id))
+                .filter(parqueaderos::conjunto_id.eq(conjunto_id))
+                .select(Parqueadero::as_select())
+                .first(conn)
+                .await
+                .optional()?
+                .ok_or_else(|| ApiError::NotFound("celda no encontrada".into()))?;
+
+            if celda.usuario_id.is_some() && celda.estado == EstadoParqueadero::Ocupado {
+                return Err(ApiError::Conflict(
+                    "la celda ya está ocupada por otro residente".into(),
+                ));
+            }
+
+            let updated: Parqueadero = diesel::update(
+                parqueaderos::table
+                    .filter(parqueaderos::id.eq(celda_id))
+                    .filter(parqueaderos::conjunto_id.eq(conjunto_id)),
+            )
+            .set((
+                parqueaderos::usuario_id.eq(Some(residente_id)),
+                parqueaderos::estado.eq(EstadoParqueadero::Ocupado),
+                parqueaderos::asignado_en.eq(Some(ahora)),
+                parqueaderos::asignado_hasta.eq(hasta),
+            ))
+            .returning(Parqueadero::as_returning())
+            .get_result(conn)
+            .await?;
+
+            let detalle = match meses {
+                Some(m) if m > 0 => format!("asignación permanente por {m} meses"),
+                _ => "asignación permanente sin vencimiento".to_string(),
+            };
+            diesel::insert_into(registros_parqueadero::table)
+                .values((
+                    registros_parqueadero::conjunto_id.eq(conjunto_id),
+                    registros_parqueadero::parqueadero_id.eq(celda_id),
+                    registros_parqueadero::usuario_id.eq(staff_id),
+                    registros_parqueadero::tipo.eq(TipoRegistroParqueadero::Verificacion),
+                    registros_parqueadero::observacion.eq(detalle),
+                ))
+                .execute(conn)
+                .await?;
+
+            Ok::<_, ApiError>(updated)
+        }
+        .scope_boxed()
+    })
+    .await
+}
+
+/// Libera una celda: limpia ocupante y cláusula, estado=DISPONIBLE. Traza.
+pub async fn liberar_celda(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    celda_id: Uuid,
+    staff_id: Uuid,
+) -> ApiResult<Parqueadero> {
+    conn.transaction(|conn| {
+        async move {
+            let _celda: Parqueadero = parqueaderos::table
+                .filter(parqueaderos::id.eq(celda_id))
+                .filter(parqueaderos::conjunto_id.eq(conjunto_id))
+                .select(Parqueadero::as_select())
+                .first(conn)
+                .await
+                .optional()?
+                .ok_or_else(|| ApiError::NotFound("celda no encontrada".into()))?;
+
+            let updated: Parqueadero = diesel::update(
+                parqueaderos::table
+                    .filter(parqueaderos::id.eq(celda_id))
+                    .filter(parqueaderos::conjunto_id.eq(conjunto_id)),
+            )
+            .set((
+                parqueaderos::usuario_id.eq(None::<Uuid>),
+                parqueaderos::estado.eq(EstadoParqueadero::Disponible),
+                parqueaderos::asignado_en.eq(None::<chrono::DateTime<Utc>>),
+                parqueaderos::asignado_hasta.eq(None::<chrono::DateTime<Utc>>),
+            ))
+            .returning(Parqueadero::as_returning())
+            .get_result(conn)
+            .await?;
+
+            diesel::insert_into(registros_parqueadero::table)
+                .values((
+                    registros_parqueadero::conjunto_id.eq(conjunto_id),
+                    registros_parqueadero::parqueadero_id.eq(celda_id),
+                    registros_parqueadero::usuario_id.eq(staff_id),
+                    registros_parqueadero::tipo.eq(TipoRegistroParqueadero::Verificacion),
+                    registros_parqueadero::observacion.eq("celda liberada".to_string()),
                 ))
                 .execute(conn)
                 .await?;

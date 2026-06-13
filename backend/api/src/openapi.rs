@@ -40,6 +40,8 @@ use utoipa::OpenApi;
         crate::domains::parqueadero::handlers::crear_vehiculo,
         crate::domains::parqueadero::handlers::mapa,
         crate::domains::parqueadero::handlers::actualizar_celda,
+        crate::domains::parqueadero::handlers::asignar_celda,
+        crate::domains::parqueadero::handlers::liberar_celda,
         crate::domains::parqueadero::handlers::registros,
         crate::domains::parqueadero::handlers::ronda_de_hoy,
         crate::domains::parqueadero::handlers::crear_ronda,

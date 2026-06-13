@@ -7,8 +7,9 @@ use crate::auth::extract::AuthUser;
 use crate::auth::guard;
 use crate::db::enums::Rol;
 use crate::domains::parqueadero::dto::{
-    CeldaDto, CeldaMapaDto, CreateRondaRequest, CreateVehiculoRequest, OcupanteDto,
-    ParqueaderoMioDto, ParqueaderoStatsDto, RegistroDto, RondaDto, UpdateCeldaRequest, VehiculoDto,
+    AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CreateRondaRequest, CreateVehiculoRequest,
+    OcupanteDto, ParqueaderoMioDto, ParqueaderoStatsDto, RegistroDto, RondaDto, UpdateCeldaRequest,
+    VehiculoDto,
 };
 use crate::domains::parqueadero::models::NuevoVehiculo;
 use crate::domains::parqueadero::repo;
@@ -44,6 +45,8 @@ pub fn router() -> Router<AppState> {
         .route("/vehiculos", post(crear_vehiculo))
         .route("/parqueadero/mapa", get(mapa))
         .route("/parqueadero/celdas/{id}", put(actualizar_celda))
+        .route("/parqueadero/celdas/{id}/asignar", post(asignar_celda))
+        .route("/parqueadero/celdas/{id}/liberar", post(liberar_celda))
         .route("/parqueadero/registros", get(registros))
         .route("/parqueadero/rondas", get(ronda_de_hoy).post(crear_ronda))
         .route("/parqueadero/stats", get(parqueadero_stats))
@@ -180,6 +183,87 @@ pub async fn actualizar_celda(
             WsEvent {
                 domain: "parqueadero".into(),
                 action: "celda_updated".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/celdas/{id}/asignar",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Cell id")),
+    request_body = AsignarCeldaRequest,
+    responses(
+        (status = 200, description = "Cell assigned to resident with optional time clause", body = CeldaDto),
+        (status = 403, description = "Requires parking manager role"),
+        (status = 404, description = "Cell not found in this conjunto"),
+        (status = 409, description = "Cell already occupied")
+    )
+)]
+pub async fn asignar_celda(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<AsignarCeldaRequest>,
+) -> ApiResult<Json<CeldaDto>> {
+    guard::require(&user, ROLES_PARQUEADERO)?;
+    let mut conn = state.pool.get().await?;
+    let celda = repo::asignar_celda(
+        &mut conn,
+        user.conjunto_id,
+        id,
+        user.id,
+        req.usuario_id,
+        req.meses,
+    )
+    .await?;
+    let dto = CeldaDto::from(celda);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "parqueadero".into(),
+                action: "celda_asignada".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/celdas/{id}/liberar",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Cell id")),
+    responses(
+        (status = 200, description = "Cell released (now DISPONIBLE)", body = CeldaDto),
+        (status = 403, description = "Requires parking manager role"),
+        (status = 404, description = "Cell not found in this conjunto")
+    )
+)]
+pub async fn liberar_celda(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<CeldaDto>> {
+    guard::require(&user, ROLES_PARQUEADERO)?;
+    let mut conn = state.pool.get().await?;
+    let celda = repo::liberar_celda(&mut conn, user.conjunto_id, id, user.id).await?;
+    let dto = CeldaDto::from(celda);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "parqueadero".into(),
+                action: "celda_liberada".into(),
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
                 target_user_id: None,
             },

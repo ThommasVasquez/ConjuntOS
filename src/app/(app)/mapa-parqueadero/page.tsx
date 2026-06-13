@@ -88,8 +88,32 @@ export default function MapaParqueaderoPage() {
       setSelectedCell(cell);
       setPlaca("");
       setObs("");
+    } else if (cell.usuarioId || cell.asignadoHasta) {
+      // Celda con asignación PERMANENTE: liberar limpia ocupante + cláusula.
+      const venceTxt = cell.asignadoHasta
+        ? ` (asignación ${new Date(cell.asignadoHasta).getTime() < Date.now() ? 'VENCIDA' : 'vigente hasta ' + new Date(cell.asignadoHasta).toLocaleDateString('es-CO')})`
+        : '';
+      if (confirm(`¿Liberar la celda ${cell.numero}?${venceTxt}\n\nQuedará disponible para una nueva asignación.`)) {
+        liberarCelda(cell.id);
+      }
     } else {
       processToggle(cell.id, 'DISPONIBLE');
+    }
+  };
+
+  const liberarCelda = async (id: string) => {
+    setIsSubmitting(true);
+    try {
+      await api.post(`/parqueadero/celdas/${id}/liberar`, {});
+      toast.success("Celda liberada. Ahora está disponible.");
+      loadData();
+      loadExtra();
+    } catch (e: any) {
+      toast.error(e?.message || "Error al liberar la celda");
+      loadData();
+    } finally {
+      setIsSubmitting(false);
+      setSelectedCell(null);
     }
   };
 
@@ -187,15 +211,19 @@ export default function MapaParqueaderoPage() {
              {parqueaderos.map((p) => {
                 const isLibre = p.estado === 'DISPONIBLE';
                 const isResident = p.tipo === 'RESIDENTE';
-                const assignedPlate = p.usuario?.vehiculos?.[0]?.placa;
-                const residentName = p.usuario?.nombre;
+                const assignedPlate = p.ocupante?.vehiculos?.[0]?.placa || p.usuario?.vehiculos?.[0]?.placa;
+                const residentName = p.ocupante?.nombre || p.usuario?.nombre;
+                // Cláusula temporal de la asignación
+                const venceEn = p.asignadoHasta ? new Date(p.asignadoHasta) : null;
+                const vencida = venceEn ? venceEn.getTime() < Date.now() : false;
+                const diasRestantes = venceEn ? Math.ceil((venceEn.getTime() - Date.now()) / 86400000) : null;
 
                 return (
                   <button 
                     key={p.id}
                     onClick={() => handleCellClick(p)}
                     className={`fade-up relative flex flex-col items-center justify-center gap-2 py-6 rounded-2xl border transition-all active:scale-95
-                      ${isLibre ? 'bg-text/5 border-border/40 hover:bg-text/10 text-text/70' : 'bg-accent/10 border-accent/40 shadow-[0_0_15px_rgba(0,0,0,0.3)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] text-accent'}
+                      ${isLibre ? 'bg-text/5 border-border/40 hover:bg-text/10 text-text/70' : vencida ? 'bg-text/10 border-text/50 border-dashed text-text' : 'bg-accent/10 border-accent/40 shadow-[0_0_15px_rgba(0,0,0,0.3)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] text-accent'}
                     `}
                   >
                      {isResident ? <ShieldCheck size={20} className={isLibre ? 'text-text/30' : 'text-accent/60'} /> : <HelpCircle size={20} className={isLibre ? 'text-neutral-500/30 dark:text-neutral-400/30' : 'text-neutral-600 dark:text-neutral-400' }/>}
@@ -210,6 +238,12 @@ export default function MapaParqueaderoPage() {
 
                      {residentName && !isLibre && (
                          <span className="text-[7px] uppercase font-bold text-text/50 absolute top-2 left-2 max-w-[50px] truncate">{residentName}</span>
+                     )}
+
+                     {!isLibre && venceEn && (
+                         <span className={`text-[7px] font-black uppercase tracking-wide absolute bottom-7 px-1 rounded-sm ${vencida ? 'bg-text text-primary' : 'text-text/60'}`}>
+                            {vencida ? 'VENCIDA' : diasRestantes !== null && diasRestantes <= 30 ? `vence ${diasRestantes}d` : `hasta ${venceEn.toLocaleDateString('es-CO', {month:'short', year:'2-digit'})}`}
+                         </span>
                      )}
 
                      <span className="text-[9px] uppercase font-bold tracking-widest absolute bottom-2 opacity-50">

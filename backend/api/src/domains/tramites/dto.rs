@@ -101,6 +101,10 @@ pub enum DecisionTramite {
 pub struct ResolverTramiteRequest {
     pub decision: DecisionTramite,
     pub observacion: Option<String>,
+    /// Solo para trámites VEHICULO al aprobar: celda a asignar permanentemente.
+    pub parqueadero_id: Option<Uuid>,
+    /// Cláusula temporal en meses (None/0 = sin vencimiento). Acompaña a parqueadero_id.
+    pub meses: Option<i32>,
 }
 
 /// Typed `tramites.payload` for tipo VEHICULO, validated on approval (422 on
