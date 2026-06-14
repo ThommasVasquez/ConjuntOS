@@ -2,7 +2,7 @@
 
 import { 
   AlertCircle, ArrowRight, Car, CheckCircle, ClipboardCheck, 
-  Clock, HelpCircle, History, Map, ShieldCheck, X 
+  Clock, History, Map, X 
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
@@ -207,65 +207,84 @@ export default function MapaParqueaderoPage() {
              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#FACC15] border border-[#FACC15] shadow-[0_0_6px_rgba(250,204,21,0.6)]"></div><span className="text-[10px] text-text uppercase font-bold tracking-widest">Reservado</span></div>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-             {parqueaderos.map((p) => {
+          {/* MAPA TIPO PLANO AÉREO: bahías a ambos lados de un carril central */}
+          {parqueaderos.length === 0 ? (
+             <div className="py-16 flex flex-col items-center justify-center gap-2 text-center">
+                <Map size={40} className="text-text/40" />
+                <p className="text-xs text-text/70 font-bold">No hay celdas registradas todavía</p>
+             </div>
+          ) : (() => {
+             // Una bahía de estacionamiento (rectángulo) pegada al carril central.
+             const bay = (p: any, side: 'left' | 'right') => {
                 const isLibre = p.estado === 'DISPONIBLE';
                 const isReservado = p.estado === 'RESERVADO';
-                const isResident = p.tipo === 'RESIDENTE';
-                const assignedPlate = p.ocupante?.vehiculos?.[0]?.placa || p.usuario?.vehiculos?.[0]?.placa;
-                const residentName = p.ocupante?.nombre || p.usuario?.nombre;
-                // Cláusula temporal de la asignación
-                const venceEn = p.asignadoHasta ? new Date(p.asignadoHasta) : null;
-                const vencida = venceEn ? venceEn.getTime() < Date.now() : false;
-                const diasRestantes = venceEn ? Math.ceil((venceEn.getTime() - Date.now()) / 86400000) : null;
-
-                // Colores semánticos: Libre=verde, Ocupado=rojo, Reservado=amarillo.
-                const stateClasses = isLibre
-                  ? 'bg-[#57bf00]/10 border-[#57bf00]/50 hover:bg-[#57bf00]/20'
-                  : isReservado
-                    ? 'bg-[#FACC15]/10 border-[#FACC15]/50 hover:bg-[#FACC15]/20'
-                    : 'bg-[#EF4444]/10 border-[#EF4444]/50 hover:bg-[#EF4444]/20';
+                const vencida = p.asignadoHasta ? new Date(p.asignadoHasta).getTime() < Date.now() : false;
+                // Libre=verde, Ocupado=rojo, Reservado=amarillo.
                 const stateColor = isLibre ? '#57bf00' : isReservado ? '#FACC15' : '#EF4444';
-
+                const numEl = (
+                   <span key="n" className="font-display font-bold text-xs leading-none break-all text-text px-1">{p.numero}</span>
+                );
+                const carEl = !isLibre
+                   ? <Car key="c" size={11} style={{ color: stateColor }} className="shrink-0" />
+                   : <span key="c" className="w-[11px]" />;
                 return (
-                  <button 
-                    key={p.id}
-                    onClick={() => handleCellClick(p)}
-                    className={`fade-up relative flex flex-col items-center justify-between gap-1 p-3 min-h-[124px] rounded-2xl border transition-all active:scale-95 overflow-hidden ${stateClasses} ${vencida ? 'border-dashed' : ''}`}
-                  >
-                     {/* Fila superior: nombre del residente (izq) + placa (der) */}
-                     <div className="w-full flex justify-between items-start gap-1 min-h-[14px]">
-                        <span className="text-[7px] uppercase font-bold text-text/70 max-w-[55%] truncate text-left leading-tight">
-                           {!isLibre && residentName ? residentName : ''}
-                        </span>
-                        {!isLibre && assignedPlate && (
-                           <span className="text-[8px] font-black px-1 rounded-sm leading-tight shrink-0" style={{ backgroundColor: stateColor, color: '#000' }}>{assignedPlate}</span>
-                        )}
-                     </div>
+                   <button
+                      key={p.id}
+                      onClick={() => handleCellClick(p)}
+                      title={`Celda ${p.numero} · ${p.estado}`}
+                      className="group relative flex items-center justify-between h-11 px-2 border-t border-white/20 transition-all active:scale-[0.98] hover:brightness-150"
+                      style={{ backgroundColor: stateColor + '26' }}
+                   >
+                      {/* tope de rueda en el extremo exterior */}
+                      <span className={`absolute inset-y-1.5 w-1 rounded-full ${side === 'left' ? 'left-0.5' : 'right-0.5'}`} style={{ backgroundColor: stateColor }} />
+                      {side === 'left' ? <>{numEl}{carEl}</> : <>{carEl}{numEl}</>}
+                      {vencida && <span className="absolute bottom-0 inset-x-0 text-center text-[6px] font-black uppercase tracking-wide text-[#EF4444]">vencida</span>}
+                   </button>
+                );
+             };
+             const mid = Math.ceil(parqueaderos.length / 2);
+             const leftCells = parqueaderos.slice(0, mid);
+             const rightCells = parqueaderos.slice(mid);
+             return (
+                <div className="fade-up relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+                     style={{ background: 'repeating-linear-gradient(45deg, #0d0d0d 0 6px, #121212 6px 12px)' }}>
+                   {/* Marca de agua "P" */}
+                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+                      <span className="font-display font-black text-white/[0.04] leading-none select-none" style={{ fontSize: '38vw' }}>P</span>
+                   </div>
 
-                     {/* Centro: ícono + número de celda */}
-                     <div className="flex flex-col items-center gap-1 w-full">
-                        {isResident
-                          ? <ShieldCheck size={18} style={{ color: stateColor }} />
-                          : <HelpCircle size={18} className={isLibre ? 'text-text/40' : 'text-text/70'} />}
-                        <span className="font-display font-bold text-sm leading-none text-center break-all max-w-full px-0.5 text-text">{p.numero}</span>
-                     </div>
+                   {/* ENTRADA */}
+                   <div className="relative flex items-center justify-center h-7 border-b-2 border-dashed border-[#57bf00]/60">
+                      <div className="absolute inset-0 bg-[#57bf00]/10" />
+                      <span className="relative text-[8px] font-black tracking-[0.3em] text-[#57bf00] uppercase">▲ Entrada</span>
+                   </div>
 
-                     {/* Fila inferior: vigencia + tipo */}
-                     <div className="w-full flex flex-col items-center gap-0.5 min-h-[20px]">
-                        {!isLibre && venceEn && (
-                           <span className="text-[7px] font-black uppercase tracking-wide px-1 rounded-sm leading-tight" style={vencida ? { backgroundColor: stateColor, color: '#000' } : { color: stateColor }}>
-                              {vencida ? 'VENCIDA' : diasRestantes !== null && diasRestantes <= 30 ? `vence ${diasRestantes}d` : `hasta ${venceEn.toLocaleDateString('es-CO', {month:'short', year:'2-digit'})}`}
-                           </span>
-                        )}
-                        <span className="text-[9px] uppercase font-bold tracking-widest opacity-60 text-text">
-                           {p.tipo}
-                        </span>
-                     </div>
-                  </button>
-                )
-             })}
-          </div>
+                   {/* CUERPO: peatonal · bahías · carril · bahías · peatonal */}
+                   <div className="relative flex items-stretch">
+                      <div className="w-1.5 bg-[#57bf00]/30" />
+                      <div className="flex-1 flex flex-col border-r-2 border-white/40">
+                         {leftCells.map((p) => bay(p, 'left'))}
+                      </div>
+                      {/* Carril central con línea amarilla y flechas */}
+                      <div className="w-10 relative flex flex-col items-center justify-between py-3 shrink-0">
+                         <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px]"
+                              style={{ backgroundImage: 'repeating-linear-gradient(to bottom, #FACC15 0 8px, transparent 8px 18px)' }} />
+                         <ArrowRight size={16} className="relative text-white/70 -rotate-90" />
+                         <ArrowRight size={16} className="relative text-white/70 rotate-90" />
+                      </div>
+                      <div className="flex-1 flex flex-col border-l-2 border-white/40">
+                         {rightCells.map((p) => bay(p, 'right'))}
+                      </div>
+                      <div className="w-1.5 bg-[#57bf00]/30" />
+                   </div>
+
+                   {/* SALIDA */}
+                   <div className="relative flex items-center justify-center h-7 border-t-2 border-dashed border-white/30">
+                      <span className="relative text-[8px] font-black tracking-[0.3em] text-text/70 uppercase">Salida ▼</span>
+                   </div>
+                </div>
+             );
+          })()}
        </div>
 
        <section className="fade-up flex flex-col gap-4 mt-2">
