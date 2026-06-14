@@ -47,7 +47,7 @@ export default function BottomNav() {
   }
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[80] w-[92%] max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div 
         className="liquid-glass rounded-[35px] w-full flex justify-between items-center p-2.5 relative shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-2xl"
       >
