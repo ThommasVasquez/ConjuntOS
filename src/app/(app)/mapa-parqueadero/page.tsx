@@ -242,6 +242,16 @@ export default function MapaParqueaderoPage() {
              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EF4444] border border-[#EF4444] shadow-[0_0_6px_rgba(239,68,68,0.6)]"></div><span className="text-[10px] text-text uppercase font-bold tracking-widest">Ocupado</span></div>
              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#FACC15] border border-[#FACC15] shadow-[0_0_6px_rgba(250,204,21,0.6)]"></div><span className="text-[10px] text-text uppercase font-bold tracking-widest">Reservado</span></div>
           </div>
+
+          {/* Equivalencia física de espacios */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-5 -mt-2">
+             <span className="text-[10px] text-text/60 font-bold uppercase tracking-widest">Equivalencia:</span>
+             <span className="text-[10px] text-text/80">🚗 1 carro</span>
+             <span className="text-[10px] text-text/40">=</span>
+             <span className="text-[10px] text-text/80">🏍️ 4 motos</span>
+             <span className="text-[10px] text-text/40">=</span>
+             <span className="text-[10px] text-text/80">🚲 5 bicis</span>
+          </div>
           
           {/* MAPA TIPO PLANO AÉREO: bahías a ambos lados de un carril central */}
           {celdasDelNivel.length === 0 ? (
@@ -252,27 +262,51 @@ export default function MapaParqueaderoPage() {
                 </p>
              </div>
           ) : (() => {
-             // Una bahía de estacionamiento (rectángulo) pegada al carril central.
+             // Una bahía de estacionamiento. La proporción física se respeta:
+             // en el cajón de un carro caben 4 motos (perpendiculares) o 5 bicis,
+             // por eso la moto ocupa 1/4 del ancho y la bici 1/5 (flex-wrap las
+             // empaqueta solas: 4 motos por fila, 5 bicis por fila, 1 carro por fila).
              const bay = (p: any, side: 'left' | 'right') => {
                 const isLibre = p.estado === 'DISPONIBLE';
                 const isReservado = p.estado === 'RESERVADO';
                 const vencida = p.asignadoHasta ? new Date(p.asignadoHasta).getTime() < Date.now() : false;
                 // Libre=verde, Ocupado=rojo, Reservado=amarillo.
                 const stateColor = isLibre ? '#57bf00' : isReservado ? '#FACC15' : '#EF4444';
+                const cat = p.categoria || 'CARRO';
+                const catIcon = cat === 'MOTO' ? '🏍️' : cat === 'BICI' ? '🚲' : '🚗';
+
+                // MOTO / BICI: tiles compactos que ocupan una fracción del ancho del
+                // cajón de carro (1/4 y 1/5), para que se vea cuántas caben.
+                if (cat === 'MOTO' || cat === 'BICI') {
+                   const widthCls = cat === 'MOTO' ? 'w-[25%]' : 'w-[20%]';
+                   return (
+                      <button
+                         key={p.id}
+                         onClick={() => handleCellClick(p)}
+                         title={`Celda ${p.numero} · ${cat} · ${p.estado}`}
+                         className={`group relative ${widthCls} h-11 flex flex-col items-center justify-center gap-0.5 border border-white/15 transition-all active:scale-[0.95] hover:brightness-150`}
+                         style={{ backgroundColor: stateColor + '26' }}
+                      >
+                         <span className="text-[11px] leading-none" style={{ opacity: isLibre ? 0.35 : 1 }}>{catIcon}</span>
+                         <span className="font-display font-bold text-[8px] leading-none text-text truncate max-w-full px-0.5">{p.numero}</span>
+                         {vencida && <span className="absolute bottom-0 inset-x-0 text-center text-[6px] font-black uppercase text-[#EF4444]">venc</span>}
+                      </button>
+                   );
+                }
+
+                // CARRO: bahía completa, ocupa todo el ancho del cajón.
                 const numEl = (
                    <span key="n" className="font-display font-bold text-xs leading-none break-all text-text px-1">{p.numero}</span>
                 );
-                // Ícono según categoría física de la celda (carro/moto/bici).
-                const catIcon = p.categoria === 'MOTO' ? '🏍️' : p.categoria === 'BICI' ? '🚲' : '🚗';
-                const carEl = !isLibre
-                   ? <span key="c" className="text-[11px] leading-none shrink-0" title={p.categoria}>{catIcon}</span>
-                   : <span key="c" className="text-[11px] leading-none shrink-0 opacity-30" title={p.categoria}>{catIcon}</span>;
+                const carEl = (
+                   <span key="c" className="text-[11px] leading-none shrink-0" style={{ opacity: isLibre ? 0.3 : 1 }} title={cat}>{catIcon}</span>
+                );
                 return (
                    <button
                       key={p.id}
                       onClick={() => handleCellClick(p)}
                       title={`Celda ${p.numero} · ${p.estado}`}
-                      className="group relative flex items-center justify-between h-11 px-2 border-t border-white/20 transition-all active:scale-[0.98] hover:brightness-150"
+                      className="group relative w-full flex items-center justify-between h-11 px-2 border-t border-white/20 transition-all active:scale-[0.98] hover:brightness-150"
                       style={{ backgroundColor: stateColor + '26' }}
                    >
                       {/* tope de rueda en el extremo exterior */}
@@ -302,7 +336,7 @@ export default function MapaParqueaderoPage() {
                    {/* CUERPO: peatonal · bahías · carril · bahías · peatonal */}
                    <div className="relative flex items-stretch">
                       <div className="w-1.5 bg-[#57bf00]/30" />
-                      <div className="flex-1 flex flex-col border-r-2 border-white/40">
+                      <div className="flex-1 flex flex-row flex-wrap content-start border-r-2 border-white/40">
                          {leftCells.map((p) => bay(p, 'left'))}
                       </div>
                       {/* Carril central con línea amarilla y flechas */}
@@ -312,7 +346,7 @@ export default function MapaParqueaderoPage() {
                          <ArrowRight size={16} className="relative text-white/70 -rotate-90" />
                          <ArrowRight size={16} className="relative text-white/70 rotate-90" />
                       </div>
-                      <div className="flex-1 flex flex-col border-l-2 border-white/40">
+                      <div className="flex-1 flex flex-row flex-wrap content-start border-l-2 border-white/40">
                          {rightCells.map((p) => bay(p, 'right'))}
                       </div>
                       <div className="w-1.5 bg-[#57bf00]/30" />
