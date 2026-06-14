@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use uuid::Uuid;
 
 use crate::db::enums::Rol;
-use crate::db::schema::usuarios;
+use crate::db::schema::{mascotas, usuarios};
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
 #[diesel(table_name = usuarios, check_for_backend(diesel::pg::Pg))]
@@ -36,4 +36,17 @@ pub struct NuevoUsuario {
     pub unidad_id: Option<Uuid>,
     pub torre: Option<String>,
     pub apto: Option<String>,
+}
+
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
+#[diesel(table_name = mascotas, check_for_backend(diesel::pg::Pg))]
+pub struct Mascota {
+    pub id: Uuid,
+    pub conjunto_id: Uuid,
+    pub usuario_id: Uuid,
+    pub nombre: String,
+    pub tipo: String,
+    pub raza: Option<String>,
+    pub foto_url: Option<String>,
+    pub created_at: DateTime<Utc>,
 }

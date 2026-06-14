@@ -65,6 +65,60 @@ pub struct ProfileResponse {
     #[serde(flatten)]
     pub user: UserDto,
     pub unidad: Option<UnidadDto>,
+    #[serde(default)]
+    pub vehiculos: Vec<VehiculoPerfilDto>,
+    #[serde(default)]
+    pub mascotas: Vec<MascotaPerfilDto>,
+    #[serde(default, rename = "tramitesSolicitados")]
+    pub tramites_solicitados: Vec<crate::domains::tramites::dto::TramiteDto>,
+}
+
+/// Vehículo tal como lo muestra el perfil del residente.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct VehiculoPerfilDto {
+    pub id: Uuid,
+    pub placa: String,
+    pub marca: Option<String>,
+    pub modelo: Option<String>,
+    pub color: Option<String>,
+    pub tipo: crate::db::enums::TipoVehiculo,
+}
+
+impl From<crate::domains::parqueadero::models::Vehiculo> for VehiculoPerfilDto {
+    fn from(v: crate::domains::parqueadero::models::Vehiculo) -> Self {
+        Self {
+            id: v.id,
+            placa: v.placa,
+            marca: v.marca,
+            modelo: v.modelo,
+            color: v.color,
+            tipo: v.tipo,
+        }
+    }
+}
+
+/// Mascota tal como la muestra el perfil del residente.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct MascotaPerfilDto {
+    pub id: Uuid,
+    pub nombre: String,
+    pub tipo: String,
+    pub raza: Option<String>,
+    pub foto_url: Option<String>,
+}
+
+impl From<crate::domains::usuarios::models::Mascota> for MascotaPerfilDto {
+    fn from(m: crate::domains::usuarios::models::Mascota) -> Self {
+        Self {
+            id: m.id,
+            nombre: m.nombre,
+            tipo: m.tipo,
+            raza: m.raza,
+            foto_url: m.foto_url,
+        }
+    }
 }
 
 #[derive(Serialize, ToSchema)]

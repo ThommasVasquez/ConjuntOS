@@ -3,7 +3,9 @@ use axum::routing::get;
 use axum::{Json, Router};
 
 use crate::auth::extract::AuthUser;
-use crate::domains::usuarios::dto::{ProfileResponse, UnidadDto, UpdateProfileRequest, UserDto};
+use crate::domains::usuarios::dto::{
+    MascotaPerfilDto, ProfileResponse, UnidadDto, UpdateProfileRequest, UserDto, VehiculoPerfilDto,
+};
 use crate::domains::usuarios::repo::{self, ProfileChanges};
 use crate::error::{ApiError, ApiResult};
 use crate::state::AppState;
@@ -37,9 +39,27 @@ pub async fn get_profile(
         Some(id) => repo::find_unidad(&mut conn, id).await?.map(UnidadDto::from),
         None => None,
     };
+    let vehiculos = repo::vehiculos_de(&mut conn, user.id)
+        .await?
+        .into_iter()
+        .map(VehiculoPerfilDto::from)
+        .collect();
+    let mascotas = repo::mascotas_de(&mut conn, user.id)
+        .await?
+        .into_iter()
+        .map(MascotaPerfilDto::from)
+        .collect();
+    let tramites_solicitados = repo::tramites_de(&mut conn, user.id)
+        .await?
+        .into_iter()
+        .map(crate::domains::tramites::dto::TramiteDto::from)
+        .collect();
     Ok(Json(ProfileResponse {
         user: UserDto::from(usuario),
         unidad,
+        vehiculos,
+        mascotas,
+        tramites_solicitados,
     }))
 }
 
@@ -108,8 +128,26 @@ pub async fn update_profile(
         Some(id) => repo::find_unidad(&mut conn, id).await?.map(UnidadDto::from),
         None => None,
     };
+    let vehiculos = repo::vehiculos_de(&mut conn, user.id)
+        .await?
+        .into_iter()
+        .map(VehiculoPerfilDto::from)
+        .collect();
+    let mascotas = repo::mascotas_de(&mut conn, user.id)
+        .await?
+        .into_iter()
+        .map(MascotaPerfilDto::from)
+        .collect();
+    let tramites_solicitados = repo::tramites_de(&mut conn, user.id)
+        .await?
+        .into_iter()
+        .map(crate::domains::tramites::dto::TramiteDto::from)
+        .collect();
     Ok(Json(ProfileResponse {
         user: UserDto::from(updated),
         unidad,
+        vehiculos,
+        mascotas,
+        tramites_solicitados,
     }))
 }

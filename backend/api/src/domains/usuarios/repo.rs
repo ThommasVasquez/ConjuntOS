@@ -4,9 +4,11 @@ use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
 use crate::db::enums::TipoUnidad;
-use crate::db::schema::{unidades, usuarios};
+use crate::db::schema::{mascotas, tramites, unidades, usuarios, vehiculos};
 use crate::db::DbConn;
 use crate::domains::conjuntos::models::Unidad;
+use crate::domains::parqueadero::models::Vehiculo;
+use crate::domains::tramites::models::Tramite;
 use crate::domains::usuarios::models::Usuario;
 use crate::error::ApiResult;
 
@@ -38,6 +40,42 @@ pub async fn find_unidad(conn: &mut DbConn, unidad_id: Uuid) -> ApiResult<Option
         .await
         .optional()?;
     Ok(unidad)
+}
+
+/// Vehículos aprobados/registrados del usuario (para su perfil).
+pub async fn vehiculos_de(conn: &mut DbConn, usuario_id: Uuid) -> ApiResult<Vec<Vehiculo>> {
+    let rows = vehiculos::table
+        .filter(vehiculos::usuario_id.eq(usuario_id))
+        .order(vehiculos::created_at.desc())
+        .select(Vehiculo::as_select())
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
+/// Mascotas registradas del usuario (para su perfil).
+pub async fn mascotas_de(
+    conn: &mut DbConn,
+    usuario_id: Uuid,
+) -> ApiResult<Vec<crate::domains::usuarios::models::Mascota>> {
+    let rows = mascotas::table
+        .filter(mascotas::usuario_id.eq(usuario_id))
+        .order(mascotas::created_at.desc())
+        .select(crate::domains::usuarios::models::Mascota::as_select())
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
+/// Trámites solicitados por el usuario (para su perfil).
+pub async fn tramites_de(conn: &mut DbConn, usuario_id: Uuid) -> ApiResult<Vec<Tramite>> {
+    let rows = tramites::table
+        .filter(tramites::usuario_id.eq(usuario_id))
+        .order(tramites::created_at.desc())
+        .select(Tramite::as_select())
+        .load(conn)
+        .await?;
+    Ok(rows)
 }
 
 /// Updates a user's role and returns the refreshed row. Used by the tester
