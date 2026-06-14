@@ -338,9 +338,28 @@ function ProfileContent() {
     setIsRegSubmitting(true);
     
     try {
+        // Construir el payload EXACTO que valida el backend (deny_unknown_fields).
+        // VEHICULO espera {placa, marca, modelo, color, tipo}; MASCOTA {nombre, tipo, raza}.
+        let payload: any = regForm;
+        if (regType === "VEHICULO") {
+            if (!regForm.tipoVehiculo) { toast.error("Selecciona la clase de vehículo"); setIsRegSubmitting(false); return; }
+            payload = {
+                placa: regForm.placa.trim().toUpperCase(),
+                marca: regForm.marca || undefined,
+                modelo: regForm.modelo || undefined,
+                color: regForm.color || undefined,
+                tipo: regForm.tipoVehiculo,
+            };
+        } else if (regType === "MASCOTA") {
+            payload = {
+                nombre: regForm.nombre,
+                tipo: regForm.tipo,
+                raza: regForm.raza || undefined,
+            };
+        }
         await api.post('/tramites', {
                 tipo: regType,
-                payload: regForm,
+                payload,
                 documentos: regDocs
             });
         toast.success("Solicitud enviada. Sujeta a aprobación administrativa.");
@@ -1077,8 +1096,8 @@ function ProfileContent() {
                     <>
                        <div className="space-y-1.5">
                            <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Clase de Vehículo</label>
-                           <div className="grid grid-cols-3 gap-2">
-                              {["CARRO", "MOTO", "BICI"].map((t) => (
+                           <div className="grid grid-cols-2 gap-2">
+                              {["CARRO", "MOTO"].map((t) => (
                                  <button 
                                    key={t}
                                    type="button"
