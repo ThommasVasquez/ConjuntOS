@@ -359,6 +359,7 @@ diesel::table! {
         created_at -> Timestamptz,
         asignado_en -> Nullable<Timestamptz>,
         asignado_hasta -> Nullable<Timestamptz>,
+        categoria -> Text,
     }
 }
 
@@ -453,6 +454,27 @@ diesel::table! {
         fecha -> Timestamptz,
         hallazgos -> Nullable<Jsonb>,
         completada -> Bool,
+    }
+}
+
+diesel::table! {
+    solicitudes_parqueadero (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        parqueadero_id -> Nullable<Uuid>,
+        celda_numero -> Text,
+        accion -> Text,
+        estado -> Text,
+        requiere_aprobacion -> Bool,
+        detalle -> Text,
+        payload -> Nullable<Jsonb>,
+        solicitante_id -> Uuid,
+        solicitante_nombre -> Text,
+        solicitante_rol -> Text,
+        creado_en -> Timestamptz,
+        aprobador_id -> Nullable<Uuid>,
+        aprobador_nombre -> Nullable<Text>,
+        resuelto_en -> Nullable<Timestamptz>,
     }
 }
 
@@ -609,6 +631,8 @@ diesel::joinable!(rondas_parqueadero -> conjuntos (conjunto_id));
 diesel::joinable!(rondas_parqueadero -> usuarios (usuario_id));
 diesel::joinable!(solicitudes_servicio -> conjuntos (conjunto_id));
 diesel::joinable!(solicitudes_servicio -> usuarios (usuario_id));
+diesel::joinable!(solicitudes_parqueadero -> conjuntos (conjunto_id));
+diesel::joinable!(solicitudes_parqueadero -> parqueaderos (parqueadero_id));
 diesel::joinable!(tramites -> conjuntos (conjunto_id));
 diesel::joinable!(unidades -> conjuntos (conjunto_id));
 diesel::joinable!(usuarios -> conjuntos (conjunto_id));
@@ -651,6 +675,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     registros_parqueadero,
     reservas,
     rondas_parqueadero,
+    solicitudes_parqueadero,
     solicitudes_servicio,
     tramites,
     unidades,

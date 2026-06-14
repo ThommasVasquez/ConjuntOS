@@ -3,9 +3,12 @@ use diesel::prelude::*;
 use uuid::Uuid;
 
 use crate::db::enums::{
-    EstadoParqueadero, TipoCeldaParqueadero, TipoRegistroParqueadero, TipoVehiculo,
+    AccionParqueadero, CategoriaParqueadero, EstadoParqueadero, EstadoSolicitudParqueadero,
+    TipoCeldaParqueadero, TipoRegistroParqueadero, TipoVehiculo,
 };
-use crate::db::schema::{parqueaderos, registros_parqueadero, rondas_parqueadero, vehiculos};
+use crate::db::schema::{
+    parqueaderos, registros_parqueadero, rondas_parqueadero, solicitudes_parqueadero, vehiculos,
+};
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
 #[diesel(table_name = vehiculos, check_for_backend(diesel::pg::Pg))]
@@ -46,6 +49,7 @@ pub struct Parqueadero {
     pub created_at: DateTime<Utc>,
     pub asignado_en: Option<DateTime<Utc>>,
     pub asignado_hasta: Option<DateTime<Utc>>,
+    pub categoria: CategoriaParqueadero,
 }
 
 #[derive(Insertable, Debug)]
@@ -56,6 +60,7 @@ pub struct NuevaCelda {
     pub torre: Option<String>,
     pub tipo: TipoCeldaParqueadero,
     pub estado: EstadoParqueadero,
+    pub categoria: CategoriaParqueadero,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
@@ -81,4 +86,43 @@ pub struct RondaParqueadero {
     /// `Vec<HallazgoDto>` validated at the boundary (Law 6).
     pub hallazgos: Option<serde_json::Value>,
     pub completada: bool,
+}
+
+/// Log inmutable de movimientos de celdas (auditoría + flujo de aprobación).
+/// Solo ADMINISTRADOR puede verlo; solo SUPER_ADMIN editar/borrar.
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
+#[diesel(table_name = solicitudes_parqueadero, check_for_backend(diesel::pg::Pg))]
+pub struct SolicitudParqueadero {
+    pub id: Uuid,
+    pub conjunto_id: Uuid,
+    pub parqueadero_id: Option<Uuid>,
+    pub celda_numero: String,
+    pub accion: AccionParqueadero,
+    pub estado: EstadoSolicitudParqueadero,
+    pub requiere_aprobacion: bool,
+    pub detalle: String,
+    pub payload: Option<serde_json::Value>,
+    pub solicitante_id: Uuid,
+    pub solicitante_nombre: String,
+    pub solicitante_rol: String,
+    pub creado_en: DateTime<Utc>,
+    pub aprobador_id: Option<Uuid>,
+    pub aprobador_nombre: Option<String>,
+    pub resuelto_en: Option<DateTime<Utc>>,
+}
+
+#[derive(Insertable, Debug)]
+#[diesel(table_name = solicitudes_parqueadero)]
+pub struct NuevaSolicitud {
+    pub conjunto_id: Uuid,
+    pub parqueadero_id: Option<Uuid>,
+    pub celda_numero: String,
+    pub accion: AccionParqueadero,
+    pub estado: EstadoSolicitudParqueadero,
+    pub requiere_aprobacion: bool,
+    pub detalle: String,
+    pub payload: Option<serde_json::Value>,
+    pub solicitante_id: Uuid,
+    pub solicitante_nombre: String,
+    pub solicitante_rol: String,
 }

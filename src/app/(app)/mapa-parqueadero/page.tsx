@@ -114,8 +114,12 @@ export default function MapaParqueaderoPage() {
   const liberarCelda = async (id: string) => {
     setIsSubmitting(true);
     try {
-      await api.post(`/parqueadero/celdas/${id}/liberar`, {});
-      toast.success("Celda liberada. Ahora está disponible.");
+      const r: any = await api.post(`/parqueadero/celdas/${id}/liberar`, {});
+      if (r?.pendiente) {
+        toast.success("Solicitud enviada a aprobación del administrador.", { duration: 5000 });
+      } else {
+        toast.success("Celda liberada. Ahora está disponible.");
+      }
       loadData();
       loadExtra();
     } catch (e: any) {
@@ -132,15 +136,18 @@ export default function MapaParqueaderoPage() {
     setParqueaderos(prev => prev.map(p => p.id === id ? { ...p, estado: newEstado } : p));
     
     try {
-      await api.put(`/parqueadero/celdas/${id}`, { 
+      const r: any = await api.put(`/parqueadero/celdas/${id}`, { 
            estado: newEstado,
            placa: plate,
            observacion: notes
          });
-      {
+      if (r?.pendiente) {
+        toast.success("Solicitud enviada a aprobación del administrador.", { duration: 5000 });
+        loadData(); // revierte el cambio optimista: aún no se aplicó
+      } else {
         toast.success(newEstado === 'OCUPADO' ? `Ingreso registrado en celda ${selectedCell?.numero || ""}` : "Celda liberada");
-        loadExtra();
       }
+      loadExtra();
     } catch {
       toast.error("Error de red");
       loadData();
@@ -255,9 +262,11 @@ export default function MapaParqueaderoPage() {
                 const numEl = (
                    <span key="n" className="font-display font-bold text-xs leading-none break-all text-text px-1">{p.numero}</span>
                 );
+                // Ícono según categoría física de la celda (carro/moto/bici).
+                const catIcon = p.categoria === 'MOTO' ? '🏍️' : p.categoria === 'BICI' ? '🚲' : '🚗';
                 const carEl = !isLibre
-                   ? <Car key="c" size={11} style={{ color: stateColor }} className="shrink-0" />
-                   : <span key="c" className="w-[11px]" />;
+                   ? <span key="c" className="text-[11px] leading-none shrink-0" title={p.categoria}>{catIcon}</span>
+                   : <span key="c" className="text-[11px] leading-none shrink-0 opacity-30" title={p.categoria}>{catIcon}</span>;
                 return (
                    <button
                       key={p.id}

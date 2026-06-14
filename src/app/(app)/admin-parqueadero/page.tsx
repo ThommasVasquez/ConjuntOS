@@ -5,7 +5,7 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { 
   ShieldAlert, Search, Filter, 
   Car, Clock, ArrowRight, ClipboardCheck, 
-  MapPin, CheckCircle, Plus, X, LayoutGrid
+  MapPin, CheckCircle, Plus, X, LayoutGrid, ScrollText
 } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ export default function AdminParqueaderoPage() {
   const [numero, setNumero] = useState("");
   const [torre, setTorre] = useState("");
   const [tipoCelda, setTipoCelda] = useState("RESIDENTE");
+  const [categoria, setCategoria] = useState("CARRO");
 
   const esAdmin = role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN';
 
@@ -46,7 +47,7 @@ export default function AdminParqueaderoPage() {
   async function crearCeldas() {
     setCreating(true);
     try {
-      const body: any = { tipo: tipoCelda, torre: torre.trim() || undefined };
+      const body: any = { tipo: tipoCelda, categoria, torre: torre.trim() || undefined };
       if (modo === 'lote') {
         const n = parseInt(cantidad, 10);
         if (!n || n < 1) { toast.error("Indica una cantidad válida"); setCreating(false); return; }
@@ -181,6 +182,12 @@ export default function AdminParqueaderoPage() {
                   <Plus size={16} /> Crear celdas
                </button>
             </div>
+            <button
+              onClick={() => router.push("/bitacora-parqueadero")}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-text/5 border border-border/50 text-text font-bold text-xs uppercase tracking-wide hover:bg-text/10 active:scale-95 transition-all"
+            >
+               <ScrollText size={15} className="text-[#009df2]" /> Ver bitácora y aprobaciones
+            </button>
          </section>
        )}
 
@@ -324,6 +331,28 @@ export default function AdminParqueaderoPage() {
                     <input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ej: A-101" className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent" />
                  </div>
                )}
+
+               <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] text-text uppercase tracking-widest font-bold">Categoría del espacio</label>
+                  <div className="grid grid-cols-3 gap-2">
+                     {[
+                        { v: 'CARRO', label: 'Carro', icon: '🚗' },
+                        { v: 'MOTO', label: 'Moto', icon: '🏍️' },
+                        { v: 'BICI', label: 'Bici', icon: '🚲' },
+                     ].map((c) => (
+                        <button
+                          key={c.v}
+                          type="button"
+                          onClick={() => setCategoria(c.v)}
+                          className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-bold transition-all ${categoria === c.v ? 'bg-[#009df2]/15 border-[#009df2] text-text' : 'bg-text/5 border-border text-text/70'}`}
+                        >
+                           <span className="text-lg leading-none">{c.icon}</span>
+                           {c.label}
+                        </button>
+                     ))}
+                  </div>
+                  <span className="text-[10px] text-text/60">Las bahías de moto y bici son espacios distintos a los de carro.</span>
+               </div>
 
                <div className="flex gap-3">
                   <div className="flex flex-col gap-1.5 flex-1">

@@ -226,6 +226,7 @@ text_enum!(EstadoPaquete {
 text_enum!(TipoVehiculo {
     Carro => "CARRO",
     Moto => "MOTO",
+    Bici => "BICI",
 });
 
 text_enum!(TipoMascota {
@@ -257,6 +258,29 @@ text_enum!(TipoRegistroParqueadero {
     Ingreso => "INGRESO",
     Salida => "SALIDA",
     Verificacion => "VERIFICACION",
+});
+
+// Categoría física de la celda: una bahía de carro no sirve para moto/bici.
+text_enum!(CategoriaParqueadero {
+    Carro => "CARRO",
+    Moto => "MOTO",
+    Bici => "BICI",
+});
+
+// Tipo de movimiento solicitado/registrado en el log de parqueadero.
+text_enum!(AccionParqueadero {
+    Asignar => "ASIGNAR",
+    Liberar => "LIBERAR",
+    CambiarEstado => "CAMBIAR_ESTADO",
+    Crear => "CREAR",
+});
+
+// Estado del flujo de aprobación de un movimiento de celda.
+text_enum!(EstadoSolicitudParqueadero {
+    Pendiente => "PENDIENTE",
+    Aprobada => "APROBADA",
+    Rechazada => "RECHAZADA",
+    Ejecutada => "EJECUTADA",
 });
 
 text_enum!(EstadoTurno {

@@ -4,9 +4,12 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::db::enums::{
-    EstadoParqueadero, TipoCeldaParqueadero, TipoRegistroParqueadero, TipoVehiculo,
+    AccionParqueadero, CategoriaParqueadero, EstadoParqueadero, EstadoSolicitudParqueadero,
+    TipoCeldaParqueadero, TipoRegistroParqueadero, TipoVehiculo,
 };
-use crate::domains::parqueadero::models::{Parqueadero, RondaParqueadero, Vehiculo};
+use crate::domains::parqueadero::models::{
+    Parqueadero, RondaParqueadero, SolicitudParqueadero, Vehiculo,
+};
 
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -52,6 +55,7 @@ pub struct CeldaDto {
     pub torre: Option<String>,
     pub tipo: TipoCeldaParqueadero,
     pub estado: EstadoParqueadero,
+    pub categoria: CategoriaParqueadero,
     pub usuario_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub asignado_en: Option<DateTime<Utc>>,
@@ -66,6 +70,7 @@ impl From<Parqueadero> for CeldaDto {
             torre: p.torre,
             tipo: p.tipo,
             estado: p.estado,
+            categoria: p.categoria,
             usuario_id: p.usuario_id,
             created_at: p.created_at,
             asignado_en: p.asignado_en,
@@ -92,6 +97,7 @@ pub struct CreateCeldaRequest {
     pub numero: Option<String>,
     pub torre: Option<String>,
     pub tipo: Option<TipoCeldaParqueadero>,
+    pub categoria: Option<CategoriaParqueadero>,
     pub prefijo: Option<String>,
     pub cantidad: Option<i32>,
 }
@@ -191,3 +197,65 @@ pub struct ParqueaderoStatsDto {
     /// 0-100, rounded.
     pub porcentaje_ocupacion: i64,
 }
+
+/// Entrada del log inmutable de movimientos de celdas. Solo la ve el ADMIN.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct SolicitudDto {
+    pub id: Uuid,
+    pub parqueadero_id: Option<Uuid>,
+    pub celda_numero: String,
+    pub accion: AccionParqueadero,
+    pub estado: EstadoSolicitudParqueadero,
+    pub requiere_aprobacion: bool,
+    pub detalle: String,
+    pub payload: Option<serde_json::Value>,
+    pub solicitante_id: Uuid,
+    pub solicitante_nombre: String,
+    pub solicitante_rol: String,
+    pub creado_en: DateTime<Utc>,
+    pub aprobador_id: Option<Uuid>,
+    pub aprobador_nombre: Option<String>,
+    pub resuelto_en: Option<DateTime<Utc>>,
+}
+
+impl From<SolicitudParqueadero> for SolicitudDto {
+    fn from(s: SolicitudParqueadero) -> Self {
+        Self {
+            id: s.id,
+            parqueadero_id: s.parqueadero_id,
+            celda_numero: s.celda_numero,
+            accion: s.accion,
+            estado: s.estado,
+            requiere_aprobacion: s.requiere_aprobacion,
+            detalle: s.detalle,
+            payload: s.payload,
+            solicitante_id: s.solicitante_id,
+            solicitante_nombre: s.solicitante_nombre,
+            solicitante_rol: s.solicitante_rol,
+            creado_en: s.creado_en,
+            aprobador_id: s.aprobador_id,
+            aprobador_nombre: s.aprobador_nombre,
+            resuelto_en: s.resuelto_en,
+        }
+    }
+}
+
+/// Editar el detalle de una entrada del log (solo super_admin).
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct EditarSolicitudRequest {
+    pub detalle: String,
+}
+
+/// Respuesta de un movimiento de celda: o se ejecutó (celda devuelta) o quedó
+/// pendiente de aprobación del admin (solicitud devuelta).
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct MovimientoResultadoDto {
+    /// true => quedó PENDIENTE de aprobación; false => se ejecutó de una.
+    pub pendiente: bool,
+    pub celda: Option<CeldaDto>,
+    pub solicitud: Option<SolicitudDto>,
+}
+

@@ -5,23 +5,72 @@ use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
-use crate::db::enums::{EstadoParqueadero, Rol, TipoCeldaParqueadero};
+use crate::db::enums::{
+    AccionParqueadero, CategoriaParqueadero, EstadoParqueadero, EstadoSolicitudParqueadero, Rol,
+    TipoCeldaParqueadero,
+};
 use crate::domains::parqueadero::dto::{
     AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CreateCeldaRequest, CreateRondaRequest,
-    CreateVehiculoRequest, OcupanteDto, ParqueaderoMioDto, ParqueaderoStatsDto, RegistroDto,
-    RondaDto, UpdateCeldaRequest, VehiculoDto,
+    CreateVehiculoRequest, EditarSolicitudRequest, MovimientoResultadoDto, OcupanteDto,
+    ParqueaderoMioDto, ParqueaderoStatsDto, RegistroDto, RondaDto, SolicitudDto, UpdateCeldaRequest,
+    VehiculoDto,
 };
-use crate::domains::parqueadero::models::{NuevaCelda, NuevoVehiculo};
-use crate::domains::parqueadero::repo;
+use crate::domains::parqueadero::models::{NuevaCelda, NuevaSolicitud, NuevoVehiculo};
+use crate::domains::parqueadero::repo::{self, Actor};
 use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
+
+/// Construye el Actor (para el log inmutable) desde el usuario autenticado.
+fn actor_de(user: &AuthUser) -> Actor {
+    Actor {
+        id: user.id,
+        nombre: user.nombre.clone(),
+        rol: user.rol.to_string(),
+    }
+}
+
+/// ¿El usuario puede ejecutar movimientos sobre celdas de residente SIN
+/// aprobación? Solo el administrador (y super_admin). El resto genera solicitud.
+fn puede_mover_residente_directo(user: &AuthUser) -> bool {
+    matches!(user.rol, Rol::Administrador | Rol::SuperAdmin)
+}
+
+/// Publica un evento WS de parqueadero (helper para reducir repetición).
+async fn notificar(
+    state: &AppState,
+    conjunto_id: Uuid,
+    action: &str,
+    payload: Option<serde_json::Value>,
+) {
+    state
+        .ws_hub
+        .publish(
+            conjunto_id,
+            WsEvent {
+                domain: "parqueadero".into(),
+                action: action.into(),
+                payload,
+                target_user_id: None,
+            },
+        )
+        .await;
+}
 
 /// Parking managers (legacy /api/parqueadero/* role list + supervisor).
 const ROLES_PARQUEADERO: &[Rol] = &[
     Rol::EncargadoParqueadero,
     Rol::SupervisorVigilancia,
     Rol::Administrador,
+];
+
+/// Quién puede ver el mapa y mover celdas (incluye VIGILANTE, que solo gestiona
+/// celdas de visitante; las de residente le generan una solicitud de aprobación).
+const ROLES_GESTION_CELDAS: &[Rol] = &[
+    Rol::EncargadoParqueadero,
+    Rol::SupervisorVigilancia,
+    Rol::Administrador,
+    Rol::Vigilante,
 ];
 
 /// Registros readers: managers plus VIGILANTE (own rows only).
@@ -51,6 +100,20 @@ pub fn router() -> Router<AppState> {
         .route("/parqueadero/registros", get(registros))
         .route("/parqueadero/rondas", get(ronda_de_hoy).post(crear_ronda))
         .route("/parqueadero/stats", get(parqueadero_stats))
+        // Log inmutable de movimientos + flujo de aprobación.
+        .route("/parqueadero/solicitudes", get(listar_solicitudes))
+        .route(
+            "/parqueadero/solicitudes/{id}/aprobar",
+            post(aprobar_solicitud),
+        )
+        .route(
+            "/parqueadero/solicitudes/{id}/rechazar",
+            post(rechazar_solicitud),
+        )
+        .route(
+            "/parqueadero/solicitudes/{id}",
+            put(editar_solicitud).delete(borrar_solicitud),
+        )
 }
 
 #[utoipa::path(
@@ -141,6 +204,7 @@ pub async fn crear_celdas(
 ) -> ApiResult<Json<Vec<CeldaDto>>> {
     guard::require(&user, ROLES_PARQUEADERO)?;
     let tipo = req.tipo.unwrap_or(TipoCeldaParqueadero::Residente);
+    let categoria = req.categoria.unwrap_or(CategoriaParqueadero::Carro);
     let torre = req
         .torre
         .map(|t| t.trim().to_string())
@@ -176,6 +240,7 @@ pub async fn crear_celdas(
             torre: torre.clone(),
             tipo,
             estado: EstadoParqueadero::Disponible,
+            categoria,
         })
         .collect();
 
@@ -210,7 +275,7 @@ pub async fn mapa(
     State(state): State<AppState>,
     user: AuthUser,
 ) -> ApiResult<Json<Vec<CeldaMapaDto>>> {
-    guard::require(&user, ROLES_PARQUEADERO)?;
+    guard::require(&user, ROLES_GESTION_CELDAS)?;
     let mut conn = state.pool.get().await?;
     let rows = repo::mapa(&mut conn, user.conjunto_id).await?;
     Ok(Json(
@@ -234,7 +299,7 @@ pub async fn mapa(
     params(("id" = Uuid, Path, description = "Cell id")),
     request_body = UpdateCeldaRequest,
     responses(
-        (status = 200, description = "Cell state updated (audit row written)", body = CeldaDto),
+        (status = 200, description = "Cell state updated or approval requested", body = MovimientoResultadoDto),
         (status = 403, description = "Requires parking manager role"),
         (status = 404, description = "Cell not found in this conjunto")
     )
@@ -244,25 +309,64 @@ pub async fn actualizar_celda(
     user: AuthUser,
     Path(id): Path<Uuid>,
     Json(req): Json<UpdateCeldaRequest>,
-) -> ApiResult<Json<CeldaDto>> {
-    guard::require(&user, ROLES_PARQUEADERO)?;
+) -> ApiResult<Json<MovimientoResultadoDto>> {
+    guard::require(&user, ROLES_GESTION_CELDAS)?;
     let mut conn = state.pool.get().await?;
-    let celda =
-        repo::actualizar_celda(&mut conn, user.conjunto_id, id, user.id, req.estado).await?;
-    let dto = CeldaDto::from(celda);
-    state
-        .ws_hub
-        .publish(
-            user.conjunto_id,
-            WsEvent {
-                domain: "parqueadero".into(),
-                action: "celda_updated".into(),
-                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-                target_user_id: None,
+    let celda = repo::obtener_celda(&mut conn, user.conjunto_id, id).await?;
+
+    // Celda de residente (asignación permanente): requiere aprobación del admin,
+    // salvo que el actor sea admin/super_admin.
+    if repo::celda_requiere_aprobacion(&celda) && !puede_mover_residente_directo(&user) {
+        let detalle = format!(
+            "cambiar estado de celda {} ({}) a {}",
+            celda.numero, celda.tipo, req.estado
+        );
+        let sol = repo::crear_solicitud_pendiente(
+            &mut conn,
+            NuevaSolicitud {
+                conjunto_id: user.conjunto_id,
+                parqueadero_id: Some(id),
+                celda_numero: celda.numero.clone(),
+                accion: AccionParqueadero::CambiarEstado,
+                estado: EstadoSolicitudParqueadero::Pendiente,
+                requiere_aprobacion: true,
+                detalle,
+                payload: Some(serde_json::json!({ "estado": req.estado })),
+                solicitante_id: user.id,
+                solicitante_nombre: user.nombre.clone(),
+                solicitante_rol: user.rol.to_string(),
             },
         )
-        .await;
-    Ok(Json(dto))
+        .await?;
+        notificar(&state, user.conjunto_id, "solicitud_creada", None).await;
+        return Ok(Json(MovimientoResultadoDto {
+            pendiente: true,
+            celda: None,
+            solicitud: Some(SolicitudDto::from(sol)),
+        }));
+    }
+
+    let celda = repo::actualizar_celda(
+        &mut conn,
+        user.conjunto_id,
+        id,
+        actor_de(&user),
+        req.estado,
+    )
+    .await?;
+    let dto = CeldaDto::from(celda);
+    notificar(
+        &state,
+        user.conjunto_id,
+        "celda_updated",
+        Some(serde_json::to_value(&dto).unwrap_or_default()),
+    )
+    .await;
+    Ok(Json(MovimientoResultadoDto {
+        pendiente: false,
+        celda: Some(dto),
+        solicitud: None,
+    }))
 }
 
 #[utoipa::path(
@@ -283,32 +387,73 @@ pub async fn asignar_celda(
     user: AuthUser,
     Path(id): Path<Uuid>,
     Json(req): Json<AsignarCeldaRequest>,
-) -> ApiResult<Json<CeldaDto>> {
-    guard::require(&user, ROLES_PARQUEADERO)?;
+) -> ApiResult<Json<MovimientoResultadoDto>> {
+    guard::require(&user, ROLES_GESTION_CELDAS)?;
     let mut conn = state.pool.get().await?;
+    let celda = repo::obtener_celda(&mut conn, user.conjunto_id, id).await?;
+
+    // Asignar a un residente SIEMPRE es una operación sobre una celda permanente;
+    // si el actor no es admin, queda pendiente de aprobación.
+    if !puede_mover_residente_directo(&user) {
+        let detalle = match req.meses {
+            Some(m) if m > 0 => format!(
+                "asignar celda {} a residente por {} meses",
+                celda.numero, m
+            ),
+            _ => format!(
+                "asignar celda {} a residente (sin vencimiento)",
+                celda.numero
+            ),
+        };
+        let sol = repo::crear_solicitud_pendiente(
+            &mut conn,
+            NuevaSolicitud {
+                conjunto_id: user.conjunto_id,
+                parqueadero_id: Some(id),
+                celda_numero: celda.numero.clone(),
+                accion: AccionParqueadero::Asignar,
+                estado: EstadoSolicitudParqueadero::Pendiente,
+                requiere_aprobacion: true,
+                detalle,
+                payload: Some(
+                    serde_json::json!({ "residenteId": req.usuario_id, "meses": req.meses }),
+                ),
+                solicitante_id: user.id,
+                solicitante_nombre: user.nombre.clone(),
+                solicitante_rol: user.rol.to_string(),
+            },
+        )
+        .await?;
+        notificar(&state, user.conjunto_id, "solicitud_creada", None).await;
+        return Ok(Json(MovimientoResultadoDto {
+            pendiente: true,
+            celda: None,
+            solicitud: Some(SolicitudDto::from(sol)),
+        }));
+    }
+
     let celda = repo::asignar_celda(
         &mut conn,
         user.conjunto_id,
         id,
-        user.id,
+        actor_de(&user),
         req.usuario_id,
         req.meses,
     )
     .await?;
     let dto = CeldaDto::from(celda);
-    state
-        .ws_hub
-        .publish(
-            user.conjunto_id,
-            WsEvent {
-                domain: "parqueadero".into(),
-                action: "celda_asignada".into(),
-                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-                target_user_id: None,
-            },
-        )
-        .await;
-    Ok(Json(dto))
+    notificar(
+        &state,
+        user.conjunto_id,
+        "celda_asignada",
+        Some(serde_json::to_value(&dto).unwrap_or_default()),
+    )
+    .await;
+    Ok(Json(MovimientoResultadoDto {
+        pendiente: false,
+        celda: Some(dto),
+        solicitud: None,
+    }))
 }
 
 #[utoipa::path(
@@ -317,7 +462,7 @@ pub async fn asignar_celda(
     tag = "parqueadero",
     params(("id" = Uuid, Path, description = "Cell id")),
     responses(
-        (status = 200, description = "Cell released (now DISPONIBLE)", body = CeldaDto),
+        (status = 200, description = "Cell released or approval requested", body = MovimientoResultadoDto),
         (status = 403, description = "Requires parking manager role"),
         (status = 404, description = "Cell not found in this conjunto")
     )
@@ -326,24 +471,54 @@ pub async fn liberar_celda(
     State(state): State<AppState>,
     user: AuthUser,
     Path(id): Path<Uuid>,
-) -> ApiResult<Json<CeldaDto>> {
-    guard::require(&user, ROLES_PARQUEADERO)?;
+) -> ApiResult<Json<MovimientoResultadoDto>> {
+    guard::require(&user, ROLES_GESTION_CELDAS)?;
     let mut conn = state.pool.get().await?;
-    let celda = repo::liberar_celda(&mut conn, user.conjunto_id, id, user.id).await?;
-    let dto = CeldaDto::from(celda);
-    state
-        .ws_hub
-        .publish(
-            user.conjunto_id,
-            WsEvent {
-                domain: "parqueadero".into(),
-                action: "celda_liberada".into(),
-                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-                target_user_id: None,
+    let celda = repo::obtener_celda(&mut conn, user.conjunto_id, id).await?;
+
+    // Liberar una celda de residente (permanente) requiere aprobación si el actor
+    // no es admin. Liberar una de visitante la puede hacer el vigilante directo.
+    if repo::celda_requiere_aprobacion(&celda) && !puede_mover_residente_directo(&user) {
+        let detalle = format!("liberar celda {} ({})", celda.numero, celda.tipo);
+        let sol = repo::crear_solicitud_pendiente(
+            &mut conn,
+            NuevaSolicitud {
+                conjunto_id: user.conjunto_id,
+                parqueadero_id: Some(id),
+                celda_numero: celda.numero.clone(),
+                accion: AccionParqueadero::Liberar,
+                estado: EstadoSolicitudParqueadero::Pendiente,
+                requiere_aprobacion: true,
+                detalle,
+                payload: None,
+                solicitante_id: user.id,
+                solicitante_nombre: user.nombre.clone(),
+                solicitante_rol: user.rol.to_string(),
             },
         )
-        .await;
-    Ok(Json(dto))
+        .await?;
+        notificar(&state, user.conjunto_id, "solicitud_creada", None).await;
+        return Ok(Json(MovimientoResultadoDto {
+            pendiente: true,
+            celda: None,
+            solicitud: Some(SolicitudDto::from(sol)),
+        }));
+    }
+
+    let celda = repo::liberar_celda(&mut conn, user.conjunto_id, id, actor_de(&user)).await?;
+    let dto = CeldaDto::from(celda);
+    notificar(
+        &state,
+        user.conjunto_id,
+        "celda_liberada",
+        Some(serde_json::to_value(&dto).unwrap_or_default()),
+    )
+    .await;
+    Ok(Json(MovimientoResultadoDto {
+        pendiente: false,
+        celda: Some(dto),
+        solicitud: None,
+    }))
 }
 
 #[utoipa::path(
@@ -471,4 +646,115 @@ pub async fn parqueadero_stats(
         libres: total - ocupados,
         porcentaje_ocupacion,
     }))
+}
+
+/// Solo el ADMINISTRADOR ve el log (super_admin bypassa siempre via guard).
+const ROLES_LOG: &[Rol] = &[Rol::Administrador];
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/solicitudes",
+    tag = "parqueadero",
+    responses(
+        (status = 200, description = "Immutable movement log (admin only)", body = [SolicitudDto]),
+        (status = 403, description = "Requires administrator role")
+    )
+)]
+pub async fn listar_solicitudes(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<SolicitudDto>>> {
+    guard::require(&user, ROLES_LOG)?;
+    let mut conn = state.pool.get().await?;
+    let rows = repo::listar_solicitudes(&mut conn, user.conjunto_id, false).await?;
+    Ok(Json(rows.into_iter().map(SolicitudDto::from).collect()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/solicitudes/{id}/aprobar",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Solicitud id")),
+    responses(
+        (status = 200, description = "Approved and executed", body = SolicitudDto),
+        (status = 403, description = "Requires administrator role")
+    )
+)]
+pub async fn aprobar_solicitud(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<SolicitudDto>> {
+    guard::require(&user, ROLES_LOG)?;
+    let mut conn = state.pool.get().await?;
+    let sol = repo::aprobar_solicitud(&mut conn, user.conjunto_id, id, actor_de(&user)).await?;
+    notificar(&state, user.conjunto_id, "celda_updated", None).await;
+    notificar(&state, user.conjunto_id, "solicitud_resuelta", None).await;
+    Ok(Json(SolicitudDto::from(sol)))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/solicitudes/{id}/rechazar",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Solicitud id")),
+    responses(
+        (status = 200, description = "Rejected (no change applied)", body = SolicitudDto),
+        (status = 403, description = "Requires administrator role")
+    )
+)]
+pub async fn rechazar_solicitud(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<SolicitudDto>> {
+    guard::require(&user, ROLES_LOG)?;
+    let mut conn = state.pool.get().await?;
+    let sol = repo::rechazar_solicitud(&mut conn, user.conjunto_id, id, actor_de(&user)).await?;
+    notificar(&state, user.conjunto_id, "solicitud_resuelta", None).await;
+    Ok(Json(SolicitudDto::from(sol)))
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/v1/parqueadero/solicitudes/{id}",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Solicitud id")),
+    request_body = EditarSolicitudRequest,
+    responses(
+        (status = 200, description = "Log entry edited (super admin only)", body = SolicitudDto),
+        (status = 403, description = "Requires super admin")
+    )
+)]
+pub async fn editar_solicitud(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<EditarSolicitudRequest>,
+) -> ApiResult<Json<SolicitudDto>> {
+    guard::require_superadmin(&user)?;
+    let mut conn = state.pool.get().await?;
+    let sol = repo::editar_solicitud(&mut conn, user.conjunto_id, id, req.detalle).await?;
+    Ok(Json(SolicitudDto::from(sol)))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/v1/parqueadero/solicitudes/{id}",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Solicitud id")),
+    responses(
+        (status = 200, description = "Log entry deleted (super admin only)"),
+        (status = 403, description = "Requires super admin")
+    )
+)]
+pub async fn borrar_solicitud(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<serde_json::Value>> {
+    guard::require_superadmin(&user)?;
+    let mut conn = state.pool.get().await?;
+    repo::borrar_solicitud(&mut conn, user.conjunto_id, id).await?;
+    Ok(Json(serde_json::json!({ "ok": true })))
 }
