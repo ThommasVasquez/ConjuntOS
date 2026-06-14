@@ -75,11 +75,20 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       };
 
       ws.onmessage = (e) => {
+        // Parse + dispatch fuera del propio callback del socket. Dispatch ejecuta
+        // los handlers sincronicamente (setState -> re-render en cascada); si eso
+        // corre dentro de onmessage, Chrome lo atribuye al "'message' handler" y
+        // dispara el Violation de >50ms ademas de retrasar el siguiente frame del
+        // socket. queueMicrotask devuelve el control de inmediato y deja que el
+        // trabajo de React ocurra en su propio tick.
+        let parsed: unknown;
         try {
-          dispatch(JSON.parse(e.data));
+          parsed = JSON.parse(e.data);
         } catch {
           // Ignore malformed messages
+          return;
         }
+        queueMicrotask(() => dispatch(parsed as Parameters<typeof dispatch>[0]));
       };
 
       ws.onclose = () => {
