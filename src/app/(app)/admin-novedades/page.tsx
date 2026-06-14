@@ -647,9 +647,9 @@ export default function AdminNovedadesPage() {
                        <button 
                          disabled={isProcessing}
                          onClick={() => handleResolve('APROBAR')}
-                         className="w-full py-3 rounded-full bg-linear-to-r from-text to-text text-white shadow-xl shadow-black/20 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                         className="w-full py-3 rounded-full bg-[#57bf00] text-white shadow-xl shadow-[#57bf00]/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
                        >
-                           {isProcessing ? '...' : 'Aprobar'}
+                           {isProcessing ? '...' : (selectedTramite.tipo === 'VEHICULO' && selectedCellId ? 'Aprobar y asignar' : 'Aprobar')}
                        </button>
                    </div>
                </div>

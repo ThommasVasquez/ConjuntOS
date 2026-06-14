@@ -373,7 +373,7 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
     <div className="fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t border-border/20 transition-all active:scale-[0.98] relative overflow-hidden">
       <div className="p-5 flex justify-between items-center relative z-10">
          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs bg-linear-to-tr from-text to-text text-white">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs bg-[#009df2] text-white">
                {anuncio.tipo?.[0] || 'A'}
             </div>
             <div>

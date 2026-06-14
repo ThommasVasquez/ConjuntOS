@@ -413,7 +413,7 @@ export default function ParqueaderoPage() {
                     <option className="bg-primary text-text" value="BICICLETA">Bicicleta / Patineta</option>
                 </select>
                 
-                <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-linear-to-r from-text to-text rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white shadow-xl active:scale-95 transition-transform disabled:opacity-50 cursor-pointer">
+                <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-[#57bf00] rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white shadow-xl shadow-[#57bf00]/30 active:scale-95 transition-transform disabled:opacity-50 cursor-pointer">
                     <ShieldCheck size={20} /> {isSubmitting ? 'Enviando...' : 'Pedir Aprobación'}
                 </button>
             </div>
