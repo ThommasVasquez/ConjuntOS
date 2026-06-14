@@ -67,6 +67,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const pushStatusRef = useRef<{ checked: boolean; sent: boolean; error?: string }>({ checked: false, sent: false });
   const peerUnavailableReceivedRef = useRef(false);
   const previousPathRef = useRef<string>("/inicio");
+  // True solo cuando la llamada llegó a CONNECTED. Sirve para no expulsar al
+  // usuario al inicio cuando una llamada saliente falla/no contesta: en ese
+  // caso lo dejamos en el marcador del citófono con un mensaje claro.
+  const hadConnectedRef = useRef(false);
   
   // Audio Tone Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -704,6 +708,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
             remoteAudioRef.current.srcObject = remoteStream;
             remoteAudioRef.current.play().catch(e => console.error("Error playing WebRTC stream:", e));
           }
+          hadConnectedRef.current = true;
           setCallState("CONNECTED");
         });
 
@@ -776,6 +781,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         endCall();
       });
 
+      hadConnectedRef.current = true;
       setCallState("CONNECTED");
       router.push("/citofonia");
     }
@@ -815,14 +821,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
       localStreamRef.current = null;
     }
 
+    // ¿La llamada llegó a conectar? Si nunca conectó (no contestaron / destinatario
+    // fuera de línea), no expulsamos al usuario al inicio: lo dejamos en el citófono
+    // con un mensaje claro para que pueda reintentar. Solo redirigimos tras una
+    // llamada real que sí se estableció.
+    const wasConnected = hadConnectedRef.current;
+    hadConnectedRef.current = false;
+
     setCallState("IDLE");
     setDialNum("");
     setLastSpeechResponse("");
-    toast.info("Llamada finalizada");
 
-    // Return to the page the user was on before the call started
-    if (typeof window !== "undefined" && window.location.pathname === "/citofonia") {
-      router.push(previousPathRef.current || "/inicio");
+    if (wasConnected) {
+      toast.info("Llamada finalizada");
+      // Return to the page the user was on before the call started
+      if (typeof window !== "undefined" && window.location.pathname === "/citofonia") {
+        router.push(previousPathRef.current || "/inicio");
+      }
+    } else {
+      toast.info("No fue posible conectar la llamada. El destinatario no está disponible.");
+      // Nos quedamos en el citófono: NO redirigimos.
     }
   };
 

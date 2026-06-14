@@ -79,8 +79,14 @@ export default function CitofoniaPage() {
   }, [isLoading]);
 
   useEffect(() => {
-    // Regresar a la pantalla anterior cuando finalice la llamada
-    if (prevCallStateRef.current !== "IDLE" && callState === "IDLE") {
+    // Regresar a la pantalla anterior SOLO cuando finalice una llamada que
+    // estuvo conectada. Si la llamada saliente nunca conectó (no contestaron /
+    // destinatario fuera de línea), el estado pasa de OUTGOING -> IDLE sin pasar
+    // por CONNECTED: en ese caso NO redirigimos, dejamos al usuario en el
+    // marcador del citófono para que pueda reintentar.
+    const wasConnected =
+      prevCallStateRef.current === "CONNECTED" || prevCallStateRef.current === "FALLBACK";
+    if (wasConnected && callState === "IDLE") {
       if (typeof window !== "undefined") {
         if (window.history.state && window.history.state.idx > 0) {
           router.back();
