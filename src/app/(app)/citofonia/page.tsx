@@ -451,10 +451,11 @@ export default function CitofoniaPage() {
 
       {/* MODAL: ADD VISITA */}
       {isAddingVisita && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[60] flex items-end justify-center animate-in fade-in duration-300">
            <div className="absolute inset-0 bg-primary/95 backdrop-blur-xl" onClick={() => setIsAddingVisita(false)} />
-           <div className="relative w-full max-w-lg bg-primary-light rounded-t-[48px] border-t border-border p-10 animate-in slide-in-from-bottom duration-500">
-              <div className="flex flex-col gap-8 pb-10">
+           <div className="relative w-full max-w-[430px] mx-auto bg-primary-light rounded-t-[48px] border-t border-border px-8 pt-8 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-500">
+              {/* pb-32 deja el botón por encima del navbar flotante (bottom-8 + alto) */}
+              <div className="flex flex-col gap-8 pb-32">
                  <div className="w-12 h-1.5 bg-text/20 rounded-full mx-auto" />
                  <div className="flex justify-between items-center">
                     <h3 className="text-2xl font-display font-bold text-text">Programar Visita</h3>
