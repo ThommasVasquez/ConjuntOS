@@ -202,14 +202,15 @@ export default function MapaParqueaderoPage() {
           </div>
 
           <div className="flex gap-4 mb-6 pt-2 pb-4 border-b border-border/10 overflow-x-auto hide-scrollbar">
-             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-text/15 border border-text/30"></div><span className="text-[10px] text-text uppercase font-bold tracking-widest">Libre</span></div>
-             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-accent/25 border border-accent"></div><span className="text-[10px] text-text uppercase font-bold tracking-widest">Ocupado</span></div>
-             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-text/25 border border-border"></div><span className="text-[10px] text-text uppercase font-bold tracking-widest">Reservado</span></div>
+             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#57bf00] border border-[#57bf00] shadow-[0_0_6px_rgba(87,191,0,0.6)]"></div><span className="text-[10px] text-text uppercase font-bold tracking-widest">Libre</span></div>
+             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EF4444] border border-[#EF4444] shadow-[0_0_6px_rgba(239,68,68,0.6)]"></div><span className="text-[10px] text-text uppercase font-bold tracking-widest">Ocupado</span></div>
+             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#FACC15] border border-[#FACC15] shadow-[0_0_6px_rgba(250,204,21,0.6)]"></div><span className="text-[10px] text-text uppercase font-bold tracking-widest">Reservado</span></div>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
              {parqueaderos.map((p) => {
                 const isLibre = p.estado === 'DISPONIBLE';
+                const isReservado = p.estado === 'RESERVADO';
                 const isResident = p.tipo === 'RESIDENTE';
                 const assignedPlate = p.ocupante?.vehiculos?.[0]?.placa || p.usuario?.vehiculos?.[0]?.placa;
                 const residentName = p.ocupante?.nombre || p.usuario?.nombre;
@@ -218,37 +219,49 @@ export default function MapaParqueaderoPage() {
                 const vencida = venceEn ? venceEn.getTime() < Date.now() : false;
                 const diasRestantes = venceEn ? Math.ceil((venceEn.getTime() - Date.now()) / 86400000) : null;
 
+                // Colores semánticos: Libre=verde, Ocupado=rojo, Reservado=amarillo.
+                const stateClasses = isLibre
+                  ? 'bg-[#57bf00]/10 border-[#57bf00]/50 hover:bg-[#57bf00]/20'
+                  : isReservado
+                    ? 'bg-[#FACC15]/10 border-[#FACC15]/50 hover:bg-[#FACC15]/20'
+                    : 'bg-[#EF4444]/10 border-[#EF4444]/50 hover:bg-[#EF4444]/20';
+                const stateColor = isLibre ? '#57bf00' : isReservado ? '#FACC15' : '#EF4444';
+
                 return (
                   <button 
                     key={p.id}
                     onClick={() => handleCellClick(p)}
-                    className={`fade-up relative flex flex-col items-center justify-center gap-2 py-6 rounded-2xl border transition-all active:scale-95
-                      ${isLibre ? 'bg-text/5 border-border/40 hover:bg-text/10 text-text' : vencida ? 'bg-text/10 border-text/50 border-dashed text-text' : 'bg-accent/10 border-accent/40 shadow-[0_0_15px_rgba(0,0,0,0.3)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] text-accent'}
-                    `}
+                    className={`fade-up relative flex flex-col items-center justify-between gap-1 p-3 min-h-[124px] rounded-2xl border transition-all active:scale-95 overflow-hidden ${stateClasses} ${vencida ? 'border-dashed' : ''}`}
                   >
-                     {isResident ? <ShieldCheck size={20} className={isLibre ? 'text-text' : 'text-accent/60'} /> : <HelpCircle size={20} className={isLibre ? 'text-text/30 dark:text-text/30' : 'text-text dark:text-text' }/>}
-                     <span className="font-display font-bold text-xl">{p.numero}</span>
-                     
-                     {!isLibre && (
-                       <div className="absolute top-2 right-2 flex flex-col items-end">
-                           <Car size={14} className="text-accent animate-bounce-subtle" />
-                           {assignedPlate && <span className="text-[8px] font-black bg-accent text-primary px-1 rounded-sm mt-1">{assignedPlate}</span>}
-                       </div>
-                     )}
+                     {/* Fila superior: nombre del residente (izq) + placa (der) */}
+                     <div className="w-full flex justify-between items-start gap-1 min-h-[14px]">
+                        <span className="text-[7px] uppercase font-bold text-text/70 max-w-[55%] truncate text-left leading-tight">
+                           {!isLibre && residentName ? residentName : ''}
+                        </span>
+                        {!isLibre && assignedPlate && (
+                           <span className="text-[8px] font-black px-1 rounded-sm leading-tight shrink-0" style={{ backgroundColor: stateColor, color: '#000' }}>{assignedPlate}</span>
+                        )}
+                     </div>
 
-                     {residentName && !isLibre && (
-                         <span className="text-[7px] uppercase font-bold text-text absolute top-2 left-2 max-w-[50px] truncate">{residentName}</span>
-                     )}
+                     {/* Centro: ícono + número de celda */}
+                     <div className="flex flex-col items-center gap-1 w-full">
+                        {isResident
+                          ? <ShieldCheck size={18} style={{ color: stateColor }} />
+                          : <HelpCircle size={18} className={isLibre ? 'text-text/40' : 'text-text/70'} />}
+                        <span className="font-display font-bold text-sm leading-none text-center break-all max-w-full px-0.5 text-text">{p.numero}</span>
+                     </div>
 
-                     {!isLibre && venceEn && (
-                         <span className={`text-[7px] font-black uppercase tracking-wide absolute bottom-7 px-1 rounded-sm ${vencida ? 'bg-text text-primary' : 'text-text'}`}>
-                            {vencida ? 'VENCIDA' : diasRestantes !== null && diasRestantes <= 30 ? `vence ${diasRestantes}d` : `hasta ${venceEn.toLocaleDateString('es-CO', {month:'short', year:'2-digit'})}`}
-                         </span>
-                     )}
-
-                     <span className="text-[9px] uppercase font-bold tracking-widest absolute bottom-2 opacity-50">
-                        {p.tipo}
-                     </span>
+                     {/* Fila inferior: vigencia + tipo */}
+                     <div className="w-full flex flex-col items-center gap-0.5 min-h-[20px]">
+                        {!isLibre && venceEn && (
+                           <span className="text-[7px] font-black uppercase tracking-wide px-1 rounded-sm leading-tight" style={vencida ? { backgroundColor: stateColor, color: '#000' } : { color: stateColor }}>
+                              {vencida ? 'VENCIDA' : diasRestantes !== null && diasRestantes <= 30 ? `vence ${diasRestantes}d` : `hasta ${venceEn.toLocaleDateString('es-CO', {month:'short', year:'2-digit'})}`}
+                           </span>
+                        )}
+                        <span className="text-[9px] uppercase font-bold tracking-widest opacity-60 text-text">
+                           {p.tipo}
+                        </span>
+                     </div>
                   </button>
                 )
              })}
