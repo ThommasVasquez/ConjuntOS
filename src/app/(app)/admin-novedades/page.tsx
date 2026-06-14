@@ -41,6 +41,31 @@ export default function AdminNovedadesPage() {
   const [availableCells, setAvailableCells] = useState<any[]>([]);
   const [selectedCellId, setSelectedCellId] = useState("");
   const [mesesAsignacion, setMesesAsignacion] = useState("12");
+  const [nuevaCeldaNum, setNuevaCeldaNum] = useState("");
+  const [nuevaCeldaTorre, setNuevaCeldaTorre] = useState("");
+  const [creandoCelda, setCreandoCelda] = useState(false);
+
+  const crearCeldaRapida = async () => {
+    if (!nuevaCeldaNum.trim()) { toast.error("Indica el número de la celda"); return; }
+    setCreandoCelda(true);
+    try {
+      const creadas = await api.post<any[]>('/parqueadero/celdas', {
+        numero: nuevaCeldaNum.trim(),
+        torre: nuevaCeldaTorre.trim() || undefined,
+        tipo: 'RESIDENTE',
+      });
+      toast.success(`Celda ${nuevaCeldaNum.trim()} creada.`);
+      setNuevaCeldaNum("");
+      setNuevaCeldaTorre("");
+      await fetchCells();
+      // Auto-selecciona la celda recién creada
+      if (Array.isArray(creadas) && creadas[0]?.id) setSelectedCellId(creadas[0].id);
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo crear la celda");
+    } finally {
+      setCreandoCelda(false);
+    }
+  };
 
   const fetchTramites = async () => {
     setLoading(true);
@@ -592,16 +617,44 @@ export default function AdminNovedadesPage() {
                     {selectedTramite.tipo === 'VEHICULO' && (
                         <div className="flex flex-col gap-2 p-3 rounded-xl bg-accent/5 border border-accent/20">
                             <label className="text-[10px] text-accent uppercase tracking-widest font-bold">Asignar Celda (Opcional)</label>
-                            <select 
-                              value={selectedCellId}
-                              onChange={(e) => setSelectedCellId(e.target.value)}
-                              className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
-                            >
-                                <option value="" className="bg-primary text-text">No asignar puesto...</option>
-                                {availableCells.map((c) => (
-                                    <option key={c.id} value={c.id} className="bg-primary text-text">Celda {c.numero} ({c.torre || 'N/A'})</option>
-                                ))}
-                            </select>
+                            {availableCells.length === 0 ? (
+                              <div className="flex flex-col gap-2 p-2 rounded-lg bg-text/5 border border-dashed border-border">
+                                 <span className="text-[11px] text-text">No hay celdas disponibles. Crea una para asignarla ahora mismo:</span>
+                                 <div className="flex gap-2">
+                                    <input
+                                      value={nuevaCeldaNum}
+                                      onChange={(e) => setNuevaCeldaNum(e.target.value)}
+                                      placeholder="N° celda (ej: A-101)"
+                                      className="flex-1 bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
+                                    />
+                                    <input
+                                      value={nuevaCeldaTorre}
+                                      onChange={(e) => setNuevaCeldaTorre(e.target.value)}
+                                      placeholder="Torre"
+                                      className="w-20 bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
+                                    />
+                                 </div>
+                                 <button
+                                   type="button"
+                                   disabled={creandoCelda}
+                                   onClick={crearCeldaRapida}
+                                   className="w-full py-2 rounded-lg bg-[#57bf00] text-white text-xs font-bold uppercase tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                                 >
+                                    {creandoCelda ? 'Creando...' : '+ Crear y asignar celda'}
+                                 </button>
+                              </div>
+                            ) : (
+                              <select 
+                                value={selectedCellId}
+                                onChange={(e) => setSelectedCellId(e.target.value)}
+                                className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
+                              >
+                                  <option value="" className="bg-primary text-text">No asignar puesto...</option>
+                                  {availableCells.map((c) => (
+                                      <option key={c.id} value={c.id} className="bg-primary text-text">Celda {c.numero} ({c.torre || 'N/A'})</option>
+                                  ))}
+                              </select>
+                            )}
                             {selectedCellId && (
                                 <div className="flex flex-col gap-1.5 mt-1">
                                     <label className="text-[10px] text-accent uppercase tracking-widest font-bold">Cláusula de tiempo (asignación permanente)</label>
