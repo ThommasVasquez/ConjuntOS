@@ -109,6 +109,8 @@ pub struct SolicitudParqueadero {
     pub aprobador_id: Option<Uuid>,
     pub aprobador_nombre: Option<String>,
     pub resuelto_en: Option<DateTime<Utc>>,
+    pub destinatario_id: Option<Uuid>,
+    pub destinatario_nombre: Option<String>,
 }
 
 #[derive(Insertable, Debug)]
@@ -125,4 +127,6 @@ pub struct NuevaSolicitud {
     pub solicitante_id: Uuid,
     pub solicitante_nombre: String,
     pub solicitante_rol: String,
+    pub destinatario_id: Option<Uuid>,
+    pub destinatario_nombre: Option<String>,
 }

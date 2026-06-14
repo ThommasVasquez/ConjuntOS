@@ -475,6 +475,8 @@ diesel::table! {
         aprobador_id -> Nullable<Uuid>,
         aprobador_nombre -> Nullable<Text>,
         resuelto_en -> Nullable<Timestamptz>,
+        destinatario_id -> Nullable<Uuid>,
+        destinatario_nombre -> Nullable<Text>,
     }
 }
 

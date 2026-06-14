@@ -278,6 +278,7 @@ text_enum!(AccionParqueadero {
 // Estado del flujo de aprobación de un movimiento de celda.
 text_enum!(EstadoSolicitudParqueadero {
     Pendiente => "PENDIENTE",
+    PendienteInquilino => "PENDIENTE_INQUILINO",
     Aprobada => "APROBADA",
     Rechazada => "RECHAZADA",
     Ejecutada => "EJECUTADA",

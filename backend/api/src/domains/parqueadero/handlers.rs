@@ -102,6 +102,16 @@ pub fn router() -> Router<AppState> {
         .route("/parqueadero/stats", get(parqueadero_stats))
         // Log inmutable de movimientos + flujo de aprobación.
         .route("/parqueadero/solicitudes", get(listar_solicitudes))
+        // Bandeja del inquilino: solicitudes de visitante que él debe aprobar.
+        .route("/parqueadero/solicitudes/mias", get(mis_solicitudes_inquilino))
+        .route(
+            "/parqueadero/solicitudes/{id}/inquilino/aprobar",
+            post(inquilino_aprobar),
+        )
+        .route(
+            "/parqueadero/solicitudes/{id}/inquilino/rechazar",
+            post(inquilino_rechazar),
+        )
         .route(
             "/parqueadero/solicitudes/{id}/aprobar",
             post(aprobar_solicitud),
@@ -335,6 +345,8 @@ pub async fn actualizar_celda(
                 solicitante_id: user.id,
                 solicitante_nombre: user.nombre.clone(),
                 solicitante_rol: user.rol.to_string(),
+                destinatario_id: None,
+                destinatario_nombre: None,
             },
         )
         .await?;
@@ -392,8 +404,68 @@ pub async fn asignar_celda(
     let mut conn = state.pool.get().await?;
     let celda = repo::obtener_celda(&mut conn, user.conjunto_id, id).await?;
 
-    // Asignar a un residente SIEMPRE es una operación sobre una celda permanente;
-    // si el actor no es admin, queda pendiente de aprobación.
+    // ── Celda de VISITANTE ───────────────────────────────────────────────
+    // La asignación la aprueba ÚNICAMENTE el inquilino que recibe la visita
+    // (consentimiento expreso), no el administrador. Queda en el log del admin
+    // como lectura. Se exige indicar a qué residente/apto se asigna.
+    if celda.tipo == TipoCeldaParqueadero::Visitante {
+        let residente_id = req.usuario_id;
+        let residente = repo::obtener_usuario(&mut conn, user.conjunto_id, residente_id)
+            .await?
+            .ok_or_else(|| {
+                ApiError::BadRequest("debes indicar el residente que recibe la visita".into())
+            })?;
+        let (residente_nombre, torre, apto) = residente;
+        let ubic = match (torre.as_deref(), apto.as_deref()) {
+            (Some(t), Some(a)) => format!(" (Torre {t} Apto {a})"),
+            (None, Some(a)) => format!(" (Apto {a})"),
+            _ => String::new(),
+        };
+        let detalle = format!(
+            "asignar parqueadero de visitante {} a visita de {}{}",
+            celda.numero, residente_nombre, ubic
+        );
+        let sol = repo::crear_solicitud_pendiente(
+            &mut conn,
+            NuevaSolicitud {
+                conjunto_id: user.conjunto_id,
+                parqueadero_id: Some(id),
+                celda_numero: celda.numero.clone(),
+                accion: AccionParqueadero::Asignar,
+                estado: EstadoSolicitudParqueadero::PendienteInquilino,
+                requiere_aprobacion: true,
+                detalle: detalle.clone(),
+                payload: Some(serde_json::json!({ "residenteId": residente_id, "meses": req.meses })),
+                solicitante_id: user.id,
+                solicitante_nombre: user.nombre.clone(),
+                solicitante_rol: user.rol.to_string(),
+                destinatario_id: Some(residente_id),
+                destinatario_nombre: Some(residente_nombre.clone()),
+            },
+        )
+        .await?;
+        // Notifica al inquilino para que apruebe/rechace en su app.
+        repo::notificar_inquilino(
+            &mut conn,
+            user.conjunto_id,
+            residente_id,
+            &format!("Parqueadero de visitante {}", celda.numero),
+            &format!(
+                "{} solicita asignarte el parqueadero de visitante {}. Aprueba o rechaza desde Parqueadero.",
+                user.nombre, celda.numero
+            ),
+        )
+        .await?;
+        notificar(&state, user.conjunto_id, "solicitud_creada", None).await;
+        return Ok(Json(MovimientoResultadoDto {
+            pendiente: true,
+            celda: None,
+            solicitud: Some(SolicitudDto::from(sol)),
+        }));
+    }
+
+    // ── Celda de RESIDENTE (asignación permanente) ───────────────────────
+    // Requiere aprobación del administrador, salvo que el actor sea admin.
     if !puede_mover_residente_directo(&user) {
         let detalle = match req.meses {
             Some(m) if m > 0 => format!(
@@ -421,6 +493,8 @@ pub async fn asignar_celda(
                 solicitante_id: user.id,
                 solicitante_nombre: user.nombre.clone(),
                 solicitante_rol: user.rol.to_string(),
+                destinatario_id: None,
+                destinatario_nombre: None,
             },
         )
         .await?;
@@ -494,6 +568,8 @@ pub async fn liberar_celda(
                 solicitante_id: user.id,
                 solicitante_nombre: user.nombre.clone(),
                 solicitante_rol: user.rol.to_string(),
+                destinatario_id: None,
+                destinatario_nombre: None,
             },
         )
         .await?;
@@ -757,4 +833,82 @@ pub async fn borrar_solicitud(
     let mut conn = state.pool.get().await?;
     repo::borrar_solicitud(&mut conn, user.conjunto_id, id).await?;
     Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/solicitudes/mias",
+    tag = "parqueadero",
+    responses(
+        (status = 200, description = "Visitor-cell requests awaiting THIS resident's approval", body = [SolicitudDto]),
+        (status = 401, description = "Not authenticated")
+    )
+)]
+pub async fn mis_solicitudes_inquilino(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<SolicitudDto>>> {
+    let mut conn = state.pool.get().await?;
+    // Por defecto solo las pendientes de su aprobación.
+    let rows = repo::solicitudes_de_inquilino(&mut conn, user.conjunto_id, user.id, true).await?;
+    Ok(Json(rows.into_iter().map(SolicitudDto::from).collect()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/solicitudes/{id}/inquilino/aprobar",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Solicitud id")),
+    responses(
+        (status = 200, description = "Resident approved: visitor cell assigned", body = SolicitudDto),
+        (status = 403, description = "Not the intended resident"),
+        (status = 404, description = "Solicitud not found")
+    )
+)]
+pub async fn inquilino_aprobar(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<SolicitudDto>> {
+    let mut conn = state.pool.get().await?;
+    let sol = repo::inquilino_aprobar(
+        &mut conn,
+        user.conjunto_id,
+        id,
+        user.id,
+        user.nombre.clone(),
+    )
+    .await?;
+    notificar(&state, user.conjunto_id, "celda_asignada", None).await;
+    notificar(&state, user.conjunto_id, "solicitud_resuelta", None).await;
+    Ok(Json(SolicitudDto::from(sol)))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/solicitudes/{id}/inquilino/rechazar",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Solicitud id")),
+    responses(
+        (status = 200, description = "Resident rejected: no assignment made", body = SolicitudDto),
+        (status = 403, description = "Not the intended resident"),
+        (status = 404, description = "Solicitud not found")
+    )
+)]
+pub async fn inquilino_rechazar(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<SolicitudDto>> {
+    let mut conn = state.pool.get().await?;
+    let sol = repo::inquilino_rechazar(
+        &mut conn,
+        user.conjunto_id,
+        id,
+        user.id,
+        user.nombre.clone(),
+    )
+    .await?;
+    notificar(&state, user.conjunto_id, "solicitud_resuelta", None).await;
+    Ok(Json(SolicitudDto::from(sol)))
 }

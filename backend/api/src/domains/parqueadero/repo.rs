@@ -694,3 +694,179 @@ pub async fn borrar_solicitud(
 pub fn celda_requiere_aprobacion(celda: &Parqueadero) -> bool {
     celda.tipo == TipoCeldaParqueadero::Residente || celda.usuario_id.is_some()
 }
+
+/// (nombre, torre, apto) de un usuario del conjunto, o None.
+pub async fn obtener_usuario(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    usuario_id: Uuid,
+) -> ApiResult<Option<(String, Option<String>, Option<String>)>> {
+    let row = usuarios::table
+        .filter(usuarios::id.eq(usuario_id))
+        .filter(usuarios::conjunto_id.eq(conjunto_id))
+        .select((usuarios::nombre, usuarios::torre, usuarios::apto))
+        .first(conn)
+        .await
+        .optional()?;
+    Ok(row)
+}
+
+/// Crea una notificación in-app para el inquilino destinatario.
+pub async fn notificar_inquilino(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    inquilino_id: Uuid,
+    titulo: &str,
+    mensaje: &str,
+) -> ApiResult<()> {
+    crate::domains::notificaciones::repo::create_notificacion(
+        conn,
+        conjunto_id,
+        inquilino_id,
+        "parqueadero",
+        titulo,
+        mensaje,
+    )
+    .await?;
+    Ok(())
+}
+
+/// Solicitudes dirigidas a un inquilino (las que él debe aprobar/rechazar).
+/// Por defecto solo las que siguen PENDIENTE_INQUILINO.
+pub async fn solicitudes_de_inquilino(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    inquilino_id: Uuid,
+    solo_pendientes: bool,
+) -> ApiResult<Vec<SolicitudParqueadero>> {
+    let mut q = solicitudes_parqueadero::table
+        .filter(solicitudes_parqueadero::conjunto_id.eq(conjunto_id))
+        .filter(solicitudes_parqueadero::destinatario_id.eq(inquilino_id))
+        .into_boxed();
+    if solo_pendientes {
+        q = q.filter(
+            solicitudes_parqueadero::estado
+                .eq(EstadoSolicitudParqueadero::PendienteInquilino),
+        );
+    }
+    let rows = q
+        .order(solicitudes_parqueadero::creado_en.desc())
+        .limit(100)
+        .select(SolicitudParqueadero::as_select())
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
+/// El inquilino aprueba: ejecuta la asignación de la celda de visitante y marca
+/// la solicitud APROBADA. Verifica que `inquilino_id` sea el destinatario.
+pub async fn inquilino_aprobar(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    solicitud_id: Uuid,
+    inquilino_id: Uuid,
+    inquilino_nombre: String,
+) -> ApiResult<SolicitudParqueadero> {
+    conn.transaction(|conn| {
+        async move {
+            let sol = obtener_solicitud(conn, conjunto_id, solicitud_id).await?;
+            if sol.destinatario_id != Some(inquilino_id) {
+                return Err(ApiError::Forbidden);
+            }
+            if sol.estado != EstadoSolicitudParqueadero::PendienteInquilino {
+                return Err(ApiError::BadRequest("la solicitud ya fue resuelta".into()));
+            }
+            let celda_id = sol
+                .parqueadero_id
+                .ok_or_else(|| ApiError::BadRequest("solicitud sin celda asociada".into()))?;
+            let payload = sol.payload.clone().unwrap_or_default();
+            let residente_id: Uuid = payload
+                .get("residenteId")
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(inquilino_id);
+            let meses: Option<i32> =
+                payload.get("meses").and_then(|v| v.as_i64()).map(|n| n as i32);
+            let ahora = Utc::now();
+            let hasta = match meses {
+                Some(m) if m > 0 => Some(ahora + chrono::Months::new(m as u32)),
+                _ => None,
+            };
+            diesel::update(
+                parqueaderos::table
+                    .filter(parqueaderos::id.eq(celda_id))
+                    .filter(parqueaderos::conjunto_id.eq(conjunto_id)),
+            )
+            .set((
+                parqueaderos::usuario_id.eq(Some(residente_id)),
+                parqueaderos::estado.eq(EstadoParqueadero::Ocupado),
+                parqueaderos::asignado_en.eq(Some(ahora)),
+                parqueaderos::asignado_hasta.eq(hasta),
+            ))
+            .execute(conn)
+            .await?;
+
+            diesel::insert_into(registros_parqueadero::table)
+                .values((
+                    registros_parqueadero::conjunto_id.eq(conjunto_id),
+                    registros_parqueadero::parqueadero_id.eq(celda_id),
+                    registros_parqueadero::usuario_id.eq(inquilino_id),
+                    registros_parqueadero::tipo.eq(TipoRegistroParqueadero::Verificacion),
+                    registros_parqueadero::observacion
+                        .eq(format!("inquilino aprobó: {}", sol.detalle)),
+                ))
+                .execute(conn)
+                .await?;
+
+            let updated = diesel::update(
+                solicitudes_parqueadero::table
+                    .filter(solicitudes_parqueadero::id.eq(solicitud_id))
+                    .filter(solicitudes_parqueadero::conjunto_id.eq(conjunto_id)),
+            )
+            .set((
+                solicitudes_parqueadero::estado.eq(EstadoSolicitudParqueadero::Aprobada),
+                solicitudes_parqueadero::aprobador_id.eq(Some(inquilino_id)),
+                solicitudes_parqueadero::aprobador_nombre.eq(Some(inquilino_nombre)),
+                solicitudes_parqueadero::resuelto_en.eq(Some(Utc::now())),
+            ))
+            .returning(SolicitudParqueadero::as_returning())
+            .get_result(conn)
+            .await?;
+            Ok::<_, ApiError>(updated)
+        }
+        .scope_boxed()
+    })
+    .await
+}
+
+/// El inquilino rechaza: no se asigna nada, queda RECHAZADA en el log.
+pub async fn inquilino_rechazar(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    solicitud_id: Uuid,
+    inquilino_id: Uuid,
+    inquilino_nombre: String,
+) -> ApiResult<SolicitudParqueadero> {
+    let sol = obtener_solicitud(conn, conjunto_id, solicitud_id).await?;
+    if sol.destinatario_id != Some(inquilino_id) {
+        return Err(ApiError::Forbidden);
+    }
+    if sol.estado != EstadoSolicitudParqueadero::PendienteInquilino {
+        return Err(ApiError::BadRequest("la solicitud ya fue resuelta".into()));
+    }
+    let updated = diesel::update(
+        solicitudes_parqueadero::table
+            .filter(solicitudes_parqueadero::id.eq(solicitud_id))
+            .filter(solicitudes_parqueadero::conjunto_id.eq(conjunto_id)),
+    )
+    .set((
+        solicitudes_parqueadero::estado.eq(EstadoSolicitudParqueadero::Rechazada),
+        solicitudes_parqueadero::aprobador_id.eq(Some(inquilino_id)),
+        solicitudes_parqueadero::aprobador_nombre.eq(Some(inquilino_nombre)),
+        solicitudes_parqueadero::resuelto_en.eq(Some(Utc::now())),
+    ))
+    .returning(SolicitudParqueadero::as_returning())
+    .get_result(conn)
+    .await?;
+    Ok(updated)
+}

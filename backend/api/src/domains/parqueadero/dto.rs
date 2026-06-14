@@ -217,6 +217,8 @@ pub struct SolicitudDto {
     pub aprobador_id: Option<Uuid>,
     pub aprobador_nombre: Option<String>,
     pub resuelto_en: Option<DateTime<Utc>>,
+    pub destinatario_id: Option<Uuid>,
+    pub destinatario_nombre: Option<String>,
 }
 
 impl From<SolicitudParqueadero> for SolicitudDto {
@@ -237,6 +239,8 @@ impl From<SolicitudParqueadero> for SolicitudDto {
             aprobador_id: s.aprobador_id,
             aprobador_nombre: s.aprobador_nombre,
             resuelto_en: s.resuelto_en,
+            destinatario_id: s.destinatario_id,
+            destinatario_nombre: s.destinatario_nombre,
         }
     }
 }

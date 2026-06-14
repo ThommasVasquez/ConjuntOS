@@ -26,6 +26,13 @@ export default function MapaParqueaderoPage() {
   const [obs, setObs] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Asignación de celda de VISITANTE: requiere elegir el residente que recibe la
+  // visita; la asignación la aprueba ese inquilino (no el admin).
+  const [cellVisitante, setCellVisitante] = useState<any>(null);
+  const [residentes, setResidentes] = useState<any[]>([]);
+  const [residenteId, setResidenteId] = useState("");
+  const [busquedaRes, setBusquedaRes] = useState("");
+
   // Nivel/sótano seleccionado. El backend no tiene campo de nivel, así que se
   // deriva del prefijo del número de celda (ej. "S1-01" -> Sótano 1, "S2-..." ->
   // Sótano 2). Las celdas sin prefijo reconocible caen en "Sótano 1" por defecto.
@@ -95,10 +102,22 @@ export default function MapaParqueaderoPage() {
     } catch {
       // Non-critical: historic data unavailable
     }
+    // Directorio de residentes para asignar celdas de visitante (no crítico).
+    try {
+      const dir = await api.get<any[]>('/directorio');
+      setResidentes(dir);
+    } catch { /* sin permiso para directorio */ }
   }
 
   const handleCellClick = (cell: any) => {
     if (cell.estado === 'DISPONIBLE') {
+      // Celda de VISITANTE: se asigna a un residente que la debe aprobar.
+      if (cell.tipo === 'VISITANTE') {
+        setCellVisitante(cell);
+        setResidenteId("");
+        setBusquedaRes("");
+        return;
+      }
       setSelectedCell(cell);
       setPlaca("");
       setObs("");
@@ -108,6 +127,26 @@ export default function MapaParqueaderoPage() {
       setCellToRelease(cell);
     } else {
       processToggle(cell.id, 'DISPONIBLE');
+    }
+  };
+
+  const asignarVisitante = async () => {
+    if (!residenteId) { toast.error("Selecciona el residente que recibe la visita"); return; }
+    setIsSubmitting(true);
+    try {
+      const r: any = await api.post(`/parqueadero/celdas/${cellVisitante.id}/asignar`, { usuarioId: residenteId });
+      if (r?.pendiente) {
+        toast.success("Solicitud enviada. El residente debe aprobarla desde su app.", { duration: 5000 });
+      } else {
+        toast.success("Celda asignada.");
+      }
+      loadData();
+      loadExtra();
+    } catch (e: any) {
+      toast.error(e?.message || "Error al asignar la celda");
+    } finally {
+      setIsSubmitting(false);
+      setCellVisitante(null);
     }
   };
 
@@ -399,6 +438,72 @@ export default function MapaParqueaderoPage() {
              ))}
           </div>
        </section>
+
+       {/* MODAL: ASIGNAR CELDA DE VISITANTE A UN RESIDENTE (aprueba el inquilino) */}
+       {cellVisitante && (
+          <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setCellVisitante(null)} />
+             <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
+                <div className="flex justify-between items-center mb-6">
+                   <div className="flex flex-col">
+                      <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em] mb-1">Parqueadero de Visitante</span>
+                      <h3 className="text-2xl font-display font-bold text-text">Celda {cellVisitante.numero}</h3>
+                   </div>
+                   <button type="button" onClick={() => setCellVisitante(null)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text">
+                      <X size={20} />
+                   </button>
+                </div>
+
+                <p className="text-sm text-text/80 leading-relaxed mb-4">
+                   Elige el <span className="font-bold">residente</span> que recibe la visita. La asignación
+                   queda <span className="font-bold text-[#FACC15]">pendiente</span> hasta que ese residente
+                   la <span className="font-bold text-[#57bf00]">apruebe</span> desde su app.
+                </p>
+
+                <input
+                  type="text"
+                  value={busquedaRes}
+                  onChange={(e) => setBusquedaRes(e.target.value)}
+                  placeholder="Buscar por nombre, torre o apto..."
+                  className="w-full bg-text/5 border border-border/50 rounded-2xl py-3 px-4 text-sm text-text placeholder:text-text/50 focus:outline-none focus:border-accent/50 mb-3"
+                />
+
+                <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto hide-scrollbar mb-5">
+                   {residentes
+                     .filter((r) => {
+                        const q = busquedaRes.toLowerCase();
+                        return !q
+                          || r.nombre?.toLowerCase().includes(q)
+                          || String(r.torre || '').toLowerCase().includes(q)
+                          || String(r.apto || '').toLowerCase().includes(q);
+                     })
+                     .map((r) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setResidenteId(r.id)}
+                          className={`flex items-center justify-between p-3 rounded-2xl border text-left transition-all ${residenteId === r.id ? 'bg-accent/15 border-accent' : 'bg-text/5 border-border/40 hover:bg-text/10'}`}
+                        >
+                           <span className="text-sm font-bold text-text">{r.nombre}</span>
+                           <span className="text-[11px] text-text/70">{r.torre ? `Torre ${r.torre}` : ''}{r.apto ? ` · ${r.apto}` : ''}</span>
+                        </button>
+                     ))}
+                   {residentes.length === 0 && (
+                      <p className="text-xs text-text/60 text-center py-4">No se pudo cargar el directorio de residentes.</p>
+                   )}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isSubmitting || !residenteId}
+                  onClick={asignarVisitante}
+                  className="w-full py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-50"
+                >
+                   {isSubmitting ? "Enviando..." : "Enviar para aprobación del residente"}
+                </button>
+             </div>
+          </div>
+       )}
 
        {/* MODAL: CONFIRMAR LIBERACIÓN DE CELDA (reemplaza el confirm() nativo) */}
        {cellToRelease && (
