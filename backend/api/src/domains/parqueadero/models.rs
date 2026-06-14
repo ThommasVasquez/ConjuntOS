@@ -48,6 +48,16 @@ pub struct Parqueadero {
     pub asignado_hasta: Option<DateTime<Utc>>,
 }
 
+#[derive(Insertable, Debug)]
+#[diesel(table_name = parqueaderos)]
+pub struct NuevaCelda {
+    pub conjunto_id: Uuid,
+    pub numero: String,
+    pub torre: Option<String>,
+    pub tipo: TipoCeldaParqueadero,
+    pub estado: EstadoParqueadero,
+}
+
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
 #[diesel(table_name = registros_parqueadero, check_for_backend(diesel::pg::Pg))]
 pub struct RegistroParqueadero {

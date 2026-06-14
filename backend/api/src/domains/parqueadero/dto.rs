@@ -83,6 +83,19 @@ pub struct AsignarCeldaRequest {
     pub meses: Option<i32>,
 }
 
+/// Crear una o varias celdas de parqueadero (admin/encargado).
+/// Si se pasa `prefijo` + `cantidad`, genera celdas numeradas
+/// (`prefijo`+1..=cantidad). Si se pasa `numero`, crea una sola.
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateCeldaRequest {
+    pub numero: Option<String>,
+    pub torre: Option<String>,
+    pub tipo: Option<TipoCeldaParqueadero>,
+    pub prefijo: Option<String>,
+    pub cantidad: Option<i32>,
+}
+
 /// Permanent occupant summary joined from `usuarios`.
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

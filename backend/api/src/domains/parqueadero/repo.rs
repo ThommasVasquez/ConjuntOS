@@ -10,7 +10,7 @@ use crate::db::schema::{
 };
 use crate::db::DbConn;
 use crate::domains::parqueadero::models::{
-    NuevoVehiculo, Parqueadero, RegistroParqueadero, RondaParqueadero, Vehiculo,
+    NuevaCelda, NuevoVehiculo, Parqueadero, RegistroParqueadero, RondaParqueadero, Vehiculo,
 };
 use crate::domains::vigilancia::repo::today_utc_range;
 use crate::error::{ApiError, ApiResult};
@@ -55,6 +55,19 @@ pub async fn crear_vehiculo(conn: &mut DbConn, nuevo: NuevoVehiculo) -> ApiResul
         .get_result(conn)
         .await?;
     Ok(row)
+}
+
+/// Inserta una o varias celdas en un solo statement y devuelve las creadas.
+pub async fn crear_celdas(
+    conn: &mut DbConn,
+    nuevas: Vec<NuevaCelda>,
+) -> ApiResult<Vec<Parqueadero>> {
+    let rows = diesel::insert_into(parqueaderos::table)
+        .values(nuevas)
+        .returning(Parqueadero::as_returning())
+        .get_results(conn)
+        .await?;
+    Ok(rows)
 }
 
 pub async fn mapa(

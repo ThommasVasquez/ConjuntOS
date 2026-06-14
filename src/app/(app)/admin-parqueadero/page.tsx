@@ -5,7 +5,7 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { 
   ShieldAlert, Search, Filter, 
   Car, Clock, ArrowRight, ClipboardCheck, 
-  MapPin, CheckCircle
+  MapPin, CheckCircle, Plus, X, LayoutGrid
 } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -22,6 +22,53 @@ export default function AdminParqueaderoPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [lastRound, setLastRound] = useState<any>(null);
+
+  // Gestión de celdas
+  const [celdas, setCeldas] = useState<any[]>([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [modo, setModo] = useState<'lote' | 'individual'>('lote');
+  const [prefijo, setPrefijo] = useState("P-");
+  const [cantidad, setCantidad] = useState("10");
+  const [numero, setNumero] = useState("");
+  const [torre, setTorre] = useState("");
+  const [tipoCelda, setTipoCelda] = useState("RESIDENTE");
+
+  const esAdmin = role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN';
+
+  async function loadCeldas() {
+    try {
+      const data = await api.get<any[]>('/parqueadero/mapa');
+      setCeldas(data);
+    } catch (e) { /* sin permiso para mapa => ignora */ }
+  }
+
+  async function crearCeldas() {
+    setCreating(true);
+    try {
+      const body: any = { tipo: tipoCelda, torre: torre.trim() || undefined };
+      if (modo === 'lote') {
+        const n = parseInt(cantidad, 10);
+        if (!n || n < 1) { toast.error("Indica una cantidad válida"); setCreating(false); return; }
+        body.prefijo = prefijo;
+        body.cantidad = n;
+      } else {
+        if (!numero.trim()) { toast.error("Indica el número de la celda"); setCreating(false); return; }
+        body.numero = numero.trim();
+      }
+      const creadas = await api.post<any[]>('/parqueadero/celdas', body);
+      toast.success(`${creadas.length} celda${creadas.length === 1 ? '' : 's'} creada${creadas.length === 1 ? '' : 's'} con éxito.`);
+      setShowCreate(false);
+      setNumero("");
+      await loadCeldas();
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudieron crear las celdas");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  const disponibles = celdas.filter(c => c.estado === 'DISPONIBLE').length;
 
   useEffect(() => {
     if (authLoading) return;
@@ -55,6 +102,7 @@ export default function AdminParqueaderoPage() {
       ]);
       setRegistros(regData);
       setLastRound(rondData);
+      await loadCeldas();
     } catch (e) {
       toast.error("Error cargando auditoría");
     } finally {
@@ -108,6 +156,33 @@ export default function AdminParqueaderoPage() {
             </div>
           )}
        </section>
+
+       {/* GESTIÓN DE CELDAS */}
+       {esAdmin && (
+         <section className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-xl flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-4">
+               <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-text/10 border border-border flex items-center justify-center">
+                     <LayoutGrid size={22} className="text-[#009df2]" />
+                  </div>
+                  <div className="flex flex-col">
+                     <span className="text-text font-bold text-lg">Celdas de Parqueadero</span>
+                     <span className="text-xs text-text">
+                        {celdas.length === 0
+                          ? 'Aún no hay celdas creadas. Crea las primeras para poder asignarlas.'
+                          : `${celdas.length} celdas · ${disponibles} disponibles`}
+                     </span>
+                  </div>
+               </div>
+               <button
+                 onClick={() => setShowCreate(true)}
+                 className="shrink-0 flex items-center gap-2 px-4 py-3 rounded-full bg-[#57bf00] text-white font-bold text-xs uppercase tracking-wide shadow-lg shadow-[#57bf00]/30 active:scale-95 transition-transform"
+               >
+                  <Plus size={16} /> Crear celdas
+               </button>
+            </div>
+         </section>
+       )}
 
        {/* FILTERS */}
        <section className="fade-up flex flex-col sm:flex-row gap-4 items-center">
@@ -203,6 +278,78 @@ export default function AdminParqueaderoPage() {
            animation: pulse-subtle 2s infinite ease-in-out;
          }
        `}} />
+
+       {/* MODAL CREAR CELDAS */}
+       {showCreate && (
+         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => !creating && setShowCreate(false)}>
+            <div className="w-full max-w-md liquid-glass rounded-[32px] border border-border p-6 flex flex-col gap-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+               <div className="flex items-center justify-between">
+                  <h3 className="text-text font-bold text-xl">Crear celdas</h3>
+                  <button onClick={() => !creating && setShowCreate(false)} className="w-9 h-9 rounded-full bg-text/10 border border-border flex items-center justify-center">
+                     <X size={18} className="text-text" />
+                  </button>
+               </div>
+
+               {/* Selector de modo */}
+               <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-text/5 border border-border">
+                  <button
+                    onClick={() => setModo('lote')}
+                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'lote' ? 'bg-[#009df2] text-white' : 'text-text'}`}
+                  >En lote</button>
+                  <button
+                    onClick={() => setModo('individual')}
+                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'individual' ? 'bg-[#009df2] text-white' : 'text-text'}`}
+                  >Individual</button>
+               </div>
+
+               {modo === 'lote' ? (
+                 <div className="flex flex-col gap-3">
+                    <div className="flex gap-3">
+                       <div className="flex flex-col gap-1.5 flex-1">
+                          <label className="text-[10px] text-text uppercase tracking-widest font-bold">Prefijo</label>
+                          <input value={prefijo} onChange={(e) => setPrefijo(e.target.value)} placeholder="P-" className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent" />
+                       </div>
+                       <div className="flex flex-col gap-1.5 w-28">
+                          <label className="text-[10px] text-text uppercase tracking-widest font-bold">Cantidad</label>
+                          <input type="number" min={1} value={cantidad} onChange={(e) => setCantidad(e.target.value)} className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent" />
+                       </div>
+                    </div>
+                    <span className="text-[11px] text-text">
+                       Se crearán <strong className="text-[#57bf00]">{prefijo}1</strong> … <strong className="text-[#57bf00]">{prefijo}{parseInt(cantidad, 10) || 0}</strong>
+                    </span>
+                 </div>
+               ) : (
+                 <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-text uppercase tracking-widest font-bold">Número de celda</label>
+                    <input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ej: A-101" className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent" />
+                 </div>
+               )}
+
+               <div className="flex gap-3">
+                  <div className="flex flex-col gap-1.5 flex-1">
+                     <label className="text-[10px] text-text uppercase tracking-widest font-bold">Torre / Bloque (opcional)</label>
+                     <input value={torre} onChange={(e) => setTorre(e.target.value)} placeholder="Torre A" className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent" />
+                  </div>
+                  <div className="flex flex-col gap-1.5 w-40">
+                     <label className="text-[10px] text-text uppercase tracking-widest font-bold">Tipo</label>
+                     <select value={tipoCelda} onChange={(e) => setTipoCelda(e.target.value)} className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent">
+                        <option className="bg-primary text-text" value="RESIDENTE">Residente</option>
+                        <option className="bg-primary text-text" value="VISITANTE">Visitante</option>
+                        <option className="bg-primary text-text" value="DISCAPACITADO">Discapacitado</option>
+                     </select>
+                  </div>
+               </div>
+
+               <button
+                 disabled={creating}
+                 onClick={crearCeldas}
+                 className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm tracking-wide shadow-xl shadow-[#57bf00]/30 active:scale-95 transition-transform disabled:opacity-50"
+               >
+                  {creating ? 'Creando...' : 'Crear celdas'}
+               </button>
+            </div>
+         </div>
+       )}
     </div>
   );
 }

@@ -5,13 +5,13 @@ use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
-use crate::db::enums::Rol;
+use crate::db::enums::{EstadoParqueadero, Rol, TipoCeldaParqueadero};
 use crate::domains::parqueadero::dto::{
-    AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CreateRondaRequest, CreateVehiculoRequest,
-    OcupanteDto, ParqueaderoMioDto, ParqueaderoStatsDto, RegistroDto, RondaDto, UpdateCeldaRequest,
-    VehiculoDto,
+    AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CreateCeldaRequest, CreateRondaRequest,
+    CreateVehiculoRequest, OcupanteDto, ParqueaderoMioDto, ParqueaderoStatsDto, RegistroDto,
+    RondaDto, UpdateCeldaRequest, VehiculoDto,
 };
-use crate::domains::parqueadero::models::NuevoVehiculo;
+use crate::domains::parqueadero::models::{NuevaCelda, NuevoVehiculo};
 use crate::domains::parqueadero::repo;
 use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
@@ -44,6 +44,7 @@ pub fn router() -> Router<AppState> {
         .route("/parqueadero/mio", get(parqueadero_mio))
         .route("/vehiculos", post(crear_vehiculo))
         .route("/parqueadero/mapa", get(mapa))
+        .route("/parqueadero/celdas", post(crear_celdas))
         .route("/parqueadero/celdas/{id}", put(actualizar_celda))
         .route("/parqueadero/celdas/{id}/asignar", post(asignar_celda))
         .route("/parqueadero/celdas/{id}/liberar", post(liberar_celda))
@@ -121,6 +122,79 @@ pub async fn crear_vehiculo(
         )
         .await;
     Ok(Json(dto))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/celdas",
+    tag = "parqueadero",
+    request_body = CreateCeldaRequest,
+    responses(
+        (status = 200, description = "Cells created", body = [CeldaDto]),
+        (status = 403, description = "Requires parking manager role")
+    )
+)]
+pub async fn crear_celdas(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<CreateCeldaRequest>,
+) -> ApiResult<Json<Vec<CeldaDto>>> {
+    guard::require(&user, ROLES_PARQUEADERO)?;
+    let tipo = req.tipo.unwrap_or(TipoCeldaParqueadero::Residente);
+    let torre = req
+        .torre
+        .map(|t| t.trim().to_string())
+        .filter(|t| !t.is_empty());
+
+    // Determina la lista de números a crear: lote (prefijo+cantidad) o uno solo (numero).
+    let numeros: Vec<String> = if let Some(cant) = req.cantidad.filter(|c| *c > 0) {
+        if cant > 500 {
+            return Err(ApiError::BadRequest(
+                "no se pueden crear más de 500 celdas a la vez".into(),
+            ));
+        }
+        let prefijo = req.prefijo.unwrap_or_default();
+        let prefijo = prefijo.trim();
+        (1..=cant).map(|i| format!("{prefijo}{i}")).collect()
+    } else if let Some(n) = req.numero {
+        let n = n.trim().to_string();
+        if n.is_empty() {
+            return Err(ApiError::BadRequest("el número de celda es obligatorio".into()));
+        }
+        vec![n]
+    } else {
+        return Err(ApiError::BadRequest(
+            "indica 'numero' o 'prefijo'+'cantidad'".into(),
+        ));
+    };
+
+    let nuevas: Vec<NuevaCelda> = numeros
+        .into_iter()
+        .map(|numero| NuevaCelda {
+            conjunto_id: user.conjunto_id,
+            numero,
+            torre: torre.clone(),
+            tipo,
+            estado: EstadoParqueadero::Disponible,
+        })
+        .collect();
+
+    let mut conn = state.pool.get().await?;
+    let creadas = repo::crear_celdas(&mut conn, nuevas).await?;
+    let dtos: Vec<CeldaDto> = creadas.into_iter().map(CeldaDto::from).collect();
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "parqueadero".into(),
+                action: "celdas_creadas".into(),
+                payload: None,
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dtos))
 }
 
 #[utoipa::path(
