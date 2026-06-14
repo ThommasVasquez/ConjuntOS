@@ -46,7 +46,7 @@ function ProfileContent() {
   interface UserData { name: string; apto: string; torre: string; phone: string; gender: string; email: string; avatar?: string; bio: string; }
   interface Vehiculo { placa: string; marca: string; modelo: string; color: string; }
   interface Mascota { nombre: string; tipo: string; raza?: string; fotoUrl?: string; }
-  interface Tramite { id: string; tipo: string; estado: string; creadoEn: string; }
+  interface Tramite { id: string; tipo: string; estado: string; createdAt: string; }
   interface Pago { id: string; concepto: string; monto: number; estado: string; fechaVencimiento: string; fechaPago?: string; }
   interface Recibo { id: string; servicio: string; monto: number; pagado: boolean; vencimiento: string; fechaPago?: string; }
 
@@ -760,7 +760,7 @@ function ProfileContent() {
                       <div key={i} className="liquid-glass-card rounded-2xl p-4 border border-border flex justify-between items-center bg-primary-light/30">
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-text capitalize">{t.tipo.toLowerCase()}</span>
-                          <span className="text-[10px] text-text uppercase tracking-tighter">{new Date(t.creadoEn).toLocaleDateString()}</span>
+                          <span className="text-[10px] text-text uppercase tracking-tighter">{t.createdAt ? new Date(t.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : "—"}</span>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
                           t.estado === "APROBADO" ? "bg-text/20 text-text" : 
@@ -849,13 +849,13 @@ function ProfileContent() {
                         <p className="text-text text-xs italic ml-2">No hay registros de pagos anteriores.</p>
                       ) : (
                         [...financialData.pagos.filter(p => p.estado === 'PAGADO'), ...financialData.recibos.filter(r => r.pagado)]
-                          .sort((a,b) => new Date((b as any).fechaPago || (b as any).creadoEn).getTime() - new Date((a as any).fechaPago || (a as any).creadoEn).getTime())
+                          .sort((a,b) => new Date((b as any).fechaPago || (b as any).createdAt).getTime() - new Date((a as any).fechaPago || (a as any).createdAt).getTime())
                           .map((item, i) => (
                             <div key={i} className="liquid-glass-card rounded-2xl p-4 border border-border flex justify-between items-center bg-primary-light/30">
                                <div className="flex flex-col">
                                   <span className="text-sm font-bold text-text">{(item as any).concepto || (item as any).servicio}</span>
                                   <span className="text-[10px] text-text uppercase tracking-tighter">
-                                    Pagado el: {new Date((item as any).fechaPago || (item as any).creadoEn).toLocaleDateString()}
+                                    Pagado el: {((item as any).fechaPago || (item as any).createdAt) ? new Date((item as any).fechaPago || (item as any).createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : "—"}
                                   </span>
                                </div>
                                <div className="flex flex-col items-end">
