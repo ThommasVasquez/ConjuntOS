@@ -21,9 +21,23 @@ export default function MapaParqueaderoPage() {
   
   // Modal State
   const [selectedCell, setSelectedCell] = useState<any>(null);
+  const [cellToRelease, setCellToRelease] = useState<any>(null);
   const [placa, setPlaca] = useState("");
   const [obs, setObs] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Nivel/sótano seleccionado. El backend no tiene campo de nivel, así que se
+  // deriva del prefijo del número de celda (ej. "S1-01" -> Sótano 1, "S2-..." ->
+  // Sótano 2). Las celdas sin prefijo reconocible caen en "Sótano 1" por defecto.
+  const [nivel, setNivel] = useState<number>(1);
+  const nivelDeCelda = (p: any): number => {
+    const m = /^\s*S(?:[ÓO]TANO)?\s*-?\s*(\d+)/i.exec(String(p?.numero || ""));
+    return m ? parseInt(m[1], 10) : 1;
+  };
+  const nivelesDisponibles = Array.from(
+    new Set(parqueaderos.map(nivelDeCelda))
+  ).sort((a, b) => a - b);
+  const celdasDelNivel = parqueaderos.filter((p) => nivelDeCelda(p) === nivel);
 
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -89,13 +103,9 @@ export default function MapaParqueaderoPage() {
       setPlaca("");
       setObs("");
     } else if (cell.usuarioId || cell.asignadoHasta) {
-      // Celda con asignación PERMANENTE: liberar limpia ocupante + cláusula.
-      const venceTxt = cell.asignadoHasta
-        ? ` (asignación ${new Date(cell.asignadoHasta).getTime() < Date.now() ? 'VENCIDA' : 'vigente hasta ' + new Date(cell.asignadoHasta).toLocaleDateString('es-CO')})`
-        : '';
-      if (confirm(`¿Liberar la celda ${cell.numero}?${venceTxt}\n\nQuedará disponible para una nueva asignación.`)) {
-        liberarCelda(cell.id);
-      }
+      // Celda con asignación PERMANENTE: abrir modal de confirmación con nuestro
+      // diseño (en vez del confirm() nativo del navegador).
+      setCellToRelease(cell);
     } else {
       processToggle(cell.id, 'DISPONIBLE');
     }
@@ -113,7 +123,7 @@ export default function MapaParqueaderoPage() {
       loadData();
     } finally {
       setIsSubmitting(false);
-      setSelectedCell(null);
+      setCellToRelease(null);
     }
   };
 
@@ -196,9 +206,28 @@ export default function MapaParqueaderoPage() {
                  <p className="text-xs text-text">Celdas de estacionamiento</p>
                </div>
             </div>
-            <div className="text-right">
-              <span className="text-[10px] text-text font-bold uppercase tracking-[0.2em]">Piso 1 - Sótano</span>
-            </div>
+          </div>
+
+          {/* SELECTOR DE NIVEL / SÓTANO */}
+          <div className="flex items-center gap-2 mb-5 overflow-x-auto hide-scrollbar">
+             {(nivelesDisponibles.length > 0 ? nivelesDisponibles : [1, 2]).map((n) => {
+                const activo = nivel === n;
+                const count = parqueaderos.filter((p) => nivelDeCelda(p) === n).length;
+                return (
+                   <button
+                      key={n}
+                      onClick={() => setNivel(n)}
+                      className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all active:scale-95 ${
+                         activo
+                            ? 'bg-accent text-on-accent border-accent shadow-lg shadow-accent/20'
+                            : 'bg-text/5 text-text border-border/40 hover:bg-text/10'
+                      }`}
+                   >
+                      Sótano {n}
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${activo ? 'bg-black/20' : 'bg-text/10'}`}>{count}</span>
+                   </button>
+                );
+             })}
           </div>
 
           <div className="flex gap-4 mb-6 pt-2 pb-4 border-b border-border/10 overflow-x-auto hide-scrollbar">
@@ -208,10 +237,12 @@ export default function MapaParqueaderoPage() {
           </div>
           
           {/* MAPA TIPO PLANO AÉREO: bahías a ambos lados de un carril central */}
-          {parqueaderos.length === 0 ? (
+          {celdasDelNivel.length === 0 ? (
              <div className="py-16 flex flex-col items-center justify-center gap-2 text-center">
                 <Map size={40} className="text-text/40" />
-                <p className="text-xs text-text/70 font-bold">No hay celdas registradas todavía</p>
+                <p className="text-xs text-text/70 font-bold">
+                   {parqueaderos.length === 0 ? "No hay celdas registradas todavía" : `Sin celdas en Sótano ${nivel}`}
+                </p>
              </div>
           ) : (() => {
              // Una bahía de estacionamiento (rectángulo) pegada al carril central.
@@ -242,9 +273,9 @@ export default function MapaParqueaderoPage() {
                    </button>
                 );
              };
-             const mid = Math.ceil(parqueaderos.length / 2);
-             const leftCells = parqueaderos.slice(0, mid);
-             const rightCells = parqueaderos.slice(mid);
+             const mid = Math.ceil(celdasDelNivel.length / 2);
+             const leftCells = celdasDelNivel.slice(0, mid);
+             const rightCells = celdasDelNivel.slice(mid);
              return (
                 <div className="fade-up relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
                      style={{ background: 'repeating-linear-gradient(45deg, #0d0d0d 0 6px, #121212 6px 12px)' }}>
@@ -325,6 +356,55 @@ export default function MapaParqueaderoPage() {
              ))}
           </div>
        </section>
+
+       {/* MODAL: CONFIRMAR LIBERACIÓN DE CELDA (reemplaza el confirm() nativo) */}
+       {cellToRelease && (
+          <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setCellToRelease(null)} />
+             <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
+                <div className="flex flex-col items-center text-center gap-4">
+                   <div className="w-16 h-16 rounded-full bg-[#FACC15]/15 border border-[#FACC15]/40 flex items-center justify-center">
+                      <AlertCircle size={30} className="text-[#FACC15]" />
+                   </div>
+                   <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em]">Liberar Celda</span>
+                      <h3 className="text-2xl font-display font-bold text-text">Celda {cellToRelease.numero}</h3>
+                   </div>
+                   <p className="text-sm text-text/80 leading-relaxed">
+                      {cellToRelease.asignadoHasta ? (
+                         <>
+                            Esta celda tiene una asignación{" "}
+                            <span className="font-bold" style={{ color: new Date(cellToRelease.asignadoHasta).getTime() < Date.now() ? '#EF4444' : '#57bf00' }}>
+                               {new Date(cellToRelease.asignadoHasta).getTime() < Date.now()
+                                  ? 'VENCIDA'
+                                  : `vigente hasta el ${new Date(cellToRelease.asignadoHasta).toLocaleDateString('es-CO')}`}
+                            </span>.{" "}
+                         </>
+                      ) : null}
+                      Quedará <span className="font-bold text-[#57bf00]">disponible</span> para una nueva asignación.
+                   </p>
+
+                   <div className="flex gap-3 w-full mt-2">
+                      <button
+                         type="button"
+                         onClick={() => setCellToRelease(null)}
+                         className="flex-1 py-4 rounded-2xl bg-text/5 border border-border/50 text-text font-bold text-sm hover:bg-text/10 active:scale-95 transition-all"
+                      >
+                         Cancelar
+                      </button>
+                      <button
+                         type="button"
+                         disabled={isSubmitting}
+                         onClick={() => liberarCelda(cellToRelease.id)}
+                         className="flex-1 py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-60"
+                      >
+                         {isSubmitting ? "Liberando..." : "Liberar Celda"}
+                      </button>
+                   </div>
+                </div>
+             </div>
+          </div>
+       )}
 
        {selectedCell && (
           <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
