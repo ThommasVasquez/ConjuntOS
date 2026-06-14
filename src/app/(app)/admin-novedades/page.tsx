@@ -33,6 +33,8 @@ export default function AdminNovedadesPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSubmittingAnuncio, setIsSubmittingAnuncio] = useState(false);
   const [editingAnuncioId, setEditingAnuncioId] = useState<string | null>(null);
+  const [anuncioToDelete, setAnuncioToDelete] = useState<string | null>(null);
+  const [isDeletingAnuncio, setIsDeletingAnuncio] = useState(false);
 
   // Modal State
   const [selectedTramite, setSelectedTramite] = useState<any>(null);
@@ -199,15 +201,24 @@ export default function AdminNovedadesPage() {
     });
   };
 
-  const handleDeleteAnuncio = async (id: string) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este anuncio?")) return;
+  const handleDeleteAnuncio = (id: string) => {
+    // Abrir modal con nuestra estética en vez del confirm() nativo del navegador.
+    setAnuncioToDelete(id);
+  };
 
+  const confirmDeleteAnuncio = async () => {
+    const id = anuncioToDelete;
+    if (!id) return;
+    setIsDeletingAnuncio(true);
     try {
       await api.delete(`/anuncios/${id}`);
       toast.success("Anuncio eliminado correctamente");
       fetchAnuncios();
     } catch {
       toast.error("Error de conexión al eliminar anuncio");
+    } finally {
+      setIsDeletingAnuncio(false);
+      setAnuncioToDelete(null);
     }
   };
 
@@ -707,6 +718,44 @@ export default function AdminNovedadesPage() {
                    </div>
                </div>
             </div>
+       )}
+
+       {/* MODAL: CONFIRMAR ELIMINAR ANUNCIO (reemplaza el confirm() nativo) */}
+       {anuncioToDelete && (
+          <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setAnuncioToDelete(null)} />
+             <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
+                <div className="flex flex-col items-center text-center gap-4">
+                   <div className="w-16 h-16 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/40 flex items-center justify-center">
+                      <Trash2 size={28} className="text-[#EF4444]" />
+                   </div>
+                   <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em]">Eliminar Anuncio</span>
+                      <h3 className="text-2xl font-display font-bold text-text">¿Estás seguro?</h3>
+                   </div>
+                   <p className="text-sm text-text/80 leading-relaxed">
+                      Esta acción no se puede deshacer. El anuncio se eliminará permanentemente de la cartelera.
+                   </p>
+                   <div className="flex gap-3 w-full mt-2">
+                      <button
+                         type="button"
+                         onClick={() => setAnuncioToDelete(null)}
+                         className="flex-1 py-4 rounded-2xl bg-text/5 border border-border/50 text-text font-bold text-sm hover:bg-text/10 active:scale-95 transition-all"
+                      >
+                         Cancelar
+                      </button>
+                      <button
+                         type="button"
+                         disabled={isDeletingAnuncio}
+                         onClick={confirmDeleteAnuncio}
+                         className="flex-1 py-4 rounded-2xl bg-[#EF4444] text-white font-bold text-sm shadow-xl shadow-[#EF4444]/20 active:scale-95 transition-all disabled:opacity-60"
+                      >
+                         {isDeletingAnuncio ? "Eliminando..." : "Eliminar"}
+                      </button>
+                   </div>
+                </div>
+             </div>
+          </div>
        )}
     </div>
   );
