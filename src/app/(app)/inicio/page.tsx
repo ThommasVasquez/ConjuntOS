@@ -159,7 +159,7 @@ function HomeResidente() {
       )}
 
       {/* 🏛️ UNIFIED HEADER GROUP */}
-      <header className="fade-up-home flex flex-col gap-6">
+      <header className="fade-up-home flex flex-col gap-6 relative z-50">
         <ProfileHeader />
         
         {/* SEARCH BAR */}
