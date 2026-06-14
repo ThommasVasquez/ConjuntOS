@@ -347,8 +347,8 @@ export default function MapaParqueaderoPage() {
                       </div>
                       <div className="flex flex-col">
                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-text">Celda {reg.parqueadero.numero}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-text/5 text-text uppercase font-black">{reg.parqueadero.tipo.slice(0,3)}</span>
+                            <span className="text-sm font-bold text-text">Celda {reg.celdaNumero}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-text/5 text-text uppercase font-black">{reg.celdaTipo?.slice(0,3)}</span>
                          </div>
                          <div className="flex items-center gap-2 mt-0.5">
                             <Clock size={10} className="text-text" />

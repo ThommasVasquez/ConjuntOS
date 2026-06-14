@@ -113,8 +113,8 @@ export default function AdminParqueaderoPage() {
 
   const filteredRegistros = registros.filter(reg => 
     reg.placa?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reg.parqueadero?.numero?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reg.usuario?.nombre?.toLowerCase().includes(searchTerm.toLowerCase())
+    reg.celdaNumero?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    reg.usuarioNombre?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
@@ -233,9 +233,9 @@ export default function AdminParqueaderoPage() {
                          </div>
                          <div className="flex flex-col">
                             <div className="flex items-center gap-2">
-                               <span className="text-lg font-bold text-text tracking-tight">Celda {reg.parqueadero.numero}</span>
+                               <span className="text-lg font-bold text-text tracking-tight">Celda {reg.celdaNumero}</span>
                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-text/5 border border-border text-[9px] text-text font-bold uppercase tracking-widest">
-                                  <MapPin size={10} /> {reg.parqueadero.tipo}
+                                  <MapPin size={10} /> {reg.celdaTipo}
                                </div>
                             </div>
                             <div className="flex items-center gap-3 mt-1">
@@ -253,9 +253,9 @@ export default function AdminParqueaderoPage() {
                             <span className="text-[10px] text-text font-bold uppercase tracking-widest mb-0.5">Operador</span>
                             <div className="flex items-center gap-2">
                                <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-on-accent text-[8px] font-bold">
-                                  {reg.usuario.nombre[0]}
+                                  {reg.usuarioNombre?.[0]}
                                </div>
-                               <span className="text-xs font-bold text-text">{reg.usuario.nombre}</span>
+                               <span className="text-xs font-bold text-text">{reg.usuarioNombre}</span>
                             </div>
                          </div>
                       </div>
