@@ -8,7 +8,13 @@ const nextConfig: NextConfig = {
   serverExternalPackages: [],
   experimental: {
     serverActions: {
-      allowedOrigins: ["https://en-conjunto.pages.dev", "en-conjunto.pages.dev", "localhost:3000"],
+      allowedOrigins: [
+        "https://en-conjunto.pages.dev",
+        "en-conjunto.pages.dev",
+        "*.en-conjunto.pages.dev",
+        "app.conjuntos.app",
+        "localhost:3000",
+      ],
       bodySizeLimit: "10mb",
     },
   },

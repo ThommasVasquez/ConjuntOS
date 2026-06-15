@@ -94,7 +94,7 @@ export default function TopBar() {
           
           {/* Dropdown Menu Dinámico */}
           {dropdownOpen && (
-            <div className="absolute top-12 right-0 w-48 liquid-glass backdrop-blur-3xl rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute top-12 right-0 w-48 bg-[#1a1a2e] backdrop-blur-3xl rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col z-50 animate-in fade-in slide-in-from-top-2 duration-200">
               {pathname === "/perfil" ? (
                 <>
                   <button onClick={() => { router.push('?modal=edit'); setDropdownOpen(false); }} className="w-full text-left px-4 py-3 text-sm text-text hover:bg-text/10 transition-colors border-b border-border flex items-center gap-2">

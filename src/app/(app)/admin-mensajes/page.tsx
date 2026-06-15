@@ -75,6 +75,76 @@ export default function AdminMensajesPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
+
+  // Admin Availability States
+  const [activoLlamadas, setActivoLlamadas] = useState(true);
+  const [activoMensajes, setActivoMensajes] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const fetchStatusConfig = async () => {
+    try {
+      const res = await fetch("/api/admin/status-config");
+      const data = await res.json();
+      if (data.success) {
+        setActivoLlamadas(data.activoLlamadas);
+        setActivoMensajes(data.activoMensajes);
+      }
+    } catch (err) {
+      console.error("Error al cargar configuración de disponibilidad:", err);
+    }
+  };
+
+  const toggleLlamadas = async () => {
+    if (isUpdatingStatus) return;
+    setIsUpdatingStatus(true);
+    const newValue = !activoLlamadas;
+    setActivoLlamadas(newValue);
+    try {
+      const res = await fetch("/api/admin/status-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activoLlamadas: newValue })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Llamadas ${newValue ? 'activadas' : 'desactivadas'} para el administrador`);
+      } else {
+        toast.error("Error al actualizar disponibilidad");
+        setActivoLlamadas(!newValue);
+      }
+    } catch {
+      toast.error("Error de red");
+      setActivoLlamadas(!newValue);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const toggleMensajes = async () => {
+    if (isUpdatingStatus) return;
+    setIsUpdatingStatus(true);
+    const newValue = !activoMensajes;
+    setActivoMensajes(newValue);
+    try {
+      const res = await fetch("/api/admin/status-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activoMensajes: newValue })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Mensajes y chat ${newValue ? 'activados' : 'desactivados'} para el administrador`);
+      } else {
+        toast.error("Error al actualizar disponibilidad");
+        setActivoMensajes(!newValue);
+      }
+    } catch {
+      toast.error("Error de red");
+      setActivoMensajes(!newValue);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
   
   // Voice Recording States
   const [isRecording, setIsRecording] = useState(false);
@@ -263,6 +333,7 @@ export default function AdminMensajesPage() {
     }
 
     fetchConversations();
+    fetchStatusConfig();
     const interval = setInterval(fetchConversations, 15000);
     return () => clearInterval(interval);
   }, [user, authLoading, role, router]);
@@ -311,6 +382,42 @@ export default function AdminMensajesPage() {
            </div>
            <div className="w-12 h-12 rounded-2xl bg-surface-2 border border-border flex items-center justify-center text-text shadow-glow">
               <MessageCircle size={20} />
+           </div>
+        </div>
+
+        {/* Availability Settings Card */}
+        <div className="mb-8 p-5 rounded-[28px] bg-surface-2 border border-border/80 flex flex-col gap-4 shadow-xl relative overflow-hidden group">
+           <div className="flex items-center gap-2">
+              <Building2 className="text-emerald-500 w-4 h-4" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-text/80">Mi Disponibilidad</span>
+           </div>
+           
+           <div className="flex justify-between items-center py-1 border-b border-border/40">
+              <div className="flex flex-col gap-0.5">
+                 <span className="text-xs font-black uppercase tracking-tight italic text-text font-bold">Llamadas de Citofonía</span>
+                 <span className="text-[9px] text-text/60 font-medium">Permitir recibir llamadas directas</span>
+              </div>
+              <button 
+                 onClick={toggleLlamadas}
+                 disabled={isUpdatingStatus}
+                 className={`w-12 h-6 rounded-full p-1 transition-all duration-300 relative focus:outline-none cursor-pointer ${activoLlamadas ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]' : 'bg-surface-3'}`}
+              >
+                 <div className={`w-4 h-4 rounded-full bg-white transition-all duration-300 ${activoLlamadas ? 'translate-x-6' : 'translate-x-0'}`} />
+              </button>
+           </div>
+
+           <div className="flex justify-between items-center py-1">
+              <div className="flex flex-col gap-0.5">
+                 <span className="text-xs font-black uppercase tracking-tight italic text-text font-bold">Chat y Mensajes</span>
+                 <span className="text-[9px] text-text/60 font-medium">Permitir chat con residentes</span>
+              </div>
+              <button 
+                 onClick={toggleMensajes}
+                 disabled={isUpdatingStatus}
+                 className={`w-12 h-6 rounded-full p-1 transition-all duration-300 relative focus:outline-none cursor-pointer ${activoMensajes ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]' : 'bg-surface-3'}`}
+              >
+                 <div className={`w-4 h-4 rounded-full bg-white transition-all duration-300 ${activoMensajes ? 'translate-x-6' : 'translate-x-0'}`} />
+              </button>
            </div>
         </div>
 

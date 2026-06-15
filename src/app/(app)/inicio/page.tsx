@@ -7,8 +7,14 @@
 
 import { 
   ArrowRight, Bell, Building2, Calendar, Car, CreditCard, DollarSign,
+<<<<<<< Updated upstream
   Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, ShieldAlert,
   Search, SlidersHorizontal, ShoppingBag, User as UserIcon
+=======
+  Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, 
+  Search, SlidersHorizontal, ShoppingBag, User as UserIcon,
+  Phone, MessageCircle, Shield, Activity, Clock, Plus, X, Eye, FileText, Users, Package, Flame, ShieldAlert
+>>>>>>> Stashed changes
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
@@ -76,6 +82,11 @@ function HomeResidente() {
       // silently ignore
     }
   }, []);
+
+  useEffect(() => {
+    window.addEventListener("notifications-updated", fetchNotificaciones);
+    return () => window.removeEventListener("notifications-updated", fetchNotificaciones);
+  }, [fetchNotificaciones]);
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -145,9 +156,14 @@ function HomeResidente() {
       try {
           await api.put('/notificaciones/leidas', { ids: [id] });
           setNotificaciones(prev => prev.filter(n => n.id !== id));
+<<<<<<< Updated upstream
       } catch {
           // silently ignore
       }
+=======
+          window.dispatchEvent(new Event("notifications-updated"));
+      } catch (e) { console.error("Error marking as read", e); }
+>>>>>>> Stashed changes
   };
 
   const fetchFinance = useCallback(async () => {
@@ -565,7 +581,91 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
 
 function HomeVigilante() {
   const router = useRouter();
+  const [visitasHoy, setVisitasHoy] = useState(0);
+  const [paquetesPendientes, setPaquetesPendientes] = useState(0);
+  const [celdasLibres, setCeldasLibres] = useState(0);
+  const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
+  const [activeEmergency, setActiveEmergency] = useState<string | null>(null);
+
+  const [invitaciones, setInvitaciones] = useState([
+    { id: '1', nombre: "Carlos Mendoza", tipo: "Frecuente", apto: "Torre 4 Apto 1410", residentId: "cl_thommy" },
+    { id: '2', nombre: "Elena Rodríguez", tipo: "Ocasional", apto: "Torre 1 Apto 502", residentId: "cl_raul" },
+    { id: '3', nombre: "Rappi - Pedido #442", tipo: "Domicilio", apto: "Torre 4 Apto 740", residentId: "cl_milo" }
+  ]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadStats() {
+      // Fetch each stat independently — a 403 on one must never cascade to the others
+      try {
+        const visRes = await fetch('/api/vigilancia/visitas');
+        if (visRes.ok) {
+          const visData = await visRes.json();
+          if (mounted && visData.success) {
+            const active = visData.data.filter((v: any) => !v.fechaSalida).length;
+            setVisitasHoy(active);
+          }
+        }
+      } catch (e) { console.error("[HomeVigilante] visitas stats error", e); }
+
+      try {
+        const paqRes = await fetch('/api/vigilancia/paquetes');
+        if (paqRes.ok) {
+          const paqData = await paqRes.json();
+          if (mounted && paqData.success) setPaquetesPendientes(paqData.data.length);
+        }
+      } catch (e) { console.error("[HomeVigilante] paquetes stats error", e); }
+
+      try {
+        const parkRes = await fetch('/api/parqueadero/stats');
+        if (parkRes.ok) {
+          const parkData = await parkRes.json();
+          if (mounted && parkData.success) setCeldasLibres(parkData.data.libres);
+        }
+      } catch (e) { console.error("[HomeVigilante] parking stats error", e); }
+    }
+    loadStats();
+    return () => { mounted = false; };
+  }, []);
+
+  const handleCheckInInvitation = async (inv: any) => {
+    try {
+      const res = await fetch('/api/vigilancia/visitas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuarioId: inv.residentId,
+          nombre: inv.nombre,
+          tipo: 'PEATONAL',
+          observacion: `Ingreso pre-autorizado (${inv.tipo})`
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Ingreso registrado para ${inv.nombre}`);
+        setInvitaciones(prev => prev.filter(item => item.id !== inv.id));
+        setVisitasHoy(v => v + 1);
+      } else {
+        toast.error("Error al registrar");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    }
+  };
+
+  const handleTriggerEmergency = (type: string) => {
+    setActiveEmergency(type);
+    setIsEmergencyModalOpen(false);
+    toast.error(`⚠️ EMERGENCIA ACTIVADA: Protocolo de ${type} en curso.`);
+  };
+
+  const clearEmergency = () => {
+    setActiveEmergency(null);
+    toast.success("Emergencia desactivada. Estado de seguridad normalizado.");
+  };
+
   return (
+<<<<<<< Updated upstream
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
@@ -573,20 +673,269 @@ function HomeVigilante() {
         <h2 className="text-2xl font-bold text-text mb-2">Central de Guardia</h2>
         <p className="text-text text-sm mb-6">Módulo de control de acceso y paquetería.</p>
         <div className="flex flex-col gap-3">
+=======
+    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden">
+      
+      {/* Blinking red background alert during emergency */}
+      {activeEmergency && (
+        <div className="absolute inset-0 bg-red-600/10 pointer-events-none z-0 animate-pulse" style={{ animationDuration: '1s' }} />
+      )}
+
+      <ProfileHeader />
+
+      {/* EMERGENCY BANNER IF ACTIVE */}
+      {activeEmergency && (
+        <div className="fade-up w-full rounded-[24px] bg-red-500/25 border border-red-500 p-4 flex items-center justify-between z-10 animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white">
+              <ShieldAlert size={20} className="animate-spin" style={{ animationDuration: '3s' }} />
+            </div>
+            <div>
+              <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest block">Alerta Activa</span>
+              <h3 className="text-sm font-bold text-white tracking-tight">Protocolo de {activeEmergency}</h3>
+            </div>
+          </div>
+>>>>>>> Stashed changes
           <button 
-            onClick={() => router.push('/control-visitas')}
-            className="w-full py-4 px-5 rounded-2xl bg-accent text-primary text-xs font-black uppercase tracking-widest text-center shadow-lg shadow-accent/20 cursor-pointer active:scale-98 transition-transform"
+            onClick={clearEmergency}
+            className="bg-white text-red-600 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-150 transition-all"
           >
-            Registrar Visita
-          </button>
-          <button 
-            onClick={() => router.push('/paqueteria')}
-            className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-center text-xs font-bold text-text cursor-pointer active:scale-98 transition-all"
-          >
-            Recepción de Envíos
+            Normalizar
           </button>
         </div>
-      </div>
+      )}
+
+      {/* METRICS SUMMARY */}
+      <section className="fade-up grid grid-cols-2 sm:grid-cols-4 gap-4 z-10">
+        <div className="liquid-glass rounded-2xl p-4 border border-border flex flex-col gap-2">
+          <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center"><Users size={16}/></div>
+          <div>
+            <span className="text-[9px] text-text/50 font-bold uppercase tracking-wider block">Visitas Activas</span>
+            <p className="text-xl font-bold text-text">{visitasHoy}</p>
+          </div>
+        </div>
+
+        <div className="liquid-glass rounded-2xl p-4 border border-border flex flex-col gap-2">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><Package size={16}/></div>
+          <div>
+            <span className="text-[9px] text-text/50 font-bold uppercase tracking-wider block">Paquetes Lobby</span>
+            <p className="text-xl font-bold text-text">{paquetesPendientes}</p>
+          </div>
+        </div>
+
+        <div className="liquid-glass rounded-2xl p-4 border border-border flex flex-col gap-2">
+          <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center"><Car size={16}/></div>
+          <div>
+            <span className="text-[9px] text-text/50 font-bold uppercase tracking-wider block">Parqueo Visitas</span>
+            <p className="text-xl font-bold text-text">{celdasLibres} Libres</p>
+          </div>
+        </div>
+
+        <div className={`liquid-glass rounded-2xl p-4 border flex flex-col gap-2 transition-all ${activeEmergency ? 'border-red-500/50 bg-red-950/20' : 'border-border'}`}>
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeEmergency ? 'bg-red-500/20 text-red-400 animate-pulse' : 'bg-green-500/20 text-green-400'}`}>
+            <Activity size={16}/>
+          </div>
+          <div>
+            <span className="text-[9px] text-text/50 font-bold uppercase tracking-wider block">Estado Sistema</span>
+            <p className={`text-xs font-bold uppercase tracking-wider mt-1 ${activeEmergency ? 'text-red-400' : 'text-green-400'}`}>
+              {activeEmergency ? 'Emergencia' : 'Normal'}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* OPERATIONS CENTER GRID */}
+      <section className="fade-up flex flex-col gap-4 z-10">
+        <h2 className="text-xs font-bold uppercase tracking-widest text-text/50 px-1">Centro Operativo</h2>
+        <div className="grid grid-cols-2 gap-4">
+          
+          <div 
+            onClick={() => router.push('/control-visitas')}
+            className="liquid-glass p-5 rounded-[28px] border border-border flex flex-col justify-between h-[130px] cursor-pointer hover:border-accent/30 hover:bg-text/5 transition-all group active:scale-95 shadow-xl"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-accent/20 flex items-center justify-center text-accent border border-accent/30 group-hover:scale-105 transition-transform"><Users size={20}/></div>
+            <div>
+              <h4 className="text-sm font-bold text-text mb-0.5">Control Acceso</h4>
+              <p className="text-[9px] text-text/50">Ingreso/Salida visitantes</p>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => router.push('/paqueteria')}
+            className="liquid-glass p-5 rounded-[28px] border border-border flex flex-col justify-between h-[130px] cursor-pointer hover:border-emerald-500/30 hover:bg-text/5 transition-all group active:scale-95 shadow-xl"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/30 group-hover:scale-105 transition-transform"><Package size={20}/></div>
+            <div>
+              <h4 className="text-sm font-bold text-text mb-0.5">Correspondencia</h4>
+              <p className="text-[9px] text-text/50">Paquetes y mensajería</p>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => router.push('/seguridad')}
+            className="liquid-glass p-5 rounded-[28px] border border-border flex flex-col justify-between h-[130px] cursor-pointer hover:border-blue-500/30 hover:bg-text/5 transition-all group active:scale-95 shadow-xl"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 border border-blue-500/30 group-hover:scale-105 transition-transform"><Eye size={20}/></div>
+            <div>
+              <h4 className="text-sm font-bold text-text mb-0.5">CCTV y Rondas</h4>
+              <p className="text-[9px] text-text/50">Monitoreo cámaras de seguridad</p>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => router.push('/novedades')}
+            className="liquid-glass p-5 rounded-[28px] border border-border flex flex-col justify-between h-[130px] cursor-pointer hover:border-purple-500/30 hover:bg-text/5 transition-all group active:scale-95 shadow-xl"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 border border-purple-500/30 group-hover:scale-105 transition-transform"><FileText size={20}/></div>
+            <div>
+              <h4 className="text-sm font-bold text-text mb-0.5">Novedades</h4>
+              <p className="text-[9px] text-text/50">Bitácora digital de turnos</p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* EMERGENCY PANIC BUTTON */}
+        <button 
+          onClick={() => setIsEmergencyModalOpen(true)}
+          className={`w-full py-4 px-5 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 border cursor-pointer active:scale-98 transition-all shadow-lg ${
+            activeEmergency 
+              ? 'bg-red-600 text-white border-red-500 animate-pulse' 
+              : 'bg-red-500/10 hover:bg-red-500/25 border-red-500/30 text-red-500'
+          }`}
+        >
+          <ShieldAlert size={16} /> {activeEmergency ? "Panel de Alerta" : "Atención de Emergencias"}
+        </button>
+      </section>
+
+      {/* PRE-AUTHORIZED INVITATIONS */}
+      <section className="fade-up flex flex-col gap-4 z-10">
+        <h2 className="text-xs font-bold uppercase tracking-widest text-text/50 px-1">Invitaciones Pre-Autorizadas</h2>
+        {invitaciones.length === 0 ? (
+          <div className="liquid-glass p-6 rounded-2xl text-center border border-dashed border-border">
+            <p className="text-xs text-text/60 italic">No hay invitaciones programadas pendientes.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {invitaciones.map((inv) => (
+              <div key={inv.id} className="liquid-glass-card rounded-[22px] p-4 flex items-center justify-between border border-border/80">
+                <div>
+                  <h4 className="text-sm font-bold text-text leading-none mb-1.5">{inv.nombre}</h4>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-accent/10 border border-accent/20 text-accent text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded">
+                      {inv.tipo}
+                    </span>
+                    <span className="text-[10px] text-text/60">Destino: {inv.apto}</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleCheckInInvitation(inv)}
+                  className="px-3.5 py-2 bg-accent hover:bg-accent/80 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer"
+                >
+                  Ingreso
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* MODAL: EMERGENCY CONTROL SHEET */}
+      {isEmergencyModalOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsEmergencyModalOpen(false)} />
+          <div className="liquid-glass-card rounded-[32px] p-6 w-full max-w-[400px] border border-red-500/30 relative z-10 flex flex-col gap-5 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="text-red-500 animate-pulse" size={20} />
+                <h3 className="text-lg font-bold text-text">Botón de Pánico / Protocolos</h3>
+              </div>
+              <button onClick={() => setIsEmergencyModalOpen(false)} className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/70 hover:bg-text/10 cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            {activeEmergency ? (
+              <div className="flex flex-col gap-4 text-center py-2">
+                <div className="w-16 h-16 rounded-full bg-red-600/20 border border-red-600 text-red-500 flex items-center justify-center mx-auto animate-ping">
+                  <ShieldAlert size={28} />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-text uppercase">Alerta de {activeEmergency} en Curso</h4>
+                  <p className="text-xs text-text/60 mt-1 leading-relaxed">
+                    El sistema se encuentra en estado de contingencia. Notifica inmediatamente a los servicios de rescate.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => { clearEmergency(); setIsEmergencyModalOpen(false); }}
+                  className="w-full py-4 bg-emerald-500 text-black rounded-xl font-bold uppercase tracking-widest text-xs mt-2"
+                >
+                  Desactivar Alerta
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <p className="text-xs text-text/60 leading-relaxed pl-1">
+                  Selecciona una categoría de emergencia para activar el protocolo del edificio y alertar a la administración.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => handleTriggerEmergency("INCENDIO 🧯")}
+                    className="p-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-center text-red-400 cursor-pointer transition-colors"
+                  >
+                    <Flame size={24} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Incendio</span>
+                  </button>
+
+                  <button 
+                    onClick={() => handleTriggerEmergency("URGENCIA MÉDICA 🚑")}
+                    className="p-4 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-center text-blue-400 cursor-pointer transition-colors"
+                  >
+                    <Activity size={24} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Médico</span>
+                  </button>
+
+                  <button 
+                    onClick={() => handleTriggerEmergency("SEGURIDAD / INTRUSO 🥷")}
+                    className="p-4 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-center text-amber-400 cursor-pointer transition-colors"
+                  >
+                    <Shield size={24} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Seguridad</span>
+                  </button>
+
+                  <button 
+                    onClick={() => handleTriggerEmergency("EVACUACIÓN GENERAL 🚨")}
+                    className="p-4 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-center text-purple-400 cursor-pointer transition-colors"
+                  >
+                    <ShieldAlert size={24} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Evacuación</span>
+                  </button>
+                </div>
+
+                <div className="mt-2 border-t border-border pt-4 flex flex-col gap-2">
+                  <span className="text-[9px] text-text/50 uppercase tracking-widest font-black pl-1">Llamada Directa (123)</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a 
+                      href="tel:123" 
+                      className="py-3 bg-text/5 border border-border rounded-xl text-xs text-text font-bold text-center flex items-center justify-center gap-1.5 hover:bg-text/10"
+                    >
+                      <Phone size={12}/> Policía (123)
+                    </a>
+                    <a 
+                      href="tel:119" 
+                      className="py-3 bg-text/5 border border-border rounded-xl text-xs text-text font-bold text-center flex items-center justify-center gap-1.5 hover:bg-text/10"
+                    >
+                      <Phone size={12}/> Bomberos (119)
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -716,6 +1065,7 @@ function HomeConsejo() {
 
 function HomeAdmin() {
   const router = useRouter();
+<<<<<<< Updated upstream
   const { user } = useAuth();
   const role = user?.rol;
   const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string } | null>(null);
@@ -725,17 +1075,146 @@ function HomeAdmin() {
       .then((data) => {
         if (data?.id && data?.activa) {
           setActiveAsamblea({ id: data.id, titulo: data.titulo, descripcion: data.descripcion });
+=======
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role;
+
+  const [activoLlamadas, setActivoLlamadas] = useState(true);
+  const [activoMensajes, setActivoMensajes] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/status-config")
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setActivoLlamadas(data.activoLlamadas);
+          setActivoMensajes(data.activoMensajes);
+>>>>>>> Stashed changes
         }
       })
       .catch(() => {});
   }, []);
 
+<<<<<<< Updated upstream
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
       
       {/* SUPER ADMIN SPECIAL CARD */}
+=======
+  const toggleLlamadas = async () => {
+    if (isUpdatingStatus) return;
+    setIsUpdatingStatus(true);
+    const newValue = !activoLlamadas;
+    setActivoLlamadas(newValue);
+    try {
+      const res = await fetch("/api/admin/status-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activoLlamadas: newValue })
+      });
+      const data = await res.json();
+      if (!data.success) setActivoLlamadas(!newValue);
+    } catch {
+      setActivoLlamadas(!newValue);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const toggleMensajes = async () => {
+    if (isUpdatingStatus) return;
+    setIsUpdatingStatus(true);
+    const newValue = !activoMensajes;
+    setActivoMensajes(newValue);
+    try {
+      const res = await fetch("/api/admin/status-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activoMensajes: newValue })
+      });
+      const data = await res.json();
+      if (!data.success) setActivoMensajes(!newValue);
+    } catch {
+      setActivoMensajes(!newValue);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <ProfileHeader />
+
+      {/* 🟢 AVAILABILITY TOGGLES */}
+      <div className="liquid-glass rounded-[28px] p-5 border border-border/80 flex flex-col gap-4 shadow-xl">
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`w-2 h-2 rounded-full ${activoLlamadas || activoMensajes ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-text/20'} transition-all`} />
+          <span className="text-[10px] font-black uppercase tracking-widest text-text/70">Mi Disponibilidad</span>
+          <span className={`ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full ${
+            activoLlamadas || activoMensajes
+              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+              : 'bg-text/5 text-text/40 border border-border'
+          }`}>
+            {activoLlamadas || activoMensajes ? 'En línea' : 'No disponible'}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center py-1 border-b border-border/40">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+              activoLlamadas ? 'bg-emerald-500/15 text-emerald-400' : 'bg-text/5 text-text/30'
+            }`}>
+              <Phone size={14} />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-bold text-text">Llamadas</span>
+              <span className="text-[9px] text-text/50">Citofonía y llamadas directas</span>
+            </div>
+          </div>
+          <button
+            onClick={toggleLlamadas}
+            disabled={isUpdatingStatus}
+            className={`w-12 h-6 rounded-full p-1 transition-all duration-300 relative focus:outline-none cursor-pointer ${
+              activoLlamadas ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]' : 'bg-surface-3'
+            }`}
+          >
+            <div className={`w-4 h-4 rounded-full bg-white transition-all duration-300 ${
+              activoLlamadas ? 'translate-x-6' : 'translate-x-0'
+            }`} />
+          </button>
+        </div>
+
+        <div className="flex justify-between items-center py-1">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+              activoMensajes ? 'bg-emerald-500/15 text-emerald-400' : 'bg-text/5 text-text/30'
+            }`}>
+              <MessageCircle size={14} />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-bold text-text">Mensajes</span>
+              <span className="text-[9px] text-text/50">Chat con residentes</span>
+            </div>
+          </div>
+          <button
+            onClick={toggleMensajes}
+            disabled={isUpdatingStatus}
+            className={`w-12 h-6 rounded-full p-1 transition-all duration-300 relative focus:outline-none cursor-pointer ${
+              activoMensajes ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]' : 'bg-surface-3'
+            }`}
+          >
+            <div className={`w-4 h-4 rounded-full bg-white transition-all duration-300 ${
+              activoMensajes ? 'translate-x-6' : 'translate-x-0'
+            }`} />
+          </button>
+        </div>
+      </div>
+
+      {/* 👑 SUPER ADMIN SPECIAL CARD */}
+>>>>>>> Stashed changes
       {role === "SUPER_ADMIN" && (
         <div 
           onClick={() => router.push('/superadmin')}

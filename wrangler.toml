@@ -18,3 +18,8 @@ NEXT_PUBLIC_API_URL = "https://api.conjuntos.app"
 NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BOHL_-nlOioDh450Jafs2OwEHZcWv3aTTLzWi3GGuJgZWn51ykAs5iGTUiWa_4Uaus5X0bQdVsgWO_NjK0ZbL8c"
 SKIP_INSTALL_COMMAND = "true"
 VAPID_SUBJECT = "mailto:soporte@conjuntos.app"
+# next-auth v5 uses AUTH_URL to build absolute API endpoints at runtime.
+# Set this to the canonical Cloudflare Pages domain so auth works on every
+# preview deployment (*.pages.dev) without per-deployment config changes.
+AUTH_URL = "https://en-conjunto.pages.dev"
+NEXTAUTH_URL = "https://en-conjunto.pages.dev"
