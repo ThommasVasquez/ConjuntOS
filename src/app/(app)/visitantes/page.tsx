@@ -67,6 +67,7 @@ export default function VisitantesPage() {
   });
 
   const [visitors, setVisitors] = useState<VisitaDto[]>([]);
+  const [lastVisit, setLastVisit] = useState<VisitaDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +135,7 @@ export default function VisitantesPage() {
         observacion: newVisitForm.observacion.trim() || undefined,
       });
       setVisitors(prev => [newVisit, ...prev]);
+      setLastVisit(newVisit);
       setIsQRModalOpen(true);
       toast.success("Visita programada con exito");
       setNewVisitForm({ name: '', tipo: 'PEATONAL', vehiculoTipo: 'NINGUNO', placa: '', observacion: '' });
@@ -141,6 +143,45 @@ export default function VisitantesPage() {
       toast.error(e?.detail || "Error al crear la invitacion");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Construye el texto de la invitación a partir de la visita seleccionada.
+  const buildInvitationText = (visita: VisitaDto): string => {
+    const anfitrion = user?.nombre || "Tu anfitrión";
+    const unidad = [user?.torre && `Torre ${user.torre}`, user?.apto && `Apto ${user.apto}`]
+      .filter(Boolean).join(", ");
+    const fecha = new Date(visita.fecha).toLocaleString("es-CO", {
+      weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+    });
+    const lines = [
+      `🎟️ *Invitación Digital*`,
+      ``,
+      `Hola ${visita.nombre}, ${anfitrion}${unidad ? ` (${unidad})` : ""} te ha enviado un pase de acceso.`,
+      ``,
+      `• Invitado: ${visita.nombre}`,
+      `• Tipo de pase: ${visita.tipo}`,
+      `• Fecha: ${fecha}`,
+    ];
+    if (visita.placa) lines.push(`• Placa: ${visita.placa}`);
+    lines.push(``, `Presenta este mensaje en portería para agilizar tu ingreso. 🛡️`);
+    return lines.join("\n");
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!lastVisit) return;
+    const text = encodeURIComponent(buildInvitationText(lastVisit));
+    // Sin número destino: WhatsApp abre el selector de contacto para reenviar.
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleCopyInvitation = async () => {
+    if (!lastVisit) return;
+    try {
+      await navigator.clipboard.writeText(buildInvitationText(lastVisit));
+      toast.success("Invitación copiada al portapapeles");
+    } catch {
+      toast.error("No se pudo copiar la invitación");
     }
   };
 
@@ -317,7 +358,7 @@ export default function VisitantesPage() {
                   </div>
                   {status === 'PROGRAMADO' ? (
                      <button 
-                       onClick={() => { setIsQRModalOpen(true); }}
+                       onClick={() => { setLastVisit(visitor); setIsQRModalOpen(true); }}
                        className="px-4 py-2 rounded-full bg-text/5 border border-border text-text text-[10px] font-bold hover:bg-accent hover:text-on-accent hover:border-accent transition-all cursor-pointer"
                      >
                        REENVIAR QR
@@ -369,18 +410,26 @@ export default function VisitantesPage() {
                  <div className="w-full flex flex-col gap-4">
                     <div className="bg-text/5 rounded-2xl p-4 border border-border">
                        <span className="text-[10px] text-text font-bold uppercase tracking-widest">Invitado</span>
-                       <p className="text-text font-bold text-lg">{newVisitForm.name || "Invitado Especial"}</p>
+                       <p className="text-text font-bold text-lg">{lastVisit?.nombre || "Invitado Especial"}</p>
                        <div className="flex items-center gap-2 mt-1">
                           <CheckCircle2 size={14} className="text-accent" />
-                          <span className="text-[10px] text-accent font-bold uppercase tracking-wider">Pase de tipo {newVisitForm.tipo}</span>
+                          <span className="text-[10px] text-accent font-bold uppercase tracking-wider">Pase de tipo {lastVisit?.tipo || "PEATONAL"}</span>
                        </div>
                     </div>
 
                     <div className="flex gap-3">
-                       <button className="flex-1 bg-text/10 hover:bg-text/20 py-4 rounded-2xl font-bold text-text text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
-                          <Download size={18} /> Guardar
+                       <button
+                          onClick={handleCopyInvitation}
+                          disabled={!lastVisit}
+                          className="flex-1 bg-text/10 hover:bg-text/20 py-4 rounded-2xl font-bold text-text text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                          <Download size={18} /> Copiar
                        </button>
-                       <button className="flex-1 bg-[#939393] hover:brightness-110 py-4 rounded-2xl font-bold text-white text-sm transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+                       <button
+                          onClick={handleShareWhatsApp}
+                          disabled={!lastVisit}
+                          className="flex-1 bg-[#25D366] hover:brightness-110 py-4 rounded-2xl font-bold text-white text-sm transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
                           <Share2 size={18} /> WhatsApp
                        </button>
                     </div>
