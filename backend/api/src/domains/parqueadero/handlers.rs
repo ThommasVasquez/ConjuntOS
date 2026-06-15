@@ -502,7 +502,7 @@ pub async fn asignar_celda(
                 requiere_aprobacion: true,
                 detalle,
                 payload: Some(
-                    serde_json::json!({ "residenteId": req.usuario_id, "meses": req.meses }),
+                    serde_json::json!({ "residenteId": req.usuario_id, "meses": req.meses, "placa": req.placa }),
                 ),
                 solicitante_id: user.id,
                 solicitante_nombre: user.nombre.clone(),
@@ -527,6 +527,7 @@ pub async fn asignar_celda(
         actor_de(&user),
         req.usuario_id,
         req.meses,
+        req.placa.clone(),
     )
     .await?;
     let dto = CeldaDto::from(celda);

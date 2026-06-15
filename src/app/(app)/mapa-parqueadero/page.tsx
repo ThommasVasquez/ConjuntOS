@@ -20,7 +20,6 @@ export default function MapaParqueaderoPage() {
   const [loading, setLoading] = useState(true);
   
   // Modal State
-  const [selectedCell, setSelectedCell] = useState<any>(null);
   const [cellToRelease, setCellToRelease] = useState<any>(null);
   // Sesión de cobro de visitante asociada a la celda que se va a liberar.
   const [sesionCobro, setSesionCobro] = useState<any>(null);
@@ -33,8 +32,6 @@ export default function MapaParqueaderoPage() {
     return () => clearInterval(t);
   }, [sesionCobro]);
   const [liquidando, setLiquidando] = useState(false);
-  const [placa, setPlaca] = useState("");
-  const [obs, setObs] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Asignación de celda de VISITANTE: requiere elegir el residente que recibe la
@@ -45,6 +42,13 @@ export default function MapaParqueaderoPage() {
   const [busquedaRes, setBusquedaRes] = useState("");
   // Tiempo estimado de la visita: minutos, o 'libre' (sin estimado).
   const [tiempoEstimado, setTiempoEstimado] = useState<string>("libre");
+
+  // Asignación de celda de RESIDENTE (permanente): a un apartamento, con placa
+  // obligatoria y vigencia opcional. Reemplaza el viejo "Registro de Acceso" sin
+  // control. Comparte el selector de residentes (residenteId/busquedaRes).
+  const [cellResidente, setCellResidente] = useState<any>(null);
+  const [placaResidente, setPlacaResidente] = useState("");
+  const [mesesResidente, setMesesResidente] = useState<string>("sin");
 
   // Nivel/sótano seleccionado. El backend no tiene campo de nivel, así que se
   // deriva del prefijo del número de celda (ej. "S1-01" -> Sótano 1, "S2-..." ->
@@ -131,9 +135,13 @@ export default function MapaParqueaderoPage() {
         setBusquedaRes("");
         return;
       }
-      setSelectedCell(cell);
-      setPlaca("");
-      setObs("");
+      // Celda de RESIDENTE: se ASIGNA a un apartamento con placa obligatoria
+      // (ya no hay "registro de acceso" libre sin dueño).
+      setCellResidente(cell);
+      setResidenteId("");
+      setBusquedaRes("");
+      setPlacaResidente("");
+      setMesesResidente("sin");
     } else if (cell.usuarioId || cell.asignadoHasta) {
       // Celda con asignación PERMANENTE: abrir modal de confirmación con nuestro
       // diseño (en vez del confirm() nativo del navegador).
@@ -197,6 +205,34 @@ export default function MapaParqueaderoPage() {
     }
   };
 
+  const asignarResidente = async () => {
+    if (!residenteId) { toast.error("Selecciona el apartamento/residente"); return; }
+    if (!placaResidente.trim()) { toast.error("La placa del vehículo es obligatoria"); return; }
+    setIsSubmitting(true);
+    try {
+      const meses = mesesResidente === "sin" ? null : parseInt(mesesResidente, 10);
+      const r: any = await api.post(`/parqueadero/celdas/${cellResidente.id}/asignar`, {
+        usuarioId: residenteId,
+        placa: placaResidente.trim().toUpperCase(),
+        meses,
+      });
+      if (r?.pendiente) {
+        toast.success("Solicitud enviada a aprobación del administrador.", { duration: 5000 });
+      } else {
+        toast.success("Celda asignada al apartamento.");
+      }
+      loadData();
+      loadExtra();
+    } catch (e: any) {
+      toast.error(e?.message || "Error al asignar la celda");
+    } finally {
+      setIsSubmitting(false);
+      setCellResidente(null);
+      setPlacaResidente("");
+      setMesesResidente("sin");
+    }
+  };
+
   const liberarCelda = async (id: string) => {
     setIsSubmitting(true);
     try {
@@ -217,21 +253,19 @@ export default function MapaParqueaderoPage() {
     }
   };
 
-  const processToggle = async (id: string, newEstado: string, plate?: string, notes?: string) => {
+  const processToggle = async (id: string, newEstado: string) => {
     setIsSubmitting(true);
     setParqueaderos(prev => prev.map(p => p.id === id ? { ...p, estado: newEstado } : p));
-    
+
     try {
-      const r: any = await api.put(`/parqueadero/celdas/${id}`, { 
+      const r: any = await api.put(`/parqueadero/celdas/${id}`, {
            estado: newEstado,
-           placa: plate,
-           observacion: notes
          });
       if (r?.pendiente) {
         toast.success("Solicitud enviada a aprobación del administrador.", { duration: 5000 });
         loadData(); // revierte el cambio optimista: aún no se aplicó
       } else {
-        toast.success(newEstado === 'OCUPADO' ? `Ingreso registrado en celda ${selectedCell?.numero || ""}` : "Celda liberada");
+        toast.success("Celda liberada");
       }
       loadExtra();
     } catch {
@@ -239,14 +273,7 @@ export default function MapaParqueaderoPage() {
       loadData();
     } finally {
       setIsSubmitting(false);
-      setSelectedCell(null);
     }
-  };
-
-  const handleConfirmAccess = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCell) return;
-    processToggle(selectedCell.id, 'OCUPADO', placa, obs);
   };
 
   const handlePerformRound = async () => {
@@ -724,56 +751,105 @@ export default function MapaParqueaderoPage() {
           </div>
        )}
 
-       {selectedCell && (
+       {/* MODAL: ASIGNAR CELDA DE RESIDENTE A UN APARTAMENTO (con placa) */}
+       {cellResidente && (
           <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
-             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSelectedCell(null)} />
-             <form 
-               onSubmit={handleConfirmAccess}
-               className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300"
-             >
-                <div className="flex justify-between items-center mb-8">
+             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setCellResidente(null)} />
+             <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
+                <div className="flex justify-between items-center mb-6">
                    <div className="flex flex-col">
-                      <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em] mb-1">Registro de Acceso</span>
-                      <h3 className="text-2xl font-display font-medium text-text">Celda {selectedCell.numero}</h3>
+                      <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em] mb-1">Asignar a Apartamento</span>
+                      <h3 className="text-2xl font-display font-bold text-text">Celda {cellResidente.numero}</h3>
                    </div>
-                   <button type="button" onClick={() => setSelectedCell(null)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text hover:text-text transition-all">
+                   <button type="button" onClick={() => setCellResidente(null)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text">
                       <X size={20} />
                    </button>
                 </div>
 
-                <div className="flex flex-col gap-6">
-                   <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-text font-bold uppercase tracking-widest ml-1">Placa del Vehículo</label>
-                      <input 
-                        required
-                        autoFocus
-                        type="text" 
-                        value={placa}
-                        onChange={(e) => setPlaca(e.target.value.toUpperCase())}
-                        placeholder="ABC-123" 
-                        className="w-full bg-text/5 border border-border/50 rounded-2xl py-4 px-6 text-text placeholder:text-text text-lg font-mono tracking-widest focus:outline-none focus:border-accent/50 focus:bg-text/10 transition-all"
-                      />
-                   </div>
+                <p className="text-sm text-text/80 leading-relaxed mb-4">
+                   Esta celda se asigna a un <span className="font-bold">apartamento</span>. Elige el residente
+                   e indica la <span className="font-bold">placa</span> del vehículo. La placa es obligatoria.
+                </p>
 
-                   <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-text font-bold uppercase tracking-widest ml-1">Observaciones (Opcional)</label>
-                      <textarea 
-                        value={obs}
-                        onChange={(e) => setObs(e.target.value)}
-                        placeholder="Ej: Vehículo de mudanza, ingreso temporal..." 
-                        className="w-full bg-text/5 border border-border/50 rounded-2xl p-4 text-sm text-text placeholder:text-text resize-none h-24 focus:outline-none focus:border-accent/50 transition-all"
-                      />
-                   </div>
+                <input
+                  type="text"
+                  value={busquedaRes}
+                  onChange={(e) => setBusquedaRes(e.target.value)}
+                  placeholder="Buscar por nombre, torre o apto..."
+                  className="w-full bg-text/5 border border-border/50 rounded-2xl py-3 px-4 text-sm text-text placeholder:text-text/50 focus:outline-none focus:border-accent/50 mb-3"
+                />
 
-                   <button 
-                     disabled={isSubmitting}
-                     type="submit" 
-                     className="w-full bg-accent rounded-2xl py-4 font-bold text-on-accent shadow-xl shadow-accent/20 active:scale-95 transition-all flex items-center justify-center gap-2"
-                   >
-                     {isSubmitting ? "Procesando..." : <><Car size={18} /> Confirmar Ingreso</>}
-                   </button>
+                <div className="flex flex-col gap-2 max-h-[32vh] overflow-y-auto hide-scrollbar mb-4">
+                   {residentes
+                     .filter((r) => {
+                        const q = busquedaRes.toLowerCase();
+                        return !q
+                          || r.nombre?.toLowerCase().includes(q)
+                          || String(r.torre || '').toLowerCase().includes(q)
+                          || String(r.apto || '').toLowerCase().includes(q);
+                     })
+                     .map((r) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setResidenteId(r.id)}
+                          className={`flex items-center justify-between p-3 rounded-2xl border text-left transition-all ${residenteId === r.id ? 'bg-accent/15 border-accent' : 'bg-text/5 border-border/40 hover:bg-text/10'}`}
+                        >
+                           <span className="text-sm font-bold text-text">{r.nombre}</span>
+                           <span className="text-[11px] text-text/70">{r.torre ? `Torre ${r.torre}` : ''}{r.apto ? ` · ${r.apto}` : ''}</span>
+                        </button>
+                     ))}
+                   {residentes.length === 0 && (
+                      <p className="text-xs text-text/60 text-center py-4">No se pudo cargar el directorio de residentes.</p>
+                   )}
                 </div>
-             </form>
+
+                {/* Placa obligatoria */}
+                <div className="flex flex-col gap-2 mb-4">
+                   <label className="text-[10px] text-text/80 font-bold uppercase tracking-widest ml-1">Placa del Vehículo *</label>
+                   <input
+                     type="text"
+                     value={placaResidente}
+                     onChange={(e) => setPlacaResidente(e.target.value.toUpperCase())}
+                     placeholder="ABC-123"
+                     className="w-full bg-text/5 border border-border/50 rounded-2xl py-4 px-6 text-text placeholder:text-text/40 text-lg font-mono tracking-widest focus:outline-none focus:border-accent/50 focus:bg-text/10 transition-all"
+                   />
+                </div>
+
+                {/* Vigencia opcional */}
+                <div className="mb-5">
+                   <div className="flex items-center justify-between mb-2 px-1">
+                      <span className="text-[11px] font-bold text-text/80 uppercase tracking-wider">Vigencia</span>
+                      <span className="text-[10px] text-text/50">opcional</span>
+                   </div>
+                   <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { v: "sin", l: "Sin venc." },
+                        { v: "6", l: "6 meses" },
+                        { v: "12", l: "1 año" },
+                        { v: "24", l: "2 años" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => setMesesResidente(opt.v)}
+                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${mesesResidente === opt.v ? 'bg-accent text-on-accent border-accent shadow-lg shadow-accent/20' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
+                        >
+                          {opt.l}
+                        </button>
+                      ))}
+                   </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isSubmitting || !residenteId || !placaResidente.trim()}
+                  onClick={asignarResidente}
+                  className="w-full py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                   <Car size={18} /> {isSubmitting ? "Asignando..." : "Asignar al apartamento"}
+                </button>
+             </div>
           </div>
        )}
 

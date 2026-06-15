@@ -204,6 +204,7 @@ pub async fn asignar_celda(
     actor: Actor,
     residente_id: Uuid,
     meses: Option<i32>,
+    placa: Option<String>,
 ) -> ApiResult<Parqueadero> {
     let ahora = Utc::now();
     let hasta = match meses {
@@ -243,8 +244,16 @@ pub async fn asignar_celda(
             .get_result(conn)
             .await?;
 
-            let detalle = match meses {
-                Some(m) if m > 0 => format!("asignación permanente por {m} meses"),
+            let placa_norm = placa
+                .as_deref()
+                .map(|p| p.trim().to_uppercase())
+                .filter(|p| !p.is_empty());
+            let detalle = match (&meses, &placa_norm) {
+                (Some(m), Some(pl)) if *m > 0 => {
+                    format!("asignación permanente por {m} meses · placa {pl}")
+                }
+                (Some(m), None) if *m > 0 => format!("asignación permanente por {m} meses"),
+                (_, Some(pl)) => format!("asignación permanente sin vencimiento · placa {pl}"),
                 _ => "asignación permanente sin vencimiento".to_string(),
             };
             diesel::insert_into(registros_parqueadero::table)
@@ -253,6 +262,7 @@ pub async fn asignar_celda(
                     registros_parqueadero::parqueadero_id.eq(celda_id),
                     registros_parqueadero::usuario_id.eq(actor.id),
                     registros_parqueadero::tipo.eq(TipoRegistroParqueadero::Verificacion),
+                    registros_parqueadero::placa.eq(placa_norm.clone()),
                     registros_parqueadero::observacion.eq(&detalle),
                 ))
                 .execute(conn)
@@ -265,7 +275,7 @@ pub async fn asignar_celda(
                 &numero,
                 AccionParqueadero::Asignar,
                 &detalle,
-                Some(serde_json::json!({ "residenteId": residente_id, "meses": meses })),
+                Some(serde_json::json!({ "residenteId": residente_id, "meses": meses, "placa": placa_norm })),
                 &actor,
             )
             .await?;
@@ -533,6 +543,11 @@ pub async fn aprobar_solicitud(
                         .ok_or_else(|| ApiError::BadRequest("payload sin residenteId".into()))?;
                     let meses: Option<i32> =
                         payload.get("meses").and_then(|v| v.as_i64()).map(|n| n as i32);
+                    let placa: Option<String> = payload
+                        .get("placa")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.trim().to_uppercase())
+                        .filter(|s| !s.is_empty());
                     let ahora = Utc::now();
                     let hasta = match meses {
                         Some(m) if m > 0 => Some(ahora + chrono::Months::new(m as u32)),
@@ -551,6 +566,21 @@ pub async fn aprobar_solicitud(
                     ))
                     .execute(conn)
                     .await?;
+                    // Deja traza de la placa asignada (auditoría).
+                    diesel::insert_into(registros_parqueadero::table)
+                        .values((
+                            registros_parqueadero::conjunto_id.eq(conjunto_id),
+                            registros_parqueadero::parqueadero_id.eq(celda_id),
+                            registros_parqueadero::usuario_id.eq(aprobador.id),
+                            registros_parqueadero::tipo.eq(TipoRegistroParqueadero::Verificacion),
+                            registros_parqueadero::placa.eq(placa.clone()),
+                            registros_parqueadero::observacion.eq(match &placa {
+                                Some(pl) => format!("asignación aprobada · placa {pl}"),
+                                None => "asignación aprobada".to_string(),
+                            }),
+                        ))
+                        .execute(conn)
+                        .await?;
                 }
                 AccionParqueadero::Liberar => {
                     diesel::update(
