@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
+use bigdecimal::BigDecimal;
 
 use crate::db::enums::{
     AccionParqueadero, CategoriaParqueadero, EstadoParqueadero, EstadoSolicitudParqueadero,
@@ -86,6 +87,10 @@ impl From<Parqueadero> for CeldaDto {
 pub struct AsignarCeldaRequest {
     pub usuario_id: Uuid,
     pub meses: Option<i32>,
+    /// Para celdas de VISITANTE: tiempo estimado en minutos (None = tiempo libre).
+    pub estimado_minutos: Option<i32>,
+    /// Placa del vehículo de la visita (opcional, informativo en la sesión).
+    pub placa: Option<String>,
 }
 
 /// Crear una o varias celdas de parqueadero (admin/encargado).
@@ -261,5 +266,47 @@ pub struct MovimientoResultadoDto {
     pub pendiente: bool,
     pub celda: Option<CeldaDto>,
     pub solicitud: Option<SolicitudDto>,
+}
+
+/// Sesión de cobro de una celda de visitante, con cálculo EN VIVO del tiempo
+/// restante gratis y el monto acumulado (para el conteo regresivo en la app).
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct SesionDto {
+    pub id: Uuid,
+    pub parqueadero_id: Option<Uuid>,
+    pub celda_numero: String,
+    pub residente_id: Uuid,
+    pub residente_nombre: String,
+    pub placa: Option<String>,
+    pub estimado_minutos: Option<i32>,
+    pub inicio: DateTime<Utc>,
+    pub fin_gratis: DateTime<Utc>,
+    pub minutos_gratis: i32,
+    #[schema(value_type = String)]
+    pub tarifa_hora: BigDecimal,
+    pub estado: String,
+    /// Segundos restantes de la ventana gratuita (0 si ya empezó el cobro).
+    pub segundos_restantes_gratis: i64,
+    /// true cuando ya pasó la ventana gratis y se está cobrando.
+    pub en_cobro: bool,
+    /// Minutos cobrables acumulados hasta ahora (0 durante la ventana gratis).
+    pub minutos_cobrados: i32,
+    /// Monto acumulado hasta ahora (prorrateado por minuto), en COP.
+    #[schema(value_type = String)]
+    pub monto_actual: BigDecimal,
+    // Solo presentes si la sesión está CERRADA.
+    pub cerrado_en: Option<DateTime<Utc>>,
+    pub liquidacion: Option<String>,
+    #[schema(value_type = Option<String>)]
+    pub monto_final: Option<BigDecimal>,
+}
+
+/// Cómo se liquida una sesión al cerrarla (vehículo en portería).
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CerrarSesionRequest {
+    /// "VISITANTE_PAGO" (pagó en sitio) o "CARGADO_APTO" (pago al residente).
+    pub liquidacion: String,
 }
 

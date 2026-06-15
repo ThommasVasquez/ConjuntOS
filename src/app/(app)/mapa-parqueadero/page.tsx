@@ -22,6 +22,9 @@ export default function MapaParqueaderoPage() {
   // Modal State
   const [selectedCell, setSelectedCell] = useState<any>(null);
   const [cellToRelease, setCellToRelease] = useState<any>(null);
+  // Sesión de cobro de visitante asociada a la celda que se va a liberar.
+  const [sesionCobro, setSesionCobro] = useState<any>(null);
+  const [liquidando, setLiquidando] = useState(false);
   const [placa, setPlaca] = useState("");
   const [obs, setObs] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,6 +35,8 @@ export default function MapaParqueaderoPage() {
   const [residentes, setResidentes] = useState<any[]>([]);
   const [residenteId, setResidenteId] = useState("");
   const [busquedaRes, setBusquedaRes] = useState("");
+  // Tiempo estimado de la visita: minutos, o 'libre' (sin estimado).
+  const [tiempoEstimado, setTiempoEstimado] = useState<string>("libre");
 
   // Nivel/sótano seleccionado. El backend no tiene campo de nivel, así que se
   // deriva del prefijo del número de celda (ej. "S1-01" -> Sótano 1, "S2-..." ->
@@ -124,9 +129,41 @@ export default function MapaParqueaderoPage() {
     } else if (cell.usuarioId || cell.asignadoHasta) {
       // Celda con asignación PERMANENTE: abrir modal de confirmación con nuestro
       // diseño (en vez del confirm() nativo del navegador).
+      setSesionCobro(null);
       setCellToRelease(cell);
+      // Si es una celda de visitante, traer la sesión de cobro (monto en vivo).
+      if (cell.tipo === 'VISITANTE') {
+        api.get<any>(`/parqueadero/sesiones/celda/${cell.id}`)
+          .then((s) => setSesionCobro(s))
+          .catch(() => setSesionCobro(null));
+      }
     } else {
       processToggle(cell.id, 'DISPONIBLE');
+    }
+  };
+
+  // Cierra la sesión de cobro con la liquidación elegida (vehículo en portería).
+  const cerrarSesionLiquidando = async (liquidacion: 'VISITANTE_PAGO' | 'CARGADO_APTO') => {
+    if (!sesionCobro?.id) { liberarCelda(cellToRelease.id); return; }
+    setLiquidando(true);
+    try {
+      const r: any = await api.post(`/parqueadero/sesiones/${sesionCobro.id}/cerrar`, { liquidacion });
+      const monto = Number(r?.montoFinal || 0);
+      if (liquidacion === 'CARGADO_APTO' && monto > 0) {
+        toast.success(`Cobro de $${monto.toLocaleString('es-CO')} cargado al apartamento.`, { duration: 5000 });
+      } else if (monto > 0) {
+        toast.success(`Visitante pagó $${monto.toLocaleString('es-CO')}. Celda liberada.`, { duration: 5000 });
+      } else {
+        toast.success("Celda liberada dentro de las 2h gratis (sin cobro).");
+      }
+      loadData();
+      loadExtra();
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo cerrar la sesión");
+    } finally {
+      setLiquidando(false);
+      setCellToRelease(null);
+      setSesionCobro(null);
     }
   };
 
@@ -134,7 +171,8 @@ export default function MapaParqueaderoPage() {
     if (!residenteId) { toast.error("Selecciona el residente que recibe la visita"); return; }
     setIsSubmitting(true);
     try {
-      const r: any = await api.post(`/parqueadero/celdas/${cellVisitante.id}/asignar`, { usuarioId: residenteId });
+      const estimadoMinutos = tiempoEstimado === "libre" ? null : parseInt(tiempoEstimado, 10);
+      const r: any = await api.post(`/parqueadero/celdas/${cellVisitante.id}/asignar`, { usuarioId: residenteId, estimadoMinutos });
       if (r?.pendiente) {
         toast.success("Solicitud enviada. El residente debe aprobarla desde su app.", { duration: 5000 });
       } else {
@@ -147,6 +185,7 @@ export default function MapaParqueaderoPage() {
     } finally {
       setIsSubmitting(false);
       setCellVisitante(null);
+      setTiempoEstimado("libre");
     }
   };
 
@@ -493,6 +532,31 @@ export default function MapaParqueaderoPage() {
                    )}
                 </div>
 
+                {/* Tiempo estimado de la visita (2h gratis, luego $3.000/h). */}
+                <div className="mb-5">
+                   <div className="flex items-center justify-between mb-2 px-1">
+                      <span className="text-[11px] font-bold text-text/80 uppercase tracking-wider">Tiempo estimado</span>
+                      <span className="text-[10px] text-text/50">2h gratis · luego $3.000/h</span>
+                   </div>
+                   <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { v: "30", l: "30 min" },
+                        { v: "60", l: "1 hora" },
+                        { v: "120", l: "2 horas" },
+                        { v: "libre", l: "Libre" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => setTiempoEstimado(opt.v)}
+                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${tiempoEstimado === opt.v ? 'bg-accent text-on-accent border-accent shadow-lg shadow-accent/20' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
+                        >
+                          {opt.l}
+                        </button>
+                      ))}
+                   </div>
+                </div>
+
                 <button
                   type="button"
                   disabled={isSubmitting || !residenteId}
@@ -532,6 +596,50 @@ export default function MapaParqueaderoPage() {
                       Quedará <span className="font-bold text-[#57bf00]">disponible</span> para una nueva asignación.
                    </p>
 
+                   {/* Cobro de visitante: muestra el monto en vivo y pide liquidación. */}
+                   {sesionCobro && (
+                      <div className="w-full bg-text/5 border border-border rounded-2xl p-4 flex flex-col gap-1 mt-1">
+                         <div className="flex justify-between items-center">
+                            <span className="text-[11px] text-text/70 uppercase tracking-wider font-bold">Tiempo usado</span>
+                            <span className="text-sm font-bold text-text">{sesionCobro.minutosCobrados > 0 ? `${sesionCobro.minutosCobrados} min cobrables` : 'Dentro de 2h gratis'}</span>
+                         </div>
+                         <div className="flex justify-between items-center">
+                            <span className="text-[11px] text-text/70 uppercase tracking-wider font-bold">A cobrar</span>
+                            <span className={`text-xl font-display font-bold ${Number(sesionCobro.montoActual) > 0 ? 'text-[#FACC15]' : 'text-[#57bf00]'}`}>
+                               ${Number(sesionCobro.montoActual || 0).toLocaleString('es-CO')}
+                            </span>
+                         </div>
+                      </div>
+                   )}
+
+                   {/* Si hay cobro pendiente, dos opciones de liquidación. */}
+                   {sesionCobro && Number(sesionCobro.montoActual) > 0 ? (
+                      <div className="flex flex-col gap-3 w-full mt-2">
+                         <button
+                            type="button"
+                            disabled={liquidando}
+                            onClick={() => cerrarSesionLiquidando('VISITANTE_PAGO')}
+                            className="w-full py-4 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-60"
+                         >
+                            {liquidando ? "Procesando..." : "Visitante pagó en sitio"}
+                         </button>
+                         <button
+                            type="button"
+                            disabled={liquidando}
+                            onClick={() => cerrarSesionLiquidando('CARGADO_APTO')}
+                            className="w-full py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-60"
+                         >
+                            {liquidando ? "Procesando..." : "Cargar al apartamento"}
+                         </button>
+                         <button
+                            type="button"
+                            onClick={() => setCellToRelease(null)}
+                            className="w-full py-3 rounded-2xl bg-text/5 border border-border/50 text-text font-bold text-sm hover:bg-text/10 active:scale-95 transition-all"
+                         >
+                            Cancelar
+                         </button>
+                      </div>
+                   ) : (
                    <div className="flex gap-3 w-full mt-2">
                       <button
                          type="button"
@@ -542,13 +650,14 @@ export default function MapaParqueaderoPage() {
                       </button>
                       <button
                          type="button"
-                         disabled={isSubmitting}
-                         onClick={() => liberarCelda(cellToRelease.id)}
+                         disabled={isSubmitting || liquidando}
+                         onClick={() => sesionCobro ? cerrarSesionLiquidando('VISITANTE_PAGO') : liberarCelda(cellToRelease.id)}
                          className="flex-1 py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-60"
                       >
-                         {isSubmitting ? "Liberando..." : "Liberar Celda"}
+                         {(isSubmitting || liquidando) ? "Liberando..." : "Liberar Celda"}
                       </button>
                    </div>
+                   )}
                 </div>
              </div>
           </div>

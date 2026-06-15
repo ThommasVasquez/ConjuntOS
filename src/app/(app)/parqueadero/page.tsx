@@ -52,12 +52,21 @@ export default function ParqueaderoPage() {
   // residente debe aprobar o rechazar (consentimiento expreso).
   const [solicitudesInquilino, setSolicitudesInquilino] = useState<any[]>([]);
   const [busyAprob, setBusyAprob] = useState<string | null>(null);
+  // Sesiones de cobro activas del residente (conteo regresivo en vivo).
+  const [sesionesCobro, setSesionesCobro] = useState<any[]>([]);
 
   const refetchSolicitudes = async () => {
     try {
       const data = await api.get<any[]>('/parqueadero/solicitudes/mias');
       setSolicitudesInquilino(data ?? []);
     } catch { /* no aplica / sin permiso */ }
+  };
+
+  const refetchSesiones = async () => {
+    try {
+      const data = await api.get<any[]>('/parqueadero/sesiones/mias');
+      setSesionesCobro(data ?? []);
+    } catch { /* no aplica */ }
   };
 
   const resolverSolicitud = async (id: string, accion: 'aprobar' | 'rechazar') => {
@@ -76,7 +85,7 @@ export default function ParqueaderoPage() {
 
   // Real-time WebSocket subscriptions
   useWsSubscription('vehiculo', () => refetchParking());
-  useWsSubscription('parqueadero', () => { refetchParking(); refetchSolicitudes(); });
+  useWsSubscription('parqueadero', () => { refetchParking(); refetchSolicitudes(); refetchSesiones(); });
 
   // Modal y Forms
   const [showVehiculoModal, setShowVehiculoModal] = useState(false);
@@ -117,6 +126,7 @@ export default function ParqueaderoPage() {
     };
     fetchData();
     refetchSolicitudes();
+    refetchSesiones();
 
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up", 
@@ -170,6 +180,21 @@ export default function ParqueaderoPage() {
                 </button>
               </div>
             </div>
+          ))}
+        </section>
+      )}
+
+      {/* SESIONES DE COBRO ACTIVAS: conteo regresivo en vivo */}
+      {sesionesCobro.length > 0 && (
+        <section className="fade-up flex flex-col gap-3">
+          <div className="flex items-center gap-2 px-1">
+            <Clock size={16} className="text-[#57bf00]" />
+            <h2 className="text-base font-display font-bold text-text tracking-tight">
+              Parqueadero de visitante
+            </h2>
+          </div>
+          {sesionesCobro.map((s) => (
+            <CuentaRegresivaCard key={s.id} sesion={s} />
           ))}
         </section>
       )}
@@ -491,6 +516,76 @@ export default function ParqueaderoPage() {
         </div>
       )}
 
+    </div>
+  );
+}
+
+/// Tarjeta de sesión de parqueadero de visitante con conteo regresivo en vivo.
+/// Tras las 2h gratis muestra el cobro acumulado prorrateado por minuto.
+function CuentaRegresivaCard({ sesion }: { sesion: any }) {
+  // Reloj local: arranca desde los segundos que envió el backend y descuenta.
+  const [segGratis, setSegGratis] = useState<number>(sesion.segundosRestantesGratis ?? 0);
+  const [montoVivo, setMontoVivo] = useState<number>(Number(sesion.montoActual ?? 0));
+
+  useEffect(() => {
+    setSegGratis(sesion.segundosRestantesGratis ?? 0);
+    setMontoVivo(Number(sesion.montoActual ?? 0));
+  }, [sesion.segundosRestantesGratis, sesion.montoActual]);
+
+  useEffect(() => {
+    const tarifaMin = Number(sesion.tarifaHora ?? 3000) / 60;
+    const finGratis = new Date(sesion.finGratis).getTime();
+    const id = setInterval(() => {
+      const ahora = Date.now();
+      const restante = Math.max(0, Math.floor((finGratis - ahora) / 1000));
+      setSegGratis(restante);
+      if (restante === 0) {
+        const minCobrables = Math.max(0, Math.floor((ahora - finGratis) / 60000));
+        setMontoVivo(Math.round(minCobrables * tarifaMin));
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [sesion.finGratis, sesion.tarifaHora]);
+
+  const enCobro = segGratis === 0;
+  const hh = Math.floor(segGratis / 3600);
+  const mm = Math.floor((segGratis % 3600) / 60);
+  const ss = segGratis % 60;
+  const fmt = (n: number) => String(n).padStart(2, '0');
+  const avisoPronto = !enCobro && segGratis <= 20 * 60;
+
+  return (
+    <div className={`liquid-glass-card rounded-[28px] p-5 border flex flex-col gap-3 ${enCobro ? 'border-[#FACC15]/50' : avisoPronto ? 'border-[#FACC15]/40' : 'border-[#57bf00]/40'}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Clock size={16} className={enCobro ? 'text-[#FACC15]' : 'text-[#57bf00]'} />
+          <span className="text-sm font-bold text-text">Celda {sesion.celdaNumero}</span>
+          {sesion.placa && <span className="text-[10px] text-text/60 bg-text/5 px-2 py-0.5 rounded-full border border-border">{sesion.placa}</span>}
+        </div>
+        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${enCobro ? 'bg-[#FACC15]/15 text-[#FACC15]' : 'bg-[#57bf00]/15 text-[#57bf00]'}`}>
+          {enCobro ? 'En cobro' : 'Gratis'}
+        </span>
+      </div>
+
+      {!enCobro ? (
+        <div className="flex flex-col items-center gap-1 py-2">
+          <span className="text-[10px] text-text/60 uppercase tracking-widest font-bold">Tiempo gratis restante</span>
+          <span className={`text-4xl font-display font-bold tabular-nums ${avisoPronto ? 'text-[#FACC15]' : 'text-text'}`}>
+            {hh > 0 ? `${fmt(hh)}:` : ''}{fmt(mm)}:{fmt(ss)}
+          </span>
+          {avisoPronto && (
+            <span className="text-[11px] text-[#FACC15] font-bold text-center">⚠️ Pronto inicia el cobro de ${Number(sesion.tarifaHora).toLocaleString('es-CO')}/hora</span>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-1 py-2">
+          <span className="text-[10px] text-text/60 uppercase tracking-widest font-bold">Cobro acumulado</span>
+          <span className="text-4xl font-display font-bold text-[#FACC15] tabular-nums">
+            ${montoVivo.toLocaleString('es-CO')}
+          </span>
+          <span className="text-[11px] text-text/60 text-center">Se cobra ${Number(sesion.tarifaHora).toLocaleString('es-CO')}/hora por minuto, hasta que el vehículo salga.</span>
+        </div>
+      )}
     </div>
   );
 }

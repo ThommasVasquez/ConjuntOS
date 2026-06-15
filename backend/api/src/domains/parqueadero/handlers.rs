@@ -10,13 +10,14 @@ use crate::db::enums::{
     TipoCeldaParqueadero,
 };
 use crate::domains::parqueadero::dto::{
-    AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CreateCeldaRequest, CreateRondaRequest,
-    CreateVehiculoRequest, EditarSolicitudRequest, MovimientoResultadoDto, OcupanteDto,
-    ParqueaderoMioDto, ParqueaderoStatsDto, RegistroDto, RondaDto, SolicitudDto, UpdateCeldaRequest,
-    VehiculoDto,
+    AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CerrarSesionRequest, CreateCeldaRequest,
+    CreateRondaRequest, CreateVehiculoRequest, EditarSolicitudRequest, MovimientoResultadoDto,
+    OcupanteDto, ParqueaderoMioDto, ParqueaderoStatsDto, RegistroDto, RondaDto, SesionDto,
+    SolicitudDto, UpdateCeldaRequest, VehiculoDto,
 };
 use crate::domains::parqueadero::models::{NuevaCelda, NuevaSolicitud, NuevoVehiculo};
 use crate::domains::parqueadero::repo::{self, Actor};
+use crate::domains::parqueadero::sesiones;
 use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
@@ -124,6 +125,10 @@ pub fn router() -> Router<AppState> {
             "/parqueadero/solicitudes/{id}",
             put(editar_solicitud).delete(borrar_solicitud),
         )
+        // Sesiones de cobro de visitante (conteo regresivo + liquidación).
+        .route("/parqueadero/sesiones/mias", get(mis_sesiones))
+        .route("/parqueadero/sesiones/celda/{id}", get(sesion_de_celda))
+        .route("/parqueadero/sesiones/{id}/cerrar", post(cerrar_sesion))
 }
 
 #[utoipa::path(
@@ -435,7 +440,12 @@ pub async fn asignar_celda(
                 estado: EstadoSolicitudParqueadero::PendienteInquilino,
                 requiere_aprobacion: true,
                 detalle: detalle.clone(),
-                payload: Some(serde_json::json!({ "residenteId": residente_id, "meses": req.meses })),
+                payload: Some(serde_json::json!({
+                    "residenteId": residente_id,
+                    "meses": req.meses,
+                    "estimadoMinutos": req.estimado_minutos,
+                    "placa": req.placa,
+                })),
                 solicitante_id: user.id,
                 solicitante_nombre: user.nombre.clone(),
                 solicitante_rol: user.rol.to_string(),
@@ -582,6 +592,9 @@ pub async fn liberar_celda(
     }
 
     let celda = repo::liberar_celda(&mut conn, user.conjunto_id, id, actor_de(&user)).await?;
+    // Si la celda de visitante tenía una sesión de cobro activa y se libera sin
+    // pasar por la liquidación, se cierra como "visitante pagó" (default seguro).
+    let _ = sesiones::cerrar_sesion_de_celda(&mut conn, user.conjunto_id, id, None).await?;
     let dto = CeldaDto::from(celda);
     notificar(
         &state,
@@ -911,4 +924,98 @@ pub async fn inquilino_rechazar(
     .await?;
     notificar(&state, user.conjunto_id, "solicitud_resuelta", None).await;
     Ok(Json(SolicitudDto::from(sol)))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sesiones de cobro de visitante (conteo regresivo + liquidación).
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/sesiones/mias",
+    tag = "parqueadero",
+    responses(
+        (status = 200, description = "Active visitor parking sessions for this resident (live countdown)", body = [SesionDto]),
+        (status = 401, description = "Not authenticated")
+    )
+)]
+pub async fn mis_sesiones(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<SesionDto>>> {
+    let mut conn = state.pool.get().await?;
+    let rows = sesiones::sesiones_activas_de_residente(&mut conn, user.conjunto_id, user.id).await?;
+    let ahora = chrono::Utc::now();
+    Ok(Json(rows.iter().map(|s| sesiones::to_dto(s, ahora)).collect()))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/sesiones/celda/{id}",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Cell id")),
+    responses(
+        (status = 200, description = "Active session for a cell, or null", body = Option<SesionDto>),
+        (status = 403, description = "Requires parking manager role")
+    )
+)]
+pub async fn sesion_de_celda(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<Option<SesionDto>>> {
+    guard::require(&user, ROLES_GESTION_CELDAS)?;
+    let mut conn = state.pool.get().await?;
+    let sesion = sesiones::sesion_activa_de_celda(&mut conn, user.conjunto_id, id).await?;
+    let ahora = chrono::Utc::now();
+    Ok(Json(sesion.map(|s| sesiones::to_dto(&s, ahora))))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/sesiones/{id}/cerrar",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Session id")),
+    request_body = CerrarSesionRequest,
+    responses(
+        (status = 200, description = "Session closed (charge frozen) and cell released", body = SesionDto),
+        (status = 403, description = "Requires parking manager role"),
+        (status = 404, description = "Active session not found")
+    )
+)]
+pub async fn cerrar_sesion(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<CerrarSesionRequest>,
+) -> ApiResult<Json<SesionDto>> {
+    guard::require(&user, ROLES_GESTION_CELDAS)?;
+    let mut conn = state.pool.get().await?;
+    // Resolver la celda de la sesión para cerrarla + liberar la celda.
+    let sesion = sesiones::obtener_sesion(&mut conn, user.conjunto_id, id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("sesión no encontrada".into()))?;
+    if sesion.estado != "ACTIVA" {
+        return Err(ApiError::BadRequest("la sesión ya está cerrada".into()));
+    }
+    let celda_id = sesion
+        .parqueadero_id
+        .ok_or_else(|| ApiError::BadRequest("sesión sin celda".into()))?;
+
+    let cerrada = sesiones::cerrar_sesion_de_celda(
+        &mut conn,
+        user.conjunto_id,
+        celda_id,
+        Some(req.liquidacion),
+    )
+    .await?
+    .ok_or_else(|| ApiError::NotFound("sin sesión activa para cerrar".into()))?;
+
+    // Vehículo en portería → liberar la celda.
+    let _ = repo::liberar_celda(&mut conn, user.conjunto_id, celda_id, actor_de(&user)).await;
+
+    notificar(&state, user.conjunto_id, "celda_liberada", None).await;
+    notificar(&state, user.conjunto_id, "sesion_cerrada", None).await;
+    let ahora = chrono::Utc::now();
+    Ok(Json(sesiones::to_dto(&cerrada, ahora)))
 }

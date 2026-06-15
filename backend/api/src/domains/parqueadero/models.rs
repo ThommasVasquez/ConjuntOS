@@ -7,7 +7,8 @@ use crate::db::enums::{
     TipoCeldaParqueadero, TipoRegistroParqueadero, TipoVehiculo,
 };
 use crate::db::schema::{
-    parqueaderos, registros_parqueadero, rondas_parqueadero, solicitudes_parqueadero, vehiculos,
+    parqueaderos, registros_parqueadero, rondas_parqueadero, sesiones_parqueadero,
+    solicitudes_parqueadero, vehiculos,
 };
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
@@ -129,4 +130,52 @@ pub struct NuevaSolicitud {
     pub solicitante_rol: String,
     pub destinatario_id: Option<Uuid>,
     pub destinatario_nombre: Option<String>,
+}
+
+/// Sesión de cobro de una celda de VISITANTE. Arranca al aprobar el inquilino;
+/// 2h gratis y luego tarifa/hora prorrateada por minuto. Se congela al liberar.
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
+#[diesel(table_name = sesiones_parqueadero, check_for_backend(diesel::pg::Pg))]
+pub struct SesionParqueadero {
+    pub id: Uuid,
+    pub conjunto_id: Uuid,
+    pub parqueadero_id: Option<Uuid>,
+    pub celda_numero: String,
+    pub solicitud_id: Option<Uuid>,
+    pub residente_id: Uuid,
+    pub residente_nombre: String,
+    pub unidad_id: Option<Uuid>,
+    pub placa: Option<String>,
+    pub estimado_minutos: Option<i32>,
+    pub inicio: DateTime<Utc>,
+    pub minutos_gratis: i32,
+    pub fin_gratis: DateTime<Utc>,
+    pub tarifa_hora: bigdecimal::BigDecimal,
+    pub aviso_20_enviado: bool,
+    pub aviso_cobro_enviado: bool,
+    pub estado: String,
+    pub cerrado_en: Option<DateTime<Utc>>,
+    pub minutos_cobrados: Option<i32>,
+    pub monto: Option<bigdecimal::BigDecimal>,
+    pub liquidacion: Option<String>,
+    pub pago_id: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Debug)]
+#[diesel(table_name = sesiones_parqueadero)]
+pub struct NuevaSesion {
+    pub conjunto_id: Uuid,
+    pub parqueadero_id: Option<Uuid>,
+    pub celda_numero: String,
+    pub solicitud_id: Option<Uuid>,
+    pub residente_id: Uuid,
+    pub residente_nombre: String,
+    pub unidad_id: Option<Uuid>,
+    pub placa: Option<String>,
+    pub estimado_minutos: Option<i32>,
+    pub inicio: DateTime<Utc>,
+    pub minutos_gratis: i32,
+    pub fin_gratis: DateTime<Utc>,
+    pub tarifa_hora: bigdecimal::BigDecimal,
 }

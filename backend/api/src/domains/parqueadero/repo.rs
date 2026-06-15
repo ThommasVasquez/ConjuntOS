@@ -9,8 +9,8 @@ use crate::db::enums::{
     TipoRegistroParqueadero,
 };
 use crate::db::schema::{
-    parqueaderos, registros_parqueadero, rondas_parqueadero, solicitudes_parqueadero, usuarios,
-    vehiculos,
+    parqueaderos, registros_parqueadero, rondas_parqueadero, sesiones_parqueadero,
+    solicitudes_parqueadero, usuarios, vehiculos,
 };
 use crate::db::DbConn;
 use crate::domains::parqueadero::models::{
@@ -711,6 +711,22 @@ pub async fn obtener_usuario(
     Ok(row)
 }
 
+/// unidad_id (apto) del residente, si tiene una asignada.
+pub async fn obtener_unidad_id(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    usuario_id: Uuid,
+) -> ApiResult<Option<Uuid>> {
+    let row: Option<Option<Uuid>> = usuarios::table
+        .filter(usuarios::id.eq(usuario_id))
+        .filter(usuarios::conjunto_id.eq(conjunto_id))
+        .select(usuarios::unidad_id)
+        .first(conn)
+        .await
+        .optional()?;
+    Ok(row.flatten())
+}
+
 /// Crea una notificación in-app para el inquilino destinatario.
 pub async fn notificar_inquilino(
     conn: &mut DbConn,
@@ -787,6 +803,14 @@ pub async fn inquilino_aprobar(
                 .unwrap_or(inquilino_id);
             let meses: Option<i32> =
                 payload.get("meses").and_then(|v| v.as_i64()).map(|n| n as i32);
+            let estimado_minutos: Option<i32> = payload
+                .get("estimadoMinutos")
+                .and_then(|v| v.as_i64())
+                .map(|n| n as i32);
+            let placa: Option<String> = payload
+                .get("placa")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let ahora = Utc::now();
             let hasta = match meses {
                 Some(m) if m > 0 => Some(ahora + chrono::Months::new(m as u32)),
@@ -815,6 +839,40 @@ pub async fn inquilino_aprobar(
                     registros_parqueadero::observacion
                         .eq(format!("inquilino aprobó: {}", sol.detalle)),
                 ))
+                .execute(conn)
+                .await?;
+
+            // Arranca la sesión de cobro de visitante (2h gratis + tarifa/min).
+            let unidad_id: Option<Uuid> = usuarios::table
+                .filter(usuarios::id.eq(residente_id))
+                .filter(usuarios::conjunto_id.eq(conjunto_id))
+                .select(usuarios::unidad_id)
+                .first::<Option<Uuid>>(conn)
+                .await
+                .optional()?
+                .flatten();
+            let inicio = ahora;
+            let minutos_gratis = crate::domains::parqueadero::sesiones::MINUTOS_GRATIS_DEFAULT;
+            let fin_gratis = inicio + chrono::Duration::minutes(minutos_gratis as i64);
+            let tarifa = bigdecimal::BigDecimal::from(
+                crate::domains::parqueadero::sesiones::TARIFA_HORA_DEFAULT,
+            );
+            diesel::insert_into(sesiones_parqueadero::table)
+                .values(crate::domains::parqueadero::models::NuevaSesion {
+                    conjunto_id,
+                    parqueadero_id: Some(celda_id),
+                    celda_numero: sol.celda_numero.clone(),
+                    solicitud_id: Some(solicitud_id),
+                    residente_id,
+                    residente_nombre: inquilino_nombre.clone(),
+                    unidad_id,
+                    placa,
+                    estimado_minutos,
+                    inicio,
+                    minutos_gratis,
+                    fin_gratis,
+                    tarifa_hora: tarifa,
+                })
                 .execute(conn)
                 .await?;
 

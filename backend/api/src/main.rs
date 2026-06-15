@@ -22,6 +22,10 @@ async fn main() -> anyhow::Result<()> {
 
     let port = config.port;
     let state = AppState::new(config, pool);
+
+    // Scheduler de cobros de parqueadero de visitante (avisos 20 min + inicio cobro).
+    enconjunto_api::domains::parqueadero::sesiones::spawn_scheduler(state.clone());
+
     let app = build_router(state);
 
     let listener = tokio::net::TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;

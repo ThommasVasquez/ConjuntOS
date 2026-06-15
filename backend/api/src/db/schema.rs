@@ -458,6 +458,34 @@ diesel::table! {
 }
 
 diesel::table! {
+    sesiones_parqueadero (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        parqueadero_id -> Nullable<Uuid>,
+        celda_numero -> Text,
+        solicitud_id -> Nullable<Uuid>,
+        residente_id -> Uuid,
+        residente_nombre -> Text,
+        unidad_id -> Nullable<Uuid>,
+        placa -> Nullable<Text>,
+        estimado_minutos -> Nullable<Int4>,
+        inicio -> Timestamptz,
+        minutos_gratis -> Int4,
+        fin_gratis -> Timestamptz,
+        tarifa_hora -> Numeric,
+        aviso_20_enviado -> Bool,
+        aviso_cobro_enviado -> Bool,
+        estado -> Text,
+        cerrado_en -> Nullable<Timestamptz>,
+        minutos_cobrados -> Nullable<Int4>,
+        monto -> Nullable<Numeric>,
+        liquidacion -> Nullable<Text>,
+        pago_id -> Nullable<Uuid>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     solicitudes_parqueadero (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -631,6 +659,10 @@ diesel::joinable!(reservas -> conjuntos (conjunto_id));
 diesel::joinable!(reservas -> usuarios (usuario_id));
 diesel::joinable!(rondas_parqueadero -> conjuntos (conjunto_id));
 diesel::joinable!(rondas_parqueadero -> usuarios (usuario_id));
+diesel::joinable!(sesiones_parqueadero -> conjuntos (conjunto_id));
+diesel::joinable!(sesiones_parqueadero -> parqueaderos (parqueadero_id));
+diesel::joinable!(sesiones_parqueadero -> unidades (unidad_id));
+diesel::joinable!(sesiones_parqueadero -> pagos (pago_id));
 diesel::joinable!(solicitudes_servicio -> conjuntos (conjunto_id));
 diesel::joinable!(solicitudes_servicio -> usuarios (usuario_id));
 diesel::joinable!(solicitudes_parqueadero -> conjuntos (conjunto_id));
@@ -677,6 +709,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     registros_parqueadero,
     reservas,
     rondas_parqueadero,
+    sesiones_parqueadero,
     solicitudes_parqueadero,
     solicitudes_servicio,
     tramites,
