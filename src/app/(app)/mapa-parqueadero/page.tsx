@@ -581,6 +581,19 @@ export default function MapaParqueaderoPage() {
                    </div>
                 </div>
 
+                {/* Aviso: el apto del residente seleccionado ya tiene una visita
+                    activa → este visitante paga desde la llegada (sin gratis). */}
+                {residenteId && parqueaderos.some(
+                  (c) => c.tipo === 'VISITANTE' && c.estado === 'OCUPADO' && c.usuarioId === residenteId
+                ) && (
+                   <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-[#FACC15]/40 bg-[#FACC15]/10 p-3.5">
+                      <AlertCircle size={18} className="text-[#FACC15] shrink-0 mt-0.5" />
+                      <p className="text-[12px] text-text/90 leading-snug">
+                         Este apartamento <span className="font-bold">ya tiene una visita activa</span>. El tiempo gratis es para un visitante a la vez, así que <span className="font-bold text-[#FACC15]">este pagará desde la llegada</span>.
+                      </p>
+                   </div>
+                )}
+
                 <button
                   type="button"
                   disabled={isSubmitting || !residenteId}
