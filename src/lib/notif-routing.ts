@@ -37,13 +37,16 @@ export function getNotifTarget(
   if (t.includes("reserva")) {
     return "/reservas";
   }
+  // Parqueadero / celda (evaluado ANTES que "visita", porque la notificación de
+  // parqueadero de VISITANTE contiene la palabra "visitante" y caería en la
+  // regla de visitas). El residente va a /parqueadero, donde está la bandeja de
+  // "Aprobaciones pendientes" para aprobar/rechazar la asignación o el cargo.
+  if (t.includes("celda") || t.includes("parqueadero") || t.includes("estacionamiento")) {
+    return esGestor ? "/admin-parqueadero" : "/parqueadero";
+  }
   // Visitas / control de acceso
   if (t.includes("visita") || t.includes("visitante")) {
     return esGestor ? "/control-visitas" : "/visitantes";
-  }
-  // Parqueadero / celda
-  if (t.includes("celda") || t.includes("parqueadero") || t.includes("estacionamiento")) {
-    return esGestor ? "/admin-parqueadero" : "/perfil";
   }
   // Mensajes / chat
   if (t.includes("mensaje") || t.includes("chat")) {
