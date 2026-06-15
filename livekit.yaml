@@ -25,6 +25,11 @@ turn:
   tls_port: 5349
   cert_file: /etc/livekit/certs/turn.crt
   key_file: /etc/livekit/certs/turn.key
+  # Acotamos el rango de relay (default 30000-40000 = 10000 puertos, inviable de
+  # publicar/abrir). 50 puertos bastan para citofonía audio. Deben publicarse en
+  # Docker y abrirse en el firewall (ufw + proveedor) como UDP.
+  relay_range_start: 30000
+  relay_range_end: 30049
 
 logging:
   level: info

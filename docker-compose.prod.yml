@@ -17,8 +17,9 @@ services:
       # Las keys vienen del entorno (no se versionan).
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
     ports:
-      - "5349:5349"      # TURN/TLS (TCP)
-      - "5349:5349/udp"  # TURN/TLS (UDP)
+      - "5349:5349"               # TURN/TLS (TCP)
+      - "5349:5349/udp"           # TURN/TLS (UDP)
+      - "30000-30049:30000-30049/udp"  # TURN relay range (acotado en livekit.yaml)
     volumes:
       - ./livekit.yaml:/etc/livekit/livekit.yaml:ro
       # Certificado TLS para el dominio TURN (turn.crt + turn.key).
