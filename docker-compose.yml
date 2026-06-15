@@ -37,9 +37,9 @@ services:
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin123
       S3_PUBLIC_URL: https://storage.conjuntos.app/enconjunto
-      LIVEKIT_API_KEY: devkey
-      LIVEKIT_API_SECRET: devsecret
-      LIVEKIT_URL: wss://livekit.conjuntos.app
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-devsecret}
+      LIVEKIT_URL: ${LIVEKIT_URL:-wss://livekit.conjuntos.app}
       # Web Push VAPID (despertador de la citofonía). Valores reales en el .env del
       # servidor (no se versionan); la clave pública también va a Cloudflare como
       # NEXT_PUBLIC_VAPID_PUBLIC_KEY.
