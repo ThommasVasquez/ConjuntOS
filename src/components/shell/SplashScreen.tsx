@@ -109,22 +109,46 @@ export default function SplashScreen() {
 
         <div 
           ref={textRef}
-          className="mt-4 flex flex-col items-center"
+          className="mt-8 flex flex-col items-center"
         >
-          <div className="w-16 h-[1px] bg-white/10 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[#FFFFFF] animate-loading-bar" />
+          {/* Loader de 4 puntos: el punto activo se ilumina en cian con halo y recorre de izquierda a derecha */}
+          <div className="dots-loader">
+            <span className="dot" />
+            <span className="dot" />
+            <span className="dot" />
+            <span className="dot" />
           </div>
         </div>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
-        @keyframes loading-bar {
-          0% { transform: translateX(-100%); }
-          50% { transform: translateX(0); }
-          100% { transform: translateX(100%); }
+        .dots-loader {
+          display: flex;
+          align-items: center;
+          gap: 22px;
         }
-        .animate-loading-bar {
-          animation: loading-bar 2s ease-in-out infinite;
+        .dots-loader .dot {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #009df2;
+          animation: dot-wave 1.4s ease-in-out infinite;
+        }
+        .dots-loader .dot:nth-child(1) { animation-delay: 0s; }
+        .dots-loader .dot:nth-child(2) { animation-delay: 0.18s; }
+        .dots-loader .dot:nth-child(3) { animation-delay: 0.36s; }
+        .dots-loader .dot:nth-child(4) { animation-delay: 0.54s; }
+        @keyframes dot-wave {
+          0%, 60%, 100% {
+            background: #009df2;
+            box-shadow: none;
+            transform: scale(1);
+          }
+          30% {
+            background: #3fe5e0;
+            box-shadow: 0 0 16px 6px rgba(63, 229, 224, 0.55);
+            transform: scale(1.15);
+          }
         }
       `}} />
     </div>
