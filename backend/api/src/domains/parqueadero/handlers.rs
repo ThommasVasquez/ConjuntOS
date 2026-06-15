@@ -971,7 +971,7 @@ pub async fn sesion_de_celda(
 ) -> ApiResult<Json<Option<SesionDto>>> {
     guard::require(&user, ROLES_GESTION_CELDAS)?;
     let mut conn = state.pool.get().await?;
-    let sesion = sesiones::sesion_activa_de_celda(&mut conn, user.conjunto_id, id).await?;
+    let sesion = sesiones::sesion_viva_de_celda(&mut conn, user.conjunto_id, id).await?;
     let ahora = chrono::Utc::now();
     Ok(Json(sesion.map(|s| sesiones::to_dto(&s, ahora))))
 }
@@ -1000,14 +1000,17 @@ pub async fn cerrar_sesion(
     let sesion = sesiones::obtener_sesion(&mut conn, user.conjunto_id, id)
         .await?
         .ok_or_else(|| ApiError::NotFound("sesión no encontrada".into()))?;
-    if sesion.estado != "ACTIVA" {
+    // Aceptamos cerrar sesiones ACTIVAS (vehículo estacionado) o RETENIDAS
+    // (cargo al apto esperando aprobación → válvula de escape: el visitante paga
+    // en sitio y entonces sí se libera). Cualquier otro estado ya está cerrado.
+    if sesion.estado != "ACTIVA" && sesion.estado != "RETENIDA" {
         return Err(ApiError::BadRequest("la sesión ya está cerrada".into()));
     }
     let celda_id = sesion
         .parqueadero_id
         .ok_or_else(|| ApiError::BadRequest("sesión sin celda".into()))?;
 
-    let cerrada = sesiones::cerrar_sesion_de_celda(
+    let resultado = sesiones::cerrar_sesion_de_celda(
         &mut conn,
         user.conjunto_id,
         celda_id,
@@ -1016,11 +1019,17 @@ pub async fn cerrar_sesion(
     .await?
     .ok_or_else(|| ApiError::NotFound("sin sesión activa para cerrar".into()))?;
 
-    // Vehículo en portería → liberar la celda.
-    let _ = repo::liberar_celda(&mut conn, user.conjunto_id, celda_id, actor_de(&user)).await;
+    let cerrada = resultado.sesion;
 
-    // Si el cargo quedó PENDIENTE de aprobación del residente, notificarle con el
-    // monto para que apruebe o rechace desde su app.
+    // Solo liberamos la celda (el vehículo sale) cuando el flujo lo permite.
+    // Si quedó RETENIDA (cargo al apto esperando aprobación del residente), la
+    // celda sigue OCUPADA y el vehículo NO puede salir hasta que aprueben.
+    if resultado.liberar {
+        let _ = repo::liberar_celda(&mut conn, user.conjunto_id, celda_id, actor_de(&user)).await;
+    }
+
+    // Si el cargo quedó RETENIDO esperando aprobación del residente, notificarle
+    // con el monto para que apruebe (y el vehículo pueda salir) o rechace.
     if cerrada.liquidacion.as_deref() == Some("CARGADO_APTO_PENDIENTE") {
         let monto = cerrada
             .monto
@@ -1030,9 +1039,9 @@ pub async fn cerrar_sesion(
             &mut conn,
             user.conjunto_id,
             cerrada.residente_id,
-            &format!("Cargo de parqueadero {} — aprueba o rechaza", cerrada.celda_numero),
+            &format!("Cobro de parqueadero {} — el vehículo está retenido", cerrada.celda_numero),
             &format!(
-                "Tu visita usó el parqueadero {} y se generó un cobro de ${}. Apruébalo para cargarlo a tu apartamento o recházalo desde Parqueadero.",
+                "Tu visita usó el parqueadero {} y se generó un cobro de ${}. El vehículo NO puede salir hasta que apruebes el cargo a tu apartamento o lo rechaces. Ábrelo en Parqueadero.",
                 cerrada.celda_numero,
                 monto.with_scale(0)
             ),
@@ -1085,7 +1094,13 @@ pub async fn cargo_aprobar(
 ) -> ApiResult<Json<SesionDto>> {
     let mut conn = state.pool.get().await?;
     let sesion = sesiones::resolver_cargo(&mut conn, user.conjunto_id, id, user.id, true).await?;
+    // Aprobado: el vehículo ya puede salir → liberar la celda retenida y avisar
+    // a portería que autorice la salida.
+    if let Some(celda_id) = sesion.parqueadero_id {
+        let _ = repo::liberar_celda(&mut conn, user.conjunto_id, celda_id, actor_de(&user)).await;
+    }
     notificar(&state, user.conjunto_id, "cargo_resuelto", None).await;
+    notificar(&state, user.conjunto_id, "celda_liberada", None).await;
     let ahora = chrono::Utc::now();
     Ok(Json(sesiones::to_dto(&sesion, ahora)))
 }

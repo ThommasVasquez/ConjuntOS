@@ -164,8 +164,10 @@ export default function MapaParqueaderoPage() {
     setLiquidando(true);
     try {
       const r: any = await api.post(`/parqueadero/sesiones/${sesionCobro.id}/cerrar`, { liquidacion });
-      const monto = Number(r?.montoFinal || 0);
-      if (liquidacion === 'CARGADO_APTO' && monto > 0) {
+      const monto = Number(r?.montoFinal || r?.montoActual || 0);
+      if (liquidacion === 'CARGADO_APTO' && r?.estado === 'RETENIDA') {
+        toast.success(`Cobro de $${monto.toLocaleString('es-CO')} enviado al residente. El vehículo queda RETENIDO hasta que apruebe.`, { duration: 6000 });
+      } else if (liquidacion === 'CARGADO_APTO' && monto > 0) {
         toast.success(`Cargo de $${monto.toLocaleString('es-CO')} enviado al residente para su aprobación.`, { duration: 5000 });
       } else if (monto > 0) {
         toast.success(`Visitante pagó $${monto.toLocaleString('es-CO')}. Celda liberada.`, { duration: 5000 });
@@ -700,8 +702,34 @@ export default function MapaParqueaderoPage() {
                       );
                    })()}
 
-                   {/* Si hay cobro pendiente, dos opciones de liquidación. */}
-                   {sesionCobro && (ahora >= new Date(sesionCobro.finGratis).getTime()) ? (
+                   {/* Si está RETENIDA: esperando aprobación del residente.
+                       El vehículo no sale salvo válvula de escape (paga en sitio). */}
+                   {sesionCobro && sesionCobro.estado === 'RETENIDA' ? (
+                      <div className="flex flex-col gap-3 w-full mt-2">
+                         <div className="w-full bg-[#EF4444]/10 border border-[#EF4444]/40 rounded-2xl p-4 text-center">
+                            <p className="text-xs text-text/90 leading-relaxed">
+                               🔒 <span className="font-bold">Vehículo retenido.</span> El cobro de{" "}
+                               <span className="font-bold text-[#FACC15]">${Number(sesionCobro.montoFinal || sesionCobro.montoActual || 0).toLocaleString('es-CO')}</span>{" "}
+                               está esperando que el residente lo apruebe. No autorices la salida hasta que apruebe, o cobra al visitante en sitio.
+                            </p>
+                         </div>
+                         <button
+                            type="button"
+                            disabled={liquidando}
+                            onClick={() => cerrarSesionLiquidando('VISITANTE_PAGO')}
+                            className="w-full py-4 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-60"
+                         >
+                            {liquidando ? "Procesando..." : "Visitante pagó en sitio → liberar"}
+                         </button>
+                         <button
+                            type="button"
+                            onClick={() => setCellToRelease(null)}
+                            className="w-full py-3 rounded-2xl bg-text/5 border border-border/50 text-text font-bold text-sm hover:bg-text/10 active:scale-95 transition-all"
+                         >
+                            Cerrar (sigue retenido)
+                         </button>
+                      </div>
+                   ) : sesionCobro && (ahora >= new Date(sesionCobro.finGratis).getTime()) ? (
                       <div className="flex flex-col gap-3 w-full mt-2">
                          <button
                             type="button"
@@ -717,7 +745,7 @@ export default function MapaParqueaderoPage() {
                             onClick={() => cerrarSesionLiquidando('CARGADO_APTO')}
                             className="w-full py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-60"
                          >
-                            {liquidando ? "Procesando..." : "Cargar al apartamento"}
+                            {liquidando ? "Procesando..." : "Cargar al apartamento (retiene el vehículo)"}
                          </button>
                          <button
                             type="button"

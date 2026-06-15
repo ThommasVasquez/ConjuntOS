@@ -51,8 +51,8 @@ pub fn monto_a(s: &SesionParqueadero, ahora: DateTime<Utc>) -> BigDecimal {
 pub fn to_dto(s: &SesionParqueadero, ahora: DateTime<Utc>) -> SesionDto {
     let segundos_restantes_gratis = (s.fin_gratis - ahora).num_seconds().max(0);
     let en_cobro = s.estado == "ACTIVA" && ahora >= s.fin_gratis;
-    // Si está cerrada, usar los valores congelados; si activa, calcular en vivo.
-    let (minutos_cobrados, monto_actual) = if s.estado == "CERRADA" {
+    // Si está cerrada o retenida, usar los valores congelados; si activa, en vivo.
+    let (minutos_cobrados, monto_actual) = if s.estado == "CERRADA" || s.estado == "RETENIDA" {
         (
             s.minutos_cobrados.unwrap_or(0),
             s.monto.clone().unwrap_or_else(|| BigDecimal::from(0)),
@@ -215,6 +215,7 @@ pub async fn obtener_sesion(
 }
 
 /// Sesión ACTIVA de una celda (si existe).
+#[allow(dead_code)]
 pub async fn sesion_activa_de_celda(
     conn: &mut DbConn,
     conjunto_id: Uuid,
@@ -248,45 +249,139 @@ pub async fn sesiones_activas_de_residente(
     Ok(rows)
 }
 
-/// Cierra la sesión ACTIVA de una celda (vehículo en portería): congela monto y
-/// minutos, aplica liquidación. Si CARGADO_APTO crea un pago pendiente al apto.
-/// Devuelve la sesión cerrada (o None si la celda no tenía sesión activa).
+/// Resultado de procesar el cierre/retención de una sesión, para que el handler
+/// sepa si debe liberar la celda (vehículo sale) o retenerla (espera aprobación).
+pub struct ResultadoCierre {
+    pub sesion: SesionParqueadero,
+    /// true → la celda debe liberarse (el vehículo puede salir).
+    /// false → la celda queda RETENIDA (vehículo esperando aprobación del residente).
+    pub liberar: bool,
+}
+
+/// Sesión "viva" de una celda (ACTIVA o RETENIDA), si existe.
+pub async fn sesion_viva_de_celda(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    parqueadero_id: Uuid,
+) -> ApiResult<Option<SesionParqueadero>> {
+    let row = sesiones_parqueadero::table
+        .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id))
+        .filter(sesiones_parqueadero::parqueadero_id.eq(parqueadero_id))
+        .filter(sesiones_parqueadero::estado.eq_any(vec!["ACTIVA", "RETENIDA"]))
+        .select(SesionParqueadero::as_select())
+        .first(conn)
+        .await
+        .optional()?;
+    Ok(row)
+}
+
+/// Procesa el cierre de la sesión "viva" de una celda (vehículo en portería).
+///
+/// Regla crítica de retención: si el operario elige **cargar al apartamento**,
+/// el vehículo NO sale todavía. La sesión pasa a `RETENIDA` con el monto
+/// congelado y `CARGADO_APTO_PENDIENTE`; el residente debe aprobar para que el
+/// vehículo pueda salir (ver `resolver_cargo`). Si el residente rechaza o no
+/// responde, portería usa la válvula de escape: el visitante paga en sitio
+/// (`VISITANTE_PAGO`) y entonces sí se libera.
+///
+/// - Desde ACTIVA:
+///     - sin cobro            → CERRADA / SIN_COBRO        (libera)
+///     - visitante pagó       → CERRADA / VISITANTE_PAGO   (libera)
+///     - cargar al apto       → RETENIDA / CARGADO_APTO_PENDIENTE (NO libera)
+/// - Desde RETENIDA (vehículo retenido esperando):
+///     - visitante paga       → CERRADA / VISITANTE_PAGO   (libera)  ← válvula
+///     - (cargar al apto)      → no-op, sigue retenida
 pub async fn cerrar_sesion_de_celda(
     conn: &mut DbConn,
     conjunto_id: Uuid,
     parqueadero_id: Uuid,
     liquidacion_preferida: Option<String>,
-) -> ApiResult<Option<SesionParqueadero>> {
+) -> ApiResult<Option<ResultadoCierre>> {
     let liq = liquidacion_preferida;
     conn.transaction(|conn| {
         async move {
-            let sesion = match sesion_activa_de_celda(conn, conjunto_id, parqueadero_id).await? {
+            let sesion = match sesion_viva_de_celda(conn, conjunto_id, parqueadero_id).await? {
                 Some(s) => s,
                 None => return Ok::<_, ApiError>(None),
             };
             let ahora = Utc::now();
+            let quiere_cargar_apto = liq.as_deref() == Some("CARGADO_APTO");
+
+            // Sesión ya RETENIDA: solo aceptamos la válvula de escape
+            // (el visitante paga en sitio). Cargar al apto sería redundante.
+            if sesion.estado == "RETENIDA" {
+                if quiere_cargar_apto {
+                    // Ya está pendiente de aprobación; no hay nada que cambiar.
+                    return Ok(Some(ResultadoCierre { sesion, liberar: false }));
+                }
+                // Válvula de escape: el visitante paga en sitio el monto ya
+                // congelado al momento de la retención. Cierra y libera.
+                let updated = diesel::update(
+                    sesiones_parqueadero::table
+                        .filter(sesiones_parqueadero::id.eq(sesion.id))
+                        .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id)),
+                )
+                .set((
+                    sesiones_parqueadero::estado.eq("CERRADA"),
+                    sesiones_parqueadero::liquidacion.eq(Some("VISITANTE_PAGO".to_string())),
+                    sesiones_parqueadero::cargo_resuelto_en.eq(Some(ahora)),
+                ))
+                .returning(SesionParqueadero::as_returning())
+                .get_result(conn)
+                .await?;
+                return Ok(Some(ResultadoCierre { sesion: updated, liberar: true }));
+            }
+
+            // Sesión ACTIVA: congelar minutos/monto en vivo.
             let mins = minutos_cobrables(&sesion, ahora);
             let monto = monto_a(&sesion, ahora);
             let hay_cobro = mins > 0 && monto > BigDecimal::from(0);
 
-            // Resolver liquidación:
-            //   - sin cobro → SIN_COBRO.
-            //   - visitante pagó en sitio → VISITANTE_PAGO (cierra definitivo).
-            //   - cargar al apto → CARGADO_APTO_PENDIENTE: el residente debe
-            //     aprobar el monto antes de generar el pago (no se crea aún).
-            let liquidacion = if !hay_cobro {
-                "SIN_COBRO".to_string()
-            } else {
-                match liq.as_deref() {
-                    Some("CARGADO_APTO") => "CARGADO_APTO_PENDIENTE".to_string(),
-                    _ => "VISITANTE_PAGO".to_string(),
-                }
-            };
+            // Sin cobro (dentro de la ventana gratis): cierra y libera siempre,
+            // sin importar la liquidación pedida.
+            if !hay_cobro {
+                let updated = diesel::update(
+                    sesiones_parqueadero::table
+                        .filter(sesiones_parqueadero::id.eq(sesion.id))
+                        .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id)),
+                )
+                .set((
+                    sesiones_parqueadero::estado.eq("CERRADA"),
+                    sesiones_parqueadero::cerrado_en.eq(Some(ahora)),
+                    sesiones_parqueadero::minutos_cobrados.eq(Some(mins)),
+                    sesiones_parqueadero::monto.eq(Some(monto)),
+                    sesiones_parqueadero::liquidacion.eq(Some("SIN_COBRO".to_string())),
+                ))
+                .returning(SesionParqueadero::as_returning())
+                .get_result(conn)
+                .await?;
+                return Ok(Some(ResultadoCierre { sesion: updated, liberar: true }));
+            }
 
-            // El pago al apto NO se crea aquí; se difiere hasta que el residente
-            // apruebe el cargo (ver `resolver_cargo`).
-            let pago_id: Option<Uuid> = None;
+            if quiere_cargar_apto {
+                // RETENER: el vehículo NO sale. Congelamos el monto y dejamos la
+                // sesión a la espera de la aprobación del residente. La celda
+                // sigue OCUPADA (no se libera).
+                let updated = diesel::update(
+                    sesiones_parqueadero::table
+                        .filter(sesiones_parqueadero::id.eq(sesion.id))
+                        .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id)),
+                )
+                .set((
+                    sesiones_parqueadero::estado.eq("RETENIDA"),
+                    sesiones_parqueadero::cerrado_en.eq(Some(ahora)),
+                    sesiones_parqueadero::minutos_cobrados.eq(Some(mins)),
+                    sesiones_parqueadero::monto.eq(Some(monto)),
+                    sesiones_parqueadero::liquidacion
+                        .eq(Some("CARGADO_APTO_PENDIENTE".to_string())),
+                ))
+                .returning(SesionParqueadero::as_returning())
+                .get_result(conn)
+                .await?;
+                return Ok(Some(ResultadoCierre { sesion: updated, liberar: false }));
+            }
 
+            // Visitante pagó en sitio: cierra y libera.
             let updated = diesel::update(
                 sesiones_parqueadero::table
                     .filter(sesiones_parqueadero::id.eq(sesion.id))
@@ -297,13 +392,12 @@ pub async fn cerrar_sesion_de_celda(
                 sesiones_parqueadero::cerrado_en.eq(Some(ahora)),
                 sesiones_parqueadero::minutos_cobrados.eq(Some(mins)),
                 sesiones_parqueadero::monto.eq(Some(monto)),
-                sesiones_parqueadero::liquidacion.eq(Some(liquidacion)),
-                sesiones_parqueadero::pago_id.eq(pago_id),
+                sesiones_parqueadero::liquidacion.eq(Some("VISITANTE_PAGO".to_string())),
             ))
             .returning(SesionParqueadero::as_returning())
             .get_result(conn)
             .await?;
-            Ok(Some(updated))
+            Ok(Some(ResultadoCierre { sesion: updated, liberar: true }))
         }
         .scope_boxed()
     })
@@ -361,7 +455,7 @@ pub async fn resolver_cargo(
             }
 
             let ahora = Utc::now();
-            let (nueva_liq, pago_id) = if aprobar {
+            let (nueva_liq, nuevo_estado, pago_id) = if aprobar {
                 // Crear el pago pendiente al apto (si tiene unidad).
                 let mut pid: Option<Uuid> = None;
                 if let Some(unidad_id) = sesion.unidad_id {
@@ -390,9 +484,16 @@ pub async fn resolver_cargo(
                         .await?;
                     pid = Some(new_pid);
                 }
-                ("CARGADO_APTO".to_string(), pid)
+                // Aprobado: el cargo se carga al apto y el vehículo PUEDE SALIR.
+                ("CARGADO_APTO".to_string(), "CERRADA".to_string(), pid)
             } else {
-                ("CARGADO_APTO_RECHAZADO".to_string(), None)
+                // Rechazado: NO se carga al apto y el vehículo sigue RETENIDO.
+                // Portería debe cobrarle al visitante en sitio (válvula de escape).
+                (
+                    "CARGADO_APTO_RECHAZADO".to_string(),
+                    "RETENIDA".to_string(),
+                    None,
+                )
             };
 
             let updated = diesel::update(
@@ -401,6 +502,7 @@ pub async fn resolver_cargo(
                     .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id)),
             )
             .set((
+                sesiones_parqueadero::estado.eq(nuevo_estado),
                 sesiones_parqueadero::liquidacion.eq(Some(nueva_liq)),
                 sesiones_parqueadero::pago_id.eq(pago_id),
                 sesiones_parqueadero::cargo_resuelto_en.eq(Some(ahora)),

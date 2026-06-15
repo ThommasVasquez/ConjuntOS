@@ -7,7 +7,7 @@
 
 import { 
   ArrowRight, Bell, Building2, Calendar, Car, CreditCard, DollarSign,
-  Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, 
+  Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, ShieldAlert,
   Search, SlidersHorizontal, ShoppingBag, User as UserIcon
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
@@ -98,6 +98,36 @@ function HomeResidente() {
     } catch { /* no aplica / sin permiso */ }
   }, []);
 
+  // Cobros de parqueadero RETENIDOS: el vehículo de la visita está en portería
+  // y NO puede salir hasta que este residente apruebe (o rechace) el cargo.
+  // Es la alerta más urgente del inicio.
+  const [cargosRetenidos, setCargosRetenidos] = useState<any[]>([]);
+
+  const fetchCargosRetenidos = useCallback(async () => {
+    try {
+      const data = await api.get<any[]>('/parqueadero/cargos/mios');
+      setCargosRetenidos(data ?? []);
+    } catch { /* no aplica / sin permiso */ }
+  }, []);
+
+  const resolverCargoRetenido = async (id: string, accion: 'aprobar' | 'rechazar') => {
+    setBusyAprob(id);
+    try {
+      await api.post(`/parqueadero/cargos/${id}/${accion}`, {});
+      toast.success(
+        accion === 'aprobar'
+          ? "Cobro aprobado. El vehículo ya puede salir y el cargo quedó en tus pagos."
+          : "Cobro rechazado. El visitante deberá pagar en portería para salir.",
+        { duration: 5000 },
+      );
+      fetchCargosRetenidos();
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo procesar");
+    } finally {
+      setBusyAprob(null);
+    }
+  };
+
   const resolverSolicitudParqueadero = async (id: string, accion: 'aprobar' | 'rechazar') => {
     setBusyAprob(id);
     try {
@@ -138,7 +168,7 @@ function HomeResidente() {
   useWsSubscription('notification', () => fetchNotificaciones());
   useWsSubscription('pago', () => fetchFinance());
   useWsSubscription('anuncio', () => fetchAnuncios());
-  useWsSubscription('parqueadero', () => fetchSolicitudesParqueadero());
+  useWsSubscription('parqueadero', () => { fetchSolicitudesParqueadero(); fetchCargosRetenidos(); });
 
   const fetchActiveAsamblea = useCallback(async () => {
     try {
@@ -163,6 +193,7 @@ function HomeResidente() {
       fetchAnuncios();
       fetchActiveAsamblea();
       fetchSolicitudesParqueadero();
+      fetchCargosRetenidos();
     }
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up-home", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 });
@@ -246,6 +277,59 @@ function HomeResidente() {
           anuncios: anuncios.map(a => ({ titulo: a.titulo, contenido: a.contenido }))
         }}
       />
+
+      {/* 🚨 COBROS RETENIDOS: el vehículo de la visita NO sale hasta aprobar */}
+      {cargosRetenidos.length > 0 && (
+        <section className="fade-up-home flex flex-col gap-3">
+          <div className="flex items-center gap-2 px-1">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EF4444] opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
+            </span>
+            <h2 className="text-text font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+              <ShieldAlert size={14} className="text-[#EF4444]" /> Cobro por aprobar — vehículo retenido
+            </h2>
+          </div>
+          <p className="text-[11px] text-text/70 px-1 -mt-1">
+            El vehículo de tu visita está retenido en portería y <b>no puede salir</b> hasta que decidas. Aprueba para cargar el cobro a tu apartamento, o recházalo (el visitante pagará en portería).
+          </p>
+          {cargosRetenidos.map((c) => (
+            <div key={c.id} className="liquid-glass-card rounded-[28px] p-5 border border-[#EF4444]/40 flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-lg font-bold text-text">Celda {c.celdaNumero}</span>
+                  {c.placa && <span className="text-xs text-text/80 font-mono">Placa {c.placa}</span>}
+                  <span className="text-[11px] text-text/60 mt-1">
+                    {c.minutosCobrados} min cobrables{c.cerradoEn ? ` · ${new Date(c.cerradoEn).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end shrink-0">
+                  <span className="text-[10px] text-text/60 uppercase tracking-wider font-bold">Monto</span>
+                  <span className="text-2xl font-display font-bold text-[#FACC15]">
+                    ${Number(c.montoFinal || c.montoActual || 0).toLocaleString('es-CO')}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  disabled={busyAprob === c.id}
+                  onClick={() => resolverCargoRetenido(c.id, 'rechazar')}
+                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  Rechazar
+                </button>
+                <button
+                  disabled={busyAprob === c.id}
+                  onClick={() => resolverCargoRetenido(c.id, 'aprobar')}
+                  className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {busyAprob === c.id ? "Procesando..." : "Aprobar cobro"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
 
       {/* 🅿️ APROBACIONES DE PARQUEADERO DE VISITANTE (acción del inquilino) */}
       {solicitudesParqueadero.length > 0 && (
