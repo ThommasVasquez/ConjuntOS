@@ -86,6 +86,31 @@ function HomeResidente() {
     }
   }, []);
 
+  // Aprobaciones de parqueadero de visitante que este residente (inquilino) debe
+  // aprobar o rechazar. Se muestran como notificación destacada en el inicio.
+  const [solicitudesParqueadero, setSolicitudesParqueadero] = useState<any[]>([]);
+  const [busyAprob, setBusyAprob] = useState<string | null>(null);
+
+  const fetchSolicitudesParqueadero = useCallback(async () => {
+    try {
+      const data = await api.get<any[]>('/parqueadero/solicitudes/mias');
+      setSolicitudesParqueadero(data ?? []);
+    } catch { /* no aplica / sin permiso */ }
+  }, []);
+
+  const resolverSolicitudParqueadero = async (id: string, accion: 'aprobar' | 'rechazar') => {
+    setBusyAprob(id);
+    try {
+      await api.post(`/parqueadero/solicitudes/${id}/inquilino/${accion}`, {});
+      toast.success(accion === 'aprobar' ? "Parqueadero de visitante aprobado." : "Solicitud rechazada.");
+      fetchSolicitudesParqueadero();
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo procesar");
+    } finally {
+      setBusyAprob(null);
+    }
+  };
+
   const markAsRead = async (id: string) => {
       try {
           await api.put('/notificaciones/leidas', { ids: [id] });
@@ -113,6 +138,7 @@ function HomeResidente() {
   useWsSubscription('notification', () => fetchNotificaciones());
   useWsSubscription('pago', () => fetchFinance());
   useWsSubscription('anuncio', () => fetchAnuncios());
+  useWsSubscription('parqueadero', () => fetchSolicitudesParqueadero());
 
   const fetchActiveAsamblea = useCallback(async () => {
     try {
@@ -136,12 +162,13 @@ function HomeResidente() {
       fetchUserData();
       fetchAnuncios();
       fetchActiveAsamblea();
+      fetchSolicitudesParqueadero();
     }
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up-home", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 });
     }, containerRef);
     return () => ctx.revert();
-  }, [user, fetchNotificaciones, fetchFinance, fetchUserData, fetchAnuncios, fetchActiveAsamblea]);
+  }, [user, fetchNotificaciones, fetchFinance, fetchUserData, fetchAnuncios, fetchActiveAsamblea, fetchSolicitudesParqueadero]);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-16 pb-32">
@@ -219,6 +246,49 @@ function HomeResidente() {
           anuncios: anuncios.map(a => ({ titulo: a.titulo, contenido: a.contenido }))
         }}
       />
+
+      {/* 🅿️ APROBACIONES DE PARQUEADERO DE VISITANTE (acción del inquilino) */}
+      {solicitudesParqueadero.length > 0 && (
+        <section className="fade-up-home flex flex-col gap-3">
+          <div className="flex items-center gap-2 px-1">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FACC15] opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#FACC15]" />
+            </span>
+            <h2 className="text-text font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+              <Car size={14} className="text-[#FACC15]" /> Aprobación de Estacionamiento
+            </h2>
+          </div>
+          <p className="text-[11px] text-text/70 px-1 -mt-1">
+            Te solicitan asignarte un parqueadero de visitante. Tu aprobación es obligatoria.
+          </p>
+          {solicitudesParqueadero.map((s) => (
+            <div key={s.id} className="liquid-glass-card rounded-[28px] p-5 border border-[#FACC15]/40 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-lg font-bold text-text">Celda {s.celdaNumero}</span>
+                {s.detalle && <span className="text-xs text-text/80">{s.detalle}</span>}
+                {s.solicitanteNombre && <span className="text-[11px] text-text/60 mt-1">Solicitado por {s.solicitanteNombre}</span>}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  disabled={busyAprob === s.id}
+                  onClick={() => resolverSolicitudParqueadero(s.id, 'rechazar')}
+                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  Rechazar
+                </button>
+                <button
+                  disabled={busyAprob === s.id}
+                  onClick={() => resolverSolicitudParqueadero(s.id, 'aprobar')}
+                  className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {busyAprob === s.id ? "Procesando..." : "Aprobar"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
 
       {/* 🧭 CATEGORÍAS PREMIUM */}
       <section className="fade-up-home flex flex-col gap-4">
