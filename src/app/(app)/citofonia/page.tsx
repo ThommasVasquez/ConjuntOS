@@ -6,8 +6,8 @@ import {
   Phone, PhoneOff, Users, Package, 
   MapPin, Clock, 
   Plus, Info, 
-  ShieldCheck, 
-  X, Loader2, Car, Bike
+  ShieldCheck,
+  X, Loader2, Car, Bike, Search
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
@@ -31,6 +31,15 @@ interface IPaquete {
   descripcion: string;
   remitente: string;
   fechaLlegada: string;
+}
+
+interface DirectorioUser {
+  id: string;
+  nombre: string;
+  numeroInterno: string;
+  rol: string;
+  torre?: string | null;
+  apto?: string | null;
 }
 
 import { useCall } from "@/components/providers/CallContext";
@@ -60,6 +69,11 @@ export default function CitofoniaPage() {
   const [paquetes, setPaquetes] = useState<IPaquete[]>([]);
   const [parking, setParking] = useState({ carros: 0, motos: 0 });
   const [isAddingVisita, setIsAddingVisita] = useState(false);
+
+  // Buscador de residentes para llamar por nombre.
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<DirectorioUser[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -114,6 +128,34 @@ export default function CitofoniaPage() {
       setIsLoading(false);
     }
   }
+
+  // Buscar residentes por nombre (o número) con debounce.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 1) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.get<DirectorioUser[]>(`/usuarios/directorio?q=${encodeURIComponent(q)}`);
+        setSearchResults(res ?? []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const callDirectorioUser = (u: DirectorioUser) => {
+    if (callState !== "IDLE") return;
+    setDialNum(u.numeroInterno);
+    startCall(`user-${u.id}`, u.nombre);
+  };
 
   const handleDial = (num: string) => {
     if (dialNum.length < 8) setDialNum(dialNum + num);
@@ -280,6 +322,50 @@ export default function CitofoniaPage() {
       <main className="flex-1">
         {activeTab === "CITOFONIA" && (
           <div className="fade-up space-y-6 animate-in slide-in-from-bottom-5 duration-500">
+             {/* SEARCH RESIDENTS */}
+             <div className="liquid-glass-card rounded-[28px] p-4 border border-border text-text">
+                <div className="flex items-center gap-2 bg-text/5 rounded-2xl px-4 py-3 border border-border">
+                   <Search size={18} className="text-text/50" />
+                   <input
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     placeholder="Buscar residente por nombre…"
+                     className="flex-1 bg-transparent outline-none text-sm text-text placeholder:text-text/40"
+                   />
+                   {searchLoading && <Loader2 size={16} className="animate-spin text-text/50" />}
+                   {searchQuery && !searchLoading && (
+                     <button onClick={() => setSearchQuery("")} className="text-text/50 cursor-pointer">
+                       <X size={16} />
+                     </button>
+                   )}
+                </div>
+                {searchResults.length > 0 && (
+                   <div className="mt-3 flex flex-col gap-2 max-h-72 overflow-y-auto">
+                      {searchResults.map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => callDirectorioUser(u)}
+                          disabled={callState !== "IDLE"}
+                          className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-text/5 hover:bg-text/10 border border-border active:scale-[0.98] transition-all cursor-pointer text-left disabled:opacity-50"
+                        >
+                          <div className="flex flex-col min-w-0">
+                             <span className="text-sm font-bold text-text truncate">{u.nombre}</span>
+                             <span className="text-[11px] text-text/50">
+                               {u.apto ? `${u.torre ? `${u.torre}-` : ""}${u.apto} · ` : ""}N° {u.numeroInterno}
+                             </span>
+                          </div>
+                          <span className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center text-accent shrink-0">
+                             <Phone size={16} />
+                          </span>
+                        </button>
+                      ))}
+                   </div>
+                )}
+                {searchQuery.trim().length >= 1 && !searchLoading && searchResults.length === 0 && (
+                   <p className="mt-3 text-center text-xs text-text/40">Sin resultados</p>
+                )}
+             </div>
+
              {/* QUICK CONTACTS */}
              <div className="grid grid-cols-2 gap-4 text-text">
                 <button 

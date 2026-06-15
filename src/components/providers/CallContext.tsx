@@ -16,7 +16,7 @@ interface CallContextType {
   lastSpeechResponse: string;
   dialNum: string;
   setDialNum: (num: string) => void;
-  startCall: (num: string) => void;
+  startCall: (num: string, displayName?: string) => void;
   endCall: () => void;
   answerCall: () => void;
   rejectCall: () => void;
@@ -405,60 +405,40 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   // ── Actions ──
-  const startCall = async (num: string) => {
+  const startCall = async (num: string, displayName?: string) => {
     if (!profile) return;
     const conjuntoId = profile.conjuntoId || "demo_id";
 
-    let targetNum = num.trim();
-    let name = `Apto ${num}`;
+    const dialed = num.trim();
+    let name = displayName?.trim() || "Llamando…";
     let targetPeerId = "";
 
-    // Full Peer ID?
-    if (num.startsWith("user-") || num.includes("-VIGILANTE") || num.includes("-ADMINISTRADOR") || num.includes("-APTO-")) {
-      targetPeerId = num;
-      if (num.includes("-VIGILANTE")) {
-        name = "Portería Principal";
-      } else if (num.includes("-ADMINISTRADOR")) {
-        name = "Administración";
-      } else if (num.includes("-APTO-")) {
-        const parts = num.split("-APTO-");
-        name = `Apto ${parts[1]}`;
-      } else {
-        name = "Residente";
+    // Already a full target id (from the search picker, a callback, or a quick-call).
+    if (
+      dialed.startsWith("user-") ||
+      dialed.startsWith("numero-") ||
+      dialed.includes("-VIGILANTE") ||
+      dialed.includes("-ADMINISTRADOR") ||
+      dialed.includes("-APTO-")
+    ) {
+      targetPeerId = dialed;
+      if (!displayName) {
+        if (dialed.includes("-VIGILANTE")) name = "Portería Principal";
+        else if (dialed.includes("-ADMINISTRADOR")) name = "Administración";
+        else if (dialed.includes("-APTO-")) name = `Apto ${dialed.split("-APTO-")[1]}`;
+        else if (dialed.startsWith("numero-")) name = `Interno ${dialed.slice(7)}`;
+        else name = "Residente";
       }
+    } else if (dialed === "P") {
+      targetPeerId = `${conjuntoId}-VIGILANTE`;
+      if (!displayName) name = "Portería Principal";
+    } else if (dialed === "A") {
+      targetPeerId = `${conjuntoId}-ADMINISTRADOR`;
+      if (!displayName) name = "Administración";
     } else {
-      if (num === "P") {
-        targetNum = "VIGILANTE";
-        name = "Portería Principal";
-      } else if (num === "A") {
-        targetNum = "ADMINISTRADOR";
-        name = "Administración";
-      } else {
-        // Normalizar número de apartamento ingresado
-        if (targetNum.includes("-")) {
-          const parts = targetNum.split("-");
-          const torrePart = parts[0].trim();
-          const aptoPart = parts[1].trim();
-          if (/^\d+$/.test(torrePart)) {
-            targetNum = `${parseInt(torrePart, 10)}-${aptoPart}`;
-          } else {
-            targetNum = `${torrePart}-${aptoPart}`;
-          }
-        } else if (/^\d+$/.test(targetNum)) {
-          if (targetNum.length === 5) {
-            targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
-          } else if (targetNum.length === 6) {
-            targetNum = `${parseInt(targetNum.slice(0, 2), 10)}-${targetNum.slice(2)}`;
-          } else if (targetNum.length === 4) {
-            targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
-          }
-        }
-      }
-
-      targetPeerId = `${conjuntoId}-${targetNum}`;
-      if (targetNum !== "VIGILANTE" && targetNum !== "ADMINISTRADOR") {
-        targetPeerId = `${conjuntoId}-APTO-${targetNum}`;
-      }
+      // Plain dialed digits -> internal number (resolved to a user by the backend).
+      targetPeerId = `numero-${dialed}`;
+      if (!displayName) name = `Interno ${dialed}`;
     }
 
     targetPeerId = sanitizePeerId(targetPeerId);

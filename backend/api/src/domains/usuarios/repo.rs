@@ -32,6 +32,48 @@ pub async fn find_by_id(conn: &mut DbConn, id: Uuid) -> ApiResult<Option<Usuario
     Ok(user)
 }
 
+/// Active users in the conjunto for the citofonía directory (excluding the
+/// caller). Optional case-insensitive filter on name or internal number.
+#[allow(clippy::type_complexity)]
+pub async fn directorio(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    exclude: Uuid,
+    q: Option<&str>,
+) -> ApiResult<Vec<(Uuid, String, String, crate::db::enums::Rol, Option<String>, Option<String>)>> {
+    use diesel::PgTextExpressionMethods;
+
+    let mut query = usuarios::table
+        .filter(usuarios::conjunto_id.eq(conjunto_id))
+        .filter(usuarios::activo.eq(true))
+        .filter(usuarios::id.ne(exclude))
+        .into_boxed();
+
+    if let Some(term) = q.map(str::trim).filter(|t| !t.is_empty()) {
+        let pattern = format!("%{term}%");
+        query = query.filter(
+            usuarios::nombre
+                .ilike(pattern.clone())
+                .or(usuarios::numero_interno.ilike(pattern)),
+        );
+    }
+
+    let rows = query
+        .order(usuarios::nombre.asc())
+        .limit(100)
+        .select((
+            usuarios::id,
+            usuarios::nombre,
+            usuarios::numero_interno,
+            usuarios::rol,
+            usuarios::torre,
+            usuarios::apto,
+        ))
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
 pub async fn find_unidad(conn: &mut DbConn, unidad_id: Uuid) -> ApiResult<Option<Unidad>> {
     let unidad = unidades::table
         .find(unidad_id)

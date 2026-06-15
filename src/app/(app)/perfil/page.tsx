@@ -43,7 +43,7 @@ function ProfileContent() {
   const [hasMounted, setHasMounted] = useState(false);
   
   // 🏗️ INITIAL STATE: Pure static defaults to avoid Hydration Mismatch
-  interface UserData { name: string; apto: string; torre: string; phone: string; gender: string; email: string; avatar?: string; bio: string; }
+  interface UserData { name: string; apto: string; torre: string; phone: string; gender: string; email: string; avatar?: string; bio: string; numeroInterno?: string; }
   interface Vehiculo { placa: string; marca: string; modelo: string; color: string; }
   interface Mascota { nombre: string; tipo: string; raza?: string; fotoUrl?: string; }
   interface Tramite { id: string; tipo: string; estado: string; createdAt: string; }
@@ -169,7 +169,8 @@ function ProfileContent() {
               phone: u.telefono || "",
               gender: u.genero || "neutro",
               email: u.email || user?.email || "",
-              bio: u.bio || userData.bio
+              bio: u.bio || userData.bio,
+              numeroInterno: u.numeroInterno || ""
             };
             setUserData(mapped);
             setEditForm(mapped);
@@ -545,6 +546,12 @@ function ProfileContent() {
             <div className="w-2 h-2 rounded-full bg-text/10 animate-pulse" />
             <span className="text-xs font-bold text-text uppercase tracking-widest">Apto {userData.apto}</span>
           </div>
+          {userData.numeroInterno && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/15 border border-accent/40">
+              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-xs font-bold text-accent uppercase tracking-widest">Citofonía N° {userData.numeroInterno}</span>
+            </div>
+          )}
         </div>
  
         {/* 🧭 UNIFIED 6-GRID STATUS BAR (Stage 68 - High Fidelity Refinement) */}

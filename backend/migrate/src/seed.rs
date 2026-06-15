@@ -145,8 +145,10 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
         .await?;
     let conjunto_id: Uuid = row.get(0);
 
-    for user in demo_users() {
+    for (idx, user) in demo_users().into_iter().enumerate() {
         let hash = hash_password(DEMO_PASSWORD)?;
+        // Immutable internal dial code, 0001, 0002, ... (kept on re-seed).
+        let numero_interno = format!("{:04}", idx + 1);
 
         // Resolve (or create) the unidad and capture its id + free-text fields.
         let (unidad_id, torre, apto): (Option<Uuid>, Option<&str>, Option<&str>) =
@@ -167,12 +169,12 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
                 "INSERT INTO usuarios (
                      id, conjunto_id, nombre, email, password_hash,
                      must_change_password, telefono, rol, unidad_id, torre, apto,
-                     genero, activo, created_at
+                     genero, activo, created_at, numero_interno
                  )
                  VALUES (
                      gen_random_uuid(), $1, $2, $3, $4,
                      false, $5, $6, $7, $8, $9,
-                     $10, true, NOW()
+                     $10, true, NOW(), $11
                  )
                  ON CONFLICT (email) DO UPDATE SET
                      password_hash = EXCLUDED.password_hash,
@@ -194,6 +196,7 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
                     &torre,
                     &apto,
                     &user.genero,
+                    &numero_interno,
                 ],
             )
             .await?;

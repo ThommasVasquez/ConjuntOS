@@ -130,6 +130,7 @@ async fn seed_user_in(state: &AppState, conjunto_id: Uuid, rol: Rol) -> (Uuid, S
             usuarios::email.eq(&email),
             usuarios::password_hash.eq(hash_password("Secreta123!").unwrap()),
             usuarios::rol.eq(rol),
+            usuarios::numero_interno.eq(&marker[..8]),
         ))
         .returning(usuarios::id)
         .get_result(&mut conn)

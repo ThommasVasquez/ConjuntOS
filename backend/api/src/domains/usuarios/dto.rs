@@ -21,6 +21,8 @@ pub struct UserDto {
     pub genero: Option<String>,
     pub must_change_password: bool,
     pub activo: bool,
+    /// Immutable 4-digit citofonía dial code, unique per conjunto.
+    pub numero_interno: String,
     /// True when this account may switch its own role at runtime (tester).
     /// Set by handlers from the configured tester whitelist; defaults to false.
     #[serde(default)]
@@ -43,9 +45,22 @@ impl From<Usuario> for UserDto {
             genero: u.genero,
             must_change_password: u.must_change_password,
             activo: u.activo,
+            numero_interno: u.numero_interno,
             is_tester: false,
         }
     }
+}
+
+/// Lightweight directory entry for the citofonía search/dial picker.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DirectorioUsuarioDto {
+    pub id: Uuid,
+    pub nombre: String,
+    pub numero_interno: String,
+    pub rol: Rol,
+    pub torre: Option<String>,
+    pub apto: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]

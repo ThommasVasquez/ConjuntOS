@@ -593,6 +593,7 @@ diesel::table! {
         activo -> Bool,
         created_at -> Timestamptz,
         password_changed_at -> Timestamptz,
+        numero_interno -> Text,
     }
 }
 

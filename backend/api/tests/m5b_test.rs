@@ -127,6 +127,7 @@ async fn seed_user_in(state: &AppState, conjunto_id: Uuid, rol: Rol) -> (Uuid, S
             usuarios::email.eq(&email),
             usuarios::password_hash.eq(hash_password("Secreta123!").unwrap()),
             usuarios::rol.eq(rol),
+            usuarios::numero_interno.eq(&marker[..8]),
         ))
         .returning(usuarios::id)
         .get_result(&mut conn)
@@ -587,4 +588,82 @@ async fn citofonia_token_cross_tenant_forbidden() {
     )
     .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+async fn seed_user_with_numero(
+    state: &AppState,
+    conjunto_id: Uuid,
+    rol: Rol,
+    numero: &str,
+) -> Uuid {
+    use enconjunto_api::db::schema::usuarios;
+    let mut conn = state.pool.get().await.unwrap();
+    let marker = Uuid::new_v4().simple().to_string();
+    let email = format!("{marker}@m5b.test.local");
+    diesel::insert_into(usuarios::table)
+        .values((
+            usuarios::conjunto_id.eq(conjunto_id),
+            usuarios::nombre.eq("Target Numero"),
+            usuarios::email.eq(&email),
+            usuarios::password_hash.eq(hash_password("Secreta123!").unwrap()),
+            usuarios::rol.eq(rol),
+            usuarios::numero_interno.eq(numero),
+        ))
+        .returning(usuarios::id)
+        .get_result(&mut conn)
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn citofonia_directorio_lists_others_excludes_self() {
+    let state = test_state().await;
+    let app = build_router(state.clone());
+    let conjunto = seed_conjunto(&state).await;
+    let (caller_id, caller_email) = seed_user_in(&state, conjunto, Rol::Vigilante).await;
+    let (target_id, _) = seed_user_in(&state, conjunto, Rol::Propietario).await;
+    let token = login(&app, &caller_email).await;
+
+    let (status, body) = request(
+        &app,
+        Method::GET,
+        "/api/v1/usuarios/directorio",
+        Some(&token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let arr = body.as_array().expect("array");
+    assert!(
+        arr.iter().any(|u| u["id"].as_str() == Some(target_id.to_string().as_str())
+            && u["numeroInterno"].as_str().is_some()),
+        "target present with numeroInterno: {body}"
+    );
+    assert!(
+        !arr.iter()
+            .any(|u| u["id"].as_str() == Some(caller_id.to_string().as_str())),
+        "caller (self) excluded: {body}"
+    );
+}
+
+#[tokio::test]
+async fn citofonia_call_by_numero() {
+    let state = test_state().await;
+    let app = build_router(state.clone());
+    let conjunto = seed_conjunto(&state).await;
+    let _target = seed_user_with_numero(&state, conjunto, Rol::Propietario, "4242").await;
+    let (_, caller_email) = seed_user_in(&state, conjunto, Rol::Vigilante).await;
+    let caller_token = login(&app, &caller_email).await;
+
+    let (status, body) = request(
+        &app,
+        Method::POST,
+        "/api/v1/citofonia/call",
+        Some(&caller_token),
+        Some(json!({ "targetPeerId": "numero-4242" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert!(body["room"].is_string(), "room issued: {body}");
+    assert_eq!(body["sent"], 0, "no push subs -> 0");
 }

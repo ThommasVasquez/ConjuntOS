@@ -23,6 +23,8 @@ pub struct Usuario {
     pub genero: Option<String>,
     pub activo: bool,
     pub created_at: DateTime<Utc>,
+    /// Immutable 4-digit citofonía dial code, unique per conjunto.
+    pub numero_interno: String,
 }
 
 #[derive(Insertable, Debug)]

@@ -63,6 +63,8 @@ pub struct CitofoniaTokenDto {
 #[derive(Debug, PartialEq)]
 pub enum PeerTarget {
     User(Uuid),
+    /// Internal dial code, resolved within the caller's conjunto.
+    Numero(String),
     Role(Uuid, Rol),
     Apto(Uuid, String, String),
     Invalid,
@@ -75,6 +77,14 @@ pub fn parse_peer_id(peer_id: &str) -> PeerTarget {
             Ok(id) => PeerTarget::User(id),
             Err(_) => PeerTarget::Invalid,
         };
+    }
+
+    // numero-{code}: internal dial code (digits), resolved in the caller's conjunto.
+    if let Some(rest) = peer_id.strip_prefix("numero-") {
+        if !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()) {
+            return PeerTarget::Numero(rest.to_string());
+        }
+        return PeerTarget::Invalid;
     }
 
     // {conjuntoId}-APTO-{torre}-{numero}
@@ -126,6 +136,16 @@ async fn resolve_targets(
             let ids: Vec<Uuid> = usuarios::table
                 .filter(usuarios::id.eq(id))
                 .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                .filter(usuarios::activo.eq(true))
+                .select(usuarios::id)
+                .load(conn)
+                .await?;
+            Ok(ids)
+        }
+        PeerTarget::Numero(code) => {
+            let ids: Vec<Uuid> = usuarios::table
+                .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                .filter(usuarios::numero_interno.eq(code))
                 .filter(usuarios::activo.eq(true))
                 .select(usuarios::id)
                 .load(conn)
