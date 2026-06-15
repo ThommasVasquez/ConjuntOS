@@ -8,7 +8,7 @@ Vercel → Project → Settings → Environment Variables:
 
 ```env
 NEXT_PUBLIC_API_URL=https://api.your-backend-domain.com
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=BBlF7n0RF6TaCqZyByo9I5zZ7Y_RreTjmc2wtJ-i6ZQp-mnY4WgpAnn3u8eZewy1gk9TcjMwCiql1oyD-tySOMs
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=BOHL_-nlOioDh450Jafs2OwEHZcWv3aTTLzWi3GGuJgZWn51ykAs5iGTUiWa_4Uaus5X0bQdVsgWO_NjK0ZbL8c
 ```
 
 `NODE_ENV` is set by Vercel automatically. Everything else belongs to the
@@ -46,7 +46,7 @@ LIVEKIT_URL=wss://livekit.conjuntos.app
 # --- Web Push VAPID (despertador de la citofonía) ---
 # Genera el par con:  pnpm dlx web-push generate-vapid-keys
 # El "Public Key" va aquí Y en NEXT_PUBLIC_VAPID_PUBLIC_KEY (Vercel). El "Private Key" solo aquí.
-VAPID_PUBLIC_KEY=BBlF7n0RF6TaCqZyByo9I5zZ7Y_RreTjmc2wtJ-i6ZQp-mnY4WgpAnn3u8eZewy1gk9TcjMwCiql1oyD-tySOMs
+VAPID_PUBLIC_KEY=BOHL_-nlOioDh450Jafs2OwEHZcWv3aTTLzWi3GGuJgZWn51ykAs5iGTUiWa_4Uaus5X0bQdVsgWO_NjK0ZbL8c
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:soporte@conjuntos.app
 

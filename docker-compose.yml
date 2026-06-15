@@ -40,6 +40,12 @@ services:
       LIVEKIT_API_KEY: devkey
       LIVEKIT_API_SECRET: devsecret
       LIVEKIT_URL: wss://livekit.conjuntos.app
+      # Web Push VAPID (despertador de la citofonía). Valores reales en el .env del
+      # servidor (no se versionan); la clave pública también va a Cloudflare como
+      # NEXT_PUBLIC_VAPID_PUBLIC_KEY.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:soporte@conjuntos.app}
     depends_on:
       db:
         condition: service_healthy
