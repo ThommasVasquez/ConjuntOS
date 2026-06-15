@@ -103,7 +103,7 @@ export default function SplashScreen() {
               letterSpacing: "-0.03em" 
             }}
           >
-            Conjunt<tspan style={{ fontWeight: 800 }}>OS</tspan><tspan dy="-34" style={{ fontSize: "22px", fontWeight: 400 }}>®</tspan>
+            Conjunt<tspan style={{ fontWeight: 800 }} fill="#57bf00">O</tspan><tspan style={{ fontWeight: 800 }} fill="#009df2">S</tspan><tspan dy="-34" style={{ fontSize: "22px", fontWeight: 400 }}>®</tspan>
           </text>
         </svg>
 
@@ -128,10 +128,14 @@ export default function SplashScreen() {
           gap: 22px;
         }
         .dots-loader .dot {
-          width: 18px;
-          height: 18px;
+          width: 20px;
+          height: 20px;
           border-radius: 50%;
-          background: #009df2;
+          /* Gota aqua en reposo: esfera glossy azul con highlight especular arriba */
+          background:
+            radial-gradient(circle at 50% 28%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 30%),
+            radial-gradient(circle at 50% 115%, #007ac2 0%, #009df2 55%, #0b6fae 100%);
+          box-shadow: inset 0 -2px 4px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.35);
           animation: dot-wave 1.4s ease-in-out infinite;
         }
         .dots-loader .dot:nth-child(1) { animation-delay: 0s; }
@@ -140,14 +144,22 @@ export default function SplashScreen() {
         .dots-loader .dot:nth-child(4) { animation-delay: 0.54s; }
         @keyframes dot-wave {
           0%, 60%, 100% {
-            background: #009df2;
-            box-shadow: none;
+            background:
+              radial-gradient(circle at 50% 28%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 30%),
+              radial-gradient(circle at 50% 115%, #007ac2 0%, #009df2 55%, #0b6fae 100%);
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.35);
             transform: scale(1);
           }
           30% {
-            background: #3fe5e0;
-            box-shadow: 0 0 16px 6px rgba(63, 229, 224, 0.55);
-            transform: scale(1.15);
+            /* Gota encendida: cian luminoso, highlight fuerte y halo aqua exterior */
+            background:
+              radial-gradient(circle at 50% 26%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 34%),
+              radial-gradient(circle at 50% 120%, #5cf2ec 0%, #3fe5e0 50%, #18b9d6 100%);
+            box-shadow:
+              inset 0 -2px 5px rgba(0,40,60,0.3),
+              inset 0 2px 4px rgba(255,255,255,0.6),
+              0 0 18px 7px rgba(63, 229, 224, 0.6);
+            transform: scale(1.18) translateY(-1px);
           }
         }
       `}} />
