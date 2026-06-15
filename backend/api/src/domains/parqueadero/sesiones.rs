@@ -113,9 +113,52 @@ pub async fn minutos_gratis_consumidos_24h(
     Ok(total)
 }
 
+/// ¿El apartamento ya tiene otra sesión de visitante ACTIVA ahora mismo?
+/// El tiempo gratis es una cortesía para UNA visita a la vez: si ya hay otra
+/// activa, la nueva cobra desde la llegada (0 min gratis).
+pub async fn tiene_sesion_activa_unidad(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    unidad_id: Uuid,
+) -> ApiResult<bool> {
+    let n: i64 = sesiones_parqueadero::table
+        .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id))
+        .filter(sesiones_parqueadero::unidad_id.eq(unidad_id))
+        .filter(sesiones_parqueadero::estado.eq("ACTIVA"))
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
+/// Minutos gratis que recibe una NUEVA sesión de visitante de un apartamento,
+/// combinando las dos reglas anti-abuso:
+///   1. Bolsa diaria por apto (24h rodante): 120 − consumidos.
+///   2. Un solo gratis concurrente: si el apto YA tiene otra visita activa, la
+///      nueva cobra desde la llegada (0 min gratis).
+/// Sin unidad asignada no hay apto que rastrear → cae al default por sesión.
+pub async fn minutos_gratis_para_nueva_sesion(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    unidad_id: Option<Uuid>,
+    ahora: DateTime<Utc>,
+) -> ApiResult<i32> {
+    let uid = match unidad_id {
+        Some(u) => u,
+        None => return Ok(MINUTOS_GRATIS_DEFAULT),
+    };
+    // Regla 2: ya hay otra visita activa del mismo apto → sin gratis.
+    if tiene_sesion_activa_unidad(conn, conjunto_id, uid).await? {
+        return Ok(0);
+    }
+    // Regla 1: bolsa diaria.
+    let consumidos = minutos_gratis_consumidos_24h(conn, conjunto_id, uid, ahora).await?;
+    Ok((MINUTOS_GRATIS_DEFAULT - consumidos).max(0))
+}
+
 /// Crea la sesión de cobro al aprobarse la asignación de una celda de visitante.
-/// El saldo gratis se calcula como bolsa diaria por apartamento (24h rodante):
-/// `minutos_gratis = max(0, 120 - consumidos_por_el_apto_en_24h)`.
+/// El saldo gratis combina bolsa diaria (24h rodante) + un solo gratis concurrente
+/// por apartamento (ver `minutos_gratis_para_nueva_sesion`).
 #[allow(clippy::too_many_arguments)]
 pub async fn crear_sesion(
     conn: &mut DbConn,
@@ -130,13 +173,8 @@ pub async fn crear_sesion(
     estimado_minutos: Option<i32>,
 ) -> ApiResult<SesionParqueadero> {
     let inicio = Utc::now();
-    // Bolsa diaria por apartamento: descuenta lo ya consumido en las últimas 24h.
-    // Sin unidad asignada no hay bolsa que compartir → cae al default por sesión.
-    let consumidos = match unidad_id {
-        Some(uid) => minutos_gratis_consumidos_24h(conn, conjunto_id, uid, inicio).await?,
-        None => 0,
-    };
-    let minutos_gratis = (MINUTOS_GRATIS_DEFAULT - consumidos).max(0);
+    let minutos_gratis =
+        minutos_gratis_para_nueva_sesion(conn, conjunto_id, unidad_id, inicio).await?;
     let fin_gratis = inicio + chrono::Duration::minutes(minutos_gratis as i64);
     let row = diesel::insert_into(sesiones_parqueadero::table)
         .values(NuevaSesion {

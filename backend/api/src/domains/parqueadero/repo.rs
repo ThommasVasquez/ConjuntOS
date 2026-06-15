@@ -852,20 +852,14 @@ pub async fn inquilino_aprobar(
                 .optional()?
                 .flatten();
             let inicio = ahora;
-            // Bolsa diaria por apartamento (24h rodante): descuenta los minutos
-            // gratis ya consumidos por este apto, para que no se reinicien las 2h
-            // en cada reingreso. Sin unidad → no hay bolsa que compartir.
-            let consumidos = match unidad_id {
-                Some(uid) => {
-                    crate::domains::parqueadero::sesiones::minutos_gratis_consumidos_24h(
-                        conn, conjunto_id, uid, inicio,
-                    )
-                    .await?
-                }
-                None => 0,
-            };
+            // Saldo gratis: bolsa diaria por apto (24h rodante) + un solo gratis
+            // concurrente (si el apto ya tiene otra visita ACTIVA, esta cobra
+            // desde la llegada). Centralizado en sesiones::minutos_gratis_para_nueva_sesion.
             let minutos_gratis =
-                (crate::domains::parqueadero::sesiones::MINUTOS_GRATIS_DEFAULT - consumidos).max(0);
+                crate::domains::parqueadero::sesiones::minutos_gratis_para_nueva_sesion(
+                    conn, conjunto_id, unidad_id, inicio,
+                )
+                .await?;
             let fin_gratis = inicio + chrono::Duration::minutes(minutos_gratis as i64);
             let tarifa = bigdecimal::BigDecimal::from(
                 crate::domains::parqueadero::sesiones::TARIFA_HORA_DEFAULT,
