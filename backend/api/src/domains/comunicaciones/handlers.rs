@@ -25,6 +25,9 @@ const ROLES_DIRECTORIO: &[Rol] = &[
     Rol::Concejo,
     Rol::Vigilante,
     Rol::SupervisorVigilancia,
+    // El encargado de parqueadero necesita el directorio para asignar celdas de
+    // visitante a un residente (selector de residente en el mapa).
+    Rol::EncargadoParqueadero,
 ];
 
 pub fn router() -> Router<AppState> {
