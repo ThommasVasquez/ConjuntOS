@@ -24,6 +24,14 @@ export default function MapaParqueaderoPage() {
   const [cellToRelease, setCellToRelease] = useState<any>(null);
   // Sesión de cobro de visitante asociada a la celda que se va a liberar.
   const [sesionCobro, setSesionCobro] = useState<any>(null);
+  // Reloj que tiquea cada segundo mientras el modal de cobro está abierto, para
+  // mostrar el tiempo transcurrido y el monto acumulado EN VIVO (no congelado).
+  const [ahora, setAhora] = useState<number>(Date.now());
+  useEffect(() => {
+    if (!sesionCobro) return;
+    const t = setInterval(() => setAhora(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [sesionCobro]);
   const [liquidando, setLiquidando] = useState(false);
   const [placa, setPlaca] = useState("");
   const [obs, setObs] = useState("");
@@ -150,7 +158,7 @@ export default function MapaParqueaderoPage() {
       const r: any = await api.post(`/parqueadero/sesiones/${sesionCobro.id}/cerrar`, { liquidacion });
       const monto = Number(r?.montoFinal || 0);
       if (liquidacion === 'CARGADO_APTO' && monto > 0) {
-        toast.success(`Cobro de $${monto.toLocaleString('es-CO')} cargado al apartamento.`, { duration: 5000 });
+        toast.success(`Cargo de $${monto.toLocaleString('es-CO')} enviado al residente para su aprobación.`, { duration: 5000 });
       } else if (monto > 0) {
         toast.success(`Visitante pagó $${monto.toLocaleString('es-CO')}. Celda liberada.`, { duration: 5000 });
       } else {
@@ -352,6 +360,17 @@ export default function MapaParqueaderoPage() {
                 const stateColor = isLibre ? '#57bf00' : isReservado ? '#FACC15' : '#EF4444';
                 const cat = p.categoria || 'CARRO';
                 const catIcon = cat === 'MOTO' ? '🏍️' : cat === 'BICI' ? '🚲' : '🚗';
+                // Para celdas de VISITANTE ocupadas: a qué residente (torre/apto)
+                // está asignada la visita. El backend lo entrega en `ocupante`.
+                const esVisitante = p.tipo === 'VISITANTE';
+                const ocup = p.ocupante;
+                const ubicOcup = ocup
+                  ? [ocup.torre ? `T${ocup.torre}` : null, ocup.apto ? `Apto ${ocup.apto}` : null]
+                      .filter(Boolean).join(' · ')
+                  : '';
+                const tooltip = esVisitante && !isLibre && ocup
+                  ? `Celda ${p.numero} · Visitante de ${ocup.nombre}${ubicOcup ? ` (${ubicOcup})` : ''}`
+                  : `Celda ${p.numero} · ${p.estado}`;
 
                 // MOTO / BICI: tiles compactos que ocupan una fracción del ancho del
                 // cajón de carro (1/4 y 1/5), para que se vea cuántas caben.
@@ -374,7 +393,12 @@ export default function MapaParqueaderoPage() {
 
                 // CARRO: bahía completa, ocupa todo el ancho del cajón.
                 const numEl = (
-                   <span key="n" className="font-display font-bold text-xs leading-none break-all text-text px-1">{p.numero}</span>
+                   <span key="n" className="font-display font-bold text-xs leading-none break-all text-text px-1 flex flex-col items-start gap-0.5">
+                      {p.numero}
+                      {esVisitante && !isLibre && ubicOcup && (
+                         <span className="font-sans font-bold text-[7px] leading-none text-[#009df2] uppercase tracking-tight">{ubicOcup}</span>
+                      )}
+                   </span>
                 );
                 const carEl = (
                    <span key="c" className="text-[11px] leading-none shrink-0" style={{ opacity: isLibre ? 0.3 : 1 }} title={cat}>{catIcon}</span>
@@ -383,7 +407,7 @@ export default function MapaParqueaderoPage() {
                    <button
                       key={p.id}
                       onClick={() => handleCellClick(p)}
-                      title={`Celda ${p.numero} · ${p.estado}`}
+                      title={tooltip}
                       className="group relative w-full flex items-center justify-between h-11 px-2 border-t border-white/20 transition-all active:scale-[0.98] hover:brightness-150"
                       style={{ backgroundColor: stateColor + '26' }}
                    >
@@ -596,24 +620,48 @@ export default function MapaParqueaderoPage() {
                       Quedará <span className="font-bold text-[#57bf00]">disponible</span> para una nueva asignación.
                    </p>
 
-                   {/* Cobro de visitante: muestra el monto en vivo y pide liquidación. */}
-                   {sesionCobro && (
-                      <div className="w-full bg-text/5 border border-border rounded-2xl p-4 flex flex-col gap-1 mt-1">
-                         <div className="flex justify-between items-center">
-                            <span className="text-[11px] text-text/70 uppercase tracking-wider font-bold">Tiempo usado</span>
-                            <span className="text-sm font-bold text-text">{sesionCobro.minutosCobrados > 0 ? `${sesionCobro.minutosCobrados} min cobrables` : 'Dentro de 2h gratis'}</span>
+                   {/* Cobro de visitante: tiempo transcurrido y monto EN VIVO. */}
+                   {sesionCobro && (() => {
+                      const ini = new Date(sesionCobro.inicio).getTime();
+                      const finGratis = new Date(sesionCobro.finGratis).getTime();
+                      const transcurridoMin = Math.max(0, Math.floor((ahora - ini) / 60000));
+                      const hh = Math.floor(transcurridoMin / 60);
+                      const mm = transcurridoMin % 60;
+                      const transcurridoTxt = hh > 0 ? `${hh}h ${mm}min` : `${mm}min`;
+                      const enCobro = ahora >= finGratis;
+                      const minCobrables = Math.max(0, Math.floor((ahora - finGratis) / 60000));
+                      const porMin = Number(sesionCobro.tarifaHora || 3000) / 60;
+                      const monto = enCobro ? Math.round(minCobrables * porMin) : 0;
+                      const segGratisRest = Math.max(0, Math.floor((finGratis - ahora) / 1000));
+                      const ghh = Math.floor(segGratisRest / 3600);
+                      const gmm = Math.floor((segGratisRest % 3600) / 60);
+                      const gss = segGratisRest % 60;
+                      return (
+                         <div className="w-full bg-text/5 border border-border rounded-2xl p-4 flex flex-col gap-2 mt-1">
+                            <div className="flex justify-between items-center">
+                               <span className="text-[11px] text-text/70 uppercase tracking-wider font-bold">Tiempo transcurrido</span>
+                               <span className="text-sm font-bold text-text font-mono">{transcurridoTxt}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                               <span className="text-[11px] text-text/70 uppercase tracking-wider font-bold">{enCobro ? 'Cobrable' : 'Gratis restante'}</span>
+                               <span className={`text-sm font-bold font-mono ${enCobro ? 'text-[#FACC15]' : 'text-[#57bf00]'}`}>
+                                  {enCobro
+                                     ? `${minCobrables} min`
+                                     : `${ghh > 0 ? `${ghh}:` : ''}${String(gmm).padStart(2,'0')}:${String(gss).padStart(2,'0')}`}
+                               </span>
+                            </div>
+                            <div className="flex justify-between items-center border-t border-border/50 pt-2 mt-0.5">
+                               <span className="text-[11px] text-text/70 uppercase tracking-wider font-bold">A cobrar</span>
+                               <span className={`text-xl font-display font-bold ${monto > 0 ? 'text-[#FACC15]' : 'text-[#57bf00]'}`}>
+                                  ${monto.toLocaleString('es-CO')}
+                               </span>
+                            </div>
                          </div>
-                         <div className="flex justify-between items-center">
-                            <span className="text-[11px] text-text/70 uppercase tracking-wider font-bold">A cobrar</span>
-                            <span className={`text-xl font-display font-bold ${Number(sesionCobro.montoActual) > 0 ? 'text-[#FACC15]' : 'text-[#57bf00]'}`}>
-                               ${Number(sesionCobro.montoActual || 0).toLocaleString('es-CO')}
-                            </span>
-                         </div>
-                      </div>
-                   )}
+                      );
+                   })()}
 
                    {/* Si hay cobro pendiente, dos opciones de liquidación. */}
-                   {sesionCobro && Number(sesionCobro.montoActual) > 0 ? (
+                   {sesionCobro && (ahora >= new Date(sesionCobro.finGratis).getTime()) ? (
                       <div className="flex flex-col gap-3 w-full mt-2">
                          <button
                             type="button"

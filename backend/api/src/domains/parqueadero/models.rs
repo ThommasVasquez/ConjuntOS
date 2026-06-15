@@ -160,6 +160,7 @@ pub struct SesionParqueadero {
     pub liquidacion: Option<String>,
     pub pago_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
+    pub cargo_resuelto_en: Option<DateTime<Utc>>,
 }
 
 #[derive(Insertable, Debug)]

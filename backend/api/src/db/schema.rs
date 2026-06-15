@@ -482,6 +482,7 @@ diesel::table! {
         liquidacion -> Nullable<Text>,
         pago_id -> Nullable<Uuid>,
         created_at -> Timestamptz,
+        cargo_resuelto_en -> Nullable<Timestamptz>,
     }
 }
 

@@ -129,6 +129,10 @@ pub fn router() -> Router<AppState> {
         .route("/parqueadero/sesiones/mias", get(mis_sesiones))
         .route("/parqueadero/sesiones/celda/{id}", get(sesion_de_celda))
         .route("/parqueadero/sesiones/{id}/cerrar", post(cerrar_sesion))
+        // Cargos al apto PENDIENTES de aprobación del residente (informa el monto).
+        .route("/parqueadero/cargos/mios", get(mis_cargos_pendientes))
+        .route("/parqueadero/cargos/{id}/aprobar", post(cargo_aprobar))
+        .route("/parqueadero/cargos/{id}/rechazar", post(cargo_rechazar))
 }
 
 #[utoipa::path(
@@ -1014,8 +1018,96 @@ pub async fn cerrar_sesion(
     // Vehículo en portería → liberar la celda.
     let _ = repo::liberar_celda(&mut conn, user.conjunto_id, celda_id, actor_de(&user)).await;
 
+    // Si el cargo quedó PENDIENTE de aprobación del residente, notificarle con el
+    // monto para que apruebe o rechace desde su app.
+    if cerrada.liquidacion.as_deref() == Some("CARGADO_APTO_PENDIENTE") {
+        let monto = cerrada
+            .monto
+            .clone()
+            .unwrap_or_else(|| bigdecimal::BigDecimal::from(0));
+        let _ = repo::notificar_inquilino(
+            &mut conn,
+            user.conjunto_id,
+            cerrada.residente_id,
+            &format!("Cargo de parqueadero {} — aprueba o rechaza", cerrada.celda_numero),
+            &format!(
+                "Tu visita usó el parqueadero {} y se generó un cobro de ${}. Apruébalo para cargarlo a tu apartamento o recházalo desde Parqueadero.",
+                cerrada.celda_numero,
+                monto.with_scale(0)
+            ),
+        )
+        .await;
+    }
+
     notificar(&state, user.conjunto_id, "celda_liberada", None).await;
     notificar(&state, user.conjunto_id, "sesion_cerrada", None).await;
     let ahora = chrono::Utc::now();
     Ok(Json(sesiones::to_dto(&cerrada, ahora)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/cargos/mios",
+    tag = "parqueadero",
+    responses(
+        (status = 200, description = "Closed sessions with a charge awaiting THIS resident's approval", body = [SesionDto]),
+        (status = 401, description = "Not authenticated")
+    )
+)]
+pub async fn mis_cargos_pendientes(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<SesionDto>>> {
+    let mut conn = state.pool.get().await?;
+    let rows =
+        sesiones::sesiones_cargo_pendiente_de_residente(&mut conn, user.conjunto_id, user.id)
+            .await?;
+    let ahora = chrono::Utc::now();
+    Ok(Json(rows.iter().map(|s| sesiones::to_dto(s, ahora)).collect()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/cargos/{id}/aprobar",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Session id")),
+    responses(
+        (status = 200, description = "Resident approved the charge: payment created", body = SesionDto),
+        (status = 403, description = "Not the resident of this charge"),
+        (status = 404, description = "Session not found")
+    )
+)]
+pub async fn cargo_aprobar(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<SesionDto>> {
+    let mut conn = state.pool.get().await?;
+    let sesion = sesiones::resolver_cargo(&mut conn, user.conjunto_id, id, user.id, true).await?;
+    notificar(&state, user.conjunto_id, "cargo_resuelto", None).await;
+    let ahora = chrono::Utc::now();
+    Ok(Json(sesiones::to_dto(&sesion, ahora)))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/cargos/{id}/rechazar",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Session id")),
+    responses(
+        (status = 200, description = "Resident rejected the charge: no payment, marked as dispute", body = SesionDto),
+        (status = 403, description = "Not the resident of this charge"),
+        (status = 404, description = "Session not found")
+    )
+)]
+pub async fn cargo_rechazar(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<SesionDto>> {
+    let mut conn = state.pool.get().await?;
+    let sesion = sesiones::resolver_cargo(&mut conn, user.conjunto_id, id, user.id, false).await?;
+    notificar(&state, user.conjunto_id, "cargo_resuelto", None).await;
+    let ahora = chrono::Utc::now();
+    Ok(Json(sesiones::to_dto(&sesion, ahora)))
 }

@@ -83,7 +83,39 @@ pub fn to_dto(s: &SesionParqueadero, ahora: DateTime<Utc>) -> SesionDto {
     }
 }
 
+/// Minutos gratis ya consumidos por un apartamento (unidad) en las últimas 24h
+/// (ventana RODANTE). Cada sesión consume = min(duración real, minutos_gratis
+/// otorgados a esa sesión). Las sesiones activas cuentan su tiempo hasta `ahora`.
+/// Esto cierra el abuso de "salir cerca de las 2h y reingresar para 2h nuevas":
+/// el saldo gratis es una bolsa diaria de 120 min por apartamento, compartida
+/// entre todas sus visitas, y los reingresos siguen descontando de la misma bolsa.
+pub async fn minutos_gratis_consumidos_24h(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    unidad_id: Uuid,
+    ahora: DateTime<Utc>,
+) -> ApiResult<i32> {
+    let desde = ahora - chrono::Duration::hours(24);
+    let sesiones: Vec<SesionParqueadero> = sesiones_parqueadero::table
+        .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id))
+        .filter(sesiones_parqueadero::unidad_id.eq(unidad_id))
+        .filter(sesiones_parqueadero::inicio.ge(desde))
+        .select(SesionParqueadero::as_select())
+        .load(conn)
+        .await?;
+    let mut total = 0i32;
+    for s in &sesiones {
+        let fin = s.cerrado_en.unwrap_or(ahora);
+        let dur = (fin - s.inicio).num_minutes().max(0) as i32;
+        // Una sesión nunca consume más gratis del que se le otorgó.
+        total += dur.min(s.minutos_gratis);
+    }
+    Ok(total)
+}
+
 /// Crea la sesión de cobro al aprobarse la asignación de una celda de visitante.
+/// El saldo gratis se calcula como bolsa diaria por apartamento (24h rodante):
+/// `minutos_gratis = max(0, 120 - consumidos_por_el_apto_en_24h)`.
 #[allow(clippy::too_many_arguments)]
 pub async fn crear_sesion(
     conn: &mut DbConn,
@@ -98,7 +130,14 @@ pub async fn crear_sesion(
     estimado_minutos: Option<i32>,
 ) -> ApiResult<SesionParqueadero> {
     let inicio = Utc::now();
-    let fin_gratis = inicio + chrono::Duration::minutes(MINUTOS_GRATIS_DEFAULT as i64);
+    // Bolsa diaria por apartamento: descuenta lo ya consumido en las últimas 24h.
+    // Sin unidad asignada no hay bolsa que compartir → cae al default por sesión.
+    let consumidos = match unidad_id {
+        Some(uid) => minutos_gratis_consumidos_24h(conn, conjunto_id, uid, inicio).await?,
+        None => 0,
+    };
+    let minutos_gratis = (MINUTOS_GRATIS_DEFAULT - consumidos).max(0);
+    let fin_gratis = inicio + chrono::Duration::minutes(minutos_gratis as i64);
     let row = diesel::insert_into(sesiones_parqueadero::table)
         .values(NuevaSesion {
             conjunto_id,
@@ -111,7 +150,7 @@ pub async fn crear_sesion(
             placa,
             estimado_minutos,
             inicio,
-            minutos_gratis: MINUTOS_GRATIS_DEFAULT,
+            minutos_gratis,
             fin_gratis,
             tarifa_hora: BigDecimal::from(TARIFA_HORA_DEFAULT),
         })
@@ -192,41 +231,23 @@ pub async fn cerrar_sesion_de_celda(
             let monto = monto_a(&sesion, ahora);
             let hay_cobro = mins > 0 && monto > BigDecimal::from(0);
 
-            // Resolver liquidación: si no hubo cobro → SIN_COBRO sin importar lo pedido.
+            // Resolver liquidación:
+            //   - sin cobro → SIN_COBRO.
+            //   - visitante pagó en sitio → VISITANTE_PAGO (cierra definitivo).
+            //   - cargar al apto → CARGADO_APTO_PENDIENTE: el residente debe
+            //     aprobar el monto antes de generar el pago (no se crea aún).
             let liquidacion = if !hay_cobro {
                 "SIN_COBRO".to_string()
             } else {
                 match liq.as_deref() {
-                    Some("CARGADO_APTO") => "CARGADO_APTO".to_string(),
+                    Some("CARGADO_APTO") => "CARGADO_APTO_PENDIENTE".to_string(),
                     _ => "VISITANTE_PAGO".to_string(),
                 }
             };
 
-            // Si se carga al apto y hay unidad, crear pago pendiente.
-            let mut pago_id: Option<Uuid> = None;
-            if liquidacion == "CARGADO_APTO" && hay_cobro {
-                if let Some(unidad_id) = sesion.unidad_id {
-                    let concepto = format!(
-                        "Parqueadero visitante {} ({} min)",
-                        sesion.celda_numero, mins
-                    );
-                    let venc = ahora + chrono::Duration::days(15);
-                    let pid: Uuid = diesel::insert_into(pagos::table)
-                        .values((
-                            pagos::conjunto_id.eq(conjunto_id),
-                            pagos::unidad_id.eq(unidad_id),
-                            pagos::usuario_id.eq(sesion.residente_id),
-                            pagos::concepto.eq(concepto),
-                            pagos::monto.eq(monto.clone()),
-                            pagos::estado.eq(EstadoPago::Pendiente),
-                            pagos::fecha_vencimiento.eq(venc),
-                        ))
-                        .returning(pagos::id)
-                        .get_result(conn)
-                        .await?;
-                    pago_id = Some(pid);
-                }
-            }
+            // El pago al apto NO se crea aquí; se difiere hasta que el residente
+            // apruebe el cargo (ver `resolver_cargo`).
+            let pago_id: Option<Uuid> = None;
 
             let updated = diesel::update(
                 sesiones_parqueadero::table
@@ -251,7 +272,110 @@ pub async fn cerrar_sesion_de_celda(
     .await
 }
 
-/// Una notificación pendiente que el scheduler debe enviar tras el tick.
+/// Sesiones CERRADAS con cargo al apto PENDIENTE de aprobación del residente.
+/// El residente las ve con el monto para aprobar o rechazar.
+pub async fn sesiones_cargo_pendiente_de_residente(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    residente_id: Uuid,
+) -> ApiResult<Vec<SesionParqueadero>> {
+    let rows = sesiones_parqueadero::table
+        .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id))
+        .filter(sesiones_parqueadero::residente_id.eq(residente_id))
+        .filter(sesiones_parqueadero::liquidacion.eq("CARGADO_APTO_PENDIENTE"))
+        .order(sesiones_parqueadero::cerrado_en.desc())
+        .select(SesionParqueadero::as_select())
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
+/// El residente resuelve un cargo CARGADO_APTO_PENDIENTE a su apto.
+///   - aprobar=true  → liquidación pasa a CARGADO_APTO y se crea el pago pendiente.
+///   - aprobar=false → liquidación pasa a CARGADO_APTO_RECHAZADO (sin pago).
+/// Solo el residente destinatario puede resolverlo (validado por el caller).
+pub async fn resolver_cargo(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    sesion_id: Uuid,
+    residente_id: Uuid,
+    aprobar: bool,
+) -> ApiResult<SesionParqueadero> {
+    conn.transaction(|conn| {
+        async move {
+            let sesion = sesiones_parqueadero::table
+                .filter(sesiones_parqueadero::id.eq(sesion_id))
+                .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id))
+                .select(SesionParqueadero::as_select())
+                .first(conn)
+                .await
+                .optional()?
+                .ok_or_else(|| ApiError::NotFound("sesión no encontrada".into()))?;
+
+            // Solo el residente responsable puede resolver su propio cargo.
+            if sesion.residente_id != residente_id {
+                return Err(ApiError::Forbidden);
+            }
+            if sesion.liquidacion.as_deref() != Some("CARGADO_APTO_PENDIENTE") {
+                return Err(ApiError::BadRequest(
+                    "este cargo ya fue resuelto".into(),
+                ));
+            }
+
+            let ahora = Utc::now();
+            let (nueva_liq, pago_id) = if aprobar {
+                // Crear el pago pendiente al apto (si tiene unidad).
+                let mut pid: Option<Uuid> = None;
+                if let Some(unidad_id) = sesion.unidad_id {
+                    let mins = sesion.minutos_cobrados.unwrap_or(0);
+                    let monto = sesion
+                        .monto
+                        .clone()
+                        .unwrap_or_else(|| BigDecimal::from(0));
+                    let concepto = format!(
+                        "Parqueadero visitante {} ({} min)",
+                        sesion.celda_numero, mins
+                    );
+                    let venc = ahora + chrono::Duration::days(15);
+                    let new_pid: Uuid = diesel::insert_into(pagos::table)
+                        .values((
+                            pagos::conjunto_id.eq(conjunto_id),
+                            pagos::unidad_id.eq(unidad_id),
+                            pagos::usuario_id.eq(sesion.residente_id),
+                            pagos::concepto.eq(concepto),
+                            pagos::monto.eq(monto),
+                            pagos::estado.eq(EstadoPago::Pendiente),
+                            pagos::fecha_vencimiento.eq(venc),
+                        ))
+                        .returning(pagos::id)
+                        .get_result(conn)
+                        .await?;
+                    pid = Some(new_pid);
+                }
+                ("CARGADO_APTO".to_string(), pid)
+            } else {
+                ("CARGADO_APTO_RECHAZADO".to_string(), None)
+            };
+
+            let updated = diesel::update(
+                sesiones_parqueadero::table
+                    .filter(sesiones_parqueadero::id.eq(sesion_id))
+                    .filter(sesiones_parqueadero::conjunto_id.eq(conjunto_id)),
+            )
+            .set((
+                sesiones_parqueadero::liquidacion.eq(Some(nueva_liq)),
+                sesiones_parqueadero::pago_id.eq(pago_id),
+                sesiones_parqueadero::cargo_resuelto_en.eq(Some(ahora)),
+            ))
+            .returning(SesionParqueadero::as_returning())
+            .get_result(conn)
+            .await?;
+            Ok(updated)
+        }
+        .scope_boxed()
+    })
+    .await
+}
 pub struct AvisoPendiente {
     pub conjunto_id: Uuid,
     pub residente_id: Uuid,

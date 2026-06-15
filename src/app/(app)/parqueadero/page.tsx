@@ -54,6 +54,8 @@ export default function ParqueaderoPage() {
   const [busyAprob, setBusyAprob] = useState<string | null>(null);
   // Sesiones de cobro activas del residente (conteo regresivo en vivo).
   const [sesionesCobro, setSesionesCobro] = useState<any[]>([]);
+  // Cargos al apto PENDIENTES de aprobación de ESTE residente (con el monto).
+  const [cargosPendientes, setCargosPendientes] = useState<any[]>([]);
 
   const refetchSolicitudes = async () => {
     try {
@@ -67,6 +69,28 @@ export default function ParqueaderoPage() {
       const data = await api.get<any[]>('/parqueadero/sesiones/mias');
       setSesionesCobro(data ?? []);
     } catch { /* no aplica */ }
+  };
+
+  const refetchCargos = async () => {
+    try {
+      const data = await api.get<any[]>('/parqueadero/cargos/mios');
+      setCargosPendientes(data ?? []);
+    } catch { /* no aplica */ }
+  };
+
+  const resolverCargo = async (id: string, accion: 'aprobar' | 'rechazar') => {
+    setBusyAprob(id);
+    try {
+      await api.post(`/parqueadero/cargos/${id}/${accion}`, {});
+      toast.success(accion === 'aprobar'
+        ? "Cargo aprobado. Se agregó a tus pagos pendientes."
+        : "Cargo rechazado. Quedó registrado como disputa.");
+      refetchCargos();
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo procesar");
+    } finally {
+      setBusyAprob(null);
+    }
   };
 
   const resolverSolicitud = async (id: string, accion: 'aprobar' | 'rechazar') => {
@@ -85,7 +109,7 @@ export default function ParqueaderoPage() {
 
   // Real-time WebSocket subscriptions
   useWsSubscription('vehiculo', () => refetchParking());
-  useWsSubscription('parqueadero', () => { refetchParking(); refetchSolicitudes(); refetchSesiones(); });
+  useWsSubscription('parqueadero', () => { refetchParking(); refetchSolicitudes(); refetchSesiones(); refetchCargos(); });
 
   // Modal y Forms
   const [showVehiculoModal, setShowVehiculoModal] = useState(false);
@@ -127,6 +151,7 @@ export default function ParqueaderoPage() {
     fetchData();
     refetchSolicitudes();
     refetchSesiones();
+    refetchCargos();
 
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up", 
@@ -195,6 +220,59 @@ export default function ParqueaderoPage() {
           </div>
           {sesionesCobro.map((s) => (
             <CuentaRegresivaCard key={s.id} sesion={s} />
+          ))}
+        </section>
+      )}
+
+      {/* BANDEJA: cargos al apto PENDIENTES de aprobación (informa el monto) */}
+      {cargosPendientes.length > 0 && (
+        <section className="fade-up flex flex-col gap-3">
+          <div className="flex items-center gap-2 px-1">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EF4444] opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
+            </span>
+            <h2 className="text-base font-display font-bold text-text tracking-tight">
+              Cobros por aprobar
+            </h2>
+          </div>
+          <p className="text-xs text-text/70 px-1 -mt-1">
+            Tu visita superó las 2h gratis. Aprueba para cargar el cobro a tu apartamento o recházalo.
+          </p>
+          {cargosPendientes.map((c) => (
+            <div key={c.id} className="liquid-glass-card rounded-[28px] p-5 border border-[#EF4444]/40 flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-lg font-bold text-text">Celda {c.celdaNumero}</span>
+                  {c.placa && <span className="text-xs text-text/80 font-mono">Placa {c.placa}</span>}
+                  <span className="text-[11px] text-text/60 mt-1">
+                    {c.minutosCobrados} min cobrables · {c.cerradoEn ? new Date(c.cerradoEn).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end shrink-0">
+                  <span className="text-[10px] text-text/60 uppercase tracking-wider font-bold">Monto</span>
+                  <span className="text-2xl font-display font-bold text-[#FACC15]">
+                    ${Number(c.montoFinal || c.montoActual || 0).toLocaleString('es-CO')}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  disabled={busyAprob === c.id}
+                  onClick={() => resolverCargo(c.id, 'rechazar')}
+                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  Rechazar
+                </button>
+                <button
+                  disabled={busyAprob === c.id}
+                  onClick={() => resolverCargo(c.id, 'aprobar')}
+                  className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {busyAprob === c.id ? "Procesando..." : "Aprobar cobro"}
+                </button>
+              </div>
+            </div>
           ))}
         </section>
       )}
