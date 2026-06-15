@@ -323,7 +323,10 @@ export default function VisitantesPage() {
                      </div>
                    </div>
                 </div>
-                <button className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text hover:text-text transition-all ring-1 ring-border cursor-pointer">
+                <button
+                   onClick={() => { setLastVisit(visitor); setIsQRModalOpen(true); }}
+                   className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text hover:text-text transition-all ring-1 ring-border cursor-pointer"
+                >
                    <MoreHorizontal size={20} />
                 </button>
               </div>
@@ -364,7 +367,10 @@ export default function VisitantesPage() {
                        REENVIAR QR
                      </button>
                   ) : (
-                     <button className="w-9 h-9 rounded-full bg-text/5 flex items-center justify-center text-text cursor-pointer">
+                     <button
+                        onClick={() => { setLastVisit(visitor); setIsQRModalOpen(true); }}
+                        className="w-9 h-9 rounded-full bg-text/5 flex items-center justify-center text-text cursor-pointer hover:bg-text/10 transition-all"
+                     >
                         <ArrowRight size={16} />
                      </button>
                   )}
