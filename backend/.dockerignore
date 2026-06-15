@@ -1,0 +1,4 @@
+# Rust build artifacts — never needed in the build context. Leaving target/ in the
+# context made it ~13GB and slowed every image build; the builder compiles from source.
+target/
+**/target/

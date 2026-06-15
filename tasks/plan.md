@@ -5,7 +5,7 @@ Decisiones fijadas: LiveKit **self-hosted** · **solo audio** · **reemplazo dir
 
 ## Decisiones técnicas zanjadas
 1. **TURN = embebido de LiveKit sobre TLS** (`turn.enabled` en `livekit.yaml`). Menos ops, ICE-aware, un servicio menos. Requiere dominio + cert TLS reales en prod.
-2. **HTTP del push:** usar el crate `web-push` solo para firma VAPID + cifrado del payload, y **enviar con el `reqwest` (rustls) ya presente**. Evita `isahc`/libcurl. El factory `create_push_sender` devuelve el sender real **solo si** `vapid_public_key/private_key/subject` están todas presentes; si no, un stub cuyo `send()` retorna `Err` (nunca `Ok` silencioso).
+2. **HTTP del push:** usar el crate **pure-Rust `web-push-native`** (RustCrypto: p256/aes-gcm/hkdf/jwt-simple pure-rust) para firma VAPID + cifrado ECE, y **enviar con el `reqwest` (rustls) ya presente**. Mantiene el build **sin OpenSSL** (el crate `web-push` clásico arrastra `ece`→`openssl-sys`). El factory `create_push_sender` devuelve el sender real **solo si** `vapid_public_key/private_key/subject` están todas presentes; si no, un stub cuyo `send()` retorna `Err` (nunca `Ok` silencioso).
 3. **Modelo de llamada:** sala efímera `citofonia-{conjuntoId}-{uuid}`. El que llama crea la sala y recibe token; el que contesta pide su propio token (`/citofonia/token`), espejando Asamblea (token acuñado para el usuario autenticado, no viaja en el push).
 
 ## Grafo de dependencias
@@ -27,7 +27,7 @@ Backend (B,C) y frontend (D,E,F) comparten solo el **contrato HTTP**, así que F
   - *Aceptación:* `GET /asambleas/{id}/livekit-token` responde `{token,url}` (sanity, no se modifica).
 
 ### Fase B — Backend: push VAPID real
-- **T3 · `WebPushSender`.** `Cargo.toml`: añadir `web-push`. En `services/push.rs`: `WebPushSender` (firma VAPID + cifra payload, POST vía `reqwest`); `create_push_sender` real si configurado, stub-que-falla si no. Mapear error de "no configurado" en el handler.
+- **T3 · `WebPushSender`.** `Cargo.toml`: añadir `web-push-native` + `http`. En `services/push.rs`: `WebPushSender` (firma VAPID + cifra payload pure-Rust, POST vía `reqwest`); `create_push_sender` real si configurado, stub-que-falla si no.
   - *Aceptación:* unit tests: construye request VAPID válida; `send()` ok/err; factory elige real vs stub.
   - *Verif.:* `cargo test -p api push` verde.
 - **CP1a** (interno): `cargo build` ok.

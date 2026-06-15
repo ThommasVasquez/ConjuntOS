@@ -49,8 +49,8 @@ El Service Worker (`public/sw.js`) pasa `room` en el mensaje `ANSWER_CALL` (en v
 ## 3. Estructura del proyecto (archivos a tocar)
 
 **Backend (Rust / axum / diesel-async)**
-- `backend/api/Cargo.toml` — añadir crate `web-push`.
-- `backend/api/src/services/push.rs` — `WebPushSender` real (VAPID); `create_push_sender` devuelve el real cuando `vapid_*` están presentes, si no `LogOnlyPushSender` cuyo `send()` retorna `Err` mapeable (no Ok silencioso).
+- `backend/api/Cargo.toml` — añadir crate `web-push-native` (pure-Rust, sin OpenSSL) + `http`.
+- `backend/api/src/services/push.rs` — `WebPushSender` real (VAPID); `create_push_sender` devuelve el real cuando `vapid_*` están presentes, si no `UnconfiguredPushSender` cuyo `send()` retorna `Err` (no Ok silencioso).
 - `backend/api/src/domains/citofonia/handlers.rs` — reemplazar `call_push` por `call`; añadir `citofonia_token`; **conservar** `parse_peer_id` y `resolve_targets` y sus tests.
 - DTOs en citofonía (`CallRequest`, `CallResponse`, `CitofoniaTokenDto`).
 - `backend/api/tests/m5b_test.rs` — actualizar tests de call-push al nuevo flujo `call` + token; añadir test de rechazo cross-tenant en `token`.

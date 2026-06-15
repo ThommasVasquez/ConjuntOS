@@ -1,12 +1,22 @@
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, bail, Result};
-use web_push::{
-    ContentEncoding, SubscriptionInfo, VapidSignatureBuilder, WebPushMessageBuilder,
-    URL_SAFE_NO_PAD,
-};
+use base64::Engine;
+use web_push_native::jwt_simple::algorithms::ES256KeyPair;
+use web_push_native::p256::PublicKey;
+use web_push_native::{Auth, WebPushBuilder};
 
 use crate::config::Config;
+
+/// Decode a base64url value (padded or not), as used by the Push API and VAPID keys.
+fn b64url_decode(s: &str) -> Result<Vec<u8>> {
+    use base64::engine::general_purpose::{URL_SAFE, URL_SAFE_NO_PAD};
+    let trimmed = s.trim_end_matches('=');
+    URL_SAFE_NO_PAD
+        .decode(trimmed)
+        .or_else(|_| URL_SAFE.decode(s))
+        .map_err(|e| anyhow!("base64url decode failed: {e}"))
+}
 
 /// Minimal subscription info needed to send a push notification.
 #[derive(Debug, Clone)]
@@ -25,22 +35,28 @@ pub trait PushSender: Send + Sync {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + '_>>;
 }
 
-/// Real VAPID sender (RFC 8291 aes128gcm). Signs + encrypts with the `web-push`
-/// crate and POSTs to the push endpoint with the existing reqwest (rustls) client,
-/// so we don't pull in the crate's bundled isahc/hyper HTTP stack.
+/// Real VAPID sender (RFC 8292 VAPID + RFC 8291 aes128gcm). Signs + encrypts with
+/// the pure-Rust `web-push-native` crate (RustCrypto), then POSTs to the push
+/// endpoint with the existing reqwest (rustls) client. No OpenSSL in the build.
 pub struct WebPushSender {
-    vapid_private_b64: String,
+    /// Raw P-256 private scalar, decoded + validated at construction.
+    vapid_key_bytes: Vec<u8>,
     vapid_subject: String,
     client: reqwest::Client,
 }
 
 impl WebPushSender {
     pub fn new(vapid_private_b64: String, vapid_subject: String) -> Result<Self> {
+        let vapid_key_bytes = b64url_decode(&vapid_private_b64)
+            .map_err(|e| anyhow!("invalid VAPID private key (base64url): {e}"))?;
+        // Validate the key parses now, so a misconfiguration fails at startup.
+        ES256KeyPair::from_bytes(&vapid_key_bytes)
+            .map_err(|e| anyhow!("invalid VAPID private key: {e}"))?;
         let client = reqwest::Client::builder()
             .build()
             .map_err(|e| anyhow!("failed to build reqwest client for push: {e}"))?;
         Ok(Self {
-            vapid_private_b64,
+            vapid_key_bytes,
             vapid_subject,
             client,
         })
@@ -53,48 +69,43 @@ impl PushSender for WebPushSender {
         sub: &PushSubscriptionInfo,
         payload: &[u8],
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + '_>> {
-        let subscription =
-            SubscriptionInfo::new(sub.endpoint.clone(), sub.p256dh.clone(), sub.auth.clone());
-        let private = self.vapid_private_b64.clone();
+        let endpoint = sub.endpoint.clone();
+        let p256dh = sub.p256dh.clone();
+        let auth = sub.auth.clone();
+        let key_bytes = self.vapid_key_bytes.clone();
         let subject = self.vapid_subject.clone();
         let payload = payload.to_vec();
         let client = self.client.clone();
 
         Box::pin(async move {
-            // VAPID signature (JWT) for this subscription's endpoint.
-            let mut sig_builder =
-                VapidSignatureBuilder::from_base64(&private, URL_SAFE_NO_PAD, &subscription)
-                    .map_err(|e| anyhow!("invalid VAPID private key: {e}"))?;
-            sig_builder.add_claim("sub", subject.as_str());
-            let signature = sig_builder
-                .build()
-                .map_err(|e| anyhow!("VAPID signature build failed: {e}"))?;
-
-            // Encrypt payload (aes128gcm) and build the push message.
-            let mut builder = WebPushMessageBuilder::new(&subscription);
-            builder.set_payload(ContentEncoding::Aes128Gcm, &payload);
-            builder.set_vapid_signature(signature);
-            builder.set_ttl(60);
-            let message = builder
-                .build()
-                .map_err(|e| anyhow!("web-push message build failed: {e}"))?;
-
-            let endpoint = message.endpoint.to_string();
-            let wp_payload = message
-                .payload
-                .ok_or_else(|| anyhow!("web-push message had no payload"))?;
-
-            // Mirror the crate's request_builder: TTL + content headers + crypto headers.
-            let mut req = client
-                .post(&endpoint)
-                .header("TTL", message.ttl.to_string())
-                .header("Content-Encoding", wp_payload.content_encoding.to_str())
-                .header("Content-Type", "application/octet-stream");
-            for (k, v) in wp_payload.crypto_headers.iter() {
-                req = req.header(*k, v);
+            let key_pair = ES256KeyPair::from_bytes(&key_bytes)
+                .map_err(|e| anyhow!("VAPID key: {e}"))?;
+            let ua_public = PublicKey::from_sec1_bytes(&b64url_decode(&p256dh)?)
+                .map_err(|e| anyhow!("invalid p256dh public key: {e}"))?;
+            let auth_bytes = b64url_decode(&auth)?;
+            if auth_bytes.len() != 16 {
+                bail!("invalid auth secret length: {}", auth_bytes.len());
             }
-            let resp = req
-                .body(wp_payload.content)
+            let ua_auth = Auth::clone_from_slice(&auth_bytes);
+            let uri: http::Uri = endpoint
+                .parse()
+                .map_err(|e| anyhow!("invalid endpoint uri: {e}"))?;
+
+            // Build the signed + encrypted (aes128gcm) push request.
+            let request = WebPushBuilder::new(uri, ua_public, ua_auth)
+                .with_vapid(&key_pair, &subject)
+                .build(payload)
+                .map_err(|e| anyhow!("web-push build failed: {e}"))?;
+
+            // Relay the http::Request through reqwest (copy headers by str/bytes so
+            // the http crate version is irrelevant).
+            let (parts, body) = request.into_parts();
+            let mut rb = client.post(parts.uri.to_string());
+            for (name, value) in parts.headers.iter() {
+                rb = rb.header(name.as_str(), value.as_bytes());
+            }
+            let resp = rb
+                .body(body)
                 .send()
                 .await
                 .map_err(|e| anyhow!("push request failed: {e}"))?;
