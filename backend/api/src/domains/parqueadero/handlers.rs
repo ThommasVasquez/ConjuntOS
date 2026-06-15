@@ -1,5 +1,5 @@
-use axum::extract::{Path, State};
-use axum::routing::{get, post, put};
+use axum::extract::{Path, Query, State};
+use axum::routing::{get, post, put, delete};
 use axum::{Json, Router};
 use uuid::Uuid;
 
@@ -11,13 +11,14 @@ use crate::db::enums::{
 };
 use crate::domains::parqueadero::dto::{
     AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CerrarSesionRequest, CreateCeldaRequest,
-    CreateRondaRequest, CreateVehiculoRequest, EditarSolicitudRequest, MovimientoResultadoDto,
-    OcupanteDto, ParqueaderoMioDto, ParqueaderoStatsDto, RegistroDto, RondaDto, SesionDto,
-    SolicitudDto, UpdateCeldaRequest, VehiculoDto,
+    CreateRondaRequest, CreateVehiculoRequest, CrearReservaVisitanteRequest, DisponibilidadCupoDto,
+    EditarSolicitudRequest, MovimientoResultadoDto, OcupanteDto, ParqueaderoMioDto,
+    ParqueaderoStatsDto, RegistroDto, ReservaVisitanteDto, RondaDto, SesionDto, SolicitudDto,
+    UpdateCeldaRequest, VehiculoDto,
 };
 use crate::domains::parqueadero::models::{NuevaCelda, NuevaSolicitud, NuevoVehiculo};
 use crate::domains::parqueadero::repo::{self, Actor};
-use crate::domains::parqueadero::sesiones;
+use crate::domains::parqueadero::{reservas, sesiones};
 use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
@@ -133,6 +134,14 @@ pub fn router() -> Router<AppState> {
         .route("/parqueadero/cargos/mios", get(mis_cargos_pendientes))
         .route("/parqueadero/cargos/{id}/aprobar", post(cargo_aprobar))
         .route("/parqueadero/cargos/{id}/rechazar", post(cargo_rechazar))
+        // Reservas de cupo de visitante (el residente reserva con antelación).
+        // Las rutas específicas van ANTES de /reservas/{id}.
+        .route("/parqueadero/reservas/disponibilidad", get(reservas_disponibilidad))
+        .route("/parqueadero/reservas/mias", get(mis_reservas))
+        .route("/parqueadero/reservas/proximas", get(reservas_proximas))
+        .route("/parqueadero/reservas", post(crear_reserva))
+        .route("/parqueadero/reservas/{id}", delete(cancelar_reserva))
+        .route("/parqueadero/reservas/{id}/llegada", post(reserva_marcar_llegada))
 }
 
 #[utoipa::path(
@@ -1126,4 +1135,169 @@ pub async fn cargo_rechazar(
     notificar(&state, user.conjunto_id, "cargo_resuelto", None).await;
     let ahora = chrono::Utc::now();
     Ok(Json(sesiones::to_dto(&sesion, ahora)))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reservas de cupo de visitante (el residente reserva con antelación).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Quién puede ver/gestionar las reservas próximas del conjunto (portería).
+const ROLES_RESERVAS_PORTERIA: &[Rol] = &[
+    Rol::EncargadoParqueadero,
+    Rol::SupervisorVigilancia,
+    Rol::Administrador,
+    Rol::Vigilante,
+];
+
+/// Parámetros de consulta de disponibilidad de cupos.
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DisponibilidadQuery {
+    /// "CARRO", "MOTO" o "BICI".
+    pub categoria: String,
+    /// Hora tentativa de llegada (ISO 8601).
+    pub llegada: chrono::DateTime<chrono::Utc>,
+    /// Minutos de estancia estimada. Omitir = tiempo libre.
+    pub duracion_minutos: Option<i32>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/reservas/disponibilidad",
+    tag = "parqueadero",
+    responses(
+        (status = 200, description = "Available visitor slots for a category and time window", body = DisponibilidadCupoDto),
+        (status = 400, description = "Invalid category")
+    )
+)]
+pub async fn reservas_disponibilidad(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Query(q): Query<DisponibilidadQuery>,
+) -> ApiResult<Json<DisponibilidadCupoDto>> {
+    let mut conn = state.pool.get().await?;
+    let categoria = reservas::normalizar_categoria(&q.categoria)?;
+    let disp =
+        reservas::disponibilidad(&mut conn, user.conjunto_id, &categoria, q.llegada, q.duracion_minutos)
+            .await?;
+    Ok(Json(disp))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/reservas",
+    tag = "parqueadero",
+    request_body = CrearReservaVisitanteRequest,
+    responses(
+        (status = 200, description = "Reservation created", body = ReservaVisitanteDto),
+        (status = 400, description = "Invalid data"),
+        (status = 409, description = "No slots available for that window")
+    )
+)]
+pub async fn crear_reserva(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<CrearReservaVisitanteRequest>,
+) -> ApiResult<Json<ReservaVisitanteDto>> {
+    let mut conn = state.pool.get().await?;
+    let categoria = reservas::normalizar_categoria(&req.categoria)?;
+    let unidad_id = repo::obtener_unidad_id(&mut conn, user.conjunto_id, user.id).await?;
+    let reserva = reservas::crear_reserva(
+        &mut conn,
+        user.conjunto_id,
+        user.id,
+        user.nombre.clone(),
+        unidad_id,
+        categoria,
+        req.visitante_nombre.clone(),
+        req.placa.clone(),
+        req.llegada_estimada,
+        req.duracion_minutos,
+        req.notas.clone(),
+    )
+    .await?;
+    // Avisar a portería que hay una nueva reserva próxima.
+    notificar(&state, user.conjunto_id, "reserva_creada", None).await;
+    Ok(Json(reserva))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/reservas/mias",
+    tag = "parqueadero",
+    responses(
+        (status = 200, description = "This resident's visitor slot reservations", body = [ReservaVisitanteDto])
+    )
+)]
+pub async fn mis_reservas(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<ReservaVisitanteDto>>> {
+    let mut conn = state.pool.get().await?;
+    let rows = reservas::reservas_de_residente(&mut conn, user.conjunto_id, user.id).await?;
+    Ok(Json(rows))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/reservas/proximas",
+    tag = "parqueadero",
+    responses(
+        (status = 200, description = "Upcoming visitor reservations (porter view)", body = [ReservaVisitanteDto]),
+        (status = 403, description = "Requires parking/porter role")
+    )
+)]
+pub async fn reservas_proximas(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<ReservaVisitanteDto>>> {
+    guard::require(&user, ROLES_RESERVAS_PORTERIA)?;
+    let mut conn = state.pool.get().await?;
+    let rows = reservas::reservas_proximas(&mut conn, user.conjunto_id).await?;
+    Ok(Json(rows))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/v1/parqueadero/reservas/{id}",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Reservation id")),
+    responses(
+        (status = 200, description = "Reservation cancelled", body = ReservaVisitanteDto),
+        (status = 403, description = "Not the owner"),
+        (status = 404, description = "Reservation not found")
+    )
+)]
+pub async fn cancelar_reserva(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<ReservaVisitanteDto>> {
+    let mut conn = state.pool.get().await?;
+    let reserva = reservas::cancelar_reserva(&mut conn, user.conjunto_id, id, user.id).await?;
+    notificar(&state, user.conjunto_id, "reserva_cancelada", None).await;
+    Ok(Json(reserva))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/reservas/{id}/llegada",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Reservation id")),
+    responses(
+        (status = 200, description = "Reservation marked as arrived", body = ReservaVisitanteDto),
+        (status = 403, description = "Requires parking/porter role"),
+        (status = 404, description = "Reservation not found or already processed")
+    )
+)]
+pub async fn reserva_marcar_llegada(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<ReservaVisitanteDto>> {
+    guard::require(&user, ROLES_RESERVAS_PORTERIA)?;
+    let mut conn = state.pool.get().await?;
+    let reserva = reservas::marcar_llegada(&mut conn, user.conjunto_id, id).await?;
+    notificar(&state, user.conjunto_id, "reserva_llegada", None).await;
+    Ok(Json(reserva))
 }

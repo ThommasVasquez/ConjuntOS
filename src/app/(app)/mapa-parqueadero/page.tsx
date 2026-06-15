@@ -2,7 +2,7 @@
 
 import { 
   AlertCircle, ArrowRight, Car, CheckCircle, ClipboardCheck, 
-  Clock, History, Map, X 
+  Clock, History, Map, X, Bike, CalendarClock 
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
@@ -17,6 +17,8 @@ export default function MapaParqueaderoPage() {
   const [parqueaderos, setParqueaderos] = useState<any[]>([]);
   const [registros, setRegistros] = useState<any[]>([]);
   const [lastRound, setLastRound] = useState<any>(null);
+  const [reservasProximas, setReservasProximas] = useState<any[]>([]);
+  const [busyReservaLlegada, setBusyReservaLlegada] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Modal State
@@ -124,7 +126,25 @@ export default function MapaParqueaderoPage() {
       const dir = await api.get<any[]>('/directorio');
       setResidentes(dir);
     } catch { /* sin permiso para directorio */ }
+    // Reservas de cupo de visitante próximas (no crítico).
+    try {
+      const res = await api.get<any[]>('/parqueadero/reservas/proximas');
+      setReservasProximas(res ?? []);
+    } catch { /* sin permiso */ }
   }
+
+  const marcarLlegadaReserva = async (id: string) => {
+    setBusyReservaLlegada(id);
+    try {
+      await api.post(`/parqueadero/reservas/${id}/llegada`, {});
+      toast.success("Llegada registrada. Asigna la celda de visitante al residente.");
+      loadExtra();
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo registrar la llegada");
+    } finally {
+      setBusyReservaLlegada(null);
+    }
+  };
 
   const handleCellClick = (cell: any) => {
     if (cell.estado === 'DISPONIBLE') {
@@ -316,6 +336,51 @@ export default function MapaParqueaderoPage() {
              <ClipboardCheck size={14} /> Iniciar Ronda
           </button>
        </section>
+
+       {/* RESERVAS DE CUPO DE VISITANTE PRÓXIMAS */}
+       {reservasProximas.length > 0 && (
+          <section className="fade-up liquid-glass rounded-3xl p-5 border border-accent/30 shadow-xl flex flex-col gap-3">
+             <div className="flex items-center gap-2">
+                <CalendarClock size={18} className="text-accent" />
+                <h3 className="text-text font-bold text-sm">Reservas de visitante próximas</h3>
+                <span className="ml-auto text-[10px] font-black text-accent bg-accent/10 px-2 py-1 rounded-full border border-accent/30">{reservasProximas.length}</span>
+             </div>
+             <div className="flex flex-col gap-2">
+                {reservasProximas.map((r) => (
+                   <div key={r.id} className="bg-text/5 border border-border rounded-2xl p-3.5 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+                         {r.categoria === 'MOTO' ? <Bike size={16} /> : <Car size={16} />}
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                         <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-text truncate">{r.residenteNombre}</span>
+                            {r.estado === 'LLEGO' && (
+                               <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#57bf00]/15 text-[#57bf00] shrink-0">Llegó</span>
+                            )}
+                         </div>
+                         <span className="text-[11px] text-text/60 truncate">
+                            {new Date(r.llegadaEstimada).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            {' · '}{r.tiempoLibre ? 'tiempo libre' : `~${r.duracionMinutos} min`}
+                            {r.placa ? ` · ${r.placa}` : ''}
+                         </span>
+                      </div>
+                      {r.estado === 'PENDIENTE' && (
+                         <button
+                            disabled={busyReservaLlegada === r.id}
+                            onClick={() => marcarLlegadaReserva(r.id)}
+                            className="shrink-0 bg-accent text-on-accent text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl active:scale-95 transition-all disabled:opacity-50"
+                         >
+                            {busyReservaLlegada === r.id ? '...' : 'Llegó'}
+                         </button>
+                      )}
+                   </div>
+                ))}
+             </div>
+             <p className="text-[10px] text-text/50 leading-relaxed">
+                Marca "Llegó" cuando el visitante entre, luego asígnale una celda de visitante en el mapa.
+             </p>
+          </section>
+       )}
 
        <div className="liquid-glass rounded-3xl p-6 border border-border/40 shadow-2xl relative overflow-hidden">
           <div className="flex justify-between items-start mb-6">

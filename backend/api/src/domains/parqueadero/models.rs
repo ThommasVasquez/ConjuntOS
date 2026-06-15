@@ -7,8 +7,8 @@ use crate::db::enums::{
     TipoCeldaParqueadero, TipoRegistroParqueadero, TipoVehiculo,
 };
 use crate::db::schema::{
-    parqueaderos, registros_parqueadero, rondas_parqueadero, sesiones_parqueadero,
-    solicitudes_parqueadero, vehiculos,
+    parqueaderos, registros_parqueadero, reservas_visitante_parqueadero, rondas_parqueadero,
+    sesiones_parqueadero, solicitudes_parqueadero, vehiculos,
 };
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
@@ -179,4 +179,43 @@ pub struct NuevaSesion {
     pub minutos_gratis: i32,
     pub fin_gratis: DateTime<Utc>,
     pub tarifa_hora: bigdecimal::BigDecimal,
+}
+
+/// Reserva de CUPO de parqueadero de visitante hecha por un residente con
+/// antelación. No reserva una celda específica (eso lo hace el vigilante al
+/// llegar la visita): reserva un cupo del pool de su categoría para una franja.
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
+#[diesel(table_name = reservas_visitante_parqueadero, check_for_backend(diesel::pg::Pg))]
+pub struct ReservaVisitante {
+    pub id: Uuid,
+    pub conjunto_id: Uuid,
+    pub residente_id: Uuid,
+    pub residente_nombre: String,
+    pub unidad_id: Option<Uuid>,
+    pub categoria: String,
+    pub visitante_nombre: Option<String>,
+    pub placa: Option<String>,
+    pub llegada_estimada: DateTime<Utc>,
+    pub duracion_minutos: Option<i32>,
+    pub fin_estimado: Option<DateTime<Utc>>,
+    pub estado: String,
+    pub sesion_id: Option<Uuid>,
+    pub notas: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Debug)]
+#[diesel(table_name = reservas_visitante_parqueadero)]
+pub struct NuevaReservaVisitante {
+    pub conjunto_id: Uuid,
+    pub residente_id: Uuid,
+    pub residente_nombre: String,
+    pub unidad_id: Option<Uuid>,
+    pub categoria: String,
+    pub visitante_nombre: Option<String>,
+    pub placa: Option<String>,
+    pub llegada_estimada: DateTime<Utc>,
+    pub duracion_minutos: Option<i32>,
+    pub fin_estimado: Option<DateTime<Utc>>,
 }

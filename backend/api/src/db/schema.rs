@@ -447,6 +447,27 @@ diesel::table! {
 }
 
 diesel::table! {
+    reservas_visitante_parqueadero (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        residente_id -> Uuid,
+        residente_nombre -> Text,
+        unidad_id -> Nullable<Uuid>,
+        categoria -> Text,
+        visitante_nombre -> Nullable<Text>,
+        placa -> Nullable<Text>,
+        llegada_estimada -> Timestamptz,
+        duracion_minutos -> Nullable<Int4>,
+        fin_estimado -> Nullable<Timestamptz>,
+        estado -> Text,
+        sesion_id -> Nullable<Uuid>,
+        notas -> Nullable<Text>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     rondas_parqueadero (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -709,6 +730,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     recibos_publicos,
     registros_parqueadero,
     reservas,
+    reservas_visitante_parqueadero,
     rondas_parqueadero,
     sesiones_parqueadero,
     solicitudes_parqueadero,

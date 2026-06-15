@@ -310,3 +310,59 @@ pub struct CerrarSesionRequest {
     pub liquidacion: String,
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Reservas de cupo de visitante (el residente reserva con antelación).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Reserva de cupo de visitante vista por el residente / vigilante.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ReservaVisitanteDto {
+    pub id: Uuid,
+    pub residente_id: Uuid,
+    pub residente_nombre: String,
+    pub categoria: String,
+    pub visitante_nombre: Option<String>,
+    pub placa: Option<String>,
+    pub llegada_estimada: DateTime<Utc>,
+    pub duracion_minutos: Option<i32>,
+    pub fin_estimado: Option<DateTime<Utc>>,
+    /// true si la reserva es de tiempo libre (sin hora de salida estimada).
+    pub tiempo_libre: bool,
+    pub estado: String,
+    pub sesion_id: Option<Uuid>,
+    pub notas: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Petición del residente para crear una reserva de cupo de visitante.
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CrearReservaVisitanteRequest {
+    /// "CARRO", "MOTO" o "BICI". Define el pool de cupos a contar.
+    pub categoria: String,
+    pub visitante_nombre: Option<String>,
+    pub placa: Option<String>,
+    /// Hora tentativa de llegada (ISO 8601).
+    pub llegada_estimada: DateTime<Utc>,
+    /// Minutos estimados de estancia. Omitir / null = tiempo libre.
+    pub duracion_minutos: Option<i32>,
+    pub notas: Option<String>,
+}
+
+/// Disponibilidad de cupos de visitante para una franja, por categoría.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DisponibilidadCupoDto {
+    pub categoria: String,
+    /// Celdas de visitante totales de esa categoría.
+    pub total: i64,
+    /// Cupos ocupados/reservados que se solapan con la franja consultada.
+    pub ocupados: i64,
+    /// Cupos libres en la franja (total - ocupados, mínimo 0).
+    pub libres: i64,
+    /// true si hay al menos un cupo libre en la franja.
+    pub hay_cupo: bool,
+}
+
+

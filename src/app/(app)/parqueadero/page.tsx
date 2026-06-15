@@ -5,7 +5,7 @@ import {
   Car, Bike, Plus, Info, ChevronRight, 
   MapPin, ShieldCheck, Clock, ArrowRight,
   Settings, X, Search, FileText, LayoutDashboard,
-  CheckCircle2
+  CheckCircle2, Calendar, AlertCircle
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
@@ -78,6 +78,31 @@ export default function ParqueaderoPage() {
     } catch { /* no aplica */ }
   };
 
+  // Reservas de cupo de visitante hechas por este residente (con antelación).
+  const [misReservas, setMisReservas] = useState<any[]>([]);
+  const [showReservaModal, setShowReservaModal] = useState(false);
+  const [busyReserva, setBusyReserva] = useState<string | null>(null);
+
+  const refetchReservas = async () => {
+    try {
+      const data = await api.get<any[]>('/parqueadero/reservas/mias');
+      setMisReservas(data ?? []);
+    } catch { /* no aplica */ }
+  };
+
+  const cancelarReserva = async (id: string) => {
+    setBusyReserva(id);
+    try {
+      await api.delete(`/parqueadero/reservas/${id}`);
+      toast.success("Reserva cancelada.");
+      refetchReservas();
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo cancelar");
+    } finally {
+      setBusyReserva(null);
+    }
+  };
+
   const resolverCargo = async (id: string, accion: 'aprobar' | 'rechazar') => {
     setBusyAprob(id);
     try {
@@ -109,7 +134,7 @@ export default function ParqueaderoPage() {
 
   // Real-time WebSocket subscriptions
   useWsSubscription('vehiculo', () => refetchParking());
-  useWsSubscription('parqueadero', () => { refetchParking(); refetchSolicitudes(); refetchSesiones(); refetchCargos(); });
+  useWsSubscription('parqueadero', () => { refetchParking(); refetchSolicitudes(); refetchSesiones(); refetchCargos(); refetchReservas(); });
 
   // Modal y Forms
   const [showVehiculoModal, setShowVehiculoModal] = useState(false);
@@ -152,6 +177,7 @@ export default function ParqueaderoPage() {
     refetchSolicitudes();
     refetchSesiones();
     refetchCargos();
+    refetchReservas();
 
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up", 
@@ -292,7 +318,10 @@ export default function ParqueaderoPage() {
           </div>
         </div>
 
-        <div className="liquid-glass-card rounded-[32px] p-5 border border-border flex flex-col gap-3 group hover:bg-text/10 transition-all duration-300">
+        <button
+          onClick={() => setShowReservaModal(true)}
+          className="liquid-glass-card rounded-[32px] p-5 border border-accent/40 flex flex-col gap-3 group hover:bg-accent/10 transition-all duration-300 text-left cursor-pointer active:scale-95"
+        >
           <div className="flex justify-between items-center">
             <div className="p-2.5 rounded-full bg-accent/20 border border-accent/40 text-accent group-hover:scale-110 transition-transform">
               <MapPin size={18} />
@@ -301,10 +330,67 @@ export default function ParqueaderoPage() {
           </div>
           <div>
             <h3 className="text-2xl font-display font-bold text-text tracking-tight">{disponibilidad.libres} / {disponibilidad.total}</h3>
-            <p className="text-[10px] text-text font-bold uppercase tracking-wider">Disponibles</p>
+            <p className="text-[10px] text-text font-bold uppercase tracking-wider">Disponibles ahora</p>
           </div>
-        </div>
-      </section>      {/* MY VEHICLES */}
+          <div className="flex items-center gap-1.5 text-accent mt-1">
+            <Clock size={13} />
+            <span className="text-[11px] font-bold">Reservar cupo →</span>
+          </div>
+        </button>
+      </section>
+
+      {/* MIS RESERVAS DE CUPO DE VISITANTE */}
+      {misReservas.filter(r => r.estado === 'PENDIENTE' || r.estado === 'LLEGO').length > 0 && (
+        <section className="fade-up flex flex-col gap-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-base font-display font-bold text-text tracking-tight">Mis reservas de visitante</h2>
+            <button
+              onClick={() => setShowReservaModal(true)}
+              className="text-[11px] font-bold text-accent flex items-center gap-1 hover:opacity-80"
+            >
+              <Plus size={13} strokeWidth={3} /> Nueva
+            </button>
+          </div>
+          {misReservas.filter(r => r.estado === 'PENDIENTE' || r.estado === 'LLEGO').map((r) => (
+            <div key={r.id} className="liquid-glass-card rounded-[28px] p-5 border border-accent/30 flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    {r.categoria === 'MOTO' ? <Bike size={16} className="text-accent" /> : <Car size={16} className="text-accent" />}
+                    <span className="text-sm font-bold text-text">
+                      {r.categoria === 'MOTO' ? 'Moto' : r.categoria === 'BICI' ? 'Bici' : 'Carro'}
+                    </span>
+                    {r.estado === 'LLEGO' && (
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#57bf00]/15 text-[#57bf00]">Llegó</span>
+                    )}
+                  </div>
+                  {r.visitanteNombre && <span className="text-xs text-text/80">{r.visitanteNombre}</span>}
+                  {r.placa && <span className="text-[11px] text-text/60 font-mono">Placa {r.placa}</span>}
+                </div>
+                <div className="flex flex-col items-end shrink-0">
+                  <span className="text-[10px] text-text/60 uppercase tracking-wider font-bold">Llegada</span>
+                  <span className="text-sm font-bold text-text">
+                    {new Date(r.llegadaEstimada).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="text-[11px] text-text/60 mt-0.5">
+                    {r.tiempoLibre ? 'Tiempo libre' : `~${r.duracionMinutos} min`}
+                  </span>
+                </div>
+              </div>
+              {r.estado === 'PENDIENTE' && (
+                <button
+                  disabled={busyReserva === r.id}
+                  onClick={() => cancelarReserva(r.id)}
+                  className="w-full py-2.5 rounded-2xl bg-text/5 border border-border text-text font-bold text-xs hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {busyReserva === r.id ? "Cancelando..." : "Cancelar reserva"}
+                </button>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
+      {/* MY VEHICLES */}
       <section className="fade-up flex flex-col gap-5">
         <div className="flex justify-between items-end px-1">
           <h2 className="text-xl font-display font-bold text-text tracking-tight">Mis Vehículos</h2>
@@ -594,6 +680,14 @@ export default function ParqueaderoPage() {
         </div>
       )}
 
+      {/* MODAL: RESERVAR CUPO DE VISITANTE */}
+      {showReservaModal && (
+        <ReservaCupoModal
+          onClose={() => setShowReservaModal(false)}
+          onCreated={() => { setShowReservaModal(false); refetchReservas(); }}
+        />
+      )}
+
     </div>
   );
 }
@@ -664,6 +758,199 @@ function CuentaRegresivaCard({ sesion }: { sesion: any }) {
           <span className="text-[11px] text-text/60 text-center">Se cobra ${Number(sesion.tarifaHora).toLocaleString('es-CO')}/hora por minuto, hasta que el vehículo salga.</span>
         </div>
       )}
+    </div>
+  );
+}
+
+/// Modal para reservar un cupo de visitante con antelación. Muestra la
+/// disponibilidad EN VIVO (por tipo de vehículo + franja) antes de confirmar.
+/// El residente reserva un cupo; el vigilante asigna la celda física al llegar.
+function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  // Por defecto: dentro de 1 hora, redondeado, en formato datetime-local.
+  const defaultLlegada = (() => {
+    const d = new Date(Date.now() + 60 * 60 * 1000);
+    d.setSeconds(0, 0);
+    // Ajuste a hora local para el input datetime-local.
+    const off = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - off).toISOString().slice(0, 16);
+  })();
+
+  const [categoria, setCategoria] = useState<'CARRO' | 'MOTO'>('CARRO');
+  const [llegadaLocal, setLlegadaLocal] = useState<string>(defaultLlegada);
+  // Duración: '30','60','120','240' min, o 'libre' (tiempo libre).
+  const [duracion, setDuracion] = useState<string>('120');
+  const [visitanteNombre, setVisitanteNombre] = useState('');
+  const [placa, setPlaca] = useState('');
+  const [disp, setDisp] = useState<any>(null);
+  const [checking, setChecking] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const duracionMin = duracion === 'libre' ? undefined : Number(duracion);
+
+  // Verifica disponibilidad cada vez que cambian tipo/llegada/duración.
+  useEffect(() => {
+    let cancel = false;
+    const run = async () => {
+      if (!llegadaLocal) return;
+      setChecking(true);
+      try {
+        const iso = new Date(llegadaLocal).toISOString();
+        const params = new URLSearchParams({ categoria, llegada: iso });
+        if (duracionMin) params.set('duracionMinutos', String(duracionMin));
+        const data = await api.get<any>(`/parqueadero/reservas/disponibilidad?${params.toString()}`);
+        if (!cancel) setDisp(data);
+      } catch {
+        if (!cancel) setDisp(null);
+      } finally {
+        if (!cancel) setChecking(false);
+      }
+    };
+    const t = setTimeout(run, 350);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [categoria, llegadaLocal, duracion]);
+
+  const crear = async () => {
+    if (!llegadaLocal) { toast.error("Elige la hora de llegada"); return; }
+    setSubmitting(true);
+    try {
+      const iso = new Date(llegadaLocal).toISOString();
+      await api.post('/parqueadero/reservas', {
+        categoria,
+        llegadaEstimada: iso,
+        duracionMinutos: duracionMin ?? null,
+        visitanteNombre: visitanteNombre.trim() || null,
+        placa: placa.trim() ? placa.trim().toUpperCase() : null,
+      });
+      toast.success("Cupo de visitante reservado.");
+      onCreated();
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo reservar");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const hayCupo = disp?.hayCupo === true;
+  const sinCupo = disp && disp.hayCupo === false;
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center px-0 sm:px-4 animate-in fade-in duration-300 isolate">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+      <div className="bg-primary rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-6 pb-12 sm:pb-6 relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-300 border-t border-border max-h-[92vh] overflow-y-auto hide-scrollbar">
+        <div className="flex justify-between items-center mb-5 border-b border-border pb-4">
+          <div>
+            <h3 className="text-xl font-display font-bold text-text tracking-wide">Reservar cupo de visitante</h3>
+            <p className="text-xs text-text/70 mt-1">Aparta un espacio con antelación para tu visita</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-text/10 flex items-center justify-center text-text hover:bg-text/20 transition-all">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Tipo de vehículo */}
+        <label className="text-[11px] font-bold uppercase tracking-wider text-text/60 px-1">Tipo de vehículo</label>
+        <div className="grid grid-cols-2 gap-3 mt-2 mb-4">
+          {(['CARRO', 'MOTO'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setCategoria(t)}
+              className={`py-4 rounded-2xl border flex flex-col items-center gap-2 transition-all active:scale-95 ${categoria === t ? 'bg-accent/15 border-accent text-accent' : 'bg-text/5 border-border text-text'}`}
+            >
+              {t === 'CARRO' ? <Car size={22} /> : <Bike size={22} />}
+              <span className="text-xs font-bold">{t === 'CARRO' ? 'Carro' : 'Moto'}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Hora de llegada */}
+        <label className="text-[11px] font-bold uppercase tracking-wider text-text/60 px-1">Hora tentativa de llegada</label>
+        <div className="relative mt-2 mb-4">
+          <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text/50 pointer-events-none" />
+          <input
+            type="datetime-local"
+            value={llegadaLocal}
+            onChange={(e) => setLlegadaLocal(e.target.value)}
+            className="w-full bg-text/5 border border-border rounded-2xl py-3.5 pl-11 pr-4 text-sm text-text focus:border-accent outline-none"
+          />
+        </div>
+
+        {/* Duración */}
+        <label className="text-[11px] font-bold uppercase tracking-wider text-text/60 px-1">Tiempo estimado de estancia</label>
+        <div className="grid grid-cols-3 gap-2 mt-2 mb-4">
+          {[
+            { v: '30', l: '30 min' },
+            { v: '60', l: '1 hora' },
+            { v: '120', l: '2 horas' },
+            { v: '240', l: '4 horas' },
+            { v: 'libre', l: 'Tiempo libre' },
+          ].map((opt) => (
+            <button
+              key={opt.v}
+              onClick={() => setDuracion(opt.v)}
+              className={`py-2.5 rounded-xl border text-xs font-bold transition-all active:scale-95 ${duracion === opt.v ? 'bg-accent/15 border-accent text-accent' : 'bg-text/5 border-border text-text'}`}
+            >
+              {opt.l}
+            </button>
+          ))}
+        </div>
+
+        {/* Datos opcionales de la visita */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text/60 px-1">Visitante (opcional)</label>
+            <input
+              value={visitanteNombre}
+              onChange={(e) => setVisitanteNombre(e.target.value)}
+              placeholder="Nombre"
+              className="w-full mt-2 bg-text/5 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:border-accent outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text/60 px-1">Placa (opcional)</label>
+            <input
+              value={placa}
+              onChange={(e) => setPlaca(e.target.value)}
+              placeholder="ABC123"
+              className="w-full mt-2 bg-text/5 border border-border rounded-2xl py-3 px-4 text-sm text-text font-mono uppercase focus:border-accent outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Disponibilidad en vivo */}
+        <div className={`rounded-2xl p-4 mb-4 border flex items-center gap-3 ${checking ? 'bg-text/5 border-border' : hayCupo ? 'bg-[#57bf00]/10 border-[#57bf00]/40' : sinCupo ? 'bg-[#EF4444]/10 border-[#EF4444]/40' : 'bg-text/5 border-border'}`}>
+          {checking ? (
+            <>
+              <Clock size={18} className="text-text/50 animate-pulse" />
+              <span className="text-sm text-text/70">Consultando disponibilidad...</span>
+            </>
+          ) : hayCupo ? (
+            <>
+              <CheckCircle2 size={18} className="text-[#57bf00]" />
+              <span className="text-sm text-text">
+                <b className="text-[#57bf00]">{disp.libres}</b> {disp.libres === 1 ? 'cupo libre' : 'cupos libres'} de {disp.categoria === 'MOTO' ? 'moto' : 'carro'} en esa franja
+              </span>
+            </>
+          ) : sinCupo ? (
+            <>
+              <AlertCircle size={18} className="text-[#EF4444]" />
+              <span className="text-sm text-text">Sin cupos de {disp.categoria === 'MOTO' ? 'moto' : 'carro'} en esa franja. Prueba otra hora.</span>
+            </>
+          ) : (
+            <span className="text-sm text-text/60">Elige tipo, hora y duración para ver cupos.</span>
+          )}
+        </div>
+
+        <button
+          disabled={submitting || !hayCupo}
+          onClick={crear}
+          className="w-full py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-40"
+        >
+          {submitting ? "Reservando..." : "Reservar cupo"}
+        </button>
+        <p className="text-[11px] text-text/50 text-center mt-3 leading-relaxed">
+          Reservas un cupo, no una celda específica. El vigilante asignará el espacio cuando tu visita llegue.
+        </p>
+      </div>
     </div>
   );
 }
