@@ -1,0 +1,37 @@
+# docker-compose.prod.yml — overrides de PRODUCCIÓN.
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Requiere un archivo .env (junto a este compose) con, al menos:
+#   LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL
+#   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
+# Ver DEPLOYMENT_ENV.md para el detalle, la generación de llaves y el runbook de TURN.
+
+services:
+  livekit:
+    # Pasa de modo --dev a config real con TURN/TLS embebido.
+    command: --config /etc/livekit/livekit.yaml
+    restart: unless-stopped
+    environment:
+      # Las keys vienen del entorno (no se versionan).
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    ports:
+      - "5349:5349"      # TURN/TLS (TCP)
+      - "5349:5349/udp"  # TURN/TLS (UDP)
+    volumes:
+      - ./livekit.yaml:/etc/livekit/livekit.yaml:ro
+      # Certificado TLS para el dominio TURN (turn.crt + turn.key).
+      - ./certs/livekit:/etc/livekit/certs:ro
+
+  backend:
+    restart: unless-stopped
+    environment:
+      # Citofonía / Asamblea (LiveKit) — valores reales desde el entorno.
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      LIVEKIT_URL: ${LIVEKIT_URL:-wss://livekit.conjuntos.app}
+      # Web Push VAPID — el "despertador" de la citofonía.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@conjuntos.app}

@@ -57,9 +57,9 @@ async fn test_state() -> AppState {
         cookie_cross_site: false,
         cookie_domain: None,
         tester_emails: Vec::new(),
-        livekit_api_key: None,
-        livekit_api_secret: None,
-        livekit_url: None,
+        livekit_api_key: Some("devkey".to_string()),
+        livekit_api_secret: Some("devsecret".to_string()),
+        livekit_url: Some("ws://localhost:7880".to_string()),
     };
     AppState::new(config, pool)
 }
@@ -467,11 +467,11 @@ async fn admin_chat_requires_admin_role() {
 }
 
 // ---------------------------------------------------------------------------
-// citofonia: call-push
+// citofonia: call + token (LiveKit)
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
-async fn citofonia_call_push_user_target() {
+async fn citofonia_call_user_target() {
     let state = test_state().await;
     let app = build_router(state.clone());
     let conjunto = seed_conjunto(&state).await;
@@ -482,23 +482,27 @@ async fn citofonia_call_push_user_target() {
     let (status, body) = request(
         &app,
         Method::POST,
-        "/api/v1/citofonia/call-push",
+        "/api/v1/citofonia/call",
         Some(&caller_token),
-        Some(json!({
-            "targetPeerId": format!("user-{target_id}"),
-            "callerName": "Porteria",
-            "callerPeerId": format!("user-{}", Uuid::new_v4())
-        })),
+        Some(json!({ "targetPeerId": format!("user-{target_id}"), "callerName": "Porteria" })),
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{body}");
-    // No push subscriptions in test -> sent=0, but the endpoint resolves.
-    assert!(body["sent"].is_number(), "sent field present: {body}");
+    assert!(
+        body["room"]
+            .as_str()
+            .unwrap()
+            .starts_with(&format!("citofonia-{conjunto}-")),
+        "room embeds conjunto: {body}"
+    );
+    assert!(!body["token"].as_str().unwrap().is_empty(), "token: {body}");
+    assert!(body["url"].is_string(), "url present: {body}");
+    // No push subscriptions in test -> sent=0.
     assert_eq!(body["sent"], 0);
 }
 
 #[tokio::test]
-async fn citofonia_call_push_role_target() {
+async fn citofonia_call_role_target() {
     let state = test_state().await;
     let app = build_router(state.clone());
     let conjunto = seed_conjunto(&state).await;
@@ -509,22 +513,18 @@ async fn citofonia_call_push_role_target() {
     let (status, body) = request(
         &app,
         Method::POST,
-        "/api/v1/citofonia/call-push",
+        "/api/v1/citofonia/call",
         Some(&resident_token),
-        Some(json!({
-            "targetPeerId": format!("{conjunto}-VIGILANTE"),
-            "callerName": "Apto 101",
-            "callerPeerId": format!("user-{}", Uuid::new_v4())
-        })),
+        Some(json!({ "targetPeerId": format!("{conjunto}-VIGILANTE"), "callerName": "Apto 101" })),
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{body}");
-    // Resolves to the vigilante user(s); sent=0 because no push subs.
+    assert!(body["room"].is_string(), "{body}");
     assert_eq!(body["sent"], 0);
 }
 
 #[tokio::test]
-async fn citofonia_call_push_invalid_peer() {
+async fn citofonia_call_invalid_peer_still_issues_room() {
     let state = test_state().await;
     let app = build_router(state.clone());
     let conjunto = seed_conjunto(&state).await;
@@ -534,15 +534,57 @@ async fn citofonia_call_push_invalid_peer() {
     let (status, body) = request(
         &app,
         Method::POST,
-        "/api/v1/citofonia/call-push",
+        "/api/v1/citofonia/call",
         Some(&caller_token),
-        Some(json!({
-            "targetPeerId": "garbage-not-a-peer",
-            "callerName": "Test",
-            "callerPeerId": "also-garbage"
-        })),
+        Some(json!({ "targetPeerId": "garbage-not-a-peer" })),
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{body}");
     assert_eq!(body["sent"], 0, "invalid peer resolves to no targets");
+}
+
+#[tokio::test]
+async fn citofonia_token_same_tenant_ok() {
+    let state = test_state().await;
+    let app = build_router(state.clone());
+    let conjunto = seed_conjunto(&state).await;
+    let (_, email) = seed_user_in(&state, conjunto, Rol::Propietario).await;
+    let token = login(&app, &email).await;
+
+    let room = format!("citofonia-{conjunto}-{}", Uuid::new_v4());
+    let (status, body) = request(
+        &app,
+        Method::GET,
+        &format!("/api/v1/citofonia/token?room={room}"),
+        Some(&token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert!(
+        !body["token"].as_str().unwrap_or("").is_empty(),
+        "token present: {body}"
+    );
+}
+
+#[tokio::test]
+async fn citofonia_token_cross_tenant_forbidden() {
+    let state = test_state().await;
+    let app = build_router(state.clone());
+    let conjunto = seed_conjunto(&state).await;
+    let (_, email) = seed_user_in(&state, conjunto, Rol::Propietario).await;
+    let token = login(&app, &email).await;
+
+    // Room embeds a DIFFERENT conjunto id -> must be rejected.
+    let other = Uuid::new_v4();
+    let room = format!("citofonia-{other}-{}", Uuid::new_v4());
+    let (status, _body) = request(
+        &app,
+        Method::GET,
+        &format!("/api/v1/citofonia/token?room={room}"),
+        Some(&token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
 }

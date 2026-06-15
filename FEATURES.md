@@ -53,8 +53,8 @@ Leyenda: ✅ implementado + probado · 🟡 implementado (sin tests dedicados) �
 
 ### ✅ Chat y citofonía (M5b)
 - Chat residente↔admin: `GET/POST /chat`, `GET /admin/chat`, `GET/POST /admin/chat/{usuario_id}`
-- Citofonía WebRTC: `POST /citofonia/call-push`
-- 9 tests M5b (aislamiento de tenant, gates de rol)
+- Citofonía LiveKit (audio): `POST /citofonia/call`, `GET /citofonia/token` + Web Push VAPID
+- 11 tests M5b (aislamiento de tenant, gates de rol)
 
 ### 🟡 Asamblea (M6) — 20 endpoints
 - Ciclo completo: sesiones, asistencias, poderes, turnos, votaciones, votos, pairing por PIN, token LiveKit

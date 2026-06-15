@@ -1,0 +1,31 @@
+# livekit.yaml — ConjuntOS LiveKit (citofonía audio + asamblea), PRODUCCIÓN.
+#
+# TURN embebido sobre TLS para que las llamadas conecten detrás de NAT simétrico /
+# redes corporativas. Las API keys NO se guardan aquí: se inyectan por la variable
+# de entorno LIVEKIT_KEYS (ver docker-compose.prod.yml) para no versionar secretos.
+#
+# Uso:  livekit-server --config /etc/livekit/livekit.yaml
+
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  # UDP mux: un solo puerto para todo el media (evita mapear rangos en Docker).
+  udp_port: 7882
+  # Detecta y anuncia la IP pública del host (consulta STUN). Requiere que el host
+  # tenga IP pública y que 7882/udp sea alcanzable desde Internet.
+  use_external_ip: true
+
+# Relay TURN embebido. Necesario para NAT restrictivo. Requiere:
+#  - Un registro DNS para `domain` apuntando a este host.
+#  - Un certificado TLS válido para ese dominio (p. ej. Let's Encrypt) en cert_file/key_file.
+turn:
+  enabled: true
+  domain: turn.conjuntos.app
+  tls_port: 5349
+  cert_file: /etc/livekit/certs/turn.crt
+  key_file: /etc/livekit/certs/turn.key
+
+logging:
+  level: info
+  json: false

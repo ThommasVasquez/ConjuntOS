@@ -1,5 +1,5 @@
-use axum::extract::State;
-use axum::routing::post;
+use axum::extract::{Query, State};
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
@@ -11,28 +11,51 @@ use crate::auth::extract::AuthUser;
 use crate::db::enums::Rol;
 use crate::db::schema::{push_subscriptions, unidades, usuarios};
 use crate::db::DbConn;
-use crate::error::ApiResult;
+use crate::error::{ApiError, ApiResult};
 use crate::services::push::PushSubscriptionInfo;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/citofonia/call-push", post(call_push))
+    Router::new()
+        .route("/citofonia/call", post(call))
+        .route("/citofonia/token", get(citofonia_token))
 }
 
 // ── DTOs ──
 
 #[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CallPushRequest {
+pub struct CallRequest {
     pub target_peer_id: String,
-    pub caller_name: String,
-    pub caller_peer_id: String,
+    /// Optional human-friendly caller label for the push body; falls back to the
+    /// authenticated user's name.
+    #[serde(default)]
+    pub caller_name: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CallPushResponse {
+pub struct CallResponse {
+    /// LiveKit room the caller joined and the callee must join.
+    pub room: String,
+    /// LiveKit access token for the caller.
+    pub token: String,
+    /// LiveKit server URL.
+    pub url: String,
+    /// Number of push notifications actually delivered.
     pub sent: i32,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct TokenQuery {
+    pub room: String,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CitofoniaTokenDto {
+    pub token: String,
+    pub url: String,
 }
 
 // ── Peer-ID parsing ──
@@ -150,71 +173,168 @@ async fn resolve_targets(
     }
 }
 
-// ── Handler ──
+// ── Handlers ──
+
+/// LiveKit `(api_key, api_secret, url)` or 503 if not configured.
+fn livekit_creds(state: &AppState) -> ApiResult<(String, String, String)> {
+    match (&state.config.livekit_api_key, &state.config.livekit_api_secret) {
+        (Some(k), Some(s)) => {
+            let url = state
+                .config
+                .livekit_url
+                .clone()
+                .unwrap_or_else(|| "ws://localhost:7880".to_string());
+            Ok((k.clone(), s.clone(), url))
+        }
+        _ => Err(ApiError::ServiceUnavailable("LiveKit no configurado".into())),
+    }
+}
+
+fn caller_label(user: &AuthUser, requested: Option<String>) -> String {
+    requested
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| user.nombre.clone())
+}
 
 #[utoipa::path(
     post,
-    path = "/api/v1/citofonia/call-push",
+    path = "/api/v1/citofonia/call",
     tag = "citofonia",
-    request_body = CallPushRequest,
+    request_body = CallRequest,
     responses(
-        (status = 200, description = "Push notifications dispatched", body = CallPushResponse),
-        (status = 401, description = "Not authenticated")
+        (status = 200, description = "Call room created; caller token returned; push dispatched", body = CallResponse),
+        (status = 401, description = "Not authenticated"),
+        (status = 503, description = "LiveKit not configured")
     )
 )]
-async fn call_push(
+async fn call(
     State(state): State<AppState>,
     user: AuthUser,
-    Json(req): Json<CallPushRequest>,
-) -> ApiResult<Json<CallPushResponse>> {
+    Json(req): Json<CallRequest>,
+) -> ApiResult<Json<CallResponse>> {
+    let (api_key, api_secret, url) = livekit_creds(&state)?;
+
     let target = parse_peer_id(&req.target_peer_id);
     let mut conn = state.pool.get().await?;
-
     let user_ids = resolve_targets(&mut conn, &target, user.conjunto_id).await?;
-    if user_ids.is_empty() {
-        return Ok(Json(CallPushResponse { sent: 0 }));
-    }
 
-    // Fetch push subscriptions for the resolved users.
-    let subs: Vec<(String, String, String)> = push_subscriptions::table
-        .filter(push_subscriptions::conjunto_id.eq(user.conjunto_id))
-        .filter(push_subscriptions::usuario_id.eq_any(&user_ids))
-        .select((
-            push_subscriptions::endpoint,
-            push_subscriptions::p256dh,
-            push_subscriptions::auth,
-        ))
-        .load(&mut conn)
-        .await?;
+    // Ephemeral per-call room; embeds conjunto_id so the callee's token request
+    // can be verified against its tenant.
+    let room = format!("citofonia-{}-{}", user.conjunto_id, Uuid::new_v4());
+    let caller_name = caller_label(&user, req.caller_name);
 
-    // Build push payload.
-    let payload = serde_json::json!({
-        "title": "Llamada Entrante",
-        "body": format!("Llamada de citofonia desde {}", req.caller_name),
-        "data": {
-            "url": "/citofonia",
-            "callerName": req.caller_name,
-            "callerPeerId": req.caller_peer_id,
-        }
-    });
-    let payload_bytes = serde_json::to_vec(&payload).unwrap_or_default();
+    let metadata = serde_json::json!({
+        "nombre": user.nombre,
+        "rol": user.rol.as_str(),
+    })
+    .to_string();
+    let token = crate::services::livekit::generate_token(
+        &api_key,
+        &api_secret,
+        &room,
+        &user.id.to_string(),
+        true,
+        &metadata,
+    )
+    .map_err(|e| ApiError::Internal(anyhow::anyhow!("token generation failed: {e}")))?;
 
-    let mut sent: i32 = 0;
-    for (endpoint, p256dh, auth) in subs {
-        let sub_info = PushSubscriptionInfo {
-            endpoint: endpoint.clone(),
-            p256dh,
-            auth,
-        };
-        match state.push_sender.send(&sub_info, &payload_bytes).await {
-            Ok(()) => sent += 1,
-            Err(e) => {
-                tracing::warn!(endpoint = %endpoint, error = ?e, "push send failed");
+    // Wake target users via push (best-effort; only real deliveries are counted).
+    let sent = if user_ids.is_empty() {
+        0
+    } else {
+        let subs: Vec<(String, String, String)> = push_subscriptions::table
+            .filter(push_subscriptions::conjunto_id.eq(user.conjunto_id))
+            .filter(push_subscriptions::usuario_id.eq_any(&user_ids))
+            .select((
+                push_subscriptions::endpoint,
+                push_subscriptions::p256dh,
+                push_subscriptions::auth,
+            ))
+            .load(&mut conn)
+            .await?;
+
+        let payload = serde_json::json!({
+            "title": "Llamada Entrante",
+            "body": format!("Llamada de citofonía desde {caller_name}"),
+            "data": {
+                "url": "/citofonia",
+                "room": room,
+                "callerName": caller_name,
+            }
+        });
+        let payload_bytes = serde_json::to_vec(&payload).unwrap_or_default();
+
+        let mut count: i32 = 0;
+        for (endpoint, p256dh, auth) in subs {
+            let sub_info = PushSubscriptionInfo {
+                endpoint: endpoint.clone(),
+                p256dh,
+                auth,
+            };
+            match state.push_sender.send(&sub_info, &payload_bytes).await {
+                Ok(()) => count += 1,
+                Err(e) => {
+                    tracing::warn!(endpoint = %endpoint, error = ?e, "push send failed");
+                }
             }
         }
+        count
+    };
+
+    Ok(Json(CallResponse {
+        room,
+        token,
+        url,
+        sent,
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/citofonia/token",
+    tag = "citofonia",
+    params(("room" = String, Query, description = "Room name to join")),
+    responses(
+        (status = 200, description = "LiveKit token for the room", body = CitofoniaTokenDto),
+        (status = 401, description = "Not authenticated"),
+        (status = 403, description = "Room belongs to another tenant"),
+        (status = 503, description = "LiveKit not configured")
+    )
+)]
+async fn citofonia_token(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Query(q): Query<TokenQuery>,
+) -> ApiResult<Json<CitofoniaTokenDto>> {
+    let (api_key, api_secret, url) = livekit_creds(&state)?;
+
+    // Room format: citofonia-{conjuntoId}-{uuid}. Verify the embedded conjunto.
+    let embedded = q
+        .room
+        .strip_prefix("citofonia-")
+        .and_then(|rest| rest.get(0..36))
+        .and_then(|id| Uuid::parse_str(id).ok());
+    match embedded {
+        Some(cid) if cid == user.conjunto_id => {}
+        _ => return Err(ApiError::Forbidden),
     }
 
-    Ok(Json(CallPushResponse { sent }))
+    let metadata = serde_json::json!({
+        "nombre": user.nombre,
+        "rol": user.rol.as_str(),
+    })
+    .to_string();
+    let token = crate::services::livekit::generate_token(
+        &api_key,
+        &api_secret,
+        &q.room,
+        &user.id.to_string(),
+        true,
+        &metadata,
+    )
+    .map_err(|e| ApiError::Internal(anyhow::anyhow!("token generation failed: {e}")))?;
+
+    Ok(Json(CitofoniaTokenDto { token, url }))
 }
 
 #[cfg(test)]

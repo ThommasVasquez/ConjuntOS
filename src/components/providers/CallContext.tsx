@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { Phone, PhoneOff, X, ShieldAlert, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -34,6 +34,9 @@ export function useCall() {
   return context;
 }
 
+// The peer-id targeting scheme is unchanged: it still identifies *who* to ring.
+// With LiveKit it is sent to the backend as `targetPeerId`; the backend resolves it
+// to users, mints a room, and pushes them. Media no longer flows peer-to-peer.
 const sanitizePeerId = (id: string): string => {
   if (!id) return "";
   return id.replace(/\//g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
@@ -43,40 +46,36 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const router = useRouter();
-  
+
   // Call States
   const [callState, setCallState] = useState<CallState>("IDLE");
   const [callerName, setCallerName] = useState("");
   const [callTime, setCallTime] = useState(0);
   const [lastSpeechResponse, setLastSpeechResponse] = useState("");
   const [dialNum, setDialNum] = useState("");
-  const [isPeerReady, setIsPeerReady] = useState(false);
-  const pendingCallbackRef = useRef<string | null>(null);
 
-  // WebRTC Refs
-  const peerRef = useRef<any>(null);
-  const activeCallRef = useRef<any>(null);
-  const incomingCallRef = useRef<any>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const myPeerIdRef = useRef("");
+  // LiveKit refs
+  const roomRef = useRef<any>(null); // current livekit-client Room
+  const attachedElsRef = useRef<HTMLMediaElement[]>([]);
+  const audioContainerRef = useRef<HTMLDivElement | null>(null);
+  const pendingRoomRef = useRef<string | null>(null); // room awaiting answer (from push)
+  const joinRoomRef = useRef<((room: string) => Promise<void>) | null>(null);
   const startCallRef = useRef<any>(null);
-  const targetPeerIdRef = useRef("");
+  const answerCallRef = useRef<any>(null);
+
   const callStateRef = useRef<CallState>("IDLE");
   callStateRef.current = callState;
-  const answerCallRef = useRef<any>(null);
-  const pushStatusRef = useRef<{ checked: boolean; sent: boolean; error?: string }>({ checked: false, sent: false });
-  const peerUnavailableReceivedRef = useRef(false);
+  const pushSentRef = useRef<number>(0);
   const previousPathRef = useRef<string>("/inicio");
-  // True solo cuando la llamada llegó a CONNECTED. Sirve para no expulsar al
-  // usuario al inicio cuando una llamada saliente falla/no contesta: en ese
-  // caso lo dejamos en el marcador del citófono con un mensaje claro.
+  // True only once the call reached CONNECTED. Keeps a failed/unanswered outgoing
+  // call from kicking the user back to /inicio: we leave them on the dialer.
   const hadConnectedRef = useRef(false);
-  
+
   // Audio Tone Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
   const activeToneRef = useRef<{ stop: () => void } | null>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const callTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const noAnswerTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load User Profile on start
   useEffect(() => {
@@ -87,199 +86,18 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  // Predictable Peer ID depending on role
-  let myPeerId = "";
-  if (profile) {
-    const conjuntoId = profile.conjuntoId || "demo_id";
-    const userId = profile.id;
-    const role = profile.rol;
-    
-    myPeerId = `user-${userId}`;
-    if (role === "VIGILANTE") {
-      myPeerId = `${conjuntoId}-VIGILANTE`;
-    } else if (role === "ADMINISTRADOR") {
-      myPeerId = `${conjuntoId}-ADMINISTRADOR`;
-    } else if (profile.unidad?.numero) {
-      const cleanTorre = profile.unidad.torre ? String(profile.unidad.torre).trim() : "";
-      let normalizedTorre = cleanTorre;
-      if (/^\d+$/.test(cleanTorre)) {
-        normalizedTorre = String(parseInt(cleanTorre, 10));
-      }
-      const towerStr = normalizedTorre ? `${normalizedTorre}-` : "";
-      myPeerId = `${conjuntoId}-APTO-${towerStr}${profile.unidad.numero}`;
-    }
-    
-    myPeerId = sanitizePeerId(myPeerId);
-  }
-
-  // Setup PeerJS connection when profile is loaded
+  // Hidden container that holds attached remote <audio> elements.
   useEffect(() => {
-    if (!profile || !myPeerId) return;
-
-    let activePeer: any = null;
-    let isCancelled = false;
-    let retryTimeout: NodeJS.Timeout | null = null;
-    
-    myPeerIdRef.current = myPeerId;
-
-    const initPeer = (retryCount = 0) => {
-      import("peerjs").then(({ default: Peer }) => {
-        if (isCancelled) return;
-
-        if (activePeer) {
-          try { activePeer.destroy(); } catch (e) {}
-        }
-
-        const p = new Peer(myPeerId, {
-          host: "0.peerjs.com",
-          port: 443,
-          secure: true,
-        });
-
-        activePeer = p;
-        peerRef.current = p;
-
-        p.on("open", (id) => {
-          if (isCancelled) {
-            p.destroy();
-            return;
-          }
-          setIsPeerReady(true);
-        });
-
-        p.on("disconnected", () => {
-          setIsPeerReady(false);
-        });
-
-        p.on("close", () => {
-          setIsPeerReady(false);
-        });
-
-        p.on("call", (call: any) => {
-          if (isCancelled) return;
-          
-          // Si el estado es OUTGOING y el peer coincide con el que estamos llamando, contestamos automáticamente (llamada de retorno)
-          if (callStateRef.current === "OUTGOING" && call.peer === targetPeerIdRef.current) {
-            incomingCallRef.current = call;
-            if (answerCallRef.current) {
-              answerCallRef.current();
-            }
-            return;
-          }
-
-          incomingCallRef.current = call;
-
-          // Escuchar cierre o error de la llamada entrante antes de contestar
-          call.on("close", () => {
-            if (incomingCallRef.current === call) {
-              endCall();
-            }
-          });
-
-          call.on("error", (err: any) => {
-            console.error("Citofonía: Error en llamada entrante antes de contestar:", err);
-            if (incomingCallRef.current === call) {
-              endCall();
-            }
-          });
-          
-          // Find caller info based on Peer ID format
-          let name = "Residente";
-          if (call.peer.includes("VIGILANTE")) {
-            name = "Portería Principal";
-          } else if (call.peer.includes("ADMINISTRADOR")) {
-            name = "Administración";
-          } else {
-            const parts = call.peer.split("-APTO-");
-            if (parts.length > 1) {
-              name = `Apto ${parts[1]}`;
-            } else {
-              name = "Residente";
-            }
-          }
-          
-          setCallerName(name);
-          setCallState("RINGING");
-          
-          // Play local incoming call ringtone
-          playRingtone();
-        });
-
-        p.on("error", (err: any) => {
-          if (isCancelled) return;
-
-          if (err.type === "unavailable-id" && retryCount < 2) {
-            retryTimeout = setTimeout(() => {
-              if (!isCancelled) {
-                initPeer(retryCount + 1);
-              }
-            }, 2000);
-            return;
-          }
-
-          const isPeerUnavailable = err.type === "peer-unavailable" || 
-            (err.message && String(err.message).toLowerCase().includes("could not connect to peer"));
-
-          if (isPeerUnavailable) {
-            peerUnavailableReceivedRef.current = true;
-            if (pushStatusRef.current.checked) {
-              if (pushStatusRef.current.sent) {
-                toast.info("El residente no está activo en la app. Notificación enviada.");
-                setLastSpeechResponse("Enviando notificación push...");
-              } else {
-                toast.error("El residente no está activo y no tiene notificaciones configuradas.");
-                endCall();
-              }
-            } else {
-              toast.info("El residente no está activo. Verificando notificaciones...");
-              setLastSpeechResponse("Buscando destinatario...");
-            }
-            return;
-          }
-
-          toast.error(`Error de citofonía: ${err.message || err.type}`);
-          endCall();
-        });
-      });
-    };
-
-    initPeer(0);
-
-    const handleUnload = () => {
-      if (activePeer) {
-        try { activePeer.destroy(); } catch (e) {}
-      }
-    };
-    if (typeof window !== "undefined") {
-      window.addEventListener("beforeunload", handleUnload);
-    }
-
-    // Create a hidden audio element in the DOM
-    if (typeof window !== "undefined") {
-      const audio = document.createElement("audio");
-      audio.autoplay = true;
-      document.body.appendChild(audio);
-      remoteAudioRef.current = audio;
-    }
-
+    if (typeof window === "undefined") return;
+    const div = document.createElement("div");
+    div.style.display = "none";
+    document.body.appendChild(div);
+    audioContainerRef.current = div;
     return () => {
-      isCancelled = true;
-      setIsPeerReady(false);
-      if (retryTimeout) clearTimeout(retryTimeout);
-      if (typeof window !== "undefined") {
-        window.removeEventListener("beforeunload", handleUnload);
-      }
-      if (activePeer) {
-        try { activePeer.destroy(); } catch (e) {}
-      }
-      if (peerRef.current) {
-        try { peerRef.current.destroy(); } catch (e) {}
-        peerRef.current = null;
-      }
-      if (remoteAudioRef.current) remoteAudioRef.current.remove();
-      stopSpeech();
+      try { div.remove(); } catch (e) {}
+      audioContainerRef.current = null;
     };
-  }, [myPeerId]);
+  }, []);
 
   // Setup Push Notifications and Service Worker
   useEffect(() => {
@@ -330,8 +148,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
 
         // Only register in the DB when we have a brand-new subscription.
-        // Re-registering an existing subscription on every profile render
-        // causes duplicate push notifications per call.
         if (isNew) {
           await api.post('/usuarios/me/push-subscriptions', subscription);
         }
@@ -343,78 +159,53 @@ export function CallProvider({ children }: { children: ReactNode }) {
     registerPush();
   }, [profile]);
 
-  // Manejar mensajes del Service Worker y URL parameters para contestar llamadas
+  // Handle Service Worker messages: INCOMING_CALL (ring) and ANSWER_CALL (join).
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
 
-    if ("serviceWorker" in navigator) {
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.type === "ANSWER_CALL" && event.data?.callerPeerId) {
-          if (event.data.callerName) {
-            setCallerName(event.data.callerName);
-          }
+    const handleMessage = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data?.room) return;
 
-          if (event.data.redirectToCallPage) {
-            const currentPath = window.location.pathname;
-            if (currentPath !== "/citofonia") {
-              previousPathRef.current = currentPath;
-            }
-            router.push("/citofonia");
-          }
-
-          // Si ya tenemos una llamada sonando, la contestamos directamente en vez de iniciar una llamada de retorno
-          if (callStateRef.current === "RINGING" && incomingCallRef.current) {
-            if (answerCallRef.current) {
-              answerCallRef.current();
-            }
-            return;
-          }
-
-          if (isPeerReady) {
-            if (startCallRef.current) {
-              startCallRef.current(event.data.callerPeerId);
-            }
-          } else {
-            pendingCallbackRef.current = event.data.callerPeerId;
-          }
+      if (data.type === "INCOMING_CALL") {
+        // Ring in-app even when the tab is open (foreground push).
+        if (callStateRef.current !== "IDLE") return;
+        pendingRoomRef.current = data.room;
+        setCallerName(data.callerName || "Llamada entrante");
+        setCallState("RINGING");
+        playRingtone();
+      } else if (data.type === "ANSWER_CALL") {
+        if (data.callerName) setCallerName(data.callerName);
+        if (data.redirectToCallPage) {
+          const currentPath = window.location.pathname;
+          if (currentPath !== "/citofonia") previousPathRef.current = currentPath;
+          router.push("/citofonia");
         }
-      };
-      navigator.serviceWorker.addEventListener("message", handleMessage);
-      return () => navigator.serviceWorker.removeEventListener("message", handleMessage);
-    }
-  }, [profile, isPeerReady, router]);
+        pendingRoomRef.current = data.room;
+        joinRoomRef.current?.(data.room);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handleMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", handleMessage);
+  }, [profile, router]);
 
+  // Handle deep-link from a notification opened in a fresh tab:
+  // /citofonia?answerCall=true&room=...&callerName=...
   useEffect(() => {
-    if (typeof window === "undefined" || !profile || !isPeerReady) return;
+    if (typeof window === "undefined" || !profile) return;
 
     const params = new URLSearchParams(window.location.search);
     const hasIncomingCall = params.get("answerCall") === "true" || params.get("incoming") === "true";
-    const callerPeerId = params.get("callerPeerId");
+    const room = params.get("room");
     const callerNameParam = params.get("callerName");
 
-    if (hasIncomingCall && callerPeerId) {
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-
-      if (callerNameParam) {
-        setCallerName(decodeURIComponent(callerNameParam));
-      }
-      if (startCallRef.current) {
-        startCallRef.current(callerPeerId);
-      }
+    if (hasIncomingCall && room) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      if (callerNameParam) setCallerName(decodeURIComponent(callerNameParam));
+      pendingRoomRef.current = room;
+      joinRoomRef.current?.(room);
     }
-  }, [profile, isPeerReady]);
-
-  // Procesar llamadas de retorno encoladas cuando PeerJS esté listo
-  useEffect(() => {
-    if (isPeerReady && pendingCallbackRef.current) {
-      const target = pendingCallbackRef.current;
-      pendingCallbackRef.current = null;
-      if (startCallRef.current) {
-        startCallRef.current(target);
-      }
-    }
-  }, [isPeerReady]);
+  }, [profile]);
 
   // Manage call timer
   useEffect(() => {
@@ -564,16 +355,65 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Actions
+  // ── LiveKit connection ──
+  const detachAll = () => {
+    attachedElsRef.current.forEach((el) => {
+      try { el.remove(); } catch (e) {}
+    });
+    attachedElsRef.current = [];
+  };
+
+  // Connect to a LiveKit room, publish the mic, and render remote audio.
+  // Marks the call CONNECTED as soon as a remote audio track is subscribed.
+  const connectToRoom = async (roomName: string, token: string, url: string) => {
+    const { Room, RoomEvent, Track } = await import("livekit-client");
+
+    if (roomRef.current) {
+      try { await roomRef.current.disconnect(); } catch (e) {}
+      roomRef.current = null;
+    }
+    detachAll();
+
+    const lkRoom = new Room();
+    roomRef.current = lkRoom;
+
+    lkRoom.on(RoomEvent.TrackSubscribed, (track: any) => {
+      if (track.kind === Track.Kind.Audio) {
+        const el = track.attach();
+        (el as HTMLMediaElement).autoplay = true;
+        audioContainerRef.current?.appendChild(el);
+        attachedElsRef.current.push(el);
+        if (activeToneRef.current) activeToneRef.current.stop();
+        if (!hadConnectedRef.current) playBeep();
+        hadConnectedRef.current = true;
+        if (noAnswerTimerRef.current) { clearTimeout(noAnswerTimerRef.current); noAnswerTimerRef.current = null; }
+        setCallState("CONNECTED");
+      }
+    });
+
+    lkRoom.on(RoomEvent.Disconnected, () => endCall());
+    lkRoom.on(RoomEvent.ParticipantDisconnected, () => {
+      if (lkRoom.remoteParticipants.size === 0) endCall();
+    });
+
+    await lkRoom.connect(url, token);
+    try {
+      await lkRoom.localParticipant.setMicrophoneEnabled(true);
+    } catch (e) {
+      toast.info("Sin micrófono — llamada en modo escucha.");
+    }
+  };
+
+  // ── Actions ──
   const startCall = async (num: string) => {
     if (!profile) return;
     const conjuntoId = profile.conjuntoId || "demo_id";
-    
+
     let targetNum = num.trim();
     let name = `Apto ${num}`;
     let targetPeerId = "";
 
-    // Si es un Peer ID completo:
+    // Full Peer ID?
     if (num.startsWith("user-") || num.includes("-VIGILANTE") || num.includes("-ADMINISTRADOR") || num.includes("-APTO-")) {
       targetPeerId = num;
       if (num.includes("-VIGILANTE")) {
@@ -606,13 +446,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
           }
         } else if (/^\d+$/.test(targetNum)) {
           if (targetNum.length === 5) {
-            // e.g. "41410" -> "4-1410"
             targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
           } else if (targetNum.length === 6) {
-            // e.g. "041410" -> "4-1410"
             targetNum = `${parseInt(targetNum.slice(0, 2), 10)}-${targetNum.slice(2)}`;
           } else if (targetNum.length === 4) {
-            // e.g. "1101" -> "1-101"
             targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
           }
         }
@@ -628,11 +465,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setCallerName(name);
     setCallState("OUTGOING");
     setLastSpeechResponse("Marcando canal digital...");
-    targetPeerIdRef.current = targetPeerId;
     playRingback();
-
-    pushStatusRef.current = { checked: false, sent: false };
-    peerUnavailableReceivedRef.current = false;
+    hadConnectedRef.current = false;
+    pushSentRef.current = 0;
 
     // Capture the current path so we can return here when the call ends
     if (typeof window !== "undefined") {
@@ -642,160 +477,82 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Get microphone stream — fall back to silent stream if no mic available
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStreamRef.current = stream;
-    } catch (e) {
-      toast.info("Sin micrófono — realizando llamada sin audio de salida.");
-      stream = new MediaStream();
-      localStreamRef.current = stream;
-    }
+    const callerRoleName = profile.rol === "VIGILANTE"
+      ? "Portería Principal"
+      : (profile.rol === "ADMINISTRADOR" ? "Administración" : `Apto ${profile.unidad?.numero || ""}`);
 
     try {
-      if (!peerRef.current) {
-        throw new Error("PeerJS client is not initialized.");
-      }
+      // Backend creates the room, returns the caller token, and pushes the targets.
+      const res = await api.post<{ room: string; token: string; url: string; sent: number }>(
+        '/citofonia/call',
+        { targetPeerId, callerName: callerRoleName }
+      );
+      pushSentRef.current = res.sent ?? 0;
 
-      // Enviar notificación Push al destinatario para despertarlo / avisarle en su navegador
-      const callerRoleName = profile.rol === "VIGILANTE" ? "Portería Principal" : (profile.rol === "ADMINISTRADOR" ? "Administración" : `Apto ${profile.unidad?.numero || ""}`);
-      api.post<{ success: boolean; sent?: number; error?: string; reason?: string }>('/citofonia/call-push', {
-          targetPeerId,
-          callerName: callerRoleName,
-          callerPeerId: myPeerIdRef.current
-        })
-      .then(json => {
-        if (json.success && (json.sent ?? 0) > 0) {
-          pushStatusRef.current = { checked: true, sent: true };
-          if (callStateRef.current === "OUTGOING" && peerUnavailableReceivedRef.current) {
-            toast.info("El residente no está activo en la app. Notificación enviada.");
-            setLastSpeechResponse("Enviando notificación push...");
+      await connectToRoom(res.room, res.token, res.url);
+
+      // No-answer timeout: nobody joined the room within 25s.
+      noAnswerTimerRef.current = setTimeout(() => {
+        if (callStateRef.current === "OUTGOING") {
+          if (pushSentRef.current > 0) {
+            toast.info("El residente fue notificado pero no ha contestado.");
+          } else {
+            toast.info("El destinatario no está disponible.");
           }
-        } else {
-          const errMsg = json.error || json.reason || "No subscriptions found";
-          pushStatusRef.current = { checked: true, sent: false, error: errMsg };
-          if (json.error) {
-            toast.error(json.error);
-            endCall();
-            return;
-          }
-          if (callStateRef.current === "OUTGOING" && peerUnavailableReceivedRef.current) {
-            toast.error("El residente no está activo y no tiene notificaciones configuradas.");
-            endCall();
-          }
-        }
-      })
-      .catch(err => {
-        pushStatusRef.current = { checked: true, sent: false, error: err.message };
-        console.error("Error al enviar notificación push de llamada:", err);
-        if (callStateRef.current === "OUTGOING" && peerUnavailableReceivedRef.current) {
-          toast.error("El residente no está activo y falló el envío de la notificación.");
           endCall();
         }
-      });
-
-      const call = peerRef.current.call(targetPeerId, stream);
-      
-      if (call) {
-        activeCallRef.current = call;
-        
-        call.on("stream", (remoteStream: MediaStream) => {
-          if (activeToneRef.current) activeToneRef.current.stop();
-          playBeep();
-          
-          if (remoteAudioRef.current) {
-            remoteAudioRef.current.srcObject = remoteStream;
-            remoteAudioRef.current.play().catch(e => console.error("Error playing WebRTC stream:", e));
-          }
-          hadConnectedRef.current = true;
-          setCallState("CONNECTED");
-        });
-
-        call.on("close", () => {
-          endCall();
-        });
-
-        call.on("error", (err: any) => {
-          toast.error("Error al establecer la conexión de voz.");
-          endCall();
-        });
-
-        // Timeout if the recipient does not answer in 25 seconds
-        setTimeout(() => {
-          setCallState((current) => {
-            if (current === "OUTGOING") {
-              toast.info("Llamada sin respuesta.");
-              endCall();
-            }
-            return current;
-          });
-        }, 25000);
-
-      } else {
-        toast.error("No se pudo iniciar la llamada.");
-        endCall();
-      }
-    } catch {
-      toast.error("No se pudo iniciar la llamada.");
+      }, 25000);
+    } catch (err: any) {
+      const msg = err?.message || "No se pudo iniciar la llamada.";
+      toast.error(msg.includes("LiveKit") ? "Servicio de voz no disponible." : "No se pudo iniciar la llamada.");
       endCall();
     }
   };
   startCallRef.current = startCall;
 
-  const answerCall = async () => {
+  // Join a room we were invited to (callee side).
+  const joinRoom = async (roomName: string) => {
+    if (!roomName) return;
     if (activeToneRef.current) activeToneRef.current.stop();
-    playBeep();
+    setCallState("OUTGOING");
+    setLastSpeechResponse("Conectando...");
 
-    // Capture the current path so we can return here when the call ends
     if (typeof window !== "undefined") {
       const currentPath = window.location.pathname;
-      if (currentPath !== "/citofonia") {
-        previousPathRef.current = currentPath;
-      }
+      if (currentPath !== "/citofonia") previousPathRef.current = currentPath;
     }
 
-    let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStreamRef.current = stream;
-    } catch (e) {
-      // Device has no mic, or permission was denied — answer silently so the
-      // resident can still hear the caller (one-way audio).
-      toast.info("Contestando sin micrófono — el dispositivo no tiene uno disponible.");
-      stream = new MediaStream();
-      localStreamRef.current = stream;
-    }
-
-    if (incomingCallRef.current) {
-      incomingCallRef.current.answer(stream);
-
-      incomingCallRef.current.on("stream", (remoteStream: MediaStream) => {
-        if (remoteAudioRef.current) {
-          remoteAudioRef.current.srcObject = remoteStream;
-          remoteAudioRef.current.play().catch(e => console.error("Error playing WebRTC stream:", e));
-        }
-      });
-
-      incomingCallRef.current.on("close", () => {
-        endCall();
-      });
-
+      const tok = await api.get<{ token: string; url: string }>(
+        `/citofonia/token?room=${encodeURIComponent(roomName)}`
+      );
+      playBeep();
+      await connectToRoom(roomName, tok.token, tok.url);
       hadConnectedRef.current = true;
       setCallState("CONNECTED");
       router.push("/citofonia");
+    } catch (err) {
+      toast.error("No se pudo contestar la llamada.");
+      endCall();
     }
+  };
+  joinRoomRef.current = joinRoom;
+
+  const answerCall = async () => {
+    const room = pendingRoomRef.current;
+    if (!room) {
+      toast.error("La llamada ya no está disponible.");
+      setCallState("IDLE");
+      return;
+    }
+    await joinRoom(room);
   };
   answerCallRef.current = answerCall;
 
   const rejectCall = () => {
     if (activeToneRef.current) activeToneRef.current.stop();
     playDisconnect();
-
-    if (incomingCallRef.current) {
-      incomingCallRef.current.close();
-      incomingCallRef.current = null;
-    }
+    pendingRoomRef.current = null;
     setCallState("IDLE");
     toast.info("Llamada rechazada");
   };
@@ -805,26 +562,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
     playDisconnect();
     stopSpeech();
 
-    // Close WebRTC calls
-    if (activeCallRef.current) {
-      activeCallRef.current.close();
-      activeCallRef.current = null;
-    }
-    if (incomingCallRef.current) {
-      incomingCallRef.current.close();
-      incomingCallRef.current = null;
-    }
+    if (noAnswerTimerRef.current) { clearTimeout(noAnswerTimerRef.current); noAnswerTimerRef.current = null; }
 
-    // Stop mic tracks
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
+    // Disconnect LiveKit (this stops the published mic track too).
+    if (roomRef.current) {
+      try { roomRef.current.disconnect(); } catch (e) {}
+      roomRef.current = null;
     }
+    detachAll();
+    pendingRoomRef.current = null;
 
-    // ¿La llamada llegó a conectar? Si nunca conectó (no contestaron / destinatario
-    // fuera de línea), no expulsamos al usuario al inicio: lo dejamos en el citófono
-    // con un mensaje claro para que pueda reintentar. Solo redirigimos tras una
-    // llamada real que sí se estableció.
     const wasConnected = hadConnectedRef.current;
     hadConnectedRef.current = false;
 
@@ -834,13 +581,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     if (wasConnected) {
       toast.info("Llamada finalizada");
-      // Return to the page the user was on before the call started
       if (typeof window !== "undefined" && window.location.pathname === "/citofonia") {
         router.push(previousPathRef.current || "/inicio");
       }
     } else {
-      toast.info("No fue posible conectar la llamada. El destinatario no está disponible.");
-      // Nos quedamos en el citófono: NO redirigimos.
+      // Stay on the dialer; do not redirect.
     }
   };
 

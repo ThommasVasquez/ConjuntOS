@@ -45,6 +45,9 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 rust-s3 = { version = "0.35", default-features = false, features = ["tokio-rustls-tls"] }
 base64 = "0.22"
 sha2 = "0.10"
+# Web Push (VAPID + RFC 8291 payload encryption). default-features=false drops the
+# bundled isahc/hyper client; we sign+encrypt with this crate and send via reqwest (rustls).
+web-push = { version = "0.10", default-features = false }
 
 [dev-dependencies]
 http-body-util = "0.1"
