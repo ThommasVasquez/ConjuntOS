@@ -20,7 +20,7 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1781547426.377385,
+    "mtime": 1781546688.3885815,
     "ast_hash": "3f65a416977200eeb150b6fa993e7e80",
     "semantic_hash": ""
   },
@@ -30,7 +30,7 @@
     "semantic_hash": "239f3ebf717465dc636818a1a619398d"
   },
   "public/sw.js": {
-    "mtime": 1781547426.3806186,
+    "mtime": 1781546677.7289238,
     "ast_hash": "20554cc2f12717b5b3afcdff903b8619",
     "semantic_hash": ""
   },
@@ -60,8 +60,8 @@
     "semantic_hash": ""
   },
   "src/app/(app)/citofonia/page.tsx": {
-    "mtime": 1781566486.3405313,
-    "ast_hash": "d142e4aad78e6e7da9b3d01eb3715380",
+    "mtime": 1781544202.4169853,
+    "ast_hash": "54f03210750d9775e74a8c9c2039b0ba",
     "semantic_hash": ""
   },
   "src/app/(app)/clasificados/page.tsx": {
@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "src/app/(app)/perfil/page.tsx": {
-    "mtime": 1781566559.7331991,
-    "ast_hash": "d6c428919466b2877c387e724abfb283",
+    "mtime": 1781544202.4218626,
+    "ast_hash": "2c5ecf4a40f9cb40efc5e1ddfeed8c9c",
     "semantic_hash": ""
   },
   "src/app/(app)/pqrs/page.tsx": {
@@ -225,8 +225,8 @@
     "semantic_hash": ""
   },
   "src/components/providers/CallContext.tsx": {
-    "mtime": 1781566393.9003801,
-    "ast_hash": "cb78c121c4b8da52c0977d14c0f7c628",
+    "mtime": 1781546640.468378,
+    "ast_hash": "a41e4203ac97b031a424b92254f02634",
     "semantic_hash": ""
   },
   "src/components/providers/ThemeContext.tsx": {
@@ -415,8 +415,8 @@
     "semantic_hash": ""
   },
   "backend/api/src/db/schema.rs": {
-    "mtime": 1781565846.607949,
-    "ast_hash": "d45227b82aade27b54237d0e64488fa8",
+    "mtime": 1781544202.3952913,
+    "ast_hash": "472c24704dbbccba285b0b074c82f005",
     "semantic_hash": ""
   },
   "backend/api/src/domains/admin_stats.rs": {
@@ -560,13 +560,13 @@
     "semantic_hash": ""
   },
   "backend/api/src/domains/usuarios/dto.rs": {
-    "mtime": 1781565933.940335,
-    "ast_hash": "afca06e4ffeba2f8453ef67b24ea3c7d",
+    "mtime": 1781544202.404757,
+    "ast_hash": "5734557551f7030bfb597d87fbbe8091",
     "semantic_hash": ""
   },
   "backend/api/src/domains/usuarios/handlers.rs": {
-    "mtime": 1781565968.0638924,
-    "ast_hash": "a2cc97a720f94ccca8f17479e1e86e7f",
+    "mtime": 1781544202.4051826,
+    "ast_hash": "1d645035cd69c531a25c486f1cdff038",
     "semantic_hash": ""
   },
   "backend/api/src/domains/usuarios/mod.rs": {
@@ -575,13 +575,13 @@
     "semantic_hash": ""
   },
   "backend/api/src/domains/usuarios/models.rs": {
-    "mtime": 1781565852.3804414,
-    "ast_hash": "5be13873b38a9b5cef1ef8229d547a4a",
+    "mtime": 1781544202.4054122,
+    "ast_hash": "4d005f5710df49abf0bd004016b10158",
     "semantic_hash": ""
   },
   "backend/api/src/domains/usuarios/repo.rs": {
-    "mtime": 1781565944.441423,
-    "ast_hash": "c607a0f044f1a076ebe46f119ae3b01d",
+    "mtime": 1781544202.4056642,
+    "ast_hash": "e73f384fd858b62db4dfa7126f4f896f",
     "semantic_hash": ""
   },
   "backend/api/src/domains/vigilancia/dto.rs": {
@@ -640,13 +640,13 @@
     "semantic_hash": ""
   },
   "backend/api/tests/api_test.rs": {
-    "mtime": 1781566108.059461,
-    "ast_hash": "958ea4c61ce6f693924a3cf329054788",
+    "mtime": 1781544202.4069252,
+    "ast_hash": "16fa756f48609182f318716c758557cb",
     "semantic_hash": ""
   },
   "backend/api/tests/m4_test.rs": {
-    "mtime": 1781566097.9275553,
-    "ast_hash": "017c309b26cf9bc881d3e6c791c9c10c",
+    "mtime": 1781544202.4072738,
+    "ast_hash": "2cfde121589705f1157087d32ea5f5aa",
     "semantic_hash": ""
   },
   "backend/migrate/src/main.rs": {
@@ -955,8 +955,8 @@
     "semantic_hash": ""
   },
   "backend/api/src/domains/citofonia/handlers.rs": {
-    "mtime": 1781565906.1675649,
-    "ast_hash": "9c7f3210422b86a24b28eeff41971d79",
+    "mtime": 1781546360.607551,
+    "ast_hash": "4b0a11a883fe0c9df298dbf4219c8dcc",
     "semantic_hash": ""
   },
   "backend/api/src/domains/citofonia/mod.rs": {
@@ -1130,8 +1130,8 @@
     "semantic_hash": ""
   },
   "backend/api/src/services/push.rs": {
-    "mtime": 1781548686.4899454,
-    "ast_hash": "299fbda4cce7afe8bcb1b26366846167",
+    "mtime": 1781546252.5188456,
+    "ast_hash": "be1ef71a9630ade2acb05bbc43dc9511",
     "semantic_hash": ""
   },
   "backend/api/src/services/storage.rs": {
@@ -1145,13 +1145,13 @@
     "semantic_hash": ""
   },
   "backend/api/tests/m5a_test.rs": {
-    "mtime": 1781566091.689379,
-    "ast_hash": "4e2e4c58b0b47edf1b0c20add3c13ad9",
+    "mtime": 1781544202.4076006,
+    "ast_hash": "97e49668d5d9e82e071b7cc08622b878",
     "semantic_hash": ""
   },
   "backend/api/tests/m5b_test.rs": {
-    "mtime": 1781566303.684847,
-    "ast_hash": "eaa91d72fcda0a1ce57b414270453505",
+    "mtime": 1781546434.1261303,
+    "ast_hash": "8aaa79247f65fd56bb8dc648cb3d9b56",
     "semantic_hash": ""
   },
   "backend/migrate/src/db.rs": {
@@ -1170,8 +1170,8 @@
     "semantic_hash": ""
   },
   "backend/migrate/src/seed.rs": {
-    "mtime": 1781565996.0222933,
-    "ast_hash": "84d2f118a54f63fd03b31a373b10b5f6",
+    "mtime": 1781544202.4086308,
+    "ast_hash": "d65fa3ddf12c288e68aec50f24fe9082",
     "semantic_hash": ""
   },
   "backend/migrate/src/steps.rs": {
@@ -1455,12 +1455,12 @@
     "semantic_hash": ""
   },
   "DEPLOYMENT_ENV.md": {
-    "mtime": 1781549619.6291785,
-    "ast_hash": "386a1f236d2eb0f0263f09d0f7db1e11",
+    "mtime": 1781547064.2112198,
+    "ast_hash": "6d88ca3e2c4d0f81ebac48578e325997",
     "semantic_hash": ""
   },
   "FEATURES.md": {
-    "mtime": 1781547426.3656876,
+    "mtime": 1781547086.0115552,
     "ast_hash": "3cbac651cc65cca29d26346eb5700360",
     "semantic_hash": ""
   },
@@ -1470,18 +1470,18 @@
     "semantic_hash": ""
   },
   "docker-compose.prod.yml": {
-    "mtime": 1781551351.533,
-    "ast_hash": "8f644c02a0c5706bf8d1a3924b8b4f7c",
+    "mtime": 1781547002.2396839,
+    "ast_hash": "e079d232e66a0d988ec9119b73af2fe5",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1781552216.1445208,
-    "ast_hash": "8ff4bff312ec76747bdfa6ad88f973c5",
+    "mtime": 1781544202.4105577,
+    "ast_hash": "2e611e8f78ab6e574eb2be7ee4cebbee",
     "semantic_hash": ""
   },
   "livekit.yaml": {
-    "mtime": 1781551339.7347658,
-    "ast_hash": "4dac6eefc1d2d16f9df01577d088f3c6",
+    "mtime": 1781546989.0338962,
+    "ast_hash": "404d5be9fb7aab28592579552e010c1d",
     "semantic_hash": ""
   },
   "playwright-report/index.html": {
@@ -1490,8 +1490,8 @@
     "semantic_hash": ""
   },
   "specs/016-citofonia-livekit/spec.md": {
-    "mtime": 1781548903.530229,
-    "ast_hash": "09069442d05b8ca395824c61f1fa65e2",
+    "mtime": 1781545641.4363728,
+    "ast_hash": "0aa4ab9acd301eb4ca13f04523d8b159",
     "semantic_hash": ""
   },
   "specs/FEATURES.md": {
@@ -1515,28 +1515,18 @@
     "semantic_hash": ""
   },
   "tasks/plan.md": {
-    "mtime": 1781548934.0876007,
-    "ast_hash": "204cda9ed9375d90ca71178cb459a568",
+    "mtime": 1781545959.0634587,
+    "ast_hash": "821b427a26491f382f2b0a3d73405f3e",
     "semantic_hash": ""
   },
   "tasks/todo.md": {
-    "mtime": 1781547426.4291954,
-    "ast_hash": "0d6f0029a18d585a7841430a0f528df9",
+    "mtime": 1781545971.5165663,
+    "ast_hash": "082deb5cfc73eb7be1424dcb2abd0537",
     "semantic_hash": ""
   },
   "public/placeholder.svg": {
     "mtime": 1781204802.3754308,
     "ast_hash": "29124c707abf6d05ebd2d84175a833e5",
-    "semantic_hash": ""
-  },
-  "backend/migrations/2026-06-16-000001_usuarios_numero_interno/down.sql": {
-    "mtime": 1781565839.991339,
-    "ast_hash": "7111adfc204dd073fdb5757c30aaa92c",
-    "semantic_hash": ""
-  },
-  "backend/migrations/2026-06-16-000001_usuarios_numero_interno/up.sql": {
-    "mtime": 1781565795.337796,
-    "ast_hash": "51705272b088fbb12b08eca91a4667de",
     "semantic_hash": ""
   }
 }

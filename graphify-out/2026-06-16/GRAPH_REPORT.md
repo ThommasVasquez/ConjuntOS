@@ -1,16 +1,16 @@
-# Graph Report - EN-CONJUNTO  (2026-06-16)
+# Graph Report - EN-CONJUNTO  (2026-06-15)
 
 ## Corpus Check
-- 289 files · ~304,208 words
+- 287 files · ~303,054 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2698 nodes · 5815 edges · 173 communities (159 shown, 14 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 118 edges (avg confidence: 0.78)
+- 2683 nodes · 5762 edges · 177 communities (159 shown, 18 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 115 edges (avg confidence: 0.78)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d5a27c61`
+- Built from commit: `3b7ebc75`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -158,10 +158,14 @@
 - [[_COMMUNITY_Supabase Query Builder|Supabase Query Builder]]
 - [[_COMMUNITY_Supabase Query Builder|Supabase Query Builder]]
 - [[_COMMUNITY_Supabase Query Builder|Supabase Query Builder]]
+- [[_COMMUNITY_Community 156|Community 156]]
+- [[_COMMUNITY_Community 157|Community 157]]
+- [[_COMMUNITY_Community 158|Community 158]]
+- [[_COMMUNITY_Community 159|Community 159]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `useAuth` - 56 edges
-2. `build_router()` - 50 edges
+2. `build_router()` - 48 edges
 3. `useWsSubscription()` - 40 edges
 4. `cuid_to_uuid()` - 38 edges
 5. `ReportRow` - 38 edges
@@ -205,11 +209,15 @@
 - 1-file cycle: `backend/api/src/domains/chat/handlers.rs -> backend/api/src/domains/chat/handlers.rs`
 - 1-file cycle: `backend/api/src/domains/chat/repo.rs -> backend/api/src/domains/chat/repo.rs`
 
-## Communities (173 total, 14 thin omitted)
+## Communities (177 total, 18 thin omitted)
 
 ### Community 0 - "Analytics Event Batching"
 Cohesion: 0.02
-Nodes (93): AdminChatRequest, AdminChatThreadDto, AreaComunDto, CatLocal, CatServicio, CeldaDto, CeldaMapaDto, ChangePasswordRequest (+85 more)
+Nodes (90): AdminChatRequest, AdminChatThreadDto, AdminStatsDto, AnuncioDto, AreaComunDto, CatLocal, CatServicio, ChangePasswordRequest (+82 more)
+
+### Community 1 - "Analytics Event Batching"
+Cohesion: 0.09
+Nodes (10): metadata, features, Footer(), Hero(), slides, Navbar(), useViewTransition(), ViewTransitionContext (+2 more)
 
 ### Community 2 - "Analytics HTTP Client"
 Cohesion: 0.21
@@ -228,8 +236,8 @@ Cohesion: 0.13
 Nodes (24): Next.js Agent Rules, conjunto-app v0.1.0 Application, Next.js Production Build Log, Next.js 15.1.0 Framework, Prisma Client v7.6.0, Reservas (Amenity Booking) Routes, Project Instructions (CLAUDE.md), Logo: Energy Soft Media vendor wordmark (SVG) (+16 more)
 
 ### Community 6 - "Supabase User Creation"
-Cohesion: 0.09
-Nodes (13): AnuncioDto, Rol, useAuth, HomeAdmin(), HomeResidente(), InicioDashboard(), getNotifTarget(), CelebrationModalProps (+5 more)
+Cohesion: 0.10
+Nodes (10): useAuth, HomeAdmin(), HomeResidente(), InicioDashboard(), CelebrationModalProps, ContentActionModalProps, BottomNav(), ROLES (+2 more)
 
 ### Community 7 - "Realtime Auth Worker"
 Cohesion: 0.10
@@ -248,8 +256,8 @@ Cohesion: 0.10
 Nodes (42): AsambleaDto, AsistenciaDto, CreateAsistenciaRequest, CreateOpinionRequest, CreatePairingRequest, CreatePoderRequest, CreateVotacionRequest, CreateVotoRequest (+34 more)
 
 ### Community 11 - "Supabase Admin Auth API"
-Cohesion: 0.09
-Nodes (36): AdminNovedadesPage(), AdminParqueaderoPage(), api, ApiError, RequestOptions, setAuthToken(), LoginResponse, NotificacionDto (+28 more)
+Cohesion: 0.08
+Nodes (37): AdminFinanzasPage(), COP(), AdminNovedadesPage(), AdminParqueaderoPage(), api, ApiError, RequestOptions, setAuthToken() (+29 more)
 
 ### Community 12 - "Minified Server Bundle"
 Cohesion: 0.19
@@ -260,8 +268,8 @@ Cohesion: 0.11
 Nodes (44): ActaDto, consensuar(), copilot(), create_subtitulo(), generate_acta(), get_acta(), list_subtitulos(), require_gemini() (+36 more)
 
 ### Community 14 - "Auth Middleware"
-Cohesion: 0.19
-Nodes (11): CitofoniaPage(), DirectorioUser, IPaquete, IVisita, Tab, CallContext, CallContextType, CallProvider() (+3 more)
+Cohesion: 0.21
+Nodes (10): CitofoniaPage(), IPaquete, IVisita, Tab, CallContext, CallContextType, CallProvider(), CallState (+2 more)
 
 ### Community 15 - "Middleware Bundle Internals"
 Cohesion: 0.12
@@ -272,20 +280,20 @@ Cohesion: 0.29
 Nodes (3): AsambleaPage(), LiveRoom, Tab
 
 ### Community 17 - "Middleware Bundle Internals"
-Cohesion: 0.23
-Nodes (32): AppState, Method, Option, Rol, Router, StatusCode, String, Uuid (+24 more)
+Cohesion: 0.15
+Nodes (39): AppState, Method, Option, Rol, Router, StatusCode, String, Uuid (+31 more)
 
 ### Community 18 - "OpenTelemetry Metrics API"
 Cohesion: 0.05
 Nodes (38): Ana Rojas (3), Anuncios — 13, Areas Comunes — 5, Asamblea Activa — 1, Carlos Martinez (2), Celdas de Parqueadero — 9, Chat — 14 mensajes, Clasificados — 9 (+30 more)
 
 ### Community 19 - "Postgres Wire Protocol"
-Cohesion: 0.14
-Nodes (25): ApiResult, ChatConversacionDto, ChatMessage, DbConn, ResidentInfoDto, Uuid, Vec, Arc (+17 more)
+Cohesion: 0.13
+Nodes (26): ApiResult, ChatConversacionDto, ChatMessage, DbConn, ResidentInfoDto, Uuid, Vec, Arc (+18 more)
 
 ### Community 22 - "Postgres Result Parsing"
-Cohesion: 0.06
-Nodes (103): AppState, Router, String, Result, main(), AppState, Method, Option (+95 more)
+Cohesion: 0.07
+Nodes (93): AppState, Router, String, Result, main(), AppState, Method, Option (+85 more)
 
 ### Community 23 - "App Route Registry"
 Cohesion: 0.23
@@ -293,7 +301,7 @@ Nodes (30): ApiResult, AppState, BigDecimal, DateTime, DbConn, Option, SesionDto
 
 ### Community 24 - "Postgres Client Pooling"
 Cohesion: 0.14
-Nodes (26): Arc, Box, Client, Config, Future, Option, Output, Pin (+18 more)
+Nodes (24): Arc, Box, Client, Config, Future, Option, Output, Pin (+16 more)
 
 ### Community 25 - "Next.js URL Parsing"
 Cohesion: 0.14
@@ -348,8 +356,8 @@ Cohesion: 0.12
 Nodes (40): ApiError, AuthUser, bearer_token(), cookie_token(), AppState, Option, Result, Rol (+32 more)
 
 ### Community 38 - "Task Queue Concurrency"
-Cohesion: 0.23
-Nodes (20): AdminChatRequest, AdminChatThreadDto, ApiResult, AppState, AuthUser, ChatConversacionDto, Json, Path (+12 more)
+Cohesion: 0.25
+Nodes (19): AdminChatRequest, AdminChatThreadDto, ApiResult, AppState, AuthUser, ChatConversacionDto, Json, Path (+11 more)
 
 ### Community 39 - "Task Queue Concurrency"
 Cohesion: 0.25
@@ -428,8 +436,8 @@ Cohesion: 0.11
 Nodes (43): AccionParqueadero, BigDecimal, CategoriaParqueadero, DateTime, EstadoParqueadero, EstadoSolicitudParqueadero, From, Option (+35 more)
 
 ### Community 61 - "Next.js Request Handler"
-Cohesion: 0.29
-Nodes (6): TipoVehiculoVisita, TipoVisita, formatScheduledDate(), formatTime(), VisitantesPage(), VisitStatus
+Cohesion: 0.40
+Nodes (4): formatScheduledDate(), formatTime(), VisitantesPage(), VisitStatus
 
 ### Community 62 - "Next.js Request Handler"
 Cohesion: 0.12
@@ -488,8 +496,8 @@ Cohesion: 0.22
 Nodes (4): MODULES, SearchContext, SearchModalProps, SUGGESTIONS
 
 ### Community 79 - "WebRTC Peer Connections"
-Cohesion: 0.11
-Nodes (48): ApiResult, AppState, AuthUser, Json, Path, State, Uuid, Vec (+40 more)
+Cohesion: 0.20
+Nodes (27): ApiResult, AppState, AuthUser, Json, Path, State, Uuid, Vec (+19 more)
 
 ### Community 80 - "Supabase Auth Client"
 Cohesion: 0.18
@@ -500,8 +508,8 @@ Cohesion: 0.14
 Nodes (49): AccionParqueadero, ApiResult, DbConn, EstadoParqueadero, NuevaSolicitud, Option, Parqueadero, Result (+41 more)
 
 ### Community 82 - "WebRTC Peer Connections"
-Cohesion: 0.18
-Nodes (11): useWsStore, Footer(), Hero(), slides, Navbar(), AuthProvider(), useViewTransition(), ViewTransitionContext (+3 more)
+Cohesion: 0.25
+Nodes (21): ApiResult, DateTime, DbConn, Option, Paquete, Utc, Uuid, Vec (+13 more)
 
 ### Community 83 - "Supabase Auth & Realtime"
 Cohesion: 0.39
@@ -528,8 +536,8 @@ Cohesion: 0.21
 Nodes (16): AreaComun, BigDecimal, DateTime, EstadoReserva, From, NaiveDate, Option, Self (+8 more)
 
 ### Community 89 - "Realtime Channel Presence"
-Cohesion: 0.14
-Nodes (25): BigDecimal, From, Mascota, Option, Rol, Self, String, TipoUnidad (+17 more)
+Cohesion: 0.13
+Nodes (24): BigDecimal, From, Mascota, Option, Rol, Self, String, TipoUnidad (+16 more)
 
 ### Community 90 - "Minified Error Logging"
 Cohesion: 0.28
@@ -549,7 +557,7 @@ Nodes (12): Option, Result, Self, String, Vec, Config, ConfigError, parse_origin
 
 ### Community 94 - "Cookies and URL State"
 Cohesion: 0.25
-Nodes (24): ApiResult, DbConn, Mascota, Option, Rol, String, Tramite, Unidad (+16 more)
+Nodes (23): ApiResult, DbConn, Mascota, Option, Rol, String, Tramite, Unidad (+15 more)
 
 ### Community 95 - "Realtime Channel Presence"
 Cohesion: 0.24
@@ -580,16 +588,16 @@ Cohesion: 0.33
 Nodes (10): BigDecimal, DateTime, EstadoPago, MetodoPago, Option, String, Utc, Uuid (+2 more)
 
 ### Community 102 - "Minified Vendor Code"
-Cohesion: 0.22
-Nodes (17): ApiResult, AppState, AuthUser, Json, Option, Query, State, String (+9 more)
+Cohesion: 0.36
+Nodes (10): ApiResult, AppState, AuthUser, Json, State, ProfileResponse, UpdateProfileRequest, get_profile() (+2 more)
 
 ### Community 103 - "Minified Bundle Internals"
 Cohesion: 0.20
 Nodes (9): 001 — Auth & Tenancy, Actors & roles, Current behavior (being replaced), Edge cases, JWT, New API surface, Out of scope, Purpose (+1 more)
 
 ### Community 104 - "Minified Bundle Internals"
-Cohesion: 0.18
-Nodes (7): inter, jetbrainsMono, metadata, montserrat, plusJakartaSans, viewport, Providers()
+Cohesion: 0.15
+Nodes (10): inter, jetbrainsMono, metadata, montserrat, plusJakartaSans, viewport, Providers(), useWsStore (+2 more)
 
 ### Community 105 - "Minified Bundle Internals"
 Cohesion: 0.38
@@ -719,10 +727,6 @@ Nodes (3): Deploy on Vercel, Getting Started, Learn More
 Cohesion: 0.90
 Nodes (4): Client, Result, connect(), try_tls_connect()
 
-### Community 138 - "Tracing & Spans"
-Cohesion: 0.67
-Nodes (3): AdminFinanzasPage(), COP(), AdminStatsDto
-
 ## Ambiguous Edges - Review These
 - `conjunto-app v0.1.0 Application` → `Logo: Energy Soft Media vendor wordmark (SVG)`  [AMBIGUOUS]
   public/energysoftmedia.svg · relation: conceptually_related_to
@@ -730,9 +734,9 @@ Nodes (3): AdminFinanzasPage(), COP(), AdminStatsDto
   public/images/hall.png · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **832 isolated node(s):** `pnpm`, `version`, `include`, `exclude`, `Result` (+827 more)
+- **828 isolated node(s):** `pnpm`, `version`, `include`, `exclude`, `Result` (+823 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -741,13 +745,13 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `Reservas (Amenity Booking) Routes` and `Photo: aerial night view of futuristic clubhouse/event hall in residential complex`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `Error` connect `Next.js Request Handler` to `Minified Server Bundle`, `App Server Actions`, `Minified Server Bundle`, `App Route Registry`, `Next.js URL Parsing`, `Minified Middleware Bundle`, `Minified Decode Utilities`, `Task Queue Concurrency`, `Task Queue Concurrency`, `Task Queue Concurrency`, `Task Queue Concurrency`, `Minified Error Logging`, `Minified Error Logging`, `Next.js Rendering Pipeline`, `Next.js Rendering Pipeline`, `Next.js Request Handler`, `Edge Routing Worker`, `WebRTC Peer Connections`, `Minified Debug Utilities`, `Minified Helper Functions`, `Realtime Channel Presence`, `Stream and Header Handling`, `Stream and Header Handling`, `Minified Vendor Code`, `Gemini Chat Client`?**
-  _High betweenness centrality (0.130) - this node is a cross-community bridge._
-- **Why does `build_router()` connect `Postgres Result Parsing` to `Middleware Bundle Internals`?**
-  _High betweenness centrality (0.031) - this node is a cross-community bridge._
+- **Why does `Error` connect `Next.js Request Handler` to `Minified Server Bundle`, `App Server Actions`, `Minified Server Bundle`, `App Route Registry`, `Next.js URL Parsing`, `Minified Middleware Bundle`, `Minified Decode Utilities`, `Task Queue Concurrency`, `Task Queue Concurrency`, `Task Queue Concurrency`, `Task Queue Concurrency`, `Minified Error Logging`, `Minified Error Logging`, `Next.js Rendering Pipeline`, `Next.js Rendering Pipeline`, `Next.js Request Handler`, `Edge Routing Worker`, `WebRTC Peer Connections`, `Minified Debug Utilities`, `WebRTC Peer Connections`, `Minified Helper Functions`, `Realtime Channel Presence`, `Stream and Header Handling`, `Stream and Header Handling`, `Minified Vendor Code`, `Gemini Chat Client`?**
+  _High betweenness centrality (0.129) - this node is a cross-community bridge._
 - **Why does `issue_with_ttl()` connect `Stream and Header Handling` to `Postgres Result Parsing`?**
-  _High betweenness centrality (0.031) - this node is a cross-community bridge._
-- **Are the 46 inferred relationships involving `build_router()` (e.g. with `main()` and `change_password_flow()`) actually correct?**
-  _`build_router()` has 46 INFERRED edges - model-reasoned connections that need verification._
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+- **Why does `Duration` connect `Postgres Result Parsing` to `Stream and Header Handling`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+- **Are the 44 inferred relationships involving `build_router()` (e.g. with `main()` and `change_password_flow()`) actually correct?**
+  _`build_router()` has 44 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 35 inferred relationships involving `cuid_to_uuid()` (e.g. with `migrate_ad_spaces()` and `migrate_anuncios()`) actually correct?**
   _`cuid_to_uuid()` has 35 INFERRED edges - model-reasoned connections that need verification._
