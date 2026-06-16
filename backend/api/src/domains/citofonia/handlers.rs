@@ -322,6 +322,15 @@ async fn call(
             .await;
     }
 
+    tracing::info!(
+        caller = %user.id,
+        targets = ?user_ids,
+        ws_published = user_ids.len(),
+        push_sent = sent,
+        room = %room,
+        "citofonia/call dispatched"
+    );
+
     Ok(Json(CallResponse {
         room,
         token,
