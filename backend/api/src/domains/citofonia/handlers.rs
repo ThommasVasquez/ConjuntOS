@@ -13,6 +13,7 @@ use crate::db::schema::{push_subscriptions, unidades, usuarios};
 use crate::db::DbConn;
 use crate::error::{ApiError, ApiResult};
 use crate::services::push::PushSubscriptionInfo;
+use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -300,6 +301,26 @@ async fn call(
         }
         count
     };
+
+    // Ring any OPEN tab of each target instantly over WebSocket. This is the
+    // reliable foreground path — independent of Web Push, which only reaches the
+    // browser that registered a subscription and is blocked/unreliable in some
+    // browsers (e.g. Brave). Push above remains the fallback for a closed app.
+    let ws_payload = serde_json::json!({ "room": room, "callerName": caller_name });
+    for uid in &user_ids {
+        state
+            .ws_hub
+            .publish(
+                user.conjunto_id,
+                WsEvent {
+                    domain: "citofonia".to_string(),
+                    action: "incoming_call".to_string(),
+                    payload: Some(ws_payload.clone()),
+                    target_user_id: Some(*uid),
+                },
+            )
+            .await;
+    }
 
     Ok(Json(CallResponse {
         room,

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 import { api } from "@/lib/api/client";
 import type { ProfileResponse } from "@/lib/api/types";
 import type { Room, RemoteTrack } from "livekit-client";
@@ -211,6 +212,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // playRingtone is a stable local helper (reads only refs); excluded to avoid re-registering the listener on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, router]);
+
+  // Foreground ring over WebSocket. The backend publishes a citofonia/incoming_call
+  // event to the target user, so an OPEN tab rings instantly without depending on
+  // Web Push (which is per-browser and blocked/unreliable in some browsers). The
+  // service-worker handler above remains the fallback for a closed/backgrounded app.
+  useWsSubscription("citofonia", (event) => {
+    if (event.action !== "incoming_call") return;
+    const data = event.payload as { room?: string; callerName?: string } | undefined;
+    if (!data?.room) return;
+    if (callStateRef.current !== "IDLE") return;
+    pendingRoomRef.current = data.room;
+    setCallerName(data.callerName || "Llamada entrante");
+    setCallState("RINGING");
+    playRingtone();
+  });
 
   // Handle deep-link from a notification opened in a fresh tab:
   // /citofonia?answerCall=true&room=...&callerName=...
