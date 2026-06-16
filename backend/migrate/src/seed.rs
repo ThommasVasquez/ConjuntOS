@@ -259,6 +259,8 @@ type VisitaRow = (
 async fn seed_content(target: &Client, conjunto_id: Uuid) -> Result<()> {
     // 1) Clear existing demo content in FK-safe order (children first).
     for table in [
+        // Parking sessions reference pagos (pago_id) — clear before pagos.
+        "sesiones_parqueadero",
         "reservas",
         "areas_comunes",
         "pagos",
