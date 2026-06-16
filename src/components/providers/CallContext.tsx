@@ -108,6 +108,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
     if (!profile) return;
 
+    const urlBase64ToUint8Array = (base64String: string) => {
+      const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    };
+
+    // Does an existing subscription use the same VAPID key we sign with now?
+    const keyMatches = (existing: ArrayBuffer | null | undefined, current: Uint8Array) => {
+      if (!existing) return false;
+      const a = new Uint8Array(existing);
+      if (a.length !== current.length) return false;
+      for (let i = 0; i < a.length; i++) if (a[i] !== current[i]) return false;
+      return true;
+    };
+
     const registerPush = async () => {
       try {
         const registration = await navigator.serviceWorker.register("/sw.js");
@@ -116,43 +136,42 @@ export function CallProvider({ children }: { children: ReactNode }) {
         if (permission === "default") {
           permission = await Notification.requestPermission();
         }
-
         if (permission !== "granted") {
+          console.warn("Citofonía: sin permiso de notificaciones — no se recibirán llamadas en segundo plano.");
           return;
         }
 
         const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!vapidPublicKey) {
+          console.warn("Citofonía: falta NEXT_PUBLIC_VAPID_PUBLIC_KEY — push deshabilitado.");
           return;
         }
-
-        const urlBase64ToUint8Array = (base64String: string) => {
-          const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-          const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
-          const rawData = window.atob(base64);
-          const outputArray = new Uint8Array(rawData.length);
-          for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
-          }
-          return outputArray;
-        };
-
         const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
         let subscription = await registration.pushManager.getSubscription();
-        let isNew = false;
+
+        // A subscription created with a *different* VAPID key (keys rotated between
+        // environments, or an old dev key) is unusable: re-subscribing throws
+        // "push service error", and the backend — which signs with the current
+        // key — can't deliver to it. Drop it and make a fresh one.
+        if (subscription && !keyMatches(subscription.options?.applicationServerKey, convertedVapidKey)) {
+          try { await subscription.unsubscribe(); } catch {}
+          subscription = null;
+        }
+
         if (!subscription) {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: convertedVapidKey
+            applicationServerKey: convertedVapidKey,
           });
-          isNew = true;
         }
 
-        // Only register in the DB when we have a brand-new subscription.
-        if (isNew) {
-          await api.post('/usuarios/me/push-subscriptions', subscription);
-        }
+        // ALWAYS (re)register with the backend — not only on a brand-new browser
+        // subscription. The push_subscriptions row is wiped on every DB re-seed
+        // while the browser keeps its subscription; without re-sending it the
+        // backend has nobody to push and the incoming call never reaches the
+        // resident. The endpoint upserts by endpoint, so this is idempotent.
+        await api.post('/usuarios/me/push-subscriptions', subscription);
       } catch (err) {
         console.error("Error al registrar notificaciones push:", err);
       }
