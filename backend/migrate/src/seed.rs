@@ -203,6 +203,34 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
         tracing::info!(email = user.email, rol = user.rol, "seeded demo user");
     }
 
+    // Citofonía: ensure EVERY user in EVERY conjunto has an internal dial number.
+    // Idempotent — only fills users missing one, assigning the next free per-conjunto
+    // 4-digit code (immutable once set). Existing numbers are never changed.
+    let assigned = target
+        .execute(
+            "WITH missing AS (
+                 SELECT id, conjunto_id,
+                        ROW_NUMBER() OVER (PARTITION BY conjunto_id ORDER BY created_at, id) AS rn
+                 FROM usuarios
+                 WHERE numero_interno IS NULL OR length(numero_interno) = 0
+             ),
+             maxn AS (
+                 SELECT conjunto_id,
+                        COALESCE(MAX(CASE WHEN numero_interno ~ '^[0-9]+$'
+                                          THEN numero_interno::int ELSE 0 END), 0) AS m
+                 FROM usuarios
+                 GROUP BY conjunto_id
+             )
+             UPDATE usuarios u
+             SET numero_interno = LPAD((mx.m + ms.rn)::text, 4, '0')
+             FROM missing ms
+             JOIN maxn mx ON mx.conjunto_id = ms.conjunto_id
+             WHERE u.id = ms.id",
+            &[],
+        )
+        .await?;
+    tracing::info!(assigned, "citofonía: ensured internal numbers across all conjuntos");
+
     // Populate the resident-facing content layer (novedades, mascotas, pagos,
     // reservas, etc.) so the demo app is not empty on first login.
     seed_content(target, conjunto_id).await?;
