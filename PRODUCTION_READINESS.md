@@ -6,6 +6,15 @@ _Generated 2026-06-16 from a 17-unit multi-agent audit (120 findings, 74 verifie
 - `next build`: **pass** · `tsc --noEmit`: **clean** (enforced, `ignoreBuildErrors:false`) · `next lint`: **0 errors / 0 warnings** (was ~292).
 - All 33 lint-affected files fixed with **no behavior change** (`any`→real types, `<img>`→`next/image`, escaped entities, safe hook deps). Committed + pushed to `main` (`d8fca22`, `a0da64b`).
 
+## ✅ Fixed & shipped since the audit (commits through `c30267b`)
+- **Lint 292→0** (no behavior change).
+- **Auth/deploy hardening:** logout clears cached profile PII; `callbackUrl` open-redirect guard; security headers (HSTS/X-Frame-Options/nosniff/Referrer-Policy/Permissions-Policy); deleted dead root `middleware.ts`. _(Cross-origin cookie itself = infra: set `COOKIE_DOMAIN=.conjuntos.app` + `COOKIE_CROSS_SITE` on the VPS and serve the app from `app.conjuntos.app` — backend already supports these env vars.)_
+- **Payments disabled behind a flag** (`NEXT_PUBLIC_PAYMENTS_ENABLED`, off by default): the simulated gateways in `pagos`, `perfil`, `reservas` (deposit only), `inmobiliaria` no longer mark anything paid; users see "próximamente." Free reservations still work.
+- **`global-error.tsx`** added — a root-layout/Provider crash no longer shows a blank screen.
+
+## Still open (next pass)
+**Code bugs (safe, no decision):** register-vehicle wrong payload · fake "Historial de Accesos" · `pagos` EN_DISPUTA charges vanish + recibos dropped · citofonía "Programar Visita" silent no-op · `inicio`/`perfil` debt mismatch · LiveKit errors invisible · central 401 handler · password-change plaintext (needs a real endpoint). **Plus:** harden e2e (real assertions + authz tests) and the accessibility/error-message pass. _Several of these touch the backend contract — verify against `backend/` before changing._
+
 ## Verdict: 🔴 NO-GO for a paid production launch
 The codebase **compiles, types, and lints clean**, but the audit confirmed blockers that fall into two buckets: **(A) product/infra decisions only you can make** (payments not integrated, deploy-domain/auth config) and **(B) code bugs that are safe to fix now**. None are lint/build issues.
 
