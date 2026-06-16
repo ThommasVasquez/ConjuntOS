@@ -23,6 +23,96 @@ const LiveRoom = dynamic(() => import("@/components/asamblea/LiveRoom"), {
 
 type Tab = "video" | "agenda" | "votos" | "chat" | "info";
 
+// Local DTOs mirroring backend/api/src/domains/asamblea/dto.rs
+// (these are not part of the shared src/lib/api/types.ts).
+interface OrdenDiaItem {
+  id?: string;
+  titulo: string;
+  descripcion?: string;
+}
+
+interface Asamblea {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  fecha: string;
+  activa: boolean;
+  ordenDia: OrdenDiaItem[];
+  itemActivoIndex: number;
+  sessionState: unknown;
+  version: number;
+}
+
+interface Opinion {
+  id: string;
+  asambleaId: string;
+  usuarioId: string;
+  nombre: string;
+  apto: string | null;
+  contenido: string;
+  createdAt: string;
+}
+
+interface Votacion {
+  id: string;
+  asambleaId: string;
+  titulo: string;
+  descripcion: string | null;
+  opciones: string[];
+  activa: boolean;
+  createdAt: string;
+}
+
+interface Voto {
+  id: string;
+  votacionId: string;
+  usuarioId: string;
+  unidadId: string | null;
+  respuesta: string;
+  coeficiente: number;
+  esVirtual: boolean;
+  hashFirma: string;
+  createdAt: string;
+}
+
+interface Asistencia {
+  id: string;
+  asambleaId: string;
+  usuarioId: string;
+  tipo: string;
+  verificado: boolean;
+  ip: string | null;
+  dispositivo: string | null;
+  createdAt: string;
+}
+
+interface QuorumResponse {
+  asistencias: Asistencia[];
+  totalCoeficiente: number;
+  presenteCoeficiente: number;
+  quorumPorcentaje: number;
+}
+
+interface Turno {
+  id: string;
+  asambleaId: string;
+  usuarioId: string;
+  nombre: string;
+  apto: string | null;
+  estado: string;
+  createdAt: string;
+}
+
+interface Poder {
+  id: string;
+  asambleaId: string;
+  otorganteId: string;
+  apoderadoId: string;
+  documentoUrl: string;
+  verificado: boolean;
+  createdAt: string;
+}
+
 function voteColor(op: string): string {
   const n = op.toUpperCase().trim();
   if (["SI", "SÍ", "APROBAR"].includes(n)) return "bg-text/10";
@@ -31,7 +121,7 @@ function voteColor(op: string): string {
   return "bg-text/10";
 }
 
-function tally(votes: any[], options: string[]) {
+function tally(votes: Voto[], options: string[]) {
   const counts: Record<string, number> = {};
   options.forEach((o) => (counts[o] = 0));
   votes.forEach((v) => (counts[v.respuesta] = (counts[v.respuesta] || 0) + 1));
@@ -50,27 +140,27 @@ export default function AsambleaPage() {
     user?.rol === "ADMINISTRADOR" || user?.rol === "SUPER_ADMIN";
 
   const [activeTab, setActiveTab] = useState<Tab>("video");
-  const [asamblea, setAsamblea] = useState<any>(null);
+  const [asamblea, setAsamblea] = useState<Asamblea | null>(null);
   const [asambleaId, setAsambleaId] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const [opiniones, setOpiniones] = useState<any[]>([]);
-  const [votaciones, setVotaciones] = useState<any[]>([]);
-  const [asistencias, setAsistencias] = useState<any[]>([]);
-  const [turnos, setTurnos] = useState<any[]>([]);
-  const [poderes, setPoderes] = useState<any[]>([]);
+  const [opiniones, setOpiniones] = useState<Opinion[]>([]);
+  const [votaciones, setVotaciones] = useState<Votacion[]>([]);
+  const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
+  const [turnos, setTurnos] = useState<Turno[]>([]);
+  const [poderes, setPoderes] = useState<Poder[]>([]);
 
   const [quorum, setQuorum] = useState<{
     totalCoeficiente: number;
     presenteCoeficiente: number;
     quorumPorcentaje: number;
   } | null>(null);
-  const [votos, setVotos] = useState<Record<string, any[]>>({});
+  const [votos, setVotos] = useState<Record<string, Voto[]>>({});
   const [newOpinion, setNewOpinion] = useState("");
 
   const fetchSession = useCallback(async () => {
     try {
-      const data = await api.get<any>("/asambleas/activa/session");
+      const data = await api.get<Asamblea>("/asambleas/activa/session");
       setAsamblea(data);
       setAsambleaId(data.id);
     } catch {
@@ -84,11 +174,11 @@ export default function AsambleaPage() {
     if (!asambleaId) return;
     try {
       const [op, vot, asi, tur, pod] = await Promise.all([
-        api.get<any[]>(`/asambleas/${asambleaId}/opiniones`),
-        api.get<any[]>(`/asambleas/${asambleaId}/votaciones`),
-        api.get<any>(`/asambleas/${asambleaId}/asistencias`),
-        api.get<any[]>(`/asambleas/${asambleaId}/turnos`),
-        api.get<any[]>(`/asambleas/${asambleaId}/poderes`),
+        api.get<Opinion[]>(`/asambleas/${asambleaId}/opiniones`),
+        api.get<Votacion[]>(`/asambleas/${asambleaId}/votaciones`),
+        api.get<QuorumResponse>(`/asambleas/${asambleaId}/asistencias`),
+        api.get<Turno[]>(`/asambleas/${asambleaId}/turnos`),
+        api.get<Poder[]>(`/asambleas/${asambleaId}/poderes`),
       ]);
       setOpiniones(op);
       setVotaciones(vot);
@@ -131,7 +221,7 @@ export default function AsambleaPage() {
   };
 
   const fetchVotos = async (votacionId: string) => {
-    try { const d = await api.get<any[]>(`/votaciones/${votacionId}/votos`); setVotos((p) => ({ ...p, [votacionId]: d })); }
+    try { const d = await api.get<Voto[]>(`/votaciones/${votacionId}/votos`); setVotos((p) => ({ ...p, [votacionId]: d })); }
     catch { /* silent */ }
   };
 
@@ -175,10 +265,10 @@ export default function AsambleaPage() {
     </div>
   );
 
-  const ordenDia: any[] = Array.isArray(asamblea.ordenDia) ? asamblea.ordenDia : [];
+  const ordenDia: OrdenDiaItem[] = Array.isArray(asamblea.ordenDia) ? asamblea.ordenDia : [];
   const currentItem = ordenDia[asamblea.itemActivoIndex];
-  const activeVotaciones = votaciones.filter((v: any) => v.activa);
-  const pendingTurnos = turnos.filter((t: any) => t.estado === "PENDIENTE" || t.estado === "HABLANDO");
+  const activeVotaciones = votaciones.filter((v) => v.activa);
+  const pendingTurnos = turnos.filter((t) => t.estado === "PENDIENTE" || t.estado === "HABLANDO");
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: "video", label: "Video", icon: <Video size={20} /> },
@@ -238,7 +328,7 @@ export default function AsambleaPage() {
                 <p className="text-[10px] text-white font-bold uppercase tracking-wide">
                   Turnos de habla
                 </p>
-                {pendingTurnos.map((t: any) => (
+                {pendingTurnos.map((t) => (
                   <div key={t.id} className="flex items-center gap-2 text-sm">
                     <span className="font-bold truncate">{t.nombre}</span>
                     {t.apto && (
@@ -276,7 +366,7 @@ export default function AsambleaPage() {
             <h2 className="text-xs font-bold text-white uppercase tracking-widest">
               Orden del día
             </h2>
-            {ordenDia.map((item: any, i: number) => (
+            {ordenDia.map((item, i) => (
               <div
                 key={item.id ?? i}
                 className={`p-4 rounded-2xl border transition-all ${
@@ -330,7 +420,7 @@ export default function AsambleaPage() {
                 No hay votaciones creadas aún.
               </p>
             ) : (
-              votaciones.map((v: any) => (
+              votaciones.map((v) => (
                 <div
                   key={v.id}
                   className={`rounded-2xl border p-4 ${
@@ -426,7 +516,7 @@ export default function AsambleaPage() {
                 No hay opiniones aún. Sé el primero en opinar.
               </p>
             ) : (
-              opiniones.map((o: any) => (
+              opiniones.map((o) => (
                 <div
                   key={o.id}
                   className="bg-white/5 border border-white/10 rounded-2xl p-3"
@@ -497,7 +587,7 @@ export default function AsambleaPage() {
                 <Shield size={14} /> Asistencias ({asistencias.length})
               </h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {asistencias.map((a: any) => (
+                {asistencias.map((a) => (
                   <div
                     key={a.id}
                     className="flex items-center justify-between text-xs py-1 border-b border-white/5 last:border-0"
@@ -526,7 +616,7 @@ export default function AsambleaPage() {
                   <FileCheck size={14} /> Poderes ({poderes.length})
                 </h3>
                 <div className="space-y-2">
-                  {poderes.map((p: any) => (
+                  {poderes.map((p) => (
                     <div
                       key={p.id}
                       className="flex items-center justify-between text-xs py-1 border-b border-white/5 last:border-0"

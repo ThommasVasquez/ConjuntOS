@@ -16,9 +16,35 @@ import CelebrationModal from "@/components/modals/CelebrationModal";
 import ContentActionModal from "@/components/modals/ContentActionModal";
 import SearchModal from "@/components/search/SearchModal";
 import { useEffect, useRef, useState, useCallback } from "react";
+
+/** Solicitud de parqueadero de visitante que el inquilino debe aprobar/rechazar. */
+interface SolicitudParqueaderoMia {
+  id: string;
+  celdaNumero?: string;
+  detalle?: string;
+  solicitanteNombre?: string;
+}
+
+/** Cobro de parqueadero retenido en portería, pendiente de aprobación del residente. */
+interface CargoParqueaderoRetenido {
+  id: string;
+  celdaNumero?: string;
+  placa?: string | null;
+  minutosCobrados?: number;
+  cerradoEn?: string | null;
+  montoFinal?: number | string | null;
+  montoActual?: number | string | null;
+}
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
-import type { AnuncioDto } from "@/lib/api/types";
+import { api } from "@/lib/api/client";
+import type {
+  AnuncioDto,
+  NotificacionDto,
+  ProfileResponse,
+  PagoDto,
+  ReciboDto,
+  PagosResponse,
+} from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { getNotifTarget } from "@/lib/notif-routing";
 import { gsap } from "gsap";
@@ -30,11 +56,11 @@ function HomeResidente() {
   const router = useRouter();
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [notificaciones, setNotificaciones] = useState<any[]>([]);
-  const [showCelebration, setShowCelebration] = useState<any>(null);
+  const [notificaciones, setNotificaciones] = useState<NotificacionDto[]>([]);
+  const [showCelebration, setShowCelebration] = useState<NotificacionDto | null>(null);
   const [selectedFeedItem, setSelectedFeedItem] = useState<AnuncioDto | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [financialData, setFinancialData] = useState<{ totalDebt: number; pagos: any[]; recibos: any[] }>({
+  const [financialData, setFinancialData] = useState<{ totalDebt: number; pagos: PagoDto[]; recibos: ReciboDto[] }>({
     totalDebt: 0,
     pagos: [],
     recibos: []
@@ -53,7 +79,7 @@ function HomeResidente() {
 
   const [anuncios, setAnuncios] = useState<AnuncioDto[]>([]);
   const [isLoadingAnuncios, setIsLoadingAnuncios] = useState(true);
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<ProfileResponse | null>(null);
   const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string } | null>(null);
 
   const fetchAnuncios = useCallback(async () => {
@@ -61,8 +87,8 @@ function HomeResidente() {
       setIsLoadingAnuncios(true);
       const data = await api.get<AnuncioDto[]>('/anuncios');
       setAnuncios(data);
-    } catch (e) {
-      
+    } catch {
+
     } finally {
       setIsLoadingAnuncios(false);
     }
@@ -70,7 +96,7 @@ function HomeResidente() {
 
   const fetchNotificaciones = useCallback(async () => {
     try {
-      const data = await api.get<import('@/lib/api/types').NotificacionDto[]>('/notificaciones');
+      const data = await api.get<NotificacionDto[]>('/notificaciones');
       setNotificaciones(data.filter((n) => !n.leida));
     } catch {
       // silently ignore
@@ -79,21 +105,21 @@ function HomeResidente() {
 
   const fetchUserData = useCallback(async () => {
     try {
-      const data = await api.get<import('@/lib/api/types').ProfileResponse>('/usuarios/me/profile');
+      const data = await api.get<ProfileResponse>('/usuarios/me/profile');
       setUserData(data);
-    } catch (e) { 
-       
+    } catch {
+
     }
   }, []);
 
   // Aprobaciones de parqueadero de visitante que este residente (inquilino) debe
   // aprobar o rechazar. Se muestran como notificación destacada en el inicio.
-  const [solicitudesParqueadero, setSolicitudesParqueadero] = useState<any[]>([]);
+  const [solicitudesParqueadero, setSolicitudesParqueadero] = useState<SolicitudParqueaderoMia[]>([]);
   const [busyAprob, setBusyAprob] = useState<string | null>(null);
 
   const fetchSolicitudesParqueadero = useCallback(async () => {
     try {
-      const data = await api.get<any[]>('/parqueadero/solicitudes/mias');
+      const data = await api.get<SolicitudParqueaderoMia[]>('/parqueadero/solicitudes/mias');
       setSolicitudesParqueadero(data ?? []);
     } catch { /* no aplica / sin permiso */ }
   }, []);
@@ -101,11 +127,11 @@ function HomeResidente() {
   // Cobros de parqueadero RETENIDOS: el vehículo de la visita está en portería
   // y NO puede salir hasta que este residente apruebe (o rechace) el cargo.
   // Es la alerta más urgente del inicio.
-  const [cargosRetenidos, setCargosRetenidos] = useState<any[]>([]);
+  const [cargosRetenidos, setCargosRetenidos] = useState<CargoParqueaderoRetenido[]>([]);
 
   const fetchCargosRetenidos = useCallback(async () => {
     try {
-      const data = await api.get<any[]>('/parqueadero/cargos/mios');
+      const data = await api.get<CargoParqueaderoRetenido[]>('/parqueadero/cargos/mios');
       setCargosRetenidos(data ?? []);
     } catch { /* no aplica / sin permiso */ }
   }, []);
@@ -121,8 +147,8 @@ function HomeResidente() {
         { duration: 5000 },
       );
       fetchCargosRetenidos();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo procesar");
+    } catch (e: unknown) {
+      toast.error((e instanceof Error ? e.message : String(e)) || "No se pudo procesar");
     } finally {
       setBusyAprob(null);
     }
@@ -134,8 +160,8 @@ function HomeResidente() {
       await api.post(`/parqueadero/solicitudes/${id}/inquilino/${accion}`, {});
       toast.success(accion === 'aprobar' ? "Parqueadero de visitante aprobado." : "Solicitud rechazada.");
       fetchSolicitudesParqueadero();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo procesar");
+    } catch (e: unknown) {
+      toast.error((e instanceof Error ? e.message : String(e)) || "No se pudo procesar");
     } finally {
       setBusyAprob(null);
     }
@@ -152,15 +178,15 @@ function HomeResidente() {
 
   const fetchFinance = useCallback(async () => {
     try {
-      const data = await api.get<{ pagos: any[]; recibos: any[] }>('/pagos');
+      const data = await api.get<PagosResponse>('/pagos');
       const pagos = data?.pagos ?? [];
       const recibos = data?.recibos ?? [];
       const totalDebt = pagos
-        .filter((p: any) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
-        .reduce((sum: number, p: any) => sum + parseFloat(p.monto || '0'), 0);
+        .filter((p: PagoDto) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
+        .reduce((sum: number, p: PagoDto) => sum + parseFloat(p.monto || '0'), 0);
       setFinancialData({ totalDebt, pagos, recibos });
-    } catch (e) {
-      
+    } catch {
+
     }
   }, []);
 
@@ -172,7 +198,7 @@ function HomeResidente() {
 
   const fetchActiveAsamblea = useCallback(async () => {
     try {
-      const data = await api.get<any>('/asambleas/activa/session');
+      const data = await api.get<{ id: string; activa: boolean; titulo: string; descripcion?: string }>('/asambleas/activa/session');
       if (data?.id && data?.activa) {
         setActiveAsamblea({ id: data.id, titulo: data.titulo, descripcion: data.descripcion });
       } else {
@@ -199,14 +225,14 @@ function HomeResidente() {
       gsap.fromTo(".fade-up-home", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 });
     }, containerRef);
     return () => ctx.revert();
-  }, [user, fetchNotificaciones, fetchFinance, fetchUserData, fetchAnuncios, fetchActiveAsamblea, fetchSolicitudesParqueadero]);
+  }, [user, fetchNotificaciones, fetchFinance, fetchUserData, fetchAnuncios, fetchActiveAsamblea, fetchSolicitudesParqueadero, fetchCargosRetenidos]);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-16 pb-32">
       <RoleSwitcher />
       {showCelebration && (
         <CelebrationModal 
-          tipo={showCelebration.tipo}
+          tipo={showCelebration.tipo as "APROBACION" | "SISTEMA"}
           titulo={showCelebration.titulo}
           mensaje={showCelebration.mensaje}
           onClose={() => {
@@ -273,7 +299,7 @@ function HomeResidente() {
         context={{
           userName: userData?.nombre || user?.nombre || undefined,
           totalDebt: financialData.totalDebt,
-          pagos: financialData.pagos,
+          pagos: financialData.pagos.map(p => ({ concepto: p.concepto, monto: Number(p.monto), estado: p.estado })),
           anuncios: anuncios.map(a => ({ titulo: a.titulo, contenido: a.contenido }))
         }}
       />
@@ -500,11 +526,11 @@ function HomeResidente() {
             item={{
               title: selectedFeedItem.titulo,
               content: selectedFeedItem.contenido,
-              image: selectedFeedItem.imagenUrl,
+              image: selectedFeedItem.imagenUrl ?? undefined,
               category: selectedFeedItem.tipo,
               type: 'POST',
             }} 
-            userData={userData}
+            userData={userData ?? {}}
             onClose={() => setSelectedFeedItem(null)} 
           />
        )}
@@ -721,7 +747,7 @@ function HomeAdmin() {
   const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string } | null>(null);
 
   useEffect(() => {
-    api.get<any>('/asambleas/activa/session')
+    api.get<{ id: string; activa: boolean; titulo: string; descripcion?: string }>('/asambleas/activa/session')
       .then((data) => {
         if (data?.id && data?.activa) {
           setActiveAsamblea({ id: data.id, titulo: data.titulo, descripcion: data.descripcion });

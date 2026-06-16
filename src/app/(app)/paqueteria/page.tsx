@@ -6,17 +6,40 @@ import { Package, CheckCircle2, ScanLine, Clock, MapPin } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+
+interface ResidenteDirectorio {
+  id: string;
+  nombre: string;
+  unidad: {
+    torre: string | null;
+    numero: string | null;
+  };
+}
+
+interface PaqueteItem {
+  id: string;
+  descripcion: string;
+  remitente: string;
+  fechaLlegada: string;
+  usuario?: {
+    nombre: string | null;
+    unidad?: {
+      torre: string | null;
+      numero: string | null;
+    } | null;
+  } | null;
+}
 
 export default function PaqueteriaPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const role = user?.rol;
 
-  const [paquetes, setPaquetes] = useState<any[]>([]);
-  const [residentes, setResidentes] = useState<any[]>([]);
+  const [paquetes, setPaquetes] = useState<PaqueteItem[]>([]);
+  const [residentes, setResidentes] = useState<ResidenteDirectorio[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [formData, setFormData] = useState({
@@ -28,7 +51,7 @@ export default function PaqueteriaPage() {
 
   const refetchPaquetes = async () => {
     try {
-      const data = await api.get<any[]>('/vigilancia/paquetes');
+      const data = await api.get<PaqueteItem[]>('/vigilancia/paquetes');
       setPaquetes(data);
     } catch {}
   };
@@ -53,12 +76,12 @@ export default function PaqueteriaPage() {
     async function loadData() {
        try {
          const [paqData, dirData] = await Promise.all([
-           api.get<any[]>('/vigilancia/paquetes'),
-           api.get<any[]>('/directorio')
+           api.get<PaqueteItem[]>('/vigilancia/paquetes'),
+           api.get<ResidenteDirectorio[]>('/directorio')
          ]);
          setPaquetes(paqData);
          setResidentes(dirData);
-       } catch (e) {
+       } catch {
          toast.error("Error al cargar datos");
        } finally {
          setLoading(false);
@@ -83,7 +106,7 @@ export default function PaqueteriaPage() {
        await api.post('/vigilancia/paquetes', formData);
        toast.success("Paquete registrado y Residente notificado");
        // Re-fetch to get the full joined object safely instead of manual push
-       const freshPaquetes = await api.get<any[]>('/vigilancia/paquetes');
+       const freshPaquetes = await api.get<PaqueteItem[]>('/vigilancia/paquetes');
        setPaquetes(freshPaquetes);
        setFormData({usuarioId: "", remitente: "", descripcion: ""});
      } catch {

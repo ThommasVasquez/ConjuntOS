@@ -2,21 +2,41 @@
 
 import { useState, useEffect } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { Users, Car, MapPin, Eye, PlusCircle, CheckCircle2, Search } from "lucide-react";
+import { Users, Car, Eye, PlusCircle } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+
+interface ResidenteDirectorio {
+  id: string;
+  nombre: string;
+  torre: string | null;
+  apto: string | null;
+}
+
+interface VisitaItem {
+  nombre: string;
+  tipo: string;
+  placa: string | null;
+  creadoEn: string;
+  usuario?: {
+    unidad?: {
+      torre: string | null;
+      numero: string | null;
+    } | null;
+  } | null;
+}
 
 export default function ControlVisitas() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const role = user?.rol;
 
-  const [visitas, setVisitas] = useState<any[]>([]);
-  const [residentes, setResidentes] = useState<any[]>([]);
+  const [visitas, setVisitas] = useState<VisitaItem[]>([]);
+  const [residentes, setResidentes] = useState<ResidenteDirectorio[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [formData, setFormData] = useState({
@@ -31,7 +51,7 @@ export default function ControlVisitas() {
 
   const refetchVisitas = async () => {
     try {
-      const data = await api.get<any[]>('/vigilancia/visitas');
+      const data = await api.get<VisitaItem[]>('/vigilancia/visitas');
       setVisitas(data);
     } catch {}
   };
@@ -57,12 +77,12 @@ export default function ControlVisitas() {
     async function loadData() {
        try {
          const [visData, dirData] = await Promise.all([
-           api.get<any[]>('/vigilancia/visitas'),
-           api.get<any[]>('/directorio')
+           api.get<VisitaItem[]>('/vigilancia/visitas'),
+           api.get<ResidenteDirectorio[]>('/directorio')
          ]);
          setVisitas(visData);
          setResidentes(dirData);
-       } catch (e) {
+       } catch {
          toast.error("Error al cargar datos");
        } finally {
          setLoading(false);
@@ -84,7 +104,7 @@ export default function ControlVisitas() {
 
      setIsSubmitting(true);
      try {
-       const newVisita = await api.post<any>('/vigilancia/visitas', formData);
+       const newVisita = await api.post<VisitaItem>('/vigilancia/visitas', formData);
        toast.success("Visita registrada exitosamente");
        setVisitas([newVisita, ...visitas]);
        setFormData({...formData, nombre: "", placa: "", observacion: ""});

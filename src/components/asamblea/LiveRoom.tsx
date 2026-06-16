@@ -5,13 +5,8 @@ import {
   LiveKitRoom,
   VideoConference,
   RoomAudioRenderer,
-  ControlBar,
-  GridLayout,
-  ParticipantTile,
-  useTracks,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
-import { Track } from 'livekit-client';
 import { api } from '@/lib/api/client';
 import type { LiveKitTokenDto } from '@/lib/api/types';
 

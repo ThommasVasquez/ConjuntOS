@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
-import { useAuth } from "@/hooks/useAuth";
 import { gsap } from "gsap";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 
@@ -230,7 +229,7 @@ export default function CitofoniaPage() {
               <div className="w-full max-w-sm bg-text/5 border border-border rounded-3xl p-6 text-center my-2 animate-in zoom-in-95 duration-300">
                  <p className="text-[10px] font-black uppercase text-accent tracking-widest mb-2">RESPUESTA RECIBIDA</p>
                  <p className="text-xs text-text italic font-medium leading-relaxed">
-                    "{lastSpeechResponse || (callState === "CONNECTED" ? "Habla por el micrófono..." : "Escuchando...")}"
+                    &quot;{lastSpeechResponse || (callState === "CONNECTED" ? "Habla por el micrófono..." : "Escuchando...")}&quot;
                  </p>
               </div>
            )}
@@ -248,7 +247,7 @@ export default function CitofoniaPage() {
                           onClick={() => handleOptionClick(opt.label, opt.reply)}
                           className="w-full py-3.5 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
                        >
-                          <span>"{opt.label}"</span>
+                          <span>&quot;{opt.label}&quot;</span>
                           <span className="text-[9px] font-black text-accent uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">Hablar</span>
                        </button>
                     ))}

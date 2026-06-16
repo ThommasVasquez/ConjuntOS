@@ -13,7 +13,7 @@ import {
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";

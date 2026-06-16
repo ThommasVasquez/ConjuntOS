@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -51,16 +52,12 @@ export default function CraftsmanshipSection() {
         </div>
 
         <div className="flex-1 relative h-[500px] w-full">
-          <img 
-            src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" 
-            alt="Data analysis" 
-            className="craft-img-1 absolute top-0 left-0 w-3/5 h-64 object-cover rounded-[32px] shadow-lg z-10"
-          />
-          <img 
-            src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80" 
-            alt="Team collaborating" 
-            className="craft-img-2 absolute bottom-0 right-0 w-3/5 h-[350px] object-cover rounded-[32px] shadow-lg"
-          />
+          <div className="craft-img-1 absolute top-0 left-0 w-3/5 h-64 rounded-[32px] shadow-lg z-10 overflow-hidden">
+            <Image fill sizes="(max-width: 768px) 60vw, 360px" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" alt="Data analysis" className="object-cover" />
+          </div>
+          <div className="craft-img-2 absolute bottom-0 right-0 w-3/5 h-[350px] rounded-[32px] shadow-lg overflow-hidden">
+            <Image fill sizes="(max-width: 768px) 60vw, 360px" src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80" alt="Team collaborating" className="object-cover" />
+          </div>
         </div>
 
       </div>

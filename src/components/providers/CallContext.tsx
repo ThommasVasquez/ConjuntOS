@@ -3,8 +3,10 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
+import type { ProfileResponse } from "@/lib/api/types";
+import type { Room, RemoteTrack } from "livekit-client";
 import { useRouter } from "next/navigation";
-import { Phone, PhoneOff, X, ShieldAlert, Check } from "lucide-react";
+import { Phone, PhoneOff, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export type CallState = "IDLE" | "RINGING" | "OUTGOING" | "CONNECTED" | "FALLBACK";
@@ -44,7 +46,7 @@ const sanitizePeerId = (id: string): string => {
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const router = useRouter();
 
   // Call States
@@ -55,13 +57,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [dialNum, setDialNum] = useState("");
 
   // LiveKit refs
-  const roomRef = useRef<any>(null); // current livekit-client Room
+  const roomRef = useRef<Room | null>(null); // current livekit-client Room
   const attachedElsRef = useRef<HTMLMediaElement[]>([]);
   const audioContainerRef = useRef<HTMLDivElement | null>(null);
   const pendingRoomRef = useRef<string | null>(null); // room awaiting answer (from push)
   const joinRoomRef = useRef<((room: string) => Promise<void>) | null>(null);
-  const startCallRef = useRef<any>(null);
-  const answerCallRef = useRef<any>(null);
+  const startCallRef = useRef<((num: string, displayName?: string) => Promise<void>) | null>(null);
+  const answerCallRef = useRef<(() => Promise<void>) | null>(null);
 
   const callStateRef = useRef<CallState>("IDLE");
   callStateRef.current = callState;
@@ -80,7 +82,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Load User Profile on start
   useEffect(() => {
     if (user) {
-      api.get('/usuarios/me/profile')
+      api.get<ProfileResponse>('/usuarios/me/profile')
         .then((data) => setProfile(data))
         .catch((err) => console.error("Error fetching profile for calling:", err));
     }
@@ -94,7 +96,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     document.body.appendChild(div);
     audioContainerRef.current = div;
     return () => {
-      try { div.remove(); } catch (e) {}
+      try { div.remove(); } catch {}
       audioContainerRef.current = null;
     };
   }, []);
@@ -187,6 +189,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
     };
     navigator.serviceWorker.addEventListener("message", handleMessage);
     return () => navigator.serviceWorker.removeEventListener("message", handleMessage);
+    // playRingtone is a stable local helper (reads only refs); excluded to avoid re-registering the listener on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, router]);
 
   // Handle deep-link from a notification opened in a fresh tab:
@@ -226,7 +230,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const startAudioContext = () => {
     if (typeof window === "undefined") return null;
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx =
+        window.AudioContext ||
+        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      audioCtxRef.current = new AudioCtx();
     }
     if (audioCtxRef.current.state === "suspended") {
       audioCtxRef.current.resume();
@@ -257,7 +264,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         try {
           osc.stop();
           osc.disconnect();
-        } catch (e) {}
+        } catch {}
       },
     };
   };
@@ -288,7 +295,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         try {
           osc.stop();
           osc.disconnect();
-        } catch (e) {}
+        } catch {}
       },
     };
   };
@@ -308,7 +315,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       try {
         osc.stop();
         osc.disconnect();
-      } catch (e) {}
+      } catch {}
     }, 200);
   };
 
@@ -332,7 +339,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       try {
         osc.stop();
         osc.disconnect();
-      } catch (e) {}
+      } catch {}
     }, 1200);
   };
 
@@ -358,7 +365,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // ── LiveKit connection ──
   const detachAll = () => {
     attachedElsRef.current.forEach((el) => {
-      try { el.remove(); } catch (e) {}
+      try { el.remove(); } catch {}
     });
     attachedElsRef.current = [];
   };
@@ -369,7 +376,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const { Room, RoomEvent, Track } = await import("livekit-client");
 
     if (roomRef.current) {
-      try { await roomRef.current.disconnect(); } catch (e) {}
+      try { await roomRef.current.disconnect(); } catch {}
       roomRef.current = null;
     }
     detachAll();
@@ -377,7 +384,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const lkRoom = new Room();
     roomRef.current = lkRoom;
 
-    lkRoom.on(RoomEvent.TrackSubscribed, (track: any) => {
+    lkRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
       if (track.kind === Track.Kind.Audio) {
         const el = track.attach();
         (el as HTMLMediaElement).autoplay = true;
@@ -399,7 +406,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     await lkRoom.connect(url, token);
     try {
       await lkRoom.localParticipant.setMicrophoneEnabled(true);
-    } catch (e) {
+    } catch {
       toast.info("Sin micrófono — llamada en modo escucha.");
     }
   };
@@ -482,8 +489,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
           endCall();
         }
       }, 25000);
-    } catch (err: any) {
-      const msg = err?.message || "No se pudo iniciar la llamada.";
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "No se pudo iniciar la llamada.";
       toast.error(msg.includes("LiveKit") ? "Servicio de voz no disponible." : "No se pudo iniciar la llamada.");
       endCall();
     }
@@ -511,7 +518,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       hadConnectedRef.current = true;
       setCallState("CONNECTED");
       router.push("/citofonia");
-    } catch (err) {
+    } catch {
       toast.error("No se pudo contestar la llamada.");
       endCall();
     }
@@ -546,7 +553,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     // Disconnect LiveKit (this stops the published mic track too).
     if (roomRef.current) {
-      try { roomRef.current.disconnect(); } catch (e) {}
+      try { roomRef.current.disconnect(); } catch {}
       roomRef.current = null;
     }
     detachAll();

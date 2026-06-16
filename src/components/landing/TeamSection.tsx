@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -45,7 +46,7 @@ export default function TeamSection() {
         <div className="team-card-container grid grid-cols-1 md:grid-cols-3 gap-6">
           {modules.map((mod, i) => (
             <div key={i} className="team-card relative h-[450px] rounded-[32px] overflow-hidden group">
-              <img src={mod.img} alt={mod.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              <Image fill sizes="(max-width: 768px) 100vw, 33vw" src={mod.img} alt={mod.title} className="object-cover transition-transform duration-700 group-hover:scale-105" />
               <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#000000] via-[#000000]/80 to-transparent flex flex-col justify-end p-8">
                 <h3 className="text-xl font-bold text-white">{mod.title}</h3>
                 <p className="text-sm text-black">{mod.subtitle}</p>

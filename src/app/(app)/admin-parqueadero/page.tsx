@@ -12,19 +12,26 @@ import { toast } from "sonner";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import type { RegistroDto, CeldaDto, CeldaMapaDto } from "@/lib/api/types";
+
+// La ronda devuelta por el backend incluye el usuario que la realizó.
+interface RondaConUsuario {
+  fecha: string;
+  usuario: { nombre: string };
+}
 
 export default function AdminParqueaderoPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const role = user?.rol;
 
-  const [registros, setRegistros] = useState<any[]>([]);
+  const [registros, setRegistros] = useState<RegistroDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [lastRound, setLastRound] = useState<any>(null);
+  const [lastRound, setLastRound] = useState<RondaConUsuario | null>(null);
 
   // Gestión de celdas
-  const [celdas, setCeldas] = useState<any[]>([]);
+  const [celdas, setCeldas] = useState<CeldaMapaDto[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [modo, setModo] = useState<'lote' | 'individual'>('lote');
@@ -39,15 +46,22 @@ export default function AdminParqueaderoPage() {
 
   async function loadCeldas() {
     try {
-      const data = await api.get<any[]>('/parqueadero/mapa');
+      const data = await api.get<CeldaMapaDto[]>('/parqueadero/mapa');
       setCeldas(data);
-    } catch (e) { /* sin permiso para mapa => ignora */ }
+    } catch { /* sin permiso para mapa => ignora */ }
   }
 
   async function crearCeldas() {
     setCreating(true);
     try {
-      const body: any = { tipo: tipoCelda, categoria, torre: torre.trim() || undefined };
+      const body: {
+        tipo: string;
+        categoria: string;
+        torre?: string;
+        prefijo?: string;
+        cantidad?: number;
+        numero?: string;
+      } = { tipo: tipoCelda, categoria, torre: torre.trim() || undefined };
       if (modo === 'lote') {
         const n = parseInt(cantidad, 10);
         if (!n || n < 1) { toast.error("Indica una cantidad válida"); setCreating(false); return; }
@@ -57,13 +71,13 @@ export default function AdminParqueaderoPage() {
         if (!numero.trim()) { toast.error("Indica el número de la celda"); setCreating(false); return; }
         body.numero = numero.trim();
       }
-      const creadas = await api.post<any[]>('/parqueadero/celdas', body);
+      const creadas = await api.post<CeldaDto[]>('/parqueadero/celdas', body);
       toast.success(`${creadas.length} celda${creadas.length === 1 ? '' : 's'} creada${creadas.length === 1 ? '' : 's'} con éxito.`);
       setShowCreate(false);
       setNumero("");
       await loadCeldas();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudieron crear las celdas");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudieron crear las celdas");
     } finally {
       setCreating(false);
     }
@@ -84,6 +98,8 @@ export default function AdminParqueaderoPage() {
       return;
     }
     loadData();
+    // loadData se recrea cada render; solo debe ejecutarse al resolver auth/rol.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, role, router]);
 
   useEffect(() => {
@@ -98,13 +114,13 @@ export default function AdminParqueaderoPage() {
   async function loadData() {
     try {
       const [regData, rondData] = await Promise.all([
-        api.get<any[]>('/parqueadero/registros'),
-        api.get<any>('/parqueadero/rondas')
+        api.get<RegistroDto[]>('/parqueadero/registros'),
+        api.get<RondaConUsuario | null>('/parqueadero/rondas')
       ]);
       setRegistros(regData);
       setLastRound(rondData);
       await loadCeldas();
-    } catch (e) {
+    } catch {
       toast.error("Error cargando auditoría");
     } finally {
       setLoading(false);

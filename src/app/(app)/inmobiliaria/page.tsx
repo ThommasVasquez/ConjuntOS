@@ -2,27 +2,23 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { 
-  Building2, 
-  Search, 
-  Filter, 
-  Plus, 
-  Bed, 
-  Bath, 
-  Maximize2, 
+import {
+  Building2,
+  Search,
+  Filter,
+  Plus,
+  Bed,
+  Bath,
+  Maximize2,
   Heart,
   CheckCircle2,
-  Phone,
-  MessageSquare,
-  X, 
-  ArrowRight, 
-  Plane as Share, 
-  MapPin, 
-  ShieldCheck, 
-  Zap
+  X,
+  ArrowRight,
+  MapPin,
+  ShieldCheck
 } from "lucide-react";
 import { gsap } from "gsap";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import BottomSheet from "@/components/shell/BottomSheet";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useWsSubscription } from "@/hooks/useWebSocket";

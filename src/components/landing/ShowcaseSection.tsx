@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { CheckCircle2 } from "lucide-react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -44,7 +45,7 @@ export default function ShowcaseSection() {
           </div>
 
           <div className="relative rounded-[32px] overflow-hidden bg-text/10 shadow-xl h-[400px]">
-            <img src="https://images.unsplash.com/photo-1556910103-1c02745a872f?auto=format&fit=crop&w=800&q=80" alt="Lobby System" className="w-full h-full object-cover" />
+            <Image fill sizes="(max-width: 768px) 100vw, 50vw" src="https://images.unsplash.com/photo-1556910103-1c02745a872f?auto=format&fit=crop&w=800&q=80" alt="Lobby System" className="object-cover" />
             <div className="absolute bottom-0 inset-x-0 bg-[#000000]/90 backdrop-blur-md p-6 flex items-center justify-between border-t border-white/5">
               <div>
                 <p className="text-sm text-black mb-1">Integración Directa</p>
@@ -58,13 +59,13 @@ export default function ShowcaseSection() {
         </div>
 
         <div className="showcase-right flex-1 relative">
-          <div className="rounded-[32px] overflow-hidden h-full min-h-[600px] bg-text/10 shadow-xl">
-            <img src="https://images.unsplash.com/photo-1542181961-9590d0c79227?auto=format&fit=crop&w=800&q=80" alt="Smart Access" className="w-full h-full object-cover" />
+          <div className="relative rounded-[32px] overflow-hidden h-full min-h-[600px] bg-text/10 shadow-xl">
+            <Image fill sizes="(max-width: 768px) 100vw, 50vw" src="https://images.unsplash.com/photo-1542181961-9590d0c79227?auto=format&fit=crop&w=800&q=80" alt="Smart Access" className="object-cover" />
           </div>
           
           <div className="showcase-float absolute bottom-8 right-8 bg-[#000000]/80 border border-white/10 backdrop-blur-xl p-4 rounded-2xl shadow-2xl flex items-center gap-4 w-72">
-            <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center overflow-hidden border border-white/5">
-              <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=100&q=80" alt="Avatar" className="w-full h-full object-cover opacity-80" />
+            <div className="relative w-12 h-12 rounded-full bg-black flex items-center justify-center overflow-hidden border border-white/5">
+              <Image fill sizes="48px" src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=100&q=80" alt="Avatar" className="object-cover opacity-80" />
             </div>
             <div>
               <p className="font-bold text-white text-sm">Control de Accesos</p>
