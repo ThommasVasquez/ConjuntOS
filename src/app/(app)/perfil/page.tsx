@@ -19,6 +19,7 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import { useTheme } from "@/components/providers/ThemeContext";
 
@@ -405,6 +406,7 @@ function ProfileContent() {
   };
 
   const handlePay = async (id: string) => {
+    if (!PAYMENTS_ENABLED) { toast.error(PAYMENTS_DISABLED_MSG); return; }
     setIsPaying(true);
 
     try {

@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { gsap } from "gsap";
 import { api } from "@/lib/api/client";
+import { toast } from "sonner";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import BottomSheet from "@/components/shell/BottomSheet";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useWsSubscription } from "@/hooks/useWebSocket";
@@ -365,6 +367,7 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
   };
 
   const handleSign = () => {
+    if (!PAYMENTS_ENABLED) { toast.error(PAYMENTS_DISABLED_MSG); return; }
     setSigned(true);
     gsap.to(".sign-path", { strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut" });
     setTimeout(() => {

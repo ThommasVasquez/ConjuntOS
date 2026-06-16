@@ -14,6 +14,7 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -173,6 +174,7 @@ export default function ReservasPage() {
     
     // Si requiere deposito lo mandamos a PAYMENT view
     if (selectedArea?.requiereDeposito && Number(selectedArea.depositoMonto) > 0) {
+      if (!PAYMENTS_ENABLED) { toast.error(PAYMENTS_DISABLED_MSG); return; }
       setStep('PAYMENT');
     } else {
       await executeBooking();

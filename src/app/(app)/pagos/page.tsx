@@ -15,6 +15,7 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import type { PagoDto, ReciboDto } from "@/lib/api/types";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -117,6 +118,7 @@ export default function PagosPage() {
 
   const handlePayment = async () => {
     if (!selectedPayment) return;
+    if (!PAYMENTS_ENABLED) { toast.error(PAYMENTS_DISABLED_MSG); return; }
     setIsProcessing(true);
     
     try {
