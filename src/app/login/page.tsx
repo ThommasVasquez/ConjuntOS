@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import { Shield, Mail, Lock, ArrowRight, Loader2, Star, Eye, EyeOff } from "lucide-react";
@@ -69,10 +70,16 @@ export default function LoginPage() {
         router.refresh();
       }, 1000);
     } catch (error: unknown) {
+      // The backend returns a generic "authentication required" for a failed
+      // login; surface a clear, user-facing message instead of that jargon.
       const message =
-        error instanceof Error
-          ? error.message
-          : "Error al conectar con la comunidad.";
+        error instanceof ApiError
+          ? error.status === 401
+            ? "Correo o contraseña incorrectos."
+            : error.detail
+          : error instanceof Error
+            ? error.message
+            : "Error al conectar con la comunidad.";
       toast.error(message);
     } finally {
       setIsLoading(false);
