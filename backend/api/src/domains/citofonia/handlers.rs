@@ -13,6 +13,7 @@ use crate::db::schema::{push_subscriptions, unidades, usuarios};
 use crate::db::DbConn;
 use crate::error::{ApiError, ApiResult};
 use crate::services::push::PushSubscriptionInfo;
+use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -63,6 +64,8 @@ pub struct CitofoniaTokenDto {
 #[derive(Debug, PartialEq)]
 pub enum PeerTarget {
     User(Uuid),
+    /// Internal dial code, resolved within the caller's conjunto.
+    Numero(String),
     Role(Uuid, Rol),
     Apto(Uuid, String, String),
     Invalid,
@@ -75,6 +78,14 @@ pub fn parse_peer_id(peer_id: &str) -> PeerTarget {
             Ok(id) => PeerTarget::User(id),
             Err(_) => PeerTarget::Invalid,
         };
+    }
+
+    // numero-{code}: internal dial code (digits), resolved in the caller's conjunto.
+    if let Some(rest) = peer_id.strip_prefix("numero-") {
+        if !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()) {
+            return PeerTarget::Numero(rest.to_string());
+        }
+        return PeerTarget::Invalid;
     }
 
     // {conjuntoId}-APTO-{torre}-{numero}
@@ -126,6 +137,16 @@ async fn resolve_targets(
             let ids: Vec<Uuid> = usuarios::table
                 .filter(usuarios::id.eq(id))
                 .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                .filter(usuarios::activo.eq(true))
+                .select(usuarios::id)
+                .load(conn)
+                .await?;
+            Ok(ids)
+        }
+        PeerTarget::Numero(code) => {
+            let ids: Vec<Uuid> = usuarios::table
+                .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                .filter(usuarios::numero_interno.eq(code))
                 .filter(usuarios::activo.eq(true))
                 .select(usuarios::id)
                 .load(conn)
@@ -280,6 +301,35 @@ async fn call(
         }
         count
     };
+
+    // Ring any OPEN tab of each target instantly over WebSocket. This is the
+    // reliable foreground path — independent of Web Push, which only reaches the
+    // browser that registered a subscription and is blocked/unreliable in some
+    // browsers (e.g. Brave). Push above remains the fallback for a closed app.
+    let ws_payload = serde_json::json!({ "room": room, "callerName": caller_name });
+    for uid in &user_ids {
+        state
+            .ws_hub
+            .publish(
+                user.conjunto_id,
+                WsEvent {
+                    domain: "citofonia".to_string(),
+                    action: "incoming_call".to_string(),
+                    payload: Some(ws_payload.clone()),
+                    target_user_id: Some(*uid),
+                },
+            )
+            .await;
+    }
+
+    tracing::info!(
+        caller = %user.id,
+        targets = ?user_ids,
+        ws_published = user_ids.len(),
+        push_sent = sent,
+        room = %room,
+        "citofonia/call dispatched"
+    );
 
     Ok(Json(CallResponse {
         room,

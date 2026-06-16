@@ -1,9 +1,9 @@
 "use client";
 
-import { 
-  ShoppingBag, Search, Plus, Utensils, Heart, Wrench, 
-  Baby, Dog, Laptop, MessageCircle, ArrowLeft,
-  ChevronRight, Filter, Star, Clock, MapPin, X, Send, Camera, Sparkles
+import {
+  ShoppingBag, Search, Plus, Utensils, Heart, Wrench,
+  MessageCircle, ArrowLeft,
+  Filter, Star, X, Send, Camera, Sparkles
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,7 +12,7 @@ import { gsap } from "gsap";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import BottomSheet from "@/components/shell/BottomSheet";
 import { toast } from "sonner";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface Clasificado {
@@ -213,12 +213,6 @@ export default function ClasificadosPage() {
 function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => void }) {
   const [isLiked, setIsLiked] = useState(false);
 
-  const formattedPrice = new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0
-  }).format(Number(item.precio || 0));
-
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
     const text = `Hola ${item.propietario?.nombre || "Vendedor"}, vi tu anuncio de "${item.nombre}" en el Mercadillo de EnConjunto y me interesa más información.`;
@@ -307,7 +301,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
       await api.post('/clasificados', form);
       toast.success("¡Publicado con éxito!");
       onSuccess();
-    } catch (e) {
+    } catch {
       toast.error("Error de conexión");
     } finally {
       setLoading(false);

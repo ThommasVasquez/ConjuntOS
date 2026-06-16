@@ -30,6 +30,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me}
       ALLOWED_ORIGINS: http://localhost:3000,https://conjuntos.app,https://www.conjuntos.app,https://app.conjuntos.app
       COOKIE_DOMAIN: .conjuntos.app
+      # Frontend (conjuntos.app) and API (api.conjuntos.app) are different origins:
+      # the session cookie must be SameSite=None; Secure to survive cross-subdomain
+      # requests/reloads. Without this it defaults to Lax and breaks auth on reload.
+      COOKIE_CROSS_SITE: ${COOKIE_CROSS_SITE:-true}
       TESTER_EMAILS: thommy@conjuntos.app,camilo@conjuntos.app,raul@conjuntos.app,paulo@conjuntos.app
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1

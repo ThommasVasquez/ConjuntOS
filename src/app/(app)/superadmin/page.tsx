@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { 
-  Building2, Plus, FileText, CheckCircle2, ShieldCheck, MapPin, 
-  User, Calendar, List, Layers, HelpCircle, Loader2, ArrowRight,
+import Image from "next/image";
+import {
+  Building2, Plus, FileText, ShieldCheck, MapPin,
+  User, Calendar, Layers, Loader2,
   Upload, Edit3
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
+import type { ConjuntoDto } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -20,7 +22,7 @@ export default function SuperAdminPage() {
   const role = user?.rol;
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [conjuntos, setConjuntos] = useState<any[]>([]);
+  const [conjuntos, setConjuntos] = useState<ConjuntoDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tab, setTab] = useState<"CREAR" | "LISTAR">("CREAR");
@@ -44,7 +46,7 @@ export default function SuperAdminPage() {
     colorPrimario: "#404040" // Default premium blue
   });
 
-  const handleEditClick = (c: any) => {
+  const handleEditClick = (c: ConjuntoDto) => {
     setEditingConjuntoId(c.id);
     setFormData({
       nombre: c.nombre || "",
@@ -105,15 +107,15 @@ export default function SuperAdminPage() {
         setIsUploading(false);
       };
       reader.readAsDataURL(file);
-    } catch (err: any) {
-      toast.error("Error al cargar imagen: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Error al cargar imagen: " + (err instanceof Error ? err.message : String(err)));
       setIsUploading(false);
     }
   };
 
   const fetchConjuntos = async () => {
     try {
-      const data = await api.get<any[]>('/superadmin/conjuntos');
+      const data = await api.get<ConjuntoDto[]>('/superadmin/conjuntos');
       setConjuntos(data);
     } catch {
       toast.error("Error al cargar conjuntos registrados");
@@ -439,10 +441,13 @@ export default function SuperAdminPage() {
               <div className="flex flex-col sm:flex-row gap-4 items-center bg-surface-2 border border-border rounded-2xl p-4">
                 {formData.logoUrl ? (
                   <div className="w-16 h-16 rounded-xl bg-white border border-border overflow-hidden flex items-center justify-center p-1 relative group shrink-0">
-                    <img 
-                      src={formData.logoUrl} 
-                      alt="Logo preview" 
-                      className="w-full h-full object-contain" 
+                    <Image
+                      src={formData.logoUrl}
+                      alt="Vista previa del logotipo"
+                      width={64}
+                      height={64}
+                      unoptimized
+                      className="w-full h-full object-contain"
                     />
                     <button 
                       type="button" 
@@ -532,7 +537,7 @@ export default function SuperAdminPage() {
                   <div className="flex gap-3 items-center">
                     {c.logoUrl && (
                       <div className="w-10 h-10 rounded-lg bg-white border border-border overflow-hidden p-0.5 flex items-center justify-center shrink-0">
-                        <img src={c.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                        <Image src={c.logoUrl} alt="Logotipo de la copropiedad" width={40} height={40} unoptimized className="w-full h-full object-contain" />
                       </div>
                     )}
                     <div>

@@ -28,12 +28,26 @@ const ESTADO_STYLE: Record<string, { label: string; color: string; bg: string }>
   EJECUTADA: { label: "Ejecutada", color: "#009df2", bg: "rgba(0,157,242,0.12)" },
 };
 
+// Solicitud de la bitácora de parqueadero devuelta por el backend.
+interface SolicitudParqueadero {
+  id: string;
+  estado: string;
+  accion: string;
+  detalle: string;
+  celdaNumero: string;
+  solicitanteNombre: string;
+  solicitanteRol: string;
+  creadoEn: string;
+  aprobadorNombre?: string | null;
+  resueltoEn?: string | null;
+}
+
 export default function BitacoraParqueaderoPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const role = user?.rol;
 
-  const [log, setLog] = useState<any[]>([]);
+  const [log, setLog] = useState<SolicitudParqueadero[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<"TODOS" | "PENDIENTE">("PENDIENTE");
@@ -51,6 +65,8 @@ export default function BitacoraParqueaderoPage() {
       return;
     }
     loadLog();
+    // esAdmin se deriva de role (ya en deps); loadLog se recrea cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, role, router]);
 
   useEffect(() => {
@@ -61,10 +77,10 @@ export default function BitacoraParqueaderoPage() {
 
   async function loadLog() {
     try {
-      const data = await api.get<any[]>("/parqueadero/solicitudes");
+      const data = await api.get<SolicitudParqueadero[]>("/parqueadero/solicitudes");
       setLog(data);
-    } catch (e: any) {
-      toast.error(e?.message || "Error al cargar la bitácora");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al cargar la bitácora");
     } finally {
       setLoading(false);
     }
@@ -76,8 +92,8 @@ export default function BitacoraParqueaderoPage() {
       await api.post(`/parqueadero/solicitudes/${id}/${accion}`, {});
       toast.success(accion === "aprobar" ? "Solicitud aprobada y aplicada." : "Solicitud rechazada.");
       loadLog();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo procesar");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo procesar");
     } finally {
       setBusy(null);
     }
@@ -128,7 +144,7 @@ export default function BitacoraParqueaderoPage() {
         ] as const).map((f) => (
           <button
             key={f.v}
-            onClick={() => setFiltro(f.v as any)}
+            onClick={() => setFiltro(f.v)}
             className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all active:scale-95 ${
               filtro === f.v
                 ? "bg-accent text-on-accent border-accent shadow-lg shadow-accent/20"

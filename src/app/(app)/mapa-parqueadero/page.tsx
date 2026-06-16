@@ -15,29 +15,61 @@ import { gsap } from "gsap";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 <<<<<<< Updated upstream
 import { useWsSubscription } from "@/hooks/useWebSocket";
-=======
-import { useCall } from "@/components/providers/CallContext";
->>>>>>> Stashed changes
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface WaitlistEntry {
-  id: string;
-  plate: string;
-  contact: string;
-  note: string;
-  arrivedAt: number;
+// Celda del mapa con los campos extra que entrega el backend para esta vista
+// (categoría física, vigencia y ocupante) además de los del CeldaMapaDto base.
+interface CeldaMapa extends CeldaMapaDto {
+  categoria?: string | null;
+  asignadoHasta?: string | null;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// Última ronda de verificación con el resumen del usuario que la realizó.
+interface UltimaRonda {
+  fecha: string;
+  usuario: { nombre: string };
+}
+
+// Reserva de cupo de visitante próxima a llegar.
+interface ReservaProxima {
+  id: string;
+  categoria?: string | null;
+  residenteNombre: string;
+  estado: string;
+  llegadaEstimada: string;
+  tiempoLibre?: boolean;
+  duracionMinutos?: number;
+  placa?: string | null;
+}
+
+// Sesión de cobro de visitante asociada a una celda ocupada.
+interface SesionCobro {
+  id: string;
+  inicio: string;
+  finGratis: string;
+  tarifaHora?: number;
+  estado?: string;
+  montoFinal?: number;
+  montoActual?: number;
+}
+
+// Respuesta común de las mutaciones de celda: pueden quedar pendientes de
+// aprobación, o devolver el monto liquidado al cerrar una sesión.
+interface MutacionCeldaResponse {
+  pendiente?: boolean;
+  estado?: string;
+  montoFinal?: number;
+  montoActual?: number;
+}
+
 export default function MapaParqueaderoPage() {
-  const [parqueaderos, setParqueaderos] = useState<any[]>([]);
-  const [registros, setRegistros] = useState<any[]>([]);
-  const [lastRound, setLastRound] = useState<any>(null);
-  const [reservasProximas, setReservasProximas] = useState<any[]>([]);
+  const [parqueaderos, setParqueaderos] = useState<CeldaMapa[]>([]);
+  const [registros, setRegistros] = useState<RegistroDto[]>([]);
+  const [lastRound, setLastRound] = useState<UltimaRonda | null>(null);
+  const [reservasProximas, setReservasProximas] = useState<ReservaProxima[]>([]);
   const [busyReservaLlegada, setBusyReservaLlegada] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedFloor, setSelectedFloor] = useState("Sótano 1");
@@ -60,9 +92,9 @@ export default function MapaParqueaderoPage() {
   const [timerTick, setTimerTick] = useState(0);
   
   // Modal State
-  const [cellToRelease, setCellToRelease] = useState<any>(null);
+  const [cellToRelease, setCellToRelease] = useState<CeldaMapa | null>(null);
   // Sesión de cobro de visitante asociada a la celda que se va a liberar.
-  const [sesionCobro, setSesionCobro] = useState<any>(null);
+  const [sesionCobro, setSesionCobro] = useState<SesionCobro | null>(null);
   // Reloj que tiquea cada segundo mientras el modal de cobro está abierto, para
   // mostrar el tiempo transcurrido y el monto acumulado EN VIVO (no congelado).
   const [ahora, setAhora] = useState<number>(Date.now());
@@ -77,8 +109,8 @@ export default function MapaParqueaderoPage() {
 <<<<<<< Updated upstream
   // Asignación de celda de VISITANTE: requiere elegir el residente que recibe la
   // visita; la asignación la aprueba ese inquilino (no el admin).
-  const [cellVisitante, setCellVisitante] = useState<any>(null);
-  const [residentes, setResidentes] = useState<any[]>([]);
+  const [cellVisitante, setCellVisitante] = useState<CeldaMapa | null>(null);
+  const [residentes, setResidentes] = useState<DirectorioEntradaDto[]>([]);
   const [residenteId, setResidenteId] = useState("");
   const [busquedaRes, setBusquedaRes] = useState("");
   // Tiempo estimado de la visita: minutos, o 'libre' (sin estimado).
@@ -87,7 +119,7 @@ export default function MapaParqueaderoPage() {
   // Asignación de celda de RESIDENTE (permanente): a un apartamento, con placa
   // obligatoria y vigencia opcional. Reemplaza el viejo "Registro de Acceso" sin
   // control. Comparte el selector de residentes (residenteId/busquedaRes).
-  const [cellResidente, setCellResidente] = useState<any>(null);
+  const [cellResidente, setCellResidente] = useState<CeldaMapa | null>(null);
   const [placaResidente, setPlacaResidente] = useState("");
   const [mesesResidente, setMesesResidente] = useState<string>("sin");
 
@@ -95,7 +127,7 @@ export default function MapaParqueaderoPage() {
   // deriva del prefijo del número de celda (ej. "S1-01" -> Sótano 1, "S2-..." ->
   // Sótano 2). Las celdas sin prefijo reconocible caen en "Sótano 1" por defecto.
   const [nivel, setNivel] = useState<number>(1);
-  const nivelDeCelda = (p: any): number => {
+  const nivelDeCelda = (p: CeldaMapa): number => {
     const m = /^\s*S(?:[ÓO]TANO)?\s*-?\s*(\d+)/i.exec(String(p?.numero || ""));
     return m ? parseInt(m[1], 10) : 1;
   };
@@ -195,9 +227,9 @@ export default function MapaParqueaderoPage() {
 
   async function loadData() {
     try {
-      const data = await api.get<any[]>('/parqueadero/mapa');
+      const data = await api.get<CeldaMapa[]>('/parqueadero/mapa');
       setParqueaderos(data);
-    } catch (e) {
+    } catch {
       toast.error("Error al cargar mapa");
     } finally {
       setLoading(false);
@@ -213,8 +245,8 @@ export default function MapaParqueaderoPage() {
   async function loadExtra() {
     try {
       const [regData, rondData] = await Promise.all([
-        api.get<any[]>('/parqueadero/registros'),
-        api.get<any>('/parqueadero/rondas')
+        api.get<RegistroDto[]>('/parqueadero/registros'),
+        api.get<UltimaRonda | null>('/parqueadero/rondas')
       ]);
 <<<<<<< Updated upstream
       setRegistros(regData);
@@ -235,12 +267,12 @@ export default function MapaParqueaderoPage() {
     }
     // Directorio de residentes para asignar celdas de visitante (no crítico).
     try {
-      const dir = await api.get<any[]>('/directorio');
+      const dir = await api.get<DirectorioEntradaDto[]>('/directorio');
       setResidentes(dir);
     } catch { /* sin permiso para directorio */ }
     // Reservas de cupo de visitante próximas (no crítico).
     try {
-      const res = await api.get<any[]>('/parqueadero/reservas/proximas');
+      const res = await api.get<ReservaProxima[]>('/parqueadero/reservas/proximas');
       setReservasProximas(res ?? []);
     } catch { /* sin permiso */ }
   }
@@ -252,8 +284,8 @@ export default function MapaParqueaderoPage() {
       await api.post(`/parqueadero/reservas/${id}/llegada`, {});
       toast.success("Llegada registrada. Asigna la celda de visitante al residente.");
       loadExtra();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo registrar la llegada");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "No se pudo registrar la llegada");
     } finally {
       setBusyReservaLlegada(null);
     }
@@ -291,29 +323,7 @@ export default function MapaParqueaderoPage() {
     return { cleanObs: obsText, residentId: "", apto: "" };
   };
 
-  const getElapsedTimeStr = (fecha: string) => {
-    if (!fecha) return "";
-    const diffMs = Date.now() - new Date(fecha).getTime();
-    const hours = Math.floor(diffMs / 3600000);
-    const minutes = Math.floor((diffMs % 3600000) / 60000);
-    if (hours === 0) return `${minutes}m`;
-    return `${hours}h ${minutes}m`;
-  };
-
-  const getElapsedMs = (fecha: string) => {
-    if (!fecha) return 0;
-    return Date.now() - new Date(fecha).getTime();
-  };
-
-  const isOvertime = (fecha: string) => {
-    if (!fecha) return false;
-    return getElapsedMs(fecha) >= 4 * 3600000; // 4 hours limit
->>>>>>> Stashed changes
-  };
-
   const handleCellClick = (cell: any) => {
-    setSelectedCell(cell);
-    setIsNoveltyFormOpen(false);
     if (cell.estado === 'DISPONIBLE') {
 <<<<<<< Updated upstream
       // Celda de VISITANTE: se asigna a un residente que la debe aprobar.
@@ -337,7 +347,7 @@ export default function MapaParqueaderoPage() {
       setCellToRelease(cell);
       // Si es una celda de visitante, traer la sesión de cobro (monto en vivo).
       if (cell.tipo === 'VISITANTE') {
-        api.get<any>(`/parqueadero/sesiones/celda/${cell.id}`)
+        api.get<SesionCobro | null>(`/parqueadero/sesiones/celda/${cell.id}`)
           .then((s) => setSesionCobro(s))
           .catch(() => setSesionCobro(null));
       }
@@ -353,10 +363,10 @@ export default function MapaParqueaderoPage() {
 
   // Cierra la sesión de cobro con la liquidación elegida (vehículo en portería).
   const cerrarSesionLiquidando = async (liquidacion: 'VISITANTE_PAGO' | 'CARGADO_APTO') => {
-    if (!sesionCobro?.id) { liberarCelda(cellToRelease.id); return; }
+    if (!sesionCobro?.id) { if (cellToRelease) liberarCelda(cellToRelease.id); return; }
     setLiquidando(true);
     try {
-      const r: any = await api.post(`/parqueadero/sesiones/${sesionCobro.id}/cerrar`, { liquidacion });
+      const r = await api.post<MutacionCeldaResponse>(`/parqueadero/sesiones/${sesionCobro.id}/cerrar`, { liquidacion });
       const monto = Number(r?.montoFinal || r?.montoActual || 0);
       if (liquidacion === 'CARGADO_APTO' && r?.estado === 'RETENIDA') {
         toast.success(`Cobro de $${monto.toLocaleString('es-CO')} enviado al residente. El vehículo queda RETENIDO hasta que apruebe.`, { duration: 6000 });
@@ -369,8 +379,8 @@ export default function MapaParqueaderoPage() {
       }
       loadData();
       loadExtra();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo cerrar la sesión");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "No se pudo cerrar la sesión");
     } finally {
       setLiquidando(false);
       setCellToRelease(null);
@@ -380,10 +390,11 @@ export default function MapaParqueaderoPage() {
 
   const asignarVisitante = async () => {
     if (!residenteId) { toast.error("Selecciona el residente que recibe la visita"); return; }
+    if (!cellVisitante) return;
     setIsSubmitting(true);
     try {
       const estimadoMinutos = tiempoEstimado === "libre" ? null : parseInt(tiempoEstimado, 10);
-      const r: any = await api.post(`/parqueadero/celdas/${cellVisitante.id}/asignar`, { usuarioId: residenteId, estimadoMinutos });
+      const r = await api.post<MutacionCeldaResponse>(`/parqueadero/celdas/${cellVisitante.id}/asignar`, { usuarioId: residenteId, estimadoMinutos });
       if (r?.pendiente) {
         toast.success("Solicitud enviada. El residente debe aprobarla desde su app.", { duration: 5000 });
       } else {
@@ -391,8 +402,8 @@ export default function MapaParqueaderoPage() {
       }
       loadData();
       loadExtra();
-    } catch (e: any) {
-      toast.error(e?.message || "Error al asignar la celda");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al asignar la celda");
     } finally {
       setIsSubmitting(false);
       setCellVisitante(null);
@@ -403,10 +414,11 @@ export default function MapaParqueaderoPage() {
   const asignarResidente = async () => {
     if (!residenteId) { toast.error("Selecciona el apartamento/residente"); return; }
     if (!placaResidente.trim()) { toast.error("La placa del vehículo es obligatoria"); return; }
+    if (!cellResidente) return;
     setIsSubmitting(true);
     try {
       const meses = mesesResidente === "sin" ? null : parseInt(mesesResidente, 10);
-      const r: any = await api.post(`/parqueadero/celdas/${cellResidente.id}/asignar`, {
+      const r = await api.post<MutacionCeldaResponse>(`/parqueadero/celdas/${cellResidente.id}/asignar`, {
         usuarioId: residenteId,
         placa: placaResidente.trim().toUpperCase(),
         meses,
@@ -418,8 +430,8 @@ export default function MapaParqueaderoPage() {
       }
       loadData();
       loadExtra();
-    } catch (e: any) {
-      toast.error(e?.message || "Error al asignar la celda");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al asignar la celda");
     } finally {
       setIsSubmitting(false);
       setCellResidente(null);
@@ -431,7 +443,7 @@ export default function MapaParqueaderoPage() {
   const liberarCelda = async (id: string) => {
     setIsSubmitting(true);
     try {
-      const r: any = await api.post(`/parqueadero/celdas/${id}/liberar`, {});
+      const r = await api.post<MutacionCeldaResponse>(`/parqueadero/celdas/${id}/liberar`, {});
       if (r?.pendiente) {
         toast.success("Solicitud enviada a aprobación del administrador.", { duration: 5000 });
       } else {
@@ -439,8 +451,8 @@ export default function MapaParqueaderoPage() {
       }
       loadData();
       loadExtra();
-    } catch (e: any) {
-      toast.error(e?.message || "Error al liberar la celda");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al liberar la celda");
       loadData();
     } finally {
       setIsSubmitting(false);
@@ -448,12 +460,12 @@ export default function MapaParqueaderoPage() {
     }
   };
 
-  const processToggle = async (id: string, newEstado: string) => {
+  const processToggle = async (id: string, newEstado: EstadoParqueadero) => {
     setIsSubmitting(true);
     setParqueaderos(prev => prev.map(p => p.id === id ? { ...p, estado: newEstado } : p));
 
     try {
-      const r: any = await api.put(`/parqueadero/celdas/${id}`, {
+      const r = await api.put<MutacionCeldaResponse>(`/parqueadero/celdas/${id}`, {
            estado: newEstado,
          });
 <<<<<<< Updated upstream
@@ -786,7 +798,7 @@ export default function MapaParqueaderoPage() {
                 ))}
              </div>
              <p className="text-[10px] text-text/50 leading-relaxed">
-                Marca "Llegó" cuando el visitante entre, luego asígnale una celda de visitante en el mapa.
+                Marca &quot;Llegó&quot; cuando el visitante entre, luego asígnale una celda de visitante en el mapa.
              </p>
           </section>
        )}
@@ -855,7 +867,7 @@ export default function MapaParqueaderoPage() {
              // en el cajón de un carro caben 4 motos (perpendiculares) o 5 bicis,
              // por eso la moto ocupa 1/4 del ancho y la bici 1/5 (flex-wrap las
              // empaqueta solas: 4 motos por fila, 5 bicis por fila, 1 carro por fila).
-             const bay = (p: any, side: 'left' | 'right') => {
+             const bay = (p: CeldaMapa, side: 'left' | 'right') => {
                 const isLibre = p.estado === 'DISPONIBLE';
                 const isReservado = p.estado === 'RESERVADO';
                 const vencida = p.asignadoHasta ? new Date(p.asignadoHasta).getTime() < Date.now() : false;

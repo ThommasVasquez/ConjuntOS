@@ -48,8 +48,16 @@ export const useAuth = create<AuthState>((set) => ({
       // Ignore errors on logout — clear local state regardless
     }
     setAuthToken(null);
-    // Clear any token persisted by a previous app version.
-    if (typeof window !== 'undefined') localStorage.removeItem('ec_token');
+    if (typeof window !== 'undefined') {
+      // Clear any token persisted by a previous app version.
+      localStorage.removeItem('ec_token');
+      // Clear cached profile PII (pic/data, keyed by user id) for every user on
+      // this device so logout doesn't leave personal data behind.
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('conjuntos_profile_')) localStorage.removeItem(key);
+      }
+    }
     set({ user: null, loading: false });
   },
 

@@ -28,7 +28,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   const [userData, setUserData] = useState({ name: "Cargando...", gender: "femenino" });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [hasStory, setHasStory] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificacionDto[]>([]);
 
   const refetchNotifications = useCallback(async () => {
     if (!userId) return;
@@ -97,7 +97,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
 
         setHasStory(pendingCount > 0 || activeReserva);
 
-      } catch (error) {
+      } catch {
         // Non-critical: profile status API unavailable
       }
     }
@@ -156,7 +156,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   };
 
   // Marca como leída y navega al destino correspondiente.
-  const handleNotifClick = async (notif: any) => {
+  const handleNotifClick = async (notif: NotificacionDto) => {
     const destino = getNotifTarget(notif, user?.rol);
     markAsRead(notif.id);
     setIsNotificationsOpen(false);

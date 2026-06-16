@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { 
-  Car, Bike, Plus, Info, ChevronRight, 
+  Car, Bike, Plus, Info, ChevronRight,
   MapPin, ShieldCheck, Clock, ArrowRight,
-  Settings, X, Search, FileText, LayoutDashboard,
+  X, FileText,
   CheckCircle2, Calendar, AlertCircle
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
 import { toast } from "sonner";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 
@@ -29,6 +29,50 @@ interface Celda {
   torre?: string;
   tipo: string;
   estado: string;
+}
+
+interface SolicitudInquilino {
+  id: string;
+  celdaNumero: string;
+  detalle: string;
+  solicitanteNombre: string;
+}
+
+interface SesionCobro {
+  id: string;
+  celdaNumero: string;
+  placa?: string | null;
+  segundosRestantesGratis?: number;
+  montoActual?: number | string;
+  tarifaHora?: number | string;
+  finGratis: string;
+}
+
+interface CargoPendiente {
+  id: string;
+  celdaNumero: string;
+  placa?: string | null;
+  minutosCobrados?: number;
+  cerradoEn?: string | null;
+  montoFinal?: number | string;
+  montoActual?: number | string;
+}
+
+interface ReservaCupo {
+  id: string;
+  estado: string;
+  categoria: string;
+  visitanteNombre?: string | null;
+  placa?: string | null;
+  llegadaEstimada: string;
+  tiempoLibre?: boolean;
+  duracionMinutos?: number | null;
+}
+
+interface DisponibilidadCupo {
+  hayCupo: boolean;
+  libres: number;
+  categoria: string;
 }
 
 export default function ParqueaderoPage() {
@@ -50,42 +94,42 @@ export default function ParqueaderoPage() {
 
   // Bandeja del inquilino: asignaciones de parqueadero de visitante que ESTE
   // residente debe aprobar o rechazar (consentimiento expreso).
-  const [solicitudesInquilino, setSolicitudesInquilino] = useState<any[]>([]);
+  const [solicitudesInquilino, setSolicitudesInquilino] = useState<SolicitudInquilino[]>([]);
   const [busyAprob, setBusyAprob] = useState<string | null>(null);
   // Sesiones de cobro activas del residente (conteo regresivo en vivo).
-  const [sesionesCobro, setSesionesCobro] = useState<any[]>([]);
+  const [sesionesCobro, setSesionesCobro] = useState<SesionCobro[]>([]);
   // Cargos al apto PENDIENTES de aprobación de ESTE residente (con el monto).
-  const [cargosPendientes, setCargosPendientes] = useState<any[]>([]);
+  const [cargosPendientes, setCargosPendientes] = useState<CargoPendiente[]>([]);
 
   const refetchSolicitudes = async () => {
     try {
-      const data = await api.get<any[]>('/parqueadero/solicitudes/mias');
+      const data = await api.get<SolicitudInquilino[]>('/parqueadero/solicitudes/mias');
       setSolicitudesInquilino(data ?? []);
     } catch { /* no aplica / sin permiso */ }
   };
 
   const refetchSesiones = async () => {
     try {
-      const data = await api.get<any[]>('/parqueadero/sesiones/mias');
+      const data = await api.get<SesionCobro[]>('/parqueadero/sesiones/mias');
       setSesionesCobro(data ?? []);
     } catch { /* no aplica */ }
   };
 
   const refetchCargos = async () => {
     try {
-      const data = await api.get<any[]>('/parqueadero/cargos/mios');
+      const data = await api.get<CargoPendiente[]>('/parqueadero/cargos/mios');
       setCargosPendientes(data ?? []);
     } catch { /* no aplica */ }
   };
 
   // Reservas de cupo de visitante hechas por este residente (con antelación).
-  const [misReservas, setMisReservas] = useState<any[]>([]);
+  const [misReservas, setMisReservas] = useState<ReservaCupo[]>([]);
   const [showReservaModal, setShowReservaModal] = useState(false);
   const [busyReserva, setBusyReserva] = useState<string | null>(null);
 
   const refetchReservas = async () => {
     try {
-      const data = await api.get<any[]>('/parqueadero/reservas/mias');
+      const data = await api.get<ReservaCupo[]>('/parqueadero/reservas/mias');
       setMisReservas(data ?? []);
     } catch { /* no aplica */ }
   };
@@ -96,8 +140,8 @@ export default function ParqueaderoPage() {
       await api.delete(`/parqueadero/reservas/${id}`);
       toast.success("Reserva cancelada.");
       refetchReservas();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo cancelar");
+    } catch (e: unknown) {
+      toast.error((e instanceof Error ? e.message : "") || "No se pudo cancelar");
     } finally {
       setBusyReserva(null);
     }
@@ -111,8 +155,8 @@ export default function ParqueaderoPage() {
         ? "Cargo aprobado. Se agregó a tus pagos pendientes."
         : "Cargo rechazado. Quedó registrado como disputa.");
       refetchCargos();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo procesar");
+    } catch (e: unknown) {
+      toast.error((e instanceof Error ? e.message : "") || "No se pudo procesar");
     } finally {
       setBusyAprob(null);
     }
@@ -125,8 +169,8 @@ export default function ParqueaderoPage() {
       toast.success(accion === 'aprobar' ? "Parqueadero de visitante aprobado." : "Solicitud rechazada.");
       refetchSolicitudes();
       refetchParking();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo procesar");
+    } catch (e: unknown) {
+      toast.error((e instanceof Error ? e.message : "") || "No se pudo procesar");
     } finally {
       setBusyAprob(null);
     }
@@ -153,7 +197,7 @@ export default function ParqueaderoPage() {
         toast.success("Solicitud enviada. Pendiente de aprobación.");
         setShowVehiculoModal(false);
         setVehiculoForm({ placa: '', marca: '', modelo: '', color: '', tipo: 'AUTOMOVIL' });
-     } catch (err) {
+     } catch {
        toast.error("Error de conexión");
      } finally {
        setIsSubmitting(false);
@@ -694,7 +738,7 @@ export default function ParqueaderoPage() {
 
 /// Tarjeta de sesión de parqueadero de visitante con conteo regresivo en vivo.
 /// Tras las 2h gratis muestra el cobro acumulado prorrateado por minuto.
-function CuentaRegresivaCard({ sesion }: { sesion: any }) {
+function CuentaRegresivaCard({ sesion }: { sesion: SesionCobro }) {
   // Reloj local: arranca desde los segundos que envió el backend y descuenta.
   const [segGratis, setSegGratis] = useState<number>(sesion.segundosRestantesGratis ?? 0);
   const [montoVivo, setMontoVivo] = useState<number>(Number(sesion.montoActual ?? 0));
@@ -781,7 +825,7 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const [duracion, setDuracion] = useState<string>('120');
   const [visitanteNombre, setVisitanteNombre] = useState('');
   const [placa, setPlaca] = useState('');
-  const [disp, setDisp] = useState<any>(null);
+  const [disp, setDisp] = useState<DisponibilidadCupo | null>(null);
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -797,7 +841,7 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
         const iso = new Date(llegadaLocal).toISOString();
         const params = new URLSearchParams({ categoria, llegada: iso });
         if (duracionMin) params.set('duracionMinutos', String(duracionMin));
-        const data = await api.get<any>(`/parqueadero/reservas/disponibilidad?${params.toString()}`);
+        const data = await api.get<DisponibilidadCupo>(`/parqueadero/reservas/disponibilidad?${params.toString()}`);
         if (!cancel) setDisp(data);
       } catch {
         if (!cancel) setDisp(null);
@@ -807,7 +851,7 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
     };
     const t = setTimeout(run, 350);
     return () => { cancel = true; clearTimeout(t); };
-  }, [categoria, llegadaLocal, duracion]);
+  }, [categoria, llegadaLocal, duracionMin]);
 
   const crear = async () => {
     if (!llegadaLocal) { toast.error("Elige la hora de llegada"); return; }
@@ -823,8 +867,8 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
       });
       toast.success("Cupo de visitante reservado.");
       onCreated();
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo reservar");
+    } catch (e: unknown) {
+      toast.error((e instanceof Error ? e.message : "") || "No se pudo reservar");
     } finally {
       setSubmitting(false);
     }

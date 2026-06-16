@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MessageCircle, Search, ArrowRight, User, ChevronLeft, Building2, CheckCheck, Loader2, X, Phone, Car, Dog, ShieldCheck, Info, Mic, Play, Pause, Music, Trash2 } from "lucide-react";
+import { MessageCircle, Search, ArrowRight, User, ChevronLeft, Building2, CheckCheck, Loader2, X, Phone, Car, Dog, ShieldCheck, Info, Mic, Play, Pause, Music } from "lucide-react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 
@@ -31,6 +32,23 @@ interface Message {
   creadoEn: string;
   leido: boolean;
 }
+
+// Minimal Web Speech API shape (no DOM lib types guaranteed across browsers).
+interface SpeechRecognitionResultLike {
+  0: { transcript: string };
+}
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<SpeechRecognitionResultLike>;
+}
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: (e: SpeechRecognitionEventLike) => void;
+  start: () => void;
+  stop: () => void;
+}
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 
 interface ResidentInfo {
   profile: {
@@ -152,8 +170,8 @@ export default function AdminMensajesPage() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [transcription, setTranscription] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recognitionRef = useRef<any>(null);
-  const timerRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchConversations = async () => {
     try {
@@ -231,13 +249,17 @@ export default function AdminMensajesPage() {
       };
 
       // Real-time Transcription Setup
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const w = window as unknown as {
+        SpeechRecognition?: SpeechRecognitionCtor;
+        webkitSpeechRecognition?: SpeechRecognitionCtor;
+      };
+      const SpeechRecognition = w.SpeechRecognition || w.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const rec = new SpeechRecognition();
         rec.lang = 'es-ES';
         rec.continuous = true;
         rec.interimResults = true;
-        rec.onresult = (e: any) => {
+        rec.onresult = (e: SpeechRecognitionEventLike) => {
           let text = "";
           for (let i = 0; i < e.results.length; i++) {
             text += e.results[i][0].transcript;
@@ -254,7 +276,7 @@ export default function AdminMensajesPage() {
       setTranscription("");
       timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
 
-    } catch (err) {
+    } catch {
       toast.error("Error al acceder al micrófono");
     }
   };
@@ -267,7 +289,7 @@ export default function AdminMensajesPage() {
     if (recognitionRef.current) {
         recognitionRef.current.stop();
     }
-    clearInterval(timerRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
     setIsRecording(false);
   };
 
@@ -311,7 +333,7 @@ export default function AdminMensajesPage() {
       setTranscription("");
       setAudioBlob(null);
       fetchChatHistory(selectedUserId);
-    } catch (err) {
+    } catch {
       toast.error("Error al enviar nota de voz");
     } finally {
       setSending(false);
@@ -339,7 +361,7 @@ export default function AdminMensajesPage() {
   }, [user, authLoading, role, router]);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (selectedUserId) {
       setShowInfoPanel(false);
       fetchChatHistory(selectedUserId);
@@ -361,7 +383,7 @@ export default function AdminMensajesPage() {
     if (!loading && conversations.length > 0) {
       gsap.fromTo(".conv-card", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, stagger: 0.04, duration: 0.4, ease: "power2.out" });
     }
-  }, [loading]);
+  }, [loading, conversations.length]);
 
   const filteredConversations = conversations.filter(c => 
     c.residente?.nombre?.toLowerCase().includes(search.toLowerCase()) ||
@@ -451,7 +473,7 @@ export default function AdminMensajesPage() {
                  ${selectedUserId === c.usuarioId ? 'bg-text/10 border-border text-white' : 'bg-surface-2 border-border hover:bg-surface'}`}
              >
                 <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center border border-border relative overflow-hidden flex-shrink-0">
-                   {c.residente?.avatar ? <img src={c.residente.avatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-text" />}
+                   {c.residente?.avatar ? <Image fill sizes="56px" src={c.residente.avatar} className="object-cover" alt={c.residente?.nombre || "Avatar del residente"} /> : <User size={24} className="text-text" />}
                    {c.noLeidos > 0 && <div className="absolute top-1 right-1 w-3 h-3 bg-text/10 border-2 border-primary rounded-full animate-pulse" />}
                 </div>
                 <div className="flex-1 text-left min-w-0">
@@ -488,7 +510,7 @@ export default function AdminMensajesPage() {
                        <ChevronLeft size={22} />
                     </button>
                     <div className="w-12 h-12 rounded-2xl bg-text/10 flex items-center justify-center border border-text/20 relative overflow-hidden shadow-inner group-hover:border-text/40 transition-all">
-                       {activeConv?.residente?.avatar ? <img src={activeConv.residente.avatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-text" />}
+                       {activeConv?.residente?.avatar ? <Image fill sizes="48px" src={activeConv.residente.avatar} className="object-cover" alt={activeConv?.residente?.nombre || "Avatar del residente"} /> : <User size={24} className="text-text" />}
                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-primary bg-text/10 shadow-[0_0_10px_rgba(128,128,128,0.5)]" />
                     </div>
                     <div className="flex flex-col">
@@ -662,7 +684,7 @@ export default function AdminMensajesPage() {
                     
                     {!isRecording && (
                       <button 
-                        onClick={sendMessage as any}
+                        onClick={() => sendMessage()}
                         disabled={(!newMessage.trim() && !audioBlob) || sending}
                         className="w-16 h-16 rounded-full bg-text/10 flex items-center justify-center text-white shadow-[0_20px_50px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100 group flex-shrink-0 border-[6px] border-surface-2"
                       >
@@ -736,7 +758,7 @@ function AudioMessage({ url, transcription }: { url: string, transcription?: str
             </button>
           ) : (
             <p className="text-[11px] leading-relaxed italic opacity-85 text-text animate-in fade-in duration-500">
-              "{transcription}"
+              &quot;{transcription}&quot;
             </p>
           )}
         </div>

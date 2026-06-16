@@ -6,9 +6,51 @@ import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCir
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import Image from "next/image";
 import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import type { AnuncioDto, CeldaMapaDto } from "@/lib/api/types";
+
+/**
+ * Shape of a trámite as consumed by this admin view. The backend may return
+ * either the new contract (payload object + documentos array) or the legacy
+ * one (descripcion string JSON), and the listing endpoint also embeds the
+ * requester under `solicitante`/`usuario`. We only model the fields actually
+ * read here so the strict DTO mismatch does not force an `any`.
+ */
+interface AdminTramite {
+  id: string;
+  tipo: string;
+  estado: string;
+  payload?: Record<string, unknown>;
+  documentos?: TramiteDocumento[];
+  descripcion?: string;
+  createdAt?: string;
+  creadoEn?: string;
+  solicitante?: SolicitanteRef;
+  usuario?: SolicitanteRef;
+  aprobadoPor?: { nombre?: string } | null;
+  aprobadoPorId?: string | null;
+}
+
+interface SolicitanteRef {
+  nombre?: string;
+  torre?: string;
+  apto?: string;
+  unidad?: { torre?: string; numero?: string };
+}
+
+interface TramiteDocumento {
+  nombre: string;
+  base64: string;
+  type?: string;
+}
+
+interface TramiteMeta {
+  metadatos: Record<string, unknown>;
+  documentos: TramiteDocumento[];
+}
 
 export default function AdminNovedadesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -17,11 +59,11 @@ export default function AdminNovedadesPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
-  const [tramites, setTramites] = useState<any[]>([]);
+  const [tramites, setTramites] = useState<AdminTramite[]>([]);
   const [tab, setTab] = useState<'PENDIENTE' | 'HISTORIAL' | 'PUBLICAR_ANUNCIO'>('PENDIENTE');
 
   // State for announcements
-  const [anuncios, setAnuncios] = useState<any[]>([]);
+  const [anuncios, setAnuncios] = useState<AnuncioDto[]>([]);
   const [loadingAnuncios, setLoadingAnuncios] = useState(false);
   const [anuncioForm, setAnuncioForm] = useState({
     titulo: "",
@@ -37,10 +79,10 @@ export default function AdminNovedadesPage() {
   const [isDeletingAnuncio, setIsDeletingAnuncio] = useState(false);
 
   // Modal State
-  const [selectedTramite, setSelectedTramite] = useState<any>(null);
+  const [selectedTramite, setSelectedTramite] = useState<AdminTramite | null>(null);
   const [obs, setObs] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [availableCells, setAvailableCells] = useState<any[]>([]);
+  const [availableCells, setAvailableCells] = useState<CeldaMapaDto[]>([]);
   const [selectedCellId, setSelectedCellId] = useState("");
   const [mesesAsignacion, setMesesAsignacion] = useState("12");
   const [nuevaCeldaNum, setNuevaCeldaNum] = useState("");
@@ -51,7 +93,7 @@ export default function AdminNovedadesPage() {
     if (!nuevaCeldaNum.trim()) { toast.error("Indica el número de la celda"); return; }
     setCreandoCelda(true);
     try {
-      const creadas = await api.post<any[]>('/parqueadero/celdas', {
+      const creadas = await api.post<CeldaMapaDto[]>('/parqueadero/celdas', {
         numero: nuevaCeldaNum.trim(),
         torre: nuevaCeldaTorre.trim() || undefined,
         tipo: 'RESIDENTE',
@@ -62,8 +104,8 @@ export default function AdminNovedadesPage() {
       await fetchCells();
       // Auto-selecciona la celda recién creada
       if (Array.isArray(creadas) && creadas[0]?.id) setSelectedCellId(creadas[0].id);
-    } catch (e: any) {
-      toast.error(e?.message || "No se pudo crear la celda");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "No se pudo crear la celda");
     } finally {
       setCreandoCelda(false);
     }
@@ -73,10 +115,10 @@ export default function AdminNovedadesPage() {
     setLoading(true);
     try {
       const qs = tab === 'PENDIENTE' ? '?estado=PENDIENTE' : '';
-      const items = await api.get<any[]>(`/tramites${qs}`);
+      const items = await api.get<AdminTramite[]>(`/tramites${qs}`);
       {
         if (tab === 'HISTORIAL') {
-             setTramites(items.filter((t: any) => t.estado !== 'PENDIENTE'));
+             setTramites(items.filter((t) => t.estado !== 'PENDIENTE'));
         } else {
              setTramites(items);
         }
@@ -90,15 +132,15 @@ export default function AdminNovedadesPage() {
 
   const fetchCells = async () => {
       try {
-          const data = await api.get<any[]>('/parqueadero/mapa');
-          setAvailableCells(data.filter((c: any) => c.estado === 'DISPONIBLE'));
+          const data = await api.get<CeldaMapaDto[]>('/parqueadero/mapa');
+          setAvailableCells(data.filter((c) => c.estado === 'DISPONIBLE'));
       } catch (e) { console.error("Error fetching cells", e); }
   };
 
   const fetchAnuncios = async () => {
     setLoadingAnuncios(true);
     try {
-      const data = await api.get<any[]>('/anuncios');
+      const data = await api.get<AnuncioDto[]>('/anuncios');
       setAnuncios(data);
     } catch {
       toast.error("Error al cargar anuncios");
@@ -138,8 +180,8 @@ export default function AdminNovedadesPage() {
       });
       setAnuncioForm(prev => ({ ...prev, imagenUrl: res.url }));
       toast.success("Imagen cargada correctamente");
-    } catch (err: any) {
-      const msg = err instanceof ApiError ? err.detail : (err?.message || "Error al cargar imagen");
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.detail : (err instanceof Error ? err.message : "Error al cargar imagen");
       toast.error("Error al cargar imagen: " + msg);
     } finally {
       setIsUploadingImage(false);
@@ -177,7 +219,7 @@ export default function AdminNovedadesPage() {
     }
   };
 
-  const startEditAnuncio = (anuncio: any) => {
+  const startEditAnuncio = (anuncio: AnuncioDto) => {
     setEditingAnuncioId(anuncio.id);
     setAnuncioForm({
       titulo: anuncio.titulo || "",
@@ -242,6 +284,9 @@ export default function AdminNovedadesPage() {
     } else if (tab === 'PUBLICAR_ANUNCIO') {
       fetchAnuncios();
     }
+    // fetch* helpers are recreated each render; including them would refetch on
+    // every render. We intentionally re-run only when tab/auth/role change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, user, authLoading, role, router]);
 
   useEffect(() => {
@@ -256,26 +301,26 @@ export default function AdminNovedadesPage() {
     }
   }, [loading, tab]);
 
-  const parseDesc = (str: string) => {
-      try { 
+  const parseDesc = (str: string): TramiteMeta => {
+      try {
         const parsed = JSON.parse(str);
         // Manejar estructura de Stage 36: { metadatos, documentos }
-        if (parsed.metadatos) return parsed;
+        if (parsed.metadatos) return { metadatos: parsed.metadatos, documentos: parsed.documentos || [] };
         // Si no, intentar aplanar si es objeto directo
         return { metadatos: parsed, documentos: [] };
-      } catch { 
-        return { metadatos: { nota: str }, documentos: [] }; 
+      } catch {
+        return { metadatos: { nota: str }, documentos: [] };
       }
   };
 
   // Normaliza un trámite al shape { metadatos, documentos } sea cual sea el
   // contrato: nuevo backend (payload objeto + documentos array) o el viejo
   // (descripcion string JSON). Evita el crash cuando no hay 'descripcion'.
-  const getMeta = (t: any) => {
+  const getMeta = (t: AdminTramite | null): TramiteMeta => {
       if (t && typeof t === 'object' && (t.payload !== undefined || t.documentos !== undefined)) {
           return { metadatos: t.payload || {}, documentos: t.documentos || [] };
       }
-      return parseDesc(t?.descripcion);
+      return parseDesc(t?.descripcion ?? "");
   };
 
   const downloadFile = (base64: string, filename: string) => {
@@ -287,7 +332,7 @@ export default function AdminNovedadesPage() {
           link.click();
           document.body.removeChild(link);
           toast.success(`Descargando ${filename}`);
-      } catch (e) {
+      } catch {
           toast.error("Error al descargar archivo");
       }
   };
@@ -303,6 +348,7 @@ export default function AdminNovedadesPage() {
   };
 
   const handleResolve = async (accion: 'APROBAR' | 'RECHAZAR') => {
+      if (!selectedTramite) return;
       if (accion === 'RECHAZAR' && !obs.trim()) {
            toast.error('Debes incluir una observación al rechazar.');
            return;
@@ -324,8 +370,8 @@ export default function AdminNovedadesPage() {
           setSelectedCellId("");
           setMesesAsignacion("12");
           fetchTramites();
-      } catch (e: any) {
-          toast.error(e?.message || 'Error al procesar el trámite.');
+      } catch (e: unknown) {
+          toast.error(e instanceof Error ? e.message : 'Error al procesar el trámite.');
       } finally {
           setIsProcessing(false);
       }
@@ -391,7 +437,7 @@ export default function AdminNovedadesPage() {
                                     <span className="p-2 rounded-full bg-surface-2 border border-border text-xl">{getTipoIcon(t.tipo)}</span>
                                     <div className="flex flex-col">
                                        <span className="text-xs font-bold text-text uppercase tracking-wider">{t.tipo}</span>
-                                       <span className="text-[10px] text-text">{new Date(t.createdAt || t.creadoEn).toLocaleString()}</span>
+                                       <span className="text-[10px] text-text">{new Date(t.createdAt || t.creadoEn || '').toLocaleString()}</span>
                                     </div>
                                  </div>
                                  {t.estado === 'PENDIENTE' && <span className="bg-text/10 text-text dark:text-text border border-text/20 dark:border-text/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock size={10}/> Pendiente</span>}
@@ -499,7 +545,7 @@ export default function AdminNovedadesPage() {
                         <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Fotografía / Imagen (Opcional)</label>
                         {anuncioForm.imagenUrl ? (
                             <div className="relative rounded-2xl overflow-hidden border border-border h-40 group">
-                                <img src={anuncioForm.imagenUrl} alt="Anuncio Preview" className="w-full h-full object-cover" />
+                                <Image src={anuncioForm.imagenUrl} alt="Vista previa del anuncio" fill className="w-full h-full object-cover" unoptimized />
                                 <button 
                                   type="button"
                                   onClick={() => setAnuncioForm(prev => ({ ...prev, imagenUrl: "" }))}
@@ -592,7 +638,7 @@ export default function AdminNovedadesPage() {
                        <div className="p-4 rounded-2xl bg-surface-2 border border-border">
                           <span className="text-[10px] text-text uppercase tracking-[0.2em] font-black mb-3 block">Detalles del Activo</span>
                           <div className="grid grid-cols-2 gap-3">
-                             {Object.entries(getMeta(selectedTramite).metadatos || {}).map(([k, v]: any) => (
+                             {Object.entries(getMeta(selectedTramite).metadatos || {}).map(([k, v]: [string, unknown]) => (
                                  <div key={k} className="flex flex-col">
                                     <span className="text-[9px] text-text uppercase font-bold">{k}</span>
                                     <span className="text-xs text-text font-mono">{String(v)}</span>
@@ -606,7 +652,7 @@ export default function AdminNovedadesPage() {
                          <div className="p-4 rounded-2xl bg-surface-2 border border-border">
                             <span className="text-[10px] text-text uppercase tracking-[0.2em] font-black mb-3 block">Documentación Adjunta</span>
                             <div className="flex flex-col gap-2">
-                               {getMeta(selectedTramite).documentos.map((doc: any, i: number) => (
+                               {getMeta(selectedTramite).documentos.map((doc, i: number) => (
                                   <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-surface-2 border border-border group">
                                      <div className="flex items-center gap-2 overflow-hidden">
                                         <FileText size={14} className={doc.type === 'pdf' ? 'text-text' : 'text-text'} />

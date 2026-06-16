@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -52,12 +53,20 @@ export default function StorySection() {
 
         <div className="story-img-container flex-1 flex gap-4 h-[500px]">
           <div className="flex flex-col gap-4 w-1/2 pt-12">
-            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80" alt="Home interior 1" className="story-img w-full h-1/2 object-cover rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40" />
-            <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80" alt="Home interior 2" className="story-img w-full h-1/2 object-cover rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40" />
+            <div className="story-img relative w-full h-1/2 overflow-hidden rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40">
+              <Image src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80" alt="Interior de hogar 1" fill className="object-cover" unoptimized />
+            </div>
+            <div className="story-img relative w-full h-1/2 overflow-hidden rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40">
+              <Image src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80" alt="Interior de hogar 2" fill className="object-cover" unoptimized />
+            </div>
           </div>
           <div className="flex flex-col gap-4 w-1/2 pb-12">
-            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80" alt="Home interior 3" className="story-img w-full h-1/2 object-cover rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40" />
-            <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80" alt="Home interior 4" className="story-img w-full h-1/2 object-cover rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40" />
+            <div className="story-img relative w-full h-1/2 overflow-hidden rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40">
+              <Image src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80" alt="Interior de hogar 3" fill className="object-cover" unoptimized />
+            </div>
+            <div className="story-img relative w-full h-1/2 overflow-hidden rounded-[32px] border border-white/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40">
+              <Image src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80" alt="Interior de hogar 4" fill className="object-cover" unoptimized />
+            </div>
           </div>
         </div>
 

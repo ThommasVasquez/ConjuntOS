@@ -15,7 +15,7 @@ import {
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useWsSubscription } from "@/hooks/useWebSocket";

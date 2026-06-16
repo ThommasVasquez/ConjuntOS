@@ -14,9 +14,9 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { gsap } from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { api } from "@/lib/api/client";
+import { api, ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
-import type { VisitaDto, TipoVisita, TipoVehiculoVisita } from "@/lib/api/types";
+import type { VisitaDto, PaqueteDto, TipoVisita, TipoVehiculoVisita } from "@/lib/api/types";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 
 type VisitStatus = 'ACTIVO' | 'PROGRAMADO' | 'HISTORIAL';
@@ -74,9 +74,9 @@ export default function VisitantesPage() {
 
   const refetchVisitors = async () => {
     try {
-      const data = await api.get<{ visitas: VisitaDto[]; paquetes: any[] }>("/comunicaciones");
+      const data = await api.get<{ visitas: VisitaDto[]; paquetes: PaqueteDto[] }>("/comunicaciones");
       setVisitors(data.visitas || []);
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error fetching visitors:", e);
     }
   };
@@ -90,9 +90,9 @@ export default function VisitantesPage() {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.get<{ visitas: VisitaDto[]; paquetes: any[] }>("/comunicaciones");
+        const data = await api.get<{ visitas: VisitaDto[]; paquetes: PaqueteDto[] }>("/comunicaciones");
         setVisitors(data.visitas || []);
-      } catch (e: any) {
+      } catch (e) {
         console.error("Error fetching visitors:", e);
         setError("No se pudieron cargar las visitas");
       } finally {
@@ -139,8 +139,8 @@ export default function VisitantesPage() {
       setIsQRModalOpen(true);
       toast.success("Visita programada con exito");
       setNewVisitForm({ name: '', tipo: 'PEATONAL', vehiculoTipo: 'NINGUNO', placa: '', observacion: '' });
-    } catch (e: any) {
-      toast.error(e?.detail || "Error al crear la invitacion");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.detail : "Error al crear la invitacion");
     } finally {
       setSubmitting(false);
     }

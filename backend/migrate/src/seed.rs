@@ -145,8 +145,10 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
         .await?;
     let conjunto_id: Uuid = row.get(0);
 
-    for user in demo_users() {
+    for (idx, user) in demo_users().into_iter().enumerate() {
         let hash = hash_password(DEMO_PASSWORD)?;
+        // Immutable internal dial code, 0001, 0002, ... (kept on re-seed).
+        let numero_interno = format!("{:04}", idx + 1);
 
         // Resolve (or create) the unidad and capture its id + free-text fields.
         let (unidad_id, torre, apto): (Option<Uuid>, Option<&str>, Option<&str>) =
@@ -167,12 +169,12 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
                 "INSERT INTO usuarios (
                      id, conjunto_id, nombre, email, password_hash,
                      must_change_password, telefono, rol, unidad_id, torre, apto,
-                     genero, activo, created_at
+                     genero, activo, created_at, numero_interno
                  )
                  VALUES (
                      gen_random_uuid(), $1, $2, $3, $4,
                      false, $5, $6, $7, $8, $9,
-                     $10, true, NOW()
+                     $10, true, NOW(), $11
                  )
                  ON CONFLICT (email) DO UPDATE SET
                      password_hash = EXCLUDED.password_hash,
@@ -194,11 +196,40 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
                     &torre,
                     &apto,
                     &user.genero,
+                    &numero_interno,
                 ],
             )
             .await?;
         tracing::info!(email = user.email, rol = user.rol, "seeded demo user");
     }
+
+    // Citofonía: ensure EVERY user in EVERY conjunto has an internal dial number.
+    // Idempotent — only fills users missing one, assigning the next free per-conjunto
+    // 4-digit code (immutable once set). Existing numbers are never changed.
+    let assigned = target
+        .execute(
+            "WITH missing AS (
+                 SELECT id, conjunto_id,
+                        ROW_NUMBER() OVER (PARTITION BY conjunto_id ORDER BY created_at, id) AS rn
+                 FROM usuarios
+                 WHERE numero_interno IS NULL OR length(numero_interno) = 0
+             ),
+             maxn AS (
+                 SELECT conjunto_id,
+                        COALESCE(MAX(CASE WHEN numero_interno ~ '^[0-9]+$'
+                                          THEN numero_interno::int ELSE 0 END), 0) AS m
+                 FROM usuarios
+                 GROUP BY conjunto_id
+             )
+             UPDATE usuarios u
+             SET numero_interno = LPAD((mx.m + ms.rn)::text, 4, '0')
+             FROM missing ms
+             JOIN maxn mx ON mx.conjunto_id = ms.conjunto_id
+             WHERE u.id = ms.id",
+            &[],
+        )
+        .await?;
+    tracing::info!(assigned, "citofonía: ensured internal numbers across all conjuntos");
 
     // Populate the resident-facing content layer (novedades, mascotas, pagos,
     // reservas, etc.) so the demo app is not empty on first login.
@@ -256,6 +287,8 @@ type VisitaRow = (
 async fn seed_content(target: &Client, conjunto_id: Uuid) -> Result<()> {
     // 1) Clear existing demo content in FK-safe order (children first).
     for table in [
+        // Parking sessions reference pagos (pago_id) — clear before pagos.
+        "sesiones_parqueadero",
         "reservas",
         "areas_comunes",
         "pagos",

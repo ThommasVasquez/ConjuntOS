@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -66,8 +67,7 @@ export default function FeaturesCollage() {
   // Initial scroll to center (Elena) - ONLY ONCE ON MOUNT
   useEffect(() => {
     if (scrollRef.current) {
-      const cardWidth = 336; // 256px (w-64) + 80px (gap-20)
-      scrollRef.current.scrollLeft = 1008;
+      scrollRef.current.scrollLeft = 1008; // 256px (w-64) + 80px (gap-20) -> centers Elena (index 3)
     }
   }, []);
 
@@ -163,7 +163,7 @@ export default function FeaturesCollage() {
               key={activeIndex}
               className="text-[4.2vw] font-black italic text-white tracking-tighter text-center uppercase leading-[0.9]"
             >
-              "{activeItem.quote}"
+              {`"${activeItem.quote}"`}
             </h2>
           </div>
         </div>
@@ -198,10 +198,12 @@ export default function FeaturesCollage() {
              
              {/* Dynamic Content */}
              <div className="absolute inset-0 testimonial-content" key={activeIndex}>
-                <img 
-                  src={activeItem.img} 
-                  className="w-full h-full object-cover opacity-80" 
-                  alt="App Preview" 
+                <Image
+                  src={activeItem.img}
+                  fill
+                  className="object-cover opacity-80"
+                  alt="Vista previa de la app"
+                  unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#000000] via-[#000000]/40 to-[#000000]/20" />
                 <div className="absolute bottom-12 left-8 right-8 text-white text-center">
@@ -235,7 +237,7 @@ export default function FeaturesCollage() {
               >
                 <div className="liquid-glass-card p-2.5 rounded-[32px] shadow-2xl border border-white/10 relative group">
                   <div className="relative aspect-[4/5.5] rounded-[24px] overflow-hidden mb-4">
-                    <img src={f.img} alt={f.name} className="w-full h-full object-cover opacity-45 grayscale group-hover:grayscale-0 transition-all duration-500" />
+                    <Image src={f.img} alt={f.name} fill className="object-cover opacity-45 grayscale group-hover:grayscale-0 transition-all duration-500" unoptimized />
                     <div className={`absolute bottom-4 left-4 ${f.color} text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg`}>
                       {f.role}
                     </div>

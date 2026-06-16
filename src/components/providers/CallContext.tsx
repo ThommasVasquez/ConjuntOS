@@ -2,9 +2,12 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 import { api } from "@/lib/api/client";
+import type { ProfileResponse } from "@/lib/api/types";
+import type { Room, RemoteTrack } from "livekit-client";
 import { useRouter } from "next/navigation";
-import { Phone, PhoneOff, X, ShieldAlert, Check } from "lucide-react";
+import { Phone, PhoneOff, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export type CallState = "IDLE" | "RINGING" | "OUTGOING" | "CONNECTED" | "FALLBACK";
@@ -16,7 +19,7 @@ interface CallContextType {
   lastSpeechResponse: string;
   dialNum: string;
   setDialNum: (num: string) => void;
-  startCall: (num: string) => void;
+  startCall: (num: string, displayName?: string) => void;
   endCall: () => void;
   answerCall: () => void;
   rejectCall: () => void;
@@ -44,7 +47,7 @@ const sanitizePeerId = (id: string): string => {
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const router = useRouter();
 
   // Call States
@@ -55,13 +58,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [dialNum, setDialNum] = useState("");
 
   // LiveKit refs
-  const roomRef = useRef<any>(null); // current livekit-client Room
+  const roomRef = useRef<Room | null>(null); // current livekit-client Room
   const attachedElsRef = useRef<HTMLMediaElement[]>([]);
   const audioContainerRef = useRef<HTMLDivElement | null>(null);
   const pendingRoomRef = useRef<string | null>(null); // room awaiting answer (from push)
   const joinRoomRef = useRef<((room: string) => Promise<void>) | null>(null);
-  const startCallRef = useRef<any>(null);
-  const answerCallRef = useRef<any>(null);
+  const startCallRef = useRef<((num: string, displayName?: string) => Promise<void>) | null>(null);
+  const answerCallRef = useRef<(() => Promise<void>) | null>(null);
 
   const callStateRef = useRef<CallState>("IDLE");
   callStateRef.current = callState;
@@ -80,7 +83,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Load User Profile on start
   useEffect(() => {
     if (user) {
-      api.get('/usuarios/me/profile')
+      api.get<ProfileResponse>('/usuarios/me/profile')
         .then((data) => setProfile(data))
         .catch((err) => console.error("Error fetching profile for calling:", err));
     }
@@ -94,7 +97,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     document.body.appendChild(div);
     audioContainerRef.current = div;
     return () => {
-      try { div.remove(); } catch (e) {}
+      try { div.remove(); } catch {}
       audioContainerRef.current = null;
     };
   }, []);
@@ -106,6 +109,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
     if (!profile) return;
 
+    const urlBase64ToUint8Array = (base64String: string) => {
+      const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    };
+
+    // Does an existing subscription use the same VAPID key we sign with now?
+    const keyMatches = (existing: ArrayBuffer | null | undefined, current: Uint8Array) => {
+      if (!existing) return false;
+      const a = new Uint8Array(existing);
+      if (a.length !== current.length) return false;
+      for (let i = 0; i < a.length; i++) if (a[i] !== current[i]) return false;
+      return true;
+    };
+
     const registerPush = async () => {
       try {
         const registration = await navigator.serviceWorker.register("/sw.js");
@@ -114,43 +137,42 @@ export function CallProvider({ children }: { children: ReactNode }) {
         if (permission === "default") {
           permission = await Notification.requestPermission();
         }
-
         if (permission !== "granted") {
+          console.warn("Citofonía: sin permiso de notificaciones — no se recibirán llamadas en segundo plano.");
           return;
         }
 
         const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!vapidPublicKey) {
+          console.warn("Citofonía: falta NEXT_PUBLIC_VAPID_PUBLIC_KEY — push deshabilitado.");
           return;
         }
-
-        const urlBase64ToUint8Array = (base64String: string) => {
-          const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-          const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
-          const rawData = window.atob(base64);
-          const outputArray = new Uint8Array(rawData.length);
-          for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
-          }
-          return outputArray;
-        };
-
         const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
         let subscription = await registration.pushManager.getSubscription();
-        let isNew = false;
+
+        // A subscription created with a *different* VAPID key (keys rotated between
+        // environments, or an old dev key) is unusable: re-subscribing throws
+        // "push service error", and the backend — which signs with the current
+        // key — can't deliver to it. Drop it and make a fresh one.
+        if (subscription && !keyMatches(subscription.options?.applicationServerKey, convertedVapidKey)) {
+          try { await subscription.unsubscribe(); } catch {}
+          subscription = null;
+        }
+
         if (!subscription) {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: convertedVapidKey
+            applicationServerKey: convertedVapidKey,
           });
-          isNew = true;
         }
 
-        // Only register in the DB when we have a brand-new subscription.
-        if (isNew) {
-          await api.post('/usuarios/me/push-subscriptions', subscription);
-        }
+        // ALWAYS (re)register with the backend — not only on a brand-new browser
+        // subscription. The push_subscriptions row is wiped on every DB re-seed
+        // while the browser keeps its subscription; without re-sending it the
+        // backend has nobody to push and the incoming call never reaches the
+        // resident. The endpoint upserts by endpoint, so this is idempotent.
+        await api.post('/usuarios/me/push-subscriptions', subscription);
       } catch (err) {
         console.error("Error al registrar notificaciones push:", err);
       }
@@ -187,7 +209,24 @@ export function CallProvider({ children }: { children: ReactNode }) {
     };
     navigator.serviceWorker.addEventListener("message", handleMessage);
     return () => navigator.serviceWorker.removeEventListener("message", handleMessage);
+    // playRingtone is a stable local helper (reads only refs); excluded to avoid re-registering the listener on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, router]);
+
+  // Foreground ring over WebSocket. The backend publishes a citofonia/incoming_call
+  // event to the target user, so an OPEN tab rings instantly without depending on
+  // Web Push (which is per-browser and blocked/unreliable in some browsers). The
+  // service-worker handler above remains the fallback for a closed/backgrounded app.
+  useWsSubscription("citofonia", (event) => {
+    if (event.action !== "incoming_call") return;
+    const data = event.payload as { room?: string; callerName?: string } | undefined;
+    if (!data?.room) return;
+    if (callStateRef.current !== "IDLE") return;
+    pendingRoomRef.current = data.room;
+    setCallerName(data.callerName || "Llamada entrante");
+    setCallState("RINGING");
+    playRingtone();
+  });
 
   // Handle deep-link from a notification opened in a fresh tab:
   // /citofonia?answerCall=true&room=...&callerName=...
@@ -226,7 +265,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const startAudioContext = () => {
     if (typeof window === "undefined") return null;
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx =
+        window.AudioContext ||
+        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      audioCtxRef.current = new AudioCtx();
     }
     if (audioCtxRef.current.state === "suspended") {
       audioCtxRef.current.resume();
@@ -257,7 +299,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         try {
           osc.stop();
           osc.disconnect();
-        } catch (e) {}
+        } catch {}
       },
     };
   };
@@ -288,7 +330,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         try {
           osc.stop();
           osc.disconnect();
-        } catch (e) {}
+        } catch {}
       },
     };
   };
@@ -308,7 +350,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       try {
         osc.stop();
         osc.disconnect();
-      } catch (e) {}
+      } catch {}
     }, 200);
   };
 
@@ -332,7 +374,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       try {
         osc.stop();
         osc.disconnect();
-      } catch (e) {}
+      } catch {}
     }, 1200);
   };
 
@@ -358,7 +400,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // ── LiveKit connection ──
   const detachAll = () => {
     attachedElsRef.current.forEach((el) => {
-      try { el.remove(); } catch (e) {}
+      try { el.remove(); } catch {}
     });
     attachedElsRef.current = [];
   };
@@ -369,7 +411,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const { Room, RoomEvent, Track } = await import("livekit-client");
 
     if (roomRef.current) {
-      try { await roomRef.current.disconnect(); } catch (e) {}
+      try { await roomRef.current.disconnect(); } catch {}
       roomRef.current = null;
     }
     detachAll();
@@ -377,7 +419,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const lkRoom = new Room();
     roomRef.current = lkRoom;
 
-    lkRoom.on(RoomEvent.TrackSubscribed, (track: any) => {
+    lkRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
       if (track.kind === Track.Kind.Audio) {
         const el = track.attach();
         (el as HTMLMediaElement).autoplay = true;
@@ -399,66 +441,46 @@ export function CallProvider({ children }: { children: ReactNode }) {
     await lkRoom.connect(url, token);
     try {
       await lkRoom.localParticipant.setMicrophoneEnabled(true);
-    } catch (e) {
+    } catch {
       toast.info("Sin micrófono — llamada en modo escucha.");
     }
   };
 
   // ── Actions ──
-  const startCall = async (num: string) => {
+  const startCall = async (num: string, displayName?: string) => {
     if (!profile) return;
     const conjuntoId = profile.conjuntoId || "demo_id";
 
-    let targetNum = num.trim();
-    let name = `Apto ${num}`;
+    const dialed = num.trim();
+    let name = displayName?.trim() || "Llamando…";
     let targetPeerId = "";
 
-    // Full Peer ID?
-    if (num.startsWith("user-") || num.includes("-VIGILANTE") || num.includes("-ADMINISTRADOR") || num.includes("-APTO-")) {
-      targetPeerId = num;
-      if (num.includes("-VIGILANTE")) {
-        name = "Portería Principal";
-      } else if (num.includes("-ADMINISTRADOR")) {
-        name = "Administración";
-      } else if (num.includes("-APTO-")) {
-        const parts = num.split("-APTO-");
-        name = `Apto ${parts[1]}`;
-      } else {
-        name = "Residente";
+    // Already a full target id (from the search picker, a callback, or a quick-call).
+    if (
+      dialed.startsWith("user-") ||
+      dialed.startsWith("numero-") ||
+      dialed.includes("-VIGILANTE") ||
+      dialed.includes("-ADMINISTRADOR") ||
+      dialed.includes("-APTO-")
+    ) {
+      targetPeerId = dialed;
+      if (!displayName) {
+        if (dialed.includes("-VIGILANTE")) name = "Portería Principal";
+        else if (dialed.includes("-ADMINISTRADOR")) name = "Administración";
+        else if (dialed.includes("-APTO-")) name = `Apto ${dialed.split("-APTO-")[1]}`;
+        else if (dialed.startsWith("numero-")) name = `Interno ${dialed.slice(7)}`;
+        else name = "Residente";
       }
+    } else if (dialed === "P") {
+      targetPeerId = `${conjuntoId}-VIGILANTE`;
+      if (!displayName) name = "Portería Principal";
+    } else if (dialed === "A") {
+      targetPeerId = `${conjuntoId}-ADMINISTRADOR`;
+      if (!displayName) name = "Administración";
     } else {
-      if (num === "P") {
-        targetNum = "VIGILANTE";
-        name = "Portería Principal";
-      } else if (num === "A") {
-        targetNum = "ADMINISTRADOR";
-        name = "Administración";
-      } else {
-        // Normalizar número de apartamento ingresado
-        if (targetNum.includes("-")) {
-          const parts = targetNum.split("-");
-          const torrePart = parts[0].trim();
-          const aptoPart = parts[1].trim();
-          if (/^\d+$/.test(torrePart)) {
-            targetNum = `${parseInt(torrePart, 10)}-${aptoPart}`;
-          } else {
-            targetNum = `${torrePart}-${aptoPart}`;
-          }
-        } else if (/^\d+$/.test(targetNum)) {
-          if (targetNum.length === 5) {
-            targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
-          } else if (targetNum.length === 6) {
-            targetNum = `${parseInt(targetNum.slice(0, 2), 10)}-${targetNum.slice(2)}`;
-          } else if (targetNum.length === 4) {
-            targetNum = `${parseInt(targetNum.slice(0, 1), 10)}-${targetNum.slice(1)}`;
-          }
-        }
-      }
-
-      targetPeerId = `${conjuntoId}-${targetNum}`;
-      if (targetNum !== "VIGILANTE" && targetNum !== "ADMINISTRADOR") {
-        targetPeerId = `${conjuntoId}-APTO-${targetNum}`;
-      }
+      // Plain dialed digits -> internal number (resolved to a user by the backend).
+      targetPeerId = `numero-${dialed}`;
+      if (!displayName) name = `Interno ${dialed}`;
     }
 
     targetPeerId = sanitizePeerId(targetPeerId);
@@ -502,8 +524,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
           endCall();
         }
       }, 25000);
-    } catch (err: any) {
-      const msg = err?.message || "No se pudo iniciar la llamada.";
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "No se pudo iniciar la llamada.";
       toast.error(msg.includes("LiveKit") ? "Servicio de voz no disponible." : "No se pudo iniciar la llamada.");
       endCall();
     }
@@ -531,7 +553,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       hadConnectedRef.current = true;
       setCallState("CONNECTED");
       router.push("/citofonia");
-    } catch (err) {
+    } catch {
       toast.error("No se pudo contestar la llamada.");
       endCall();
     }
@@ -566,7 +588,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     // Disconnect LiveKit (this stops the published mic track too).
     if (roomRef.current) {
-      try { roomRef.current.disconnect(); } catch (e) {}
+      try { roomRef.current.disconnect(); } catch {}
       roomRef.current = null;
     }
     detachAll();

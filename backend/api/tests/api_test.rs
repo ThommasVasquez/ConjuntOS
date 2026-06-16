@@ -120,6 +120,7 @@ async fn seed_user(state: &AppState, rol: Rol) -> (Uuid, String) {
             usuarios::email.eq(&email),
             usuarios::password_hash.eq(hash_password("Secreta123!").unwrap()),
             usuarios::rol.eq(rol),
+            usuarios::numero_interno.eq(&marker[..8]),
         ))
         .execute(&mut conn)
         .await

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { X, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 
@@ -14,7 +14,6 @@ interface CelebrationModalProps {
 export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: CelebrationModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     // 1. Modal Entrance
@@ -69,7 +68,6 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
   };
 
   const handleClose = () => {
-    setIsClosing(true);
     gsap.to(".modal-content", {
       scale: 0.9,
       opacity: 0,
@@ -110,7 +108,7 @@ export default function CelebrationModal({ tipo, titulo, mensaje, onClose }: Cel
 
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full">
             <p className="text-[10px] text-white font-bold uppercase tracking-widest mb-1">Motivo / Mensaje</p>
-            <p className="text-xs text-white italic">"{titulo}"</p>
+            <p className="text-xs text-white italic">&quot;{titulo}&quot;</p>
           </div>
 
           <button 

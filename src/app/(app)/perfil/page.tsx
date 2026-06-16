@@ -18,7 +18,8 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import { useTheme } from "@/components/providers/ThemeContext";
 
@@ -43,12 +44,30 @@ function ProfileContent() {
   const [hasMounted, setHasMounted] = useState(false);
   
   // 🏗️ INITIAL STATE: Pure static defaults to avoid Hydration Mismatch
-  interface UserData { name: string; apto: string; torre: string; phone: string; gender: string; email: string; avatar?: string; bio: string; }
+  interface UserData { name: string; apto: string; torre: string; phone: string; gender: string; email: string; avatar?: string; bio: string; numeroInterno?: string; }
   interface Vehiculo { placa: string; marca: string; modelo: string; color: string; }
   interface Mascota { nombre: string; tipo: string; raza?: string; fotoUrl?: string; }
   interface Tramite { id: string; tipo: string; estado: string; createdAt: string; }
-  interface Pago { id: string; concepto: string; monto: number; estado: string; fechaVencimiento: string; fechaPago?: string; }
-  interface Recibo { id: string; servicio: string; monto: number; pagado: boolean; vencimiento: string; fechaPago?: string; }
+  interface Pago { id: string; concepto: string; monto: number; estado: string; fechaVencimiento: string; fechaPago?: string; createdAt?: string; }
+  interface Recibo { id: string; servicio: string; monto: number; pagado: boolean; vencimiento: string; fechaPago?: string; createdAt?: string; }
+  interface ReservaActiva { estado?: string; fechaInicio: string; fechaFin: string; area?: { nombre?: string; imagenUrl?: string }; }
+  interface PaqueteActivo { remitente?: string; origen?: string; guia?: string; fechaLlegada: string; }
+  interface ProfileFetch {
+    nombre?: string;
+    apto?: string;
+    torre?: string;
+    telefono?: string;
+    genero?: string;
+    email?: string;
+    bio?: string;
+    numeroInterno?: string;
+    avatar?: string;
+    unidad?: { numero?: string; torre?: string };
+    vehiculos?: Vehiculo[];
+    mascotas?: Mascota[];
+    tramitesSolicitados?: Tramite[];
+  }
+  interface FinanceFetch { pagos?: Pago[]; recibos?: Recibo[]; }
 
   const [userData, setUserData] = useState<UserData>({
     name: "Residente",
@@ -65,9 +84,10 @@ function ProfileContent() {
   const [tramites, setTramites] = useState<Tramite[]>([]);
   
   // Vistas y Modales
-  const [viewMode, setViewMode] = useState<"profile" | "vehicles" | "pets" | "deuda" | "requests" | "reservas" | "paquetes">("profile");
-  const [activeReservas, setActiveReservas] = useState<any[]>([]);
-  const [activePaquetes, setActivePaquetes] = useState<any[]>([]);
+  type ViewMode = "profile" | "vehicles" | "pets" | "deuda" | "requests" | "reservas" | "paquetes";
+  const [viewMode, setViewMode] = useState<ViewMode>("profile");
+  const [activeReservas, setActiveReservas] = useState<ReservaActiva[]>([]);
+  const [activePaquetes, setActivePaquetes] = useState<PaqueteActivo[]>([]);
   
   // ... rest of the component state ...
 
@@ -76,7 +96,7 @@ function ProfileContent() {
     async function loadData() {
       if (!userId) return;
       try {
-        const apiPackages = await api.get<any[]>('/paquetes/mios');
+        const apiPackages = await api.get<PaqueteActivo[]>('/paquetes/mios');
         setActivePaquetes(apiPackages);
       } catch (e) {
         console.error("Error loading packages", e);
@@ -154,10 +174,10 @@ function ProfileContent() {
         clearTimeout(timeoutId);
         
         const [profileData, financeData, reservasData, paquetesData] = await Promise.all([
-          api.get<any>('/usuarios/me/profile').catch(() => null),
-          api.get<any>('/pagos').catch(() => null),
-          api.get<any[]>('/reservas?filter=future').catch(() => null),
-          api.get<any[]>('/paquetes/mios').catch(() => null),
+          api.get<ProfileFetch>('/usuarios/me/profile').catch(() => null),
+          api.get<FinanceFetch>('/pagos').catch(() => null),
+          api.get<ReservaActiva[]>('/reservas?filter=future').catch(() => null),
+          api.get<PaqueteActivo[]>('/paquetes/mios').catch(() => null),
         ]);
         
         if (profileData) {
@@ -169,7 +189,8 @@ function ProfileContent() {
               phone: u.telefono || "",
               gender: u.genero || "neutro",
               email: u.email || user?.email || "",
-              bio: u.bio || userData.bio
+              bio: u.bio || userData.bio,
+              numeroInterno: u.numeroInterno || ""
             };
             setUserData(mapped);
             setEditForm(mapped);
@@ -180,16 +201,21 @@ function ProfileContent() {
         }
 
         if (financeData) {
-          const totalDebt = [...(financeData.pagos || []), ...(financeData.recibos || [])]
-            .filter((p: any) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO' || p.pagado === false)
-            .reduce((acc: number, p: any) => acc + Number(p.monto), 0);
-          setFinancialData({ ...financeData, totalDebt });
+          const items: Array<Pago | Recibo> = [...(financeData.pagos || []), ...(financeData.recibos || [])];
+          const totalDebt = items
+            .filter((p) => {
+              const estado = (p as Pago).estado;
+              const pagado = (p as Recibo).pagado;
+              return estado === 'PENDIENTE' || estado === 'VENCIDO' || pagado === false;
+            })
+            .reduce((acc, p) => acc + Number(p.monto), 0);
+          setFinancialData({ pagos: financeData.pagos || [], recibos: financeData.recibos || [], totalDebt });
         }
 
         if (reservasData) setActiveReservas(reservasData);
 
         setActivePaquetes(paquetesData || []);
-      } catch (error: unknown) {
+      } catch {
         // Non-critical: API unavailable, using cached data
       }
     }
@@ -254,7 +280,7 @@ function ProfileContent() {
         } catch {
           toast.success("Foto cargada localmente");
         }
-      } catch (err) {
+      } catch {
           toast.error("Error al procesar la imagen");
       }
     };
@@ -340,7 +366,7 @@ function ProfileContent() {
     try {
         // Construir el payload EXACTO que valida el backend (deny_unknown_fields).
         // VEHICULO espera {placa, marca, modelo, color, tipo}; MASCOTA {nombre, tipo, raza}.
-        let payload: any = regForm;
+        let payload: Record<string, unknown> = regForm;
         if (regType === "VEHICULO") {
             if (!regForm.tipoVehiculo) { toast.error("Selecciona la clase de vehículo"); setIsRegSubmitting(false); return; }
             payload = {
@@ -370,7 +396,7 @@ function ProfileContent() {
             placa: "", marca: "", modelo: "", ano: "", color: "", tipoVehiculo: ""
         });
         // Recargar trámites
-        const refreshed = await api.get<any>('/usuarios/me/profile');
+        const refreshed = await api.get<ProfileFetch>('/usuarios/me/profile');
         if (refreshed) setTramites(refreshed.tramitesSolicitados || []);
     } catch {
         toast.error("Error de conexión");
@@ -379,7 +405,8 @@ function ProfileContent() {
     }
   };
 
-  const handlePay = async (id: string, type: 'PAGO' | 'RECIBO') => {
+  const handlePay = async (id: string) => {
+    if (!PAYMENTS_ENABLED) { toast.error(PAYMENTS_DISABLED_MSG); return; }
     setIsPaying(true);
 
     try {
@@ -398,8 +425,10 @@ function ProfileContent() {
         // Recalculate total debt from non-paid items
         const newTotal = [...updatedPagos, ...updatedRecibos]
           .filter(item => {
-            const itemEstado = (item as any).estado || ((item as any).pagado ? 'PAGADO' : 'PENDIENTE');
-            return itemEstado === 'PENDIENTE' || itemEstado === 'VENCIDO' || (item as any).pagado === false;
+            const estado = (item as Pago).estado;
+            const pagado = (item as Recibo).pagado;
+            const itemEstado = estado || (pagado ? 'PAGADO' : 'PENDIENTE');
+            return itemEstado === 'PENDIENTE' || itemEstado === 'VENCIDO' || pagado === false;
           })
           .reduce((acc, item) => acc + Number(item.monto), 0);
 
@@ -407,11 +436,16 @@ function ProfileContent() {
       });
 
       // Background sync with API
-      api.get<any>('/pagos').then(d => {
-        const totalDebt = [...(d.pagos || []), ...(d.recibos || [])]
-          .filter((p: any) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO' || p.pagado === false)
-          .reduce((acc: number, p: any) => acc + Number(p.monto), 0);
-        setFinancialData({ ...d, totalDebt });
+      api.get<FinanceFetch>('/pagos').then(d => {
+        const items: Array<Pago | Recibo> = [...(d.pagos || []), ...(d.recibos || [])];
+        const totalDebt = items
+          .filter((p) => {
+            const estado = (p as Pago).estado;
+            const pagado = (p as Recibo).pagado;
+            return estado === 'PENDIENTE' || estado === 'VENCIDO' || pagado === false;
+          })
+          .reduce((acc, p) => acc + Number(p.monto), 0);
+        setFinancialData({ pagos: d.pagos || [], recibos: d.recibos || [], totalDebt });
       });
     } catch {
       toast.error("Fallo de conexión con la pasarela");
@@ -545,6 +579,12 @@ function ProfileContent() {
             <div className="w-2 h-2 rounded-full bg-text/10 animate-pulse" />
             <span className="text-xs font-bold text-text uppercase tracking-widest">Apto {userData.apto}</span>
           </div>
+          {userData.numeroInterno && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/15 border border-accent/40">
+              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-xs font-bold text-accent uppercase tracking-widest">Citofonía N° {userData.numeroInterno}</span>
+            </div>
+          )}
         </div>
  
         {/* 🧭 UNIFIED 6-GRID STATUS BAR (Stage 68 - High Fidelity Refinement) */}
@@ -552,7 +592,7 @@ function ProfileContent() {
           {statusIcons.map((stat, i) => (
             <button 
               key={i} 
-              onClick={() => setViewMode(stat.view as any)} 
+              onClick={() => setViewMode(stat.view as ViewMode)}
               className={`flex flex-col items-center gap-2 group ${i >= 4 ? 'col-span-2 mx-auto w-1/2' : ''}`}
             >
               <span className="text-[10px] text-text uppercase tracking-[0.15em] font-black leading-none">{stat.label}</span>
@@ -732,11 +772,11 @@ function ProfileContent() {
                       key={i}
                       onClick={() => {
                         if (btn.type === "OTRO") {
-                          setRegType("VEHICULO" as any); // Fallback to a valid registration type for the modal
+                          setRegType("VEHICULO"); // Fallback to a valid registration type for the modal
                           setShowRegModal(true);
                         } else {
                           toast.info(`Iniciando solicitud de: ${btn.label}`);
-                          setRegType("OTRO" as any);
+                          setRegType("OTRO");
                           setRegForm(prev => ({ ...prev, tipo: btn.type }));
                           setShowRegModal(true);
                         }
@@ -807,7 +847,7 @@ function ProfileContent() {
                            <div className="flex flex-col items-end gap-2">
                               <span className="text-lg font-black text-text">${Number(p.monto).toLocaleString()}</span>
                               <button 
-                                 onClick={() => handlePay(p.id, 'PAGO')}
+                                 onClick={() => handlePay(p.id)}
                                  className="px-4 py-1.5 rounded-full bg-text/10 text-text text-[10px] font-black uppercase hover:bg-accent hover:text-primary transition-all active:scale-90"
                                >
                                  Pagar
@@ -826,7 +866,7 @@ function ProfileContent() {
                            <div className="flex flex-col items-end gap-2">
                                <span className="text-lg font-black text-text">${Number(r.monto).toLocaleString()}</span>
                                <button 
-                                 onClick={() => handlePay(r.id, 'RECIBO')}
+                                 onClick={() => handlePay(r.id)}
                                  className="px-4 py-1.5 rounded-full bg-text/20 text-text text-[10px] font-black uppercase hover:bg-text/10 hover:text-white transition-all active:scale-90"
                                >
                                  Pagar Ahora
@@ -835,8 +875,8 @@ function ProfileContent() {
                         </div>
                       ))}
 
-                      {financialData.pagos.filter(p => (p as any).estado !== 'PAGADO').length === 0 && 
-                       financialData.recibos.filter(r => !(r as any).pagado).length === 0 && (
+                      {financialData.pagos.filter(p => p.estado !== 'PAGADO').length === 0 &&
+                       financialData.recibos.filter(r => !r.pagado).length === 0 && (
                         <div className="text-center py-10">
                            <p className="text-text text-sm italic mb-4">No tienes deudas pendientes.</p>
                         </div>
@@ -848,18 +888,18 @@ function ProfileContent() {
                       {[...financialData.pagos.filter(p => p.estado === 'PAGADO'), ...financialData.recibos.filter(r => r.pagado)].length === 0 ? (
                         <p className="text-text text-xs italic ml-2">No hay registros de pagos anteriores.</p>
                       ) : (
-                        [...financialData.pagos.filter(p => p.estado === 'PAGADO'), ...financialData.recibos.filter(r => r.pagado)]
-                          .sort((a,b) => new Date((b as any).fechaPago || (b as any).createdAt).getTime() - new Date((a as any).fechaPago || (a as any).createdAt).getTime())
+                        ([...financialData.pagos.filter(p => p.estado === 'PAGADO'), ...financialData.recibos.filter(r => r.pagado)] as Array<Pago | Recibo>)
+                          .sort((a,b) => new Date(b.fechaPago || b.createdAt || '').getTime() - new Date(a.fechaPago || a.createdAt || '').getTime())
                           .map((item, i) => (
                             <div key={i} className="liquid-glass-card rounded-2xl p-4 border border-border flex justify-between items-center bg-primary-light/30">
                                <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-text">{(item as any).concepto || (item as any).servicio}</span>
+                                  <span className="text-sm font-bold text-text">{(item as Pago).concepto || (item as Recibo).servicio}</span>
                                   <span className="text-[10px] text-text uppercase tracking-tighter">
-                                    Pagado el: {((item as any).fechaPago || (item as any).createdAt) ? new Date((item as any).fechaPago || (item as any).createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : "—"}
+                                    Pagado el: {(item.fechaPago || item.createdAt) ? new Date((item.fechaPago || item.createdAt) as string).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : "—"}
                                   </span>
                                </div>
                                <div className="flex flex-col items-end">
-                                  <span className="text-sm font-black text-text">${Number((item as any).monto).toLocaleString()}</span>
+                                  <span className="text-sm font-black text-text">${Number(item.monto).toLocaleString()}</span>
                                   <div className="flex items-center gap-1 text-[8px] text-text uppercase font-black">
                                      <CheckCircle2 size={10} /> Conciliado
                                   </div>
@@ -1047,7 +1087,7 @@ function ProfileContent() {
                     <label className="text-[10px] text-text uppercase tracking-[0.2em] font-bold ml-1">Género</label>
                     <select
                       value={editForm.gender}
-                      onChange={(e) => setEditForm({...editForm, gender: e.target.value as any})}
+                      onChange={(e) => setEditForm({...editForm, gender: e.target.value})}
                       className="w-full bg-primary-light/50 border border-border rounded-[24px] p-5 text-text focus:outline-none focus:border-accent/40 focus:bg-primary-light/80 transition-all appearance-none cursor-pointer"
                     >
                       <option value="masculino" className="bg-primary text-text">Masculino</option>

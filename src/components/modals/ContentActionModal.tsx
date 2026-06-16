@@ -1,15 +1,29 @@
 "use client";
 
-import { X, CheckCircle2, ShoppingBag, CreditCard, MapPin, Sparkles, Megaphone, Bell } from "lucide-react";
+import { X, ShoppingBag, CreditCard, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import Image from "next/image";
 import { toast } from "sonner";
 import CelebrationModal from "./CelebrationModal";
 
+interface ContentActionItem {
+  title?: string;
+  content?: string;
+  image?: string;
+  type?: string;
+  category?: string;
+  brand?: string;
+}
+
+interface ContentActionUserData {
+  torre?: string | null;
+  apartamento?: string | null;
+}
+
 interface ContentActionModalProps {
-  item: any;
-  userData: any;
+  item: ContentActionItem;
+  userData: ContentActionUserData;
   onClose: () => void;
   onActionComplete?: (itemName: string) => void;
 }
@@ -50,7 +64,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
      setTimeout(() => {
         setStep("success");
         setShowCelebration(true);
-        if (onActionComplete) onActionComplete(item.title);
+        if (onActionComplete) onActionComplete(item.title ?? "");
      }, 15000);
   };
 

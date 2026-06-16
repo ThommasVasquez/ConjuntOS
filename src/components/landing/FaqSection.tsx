@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -50,7 +51,7 @@ export default function FaqSection() {
           </h2>
           
           <div className="faq-img absolute -bottom-10 right-10 lg:bottom-0 lg:right-20 w-48 h-48 rounded-[24px] overflow-hidden shadow-2xl rotate-3">
-            <img src="https://images.unsplash.com/photo-1574362848149-11496d93a7c7?auto=format&fit=crop&w=400&q=80" alt="Customer support" className="w-full h-full object-cover" />
+            <Image fill sizes="192px" src="https://images.unsplash.com/photo-1574362848149-11496d93a7c7?auto=format&fit=crop&w=400&q=80" alt="Customer support" className="object-cover" />
           </div>
         </div>
 

@@ -15,6 +15,8 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
+import type { PagoDto, ReciboDto } from "@/lib/api/types";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useWsSubscription } from "@/hooks/useWebSocket";
@@ -30,12 +32,12 @@ interface Transaction {
 }
 
 /** Parse the backend response into the shape the page expects */
-function parsePagosResponse(json: { pagos?: any[]; recibos?: any[] }): {
+function parsePagosResponse(json: { pagos?: PagoDto[]; recibos?: ReciboDto[] }): {
   pagos: Transaction[];
   totalDebt: number;
 } {
   const rawPagos = json?.pagos ?? [];
-  const pagos: Transaction[] = rawPagos.map((p: any) => ({
+  const pagos: Transaction[] = rawPagos.map((p) => ({
     id: p.id,
     concepto: p.concepto,
     monto: parseFloat(p.monto || '0'),
@@ -72,7 +74,7 @@ export default function PagosPage() {
 
   const doFetch = async () => {
     try {
-      const json = await api.get<{ pagos?: any[]; recibos?: any[] }>('/pagos');
+      const json = await api.get<{ pagos?: PagoDto[]; recibos?: ReciboDto[] }>('/pagos');
       setData(parsePagosResponse(json));
     } catch {
       // silently ignore on WS refresh
@@ -90,7 +92,7 @@ export default function PagosPage() {
       setIsLoading(true);
       
       try {
-        const json = await api.get<{ pagos?: any[]; recibos?: any[] }>('/pagos');
+        const json = await api.get<{ pagos?: PagoDto[]; recibos?: ReciboDto[] }>('/pagos');
         setData(parsePagosResponse(json));
         initialFetchDone.current = true;
       } catch (error: unknown) {
@@ -116,19 +118,10 @@ export default function PagosPage() {
 
   const handlePayment = async () => {
     if (!selectedPayment) return;
+    if (!PAYMENTS_ENABLED) { toast.error(PAYMENTS_DISABLED_MSG); return; }
     setIsProcessing(true);
     
     try {
-      // Determinar si es un Pago administrativo o un Recibo público
-      // En la DB, Pago tiene 'estado' y ReciboPublico tiene 'pagado'
-      // Pero en la interfaz Transaction del frontend, los unificamos.
-      // Aquí adivinamos el tipo o simplemente enviamos el ID.
-      // Para este demo, asumimos que son PAGO a menos que el concepto diga algo de servicios.
-      const type = selectedPayment.concepto.toLowerCase().includes('energía') || 
-                   selectedPayment.concepto.toLowerCase().includes('gas') ||
-                   selectedPayment.concepto.toLowerCase().includes('vanti') ||
-                   selectedPayment.concepto.toLowerCase().includes('enel') ? 'RECIBO' : 'PAGO';
-
       await api.put(`/pagos/${selectedPayment.id}/pagar`, { metodo: 'PSE' });
 
       await new Promise(resolve => setTimeout(resolve, 3500));

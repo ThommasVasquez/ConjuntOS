@@ -1,10 +1,12 @@
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::routing::get;
 use axum::{Json, Router};
+use serde::Deserialize;
 
 use crate::auth::extract::AuthUser;
 use crate::domains::usuarios::dto::{
-    MascotaPerfilDto, ProfileResponse, UnidadDto, UpdateProfileRequest, UserDto, VehiculoPerfilDto,
+    DirectorioUsuarioDto, MascotaPerfilDto, ProfileResponse, UnidadDto, UpdateProfileRequest,
+    UserDto, VehiculoPerfilDto,
 };
 use crate::domains::usuarios::repo::{self, ProfileChanges};
 use crate::error::{ApiError, ApiResult};
@@ -15,7 +17,50 @@ use crate::state::AppState;
 const MAX_AVATAR_BYTES: usize = 150 * 1024;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/usuarios/me/profile", get(get_profile).put(update_profile))
+    Router::new()
+        .route("/usuarios/me/profile", get(get_profile).put(update_profile))
+        .route("/usuarios/directorio", get(directorio))
+}
+
+#[derive(Deserialize)]
+pub struct DirectorioQuery {
+    #[serde(default)]
+    pub q: Option<String>,
+}
+
+/// Citofonía directory: active users in the caller's conjunto (excluding self),
+/// optionally filtered by name or internal number. Powers the search picker.
+#[utoipa::path(
+    get,
+    path = "/api/v1/usuarios/directorio",
+    tag = "usuarios",
+    params(("q" = Option<String>, Query, description = "Filter by name or internal number")),
+    responses(
+        (status = 200, description = "Directory entries", body = [DirectorioUsuarioDto]),
+        (status = 401, description = "Not authenticated")
+    )
+)]
+pub async fn directorio(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Query(query): Query<DirectorioQuery>,
+) -> ApiResult<Json<Vec<DirectorioUsuarioDto>>> {
+    let mut conn = state.pool.get().await?;
+    let rows = repo::directorio(&mut conn, user.conjunto_id, user.id, query.q.as_deref()).await?;
+    let out = rows
+        .into_iter()
+        .map(
+            |(id, nombre, numero_interno, rol, torre, apto)| DirectorioUsuarioDto {
+                id,
+                nombre,
+                numero_interno,
+                rol,
+                torre,
+                apto,
+            },
+        )
+        .collect();
+    Ok(Json(out))
 }
 
 #[utoipa::path(

@@ -3,6 +3,7 @@
 import { useViewTransition } from "@/components/providers/ViewTransitionContext";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import Image from "next/image";
 
 const slides = [
   {
@@ -237,10 +238,12 @@ export default function Hero() {
             <div className="relative z-10">
               <div className="feature-content">
                 <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 overflow-hidden mb-8 flex items-center justify-center">
-                   <img 
-                      src={currentFeature.img} 
-                      alt={currentFeature.title} 
-                      className="w-16 h-16 object-cover rounded-xl opacity-90 grayscale group-hover:grayscale-0 transition-all duration-300" 
+                   <Image
+                      width={64}
+                      height={64}
+                      src={currentFeature.img}
+                      alt={currentFeature.title}
+                      className="w-16 h-16 object-cover rounded-xl opacity-90 grayscale group-hover:grayscale-0 transition-all duration-300"
                     />
                 </div>
                 <div>

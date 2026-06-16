@@ -13,7 +13,8 @@ import {
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
+import type { AnuncioDto } from "@/lib/api/types";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -51,9 +52,9 @@ export default function CarteleraPage() {
 <<<<<<< Updated upstream
   // Real-time WebSocket subscription for anuncios
   useWsSubscription('anuncio', () => {
-    api.get<any[]>('/anuncios').then((anunciosData) => {
+    api.get<AnuncioDto[]>('/anuncios').then((anunciosData) => {
       if (anunciosData) {
-        const apiMapped = anunciosData.map((a: any) => ({
+        const apiMapped = anunciosData.map((a) => ({
           id: a.id,
           title: a.titulo,
           content: a.contenido,
@@ -121,7 +122,7 @@ export default function CarteleraPage() {
 
     try {
       await api.post('/chat', { mensaje: tempMsg.mensaje });
-    } catch (err) {
+    } catch {
       toast.error("Error de conexión");
     } finally {
       setIsSending(false);
@@ -134,11 +135,11 @@ export default function CarteleraPage() {
       isInitialLoad.current = true;
 
       try {
-        const anunciosData = await api.get<any[]>('/anuncios');
+        const anunciosData = await api.get<AnuncioDto[]>('/anuncios');
 
         let apiMapped: Notice[] = [];
         if (anunciosData) {
-          apiMapped = anunciosData.map((a: any) => ({
+          apiMapped = anunciosData.map((a) => ({
             id: a.id,
             title: a.titulo,
             content: a.contenido,
