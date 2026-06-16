@@ -12,6 +12,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import { Shield, Mail, Lock, ArrowRight, Loader2, Star, Eye, EyeOff } from "lucide-react";
 
+// Validate a post-login redirect target: only same-origin relative paths.
+// Rejects protocol-relative ("//evil.com"), absolute URLs ("http://…") and backslash tricks.
+function safeCallback(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/inicio";
+  if (raw.includes("://") || raw.includes("\\")) return "/inicio";
+  return raw;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { login, user } = useAuth();
@@ -28,7 +36,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (user) {
       const params = new URLSearchParams(window.location.search);
-      router.replace(params.get("callbackUrl") || "/inicio");
+      router.replace(safeCallback(params.get("callbackUrl")));
     }
   }, [user, router]);
 
@@ -64,7 +72,7 @@ export default function LoginPage() {
       await login(formData.email, formData.password);
       toast.success("¡Bienvenido! Sesión iniciada con éxito.");
       const params = new URLSearchParams(window.location.search);
-      const dest = params.get("callbackUrl") || "/inicio";
+      const dest = safeCallback(params.get("callbackUrl"));
       setTimeout(() => {
         router.push(dest);
         router.refresh();
