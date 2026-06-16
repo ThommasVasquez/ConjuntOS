@@ -9,12 +9,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
-import { Shield, Mail, Lock, ArrowRight, Loader2, Star } from "lucide-react";
+import { Shield, Mail, Lock, ArrowRight, Loader2, Star, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
@@ -115,15 +116,23 @@ export default function LoginPage() {
             <label className="text-[11px] font-bold text-white uppercase tracking-widest ml-1 text-right">Contraseña</label>
             <div className="relative group">
               <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white group-focus-within:text-accent transition-colors" size={20} />
-              <input 
-                type="password" 
+              <input
+                type={showPassword ? "text" : "password"}
                 required
                 autoComplete="current-password"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
-                placeholder="••••••••" 
-                className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-6 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white"
+                placeholder="••••••••"
+                className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-14 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-white/60 hover:text-accent transition-colors cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
           </div>
 
