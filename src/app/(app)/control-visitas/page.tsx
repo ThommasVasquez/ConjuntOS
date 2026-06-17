@@ -45,7 +45,9 @@ export default function ControlVisitas() {
     tipo: "PEATONAL",
     vehiculoTipo: "NINGUNO",
     placa: "",
-    observacion: ""
+    observacion: "",
+    documento: "",
+    categoria: "VISITA"
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -108,11 +110,61 @@ export default function ControlVisitas() {
        toast.success("Visita registrada exitosamente");
        setVisitas([newVisita, ...visitas]);
        setFormData({...formData, nombre: "", placa: "", observacion: ""});
+=======
+       const res = await fetch('/api/vigilancia/visitas', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(formData)
+       });
+       const data = await res.json();
+       if(data.success) {
+          toast.success("Visita registrada exitosamente");
+          // Re-fetch visitas to ensure complete data and relation enrichment
+          const visRes = await fetch('/api/vigilancia/visitas');
+          const visData = await visRes.json();
+          if (visData.success) {
+            setVisitas(visData.data);
+          } else {
+            setVisitas([data.data, ...visitas]);
+          }
+          setFormData({
+            usuarioId: "",
+            nombre: "",
+            tipo: "PEATONAL",
+            vehiculoTipo: "NINGUNO",
+            placa: "",
+            observacion: "",
+            documento: "",
+            categoria: "VISITA"
+          });
+       } else {
+          toast.error("Error al registrar");
+       }
+>>>>>>> Stashed changes
      } catch {
        toast.error("Error de conexión");
      } finally {
        setIsSubmitting(false);
      }
+  };
+
+  const handleCheckout = async (visitaId: string) => {
+    try {
+      const res = await fetch('/api/vigilancia/visitas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitaId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Salida registrada exitosamente");
+        setVisitas(prev => prev.map(v => v.id === visitaId ? { ...v, fechaSalida: data.data.fechaSalida } : v));
+      } else {
+        toast.error("Error al registrar salida");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    }
   };
 
   if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
@@ -140,6 +192,7 @@ export default function ControlVisitas() {
                    onChange={e => setFormData({...formData, usuarioId: e.target.value})}
                    className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all"
                 >
+<<<<<<< Updated upstream
                    <option value="">Seleccione residente...</option>
                    {residentes.map(r => (
                      <option key={r.id} value={r.id} className="bg-primary text-text">
@@ -159,6 +212,45 @@ export default function ControlVisitas() {
                    onChange={e => setFormData({...formData, nombre: e.target.value})}
                    className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
                 />
+=======
+                    <option value="">Seleccione residente...</option>
+                    {residentes.map(r => {
+                      const torre = r.unidad?.torre || r.torre;
+                      const numero = r.unidad?.numero || r.numero;
+                      const torreLabel = torre ? `Torre ${torre}` : "Sin Torre";
+                      const aptoLabel = numero ? `Apto ${numero}` : "Sin Apto";
+                      return (
+                        <option key={r.id} value={r.id} className="bg-primary text-text">
+                          {torreLabel} - {aptoLabel} ({r.nombre})
+                        </option>
+                      );
+                    })}
+                </select>
+             </div>
+             
+             <div className="flex gap-4">
+                <div className="flex-1 flex flex-col gap-1.5">
+                   <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Ocupante Principal</label>
+                   <input 
+                      required
+                      type="text" 
+                      placeholder="Nombre del visitante" 
+                      value={formData.nombre}
+                      onChange={e => setFormData({...formData, nombre: e.target.value})}
+                      className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
+                   />
+                </div>
+                <div className="flex-1 flex flex-col gap-1.5">
+                   <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Documento Identidad</label>
+                   <input 
+                      type="text" 
+                      placeholder="C.C. / Pasaporte" 
+                      value={formData.documento}
+                      onChange={e => setFormData({...formData, documento: e.target.value})}
+                      className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
+                   />
+                </div>
+>>>>>>> Stashed changes
              </div>
 
              <div className="flex gap-4">
@@ -173,6 +265,7 @@ export default function ControlVisitas() {
                       <option value="VEHICULAR" className="bg-primary text-text">Vehicular</option>
                    </select>
                 </div>
+<<<<<<< Updated upstream
                 {formData.tipo === 'VEHICULAR' && (
                   <div className="flex-1 flex flex-col gap-1.5">
                      <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Placa</label>
@@ -189,6 +282,49 @@ export default function ControlVisitas() {
              </div>
 
              <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-accent hover:bg-accent/80 transition-colors rounded-2xl font-bold text-primary shadow-[0_0_20px_rgba(0,0,0,0.3)] flex justify-center items-center gap-2">
+=======
+                <div className="flex-1 flex flex-col gap-1.5">
+                   <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Categoría</label>
+                   <select 
+                      value={formData.categoria}
+                      onChange={e => setFormData({...formData, categoria: e.target.value})}
+                      className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all"
+                   >
+                      <option value="VISITA" className="bg-primary text-text">Visita</option>
+                      <option value="DELIVERY" className="bg-primary text-text">Domicilio / Delivery</option>
+                      <option value="CONTRATISTA" className="bg-primary text-text">Contratista</option>
+                      <option value="PROVEEDOR" className="bg-primary text-text">Proveedor</option>
+                   </select>
+                </div>
+             </div>
+
+             {formData.tipo === 'VEHICULAR' && (
+               <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Placa Vehículo</label>
+                  <input 
+                     required
+                     type="text" 
+                     placeholder="ABC-123" 
+                     value={formData.placa}
+                     onChange={e => setFormData({...formData, placa: e.target.value.toUpperCase()})}
+                     className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent uppercase transition-all" 
+                  />
+               </div>
+             )}
+
+             <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Observaciones</label>
+                <input 
+                   type="text" 
+                   placeholder="Ej: Entrega de llaves, Reparaciones de gas, etc." 
+                   value={formData.observacion}
+                   onChange={e => setFormData({...formData, observacion: e.target.value})}
+                   className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
+                />
+             </div>
+
+             <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-accent hover:bg-accent/80 transition-colors rounded-2xl font-bold text-primary shadow-[0_0_20px_rgba(217,70,239,0.3)] flex justify-center items-center gap-2 cursor-pointer">
+>>>>>>> Stashed changes
                 {isSubmitting ? "Registrando..." : <><PlusCircle size={18}/> Registrar Ingreso</>}
              </button>
           </form>
@@ -197,6 +333,7 @@ export default function ControlVisitas() {
        {/* Bitácora de Hoy */}
        <div className="fade-up flex flex-col gap-4">
           <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2"><Eye size={16} className="text-accent"/> Bitácora Reciente</h3>
+<<<<<<< Updated upstream
           {visitas.length === 0 && <p className="text-text text-sm text-center py-6">No hay visitas registradas hoy.</p>}
           {visitas.map((v, i) => (
              <div key={i} className="liquid-glass p-4 rounded-3xl border border-border/50 flex flex-col gap-3">
@@ -217,6 +354,57 @@ export default function ControlVisitas() {
                 </div>
              </div>
           ))}
+=======
+          {visitas.length === 0 && <p className="text-text/60 text-sm text-center py-6">No hay visitas registradas hoy.</p>}
+          <div className="flex flex-col gap-4">
+            {visitas.map((v, i) => (
+               <div key={i} className="liquid-glass p-5 rounded-3xl border border-border/50 flex flex-col gap-3 shadow-md">
+                  <div className="flex justify-between items-start">
+                     <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-text font-bold leading-tight">{v.nombre}</p>
+                          <span className="bg-primary border border-border text-text/60 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded">
+                            {v.categoria || 'VISITA'}
+                          </span>
+                        </div>
+                        <p className="text-text/60 text-xs">
+                          Destino: {v.usuario?.unidad?.torre || v.usuario?.torre || "Torre 1"} - {v.usuario?.unidad?.numero || v.usuario?.apto || v.usuario?.numero || "502"}
+                        </p>
+                        {v.documento && (
+                          <p className="text-[10px] text-text/50 mt-1">Doc: {v.documento}</p>
+                        )}
+                        {v.observacion && (
+                          <p className="text-xs text-text/60 italic mt-1 font-sans">"{v.observacion}"</p>
+                        )}
+                     </div>
+                     <div className="flex flex-col items-end gap-1.5">
+                       <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text/60">
+                          Entrada: {new Date(v.creadoEn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                       </div>
+                       {v.fechaSalida ? (
+                         <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-bold">
+                           Salida: {new Date(v.fechaSalida).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                         </div>
+                       ) : (
+                         <button
+                           onClick={() => handleCheckout(v.id)}
+                           className="bg-emerald-500 hover:bg-emerald-600 text-black px-3.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all"
+                         >
+                           Marcar Salida
+                         </button>
+                       )}
+                     </div>
+                  </div>
+                  <div className="flex bg-surface/50 p-2 rounded-xl gap-4 items-center border border-border/30">
+                     <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${v.tipo === 'VEHICULAR' ? 'text-emerald-400' : 'text-accent'}`}>
+                        {v.tipo === 'VEHICULAR' ? <Car size={14}/> : <Users size={14}/>} {v.tipo}
+                     </div>
+                     {v.placa && <div className="text-xs text-text/70 bg-text/5 px-2 py-0.5 rounded border border-border font-mono tracking-widest">{v.placa}</div>}
+                  </div>
+               </div>
+            ))}
+          </div>
+>>>>>>> Stashed changes
        </div>
     </div>
   );

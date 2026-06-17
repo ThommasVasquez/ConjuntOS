@@ -491,7 +491,7 @@ function ProfileContent() {
           {/* DROPDOWN MENU - MAX PRIORITY */}
           {showMenu && hasMounted && (
             <div 
-              className="fixed top-20 right-6 w-52 liquid-glass rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-top-4 duration-300 z-[9999] border border-border"
+              className="fixed top-20 right-6 w-52 bg-[#1a1a2e] border border-white/10 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.7)] animate-in fade-in slide-in-from-top-4 duration-300 z-[9999]"
               style={{ pointerEvents: 'auto' }}
             >
               <button 
