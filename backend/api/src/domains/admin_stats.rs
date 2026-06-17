@@ -1,22 +1,69 @@
-//! Admin dashboard counters (legacy /api/admin/stats). Flat module like
-//! auth_routes.rs — single endpoint, no models of its own.
+//! Admin dashboard counters + status config toggles. Flat module like
+//! auth_routes.rs — endpoints + queries in one file.
+
+use std::sync::RwLock;
 
 use axum::extract::State;
 use axum::routing::get;
 use axum::{Json, Router};
 use bigdecimal::BigDecimal;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
+use crate::db::enums::Rol;
 use crate::domains::pagos::repo;
 use crate::error::ApiResult;
 use crate::state::AppState;
 
-pub fn router() -> Router<AppState> {
-    Router::new().route("/admin/stats", get(admin_stats))
+// ── In-memory admin availability status ────────────────────────────────────
+
+/// Per-admin availability state (defaults to all-active on restart).
+#[derive(Debug, Clone, Serialize)]
+struct AdminStatus {
+    activo_llamadas: bool,
+    activo_mensajes: bool,
 }
+
+impl Default for AdminStatus {
+    fn default() -> Self {
+        Self {
+            activo_llamadas: true,
+            activo_mensajes: true,
+        }
+    }
+}
+
+/// Shared mutable state. Default-constructs on first access.
+static STATUS: RwLock<Option<AdminStatus>> = RwLock::new(None);
+
+fn read_status() -> AdminStatus {
+    let guard = STATUS.read().unwrap();
+    guard.clone().unwrap_or_default()
+}
+
+fn update_status(llamadas: Option<bool>, mensajes: Option<bool>) -> AdminStatus {
+    let mut guard = STATUS.write().unwrap();
+    let entry = guard.get_or_insert_with(AdminStatus::default);
+    if let Some(v) = llamadas {
+        entry.activo_llamadas = v;
+    }
+    if let Some(v) = mensajes {
+        entry.activo_mensajes = v;
+    }
+    entry.clone()
+}
+
+// ── Router ──────────────────────────────────────────────────────────────────
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/admin/stats", get(admin_stats))
+        .route("/admin/status-config", get(get_status).post(update_status_handler))
+}
+
+// ── DTOs ────────────────────────────────────────────────────────────────────
 
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -28,6 +75,36 @@ pub struct AdminStatsDto {
     pub reservas_pendientes: i64,
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct StatusResponse {
+    success: bool,
+    #[serde(rename = "activoLlamadas")]
+    activo_llamadas: bool,
+    #[serde(rename = "activoMensajes")]
+    activo_mensajes: bool,
+}
+
+impl From<AdminStatus> for StatusResponse {
+    fn from(s: AdminStatus) -> Self {
+        Self {
+            success: true,
+            activo_llamadas: s.activo_llamadas,
+            activo_mensajes: s.activo_mensajes,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct StatusUpdate {
+    #[serde(rename = "activoLlamadas")]
+    activo_llamadas: Option<bool>,
+    #[serde(rename = "activoMensajes")]
+    activo_mensajes: Option<bool>,
+}
+
+// ── Handlers ────────────────────────────────────────────────────────────────
+
+/// GET /api/v1/admin/stats — dashboard counters.
 #[utoipa::path(
     get,
     path = "/api/v1/admin/stats",
@@ -49,4 +126,21 @@ pub async fn admin_stats(
         recaudo_mes,
         reservas_pendientes,
     }))
+}
+
+/// GET /api/v1/admin/status-config — read admin availability toggles.
+async fn get_status(State(_state): State<AppState>, user: AuthUser) -> ApiResult<Json<StatusResponse>> {
+    guard::require(&user, &[Rol::Administrador, Rol::Concejo])?;
+    Ok(Json(read_status().into()))
+}
+
+/// POST /api/v1/admin/status-config — update admin availability toggles.
+async fn update_status_handler(
+    State(_state): State<AppState>,
+    user: AuthUser,
+    Json(payload): Json<StatusUpdate>,
+) -> ApiResult<Json<StatusResponse>> {
+    guard::require(&user, &[Rol::Administrador, Rol::Concejo])?;
+    let status = update_status(payload.activo_llamadas, payload.activo_mensajes);
+    Ok(Json(status.into()))
 }

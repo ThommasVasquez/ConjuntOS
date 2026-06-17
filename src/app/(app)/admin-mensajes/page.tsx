@@ -101,8 +101,7 @@ export default function AdminMensajesPage() {
 
   const fetchStatusConfig = async () => {
     try {
-      const res = await fetch("/api/admin/status-config");
-      const data = await res.json();
+      const data = await api.get<{ success: boolean; activoLlamadas: boolean; activoMensajes: boolean }>("/admin/status-config");
       if (data.success) {
         setActivoLlamadas(data.activoLlamadas);
         setActivoMensajes(data.activoMensajes);
@@ -118,12 +117,7 @@ export default function AdminMensajesPage() {
     const newValue = !activoLlamadas;
     setActivoLlamadas(newValue);
     try {
-      const res = await fetch("/api/admin/status-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activoLlamadas: newValue })
-      });
-      const data = await res.json();
+      const data = await api.post<{ success: boolean }>("/admin/status-config", { activoLlamadas: newValue });
       if (data.success) {
         toast.success(`Llamadas ${newValue ? 'activadas' : 'desactivadas'} para el administrador`);
       } else {
@@ -144,12 +138,7 @@ export default function AdminMensajesPage() {
     const newValue = !activoMensajes;
     setActivoMensajes(newValue);
     try {
-      const res = await fetch("/api/admin/status-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activoMensajes: newValue })
-      });
-      const data = await res.json();
+      const data = await api.post<{ success: boolean }>("/admin/status-config", { activoMensajes: newValue });
       if (data.success) {
         toast.success(`Mensajes y chat ${newValue ? 'activados' : 'desactivados'} para el administrador`);
       } else {
