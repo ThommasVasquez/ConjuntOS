@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { 
-  Eye, Activity, Clock, Shield, Check, RotateCcw, Maximize2, Play, Pause, AlertTriangle, ChevronLeft
+  Eye, Activity, Clock, Shield, Check, RotateCcw, Maximize2, Play, Pause, AlertTriangle, ChevronLeft, ClipboardList
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { gsap } from "gsap";
+import { api } from "@/lib/api/client";
 
 interface Camera {
   id: number;
@@ -27,14 +28,6 @@ export default function SeguridadPage() {
   const [selectedCam, setSelectedCam] = useState<Camera | null>(null);
   const [thermalFilter, setThermalFilter] = useState(false);
   const [camStatus, setCamStatus] = useState<"LIVE" | "PAUSED">("LIVE");
-  const [roundProgress, setRoundProgress] = useState({
-    lobby: false,
-    sotano: false,
-    ascensores: false,
-    perimetro: false
-  });
-  const [isRoundActive, setIsRoundActive] = useState(false);
-  const [roundStartTime, setRoundStartTime] = useState<string | null>(null);
 
   // References for Canvas animations
   const canvasRefs = [
@@ -220,52 +213,60 @@ export default function SeguridadPage() {
     };
   }, [activeTab, thermalFilter, camStatus]);
 
-  // Round management handlers
-  const toggleCheckpoint = (key: keyof typeof roundProgress) => {
-    if (!isRoundActive) {
-      toast.warning("Inicia la ronda antes de registrar los puntos de control.");
-      return;
-    }
-    setRoundProgress(prev => ({ ...prev, [key]: !prev[key] }));
+interface RondaDto {
+  id: string;
+  hallazgos: string | null;
+  completada: boolean;
+  fecha: string;
+}
+
+  // ── Rondas reales (backend) ──────────────────────────────────────────
+  const [rondaHoy, setRondaHoy] = useState<RondaDto | null>(null);
+  const [hallazgos, setHallazgos] = useState("");
+  const [rondaLoading, setRondaLoading] = useState(false);
+
+  const fetchRonda = async () => {
+    try {
+      const data = await api.get<RondaDto | null>('/parqueadero/rondas');
+      setRondaHoy(data);
+      if (data?.hallazgos) setHallazgos(data.hallazgos);
+    } catch {}
   };
 
-  const startRound = () => {
-    setIsRoundActive(true);
-    setRoundStartTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    setRoundProgress({ lobby: false, sotano: false, ascensores: false, perimetro: false });
-    toast.success("Ronda de vigilancia iniciada. Registra todos los puntos de control.");
+  useEffect(() => {
+    if (!user) return;
+    fetchRonda();
+  }, [user]);
+
+  const startRound = async () => {
+    setRondaLoading(true);
+    try {
+      const r = await api.post<RondaDto>('/parqueadero/rondas', { hallazgos: "", completada: false });
+      setRondaHoy(r);
+      setHallazgos("");
+      toast.success("Ronda de vigilancia iniciada");
+    } catch {
+      toast.error("Error al iniciar ronda");
+    } finally {
+      setRondaLoading(false);
+    }
   };
 
-  const submitRound = () => {
-    const allChecked = Object.values(roundProgress).every(val => val);
-    if (!allChecked) {
-      toast.error("Debes verificar todos los puntos de control para concluir la ronda.");
+  const submitRound = async () => {
+    if (!hallazgos.trim()) {
+      toast.error("Registra al menos una observación en los hallazgos");
       return;
     }
-
-    // Save round novelty inside database logs
-    fetch('/api/vigilancia/novedades', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titulo: "Ronda de Seguridad Concluida",
-        descripcion: `Ronda de vigilancia nocturna completada sin incidentes. Iniciada a las ${roundStartTime} y cerrada a las ${new Date().toLocaleTimeString()}. Todos los puntos verificados.`,
-        tipo: "RONDAS"
-      })
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        toast.success("Ronda de vigilancia cerrada y registrada en la bitácora.");
-        setIsRoundActive(false);
-        setRoundStartTime(null);
-      } else {
-        toast.error("Error al reportar ronda");
-      }
-    })
-    .catch(() => {
-      toast.error("Error de conexión");
-    });
+    setRondaLoading(true);
+    try {
+      const r = await api.post<RondaDto>('/parqueadero/rondas', { hallazgos: hallazgos.trim(), completada: true });
+      setRondaHoy(r);
+      toast.success("Ronda completada y registrada");
+    } catch {
+      toast.error("Error al registrar ronda");
+    } finally {
+      setRondaLoading(false);
+    }
   };
 
   return (
@@ -394,107 +395,73 @@ export default function SeguridadPage() {
                 <p className="text-xs text-text/60">Auditoría obligatoria de seguridad por turnos</p>
               </div>
               
-              {!isRoundActive ? (
+              {!rondaHoy || rondaHoy.completada ? (
                 <button 
                   onClick={startRound}
-                  className="bg-blue-500 hover:bg-blue-600 text-black text-xs font-black uppercase tracking-widest px-4 py-3 rounded-2xl transition-all cursor-pointer shadow-lg"
+                  disabled={rondaLoading}
+                  className="bg-blue-500 hover:bg-blue-600 text-black text-xs font-black uppercase tracking-widest px-4 py-3 rounded-2xl transition-all cursor-pointer shadow-lg disabled:opacity-50"
                 >
-                  Iniciar Ronda Nocturna
+                  {rondaLoading ? "Iniciando…" : "Iniciar Ronda"}
                 </button>
               ) : (
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-2 rounded-2xl">
-                    <Clock size={14} className="animate-spin" style={{ animationDuration: '3s' }} /> Inició: {roundStartTime}
+                    <Clock size={14} /> En curso
                   </div>
                   <button 
                     onClick={submitRound}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-black uppercase tracking-widest px-4 py-3 rounded-2xl transition-all cursor-pointer shadow-lg"
+                    disabled={rondaLoading}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-black uppercase tracking-widest px-4 py-3 rounded-2xl transition-all cursor-pointer shadow-lg disabled:opacity-50"
                   >
-                    Concluir y Registrar
+                    {rondaLoading ? "Registrando…" : "Concluir Ronda"}
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-              
-              <div 
-                onClick={() => toggleCheckpoint("lobby")}
-                className={`p-5 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
-                  roundProgress.lobby 
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
-                    : isRoundActive ? "bg-surface border-border hover:border-text/30" : "bg-surface-3/30 border-border/40 opacity-60"
-                }`}
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-text mb-0.5">Punto 1: Lobby Principal</h4>
-                  <p className="text-[10px] text-text/50">Cerradura y citófonos</p>
-                </div>
-                <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-                  roundProgress.lobby ? "bg-emerald-500 border-emerald-500 text-black" : "border-border"
-                }`}>
-                  {roundProgress.lobby && <Check size={14} />}
-                </div>
+            {/* Hallazgos textarea */}
+            {rondaHoy && !rondaHoy.completada && (
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text/60">Hallazgos / Observaciones</label>
+                <textarea
+                  value={hallazgos}
+                  onChange={(e) => setHallazgos(e.target.value)}
+                  placeholder="Registra aquí cualquier novedad: luces apagadas, puertas abiertas, personas sospechosas, vehículos mal estacionados…"
+                  rows={4}
+                  className="w-full bg-surface-2 border border-border rounded-2xl p-4 text-sm text-text focus:outline-none focus:border-text/30 resize-none placeholder:text-text/30"
+                />
               </div>
+            )}
 
-              <div 
-                onClick={() => toggleCheckpoint("sotano")}
-                className={`p-5 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
-                  roundProgress.sotano 
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
-                    : isRoundActive ? "bg-surface border-border hover:border-text/30" : "bg-surface-3/30 border-border/40 opacity-60"
-                }`}
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-text mb-0.5">Punto 2: Sótano Parqueaderos</h4>
-                  <p className="text-[10px] text-text/50">Inspección de vehículos e iluminación</p>
+            {/* Ronda completada hoy */}
+            {rondaHoy?.completada && (
+              <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Check size={18} className="text-emerald-400" />
+                  <span className="text-sm font-bold text-emerald-400">Ronda completada hoy</span>
                 </div>
-                <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-                  roundProgress.sotano ? "bg-emerald-500 border-emerald-500 text-black" : "border-border"
-                }`}>
-                  {roundProgress.sotano && <Check size={14} />}
-                </div>
+                {rondaHoy.hallazgos && (
+                  <p className="text-xs text-text/70 italic pl-7">«{rondaHoy.hallazgos}»</p>
+                )}
+                <button
+                  onClick={startRound}
+                  disabled={rondaLoading}
+                  className="self-start mt-2 px-4 py-2 bg-surface border border-border rounded-xl text-xs font-bold text-text hover:bg-surface-2 transition-all disabled:opacity-50"
+                >
+                  <RotateCcw size={12} className="inline mr-1.5" />
+                  Iniciar otra ronda
+                </button>
               </div>
+            )}
 
-              <div 
-                onClick={() => toggleCheckpoint("ascensores")}
-                className={`p-5 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
-                  roundProgress.ascensores 
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
-                    : isRoundActive ? "bg-surface border-border hover:border-text/30" : "bg-surface-3/30 border-border/40 opacity-60"
-                }`}
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-text mb-0.5">Punto 3: Cuarto de Máquinas y Ascensores</h4>
-                  <p className="text-[10px] text-text/50">Cuadros eléctricos de torres</p>
-                </div>
-                <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-                  roundProgress.ascensores ? "bg-emerald-500 border-emerald-500 text-black" : "border-border"
-                }`}>
-                  {roundProgress.ascensores && <Check size={14} />}
-                </div>
+            {/* Sin ronda hoy */}
+            {!rondaHoy && (
+              <div className="p-8 rounded-2xl bg-surface-3/30 border border-dashed border-border/40 flex flex-col items-center gap-3 text-center">
+                <ClipboardList size={32} className="text-text/30" />
+                <p className="text-xs text-text/50 font-medium">No hay rondas registradas hoy</p>
+                <p className="text-[10px] text-text/40">Inicia una ronda para registrar la inspección de seguridad</p>
               </div>
-
-              <div 
-                onClick={() => toggleCheckpoint("perimetro")}
-                className={`p-5 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
-                  roundProgress.perimetro 
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
-                    : isRoundActive ? "bg-surface border-border hover:border-text/30" : "bg-surface-3/30 border-border/40 opacity-60"
-                }`}
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-text mb-0.5">Punto 4: Puerta Perimetral Trasera</h4>
-                  <p className="text-[10px] text-text/50">Cercas eléctricas y candado</p>
-                </div>
-                <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-                  roundProgress.perimetro ? "bg-emerald-500 border-emerald-500 text-black" : "border-border"
-                }`}>
-                  {roundProgress.perimetro && <Check size={14} />}
-                </div>
-              </div>
-
-            </div>
+            )}
           </div>
         </div>
       )}
