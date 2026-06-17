@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { useCall } from "@/components/providers/CallContext";
 interface ResidenteDirectorio {
   id: string;
   nombre: string;
