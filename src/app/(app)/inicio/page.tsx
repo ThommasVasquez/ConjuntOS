@@ -9,12 +9,17 @@ import {
   ArrowRight, Bell, Building2, Calendar, Car, CreditCard, DollarSign,
 <<<<<<< Updated upstream
   Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, ShieldAlert,
+<<<<<<< HEAD
   Search, SlidersHorizontal, ShoppingBag, User as UserIcon
 =======
   Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, 
   Search, SlidersHorizontal, ShoppingBag, User as UserIcon,
   Phone, MessageCircle, Shield, Activity, Clock, Plus, X, Eye, FileText, Users, Package, Flame, ShieldAlert
 >>>>>>> Stashed changes
+=======
+  Search, SlidersHorizontal, ShoppingBag, User as UserIcon,
+  Users, Wrench, MapPin, LayoutGrid
+>>>>>>> 6cb7c17 (feat: expandir módulo administrador — 4 nuevos módulos)
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
@@ -1287,32 +1292,74 @@ function HomeAdmin() {
       )}
 
       {/* QUICK ACCESSIBLE ACTIONS */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
+        {/* RESIDENTES CARD */}
+        <div 
+          onClick={() => router.push('/admin-residentes')}
+          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+        >
+          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
+            <Users size={18} />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-text mb-0.5">Residentes</h4>
+            <p className="text-[8px] text-text">Gestionar unidades</p>
+          </div>
+        </div>
+
         {/* CITOFONÍA CARD */}
         <div 
           onClick={() => router.push('/citofonia')}
-          className="p-5 rounded-[28px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
         >
-          <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <UserIcon size={20} />
+          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
+            <UserIcon size={18} />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-text mb-0.5">Citofonía</h4>
-            <p className="text-[9px] text-text">Llamar a unidades y portería</p>
+            <h4 className="text-xs font-bold text-text mb-0.5">Citofonía</h4>
+            <p className="text-[8px] text-text">Llamar a unidades</p>
           </div>
         </div>
 
         {/* NOVEDADES CARD */}
         <div 
           onClick={() => router.push('/admin-novedades')}
-          className="p-5 rounded-[28px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
         >
-          <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Building2 size={20} />
+          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
+            <Building2 size={18} />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-text mb-0.5">Novedades</h4>
-            <p className="text-[9px] text-text">Crear anuncios y circulares</p>
+            <h4 className="text-xs font-bold text-text mb-0.5">Novedades</h4>
+            <p className="text-[8px] text-text">Anuncios y trámites</p>
+          </div>
+        </div>
+
+        {/* PQRS CARD */}
+        <div 
+          onClick={() => router.push('/admin-pqrs')}
+          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+        >
+          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
+            <Wrench size={18} />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-text mb-0.5">Solicitudes</h4>
+            <p className="text-[8px] text-text">PQRS y servicios</p>
+          </div>
+        </div>
+
+        {/* ÁREAS CARD */}
+        <div 
+          onClick={() => router.push('/admin-areas')}
+          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+        >
+          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
+            <MapPin size={18} />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-text mb-0.5">Áreas</h4>
+            <p className="text-[8px] text-text">Espacios comunes</p>
           </div>
         </div>
       </div>
@@ -1320,14 +1367,14 @@ function HomeAdmin() {
       {/* GESTIÓN GENERAL CARD */}
       <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl text-text">
         <h2 className="text-base font-bold mb-2">Gestión del Conjunto</h2>
-        <p className="text-[11px] text-text leading-relaxed mb-6">Accede a las herramientas de control de finanzas y parqueaderos.</p>
+        <p className="text-[11px] text-text leading-relaxed mb-6">Control de finanzas, parqueaderos y configuración.</p>
         
         <div className="flex flex-col gap-3">
           <button 
             onClick={() => router.push('/admin-finanzas')}
             className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
           >
-            <span>Ver Finanzas y Cartera</span>
+            <span className="flex items-center gap-2"><DollarSign size={14} className="text-[#57bf00]"/> Finanzas y Cartera</span>
             <ArrowRight size={14} className="text-text group-hover:text-accent group-hover:translate-x-1 transition-all" />
           </button>
           
@@ -1335,7 +1382,15 @@ function HomeAdmin() {
             onClick={() => router.push('/admin-parqueadero')}
             className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
           >
-            <span>Control de Parqueaderos</span>
+            <span className="flex items-center gap-2"><Car size={14} className="text-[#009df2]"/> Control de Parqueaderos</span>
+            <ArrowRight size={14} className="text-text group-hover:text-accent group-hover:translate-x-1 transition-all" />
+          </button>
+
+          <button 
+            onClick={() => router.push('/superadmin')}
+            className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
+          >
+            <span className="flex items-center gap-2"><ShieldAlert size={14} className="text-text"/> Panel SuperAdmin</span>
             <ArrowRight size={14} className="text-text group-hover:text-accent group-hover:translate-x-1 transition-all" />
           </button>
         </div>
