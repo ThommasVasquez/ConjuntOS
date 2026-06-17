@@ -75,33 +75,17 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-<<<<<<< Updated upstream
   const data = event.notification.data || {};
   const urlToOpen = data.url || "/citofonia";
   const room = data.room;
 
   if (event.action === "close") {
-    return;
-=======
-  const action = event.action;
-  if (action === "close") return;
-
-  // Always resolve the target URL against THIS SW's origin
-  const targetPath = event.notification.data?.url || "/citofonia";
-  const callerPeerId = event.notification.data?.callerPeerId;
-  const callerName = event.notification.data?.callerName;
-
-  let targetUrl = sameOriginUrl(targetPath);
-  if (callerPeerId) {
-    targetUrl += `?answerCall=true&callerPeerId=${encodeURIComponent(callerPeerId)}&callerName=${encodeURIComponent(callerName || "Portería")}`;
->>>>>>> Stashed changes
-  }
+    return;  }
 
   const scopeOrigin = new URL(self.registration.scope).origin;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
-<<<<<<< Updated upstream
       // 1. Una pestaña de citofonía ya abierta
       for (let client of windowClients) {
         if (client.url.includes("/citofonia") && "focus" in client) {
@@ -109,30 +93,13 @@ self.addEventListener("notificationclick", (event) => {
             client.postMessage({
               type: "ANSWER_CALL",
               room,
-              callerName: data.callerName,
-=======
-      // 1. Prefer a citofonia tab that's already open on the SAME origin
-      for (const client of windowClients) {
-        try {
-          const clientOrigin = new URL(client.url).origin;
-          if (clientOrigin !== scopeOrigin) continue; // skip cross-origin tabs
-        } catch { continue; }
-
-        if (client.url.includes("/citofonia") && "focus" in client) {
-          if (callerPeerId) {
-            client.postMessage({
-              type: "ANSWER_CALL",
-              callerPeerId,
-              callerName,
->>>>>>> Stashed changes
-              redirectToCallPage: true
+              callerName: data.callerName,              redirectToCallPage: true
             });
           }
           return client.focus();
         }
       }
 
-<<<<<<< Updated upstream
       // 2. Cualquier pestaña de la aplicación abierta
       const selfUrl = new URL(self.registration.scope);
       for (let client of windowClients) {
@@ -142,41 +109,19 @@ self.addEventListener("notificationclick", (event) => {
             client.postMessage({
               type: "ANSWER_CALL",
               room,
-              callerName: data.callerName,
-=======
-      // 2. Fall back to any app tab on the same origin
-      for (const client of windowClients) {
-        try {
-          const clientOrigin = new URL(client.url).origin;
-          if (clientOrigin !== scopeOrigin) continue;
-        } catch { continue; }
-
-        if ("focus" in client) {
-          if (callerPeerId) {
-            client.postMessage({
-              type: "ANSWER_CALL",
-              callerPeerId,
-              callerName,
->>>>>>> Stashed changes
-              redirectToCallPage: true
+              callerName: data.callerName,              redirectToCallPage: true
             });
           }
           return client.focus();
         }
       }
 
-<<<<<<< Updated upstream
       // 3. Sin pestaña abierta: abrir una nueva con los datos de la sala
       if (clients.openWindow) {
         let targetUrl = urlToOpen;
         if (room) {
           targetUrl = `${urlToOpen}?answerCall=true&room=${encodeURIComponent(room)}&callerName=${encodeURIComponent(data.callerName || "Portería")}`;
-        }
-=======
-      // 3. No app tab open — open a new window (same-origin URL guaranteed)
-      if (clients.openWindow) {
->>>>>>> Stashed changes
-        return clients.openWindow(targetUrl);
+        }        return clients.openWindow(targetUrl);
       }
     })
   );

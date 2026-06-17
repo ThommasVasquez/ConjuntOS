@@ -49,7 +49,6 @@ export default function CarteleraPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const isInitialLoad = useRef(false);
 
-<<<<<<< Updated upstream
   // Real-time WebSocket subscription for anuncios
   useWsSubscription('anuncio', () => {
     api.get<AnuncioDto[]>('/anuncios').then((anunciosData) => {
@@ -69,27 +68,6 @@ export default function CarteleraPage() {
       }
     }).catch(() => {});
   });
-=======
-  const fetchAdminStatus = async () => {
-    try {
-      const res = await fetch("/api/admin/status-config");
-      const data = await res.json();
-      if (data.success) {
-        setIsAdminOnline(data.isAdminOnline);
-      }
-    } catch (err) {
-      console.error("Error al cargar estado del administrador:", err);
-    }
-  };
-
-  // Real Admin Status Polling
-  useEffect(() => {
-    fetchAdminStatus();
-    const statusInterval = setInterval(fetchAdminStatus, 15000);
-    return () => clearInterval(statusInterval);
-  }, []);
->>>>>>> Stashed changes
-
   // Fetch Chat History
   const fetchChat = async () => {
     try {

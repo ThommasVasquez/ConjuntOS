@@ -558,45 +558,10 @@ export default function CitofoniaPage() {
                          </div>
                          <div className="flex flex-col">
                             <span className="text-text font-bold text-sm">{v.nombre}</span>
-<<<<<<< Updated upstream
                             <span className="text-text text-[10px]">{v.placa ? `Placa: ${v.placa}` : 'Personal'} • {new Date(v.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
                          </div>
                       </div>
-                      <div className="px-2 py-1 bg-text/5 border border-border rounded-lg text-[8px] font-black uppercase text-text">PROGRAMADA</div>
-=======
-                            <span className="text-text/50 text-[10px]">
-                              {v.placa ? `Placa: ${v.placa}` : 'Personal'} • {new Date(v.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
-                              {v.horaLlegadaEstimada && v.horaSalidaEstimada && ` • Est: ${v.horaLlegadaEstimada} - ${v.horaSalidaEstimada}`}
-                              {v.celdaAsignadaNumero && ` • Celda: ${v.celdaAsignadaNumero}`}
-                            </span>
-                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                          {(v.estadoVisita === "CELDA_ASIGNADA" || v.estadoVisita === "NOTIFICADO_15_MIN") && (
-                             <button
-                               onClick={() => handleReconfirmVisita(v.id)}
-                               className="px-3 py-1.5 bg-accent hover:bg-accent/80 text-white rounded-lg text-[9px] font-black uppercase tracking-widest cursor-pointer transition-all shadow-md active:scale-95 animate-pulse"
-                             >
-                               RECONFIRMAR
-                             </button>
-                          )}
-                          
-                          <div className={`px-2 py-1 border rounded-lg text-[8px] font-black uppercase tracking-wider ${
-                             v.estadoVisita === "PENDIENTE" ? "bg-text/5 border-border text-text/50" :
-                             (v.estadoVisita === "CELDA_ASIGNADA" || v.estadoVisita === "NOTIFICADO_15_MIN") ? "bg-blue-500/10 border-blue-500/20 text-blue-400" :
-                             v.estadoVisita === "CONFIRMADA" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
-                             v.estadoVisita === "EXPIRADA" ? "bg-red-500/10 border-red-500/20 text-red-400" :
-                             v.estadoVisita === "FINALIZADA" ? "bg-text/10 border-border/30 text-text/60" :
-                             "bg-text/5 border-border text-text/60"
-                          }`}>
-                             {v.estadoVisita === "PENDIENTE" ? "PENDIENTE ASIGNACIÓN" :
-                              (v.estadoVisita === "CELDA_ASIGNADA" || v.estadoVisita === "NOTIFICADO_15_MIN") ? "CELDA ASIGNADA" :
-                              v.estadoVisita || "PROGRAMADA"}
-                          </div>
-                       </div>
->>>>>>> Stashed changes
-                   </div>
+                      <div className="px-2 py-1 bg-text/5 border border-border rounded-lg text-[8px] font-black uppercase text-text">PROGRAMADA</div>                   </div>
                  ))}
               </div>
            </div>
@@ -654,7 +619,6 @@ export default function CitofoniaPage() {
 
       {/* MODAL: ADD VISITA */}
       {isAddingVisita && (
-<<<<<<< Updated upstream
         <div className="fixed inset-0 z-[60] flex items-end justify-center animate-in fade-in duration-300">
            <div className="absolute inset-0 bg-primary/95 backdrop-blur-xl" onClick={() => setIsAddingVisita(false)} />
            <div className="relative w-full max-w-[430px] mx-auto bg-primary-light rounded-t-[48px] border-t border-border px-8 pt-8 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-500">
@@ -705,121 +669,7 @@ export default function CitofoniaPage() {
                  </div>
               </div>
            </div>
-        </div>
-=======
-         <div className="fixed inset-0 z-50 flex items-end justify-center p-0 animate-in fade-in duration-300">
-            <div className="absolute inset-0 bg-primary/95 backdrop-blur-xl" onClick={() => setIsAddingVisita(false)} />
-            <div className="relative w-full max-w-lg bg-primary-light rounded-t-[48px] border-t border-border p-10 animate-in slide-in-from-bottom duration-500">
-               <div className="flex flex-col gap-8 pb-10">
-                  <div className="w-12 h-1.5 bg-text/20 rounded-full mx-auto" />
-                  <div className="flex justify-between items-center">
-                     <h3 className="text-2xl font-display font-bold text-text">Programar Visita</h3>
-                     <button onClick={() => setIsAddingVisita(false)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text/45 cursor-pointer"><X size={20} /></button>
-                  </div>
-
-                  <div className="space-y-6">
-                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Nombre del Invitado</label>
-                        <input 
-                          type="text" 
-                          placeholder="Ej: Diana Prince" 
-                          value={visitaNombre}
-                          onChange={(e) => setVisitaNombre(e.target.value)}
-                          className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text placeholder:text-text/55 focus:border-accent outline-none transition-all" 
-                        />
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Tipo de Vehículo</label>
-                           <select 
-                             value={visitaVehiculoTipo}
-                             onChange={(e) => setVisitaVehiculoTipo(e.target.value)}
-                             className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none focus:border-accent"
-                           >
-                              <option className="bg-primary text-text" value="NINGUNO">Peatonal</option>
-                              <option className="bg-primary text-text" value="CARRO">Carro</option>
-                              <option className="bg-primary text-text" value="MOTO">Moto</option>
-                           </select>
-                        </div>
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Placa (Si aplica)</label>
-                           <input 
-                             type="text" 
-                             placeholder="ABC-123" 
-                             value={visitaPlaca}
-                             onChange={(e) => setVisitaPlaca(e.target.value.toUpperCase())}
-                             disabled={visitaVehiculoTipo === "NINGUNO"}
-                             className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none placeholder:text-text/55 uppercase focus:border-accent disabled:opacity-50" 
-                           />
-                        </div>
-                     </div>
-
-                     {visitaVehiculoTipo !== "NINGUNO" && (
-                        <>
-                           {/* Availability status */}
-                           <div className="p-3.5 rounded-2xl bg-text/5 border border-border flex flex-col gap-1">
-                              <span className="text-[9px] font-black text-text/50 uppercase tracking-widest">Disponibilidad en Tiempo Real</span>
-                              {visitaVehiculoTipo === "CARRO" ? (
-                                 <p className={`text-xs font-bold flex items-center gap-1.5 ${parking.carros > 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${parking.carros > 0 ? "bg-emerald-400" : "bg-rose-400"}`} />
-                                    {parking.carros > 0 ? `Cupos disponibles: ${parking.carros} carros` : "No hay cupos disponibles de visitantes."}
-                                 </p>
-                              ) : (
-                                 <p className={`text-xs font-bold flex items-center gap-1.5 ${parking.motos > 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${parking.motos > 0 ? "bg-emerald-400" : "bg-rose-400"}`} />
-                                    {parking.motos > 0 ? `Cupos disponibles: ${parking.motos} motos` : "No hay cupos disponibles de visitantes."}
-                                 </p>
-                              )}
-                           </div>
-
-                           {/* Estimates */}
-                           <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Llegada Estimada</label>
-                                 <input 
-                                   type="time" 
-                                   value={visitaHoraLlegada}
-                                   onChange={(e) => setVisitaHoraLlegada(e.target.value)}
-                                   className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none focus:border-accent" 
-                                 />
-                              </div>
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black text-text/60 uppercase tracking-widest">Salida Estimada</label>
-                                 <input 
-                                   type="time" 
-                                   value={visitaHoraSalida}
-                                   onChange={(e) => setVisitaHoraSalida(e.target.value)}
-                                   className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none focus:border-accent" 
-                                 />
-                              </div>
-                           </div>
-                        </>
-                     )}
-
-                     <div className="p-4 rounded-2xl bg-accent/10 border border-accent/20 flex gap-4 items-center">
-                        <Info size={20} className="text-accent shrink-0" />
-                        <p className="text-[10px] text-text/60 font-medium leading-relaxed">
-                           {visitaVehiculoTipo !== "NINGUNO" 
-                              ? "Al programar una visita vehicular, el sistema reservará un cupo dinámico de visitantes según las horas especificadas."
-                              : "Las visitas peatonales no requieren reserva de parqueadero."
-                           }
-                        </p>
-                     </div>
-
-                     <button 
-                       onClick={handleSaveVisita}
-                       disabled={isSubmittingVisita || (visitaVehiculoTipo === "CARRO" && parking.carros <= 0) || (visitaVehiculoTipo === "MOTO" && parking.motos <= 0)}
-                       className="w-full py-5 rounded-2xl bg-accent disabled:opacity-40 text-white font-black text-base shadow-xl shadow-accent/20 active:scale-95 transition-all mt-4 cursor-pointer flex items-center justify-center gap-2"
-                     >
-                       {isSubmittingVisita ? "Agendando..." : "PROGRAMAR AHORA"}
-                     </button>
-                  </div>
-               </div>
-            </div>
-         </div>
->>>>>>> Stashed changes
-      )}
+        </div>      )}
 
     </div>
   );

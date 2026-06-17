@@ -122,24 +122,9 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         setIsNotificationsOpen(false);
       }
     };
-    
-    const handleNotificationsUpdated = () => {
-      loadData();
-    };
-
     document.addEventListener("mousedown", handleClickOutside);
-<<<<<<< Updated upstream
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [authLoading, userId]);
-=======
-    window.addEventListener("notifications-updated", handleNotificationsUpdated);
-    
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("notifications-updated", handleNotificationsUpdated);
-    };
-  }, [status, userId]);
->>>>>>> Stashed changes
 
   const getNotifIcon = (tipo: string) => {
     switch (tipo) {
@@ -174,35 +159,13 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
 
   const markAsRead = async (id: string) => {
     try {
-<<<<<<< Updated upstream
       await api.put('/notificaciones/leidas', { ids: [id] });
-=======
-<<<<<<< Updated upstream
-      await api.put('/notificaciones/marcar-leidas', { ids: [id] });
->>>>>>> Stashed changes
       setNotifications(prev =>
         prev.map(n => (n.id === id ? { ...n, leida: true } : n))
       );
       const updated = notifications.map(n => (n.id === id ? { ...n, leida: true } : n));
       const unreadCount = updated.filter(n => !n.leida).length;
       setHasStory(unreadCount > 0);
-=======
-      const res = await fetch("/api/notificaciones", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, leida: true })
-      });
-      if (res.ok) {
-        setNotifications(prev =>
-          prev.map(n => (n.id === id ? { ...n, leida: true } : n))
-        );
-        const updated = notifications.map(n => (n.id === id ? { ...n, leida: true } : n));
-        const unreadCount = updated.filter(n => !n.leida).length;
-        setHasStory(unreadCount > 0);
-        // Sync with dashboard feed
-        window.dispatchEvent(new Event("notifications-updated"));
-      }
->>>>>>> Stashed changes
     } catch (err) {
       console.error("Error marking notification as read:", err);
     }
@@ -212,33 +175,13 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
     try {
       const unread = notifications.filter(n => !n.leida);
       if (unread.length === 0) return;
-<<<<<<< Updated upstream
       const ids = unread.map(n => n.id);
       await api.put('/notificaciones/leidas', { ids });
       setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
       setHasStory(false);
       toast.success("Notificaciones marcadas como leídas");
-=======
-      
-      const res = await fetch("/api/notificaciones", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true })
-      });
-
-      if (res.ok) {
-        setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
-        setHasStory(false);
-        toast.success("Notificaciones marcadas como leídas");
-        // Sync with dashboard feed
-        window.dispatchEvent(new Event("notifications-updated"));
-      } else {
-        toast.error("Error al limpiar notificaciones");
-      }
->>>>>>> Stashed changes
     } catch (err) {
       console.error("Error clearing notifications:", err);
-      toast.error("Error al limpiar notificaciones");
     }
   };
 

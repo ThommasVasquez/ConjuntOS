@@ -8,12 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
-<<<<<<< Updated upstream
 import { useWsSubscription } from "@/hooks/useWebSocket";
-=======
-import { useCall } from "@/components/providers/CallContext";
->>>>>>> Stashed changes
-
 interface ResidenteDirectorio {
   id: string;
   nombre: string;
@@ -150,7 +145,6 @@ export default function PaqueteriaPage() {
           
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
              <div className="flex flex-col gap-1.5">
-<<<<<<< Updated upstream
                 <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Destinatario</label>
                 <select 
                    value={formData.usuarioId} 
@@ -163,51 +157,6 @@ export default function PaqueteriaPage() {
                    ))}
                 </select>
              </div>
-=======
-                <label className="text-[10px] text-text/60 font-bold uppercase tracking-widest pl-1">Destinatario</label>
-                 <select 
-                    value={formData.usuarioId} 
-                    onChange={e => setFormData({...formData, usuarioId: e.target.value})}
-                    className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-emerald-500"
-                 >
-                    <option value="" className="bg-primary text-text">Seleccione apartamento/residente...</option>
-                    {residentes.map(r => {
-                      const torre = r.unidad?.torre || r.torre;
-                      const numero = r.unidad?.numero || r.numero;
-                      const torreLabel = torre ? `Torre ${torre}` : "Sin Torre";
-                      const aptoLabel = numero ? `Apto ${numero}` : "Sin Apto";
-                      return (
-                        <option key={r.id} value={r.id} className="bg-primary text-text">
-                          {torreLabel} - {aptoLabel} ({r.nombre})
-                        </option>
-                      );
-                    })}
-                 </select>
-              </div>
-
-              {formData.usuarioId && (
-                (() => {
-                  const selectedResident = residentes.find(r => r.id === formData.usuarioId);
-                  if (selectedResident) {
-                    const torre = selectedResident.unidad?.torre || selectedResident.torre;
-                    const numero = selectedResident.unidad?.numero || selectedResident.numero;
-                    if (torre && numero) {
-                      return (
-                        <button 
-                          type="button"
-                          onClick={() => startCall(`${torre}${numero}`)}
-                          className="w-full py-3 bg-accent/20 hover:bg-accent/30 text-accent border border-accent/30 transition-all rounded-2xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest cursor-pointer"
-                        >
-                           <Phone size={16} /> Llamar al Apto {torre}{numero} ({selectedResident.nombre})
-                        </button>
-                      );
-                    }
-                  }
-                  return null;
-                })()
-              )}
->>>>>>> Stashed changes
-
              <div className="flex gap-4">
                   <div className="flex-1 flex flex-col gap-1.5">
                      <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Empresa / Remitente</label>
@@ -262,42 +211,12 @@ export default function PaqueteriaPage() {
                       Hace {Math.floor((new Date().getTime() - new Date(p.fechaLlegada).getTime()) / 60000)} min
                    </div>
                 </div>
-<<<<<<< Updated upstream
                 <div className="flex items-center gap-2 text-text text-xs font-semibold relative z-10">
                    <MapPin size={14} /> {p.usuario?.unidad?.torre} - Apto {p.usuario?.unidad?.numero} ({p.usuario?.nombre})
                 </div>
                 <button onClick={() => markAsDelivered(p.id)} className="w-full mt-2 py-3 bg-surface-2 border border-border hover:bg-text/10 dark:hover:bg-text/20 hover:border-text/40 hover:text-text dark:hover:text-text transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest relative z-10 text-text">
                    <CheckCircle2 size={16} /> Marcar como Entregado
-                </button>
-=======
-                 <div className="flex items-center gap-2 text-text/75 text-xs font-semibold relative z-10">
-                    <MapPin size={14} /> 
-                    {p.usuario?.unidad?.torre || p.usuario?.torre || "Sin Torre"} - Apto {p.usuario?.unidad?.numero || p.usuario?.apto || p.usuario?.numero || "S/N"} ({p.usuario?.nombre})
-                 </div>
-                 <div className="flex gap-3 relative z-10 w-full">
-                    <button 
-                      onClick={() => {
-                        const torre = p.usuario?.unidad?.torre || p.usuario?.torre;
-                        const numero = p.usuario?.unidad?.numero || p.usuario?.apto || p.usuario?.numero;
-                        if (torre && numero) {
-                          startCall(`${torre}${numero}`);
-                        } else {
-                          toast.error("No se pudo determinar el número del citófono");
-                        }
-                      }}
-                      className="flex-1 py-3 bg-accent/20 hover:bg-accent/30 border border-accent/40 text-accent transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest cursor-pointer"
-                    >
-                       <Phone size={16} /> Llamar Apto
-                    </button>
-                    <button 
-                      onClick={() => markAsDelivered(p.id)} 
-                      className="flex-2 py-3 bg-surface-2 border border-border hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-text cursor-pointer"
-                    >
-                       <CheckCircle2 size={16} /> Entregado
-                    </button>
-                 </div>
->>>>>>> Stashed changes
-             </div>
+                </button>             </div>
           ))}
        </div>
     </div>
