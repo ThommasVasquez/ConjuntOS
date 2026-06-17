@@ -265,7 +265,7 @@ export default function CitofoniaPage() {
 
       {/* CALL SCREEN OVERLAY */}
       {callState !== "IDLE" && (
-        <div className="fixed inset-0 z-[90] flex flex-col items-center justify-between bg-primary/98 backdrop-blur-2xl p-8 pb-40 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[90] flex flex-col items-center justify-between bg-primary/98 backdrop-blur-2xl p-8 pb-44 animate-in fade-in duration-300">
            <div className="w-full flex flex-col items-center gap-2 mt-16">
               <span className="text-[10px] font-black text-accent uppercase tracking-widest animate-pulse">
                  {callState === "RINGING" ? "LLAMADA ENTRANTE..." : (callState === "OUTGOING" ? "LLAMANDO..." : "CONEXIÓN SEGURA")}
@@ -340,33 +340,33 @@ export default function CitofoniaPage() {
            )}
 
            {/* Action Buttons */}
-           <div className="w-full max-w-xs mb-8 flex justify-center gap-6">
-             {callState === "RINGING" ? (
-               <>
-                 <button
-                    onClick={rejectCall}
-                    className="w-16 h-16 rounded-full bg-text/20 hover:bg-text/30 border border-text/40 flex items-center justify-center text-text shadow-2xl active:scale-90 transition-all cursor-pointer"
-                 >
-                    <PhoneOff size={28} />
-                 </button>
-                 <button
-                    onClick={answerCall}
-                    className="w-16 h-16 rounded-full bg-text/10 hover:bg-text/10 flex items-center justify-center text-white shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
-                    style={{ animationDuration: '2s' }}
-                 >
-                    <Phone size={28} />
-                 </button>
-               </>
-             ) : (
-               <button
-                  onClick={endCall}
-                  className="w-16 h-16 rounded-full bg-text/10 hover:bg-text/10 flex items-center justify-center text-white shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
-                  style={{ animationDuration: '3s' }}
-               >
-                  <PhoneOff size={28} />
-               </button>
-             )}
-           </div>
+          <div className="w-full max-w-xs mb-28 flex justify-center gap-6">
+            {callState === "RINGING" ? (
+              <>
+                <button
+                   onClick={rejectCall}
+                   className="w-16 h-16 rounded-full bg-[#EF4444]/20 hover:bg-[#EF4444]/30 border border-[#EF4444]/40 flex items-center justify-center text-[#EF4444] shadow-2xl active:scale-90 transition-all cursor-pointer"
+                >
+                   <PhoneOff size={28} />
+                </button>
+                <button
+                   onClick={answerCall}
+                   className="w-16 h-16 rounded-full bg-[#57bf00]/20 hover:bg-[#57bf00]/30 border border-[#57bf00]/40 flex items-center justify-center text-[#57bf00] shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                   style={{ animationDuration: '2s' }}
+                >
+                   <Phone size={28} />
+                </button>
+              </>
+            ) : (
+              <button
+                 onClick={endCall}
+                 className="w-16 h-16 rounded-full bg-[#EF4444]/20 hover:bg-[#EF4444]/30 border border-[#EF4444]/40 flex items-center justify-center text-[#EF4444] shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                 style={{ animationDuration: '3s' }}
+              >
+                 <PhoneOff size={28} />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
