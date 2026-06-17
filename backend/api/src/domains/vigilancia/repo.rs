@@ -4,11 +4,11 @@ use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use uuid::Uuid;
 
-use crate::db::enums::{EstadoPaquete, Rol};
-use crate::db::schema::{paquetes, usuarios, visitas};
+use crate::db::enums::{EstadoCorrespondencia, EstadoPaquete, Rol, TipoCorrespondencia};
+use crate::db::schema::{correspondencia, paquetes, usuarios, visitas};
 use crate::db::DbConn;
 use crate::domains::notificaciones::repo::create_notificacion;
-use crate::domains::vigilancia::models::{NuevaVisita, Paquete, Visita};
+use crate::domains::vigilancia::models::{Correspondencia, NuevaVisita, Paquete, Visita};
 use crate::error::{ApiError, ApiResult};
 
 type ResidenteRef = (String, Option<String>, Option<String>);
@@ -206,4 +206,86 @@ pub async fn stats(conn: &mut DbConn, conjunto_id: Uuid) -> ApiResult<(i64, i64,
         .get_result(conn)
         .await?;
     Ok((visitas_hoy, paquetes_pendientes, total_residentes))
+}
+
+// ── Correspondencia ────────────────────────────────────────────────────
+
+pub async fn correspondencia_conjunto(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+) -> ApiResult<Vec<(Correspondencia, ResidenteRef)>> {
+    let rows = correspondencia::table
+        .inner_join(usuarios::table)
+        .filter(correspondencia::conjunto_id.eq(conjunto_id))
+        .order(correspondencia::fecha_llegada.desc())
+        .limit(50)
+        .select((
+            Correspondencia::as_select(),
+            (usuarios::nombre, usuarios::torre, usuarios::apto),
+        ))
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
+pub async fn crear_correspondencia_con_notificacion(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    destinatario_id: Uuid,
+    tipo: TipoCorrespondencia,
+    remitente: &str,
+    descripcion: Option<&str>,
+) -> ApiResult<Correspondencia> {
+    conn.transaction(|conn| {
+        async move {
+            let corr: Correspondencia = diesel::insert_into(correspondencia::table)
+                .values((
+                    correspondencia::conjunto_id.eq(conjunto_id),
+                    correspondencia::usuario_id.eq(destinatario_id),
+                    correspondencia::tipo.eq(tipo),
+                    correspondencia::remitente.eq(remitente),
+                    correspondencia::descripcion.eq(descripcion),
+                    correspondencia::estado.eq(EstadoCorrespondencia::EnPorteria),
+                ))
+                .returning(Correspondencia::as_returning())
+                .get_result(conn)
+                .await?;
+
+            create_notificacion(
+                conn,
+                conjunto_id,
+                destinatario_id,
+                "PAQUETE",
+                "Correspondencia en portería",
+                &format!("Tienes {tipo} de {remitente} en portería{}",
+                    descripcion.map_or(String::new(), |d| format!(": {d}"))),
+            )
+            .await?;
+
+            Ok::<_, ApiError>(corr)
+        }
+        .scope_boxed()
+    })
+    .await
+}
+
+pub async fn entregar_correspondencia(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    corr_id: Uuid,
+) -> ApiResult<Option<Correspondencia>> {
+    let row = diesel::update(
+        correspondencia::table
+            .filter(correspondencia::id.eq(corr_id))
+            .filter(correspondencia::conjunto_id.eq(conjunto_id)),
+    )
+    .set((
+        correspondencia::estado.eq(EstadoCorrespondencia::Entregado),
+        correspondencia::entregado_en.eq(Utc::now()),
+    ))
+    .returning(Correspondencia::as_returning())
+    .get_result(conn)
+    .await
+    .optional()?;
+    Ok(row)
 }

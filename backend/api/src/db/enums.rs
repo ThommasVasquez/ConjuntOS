@@ -223,6 +223,18 @@ text_enum!(EstadoPaquete {
     Entregado => "ENTREGADO",
 });
 
+text_enum!(TipoCorrespondencia {
+    Carta => "CARTA",
+    Documento => "DOCUMENTO",
+    Revista => "REVISTA",
+    Otro => "OTRO",
+});
+
+text_enum!(EstadoCorrespondencia {
+    EnPorteria => "EN_PORTERIA",
+    Entregado => "ENTREGADO",
+});
+
 text_enum!(TipoVehiculo {
     Carro => "CARRO",
     Moto => "MOTO",

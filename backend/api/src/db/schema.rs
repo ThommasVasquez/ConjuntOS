@@ -348,6 +348,21 @@ diesel::table! {
 }
 
 diesel::table! {
+    correspondencia (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        usuario_id -> Uuid,
+        tipo -> Text,
+        remitente -> Text,
+        descripcion -> Nullable<Text>,
+        estado -> Text,
+        fecha_llegada -> Timestamptz,
+        entregado_en -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     parqueaderos (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -648,6 +663,8 @@ diesel::joinable!(asamblea_votos -> usuarios (usuario_id));
 diesel::joinable!(asambleas -> conjuntos (conjunto_id));
 diesel::joinable!(chat_admin -> conjuntos (conjunto_id));
 diesel::joinable!(chat_admin -> usuarios (usuario_id));
+diesel::joinable!(correspondencia -> conjuntos (conjunto_id));
+diesel::joinable!(correspondencia -> usuarios (usuario_id));
 diesel::joinable!(documentos -> conjuntos (conjunto_id));
 diesel::joinable!(gastos -> conjuntos (conjunto_id));
 diesel::joinable!(inmuebles -> conjuntos (conjunto_id));
@@ -715,6 +732,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     asambleas,
     chat_admin,
     conjuntos,
+    correspondencia,
     documentos,
     gastos,
     inmuebles,

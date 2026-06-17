@@ -6,9 +6,10 @@ use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
-use crate::db::enums::Rol;
+use crate::db::enums::{Rol, TipoCorrespondencia};
 use crate::domains::vigilancia::dto::{
-    ComunicacionesDto, CreatePaqueteRequest, CreateVisitaResidenteRequest,
+    ComunicacionesDto, CorrespondenciaDto, CorrespondenciaVigilanciaDto,
+    CreateCorrespondenciaRequest, CreatePaqueteRequest, CreateVisitaResidenteRequest,
     CreateVisitaVigilanciaRequest, PaqueteDto, PaqueteVigilanciaDto, VigilanciaStatsDto, VisitaDto,
     VisitaVigilanciaDto,
 };
@@ -40,6 +41,11 @@ pub fn router() -> Router<AppState> {
         .route("/paquetes/mios", get(paquetes_mios))
         .route("/comunicaciones", get(comunicaciones))
         .route("/visitas", post(crear_visita_residente))
+        .route(
+            "/vigilancia/correspondencia",
+            get(listar_correspondencia).post(crear_correspondencia),
+        )
+        .route("/vigilancia/correspondencia/{id}/entregar", put(entregar_correspondencia_handler))
 }
 
 #[utoipa::path(
@@ -350,4 +356,88 @@ pub async fn comunicaciones(
         visitas: visitas.into_iter().map(VisitaDto::from).collect(),
         paquetes: paquetes.into_iter().map(PaqueteDto::from).collect(),
     }))
+}
+
+// ── Correspondencia ────────────────────────────────────────────────────
+
+async fn listar_correspondencia(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<CorrespondenciaVigilanciaDto>>> {
+    guard::require(&user, ROLES_VIGILANCIA)?;
+    let mut conn = state.pool.get().await?;
+    let rows = repo::correspondencia_conjunto(&mut conn, user.conjunto_id).await?;
+    Ok(Json(
+        rows.into_iter()
+            .map(|(corr, residente)| CorrespondenciaVigilanciaDto {
+                correspondencia: corr.into(),
+                residente: residente.into(),
+            })
+            .collect(),
+    ))
+}
+
+async fn crear_correspondencia(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<CreateCorrespondenciaRequest>,
+) -> ApiResult<Json<CorrespondenciaDto>> {
+    guard::require(&user, ROLES_VIGILANCIA)?;
+    if req.remitente.trim().is_empty() {
+        return Err(ApiError::BadRequest("el remitente es obligatorio".into()));
+    }
+    let mut conn = state.pool.get().await?;
+    if !repo::usuario_en_conjunto(&mut conn, user.conjunto_id, req.usuario_id).await? {
+        return Err(ApiError::NotFound("residente destino no encontrado".into()));
+    }
+    let tipo = req.tipo.unwrap_or(TipoCorrespondencia::Carta);
+    let corr = repo::crear_correspondencia_con_notificacion(
+        &mut conn,
+        user.conjunto_id,
+        req.usuario_id,
+        tipo,
+        req.remitente.trim(),
+        req.descripcion.as_deref(),
+    )
+    .await?;
+    let dto = CorrespondenciaDto::from(corr);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "correspondencia".into(),
+                action: "created".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: Some(req.usuario_id),
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+async fn entregar_correspondencia_handler(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<CorrespondenciaDto>> {
+    guard::require(&user, ROLES_VIGILANCIA)?;
+    let mut conn = state.pool.get().await?;
+    let corr = repo::entregar_correspondencia(&mut conn, user.conjunto_id, id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("correspondencia no encontrada".into()))?;
+    let dto = CorrespondenciaDto::from(corr);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "correspondencia".into(),
+                action: "delivered".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
 }

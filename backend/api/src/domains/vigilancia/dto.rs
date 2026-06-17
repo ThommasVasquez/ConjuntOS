@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::db::enums::{EstadoPaquete, TipoVehiculoVisita, TipoVisita};
-use crate::domains::vigilancia::models::{Paquete, Visita};
+use crate::db::enums::{EstadoCorrespondencia, EstadoPaquete, TipoCorrespondencia, TipoVehiculoVisita, TipoVisita};
+use crate::domains::vigilancia::models::{Correspondencia, Paquete, Visita};
 
 /// Recipient summary joined from `usuarios` for gate views.
 #[derive(Serialize, ToSchema)]
@@ -149,4 +149,51 @@ pub struct VigilanciaStatsDto {
 pub struct ComunicacionesDto {
     pub visitas: Vec<VisitaDto>,
     pub paquetes: Vec<PaqueteDto>,
+}
+
+// ── Correspondencia ────────────────────────────────────────────────────
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CorrespondenciaDto {
+    pub id: Uuid,
+    pub usuario_id: Uuid,
+    pub tipo: TipoCorrespondencia,
+    pub remitente: String,
+    pub descripcion: Option<String>,
+    pub estado: EstadoCorrespondencia,
+    pub fecha_llegada: DateTime<Utc>,
+    pub entregado_en: Option<DateTime<Utc>>,
+}
+
+impl From<Correspondencia> for CorrespondenciaDto {
+    fn from(c: Correspondencia) -> Self {
+        Self {
+            id: c.id,
+            usuario_id: c.usuario_id,
+            tipo: c.tipo,
+            remitente: c.remitente,
+            descripcion: c.descripcion,
+            estado: c.estado,
+            fecha_llegada: c.fecha_llegada,
+            entregado_en: c.entregado_en,
+        }
+    }
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CorrespondenciaVigilanciaDto {
+    #[serde(flatten)]
+    pub correspondencia: CorrespondenciaDto,
+    pub residente: ResidenteRefDto,
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateCorrespondenciaRequest {
+    pub usuario_id: Uuid,
+    pub tipo: Option<TipoCorrespondencia>,
+    pub remitente: String,
+    pub descripcion: Option<String>,
 }
