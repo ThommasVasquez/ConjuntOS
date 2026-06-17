@@ -1,4 +1,7 @@
-import { notifyUser } from "./notifyUser";
+// notifyUser stub — the actual notification is handled by the Rust backend
+async function notifyUser(_params: any): Promise<void> {
+  // noop: backend handles push notifications
+}
 
 /**
  * checkAndProcessReservations

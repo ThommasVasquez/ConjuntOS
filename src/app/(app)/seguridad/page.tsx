@@ -52,20 +52,20 @@ export default function SeguridadPage() {
   ];
 
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
+    if (authLoading) return;
+    if (!user) {
       router.push("/login");
       return;
     }
     const allowed = ['VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ADMINISTRADOR', 'SUPER_ADMIN'];
-    if (!allowed.includes(role)) {
+    if (!role || !allowed.includes(role)) {
       toast.error("No tienes permisos para acceder a esta sección.");
       router.push("/inicio");
       return;
     }
 
     gsap.fromTo(".fade-up", { opacity: 0, y: 15 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
-  }, [session, status, role, router]);
+  }, [user, authLoading, role, router]);
 
   // Handle drawing mock security feed inside canvases
   useEffect(() => {
