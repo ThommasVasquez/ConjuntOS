@@ -683,6 +683,28 @@ export function CallProvider({ children }: { children: ReactNode }) {
     >
       {children}
 
+      {/* GLOBAL FLOATING OUTGOING CALL HUD OVERLAY */}
+      {callState === "OUTGOING" && !isCitofoniaPage && (
+        <div className="fixed top-6 inset-x-6 z-50 p-6 liquid-glass-card rounded-[32px] border border-accent/40 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-top-12 duration-500 max-w-sm mx-auto">
+          <div className="flex items-center gap-3">
+             <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center text-accent animate-pulse">
+                <Phone size={24} />
+             </div>
+             <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-black text-accent uppercase tracking-widest block animate-pulse">Llamando…</span>
+                <h4 className="text-base font-display font-black text-text truncate">{callerName}</h4>
+                <span className="text-text/50 text-[10px] font-medium">{callTime > 0 ? `${Math.floor(callTime/60)}:${(callTime%60).toString().padStart(2,'0')}` : "Marcando canal digital…"}</span>
+             </div>
+          </div>
+          <button
+             onClick={endCall}
+             className="w-full py-3 bg-[#EF4444]/20 hover:bg-[#EF4444]/30 border border-[#EF4444]/40 text-[#EF4444] rounded-2xl font-bold text-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2"
+          >
+             <PhoneOff size={14} /> Colgar
+          </button>
+        </div>
+      )}
+
       {/* GLOBAL FLOATING INCOMING CALL HUD OVERLAY */}
       {callState === "RINGING" && !isCitofoniaPage && (
         <div className="fixed top-6 inset-x-6 z-50 p-6 liquid-glass-card rounded-[32px] border border-accent/40 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-top-12 duration-500 max-w-sm mx-auto">

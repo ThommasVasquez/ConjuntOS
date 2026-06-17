@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { useCall } from "@/components/providers/CallContext";
 
 interface Conversation {
   usuarioId: string;
@@ -79,6 +80,7 @@ export default function AdminMensajesPage() {
   const { user, loading: authLoading } = useAuth();
   const role = user?.rol;
   const router = useRouter();
+  const { startCall, callState } = useCall();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -161,6 +163,24 @@ export default function AdminMensajesPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Call resident via citofonía
+  const handleCallResident = () => {
+    const t = activeConv?.residente?.torre;
+    const a = activeConv?.residente?.apto;
+    const name = activeConv?.residente?.nombre || "Residente";
+    if (!t || !a || !user?.conjuntoId) {
+      toast.error("No se puede determinar la unidad del residente");
+      return;
+    }
+    if (callState !== "IDLE") {
+      toast.info("Ya hay una llamada en curso");
+      return;
+    }
+    const peerId = `${user.conjuntoId}-APTO-${t}-${a}`;
+    startCall(peerId, name);
+    toast.success(`Llamando a ${name} (${t}-${a})…`);
+  };
 
   const fetchConversations = async () => {
     try {
@@ -515,12 +535,22 @@ export default function AdminMensajesPage() {
                        </div>
                     </div>
                  </div>
-                 <button 
-                    onClick={() => setSelectedUserId(null)}
-                    className="w-10 h-10 rounded-2xl bg-surface border border-border flex items-center justify-center text-text-muted hover:text-text transition-all active:scale-90"
-                 >
-                    <X size={20} />
-                 </button>
+                 <div className="flex items-center gap-2">
+                    <button
+                       onClick={handleCallResident}
+                       disabled={callState !== "IDLE"}
+                       title="Llamar por citofonía"
+                       className="w-10 h-10 rounded-2xl bg-[#57bf00]/15 border border-[#57bf00]/30 flex items-center justify-center text-[#57bf00] hover:bg-[#57bf00]/25 active:scale-90 transition-all disabled:opacity-30 disabled:scale-100"
+                    >
+                       <Phone size={18} />
+                    </button>
+                    <button 
+                       onClick={() => setSelectedUserId(null)}
+                       className="w-10 h-10 rounded-2xl bg-surface border border-border flex items-center justify-center text-text-muted hover:text-text transition-all active:scale-90"
+                    >
+                       <X size={20} />
+                    </button>
+                 </div>
               </div>
 
               {/* CHAT BODY */}
