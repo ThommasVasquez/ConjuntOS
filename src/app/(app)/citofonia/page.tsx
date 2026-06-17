@@ -265,7 +265,7 @@ export default function CitofoniaPage() {
 
       {/* CALL SCREEN OVERLAY */}
       {callState !== "IDLE" && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-primary/98 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[90] flex flex-col items-center justify-between bg-primary/98 backdrop-blur-2xl p-8 pb-40 animate-in fade-in duration-300">
            <div className="w-full flex flex-col items-center gap-2 mt-16">
               <span className="text-[10px] font-black text-accent uppercase tracking-widest animate-pulse">
                  {callState === "RINGING" ? "LLAMADA ENTRANTE..." : (callState === "OUTGOING" ? "LLAMANDO..." : "CONEXIÓN SEGURA")}
