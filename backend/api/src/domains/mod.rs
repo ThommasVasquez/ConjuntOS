@@ -1,4 +1,8 @@
+pub mod admin_areas;
+pub mod admin_finanzas;
 pub mod admin_stats;
+pub mod admin_usuarios;
+pub mod servicios;
 pub mod ai;
 pub mod asamblea;
 pub mod auth_routes;
