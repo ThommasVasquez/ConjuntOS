@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::db::enums::{EstadoCorrespondencia, EstadoPaquete, TipoCorrespondencia, TipoVehiculoVisita, TipoVisita};
-use crate::domains::vigilancia::models::{Correspondencia, Paquete, Visita};
+use crate::db::enums::{EstadoCorrespondencia, EstadoNovedad, EstadoPaquete, SeveridadNovedad, TipoCorrespondencia, TipoNovedad, TipoVehiculoVisita, TipoVisita};
+use crate::domains::vigilancia::models::{Correspondencia, Novedad, Paquete, Visita};
 
 /// Recipient summary joined from `usuarios` for gate views.
 #[derive(Serialize, ToSchema)]
@@ -196,4 +196,61 @@ pub struct CreateCorrespondenciaRequest {
     pub tipo: Option<TipoCorrespondencia>,
     pub remitente: String,
     pub descripcion: Option<String>,
+}
+
+// ── Novedades ──────────────────────────────────────────────────────────
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct NovedadDto {
+    pub id: Uuid,
+    pub usuario_id: Uuid,
+    pub tipo: TipoNovedad,
+    pub ubicacion: Option<String>,
+    pub descripcion: String,
+    pub severidad: SeveridadNovedad,
+    pub estado: EstadoNovedad,
+    pub resolucion: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub resuelto_en: Option<DateTime<Utc>>,
+}
+
+impl From<Novedad> for NovedadDto {
+    fn from(n: Novedad) -> Self {
+        Self {
+            id: n.id,
+            usuario_id: n.usuario_id,
+            tipo: n.tipo,
+            ubicacion: n.ubicacion,
+            descripcion: n.descripcion,
+            severidad: n.severidad,
+            estado: n.estado,
+            resolucion: n.resolucion,
+            created_at: n.created_at,
+            resuelto_en: n.resuelto_en,
+        }
+    }
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct NovedadVigilanciaDto {
+    #[serde(flatten)]
+    pub novedad: NovedadDto,
+    pub reportado_por: ResidenteRefDto,
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateNovedadRequest {
+    pub tipo: TipoNovedad,
+    pub ubicacion: Option<String>,
+    pub descripcion: String,
+    pub severidad: Option<SeveridadNovedad>,
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolverNovedadRequest {
+    pub resolucion: String,
 }

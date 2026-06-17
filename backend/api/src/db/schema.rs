@@ -363,6 +363,23 @@ diesel::table! {
 }
 
 diesel::table! {
+    novedades_seguridad (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        usuario_id -> Uuid,
+        tipo -> Text,
+        ubicacion -> Nullable<Text>,
+        descripcion -> Text,
+        severidad -> Text,
+        estado -> Text,
+        resuelto_por -> Nullable<Uuid>,
+        resolucion -> Nullable<Text>,
+        created_at -> Timestamptz,
+        resuelto_en -> Nullable<Timestamptz>,
+    }
+}
+
+diesel::table! {
     parqueaderos (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -665,6 +682,8 @@ diesel::joinable!(chat_admin -> conjuntos (conjunto_id));
 diesel::joinable!(chat_admin -> usuarios (usuario_id));
 diesel::joinable!(correspondencia -> conjuntos (conjunto_id));
 diesel::joinable!(correspondencia -> usuarios (usuario_id));
+diesel::joinable!(novedades_seguridad -> conjuntos (conjunto_id));
+diesel::joinable!(novedades_seguridad -> usuarios (usuario_id));
 diesel::joinable!(documentos -> conjuntos (conjunto_id));
 diesel::joinable!(gastos -> conjuntos (conjunto_id));
 diesel::joinable!(inmuebles -> conjuntos (conjunto_id));
@@ -740,6 +759,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     locales,
     mascotas,
     notificaciones,
+    novedades_seguridad,
     pagos,
     paquetes,
     parqueaderos,

@@ -4,11 +4,11 @@ use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use uuid::Uuid;
 
-use crate::db::enums::{EstadoCorrespondencia, EstadoPaquete, Rol, TipoCorrespondencia};
-use crate::db::schema::{correspondencia, paquetes, usuarios, visitas};
+use crate::db::enums::{EstadoCorrespondencia, EstadoNovedad, EstadoPaquete, Rol, SeveridadNovedad, TipoCorrespondencia, TipoNovedad};
+use crate::db::schema::{correspondencia, novedades_seguridad, paquetes, usuarios, visitas};
 use crate::db::DbConn;
 use crate::domains::notificaciones::repo::create_notificacion;
-use crate::domains::vigilancia::models::{Correspondencia, NuevaVisita, Paquete, Visita};
+use crate::domains::vigilancia::models::{Correspondencia, Novedad, NuevaNovedad, NuevaVisita, Paquete, Visita};
 use crate::error::{ApiError, ApiResult};
 
 type ResidenteRef = (String, Option<String>, Option<String>);
@@ -284,6 +284,71 @@ pub async fn entregar_correspondencia(
         correspondencia::entregado_en.eq(Utc::now()),
     ))
     .returning(Correspondencia::as_returning())
+    .get_result(conn)
+    .await
+    .optional()?;
+    Ok(row)
+}
+
+// ── Novedades ──────────────────────────────────────────────────────────
+
+pub async fn novedades_conjunto(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+) -> ApiResult<Vec<(Novedad, ResidenteRef)>> {
+    let rows = novedades_seguridad::table
+        .inner_join(usuarios::table.on(novedades_seguridad::usuario_id.eq(usuarios::id)))
+        .filter(novedades_seguridad::conjunto_id.eq(conjunto_id))
+        .order(novedades_seguridad::created_at.desc())
+        .limit(50)
+        .select((
+            Novedad::as_select(),
+            (usuarios::nombre, usuarios::torre, usuarios::apto),
+        ))
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
+pub async fn crear_novedad(
+    conn: &mut DbConn,
+    nueva: NuevaNovedad,
+) -> ApiResult<Novedad> {
+    let row = diesel::insert_into(novedades_seguridad::table)
+        .values((
+            novedades_seguridad::conjunto_id.eq(nueva.conjunto_id),
+            novedades_seguridad::usuario_id.eq(nueva.usuario_id),
+            novedades_seguridad::tipo.eq(nueva.tipo),
+            novedades_seguridad::ubicacion.eq(nueva.ubicacion),
+            novedades_seguridad::descripcion.eq(nueva.descripcion),
+            novedades_seguridad::severidad.eq(nueva.severidad),
+            novedades_seguridad::estado.eq(EstadoNovedad::Pendiente),
+        ))
+        .returning(Novedad::as_returning())
+        .get_result(conn)
+        .await?;
+    Ok(row)
+}
+
+pub async fn resolver_novedad(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    novedad_id: Uuid,
+    resuelto_por: Uuid,
+    resolucion: &str,
+) -> ApiResult<Option<Novedad>> {
+    let row = diesel::update(
+        novedades_seguridad::table
+            .filter(novedades_seguridad::id.eq(novedad_id))
+            .filter(novedades_seguridad::conjunto_id.eq(conjunto_id)),
+    )
+    .set((
+        novedades_seguridad::estado.eq(EstadoNovedad::Cerrado),
+        novedades_seguridad::resuelto_por.eq(resuelto_por),
+        novedades_seguridad::resolucion.eq(resolucion),
+        novedades_seguridad::resuelto_en.eq(Utc::now()),
+    ))
+    .returning(Novedad::as_returning())
     .get_result(conn)
     .await
     .optional()?;

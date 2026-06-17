@@ -235,6 +235,27 @@ text_enum!(EstadoCorrespondencia {
     Entregado => "ENTREGADO",
 });
 
+text_enum!(TipoNovedad {
+    PersonaSospechosa => "PERSONA_SOSPECHOSA",
+    Ruido => "RUIDO",
+    Daño => "DAÑO",
+    Incendio => "INCENDIO",
+    Otro => "OTRO",
+});
+
+text_enum!(SeveridadNovedad {
+    Baja => "BAJA",
+    Media => "MEDIA",
+    Alta => "ALTA",
+    Critica => "CRITICA",
+});
+
+text_enum!(EstadoNovedad {
+    Pendiente => "PENDIENTE",
+    Atendido => "ATENDIDO",
+    Cerrado => "CERRADO",
+});
+
 text_enum!(TipoVehiculo {
     Carro => "CARRO",
     Moto => "MOTO",

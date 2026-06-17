@@ -6,14 +6,15 @@ use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
-use crate::db::enums::{Rol, TipoCorrespondencia};
+use crate::db::enums::{Rol, SeveridadNovedad, TipoCorrespondencia, TipoNovedad};
 use crate::domains::vigilancia::dto::{
     ComunicacionesDto, CorrespondenciaDto, CorrespondenciaVigilanciaDto,
-    CreateCorrespondenciaRequest, CreatePaqueteRequest, CreateVisitaResidenteRequest,
-    CreateVisitaVigilanciaRequest, PaqueteDto, PaqueteVigilanciaDto, VigilanciaStatsDto, VisitaDto,
-    VisitaVigilanciaDto,
+    CreateCorrespondenciaRequest, CreateNovedadRequest, CreatePaqueteRequest,
+    CreateVisitaResidenteRequest, CreateVisitaVigilanciaRequest, NovedadDto,
+    NovedadVigilanciaDto, PaqueteDto, PaqueteVigilanciaDto, ResolverNovedadRequest,
+    VigilanciaStatsDto, VisitaDto, VisitaVigilanciaDto,
 };
-use crate::domains::vigilancia::models::NuevaVisita;
+use crate::domains::vigilancia::models::{NuevaNovedad, NuevaVisita};
 use crate::domains::vigilancia::repo;
 use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
@@ -46,6 +47,11 @@ pub fn router() -> Router<AppState> {
             get(listar_correspondencia).post(crear_correspondencia),
         )
         .route("/vigilancia/correspondencia/{id}/entregar", put(entregar_correspondencia_handler))
+        .route(
+            "/vigilancia/novedades",
+            get(listar_novedades).post(crear_novedad_handler),
+        )
+        .route("/vigilancia/novedades/{id}/resolver", put(resolver_novedad_handler))
 }
 
 #[utoipa::path(
@@ -414,6 +420,77 @@ async fn crear_correspondencia(
         )
         .await;
     Ok(Json(dto))
+}
+
+// ── Novedades ──────────────────────────────────────────────────────────
+
+async fn listar_novedades(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<NovedadVigilanciaDto>>> {
+    guard::require(&user, ROLES_VIGILANCIA)?;
+    let mut conn = state.pool.get().await?;
+    let rows = repo::novedades_conjunto(&mut conn, user.conjunto_id).await?;
+    Ok(Json(
+        rows.into_iter()
+            .map(|(nov, reportado_por)| NovedadVigilanciaDto {
+                novedad: nov.into(),
+                reportado_por: reportado_por.into(),
+            })
+            .collect(),
+    ))
+}
+
+async fn crear_novedad_handler(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<CreateNovedadRequest>,
+) -> ApiResult<Json<NovedadDto>> {
+    guard::require(&user, ROLES_VIGILANCIA)?;
+    if req.descripcion.trim().is_empty() {
+        return Err(ApiError::BadRequest("la descripción es obligatoria".into()));
+    }
+    let mut conn = state.pool.get().await?;
+    let novedad = repo::crear_novedad(
+        &mut conn,
+        NuevaNovedad {
+            conjunto_id: user.conjunto_id,
+            usuario_id: user.id,
+            tipo: req.tipo,
+            ubicacion: req.ubicacion,
+            descripcion: req.descripcion.trim().to_string(),
+            severidad: req.severidad.unwrap_or(SeveridadNovedad::Baja),
+        },
+    )
+    .await?;
+    let dto = NovedadDto::from(novedad);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "novedad".into(),
+                action: "created".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+async fn resolver_novedad_handler(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<ResolverNovedadRequest>,
+) -> ApiResult<Json<NovedadDto>> {
+    guard::require(&user, ROLES_VIGILANCIA)?;
+    let mut conn = state.pool.get().await?;
+    let novedad = repo::resolver_novedad(&mut conn, user.conjunto_id, id, user.id, &req.resolucion)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("novedad no encontrada".into()))?;
+    Ok(Json(novedad.into()))
 }
 
 async fn entregar_correspondencia_handler(
