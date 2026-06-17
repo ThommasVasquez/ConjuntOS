@@ -121,6 +121,212 @@ impl PushSender for WebPushSender {
     }
 }
 
+// ── Native (Expo / FCM / APNs) push ──────────────────────────────────────────
+
+/// Minimal native device token needed to send a native push.
+#[derive(Debug, Clone)]
+pub struct NativePushTokenInfo {
+    /// "expo" | "fcm" | "apns" — selects the transport.
+    pub platform: String,
+    pub token: String,
+}
+
+/// Structured push content, transport-agnostic. The web-push path serializes
+/// this to the historical `{title, body, data}` JSON; the native path maps it
+/// onto the Expo Push message shape. Keeps the data contract identical.
+#[derive(Debug, Clone)]
+pub struct PushMessage {
+    pub title: String,
+    pub body: String,
+    pub data: serde_json::Value,
+}
+
+impl PushMessage {
+    /// The exact JSON the web-push Service Worker already consumes.
+    pub fn to_web_json_bytes(&self) -> Vec<u8> {
+        let v = serde_json::json!({
+            "title": self.title,
+            "body": self.body,
+            "data": self.data,
+        });
+        serde_json::to_vec(&v).unwrap_or_default()
+    }
+}
+
+/// Trait for sending native device pushes (Expo / FCM / APNs).
+pub trait NativePushSender: Send + Sync {
+    fn send(
+        &self,
+        token: &NativePushTokenInfo,
+        message: &PushMessage,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + '_>>;
+}
+
+/// Real Expo Push sender. POSTs to the Expo Push HTTP API
+/// (`https://exp.host/--/api/v2/push/send`) over the existing rustls reqwest
+/// client. Only `platform == "expo"` is delivered; FCM/APNs direct transports
+/// are not yet implemented and are reported as errors (never faked).
+pub struct ExpoPushSender {
+    client: reqwest::Client,
+    endpoint: String,
+}
+
+impl ExpoPushSender {
+    const DEFAULT_ENDPOINT: &'static str = "https://exp.host/--/api/v2/push/send";
+
+    pub fn new() -> Result<Self> {
+        let client = reqwest::Client::builder()
+            .build()
+            .map_err(|e| anyhow!("failed to build reqwest client for expo push: {e}"))?;
+        Ok(Self {
+            client,
+            endpoint: Self::DEFAULT_ENDPOINT.to_string(),
+        })
+    }
+}
+
+impl NativePushSender for ExpoPushSender {
+    fn send(
+        &self,
+        token: &NativePushTokenInfo,
+        message: &PushMessage,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + '_>> {
+        let platform = token.platform.clone();
+        let device_token = token.token.clone();
+        let title = message.title.clone();
+        let body = message.body.clone();
+        let data = message.data.clone();
+        let client = self.client.clone();
+        let endpoint = self.endpoint.clone();
+
+        Box::pin(async move {
+            if platform != "expo" {
+                // FCM/APNs direct transports are not wired yet. Do NOT fake a
+                // delivery (constitution Law 4) — surface an error so the caller
+                // counts 0 for this token.
+                bail!("native push transport '{platform}' not implemented (only 'expo')")
+            }
+
+            // Expo Push message shape. `data` carries the same deep-link payload
+            // the app reads ({url, room, callerName}). `channelId` must name an
+            // Android channel the RN app actually creates via
+            // setNotificationChannelAsync; it registers "default" (importance
+            // MAX), so a non-existent "citofonia" channel would drop/fall back
+            // and lose the heads-up + sound behavior.
+            let msg = serde_json::json!({
+                "to": device_token,
+                "title": title,
+                "body": body,
+                "data": data,
+                "sound": "default",
+                "priority": "high",
+                "channelId": "default",
+            });
+
+            let resp = client
+                .post(&endpoint)
+                .header("accept", "application/json")
+                .header("content-type", "application/json")
+                .json(&msg)
+                .send()
+                .await
+                .map_err(|e| anyhow!("expo push request failed: {e}"))?;
+
+            let status = resp.status();
+            let payload: serde_json::Value = resp
+                .json()
+                .await
+                .map_err(|e| anyhow!("expo push: invalid response body: {e}"))?;
+
+            if !status.is_success() {
+                bail!("expo push endpoint returned {status}: {payload}")
+            }
+
+            // Expo returns {"data": {"status": "ok"|"error", ...}}. An HTTP 200
+            // with a per-ticket error (e.g. DeviceNotRegistered) is still a
+            // non-delivery — treat it as an error so it isn't counted.
+            let ticket_status = payload
+                .get("data")
+                .and_then(|d| d.get("status"))
+                .and_then(|s| s.as_str());
+            match ticket_status {
+                Some("ok") => Ok(()),
+                Some(other) => {
+                    bail!("expo push ticket status '{other}': {payload}")
+                }
+                None => {
+                    // Unexpected shape; be conservative and treat as failure.
+                    bail!("expo push: unexpected response shape: {payload}")
+                }
+            }
+        })
+    }
+}
+
+/// Fallback used when native push is NOT configured/enabled. Its `send()`
+/// returns an error so the caller never counts an un-sent notification as
+/// delivered (constitution Law 4: no fake success in prod).
+pub struct UnconfiguredNativePushSender;
+
+impl NativePushSender for UnconfiguredNativePushSender {
+    fn send(
+        &self,
+        token: &NativePushTokenInfo,
+        _message: &PushMessage,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + '_>> {
+        let platform = token.platform.clone();
+        Box::pin(async move {
+            tracing::warn!(platform = %platform, "native push skipped: not configured");
+            bail!("native push not configured")
+        })
+    }
+}
+
+/// Test double recording every native push attempt for assertion.
+#[derive(Default)]
+pub struct RecordingNativePushSender {
+    pub sent: Arc<Mutex<Vec<(String, String, Vec<u8>)>>>,
+}
+
+impl RecordingNativePushSender {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl NativePushSender for RecordingNativePushSender {
+    fn send(
+        &self,
+        token: &NativePushTokenInfo,
+        message: &PushMessage,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + '_>> {
+        let platform = token.platform.clone();
+        let device_token = token.token.clone();
+        let data = message.to_web_json_bytes();
+        let sent = Arc::clone(&self.sent);
+        Box::pin(async move {
+            sent.lock().unwrap().push((platform, device_token, data));
+            Ok(())
+        })
+    }
+}
+
+/// Factory for the native sender. Expo needs no server credentials (the device
+/// token is the auth), so the real `ExpoPushSender` is always enabled; if the
+/// reqwest client fails to build we fall back to the unconfigured sender.
+pub fn create_native_push_sender() -> Arc<dyn NativePushSender> {
+    match ExpoPushSender::new() {
+        Ok(sender) => {
+            tracing::info!("push: Expo native push sender enabled");
+            Arc::new(sender)
+        }
+        Err(e) => {
+            tracing::error!(error = ?e, "push: failed to build Expo sender; native pushes disabled");
+            Arc::new(UnconfiguredNativePushSender)
+        }
+    }
+}
+
 /// Fallback used when VAPID is NOT configured. Its `send()` returns an error so the
 /// caller never counts an un-sent notification as delivered.
 pub struct UnconfiguredPushSender;

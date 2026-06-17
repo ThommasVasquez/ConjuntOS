@@ -9,10 +9,10 @@ use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
 use crate::db::enums::Rol;
-use crate::db::schema::{push_subscriptions, unidades, usuarios};
+use crate::db::schema::{native_push_tokens, push_subscriptions, unidades, usuarios};
 use crate::db::DbConn;
 use crate::error::{ApiError, ApiResult};
-use crate::services::push::PushSubscriptionInfo;
+use crate::services::push::{NativePushTokenInfo, PushMessage, PushSubscriptionInfo};
 use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
 
@@ -260,9 +260,25 @@ async fn call(
     .map_err(|e| ApiError::Internal(anyhow::anyhow!("token generation failed: {e}")))?;
 
     // Wake target users via push (best-effort; only real deliveries are counted).
+    // Fans out per target to BOTH transports: web-push (VAPID) subscriptions and
+    // native (Expo / FCM / APNs) device tokens. The data contract is identical
+    // across both; `sent` counts successful deliveries across the union.
     let sent = if user_ids.is_empty() {
         0
     } else {
+        let message = PushMessage {
+            title: "Llamada Entrante".to_string(),
+            body: format!("Llamada de citofonía desde {caller_name}"),
+            data: serde_json::json!({
+                "url": "/citofonia",
+                "room": room,
+                "callerName": caller_name,
+            }),
+        };
+
+        let mut count: i32 = 0;
+
+        // ── Web-push (VAPID) ──
         let subs: Vec<(String, String, String)> = push_subscriptions::table
             .filter(push_subscriptions::conjunto_id.eq(user.conjunto_id))
             .filter(push_subscriptions::usuario_id.eq_any(&user_ids))
@@ -274,31 +290,42 @@ async fn call(
             .load(&mut conn)
             .await?;
 
-        let payload = serde_json::json!({
-            "title": "Llamada Entrante",
-            "body": format!("Llamada de citofonía desde {caller_name}"),
-            "data": {
-                "url": "/citofonia",
-                "room": room,
-                "callerName": caller_name,
-            }
-        });
-        let payload_bytes = serde_json::to_vec(&payload).unwrap_or_default();
-
-        let mut count: i32 = 0;
+        let web_payload_bytes = message.to_web_json_bytes();
         for (endpoint, p256dh, auth) in subs {
             let sub_info = PushSubscriptionInfo {
                 endpoint: endpoint.clone(),
                 p256dh,
                 auth,
             };
-            match state.push_sender.send(&sub_info, &payload_bytes).await {
+            match state.push_sender.send(&sub_info, &web_payload_bytes).await {
                 Ok(()) => count += 1,
                 Err(e) => {
-                    tracing::warn!(endpoint = %endpoint, error = ?e, "push send failed");
+                    tracing::warn!(endpoint = %endpoint, error = ?e, "web-push send failed");
                 }
             }
         }
+
+        // ── Native (Expo / FCM / APNs) ──
+        let native_tokens: Vec<(String, String)> = native_push_tokens::table
+            .filter(native_push_tokens::conjunto_id.eq(user.conjunto_id))
+            .filter(native_push_tokens::usuario_id.eq_any(&user_ids))
+            .select((native_push_tokens::platform, native_push_tokens::token))
+            .load(&mut conn)
+            .await?;
+
+        for (platform, token) in native_tokens {
+            let info = NativePushTokenInfo {
+                platform: platform.clone(),
+                token: token.clone(),
+            };
+            match state.native_push_sender.send(&info, &message).await {
+                Ok(()) => count += 1,
+                Err(e) => {
+                    tracing::warn!(platform = %platform, error = ?e, "native push send failed");
+                }
+            }
+        }
+
         count
     };
 

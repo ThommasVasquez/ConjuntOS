@@ -95,7 +95,7 @@ use utoipa::OpenApi;
         (name = "auth", description = "Session management (JWT via ec_session cookie or Bearer)"),
         (name = "usuarios", description = "Profile and account"),
         (name = "superadmin", description = "Cross-tenant administration"),
-        (name = "notificaciones", description = "In-app notifications and web-push subscriptions"),
+        (name = "notificaciones", description = "In-app notifications, web-push subscriptions, and native (Expo/FCM/APNs) push tokens"),
         (name = "vigilancia", description = "Gate operations: visits, packages, stats"),
         (name = "parqueadero", description = "Parking: vehicles, cell map, audit log, rounds"),
         (name = "reservas", description = "Common areas and amenity reservations"),

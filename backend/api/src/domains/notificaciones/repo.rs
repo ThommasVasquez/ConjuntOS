@@ -2,9 +2,9 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
-use crate::db::schema::{notificaciones, push_subscriptions};
+use crate::db::schema::{native_push_tokens, notificaciones, push_subscriptions};
 use crate::db::DbConn;
-use crate::domains::notificaciones::models::{Notificacion, PushSubscription};
+use crate::domains::notificaciones::models::{NativePushToken, Notificacion, PushSubscription};
 use crate::error::ApiResult;
 
 pub async fn list_for_user(
@@ -123,6 +123,55 @@ pub async fn delete_push_subscription(
         push_subscriptions::table
             .filter(push_subscriptions::usuario_id.eq(usuario_id))
             .filter(push_subscriptions::endpoint.eq(endpoint)),
+    )
+    .execute(conn)
+    .await?;
+    Ok(deleted)
+}
+
+/// Additive native (Expo / FCM / APNs) token registration. Upsert keyed on
+/// `token` (mirrors the web-push `endpoint` upsert): re-registering the same
+/// token re-binds it to the current user/platform/device.
+pub async fn upsert_native_push_token(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    usuario_id: Uuid,
+    platform: &str,
+    token: &str,
+    device_id: Option<&str>,
+) -> ApiResult<NativePushToken> {
+    let row = diesel::insert_into(native_push_tokens::table)
+        .values((
+            native_push_tokens::conjunto_id.eq(conjunto_id),
+            native_push_tokens::usuario_id.eq(usuario_id),
+            native_push_tokens::platform.eq(platform),
+            native_push_tokens::token.eq(token),
+            native_push_tokens::device_id.eq(device_id),
+        ))
+        .on_conflict(native_push_tokens::token)
+        .do_update()
+        .set((
+            native_push_tokens::conjunto_id.eq(conjunto_id),
+            native_push_tokens::usuario_id.eq(usuario_id),
+            native_push_tokens::platform.eq(platform),
+            native_push_tokens::device_id.eq(device_id),
+        ))
+        .returning(NativePushToken::as_returning())
+        .get_result(conn)
+        .await?;
+    Ok(row)
+}
+
+/// Idempotent removal of a native token by its token value (scoped to owner).
+pub async fn delete_native_push_token(
+    conn: &mut DbConn,
+    usuario_id: Uuid,
+    token: &str,
+) -> ApiResult<usize> {
+    let deleted = diesel::delete(
+        native_push_tokens::table
+            .filter(native_push_tokens::usuario_id.eq(usuario_id))
+            .filter(native_push_tokens::token.eq(token)),
     )
     .execute(conn)
     .await?;

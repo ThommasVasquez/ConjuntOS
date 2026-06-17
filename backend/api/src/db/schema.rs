@@ -317,6 +317,18 @@ diesel::table! {
 }
 
 diesel::table! {
+    native_push_tokens (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        usuario_id -> Uuid,
+        platform -> Text,
+        token -> Text,
+        device_id -> Nullable<Text>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     pagos (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -657,6 +669,8 @@ diesel::joinable!(locales -> conjuntos (conjunto_id));
 diesel::joinable!(locales -> usuarios (propietario_id));
 diesel::joinable!(mascotas -> conjuntos (conjunto_id));
 diesel::joinable!(mascotas -> usuarios (usuario_id));
+diesel::joinable!(native_push_tokens -> conjuntos (conjunto_id));
+diesel::joinable!(native_push_tokens -> usuarios (usuario_id));
 diesel::joinable!(notificaciones -> conjuntos (conjunto_id));
 diesel::joinable!(notificaciones -> usuarios (usuario_id));
 diesel::joinable!(pagos -> conjuntos (conjunto_id));
@@ -721,6 +735,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     juntas,
     locales,
     mascotas,
+    native_push_tokens,
     notificaciones,
     pagos,
     paquetes,
