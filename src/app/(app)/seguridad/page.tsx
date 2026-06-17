@@ -6,7 +6,7 @@ import {
   Eye, Activity, Clock, Shield, Check, RotateCcw, Maximize2, Play, Pause, AlertTriangle, ChevronLeft
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { gsap } from "gsap";
 
@@ -20,8 +20,8 @@ interface Camera {
 
 export default function SeguridadPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const role = (session?.user as any)?.role;
+  const { user, loading: authLoading } = useAuth();
+  const role = user?.rol;
 
   const [activeTab, setActiveTab] = useState<"cctv" | "rondas">("cctv");
   const [selectedCam, setSelectedCam] = useState<Camera | null>(null);

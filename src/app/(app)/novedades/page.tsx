@@ -6,7 +6,7 @@ import {
   FileText, PlusCircle, Clock, User, AlertCircle, Wrench, RefreshCw, HelpCircle, ChevronLeft 
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { gsap } from "gsap";
 
@@ -24,8 +24,8 @@ interface Novedad {
 
 export default function NovedadesPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const role = (session?.user as any)?.role;
+  const { user, loading: authLoading } = useAuth();
+  const role = user?.rol;
 
   const [novedades, setNovedades] = useState<Novedad[]>([]);
   const [loading, setLoading] = useState(true);
