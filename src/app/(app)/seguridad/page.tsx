@@ -220,22 +220,75 @@ interface RondaDto {
   fecha: string;
 }
 
-  // ── Rondas reales (backend) ──────────────────────────────────────────
+interface PuntoRondaDto {
+  id: string;
+  nfc_uid: string;
+  nombre: string;
+  ubicacion: string | null;
+  orden: number;
+  activo: boolean;
+}
+
+interface CheckpointRondaDto {
+  id: string;
+  punto_id: string;
+  nfc_uid: string;
+  punto_nombre: string;
+  verificado_en: string;
+}
+
+interface RondaConCheckpointsDto extends RondaDto {
+  puntos_totales: number;
+  checkpoints: CheckpointRondaDto[];
+  completada_nfc: boolean;
+}
+
+  // ── Rondas NFC (backend + Web NFC) ──────────────────────────────────
   const [rondaHoy, setRondaHoy] = useState<RondaDto | null>(null);
+  const [checkpoints, setCheckpoints] = useState<CheckpointRondaDto[]>([]);
+  const [puntosRonda, setPuntosRonda] = useState<PuntoRondaDto[]>([]);
+  const [puntosTotales, setPuntosTotales] = useState(0);
+  const [completadaNfc, setCompletadaNfc] = useState(false);
   const [hallazgos, setHallazgos] = useState("");
   const [rondaLoading, setRondaLoading] = useState(false);
+  const [nfcSupported, setNfcSupported] = useState(false);
+  const [nfcScanning, setNfcScanning] = useState(false);
+  const [nfcError, setNfcError] = useState<string | null>(null);
+  const [lastTapPoint, setLastTapPoint] = useState<string | null>(null);
+
+  // Detectar soporte Web NFC (solo Chrome Android)
+  useEffect(() => {
+    setNfcSupported(typeof window !== "undefined" && "NDEFReader" in window);
+  }, []);
+
+  const fetchPuntosRonda = async () => {
+    try {
+      const pts = await api.get<PuntoRondaDto[]>('/parqueadero/puntos-ronda');
+      setPuntosRonda(pts || []);
+      setPuntosTotales(pts?.length || 0);
+    } catch {}
+  };
 
   const fetchRonda = async () => {
     try {
       const data = await api.get<RondaDto | null>('/parqueadero/rondas');
       setRondaHoy(data);
       if (data?.hallazgos) setHallazgos(data.hallazgos);
+      if (data?.id) {
+        try {
+          const cp = await api.get<RondaConCheckpointsDto>(`/parqueadero/rondas/${data.id}/checkpoints`);
+          setCheckpoints(cp?.checkpoints || []);
+          setCompletadaNfc(cp?.completada_nfc || false);
+          setPuntosTotales(cp?.puntos_totales || 0);
+        } catch {}
+      }
     } catch {}
   };
 
   useEffect(() => {
     if (!user) return;
     fetchRonda();
+    fetchPuntosRonda();
   }, [user]);
 
   const startRound = async () => {
@@ -243,7 +296,10 @@ interface RondaDto {
     try {
       const r = await api.post<RondaDto>('/parqueadero/rondas', { hallazgos: "", completada: false });
       setRondaHoy(r);
+      setCheckpoints([]);
+      setCompletadaNfc(false);
       setHallazgos("");
+      setNfcError(null);
       toast.success("Ronda de vigilancia iniciada");
     } catch {
       toast.error("Error al iniciar ronda");
@@ -266,6 +322,56 @@ interface RondaDto {
       toast.error("Error al registrar ronda");
     } finally {
       setRondaLoading(false);
+    }
+  };
+
+  // Escanear NFC y registrar checkpoint
+  const scanNfc = async () => {
+    if (!nfcSupported) {
+      setNfcError("NFC no soportado en este dispositivo/navegador. Usa Chrome en Android.");
+      return;
+    }
+    if (!rondaHoy || rondaHoy.completada) {
+      setNfcError("Inicia una ronda primero");
+      return;
+    }
+    setNfcScanning(true);
+    setNfcError(null);
+    try {
+      const ndef = new (window as any).NDEFReader();
+      await ndef.scan();
+      toast.success("Acerca el celular a un tag NFC...");
+
+      ndef.onreading = async ({ serialNumber }: { serialNumber: string }) => {
+        setNfcScanning(false);
+        setLastTapPoint("Tag detectado: " + serialNumber);
+        try {
+          const cp = await api.post<CheckpointRondaDto>('/parqueadero/rondas/checkpoint', {
+            nfc_uid: serialNumber,
+            ronda_id: rondaHoy!.id,
+          });
+          setCheckpoints(prev => [...prev, cp]);
+          setNfcError(null);
+          const nuevoTotal = checkpoints.length + 1;
+          setCompletadaNfc(nuevoTotal >= puntosTotales);
+          toast.success("✓ " + cp.punto_nombre + " registrado");
+          setLastTapPoint(null);
+        } catch (err: any) {
+          const msg = err?.message || err?.error || "Error al registrar";
+          setNfcError(msg.includes("duplicate") || msg.includes("ya fue registrado")
+            ? "Este punto ya fue registrado en esta ronda"
+            : msg);
+          toast.error("Error al registrar checkpoint");
+        }
+      };
+
+      ndef.onreadingerror = () => {
+        setNfcScanning(false);
+        setNfcError("Error al leer el tag NFC. Intenta de nuevo.");
+      };
+    } catch (err: any) {
+      setNfcScanning(false);
+      setNfcError(err?.message || "Error al activar el lector NFC");
     }
   };
 
@@ -392,7 +498,7 @@ interface RondaDto {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-4">
               <div>
                 <h3 className="text-base font-bold text-text">Bitácora de Rondas de Guardia</h3>
-                <p className="text-xs text-text/60">Auditoría obligatoria de seguridad por turnos</p>
+                <p className="text-xs text-text/60">Auditoría obligatoria de seguridad con verificación NFC</p>
               </div>
               
               {!rondaHoy || rondaHoy.completada ? (
@@ -410,14 +516,116 @@ interface RondaDto {
                   </div>
                   <button 
                     onClick={submitRound}
-                    disabled={rondaLoading}
+                    disabled={rondaLoading || !completadaNfc}
                     className="bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-black uppercase tracking-widest px-4 py-3 rounded-2xl transition-all cursor-pointer shadow-lg disabled:opacity-50"
+                    title={!completadaNfc ? "Debes visitar todos los puntos NFC primero" : "Concluir ronda"}
                   >
                     {rondaLoading ? "Registrando…" : "Concluir Ronda"}
                   </button>
                 </div>
               )}
             </div>
+
+            {/* ── Progreso de checkpoints NFC ── */}
+            {rondaHoy && !rondaHoy.completada && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text/60">
+                    Puntos de Ronda NFC
+                  </label>
+                  <span className="text-[10px] font-bold text-text/50">
+                    {checkpoints.length}/{puntosTotales || puntosRonda.length}
+                  </span>
+                </div>
+                
+                {/* Barra de progreso */}
+                <div className="w-full h-2 bg-surface-3 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-400 rounded-full transition-all duration-500"
+                    style={{ width: `${puntosTotales > 0 ? (checkpoints.length / (puntosTotales || puntosRonda.length)) * 100 : 0}%` }}
+                  />
+                </div>
+
+                {/* Lista de puntos con estado */}
+                <div className="grid gap-1.5">
+                  {(puntosRonda.length > 0 ? puntosRonda : []).map((punto) => {
+                    const verificado = checkpoints.some(cp => cp.punto_id === punto.id);
+                    return (
+                      <div 
+                        key={punto.id}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all ${
+                          verificado 
+                            ? "bg-emerald-500/10 border border-emerald-500/20" 
+                            : "bg-surface-2/50 border border-border/30"
+                        }`}
+                      >
+                        {verificado 
+                          ? <Check size={14} className="text-emerald-400 shrink-0" />
+                          : <div className="w-3.5 h-3.5 rounded-full border-2 border-text/20 shrink-0" />
+                        }
+                        <span className={verificado ? "text-emerald-400 font-medium" : "text-text/60"}>
+                          {punto.nombre}
+                        </span>
+                        {punto.ubicacion && (
+                          <span className="text-text/30 truncate ml-auto text-[10px]">{punto.ubicacion}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {puntosRonda.length === 0 && (
+                    <p className="text-[10px] text-text/30 italic text-center py-2">
+                      No hay puntos NFC configurados. Contacta al administrador.
+                    </p>
+                  )}
+                </div>
+
+                {/* Botón NFC */}
+                <button
+                  onClick={scanNfc}
+                  disabled={nfcScanning || !nfcSupported || !!rondaHoy?.completada}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
+                    nfcSupported
+                      ? "bg-[#009df2] hover:bg-[#0088d4] text-white shadow-lg"
+                      : "bg-surface-2 border border-border text-text/40"
+                  } disabled:opacity-50`}
+                >
+                  {nfcScanning ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Escaneando…
+                    </>
+                  ) : nfcSupported ? (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7-6 14-6 14S6 15 6 8"/><circle cx="12" cy="8" r="2"/>
+                      </svg>
+                      Escanear Tag NFC
+                    </>
+                  ) : (
+                    "NFC no disponible"
+                  )}
+                </button>
+
+                {/* Mensajes NFC */}
+                {!nfcSupported && (
+                  <p className="text-[10px] text-amber-400/80 text-center">
+                    ⚠️ El escaneo NFC solo funciona en Chrome para Android. Usa un celular Android compatible.
+                  </p>
+                )}
+
+                {lastTapPoint && (
+                  <p className="text-[11px] text-blue-400 font-mono text-center bg-blue-500/5 rounded-lg py-1.5 animate-pulse">
+                    {lastTapPoint}
+                  </p>
+                )}
+
+                {nfcError && (
+                  <p className="text-[11px] text-red-400 bg-red-500/10 rounded-lg px-3 py-2 text-center">
+                    {nfcError}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Hallazgos textarea */}
             {rondaHoy && !rondaHoy.completada && (
@@ -440,6 +648,15 @@ interface RondaDto {
                   <Check size={18} className="text-emerald-400" />
                   <span className="text-sm font-bold text-emerald-400">Ronda completada hoy</span>
                 </div>
+                {checkpoints.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pl-7">
+                    {checkpoints.map(cp => (
+                      <span key={cp.id} className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
+                        ✓ {cp.punto_nombre}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {rondaHoy.hallazgos && (
                   <p className="text-xs text-text/70 italic pl-7">«{rondaHoy.hallazgos}»</p>
                 )}
@@ -459,7 +676,7 @@ interface RondaDto {
               <div className="p-8 rounded-2xl bg-surface-3/30 border border-dashed border-border/40 flex flex-col items-center gap-3 text-center">
                 <ClipboardList size={32} className="text-text/30" />
                 <p className="text-xs text-text/50 font-medium">No hay rondas registradas hoy</p>
-                <p className="text-[10px] text-text/40">Inicia una ronda para registrar la inspección de seguridad</p>
+                <p className="text-[10px] text-text/40">Inicia una ronda para recorrer los puntos NFC de inspección</p>
               </div>
             )}
           </div>
