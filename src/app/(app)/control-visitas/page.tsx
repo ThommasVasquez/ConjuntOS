@@ -22,11 +22,9 @@ interface VisitaItem {
   tipo: string;
   placa: string | null;
   creadoEn: string;
-  usuario?: {
-    unidad?: {
-      torre: string | null;
-      numero: string | null;
-    } | null;
+  residente?: {
+    torre: string | null;
+    apto: string | null;
   } | null;
 }
 
@@ -203,7 +201,7 @@ export default function ControlVisitas() {
                 <div className="flex justify-between items-start">
                    <div>
                      <p className="text-text font-bold">{v.nombre}</p>
-                     <p className="text-text text-xs">Visita a: {v.usuario?.unidad?.torre} - {v.usuario?.unidad?.numero}</p>
+                     <p className="text-text text-xs">Visita a: {v.residente?.torre} - {v.residente?.apto}</p>
                    </div>
                    <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
                       {new Date(v.creadoEn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
