@@ -32,10 +32,15 @@ export default function RoleSwitcher() {
   const [busy, setBusy] = useState(false);
 
   // Only testers see this control.
-  // TEMP DEBUG: show for everyone to isolate rendering issue
-  if (!user?.isTester) {
-    console.log('[RoleSwitcher] hidden — isTester:', user?.isTester, 'user:', user?.email, user?.rol);
-    // return null;
+  if (!user) return null;
+  // TEMP DEBUG: show banner when isTester is false
+  if (!user.isTester) {
+    console.log('[RoleSwitcher] hidden — isTester:', user.isTester, 'user:', user.email, user.rol);
+    return (
+      <div className="relative w-full mb-4 z-[60] p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-center">
+        ⚠️ RoleSwitcher hidden — isTester=false (user: {user.email}, rol: {user.rol})
+      </div>
+    );
   }
 
   const currentLabel =
