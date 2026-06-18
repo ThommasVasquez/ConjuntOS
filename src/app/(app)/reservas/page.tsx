@@ -86,8 +86,12 @@ export default function ReservasPage() {
     setSelectedArea(area);
     
     // Generar próximos 7 días a partir de hoy (limitado a sus días disponibles)
-    const allowedDaysStr = area.diasDisponibles || "0,1,2,3,4,5,6";
-    const allowedDays = allowedDaysStr.split(',').map((d: string) => parseInt(d, 10));
+    // Backend returns day names (LUN,MAR,...), frontend maps to JS day numbers
+    const DAY_MAP: Record<string, number> = {
+      DOM: 0, LUN: 1, MAR: 2, MIE: 3, JUE: 4, VIE: 5, SAB: 6,
+    };
+    const allowedDaysStr = area.diasDisponibles || "LUN,MAR,MIE,JUE,VIE,SAB,DOM";
+    const allowedDays = allowedDaysStr.split(',').map((d: string) => DAY_MAP[d.trim()] ?? -1).filter((d: number) => d >= 0);
     
     const days: Date[] = [];
     const d = new Date();
