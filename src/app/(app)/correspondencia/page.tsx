@@ -13,10 +13,9 @@ import { useWsSubscription } from "@/hooks/useWebSocket";
 interface ResidenteDirectorio {
   id: string;
   nombre: string;
-  unidad: {
-    torre: string | null;
-    numero: string | null;
-  };
+  torre: string | null;
+  apto: string | null;
+  telefono: string | null;
 }
 
 interface CorrespondenciaItem {
@@ -25,12 +24,10 @@ interface CorrespondenciaItem {
   remitente: string;
   tipo: string;
   fechaLlegada: string;
-  usuario?: {
+  residente?: {
     nombre: string | null;
-    unidad?: {
-      torre: string | null;
-      numero: string | null;
-    } | null;
+    torre: string | null;
+    apto: string | null;
   } | null;
 }
 
@@ -160,7 +157,7 @@ export default function CorrespondenciaPage() {
                 >
                    <option value="" className="bg-primary text-text">Seleccione apartamento/residente...</option>
                    {residentes.map(r => (
-                     <option key={r.id} value={r.id} className="bg-primary text-text">{r.unidad.torre} - Apto {r.unidad.numero} ({r.nombre})</option>
+                     <option key={r.id} value={r.id} className="bg-primary text-text">{r.torre} - Apto {r.apto} ({r.nombre})</option>
                    ))}
                 </select>
              </div>
@@ -236,7 +233,7 @@ export default function CorrespondenciaPage() {
                    </div>
                 </div>
                 <div className="flex items-center gap-2 text-text text-xs font-semibold relative z-10">
-                   <MapPin size={14} /> {p.usuario?.unidad?.torre} - Apto {p.usuario?.unidad?.numero} ({p.usuario?.nombre})
+                   <MapPin size={14} /> {p.residente?.torre} - Apto {p.residente?.apto} ({p.residente?.nombre})
                 </div>
                 <button onClick={() => markAsDelivered(p.id)} className="w-full mt-2 py-3 bg-surface-2 border border-border hover:bg-text/10 dark:hover:bg-text/20 hover:border-text/40 hover:text-text dark:hover:text-text transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest relative z-10 text-text">
                    <CheckCircle2 size={16} /> Marcar como Entregado

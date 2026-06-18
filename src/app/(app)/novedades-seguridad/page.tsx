@@ -17,9 +17,9 @@ interface NovedadItem {
   ubicacion: string;
   severidad: string;
   estado: string;
-  created_at: string;
+  createdAt: string;
   resolucion?: string;
-  reportado_por?: {
+  reportadoPor?: {
     nombre: string;
     torre: string;
     apto: string;
@@ -328,7 +328,7 @@ export default function NovedadesSeguridadPage() {
                 <p className="text-text font-bold text-lg leading-tight mt-1">{n.descripcion}</p>
               </div>
               <div className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text whitespace-nowrap">
-                {formatTimeAgo(n.created_at)}
+                {formatTimeAgo(n.createdAt)}
               </div>
             </div>
 
@@ -336,11 +336,11 @@ export default function NovedadesSeguridadPage() {
               <MapPin size={14} /> {n.ubicacion}
             </div>
 
-            {n.reportado_por && (
+            {n.reportadoPor && (
               <div className="flex items-center gap-2 text-text text-[10px] font-bold uppercase tracking-widest relative z-10">
-                Reportado por: {n.reportado_por.nombre}
-                {n.reportado_por.torre && ` • Torre ${n.reportado_por.torre}`}
-                {n.reportado_por.apto && ` • Apto ${n.reportado_por.apto}`}
+                Reportado por: {n.reportadoPor.nombre}
+                {n.reportadoPor.torre && ` • Torre ${n.reportadoPor.torre}`}
+                {n.reportadoPor.apto && ` • Apto ${n.reportadoPor.apto}`}
               </div>
             )}
 
@@ -436,7 +436,7 @@ export default function NovedadesSeguridadPage() {
                   )}
                 </div>
                 <div className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text whitespace-nowrap">
-                  {formatTimeAgo(n.created_at)}
+                  {formatTimeAgo(n.createdAt)}
                 </div>
               </div>
 
@@ -444,11 +444,11 @@ export default function NovedadesSeguridadPage() {
                 <MapPin size={14} /> {n.ubicacion}
               </div>
 
-              {n.reportado_por && (
+              {n.reportadoPor && (
                 <div className="flex items-center gap-2 text-text text-[10px] font-bold uppercase tracking-widest relative z-10">
-                  Reportado por: {n.reportado_por.nombre}
-                  {n.reportado_por.torre && ` • Torre ${n.reportado_por.torre}`}
-                  {n.reportado_por.apto && ` • Apto ${n.reportado_por.apto}`}
+                  Reportado por: {n.reportadoPor.nombre}
+                  {n.reportadoPor.torre && ` • Torre ${n.reportadoPor.torre}`}
+                  {n.reportadoPor.apto && ` • Apto ${n.reportadoPor.apto}`}
                 </div>
               )}
             </div>

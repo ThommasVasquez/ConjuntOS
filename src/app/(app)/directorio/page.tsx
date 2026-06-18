@@ -15,8 +15,7 @@ interface DirectorioUser {
   nombre: string;
   torre?: string | null;
   apto?: string | null;
-  numeroInterno: string;
-  rol: string;
+  telefono?: string | null;
 }
 
 export default function DirectorioPage() {
@@ -154,12 +153,9 @@ export default function DirectorioPage() {
                           ? `Torre ${u.torre}`
                           : "Sin unidad"}
                     {" · "}
-                    {u.rol
-                      ? u.rol
-                          .replace(/_/g, " ")
-                          .toLowerCase()
-                          .replace(/\b\w/g, (c) => c.toUpperCase())
-                      : ""}
+                    {u.telefono
+                      ? u.telefono
+                      : "Sin teléfono"}
                   </span>
                 </div>
 
