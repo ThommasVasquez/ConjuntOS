@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { gsap } from "gsap";
 import { api } from "@/lib/api/client";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 interface Camera {
   id: number;
@@ -290,6 +291,12 @@ interface RondaConCheckpointsDto extends RondaDto {
     fetchRonda();
     fetchPuntosRonda();
   }, [user]);
+
+  // Real-time WebSocket subscription for ronda checkpoint updates
+  useWsSubscription('ronda', () => {
+    fetchRonda();
+    fetchPuntosRonda();
+  });
 
   const startRound = async () => {
     setRondaLoading(true);

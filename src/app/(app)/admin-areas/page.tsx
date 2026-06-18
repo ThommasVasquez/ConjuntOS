@@ -190,8 +190,6 @@ export default function AdminAreasPage() {
   // Real-time WebSocket subscriptions
   useWsSubscription("reserva", () => {
     fetchReservas();
-  });
-  useWsSubscription("area_comun", () => {
     fetchAreas();
   });
 

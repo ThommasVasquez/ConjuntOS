@@ -615,6 +615,7 @@ pub fn spawn_scheduler(state: crate::state::AppState) {
                     "parqueadero",
                     &aviso.titulo,
                     &aviso.mensaje,
+                    None,
                 )
                 .await
                 {

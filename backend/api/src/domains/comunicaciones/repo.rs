@@ -66,6 +66,7 @@ pub async fn crear_anuncio_con_notificaciones(
                     "INFO",
                     &titulo,
                     &mensaje,
+                    None,
                 )
                 .await?;
             }

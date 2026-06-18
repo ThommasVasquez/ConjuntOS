@@ -880,6 +880,7 @@ pub async fn notificar_inquilino(
         "parqueadero",
         titulo,
         mensaje,
+        None,
     )
     .await?;
     Ok(())

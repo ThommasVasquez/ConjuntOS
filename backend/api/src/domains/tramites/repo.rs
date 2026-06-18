@@ -90,6 +90,7 @@ pub async fn crear_tramite_con_notificaciones(
                     "INFO",
                     &titulo,
                     &mensaje,
+                    None,
                 )
                 .await?;
             }
@@ -235,6 +236,7 @@ pub async fn resolver_tramite(
                         "Tu trámite de {} ha sido procesado exitosamente.",
                         tramite.tipo
                     ),
+                    None,
                 )
                 .await?;
             } else {
@@ -246,6 +248,7 @@ pub async fn resolver_tramite(
                     "SISTEMA",
                     "Trámite rechazado",
                     &format!("Tu solicitud ha sido negada por la administración. Motivo: {motivo}"),
+                    None,
                 )
                 .await?;
             }

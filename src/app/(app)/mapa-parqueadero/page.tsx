@@ -120,8 +120,12 @@ export default function MapaParqueaderoPage() {
   const router = useRouter();
   const role = user?.rol;
 
-  // Real-time WebSocket subscription
+  // Real-time WebSocket subscriptions
   useWsSubscription('parqueadero', () => {
+    loadData();
+    loadExtra();
+  });
+  useWsSubscription('ronda', () => {
     loadData();
     loadExtra();
   });

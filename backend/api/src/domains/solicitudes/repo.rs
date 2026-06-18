@@ -65,6 +65,7 @@ pub async fn crear_solicitud_con_notificaciones(
                     "INFO",
                     "Nueva solicitud PQRS",
                     &mensaje,
+                    None,
                 )
                 .await?;
             }

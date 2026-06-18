@@ -6,6 +6,7 @@ use crate::db::schema::{notificaciones, push_subscriptions};
 use crate::db::DbConn;
 use crate::domains::notificaciones::models::{Notificacion, PushSubscription};
 use crate::error::ApiResult;
+use crate::services::ws_hub::{WsEvent, WsHub};
 
 pub async fn list_for_user(
     conn: &mut DbConn,
@@ -60,6 +61,9 @@ pub async fn mark_read(
 
 /// Shared helper: other domains (paquetes, tramites, anuncios, ...) create
 /// in-app notifications through this single entry point.
+///
+/// When `ws_hub` is provided, also broadcasts a real-time `notification.created`
+/// event so connected frontends can refetch without polling.
 pub async fn create_notificacion(
     conn: &mut DbConn,
     conjunto_id: Uuid,
@@ -67,6 +71,7 @@ pub async fn create_notificacion(
     tipo: &str,
     titulo: &str,
     mensaje: &str,
+    ws_hub: Option<&WsHub>,
 ) -> ApiResult<Notificacion> {
     let row = diesel::insert_into(notificaciones::table)
         .values((
@@ -79,6 +84,20 @@ pub async fn create_notificacion(
         .returning(Notificacion::as_returning())
         .get_result(conn)
         .await?;
+
+    if let Some(hub) = ws_hub {
+        hub.publish(
+            conjunto_id,
+            WsEvent {
+                domain: "notification".into(),
+                action: "created".into(),
+                payload: None,
+                target_user_id: Some(usuario_id),
+            },
+        )
+        .await;
+    }
+
     Ok(row)
 }
 

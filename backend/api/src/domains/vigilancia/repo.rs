@@ -133,6 +133,7 @@ pub async fn crear_paquete_con_notificacion(
                 "PAQUETE",
                 "Paquete en portería",
                 &format!("Tienes un paquete de {remitente} en portería: {descripcion}"),
+                None,
             )
             .await?;
 
@@ -259,6 +260,7 @@ pub async fn crear_correspondencia_con_notificacion(
                 "Correspondencia en portería",
                 &format!("Tienes {tipo} de {remitente} en portería{}",
                     descripcion.map_or(String::new(), |d| format!(": {d}"))),
+                None,
             )
             .await?;
 
