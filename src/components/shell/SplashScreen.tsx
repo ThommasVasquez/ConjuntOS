@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import Image from "next/image";
 
 export default function SplashScreen() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const logoRef = useRef<SVGSVGElement>(null);
+  const logoRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -77,35 +78,15 @@ export default function SplashScreen() {
       
       <div className="relative flex flex-col items-center">
         {/* Precise Official Logo (Paths matched to provided image) */}
-        <svg 
-          ref={logoRef}
-          width="320" 
-          height="120" 
-          viewBox="0 0 540 180" 
-          fill="none" 
-          xmlns="http://www.w3.org/2000/svg"
-          className="text-white drop-shadow-2xl"
-        >
-          <path d="M40 70V160H80V30L72 30V38H64V30L56 38V46H40" fill="currentColor"/>
-          <path d="M50 82C50 78.6863 52.6863 76 56 76C59.3137 76 62 78.6863 62 82V98H50V82Z" fill="#000000"/>
-          <path d="M76 30V6C76 6 70 3 64 7.5C58 12 52 9 52 9L53.5 18C53.5 18 59.5 21 65.5 16.5C71.5 12 76 15 76 15" fill="currentColor"/>
-          <path d="M88 78V110H104V58L96 58V66H88" fill="currentColor" fillOpacity="0.85"/>
-          <path d="M92 82C92 80.3431 93.3431 79 95 79C96.6569 79 98 80.3431 98 82V89H92V82Z" fill="#000000"/>
-
-          <text 
-            x="135" 
-            y="122" 
-            fill="currentColor" 
-            style={{ 
-              fontFamily: "'Plus Jakarta Sans', sans-serif", 
-              fontWeight: 700, 
-              fontSize: "72px", 
-              letterSpacing: "-0.03em" 
-            }}
-          >
-            Conjunt<tspan style={{ fontWeight: 800 }} fill="#57bf00">O</tspan><tspan style={{ fontWeight: 800 }} fill="#009df2">S</tspan><tspan dy="-34" style={{ fontSize: "22px", fontWeight: 400 }}>®</tspan>
-          </text>
-        </svg>
+        <div ref={logoRef} className="w-[320px] h-[120px] relative">
+          <Image 
+            src="/logo.svg" 
+            alt="ConjuntOS" 
+            fill
+            className="object-contain drop-shadow-2xl"
+            priority
+          />
+        </div>
 
         <div 
           ref={textRef}

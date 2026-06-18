@@ -66,16 +66,13 @@ export default function Navbar() {
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <svg viewBox="0 0 540 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full object-contain text-white">
-                  <path d="M40 70V160H80V30L72 30V38H64V30L56 38V46H40" fill="currentColor"/>
-                  <path d="M50 82C50 78.6863 52.6863 76 56 76C59.3137 76 62 78.6863 62 82V98H50V82Z" className="fill-white dark:fill-[#000000]"/>
-                  <path d="M76 30V6C76 6 70 3 64 7.5C58 12 52 9 52 9L53.5 18C53.5 18 59.5 21 65.5 16.5C71.5 12 76 15 76 15" fill="currentColor"/>
-                  <path d="M88 78V110H104V58L96 58V66H88" fill="currentColor" fillOpacity="0.85"/>
-                  <path d="M92 82C92 80.3431 93.3431 79 95 79C96.6569 79 98 80.3431 98 82V89H92V82Z" className="fill-white dark:fill-[#000000]"/>
-                  <text x="135" y="122" fill="currentColor" style={{ fontFamily: 'var(--font-plus-jakarta), sans-serif', fontWeight: 700, fontSize: '72px', letterSpacing: '-0.03em' }}>
-                    Conjunt<tspan style={{ fontWeight: 800 }}>OS</tspan><tspan dy="-34" style={{ fontSize: '22px', fontWeight: 400 }}>®</tspan>
-                  </text>
-                </svg>
+                <Image 
+                  src="/logo.svg" 
+                  alt="ConjuntOS" 
+                  width={160} 
+                  height={40} 
+                  className="w-full h-full object-contain"
+                />
               )}
             </div>
           </div>
