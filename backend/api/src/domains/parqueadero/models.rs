@@ -7,8 +7,8 @@ use crate::db::enums::{
     TipoCeldaParqueadero, TipoRegistroParqueadero, TipoVehiculo,
 };
 use crate::db::schema::{
-    parqueaderos, registros_parqueadero, reservas_visitante_parqueadero, rondas_parqueadero,
-    sesiones_parqueadero, solicitudes_parqueadero, vehiculos,
+    checkpoints_ronda, parqueaderos, puntos_ronda, registros_parqueadero, reservas_visitante_parqueadero,
+    rondas_parqueadero, sesiones_parqueadero, solicitudes_parqueadero, vehiculos,
 };
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
@@ -87,6 +87,31 @@ pub struct RondaParqueadero {
     /// `Vec<HallazgoDto>` validated at the boundary (Law 6).
     pub hallazgos: Option<serde_json::Value>,
     pub completada: bool,
+}
+
+/// Punto estratégico de ronda con tag NFC.
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
+#[diesel(table_name = puntos_ronda, check_for_backend(diesel::pg::Pg))]
+pub struct PuntoRonda {
+    pub id: Uuid,
+    pub conjunto_id: Uuid,
+    pub nfc_uid: String,
+    pub nombre: String,
+    pub ubicacion: Option<String>,
+    pub orden: i32,
+    pub activo: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Registro de un tap NFC durante una ronda.
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
+#[diesel(table_name = checkpoints_ronda, check_for_backend(diesel::pg::Pg))]
+pub struct CheckpointRonda {
+    pub id: Uuid,
+    pub ronda_id: Uuid,
+    pub punto_id: Uuid,
+    pub nfc_uid: String,
+    pub verificado_en: DateTime<Utc>,
 }
 
 /// Log inmutable de movimientos de celdas (auditoría + flujo de aprobación).

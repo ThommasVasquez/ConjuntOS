@@ -10,10 +10,12 @@ use crate::db::enums::{
     TipoCeldaParqueadero,
 };
 use crate::domains::parqueadero::dto::{
-    AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CerrarSesionRequest, CreateCeldaRequest,
-    CreateRondaRequest, CreateVehiculoRequest, CrearReservaVisitanteRequest, DisponibilidadCupoDto,
-    EditarSolicitudRequest, MovimientoResultadoDto, OcupanteDto, ParqueaderoMioDto,
-    ParqueaderoStatsDto, RegistroDto, ReservaVisitanteDto, RondaDto, SesionDto, SolicitudDto,
+    AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CerrarSesionRequest, CheckpointRondaDto,
+    CreateCeldaRequest, CreatePuntoRondaRequest, CreateRondaRequest, CreateVehiculoRequest,
+    CrearReservaVisitanteRequest, DisponibilidadCupoDto, EditarSolicitudRequest,
+    MovimientoResultadoDto, OcupanteDto, ParqueaderoMioDto, ParqueaderoStatsDto,
+    PuntoRondaDto, RegistroDto, RegistrarCheckpointRequest, ReservaVisitanteDto,
+    RondaConCheckpointsDto, RondaDto, SesionDto, SolicitudDto,
     UpdateCeldaRequest, VehiculoDto,
 };
 use crate::domains::parqueadero::models::{NuevaCelda, NuevaSolicitud, NuevoVehiculo};
@@ -101,6 +103,9 @@ pub fn router() -> Router<AppState> {
         .route("/parqueadero/celdas/{id}/liberar", post(liberar_celda))
         .route("/parqueadero/registros", get(registros))
         .route("/parqueadero/rondas", get(ronda_de_hoy).post(crear_ronda))
+        .route("/parqueadero/rondas/{id}/checkpoints", get(checkpoints_de_ronda))
+        .route("/parqueadero/rondas/checkpoint", post(registrar_checkpoint))
+        .route("/parqueadero/puntos-ronda", get(puntos_ronda_handler).post(crear_punto_ronda))
         .route("/parqueadero/stats", get(parqueadero_stats))
         // Log inmutable de movimientos + flujo de aprobación.
         .route("/parqueadero/solicitudes", get(listar_solicitudes))
@@ -1300,4 +1305,144 @@ pub async fn reserva_marcar_llegada(
     let reserva = reservas::marcar_llegada(&mut conn, user.conjunto_id, id).await?;
     notificar(&state, user.conjunto_id, "reserva_llegada", None).await;
     Ok(Json(reserva))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rondas NFC
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/puntos-ronda",
+    tag = "parqueadero",
+    responses(
+        (status = 200, description = "Active NFC checkpoints for the conjunto", body = [PuntoRondaDto]),
+        (status = 403, description = "Requires ronda role")
+    )
+)]
+pub async fn puntos_ronda_handler(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<PuntoRondaDto>>> {
+    guard::require(&user, ROLES_RONDAS)?;
+    let mut conn = state.pool.get().await?;
+    let puntos = repo::puntos_ronda_activos(&mut conn, user.conjunto_id).await?;
+    Ok(Json(puntos.into_iter().map(PuntoRondaDto::from).collect()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/puntos-ronda",
+    tag = "parqueadero",
+    request_body = CreatePuntoRondaRequest,
+    responses(
+        (status = 200, description = "NFC checkpoint created", body = PuntoRondaDto),
+        (status = 403, description = "Requires admin role")
+    )
+)]
+pub async fn crear_punto_ronda(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<CreatePuntoRondaRequest>,
+) -> ApiResult<Json<PuntoRondaDto>> {
+    guard::require_admin(&user)?;
+    if req.nfc_uid.trim().is_empty() || req.nombre.trim().is_empty() {
+        return Err(ApiError::BadRequest("nfc_uid y nombre son obligatorios".into()));
+    }
+    let mut conn = state.pool.get().await?;
+    let punto = repo::crear_punto_ronda(
+        &mut conn,
+        user.conjunto_id,
+        req.nfc_uid.trim(),
+        req.nombre.trim(),
+        req.ubicacion.as_deref(),
+        req.orden,
+    )
+    .await?;
+    Ok(Json(PuntoRondaDto::from(punto)))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/parqueadero/rondas/checkpoint",
+    tag = "parqueadero",
+    request_body = RegistrarCheckpointRequest,
+    responses(
+        (status = 200, description = "Checkpoint recorded", body = CheckpointRondaDto),
+        (status = 400, description = "NFC UID not found or duplicate"),
+        (status = 403, description = "Requires ronda role")
+    )
+)]
+pub async fn registrar_checkpoint(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<RegistrarCheckpointRequest>,
+) -> ApiResult<Json<CheckpointRondaDto>> {
+    guard::require(&user, ROLES_RONDAS)?;
+    let mut conn = state.pool.get().await?;
+    let punto = repo::punto_por_nfc(&mut conn, user.conjunto_id, req.nfc_uid.trim())
+        .await?
+        .ok_or_else(|| ApiError::BadRequest("punto NFC no encontrado o inactivo".into()))?;
+    let cp = repo::registrar_checkpoint(&mut conn, req.ronda_id, punto.id, req.nfc_uid.trim()).await?;
+    let dto = CheckpointRondaDto {
+        id: cp.id,
+        punto_id: cp.punto_id,
+        nfc_uid: cp.nfc_uid,
+        punto_nombre: punto.nombre,
+        verificado_en: cp.verificado_en,
+    };
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "ronda".into(),
+                action: "checkpoint".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/parqueadero/rondas/{id}/checkpoints",
+    tag = "parqueadero",
+    params(("id" = Uuid, Path, description = "Ronda id")),
+    responses(
+        (status = 200, description = "Checkpoints for this round with total count", body = RondaConCheckpointsDto),
+        (status = 404, description = "Ronda not found")
+    )
+)]
+pub async fn checkpoints_de_ronda(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<RondaConCheckpointsDto>> {
+    guard::require(&user, ROLES_RONDAS)?;
+    let mut conn = state.pool.get().await?;
+    let ronda = repo::ronda_por_id(&mut conn, id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("ronda no encontrada".into()))?;
+    let checkpoints = repo::checkpoints_de_ronda(&mut conn, ronda.id).await?;
+    let puntos_totales = repo::puntos_ronda_activos(&mut conn, user.conjunto_id).await?.len();
+    let checkpoint_dtos: Vec<CheckpointRondaDto> = checkpoints
+        .into_iter()
+        .map(|(cp, nombre)| CheckpointRondaDto {
+            id: cp.id,
+            punto_id: cp.punto_id,
+            nfc_uid: cp.nfc_uid,
+            punto_nombre: nombre,
+            verificado_en: cp.verificado_en,
+        })
+        .collect();
+    let completada_nfc = checkpoint_dtos.len() >= puntos_totales;
+    Ok(Json(RondaConCheckpointsDto {
+        ronda: RondaDto::from(ronda),
+        puntos_totales,
+        checkpoints: checkpoint_dtos,
+        completada_nfc,
+    }))
 }

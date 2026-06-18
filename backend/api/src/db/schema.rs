@@ -511,6 +511,29 @@ diesel::table! {
 }
 
 diesel::table! {
+    puntos_ronda (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        nfc_uid -> Varchar,
+        nombre -> Varchar,
+        ubicacion -> Nullable<Varchar>,
+        orden -> Int4,
+        activo -> Bool,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    checkpoints_ronda (id) {
+        id -> Uuid,
+        ronda_id -> Uuid,
+        punto_id -> Uuid,
+        nfc_uid -> Varchar,
+        verificado_en -> Timestamptz,
+    }
+}
+
+diesel::table! {
     sesiones_parqueadero (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -718,6 +741,9 @@ diesel::joinable!(reservas -> conjuntos (conjunto_id));
 diesel::joinable!(reservas -> usuarios (usuario_id));
 diesel::joinable!(rondas_parqueadero -> conjuntos (conjunto_id));
 diesel::joinable!(rondas_parqueadero -> usuarios (usuario_id));
+diesel::joinable!(puntos_ronda -> conjuntos (conjunto_id));
+diesel::joinable!(checkpoints_ronda -> puntos_ronda (punto_id));
+diesel::joinable!(checkpoints_ronda -> rondas_parqueadero (ronda_id));
 diesel::joinable!(sesiones_parqueadero -> conjuntos (conjunto_id));
 diesel::joinable!(sesiones_parqueadero -> parqueaderos (parqueadero_id));
 diesel::joinable!(sesiones_parqueadero -> unidades (unidad_id));
@@ -771,6 +797,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     reservas,
     reservas_visitante_parqueadero,
     rondas_parqueadero,
+    checkpoints_ronda,
+    puntos_ronda,
     sesiones_parqueadero,
     solicitudes_parqueadero,
     solicitudes_servicio,

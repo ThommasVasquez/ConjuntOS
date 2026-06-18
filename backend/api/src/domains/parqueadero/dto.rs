@@ -10,6 +10,7 @@ use crate::db::enums::{
 };
 use crate::domains::parqueadero::models::{
     Parqueadero, RondaParqueadero, SolicitudParqueadero, Vehiculo,
+    PuntoRonda, CheckpointRonda,
 };
 
 #[derive(Serialize, ToSchema)]
@@ -363,6 +364,71 @@ pub struct DisponibilidadCupoDto {
     pub libres: i64,
     /// true si hay al menos un cupo libre en la franja.
     pub hay_cupo: bool,
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rondas NFC
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PuntoRondaDto {
+    pub id: Uuid,
+    pub nfc_uid: String,
+    pub nombre: String,
+    pub ubicacion: Option<String>,
+    pub orden: i32,
+    pub activo: bool,
+}
+
+impl From<PuntoRonda> for PuntoRondaDto {
+    fn from(p: PuntoRonda) -> Self {
+        Self {
+            id: p.id,
+            nfc_uid: p.nfc_uid,
+            nombre: p.nombre,
+            ubicacion: p.ubicacion,
+            orden: p.orden,
+            activo: p.activo,
+        }
+    }
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePuntoRondaRequest {
+    pub nfc_uid: String,
+    pub nombre: String,
+    pub ubicacion: Option<String>,
+    #[serde(default)]
+    pub orden: i32,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CheckpointRondaDto {
+    pub id: Uuid,
+    pub punto_id: Uuid,
+    pub nfc_uid: String,
+    pub punto_nombre: String,
+    pub verificado_en: DateTime<Utc>,
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct RegistrarCheckpointRequest {
+    pub nfc_uid: String,
+    pub ronda_id: Uuid,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct RondaConCheckpointsDto {
+    #[serde(flatten)]
+    pub ronda: RondaDto,
+    pub puntos_totales: usize,
+    pub checkpoints: Vec<CheckpointRondaDto>,
+    pub completada_nfc: bool,
 }
 
 

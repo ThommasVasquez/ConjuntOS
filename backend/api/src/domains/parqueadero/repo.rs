@@ -9,13 +9,13 @@ use crate::db::enums::{
     TipoRegistroParqueadero,
 };
 use crate::db::schema::{
-    parqueaderos, registros_parqueadero, rondas_parqueadero, sesiones_parqueadero,
+    checkpoints_ronda, parqueaderos, puntos_ronda, registros_parqueadero, rondas_parqueadero, sesiones_parqueadero,
     solicitudes_parqueadero, usuarios, vehiculos,
 };
 use crate::db::DbConn;
 use crate::domains::parqueadero::models::{
     NuevaCelda, NuevaSolicitud, NuevoVehiculo, Parqueadero, RegistroParqueadero, RondaParqueadero,
-    SolicitudParqueadero, Vehiculo,
+    SolicitudParqueadero, Vehiculo, PuntoRonda, CheckpointRonda,
 };
 use crate::domains::vigilancia::repo::today_utc_range;
 use crate::error::{ApiError, ApiResult};
@@ -422,6 +422,114 @@ pub async fn crear_ronda(
         .get_result(conn)
         .await?;
     Ok(row)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rondas NFC — puntos y checkpoints
+// ─────────────────────────────────────────────────────────────────────────────
+
+pub async fn puntos_ronda_activos(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+) -> ApiResult<Vec<PuntoRonda>> {
+    let rows = puntos_ronda::table
+        .filter(puntos_ronda::conjunto_id.eq(conjunto_id))
+        .filter(puntos_ronda::activo.eq(true))
+        .order(puntos_ronda::orden.asc())
+        .select(PuntoRonda::as_select())
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
+pub async fn punto_por_nfc(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    nfc_uid: &str,
+) -> ApiResult<Option<PuntoRonda>> {
+    let row = puntos_ronda::table
+        .filter(puntos_ronda::conjunto_id.eq(conjunto_id))
+        .filter(puntos_ronda::nfc_uid.eq(nfc_uid))
+        .filter(puntos_ronda::activo.eq(true))
+        .select(PuntoRonda::as_select())
+        .first(conn)
+        .await
+        .optional()?;
+    Ok(row)
+}
+
+pub async fn crear_punto_ronda(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    nfc_uid: &str,
+    nombre: &str,
+    ubicacion: Option<&str>,
+    orden: i32,
+) -> ApiResult<PuntoRonda> {
+    let row = diesel::insert_into(puntos_ronda::table)
+        .values((
+            puntos_ronda::conjunto_id.eq(conjunto_id),
+            puntos_ronda::nfc_uid.eq(nfc_uid),
+            puntos_ronda::nombre.eq(nombre),
+            puntos_ronda::ubicacion.eq(ubicacion),
+            puntos_ronda::orden.eq(orden),
+        ))
+        .returning(PuntoRonda::as_returning())
+        .get_result(conn)
+        .await?;
+    Ok(row)
+}
+
+pub async fn registrar_checkpoint(
+    conn: &mut DbConn,
+    ronda_id: Uuid,
+    punto_id: Uuid,
+    nfc_uid: &str,
+) -> ApiResult<CheckpointRonda> {
+    let row = diesel::insert_into(checkpoints_ronda::table)
+        .values((
+            checkpoints_ronda::ronda_id.eq(ronda_id),
+            checkpoints_ronda::punto_id.eq(punto_id),
+            checkpoints_ronda::nfc_uid.eq(nfc_uid),
+        ))
+        .returning(CheckpointRonda::as_returning())
+        .get_result(conn)
+        .await
+        .map_err(|e| {
+            if e.to_string().contains("duplicate key") || e.to_string().contains("violates unique") {
+                ApiError::BadRequest("este punto ya fue registrado en esta ronda".into())
+            } else {
+                ApiError::from(e)
+            }
+        })?;
+    Ok(row)
+}
+
+pub async fn ronda_por_id(
+    conn: &mut DbConn,
+    ronda_id: Uuid,
+) -> ApiResult<Option<RondaParqueadero>> {
+    let row = rondas_parqueadero::table
+        .filter(rondas_parqueadero::id.eq(ronda_id))
+        .select(RondaParqueadero::as_select())
+        .first(conn)
+        .await
+        .optional()?;
+    Ok(row)
+}
+
+pub async fn checkpoints_de_ronda(
+    conn: &mut DbConn,
+    ronda_id: Uuid,
+) -> ApiResult<Vec<(CheckpointRonda, String)>> {
+    let rows = checkpoints_ronda::table
+        .inner_join(puntos_ronda::table)
+        .filter(checkpoints_ronda::ronda_id.eq(ronda_id))
+        .order(checkpoints_ronda::verificado_en.asc())
+        .select((CheckpointRonda::as_select(), puntos_ronda::nombre))
+        .load(conn)
+        .await?;
+    Ok(rows)
 }
 
 /// (total celdas, ocupadas).
