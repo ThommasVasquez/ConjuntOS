@@ -32,7 +32,11 @@ export default function RoleSwitcher() {
   const [busy, setBusy] = useState(false);
 
   // Only testers see this control.
-  if (!user?.isTester) return null;
+  // TEMP DEBUG: show for everyone to isolate rendering issue
+  if (!user?.isTester) {
+    console.log('[RoleSwitcher] hidden — isTester:', user?.isTester, 'user:', user?.email, user?.rol);
+    // return null;
+  }
 
   const currentLabel =
     ROLES.find((r) => r.value === user.rol)?.label ?? user.rol;
