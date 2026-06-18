@@ -546,13 +546,31 @@ export default function AdminNovedadesPage() {
                         {anuncioForm.imagenUrl ? (
                             <div className="relative rounded-2xl overflow-hidden border border-border h-40 group">
                                 <Image src={anuncioForm.imagenUrl} alt="Vista previa del anuncio" fill className="w-full h-full object-cover" unoptimized />
-                                <button 
-                                  type="button"
-                                  onClick={() => setAnuncioForm(prev => ({ ...prev, imagenUrl: "" }))}
-                                  className="absolute top-3 right-3 bg-text/10 text-white rounded-full p-2 hover:bg-text/10 transition-all shadow-md active:scale-90"
-                                >
-                                    <XCircle size={16} />
-                                </button>
+                                <div className="absolute top-3 right-3 flex gap-2">
+                                    {/* Replace image button: re-uses the hidden file input */}
+                                    <label className="bg-accent text-on-accent rounded-full p-2 cursor-pointer transition-all shadow-md active:scale-90 hover:bg-accent/90">
+                                        <input 
+                                          type="file" 
+                                          accept="image/*" 
+                                          className="hidden" 
+                                          onChange={handleImageUpload} 
+                                          disabled={isUploadingImage}
+                                        />
+                                        <Upload size={14} />
+                                    </label>
+                                    <button 
+                                      type="button"
+                                      onClick={() => setAnuncioForm(prev => ({ ...prev, imagenUrl: "" }))}
+                                      className="bg-text/10 text-white rounded-full p-2 hover:bg-text/10 transition-all shadow-md active:scale-90"
+                                    >
+                                        <XCircle size={16} />
+                                    </button>
+                                </div>
+                                {isUploadingImage && (
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <label className="border-2 border-dashed border-border hover:border-accent/50 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-surface-2/20 hover:bg-surface-2/40">
