@@ -36,3 +36,5 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@conjuntos.app}
+      # Cuentas tester que pueden cambiar de rol en caliente (RoleSwitcher).
+      TESTER_EMAILS: ${TESTER_EMAILS:-thommy@conjuntos.app,camilo@conjuntos.app,raul@conjuntos.app,paulo@conjuntos.app}
