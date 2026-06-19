@@ -41,7 +41,7 @@ interface AdminSolicitud extends SolicitudDto {
 // Constants
 // ---------------------------------------------------------------------------
 
-type TabKey = "PENDIENTES" | "EN_PROGRESO" | "COMPLETADAS" | "TODAS";
+type TabKey = "PENDIENTES" | "EN_PROGRESO" | "FINALIZADAS" | "TODAS";
 
 const CATEGORIAS: { key: CatServicio; label: string; icon: React.ReactNode }[] = [
   { key: "PLOMERIA", label: "Plomería", icon: <Wrench size={14} /> },
@@ -81,10 +81,16 @@ function getEstadoBadge(estado: EstadoSolicitud): { label: string; className: st
         className: "bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30",
         icon: <Clock size={10} />,
       };
-    case "COMPLETADA":
+    case "RESUELTA":
       return {
-        label: "Completada",
+        label: "Resuelta",
         className: "bg-[#57bf00]/15 text-[#57bf00] border border-[#57bf00]/30",
+        icon: <CheckCircle2 size={10} />,
+      };
+    case "CERRADA":
+      return {
+        label: "Cerrada",
+        className: "bg-[#6B7280]/15 text-[#6B7280] border border-[#6B7280]/30",
         icon: <CheckCircle2 size={10} />,
       };
     default:
@@ -96,7 +102,7 @@ function getEstadoBadge(estado: EstadoSolicitud): { label: string; className: st
   }
 }
 
-const ESTADO_OPTIONS: EstadoSolicitud[] = ["ABIERTA", "ASIGNADA", "EN_PROGRESO", "COMPLETADA"];
+const ESTADO_OPTIONS: EstadoSolicitud[] = ["ABIERTA", "ASIGNADA", "EN_PROGRESO", "RESUELTA", "CERRADA"];
 
 // ---------------------------------------------------------------------------
 // Page Component
@@ -137,7 +143,7 @@ export default function AdminPQRSPage() {
     const params = new URLSearchParams();
     if (tab === "PENDIENTES") params.set("estado", "ABIERTA");
     else if (tab === "EN_PROGRESO") params.set("estado", "ASIGNADA,EN_PROGRESO");
-    else if (tab === "COMPLETADAS") params.set("estado", "COMPLETADA");
+    else if (tab === "FINALIZADAS") params.set("estado", "RESUELTA,CERRADA");
     // TODAS: no estado filter
 
     if (filtroCategoria) params.set("categoria", filtroCategoria);
@@ -291,7 +297,7 @@ export default function AdminPQRSPage() {
           [
             ["PENDIENTES", "Pendientes"],
             ["EN_PROGRESO", "En Progreso"],
-            ["COMPLETADAS", "Completadas"],
+            ["FINALIZADAS", "Finalizadas"],
             ["TODAS", "Todas"],
           ] as [TabKey, string][]
         ).map(([key, label]) => (
@@ -698,13 +704,13 @@ export default function AdminPQRSPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  setNuevoEstado("COMPLETADA");
+                  setNuevoEstado("CERRADA");
                   handleCambiarEstado();
                 }}
-                disabled={isProcessing || selected.estado === "COMPLETADA"}
-                className="flex-1 py-3 rounded-full border border-[#57bf00]/30 text-[#57bf00] font-bold text-xs tracking-wide hover:bg-[#57bf00]/10 transition-colors disabled:opacity-40"
+                disabled={isProcessing || selected.estado === "CERRADA"}
+                className="flex-1 py-3 rounded-full border border-[#6B7280]/30 text-[#6B7280] font-bold text-xs tracking-wide hover:bg-[#6B7280]/10 transition-colors disabled:opacity-40"
               >
-                Marcar Completada
+                Cerrar Ticket
               </button>
               <button
                 onClick={() => {

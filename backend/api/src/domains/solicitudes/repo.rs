@@ -20,7 +20,7 @@ pub async fn listar_solicitudes(
     conn: &mut DbConn,
     conjunto_id: Uuid,
     solo_usuario: Option<Uuid>,
-    estado: Option<EstadoSolicitud>,
+    estados: Option<Vec<EstadoSolicitud>>,
 ) -> ApiResult<Vec<Solicitud>> {
     let mut query = solicitudes_servicio::table
         .filter(solicitudes_servicio::conjunto_id.eq(conjunto_id))
@@ -28,8 +28,10 @@ pub async fn listar_solicitudes(
     if let Some(usuario_id) = solo_usuario {
         query = query.filter(solicitudes_servicio::usuario_id.eq(usuario_id));
     }
-    if let Some(e) = estado {
-        query = query.filter(solicitudes_servicio::estado.eq(e));
+    if let Some(ref est_list) = estados {
+        if !est_list.is_empty() {
+            query = query.filter(solicitudes_servicio::estado.eq_any(est_list));
+        }
     }
     query.order(solicitudes_servicio::created_at.desc())
         .limit(100)

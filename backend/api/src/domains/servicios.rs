@@ -70,7 +70,7 @@ pub struct UpdateSolicitudRequest {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AdminSolicitudesQuery {
-    pub estado: Option<EstadoSolicitud>,
+    pub estado: Option<String>,
     pub categoria: Option<CatServicio>,
     pub urgente: Option<bool>,
 }
@@ -100,7 +100,19 @@ async fn listar_admin(
     guard::require_admin(&user)?;
     let mut conn = state.pool.get().await?;
     // Use repo for full DTO support
-    let rows = repo::listar_solicitudes(&mut conn, user.conjunto_id, None, filtros.estado).await?;
+    let estados: Option<Vec<EstadoSolicitud>> = filtros.estado.map(|s| {
+        s.split(',').filter_map(|p| {
+            match p.trim() {
+                "ABIERTA" => Some(EstadoSolicitud::Abierta),
+                "ASIGNADA" => Some(EstadoSolicitud::Asignada),
+                "EN_PROGRESO" => Some(EstadoSolicitud::EnProgreso),
+                "RESUELTA" => Some(EstadoSolicitud::Resuelta),
+                "CERRADA" => Some(EstadoSolicitud::Cerrada),
+                _ => None,
+            }
+        }).collect()
+    });
+    let rows = repo::listar_solicitudes(&mut conn, user.conjunto_id, None, estados).await?;
     Ok(Json(rows.into_iter().map(SolicitudServicioDto::from).collect()))
 }
 
