@@ -105,6 +105,14 @@ function getEstadoBadge(estado: EstadoCaso): { label: string; className: string;
 
 const ESTADO_OPTIONS: EstadoCaso[] = ["REPORTADO", "EN_MEDIACION", "RESUELTO", "ESCALADO", "ARCHIVADO"];
 
+interface UnidadOption {
+  id: string;
+  torre: string | null;
+  numero: string;
+  nombre_residente: string | null;
+  label: string;
+}
+
 // ---------------------------------------------------------------------------
 // Page Component
 // ---------------------------------------------------------------------------
@@ -120,6 +128,7 @@ export default function ComiteConvivenciaPage() {
   const [casos, setCasos] = useState<CasoConvivenciaDto[]>([]);
   const [stats, setStats] = useState<StatsConvivencia | null>(null);
   const [loading, setLoading] = useState(true);
+  const [unidades, setUnidades] = useState<UnidadOption[]>([]);
 
   // Tabs
   const [tab, setTab] = useState<TabKey>("TODOS");
@@ -172,6 +181,18 @@ export default function ComiteConvivenciaPage() {
     }
   };
 
+  const fetchUnidades = async () => {
+    try {
+      const raw = await api.get<UnidadOption[]>("/convivencia/unidades");
+      setUnidades(raw.map((u) => ({
+        ...u,
+        label: `T${u.torre || "?"} ${u.numero}${u.nombre_residente ? ` — ${u.nombre_residente}` : ""}`,
+      })));
+    } catch {
+      // Unidades are non-critical
+    }
+  };
+
   // Real-time WebSocket
   useWsSubscription("convivencia", () => {
     fetchCasos();
@@ -196,6 +217,7 @@ export default function ComiteConvivenciaPage() {
     }
     fetchCasos();
     fetchStats();
+    fetchUnidades();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, user, authLoading, role, router]);
 
@@ -512,27 +534,33 @@ export default function ComiteConvivenciaPage() {
             {/* Unidad que reporta */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-text">
-                ID Unidad que Reporta <span className="text-[#EF4444]">*</span>
+                Unidad que Reporta <span className="text-[#EF4444]">*</span>
               </label>
-              <input
-                type="text"
-                placeholder="Ej: UUID de la unidad"
+              <select
                 value={formData.unidad_reporta_id}
-                onChange={(e) => setFormData((f) => ({ ...f, unidad_reporta_id: e.target.value }))}
-                className="bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text placeholder:text-text/30 focus:outline-none focus:border-accent"
-              />
+                onChange={(e) => setFormData((f) => ({ ...f, unidad_reporta_id: e.target.value, unidad_reportada_id: e.target.value === f.unidad_reportada_id ? "" : f.unidad_reportada_id }))}
+                className="bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text focus:outline-none focus:border-accent"
+              >
+                <option value="">Seleccionar unidad...</option>
+                {unidades.map((u) => (
+                  <option key={u.id} value={u.id}>{u.label}</option>
+                ))}
+              </select>
             </div>
 
             {/* Unidad reportada */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-text">ID Unidad Reportada (opcional)</label>
-              <input
-                type="text"
-                placeholder="Ej: UUID de unidad reportada"
+              <label className="text-[10px] font-bold uppercase tracking-widest text-text">Unidad Reportada (opcional)</label>
+              <select
                 value={formData.unidad_reportada_id}
                 onChange={(e) => setFormData((f) => ({ ...f, unidad_reportada_id: e.target.value }))}
-                className="bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text placeholder:text-text/30 focus:outline-none focus:border-accent"
-              />
+                className="bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text focus:outline-none focus:border-accent"
+              >
+                <option value="">Ninguna</option>
+                {unidades.filter((u) => u.id !== formData.unidad_reporta_id).map((u) => (
+                  <option key={u.id} value={u.id}>{u.label}</option>
+                ))}
+              </select>
             </div>
 
             {/* Description */}

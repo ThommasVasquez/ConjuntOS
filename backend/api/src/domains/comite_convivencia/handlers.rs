@@ -43,6 +43,8 @@ pub fn router() -> Router<AppState> {
         // Actas
         .route("/convivencia/casos/{id}/acta", post(generar_acta))
         .route("/convivencia/actas/{id}/firmar", post(firmar_acta))
+        // Catálogos
+        .route("/convivencia/unidades", get(listar_unidades))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -485,4 +487,15 @@ async fn caso_to_dto(
     } else { None };
 
     Ok(CasoConvivenciaDto::from_model(caso, unidad_reporta, unidad_reportada, creador, miembro, acta))
+}
+
+/// GET /api/v1/convivencia/unidades — list unidades for dropdown selectors
+async fn listar_unidades(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<crate::domains::comite_convivencia::dto::UnidadEmbed>>> {
+    guard::require(&user, ADMIN_CONVIVENCIA)?;
+    let mut conn = state.pool.get().await?;
+    let unidades = repo::listar_unidades_convivencia(&mut conn, user.conjunto_id).await?;
+    Ok(Json(unidades))
 }

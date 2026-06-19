@@ -351,3 +351,31 @@ pub async fn usuario_embed(conn: &mut DbConn, usuario_id: Uuid) -> ApiResult<Usu
         .map_err(|e| ApiError::Internal(anyhow::anyhow!("Error buscando usuario: {e}")))?;
     Ok(UsuarioEmbed { id, nombre, email, telefono })
 }
+
+/// List all unidades in a conjunto with resident info (for dropdowns).
+pub async fn listar_unidades_convivencia(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+) -> ApiResult<Vec<UnidadEmbed>> {
+    use crate::db::schema::unidades as u;
+    let rows: Vec<(Uuid, Option<String>, String)> = u::table
+        .filter(u::conjunto_id.eq(conjunto_id))
+        .select((u::id, u::torre, u::numero))
+        .order_by(u::numero.asc())
+        .load(conn)
+        .await
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Error listando unidades: {e}")))?;
+    let mut result = vec![];
+    for (id, torre, numero) in rows {
+        let nombre_residente = usuarios::table
+            .filter(usuarios::unidad_id.eq(id))
+            .filter(usuarios::rol.eq_any(["PROPIETARIO", "ARRENDATARIO"]))
+            .select(usuarios::nombre)
+            .first(conn)
+            .await
+            .optional()
+            .unwrap_or(None);
+        result.push(UnidadEmbed { id, torre, numero, nombre_residente });
+    }
+    Ok(result)
+}
