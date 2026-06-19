@@ -84,7 +84,7 @@ async fn crear_pase(
             permiso_vehiculo: body.permiso_vehiculo,
             permiso_asamblea: body.permiso_asamblea,
         },
-    )?;
+    ).await?;
 
     let mut vehiculos_dto = vec![];
     if let Some(vehiculos) = body.vehiculos {
@@ -98,7 +98,7 @@ async fn crear_pase(
                     modelo: v.modelo,
                     color: v.color,
                 },
-            )?;
+            ).await?;
             vehiculos_dto.push(VehiculoTemporalDto::from(vt));
         }
     }
@@ -137,11 +137,11 @@ async fn mis_pases(
     guard::require(&user, ROLES_PASE)?;
 
     let mut conn = state.pool.get().await?;
-    let pases = repo::pases_por_propietario(&mut conn, user.id)?;
+    let pases = repo::pases_por_propietario(&mut conn, user.id).await?;
 
     let mut result = vec![];
     for pase in pases {
-        let vehiculos = repo::vehiculos_por_pase(&mut conn, pase.id)?;
+        let vehiculos = repo::vehiculos_por_pase(&mut conn, pase.id).await?;
         let mut dto = PaseTemporalDto::from(pase);
         dto.vehiculos = vehiculos.into_iter().map(VehiculoTemporalDto::from).collect();
         result.push(dto);
@@ -163,7 +163,7 @@ async fn validar_pase(
     Path(codigo): Path<String>,
 ) -> ApiResult<Json<ValidacionPaseDto>> {
     let mut conn = state.pool.get().await?;
-    let pase = repo::pase_por_codigo(&mut conn, &codigo)?
+    let pase = repo::pase_por_codigo(&mut conn, &codigo).await?
         .ok_or_else(|| ApiError::NotFound("Código de acceso no encontrado".into()))?;
 
     let hoy = Utc::now().date_naive();
@@ -184,7 +184,7 @@ async fn validar_pase(
         None
     };
 
-    let vehiculos = repo::vehiculos_por_pase(&mut conn, pase.id)?;
+    let vehiculos = repo::vehiculos_por_pase(&mut conn, pase.id).await?;
 
     Ok(Json(ValidacionPaseDto {
         valido,
@@ -221,7 +221,7 @@ async fn revocar_pase(
     guard::require(&user, ROLES_PASE)?;
 
     let mut conn = state.pool.get().await?;
-    let pase = repo::pase_por_id(&mut conn, pase_id)?
+    let pase = repo::pase_por_id(&mut conn, pase_id).await?
         .ok_or_else(|| ApiError::NotFound("Pase no encontrado".into()))?;
 
     // Solo el propietario que emitió el pase puede revocarlo
@@ -229,7 +229,7 @@ async fn revocar_pase(
         return Err(ApiError::Forbidden);
     }
 
-    repo::revocar_pase(&mut conn, pase_id)?;
+    repo::revocar_pase(&mut conn, pase_id).await?;
 
     Ok(Json(serde_json::json!({"status": "ok"})))
 }
