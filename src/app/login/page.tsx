@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
-import { Shield, Mail, Lock, ArrowRight, Loader2, Star, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, Star, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 // Validate a post-login redirect target: only same-origin relative paths.
 // Rejects protocol-relative ("//evil.com"), absolute URLs ("http://…") and backslash tricks.
@@ -103,18 +104,25 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-linear-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
         
         <div className="text-center mb-10 flex flex-col items-center">
-          <div className="fade-in-element w-16 h-16 bg-accent rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,0,0,0.3)] border border-accent/50 rotate-6 hover:rotate-0 transition-transform duration-500">
-             <Shield className="text-white" size={32} />
+          <div className="fade-in-element w-24 h-24 flex items-center justify-center mb-6 relative">
+             <Image 
+               src="/logo-vertical.svg"
+               alt="ConjuntOS"
+               width={96}
+               height={96}
+               className="object-contain"
+               priority
+             />
           </div>
-          <h1 className="fade-in-element text-4xl font-display font-bold text-white tracking-tight text-glow mb-2">ConjuntOS</h1>
-          <p className="fade-in-element text-white text-sm font-medium tracking-wide">Tu comunidad, sincronizada en la nube.</p>
+          <h1 className="fade-in-element text-4xl font-display font-bold text-text tracking-tight text-glow mb-2">ConjuntOS</h1>
+          <p className="fade-in-element text-text-muted text-sm font-medium tracking-wide">Tu comunidad, sincronizada en la nube.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="fade-in-element space-y-2">
-            <label className="text-[11px] font-bold text-white uppercase tracking-widest ml-1">Email Residencial</label>
+            <label className="text-[11px] font-bold text-text uppercase tracking-widest ml-1">Email Residencial</label>
             <div className="relative group">
-              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white group-focus-within:text-accent transition-colors" size={20} />
+              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent transition-colors" size={20} />
               <input 
                 type="text" 
                 required
@@ -122,15 +130,15 @@ export default function LoginPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 placeholder="ej: thommy" 
-                className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-6 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white"
+                className="w-full bg-surface-2 border border-border rounded-3xl py-4.5 pl-14 pr-6 text-sm text-text focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-text-muted"
               />
             </div>
           </div>
 
           <div className="fade-in-element space-y-2">
-            <label className="text-[11px] font-bold text-white uppercase tracking-widest ml-1 text-right">Contraseña</label>
+            <label className="text-[11px] font-bold text-text uppercase tracking-widest ml-1 text-right">Contraseña</label>
             <div className="relative group">
-              <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white group-focus-within:text-accent transition-colors" size={20} />
+              <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent transition-colors" size={20} />
               <input
                 type={showPassword ? "text" : "password"}
                 required
@@ -138,13 +146,13 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 placeholder="••••••••"
-                className="w-full bg-white/5 border border-white/5 rounded-3xl py-4.5 pl-14 pr-14 text-sm text-white focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-white"
+                className="w-full bg-surface-2 border border-border rounded-3xl py-4.5 pl-14 pr-14 text-sm text-text focus:outline-hidden focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner placeholder:text-text-muted"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                className="absolute right-5 top-1/2 -translate-y-1/2 text-white/60 hover:text-accent transition-colors cursor-pointer"
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-text-muted/60 hover:text-accent transition-colors cursor-pointer"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -171,11 +179,11 @@ export default function LoginPage() {
         </form>
 
         <div className="fade-in-element mt-10 text-center space-y-4">
-           <p className="text-white text-[11px] flex items-center justify-center gap-2">
+           <p className="text-text-muted text-[11px] flex items-center justify-center gap-2">
              <Star size={12} className="text-accent" /> Acceso exclusivo para residentes autorizados
            </p>
            <div className="flex justify-center gap-6">
-              <button className="text-[10px] text-white font-bold uppercase transition-colors tracking-widest">¿Olvidaste tu contraseña?</button>
+              <button className="text-[10px] text-text-muted font-bold uppercase transition-colors tracking-widest">¿Olvidaste tu contraseña?</button>
            </div>
         </div>
 
@@ -183,7 +191,7 @@ export default function LoginPage() {
         <BrandedFooter isInternal className="pointer-events-none" />
       </div>
 
-      <div className="absolute top-10 left-10 text-white/[0.03] text-[15vw] font-display font-black pointer-events-none select-none uppercase tracking-tighter leading-none h-[120px] overflow-hidden">
+      <div className="absolute top-10 left-10 text-text/[0.03] text-[15vw] font-display font-black pointer-events-none select-none uppercase tracking-tighter leading-none h-[120px] overflow-hidden">
         CONJUNTOS
       </div>
       
