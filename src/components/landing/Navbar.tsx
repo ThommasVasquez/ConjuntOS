@@ -6,8 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useAuth } from "@/hooks/useAuth";
 
-import Image from "next/image";
-
 export default function Navbar() {
   const { navigate } = useViewTransition();
   const { user } = useAuth();
@@ -58,11 +56,9 @@ export default function Navbar() {
    scrolled ? "h-10 w-10 text-white" : "h-10 w-[140px] text-white"
  }`}>
    {scrolled ? (
-     <Image 
+     <img 
        src="/solo.svg" 
        alt="ConjuntOS" 
-       width={40} 
-       height={40} 
        className="w-full h-full object-contain"
      />
    ) : (
