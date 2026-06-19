@@ -106,7 +106,7 @@ export default function LoginPage() {
         <div className="text-center mb-10 flex flex-col items-center">
           <div className="fade-in-element w-full max-w-[450px] flex items-center justify-center mb-4 relative mx-auto">
              <Image 
-               src="/logo-vertical.svg"
+               src="/ConjuntOS_Vertical.svg"
                alt="ConjuntOS"
                width={450}
                height={450}
