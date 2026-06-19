@@ -56,11 +56,19 @@ export default function PasesTemporalesPage() {
     }
   };
 
-  const fetchUnidades = async () => {
-    try {
-      const data = await api.get<{ unidades: { id: string; numero: string; torre?: string }[] }>("/perfil");
-      setUnidades(data.unidades || []);
-    } catch {}
+  const fetchUnidades = () => {
+    // Use user's unit from auth context — each propietario has one unit
+    if (user?.unidadId) {
+      const u = { 
+        id: user.unidadId, 
+        numero: user.apto || user.torre || user.unidadId.slice(0, 8),
+        torre: user.torre || undefined 
+      };
+      setUnidades([u]);
+      if (!formData.unidad_id) {
+        setFormData(prev => ({ ...prev, unidad_id: u.id }));
+      }
+    }
   };
 
   useEffect(() => {
