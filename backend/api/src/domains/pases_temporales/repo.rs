@@ -149,6 +149,22 @@ pub async fn upsert_usuario_huesped(
             ..user
         })
     } else {
+        // Generar numero_interno autoincremental para el conjunto
+        let max_num: Option<String> = usuarios::table
+            .filter(usuarios::conjunto_id.eq(conjunto_id))
+            .select(usuarios::numero_interno)
+            .order(usuarios::numero_interno.desc())
+            .first(conn)
+            .await
+            .optional()?;
+        let next_num = match max_num {
+            Some(s) => {
+                let n: i32 = s.parse().unwrap_or(9999);
+                format!("{:04}", (n + 1).min(9999))
+            }
+            None => "0001".to_string(),
+        };
+
         // Crear nuevo usuario HUESPED_TEMPORAL
         diesel::insert_into(usuarios::table)
             .values((
@@ -159,6 +175,7 @@ pub async fn upsert_usuario_huesped(
                 usuarios::rol.eq("HUESPED_TEMPORAL"),
                 usuarios::unidad_id.eq(unidad_id),
                 usuarios::activo.eq(true),
+                usuarios::numero_interno.eq(&next_num),
             ))
             .returning(Usuario::as_returning())
             .get_result(conn)
