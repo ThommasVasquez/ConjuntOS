@@ -46,7 +46,9 @@ export type CatServicio =
   | 'CERRAJERIA'
   | 'OTRO';
 
-export type EstadoSolicitud = 'ABIERTA' | 'ASIGNADA' | 'EN_PROGRESO' | 'COMPLETADA';
+export type EstadoSolicitud = 'ABIERTA' | 'ASIGNADA' | 'EN_PROGRESO' | 'RESUELTA' | 'CERRADA';
+
+export type PrioridadTicket = 'BAJA' | 'MEDIA' | 'ALTA' | 'URGENTE';
 
 export type TipoPqr = 'PETICION' | 'QUEJA' | 'RECLAMO' | 'SUGERENCIA' | 'MANTENIMIENTO';
 
@@ -674,6 +676,13 @@ export interface SolicitudDto {
   imagenes: string[];
   estado: EstadoSolicitud;
   proveedorId: string | null;
+  prioridad: PrioridadTicket;
+  slaHoras: number;
+  slaVencimiento: string | null;
+  asignadoAId: string | null;
+  fechaAsignacion: string | null;
+  fechaResolucion: string | null;
+  fechaCierre: string | null;
   createdAt: string;
 }
 
@@ -683,6 +692,25 @@ export interface CreateSolicitudRequest {
   descripcion: string;
   urgente?: boolean;
   imagenes?: string[];
+  prioridad?: PrioridadTicket;
+}
+
+export interface UpdateTicketRequest {
+  estado?: EstadoSolicitud;
+  proveedorId?: string;
+  asignadoAId?: string;
+  prioridad?: PrioridadTicket;
+}
+
+export interface TicketStatsDto {
+  total: number;
+  abiertos: number;
+  asignados: number;
+  enProgreso: number;
+  resueltos: number;
+  cerrados: number;
+  slaVencidos: number;
+  tiempoPromedioResolucionHoras: number;
 }
 
 // ===========================================================================

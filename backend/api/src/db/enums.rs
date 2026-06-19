@@ -191,7 +191,15 @@ text_enum!(EstadoSolicitud {
     Abierta => "ABIERTA",
     Asignada => "ASIGNADA",
     EnProgreso => "EN_PROGRESO",
-    Completada => "COMPLETADA",
+    Resuelta => "RESUELTA",
+    Cerrada => "CERRADA",
+});
+
+text_enum!(PrioridadTicket {
+    Baja => "BAJA",
+    Media => "MEDIA",
+    Alta => "ALTA",
+    Urgente => "URGENTE",
 });
 
 text_enum!(EstadoPaseTemporal {

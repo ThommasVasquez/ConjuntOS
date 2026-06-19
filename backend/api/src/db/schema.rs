@@ -695,6 +695,34 @@ diesel::table! {
         imagenes -> Jsonb,
         estado -> Text,
         proveedor_id -> Nullable<Uuid>,
+        prioridad -> Text,
+        sla_horas -> Int4,
+        sla_vencimiento -> Nullable<Timestamptz>,
+        asignado_a_id -> Nullable<Uuid>,
+        fecha_asignacion -> Nullable<Timestamptz>,
+        fecha_resolucion -> Nullable<Timestamptz>,
+        fecha_cierre -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    ticket_comentarios (id) {
+        id -> Uuid,
+        ticket_id -> Uuid,
+        usuario_id -> Uuid,
+        contenido -> Text,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    ticket_transiciones (id) {
+        id -> Uuid,
+        ticket_id -> Uuid,
+        estado_anterior -> Text,
+        estado_nuevo -> Text,
+        usuario_id -> Uuid,
         created_at -> Timestamptz,
     }
 }
@@ -848,6 +876,10 @@ diesel::joinable!(sesiones_parqueadero -> unidades (unidad_id));
 diesel::joinable!(sesiones_parqueadero -> pagos (pago_id));
 diesel::joinable!(solicitudes_servicio -> conjuntos (conjunto_id));
 diesel::joinable!(solicitudes_servicio -> usuarios (usuario_id));
+diesel::joinable!(ticket_comentarios -> solicitudes_servicio (ticket_id));
+diesel::joinable!(ticket_comentarios -> usuarios (usuario_id));
+diesel::joinable!(ticket_transiciones -> solicitudes_servicio (ticket_id));
+diesel::joinable!(ticket_transiciones -> usuarios (usuario_id));
 diesel::joinable!(solicitudes_parqueadero -> conjuntos (conjunto_id));
 diesel::joinable!(solicitudes_parqueadero -> parqueaderos (parqueadero_id));
 diesel::joinable!(tramites -> conjuntos (conjunto_id));
@@ -927,4 +959,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     comite_miembros,
     actas_convivencia,
     firmas_actas,
+    ticket_comentarios,
+    ticket_transiciones,
 );

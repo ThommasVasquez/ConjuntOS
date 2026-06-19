@@ -3,7 +3,7 @@ use axum::routing::get;
 use axum::{Json, Router};
 
 use crate::auth::extract::AuthUser;
-use crate::db::enums::{Rol, TipoPqr};
+use crate::db::enums::{PrioridadTicket, Rol, TipoPqr};
 use crate::domains::solicitudes::dto::{CreateSolicitudRequest, SolicitudDto};
 use crate::domains::solicitudes::models::NuevaSolicitud;
 use crate::domains::solicitudes::repo;
@@ -36,8 +36,9 @@ pub async fn listar_solicitudes(
         _ => Some(user.id),
     };
     let mut conn = state.pool.get().await?;
-    let rows = repo::listar_solicitudes(&mut conn, user.conjunto_id, solo_usuario).await?;
-    Ok(Json(rows.into_iter().map(SolicitudDto::from).collect()))
+    let rows = repo::listar_solicitudes(&mut conn, user.conjunto_id, solo_usuario, None).await?;
+    let dtos: Vec<SolicitudDto> = rows.into_iter().map(|s| SolicitudDto::from_model(s, vec![], vec![])).collect();
+    Ok(Json(dtos))
 }
 
 #[utoipa::path(
@@ -72,11 +73,13 @@ pub async fn crear_solicitud(
             descripcion: req.descripcion.trim().to_string(),
             urgente: req.urgente.unwrap_or(false),
             imagenes,
+            prioridad: PrioridadTicket::Media,
+            sla_horas: if req.urgente.unwrap_or(false) { 4 } else { 48 },
         },
         &user.nombre,
     )
     .await?;
-    let dto = SolicitudDto::from(solicitud);
+    let dto = SolicitudDto::from_model(solicitud, vec![], vec![]);
     state
         .ws_hub
         .publish(

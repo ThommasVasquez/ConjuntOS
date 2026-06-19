@@ -4,3 +4,4 @@ pub mod models;
 pub mod repo;
 
 pub use handlers::router;
+pub use models::Solicitud;
