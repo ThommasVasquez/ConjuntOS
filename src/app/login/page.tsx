@@ -104,15 +104,17 @@ export default function LoginPage() {
         
         <div className="text-center mb-10 flex flex-col items-center">
           <div className="fade-in-element w-full max-w-[450px] mb-4 mx-auto">
-             {/* eslint-disable-next-line @next/next/no-img-element */}
-             <picture>
-               <source {...{"srcset": "/ConjuntOS_Vertical_Dark.svg"}} media="(prefers-color-scheme: dark)" />
-               <img 
-                 src="/ConjuntOS_Vertical.svg"
-                 alt="ConjuntOS"
-                 style={{ width: '100%', maxWidth: '450px', height: 'auto', display: 'block', margin: '0 auto' }}
-               />
-             </picture>
+             {/* picture with srcset forced lowercase — React 19 SSR renders srcSet (camelCase) which browsers ignore */}
+             <div 
+               className="w-full"
+               style={{ width: '100%', maxWidth: '450px', margin: '0 auto' }}
+               dangerouslySetInnerHTML={{ __html: 
+                 '<picture>' +
+                 '<source srcset="/ConjuntOS_Vertical_Dark.svg" media="(prefers-color-scheme: dark)">' +
+                 '<img src="/ConjuntOS_Vertical.svg" alt="ConjuntOS" style="width:100%;max-width:450px;height:auto;display:block;margin:0 auto">' +
+                 '</picture>'
+               }}
+             />
           </div>
           <p className="fade-in-element text-text-muted text-sm font-medium tracking-wide">Tu comunidad, sincronizada en la nube.</p>
         </div>
