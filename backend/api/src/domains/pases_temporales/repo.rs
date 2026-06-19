@@ -281,7 +281,7 @@ pub async fn actualizar_pase(
     permiso_asamblea: Option<bool>,
 ) -> ApiResult<PaseTemporal> {
     let mut sql = String::from(
-        "UPDATE pases_temporales SET updated_at = now()"
+        "UPDATE pases_temporales SET id = id"
     );
     if let Some(v) = nombre_anfitrion {
         sql.push_str(&format!(", nombre_anfitrion = '{}'", v.replace('\'', "''")));
