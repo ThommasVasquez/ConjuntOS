@@ -32,6 +32,8 @@ export default function LoginPage() {
     password: ""
   });
 
+  const [isDark, setIsDark] = useState(true);
+
   // Already logged in → redirect to dashboard
   useEffect(() => {
     if (user) {
@@ -39,6 +41,17 @@ export default function LoginPage() {
       router.replace(safeCallback(params.get("callbackUrl")));
     }
   }, [user, router]);
+
+  // Detect dark mode for logo swapping
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const logoSrc = isDark ? "/ConjuntOS_Vertical_Dark.svg" : "/ConjuntOS_Vertical.svg";
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -106,7 +119,7 @@ export default function LoginPage() {
           <div className="fade-in-element w-full max-w-[450px] mb-4 mx-auto text-center">
              {/* eslint-disable-next-line @next/next/no-img-element */}
              <img 
-               src="/ConjuntOS_Vertical.svg"
+               src={logoSrc}
                alt="ConjuntOS"
                style={{ width: '100%', maxWidth: '450px', height: 'auto', display: 'block', margin: '0 auto' }}
              />

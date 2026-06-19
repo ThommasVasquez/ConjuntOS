@@ -4,7 +4,7 @@
   <defs>
     <style>
       .st0 {
-        fill: #111213;
+        fill: #ffffff;
       }
 
       .st1 {
@@ -12,12 +12,14 @@
       }
 
       .st2 {
-        fill: #fefefe;
+        fill: #111213;
       }
 
       .st3 {
         fill: #57bf00;
       }
+      
+      path:not([class]), polygon:not([class]) { fill: #ffffff; }
     </style>
   </defs>
   <g>
