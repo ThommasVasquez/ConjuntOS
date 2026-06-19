@@ -11,7 +11,6 @@ import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import { Mail, Lock, ArrowRight, Loader2, Star, Eye, EyeOff } from "lucide-react";
-import Image from "next/image";
 
 // Validate a post-login redirect target: only same-origin relative paths.
 // Rejects protocol-relative ("//evil.com"), absolute URLs ("http://…") and backslash tricks.
@@ -104,14 +103,12 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-linear-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
         
         <div className="text-center mb-10 flex flex-col items-center">
-          <div className="fade-in-element w-full max-w-[450px] mb-4 mx-auto">
-             <Image 
+          <div className="fade-in-element w-full max-w-[450px] mb-4 mx-auto text-center">
+             {/* eslint-disable-next-line @next/next/no-img-element */}
+             <img 
                src="/ConjuntOS_Vertical.svg"
                alt="ConjuntOS"
-               width={450}
-               height={450}
-               className="object-contain w-full h-auto mx-auto block"
-               priority
+               style={{ width: '100%', maxWidth: '450px', height: 'auto', display: 'block', margin: '0 auto' }}
              />
           </div>
           <p className="fade-in-element text-text-muted text-sm font-medium tracking-wide">Tu comunidad, sincronizada en la nube.</p>
