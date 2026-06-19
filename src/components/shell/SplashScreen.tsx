@@ -76,7 +76,7 @@ export default function SplashScreen() {
   return (
     <div 
       ref={containerRef} 
-      className="fixed inset-0 bg-[#000000] flex flex-col items-center justify-center overflow-hidden"
+      className={`fixed inset-0 ${isDark ? 'bg-[#000000]' : 'bg-[#ffffff]'} flex flex-col items-center justify-center overflow-hidden`}
       style={{ zIndex: 999999 }}
     >
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-[#009df2]/8 blur-[120px] rounded-full" />
