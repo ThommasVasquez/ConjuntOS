@@ -98,6 +98,26 @@ pub struct VehiculoTemporalInput {
     pub color: Option<String>,
 }
 
+/// Campos editables de un pase temporal. Todos son opcionales: solo se
+/// actualizan los campos presentes en el JSON.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ActualizarPaseTemporalRequest {
+    pub nombre_anfitrion: Option<String>,
+    pub nombre_huesped: Option<String>,
+    pub email_huesped: Option<String>,
+    pub telefono_huesped: Option<String>,
+    #[schema(value_type = String, format = "date")]
+    pub fecha_inicio: Option<NaiveDate>,
+    #[schema(value_type = String, format = "date")]
+    pub fecha_fin: Option<NaiveDate>,
+    pub permiso_gimnasio: Option<bool>,
+    pub permiso_piscina: Option<bool>,
+    pub permiso_entrada_salida: Option<bool>,
+    pub permiso_vehiculo: Option<bool>,
+    pub permiso_asamblea: Option<bool>,
+    pub vehiculos: Option<Vec<VehiculoTemporalInput>>,
+}
+
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ValidacionPaseDto {
     pub valido: bool,

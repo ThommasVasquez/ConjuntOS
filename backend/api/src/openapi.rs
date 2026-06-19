@@ -98,6 +98,7 @@ use utoipa::OpenApi;
         crate::domains::pases_temporales::handlers::mi_pase,
         crate::domains::pases_temporales::handlers::validar_pase,
         crate::domains::pases_temporales::handlers::revocar_pase,
+        crate::domains::pases_temporales::handlers::editar_pase,
     ),
     tags(
         (name = "ops", description = "Health and operational endpoints"),

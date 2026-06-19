@@ -10,8 +10,8 @@ use crate::auth::password;
 use crate::auth::guard;
 use crate::db::enums::{EstadoPaseTemporal, Rol};
 use crate::domains::pases_temporales::dto::{
-    CrearPaseTemporalRequest, PaseTemporalDto, PermisosDto, ValidacionPaseDto,
-    VehiculoTemporalDto,
+    ActualizarPaseTemporalRequest, CrearPaseTemporalRequest, PaseTemporalDto, PermisosDto,
+    ValidacionPaseDto, VehiculoTemporalDto,
 };
 use crate::domains::pases_temporales::models::{
     NuevoPaseTemporal, NuevoVehiculoTemporal,
@@ -38,6 +38,7 @@ pub fn router() -> Router<AppState> {
         .route("/pases-temporales/mi-pase", get(mi_pase))
         .route("/pases-temporales/validar/{codigo}", get(validar_pase))
         .route("/pases-temporales/{id}/revocar", put(revocar_pase))
+        .route("/pases-temporales/{id}", put(editar_pase))
 }
 
 /// POST /api/v1/pases-temporales — Emitir un nuevo pase temporal (solo PROPIETARIO).
@@ -281,4 +282,90 @@ async fn revocar_pase(
     repo::revocar_pase(&mut conn, pase_id).await?;
 
     Ok(Json(serde_json::json!({"status": "ok"})))
+}
+
+/// PUT /api/v1/pases-temporales/{id} — Editar un pase temporal (solo el propietario que lo emitió).
+#[utoipa::path(
+    put,
+    path = "/api/v1/pases-temporales/{id}",
+    tag = "pases-temporales",
+    request_body = ActualizarPaseTemporalRequest,
+    responses(
+        (status = 200, body = PaseTemporalDto),
+        (status = 403),
+        (status = 404)
+    )
+)]
+async fn editar_pase(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(pase_id): Path<Uuid>,
+    Json(body): Json<ActualizarPaseTemporalRequest>,
+) -> ApiResult<Json<PaseTemporalDto>> {
+    guard::require(&user, ROLES_PASE)?;
+
+    let mut conn = state.pool.get().await?;
+    let pase = repo::pase_por_id(&mut conn, pase_id).await?
+        .ok_or_else(|| ApiError::NotFound("Pase no encontrado".into()))?;
+
+    // Solo el propietario que emitió el pase puede editarlo
+    if pase.propietario_id != user.id {
+        return Err(ApiError::Forbidden);
+    }
+
+    let pase = repo::actualizar_pase(
+        &mut conn,
+        pase_id,
+        body.nombre_anfitrion.as_deref(),
+        body.nombre_huesped.as_deref(),
+        body.email_huesped.as_deref(),
+        body.telefono_huesped.as_deref(),
+        body.fecha_inicio,
+        body.fecha_fin,
+        body.permiso_gimnasio,
+        body.permiso_piscina,
+        body.permiso_entrada_salida,
+        body.permiso_vehiculo,
+        body.permiso_asamblea,
+    ).await?;
+
+    // Si se enviaron vehiculos, reemplazar
+    let vehiculos_dto = if let Some(vehiculos) = &body.vehiculos {
+        let nuevos: Vec<NuevoVehiculoTemporal> = vehiculos.iter().map(|v| {
+            NuevoVehiculoTemporal {
+                pase_id,
+                placa: v.placa.clone(),
+                marca: v.marca.clone(),
+                modelo: v.modelo.clone(),
+                color: v.color.clone(),
+            }
+        }).collect();
+        repo::reemplazar_vehiculos(&mut conn, pase_id, &nuevos).await?
+            .into_iter()
+            .map(VehiculoTemporalDto::from)
+            .collect()
+    } else {
+        repo::vehiculos_por_pase(&mut conn, pase_id).await?
+            .into_iter()
+            .map(VehiculoTemporalDto::from)
+            .collect()
+    };
+
+    let mut dto = PaseTemporalDto::from(pase);
+    dto.vehiculos = vehiculos_dto;
+
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "pase_temporal".into(),
+                action: "actualizado".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+
+    Ok(Json(dto))
 }

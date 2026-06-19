@@ -262,3 +262,86 @@ pub async fn pase_activo_por_usuario(
         .await
         .optional()?)
 }
+
+/// Actualiza un pase temporal con los campos recibidos (solo los presentes).
+/// También reemplaza los vehículos si se incluyen.
+pub async fn actualizar_pase(
+    conn: &mut DbConn,
+    pase_id: Uuid,
+    nombre_anfitrion: Option<&str>,
+    nombre_huesped: Option<&str>,
+    email_huesped: Option<&str>,
+    telefono_huesped: Option<&str>,
+    fecha_inicio: Option<chrono::NaiveDate>,
+    fecha_fin: Option<chrono::NaiveDate>,
+    permiso_gimnasio: Option<bool>,
+    permiso_piscina: Option<bool>,
+    permiso_entrada_salida: Option<bool>,
+    permiso_vehiculo: Option<bool>,
+    permiso_asamblea: Option<bool>,
+) -> ApiResult<PaseTemporal> {
+    let mut sql = String::from(
+        "UPDATE pases_temporales SET updated_at = now()"
+    );
+    if let Some(v) = nombre_anfitrion {
+        sql.push_str(&format!(", nombre_anfitrion = '{}'", v.replace('\'', "''")));
+    }
+    if let Some(v) = nombre_huesped {
+        sql.push_str(&format!(", nombre_huesped = '{}'", v.replace('\'', "''")));
+    }
+    if let Some(v) = email_huesped {
+        sql.push_str(&format!(", email_huesped = '{}'", v.replace('\'', "''")));
+    }
+    if let Some(v) = telefono_huesped {
+        sql.push_str(&format!(", telefono_huesped = '{}'", v.replace('\'', "''")));
+    }
+    if let Some(v) = fecha_inicio {
+        sql.push_str(&format!(", fecha_inicio = '{}'", v));
+    }
+    if let Some(v) = fecha_fin {
+        sql.push_str(&format!(", fecha_fin = '{}'", v));
+    }
+    if let Some(v) = permiso_gimnasio {
+        sql.push_str(&format!(", permiso_gimnasio = {}", v));
+    }
+    if let Some(v) = permiso_piscina {
+        sql.push_str(&format!(", permiso_piscina = {}", v));
+    }
+    if let Some(v) = permiso_entrada_salida {
+        sql.push_str(&format!(", permiso_entrada_salida = {}", v));
+    }
+    if let Some(v) = permiso_vehiculo {
+        sql.push_str(&format!(", permiso_vehiculo = {}", v));
+    }
+    if let Some(v) = permiso_asamblea {
+        sql.push_str(&format!(", permiso_asamblea = {}", v));
+    }
+    sql.push_str(&format!(" WHERE id = '{}' RETURNING *", pase_id));
+
+    let pase: PaseTemporal = diesel::sql_query(&sql).get_result(conn).await?;
+    Ok(pase)
+}
+
+/// Elimina todos los vehículos de un pase y los reemplaza con los nuevos.
+pub async fn reemplazar_vehiculos(
+    conn: &mut DbConn,
+    pase_id: Uuid,
+    vehiculos: &[crate::domains::pases_temporales::models::NuevoVehiculoTemporal],
+) -> ApiResult<Vec<VehiculoTemporal>> {
+    use crate::db::schema::vehiculos_temporales::dsl::*;
+    // Borrar existentes
+    diesel::delete(vehiculos_temporales.filter(pase_id.eq(pase_id)))
+        .execute(conn)
+        .await?;
+    // Insertar nuevos
+    let mut result = vec![];
+    for v in vehiculos {
+        let vt = diesel::insert_into(vehiculos_temporales)
+            .values(v)
+            .returning(VehiculoTemporal::as_returning())
+            .get_result(conn)
+            .await?;
+        result.push(vt);
+    }
+    Ok(result)
+}

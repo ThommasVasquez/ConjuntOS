@@ -4,7 +4,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use diesel::prelude::*;
 use uuid::Uuid;
 
-#[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
+#[derive(Queryable, Selectable, Identifiable, QueryableByName, Debug, Clone)]
 #[diesel(table_name = pases_temporales, check_for_backend(diesel::pg::Pg))]
 pub struct PaseTemporal {
     pub id: Uuid,
