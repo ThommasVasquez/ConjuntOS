@@ -5,7 +5,6 @@ import { Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useAuth } from "@/hooks/useAuth";
-import Image from "next/image";
 
 export default function Navbar() {
   const { navigate } = useViewTransition();
@@ -54,7 +53,7 @@ export default function Navbar() {
             className="flex items-center cursor-pointer group"
           >
             <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center ${
-              scrolled ? "h-10 w-10 text-white" : "h-10 w-[140px] relative"
+              scrolled ? "h-10 w-10 text-white" : "h-10 w-[140px]"
             }`}>
               {scrolled ? (
                 <img 
@@ -63,12 +62,10 @@ export default function Navbar() {
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <Image 
-                  src="/logo.svg" 
+                <img 
+                  src="/splash-white.png" 
                   alt="ConjuntOS" 
-                  fill
-                  className="object-contain"
-                  style={{ filter: "brightness(0) invert(1)" }}
+                  className="w-full h-full object-contain"
                 />
               )}
             </div>
