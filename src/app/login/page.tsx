@@ -104,13 +104,13 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-linear-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
         
         <div className="text-center mb-10 flex flex-col items-center">
-          <div className="fade-in-element w-40 h-40 flex items-center justify-center mb-4 relative">
+          <div className="fade-in-element w-full max-w-[450px] flex items-center justify-center mb-4 relative mx-auto">
              <Image 
                src="/logo-vertical.svg"
                alt="ConjuntOS"
-               width={160}
-               height={160}
-               className="object-contain"
+               width={450}
+               height={450}
+               className="object-contain w-full h-auto"
                priority
              />
           </div>
