@@ -42,7 +42,7 @@ export default function MiEstanciaPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="min-h-screen bg-primary flex items-center justify-center">
         <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
       </div>
     );
@@ -50,7 +50,7 @@ export default function MiEstanciaPage() {
 
   if (!pase) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="min-h-screen bg-primary">
         <ProfileHeader />
         <div className="p-6 text-center">
           <User size={48} className="mx-auto text-text-secondary mb-4" />
@@ -69,7 +69,7 @@ export default function MiEstanciaPage() {
   const diasRestantes = Math.ceil((fin.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-primary">
       <ProfileHeader />
       <div className="p-4 space-y-4 max-w-lg mx-auto">
 
@@ -131,7 +131,7 @@ export default function MiEstanciaPage() {
             <h2 className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-3">Vehículos</h2>
             <div className="space-y-2">
               {pase.vehiculos.map((v, i) => (
-                <div key={i} className="flex items-center gap-3 bg-bg rounded-lg p-3">
+                <div key={i} className="flex items-center gap-3 bg-primary rounded-lg p-3">
                   <Car size={18} className="text-accent" />
                   <div>
                     <span className="text-text font-mono font-bold">{v.placa}</span>
@@ -169,7 +169,7 @@ export default function MiEstanciaPage() {
 
 function PermisoBadge({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
-    <div className="flex items-center gap-2 bg-bg rounded-lg p-2.5">
+    <div className="flex items-center gap-2 bg-primary rounded-lg p-2.5">
       <Icon size={16} className="text-accent" />
       <span className="text-sm text-text">{label}</span>
     </div>
