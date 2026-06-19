@@ -32,13 +32,6 @@ export default function LoginPage() {
     password: ""
   });
 
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== "undefined") {
-      return window.matchMedia("(prefers-color-scheme: dark)").matches;
-    }
-    return true; // default dark (SSR)
-  });
-
   // Already logged in → redirect to dashboard
   useEffect(() => {
     if (user) {
@@ -46,17 +39,6 @@ export default function LoginPage() {
       router.replace(safeCallback(params.get("callbackUrl")));
     }
   }, [user, router]);
-
-  // Detect dark mode for logo swapping
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    setIsDark(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  const logoSrc = isDark ? "/ConjuntOS_Vertical_Dark.svg" : "/ConjuntOS_Vertical.svg";
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -124,8 +106,16 @@ export default function LoginPage() {
           <div className="fade-in-element w-full max-w-[450px] mb-4 mx-auto text-center">
              {/* eslint-disable-next-line @next/next/no-img-element */}
              <img 
-               src={logoSrc}
+               src="/ConjuntOS_Vertical.svg"
                alt="ConjuntOS"
+               className="logo-light"
+               style={{ width: '100%', maxWidth: '450px', height: 'auto', display: 'block', margin: '0 auto' }}
+             />
+             {/* eslint-disable-next-line @next/next/no-img-element */}
+             <img 
+               src="/ConjuntOS_Vertical_Dark.svg"
+               alt="ConjuntOS"
+               className="logo-dark"
                style={{ width: '100%', maxWidth: '450px', height: 'auto', display: 'block', margin: '0 auto' }}
              />
           </div>
@@ -211,6 +201,14 @@ export default function LoginPage() {
       
       <style dangerouslySetInnerHTML={{__html: `
         .text-glow { text-shadow: 0 0 30px rgba(0,0,0,0.3); }
+        @media (prefers-color-scheme: light) {
+          .logo-dark { display: none; }
+          .logo-light { display: block; }
+        }
+        @media (prefers-color-scheme: dark) {
+          .logo-light { display: none; }
+          .logo-dark { display: block; }
+        }
       `}} />
     </div>
   );
