@@ -7,7 +7,7 @@ import type { PaseTemporalDto, CrearPaseTemporalRequest, VehiculoTemporalInput }
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { ArrowRight, Calendar, Car, ClipboardList, DoorOpen, Dumbbell, Megaphone, PlusCircle, ShieldAlert, Trash2, Users, Waves, XCircle } from "lucide-react";
+import { ArrowRight, Calendar, Car, ClipboardList, DoorOpen, Dumbbell, Megaphone, Pencil, PlusCircle, ShieldAlert, Trash2, Users, Waves, XCircle } from "lucide-react";
 
 type FormData = Omit<CrearPaseTemporalRequest, "fecha_inicio" | "fecha_fin"> & {
   fecha_inicio: string;
@@ -44,6 +44,7 @@ export default function PasesTemporalesPage() {
   const [vehiculosForm, setVehiculosForm] = useState<VehiculoTemporalInput[]>([
     { placa: "", marca: "", modelo: "", color: "" },
   ]);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchPases = async () => {
     try {
@@ -90,8 +91,11 @@ export default function PasesTemporalesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.unidad_id || !formData.nombre_huesped || !formData.fecha_inicio || !formData.fecha_fin) {
-      return toast.error("Campos obligatorios: unidad, huésped y fechas");
+    if (!formData.nombre_huesped || !formData.fecha_inicio || !formData.fecha_fin) {
+      return toast.error("Campos obligatorios: huésped y fechas");
+    }
+    if (!editingId && !formData.unidad_id) {
+      return toast.error("Selecciona una unidad");
     }
 
     setIsSubmitting(true);
@@ -100,13 +104,20 @@ export default function PasesTemporalesPage() {
         ...formData,
         vehiculos: formData.permiso_vehiculo ? vehiculosForm.filter(v => v.placa.trim()) : undefined,
       };
-      await api.post<PaseTemporalDto>("/pases-temporales", payload);
-      toast.success("Pase temporal emitido exitosamente");
+      if (editingId) {
+        // PUT: enviar solo campos presentes
+        await api.put<PaseTemporalDto>(`/pases-temporales/${editingId}`, payload);
+        toast.success("Pase actualizado");
+      } else {
+        await api.post<PaseTemporalDto>("/pases-temporales", payload);
+        toast.success("Pase temporal emitido exitosamente");
+      }
       setShowForm(false);
+      setEditingId(null);
       resetForm();
       fetchPases();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error al emitir pase";
+      const msg = err instanceof Error ? err.message : "Error al guardar pase";
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
@@ -142,6 +153,36 @@ export default function PasesTemporalesPage() {
     }
   };
 
+  const startEditing = (pase: PaseTemporalDto) => {
+    setEditingId(pase.id);
+    setFormData({
+      unidad_id: "", // no se edita
+      nombre_anfitrion: pase.nombre_anfitrion,
+      nombre_huesped: pase.nombre_huesped,
+      email_huesped: pase.email_huesped || "",
+      telefono_huesped: pase.telefono_huesped || "",
+      fecha_inicio: pase.fecha_inicio,
+      fecha_fin: pase.fecha_fin,
+      permiso_gimnasio: pase.permiso_gimnasio,
+      permiso_piscina: pase.permiso_piscina,
+      permiso_entrada_salida: pase.permiso_entrada_salida,
+      permiso_vehiculo: pase.permiso_vehiculo,
+      permiso_asamblea: pase.permiso_asamblea,
+      vehiculos: [],
+    });
+    if (pase.vehiculos.length > 0) {
+      setVehiculosForm(pase.vehiculos.map(v => ({
+        placa: v.placa,
+        marca: v.marca || "",
+        modelo: v.modelo || "",
+        color: v.color || "",
+      })));
+    } else {
+      setVehiculosForm([{ placa: "", marca: "", modelo: "", color: "" }]);
+    }
+    setShowForm(true);
+  };
+
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
       case "ACTIVO": return { bg: "bg-[#57bf00]/10", border: "border-[#57bf00]/30", text: "text-[#57bf00]", label: "ACTIVO" };
@@ -175,7 +216,10 @@ export default function PasesTemporalesPage() {
           <p className="text-sm text-text">Huéspedes de alquiler corto (AirBnB)</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) { setEditingId(null); resetForm(); }
+            setShowForm(!showForm);
+          }}
           className="flex items-center gap-2 bg-accent text-on-accent px-5 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-accent/20 active:scale-95 transition-all"
         >
           {showForm ? <XCircle size={16} /> : <PlusCircle size={16} />}
@@ -189,9 +233,12 @@ export default function PasesTemporalesPage() {
           onSubmit={handleSubmit}
           className="liquid-glass-card rounded-[28px] p-6 border border-border flex flex-col gap-4 animate-in slide-in-from-top-4 duration-300"
         >
-          <h2 className="text-base font-bold text-text pb-2 border-b border-border">Emitir Pase Temporal</h2>
+          <h2 className="text-base font-bold text-text pb-2 border-b border-border">
+            {editingId ? "Editar Pase Temporal" : "Emitir Pase Temporal"}
+          </h2>
 
-          {/* Unidad */}
+          {/* Unidad — solo al crear */}
+          {!editingId && (
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Unidad *</label>
             <select
@@ -206,6 +253,7 @@ export default function PasesTemporalesPage() {
               ))}
             </select>
           </div>
+          )}
 
           {/* Huésped y Anfitrión */}
           <div className="grid grid-cols-2 gap-4">
@@ -378,7 +426,7 @@ export default function PasesTemporalesPage() {
             disabled={isSubmitting}
             className="w-full py-4 bg-accent rounded-2xl font-bold text-xs uppercase tracking-widest text-on-accent shadow-xl shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
           >
-            {isSubmitting ? "Emitiendo..." : "Emitir Pase Temporal"}
+            {isSubmitting ? (editingId ? "Guardando..." : "Emitiendo...") : (editingId ? "Guardar Cambios" : "Emitir Pase Temporal")}
           </button>
         </form>
       )}
@@ -438,12 +486,20 @@ export default function PasesTemporalesPage() {
                   </div>
 
                   {pase.estado === "ACTIVO" && (
-                    <button
-                      onClick={() => handleRevocar(pase.id)}
-                      className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-full px-3 py-1 hover:bg-[#EF4444]/20 active:scale-95 transition-all"
-                    >
-                      <ShieldAlert size={12} /> Revocar
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => startEditing(pase)}
+                        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-accent bg-accent/10 border border-accent/30 rounded-full px-3 py-1 hover:bg-accent/20 active:scale-95 transition-all"
+                      >
+                        <Pencil size={12} /> Editar
+                      </button>
+                      <button
+                        onClick={() => handleRevocar(pase.id)}
+                        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-full px-3 py-1 hover:bg-[#EF4444]/20 active:scale-95 transition-all"
+                      >
+                        <ShieldAlert size={12} /> Revocar
+                      </button>
+                    </div>
                   )}
                 </div>
 
