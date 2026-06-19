@@ -6,7 +6,7 @@ import {
   CheckCircle2, Clock, AlertTriangle, Wrench, Zap,
   Paintbrush, KeyRound, MoreHorizontal, User, Image as ImageIcon,
   ChevronLeft, ChevronRight, RefreshCw, MessageSquare, AlertCircle,
-  X, Loader2, ArrowUpDown,
+  X, Loader2, ArrowUpDown, Send, TrendingUp, History,
 } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -19,6 +19,9 @@ import type {
   EstadoSolicitud,
   TipoPqr,
   SolicitudDto,
+  PrioridadTicket,
+  TicketStatsDto,
+  TicketComentarioDto,
 } from "@/lib/api/types";
 
 // ---------------------------------------------------------------------------
@@ -102,6 +105,16 @@ function getEstadoBadge(estado: EstadoSolicitud): { label: string; className: st
   }
 }
 
+function getPrioridadBadge(prioridad: PrioridadTicket): { label: string; className: string } {
+  switch (prioridad) {
+    case "URGENTE": return { label: "Urgente", className: "bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30" };
+    case "ALTA": return { label: "Alta", className: "bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30" };
+    case "MEDIA": return { label: "Media", className: "bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30" };
+    case "BAJA": return { label: "Baja", className: "bg-[#6B7280]/15 text-[#6B7280] border border-[#6B7280]/30" };
+  }
+}
+
+const PRIORIDAD_OPTIONS: PrioridadTicket[] = ["BAJA", "MEDIA", "ALTA", "URGENTE"];
 const ESTADO_OPTIONS: EstadoSolicitud[] = ["ABIERTA", "ASIGNADA", "EN_PROGRESO", "RESUELTA", "CERRADA"];
 
 // ---------------------------------------------------------------------------
@@ -129,8 +142,16 @@ export default function AdminPQRSPage() {
   // Modal detail
   const [selected, setSelected] = useState<AdminSolicitud | null>(null);
   const [nuevoEstado, setNuevoEstado] = useState<EstadoSolicitud>("ASIGNADA");
+  const [nuevaPrioridad, setNuevaPrioridad] = useState<PrioridadTicket>("MEDIA");
   const [proveedorId, setProveedorId] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Stats + Comentarios
+  const [stats, setStats] = useState<TicketStatsDto | null>(null);
+  const [comentarios, setComentarios] = useState<TicketComentarioDto[]>([]);
+  const [nuevoComentario, setNuevoComentario] = useState("");
+  const [cargandoComentarios, setCargandoComentarios] = useState(false);
+  const [enviandoComentario, setEnviandoComentario] = useState(false);
 
   // Image gallery in modal
   const [imgIdx, setImgIdx] = useState(0);
@@ -169,6 +190,43 @@ export default function AdminPQRSPage() {
   // Real-time WebSocket
   useWsSubscription("solicitud", () => fetchSolicitudes());
 
+  const fetchStats = async () => {
+    try {
+      const data = await api.get<TicketStatsDto>("/admin/solicitudes/stats");
+      setStats(data);
+    } catch { /* silencioso */ }
+  };
+
+  const fetchComentarios = async (ticketId: string) => {
+    setCargandoComentarios(true);
+    try {
+      const data = await api.get<TicketComentarioDto[]>(`/admin/solicitudes/${ticketId}/comentarios`);
+      setComentarios(data);
+    } catch {
+      setComentarios([]);
+    } finally {
+      setCargandoComentarios(false);
+    }
+  };
+
+  const postComentario = async () => {
+    if (!selected || !nuevoComentario.trim()) return;
+    setEnviandoComentario(true);
+    try {
+      await api.post(`/admin/solicitudes/${selected.id}/comentarios`, {
+        contenido: nuevoComentario.trim(),
+      });
+      toast.success("Comentario agregado");
+      setNuevoComentario("");
+      fetchComentarios(selected.id);
+    } catch (e: unknown) {
+      const msg = e instanceof ApiError ? e.detail : "Error al enviar";
+      toast.error(msg);
+    } finally {
+      setEnviandoComentario(false);
+    }
+  };
+
   // -----------------------------------------------------------------------
   // Auth guard + initial load
   // -----------------------------------------------------------------------
@@ -186,6 +244,7 @@ export default function AdminPQRSPage() {
       return;
     }
     fetchSolicitudes();
+    fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, user, authLoading, role, router, filtroCategoria, filtroUrgente]);
 
@@ -216,6 +275,7 @@ export default function AdminPQRSPage() {
     try {
       await api.put(`/admin/solicitudes/${selected.id}`, {
         estado: nuevoEstado,
+        prioridad: nuevaPrioridad,
         proveedor_id: proveedorId.trim() || undefined,
       });
       toast.success(`Solicitud actualizada a "${nuevoEstado}"`);
@@ -290,6 +350,26 @@ export default function AdminPQRSPage() {
           </button>
         </div>
       </div>
+
+      {/* Stats Dashboard */}
+      {stats && (
+        <div className="fade-up grid grid-cols-4 gap-2">
+          {[
+            { label: "Abiertos", value: stats.abiertos, color: "bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/20" },
+            { label: "En Progreso", value: stats.enProgreso, color: "bg-[#F97316]/10 text-[#F97316] border-[#F97316]/20" },
+            { label: "Resueltos", value: stats.resueltos, color: "bg-[#57bf00]/10 text-[#57bf00] border-[#57bf00]/20" },
+            { label: "SLA Vencido", value: stats.slaVencidos, color: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20" },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className={`flex flex-col items-center gap-1 p-3 rounded-2xl border ${item.color}`}
+            >
+              <span className="text-2xl font-display font-bold">{item.value}</span>
+              <span className="text-[9px] font-bold uppercase tracking-wide">{item.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
@@ -392,7 +472,11 @@ export default function AdminPQRSPage() {
                 onClick={() => {
                   setSelected(s);
                   setNuevoEstado(s.estado);
+                  setNuevaPrioridad((s as any).prioridad || "MEDIA");
+                  setProveedorId("");
                   setImgIdx(0);
+                  setComentarios([]);
+                  fetchComentarios(s.id);
                 }}
                 className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer"
               >
@@ -403,7 +487,7 @@ export default function AdminPQRSPage() {
                       {CATEGORIA_ICON_MAP[s.categoria] || <MoreHorizontal size={18} />}
                     </span>
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-text uppercase tracking-wider">
+                      <span className="text-xs font-bold text-text uppercase tracking-wide">
                         {s.categoria}
                       </span>
                       <span className="text-[10px] text-text">
@@ -413,6 +497,11 @@ export default function AdminPQRSPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {(s as any).prioridad && (
+                      <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${getPrioridadBadge((s as any).prioridad || "MEDIA").className}`}>
+                        {getPrioridadBadge((s as any).prioridad || "MEDIA").label}
+                      </span>
+                    )}
                     {s.urgente && (
                       <span className="bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                         <AlertTriangle size={10} />
@@ -673,6 +762,21 @@ export default function AdminPQRSPage() {
                 })}
               </select>
 
+              <select
+                value={nuevaPrioridad}
+                onChange={(e) => setNuevaPrioridad(e.target.value as PrioridadTicket)}
+                className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 text-xs text-text outline-none focus:border-accent"
+              >
+                {PRIORIDAD_OPTIONS.map((opt) => {
+                  const pb = getPrioridadBadge(opt);
+                  return (
+                    <option key={opt} value={opt} className="bg-primary text-text">
+                      Prioridad: {pb.label}
+                    </option>
+                  );
+                })}
+              </select>
+
               <input
                 type="text"
                 value={proveedorId}
@@ -722,6 +826,52 @@ export default function AdminPQRSPage() {
               >
                 Reabrir
               </button>
+            </div>
+
+            {/* Comentarios */}
+            <div className="flex flex-col gap-3 pt-2 border-t border-border">
+              <span className="text-[10px] text-text uppercase tracking-[0.2em] font-black flex items-center gap-1.5">
+                <MessageSquare size={12} />
+                Comentarios ({comentarios.length})
+              </span>
+
+              {cargandoComentarios ? (
+                <div className="w-5 h-5 border-2 border-border border-t-accent rounded-full animate-spin mx-auto" />
+              ) : comentarios.length === 0 ? (
+                <p className="text-[10px] text-text italic text-center py-2">
+                  Sin comentarios aún
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
+                  {comentarios.map((c) => (
+                    <div key={c.id} className="bg-surface-2 rounded-xl p-3 border border-border">
+                      <p className="text-xs text-text leading-relaxed">{c.contenido}</p>
+                      <span className="text-[9px] text-text mt-1 block">
+                        {new Date(c.createdAt).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add comment */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={nuevoComentario}
+                  onChange={(e) => setNuevoComentario(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && postComentario()}
+                  placeholder="Escribir comentario..."
+                  className="flex-1 bg-surface-2 border border-border rounded-xl px-4 py-2.5 text-xs text-text outline-none focus:border-accent"
+                />
+                <button
+                  onClick={postComentario}
+                  disabled={enviandoComentario || !nuevoComentario.trim()}
+                  className="px-3 py-2.5 rounded-xl bg-accent text-primary font-bold text-xs flex items-center gap-1 disabled:opacity-40 active:scale-95 transition-transform"
+                >
+                  {enviandoComentario ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                </button>
+              </div>
             </div>
           </div>
         </div>

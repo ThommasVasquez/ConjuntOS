@@ -713,6 +713,23 @@ export interface TicketStatsDto {
   tiempoPromedioResolucionHoras: number;
 }
 
+export interface TicketComentarioDto {
+  id: string;
+  ticketId: string;
+  usuarioId: string;
+  contenido: string;
+  createdAt: string;
+}
+
+export interface TicketTransicionDto {
+  id: string;
+  ticketId: string;
+  estadoAnterior: string;
+  estadoNuevo: string;
+  usuarioId: string;
+  createdAt: string;
+}
+
 // ===========================================================================
 // Chat
 // ===========================================================================
