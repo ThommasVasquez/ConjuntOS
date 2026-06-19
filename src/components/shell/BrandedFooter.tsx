@@ -64,9 +64,9 @@ export function BrandedFooter({ className = "", isFixed = false, isInternal = fa
        </div>
        <div className="flex flex-col items-center gap-0.5">
           <div className="text-[8.5px] font-black text-text tracking-[0.45em] drop-shadow-sm uppercase">
-             Conjunt<span className="text-text">OS</span> v.1.01.0
+             Conjunt<span className="text-text">OS</span> v.1.0
           </div>
-          <div className="text-[6.5px] text-text font-bold text-center tracking-widest uppercase">
+          <div className="text-[6.5px] text-text font-bold text-center tracking-widest">
              Powered by ENERGYSOFTmedia® ⚡️ | 
              <span className="ml-1 text-text dark:text-text font-black">
                Software con Energía!
