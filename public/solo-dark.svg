@@ -3,32 +3,18 @@
   <!-- Generator: Adobe Illustrator 30.4.0, SVG Export Plug-In . SVG Version: 2.1.4 Build 226)  -->
   <defs>
     <style>
-      .st0 {
-        fill: #111213;
+      .st0 { fill: #fefefe;
       }
 
       .st1 {
         fill: #009df1;
       }
 
-      .st2 {
-        fill: #fefefe;
+      .st2 { fill: #111213;
       }
 
       .st3 {
         fill: #57bf00;
-      }
-
-      
-        .st0 {
-          fill: #fefefe;
-        
-
-        .st2 {
-          fill: #111213;
-        }
-
-        /* .st1 and .st3 stay the same — blue and green always preserved */
       }
     </style>
   </defs>

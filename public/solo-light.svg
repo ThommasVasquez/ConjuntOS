@@ -18,15 +18,6 @@
       .st3 {
         fill: #57bf00;
       }
-
-      
-
-        .st2 {
-          fill: #111213;
-        }
-
-        /* .st1 and .st3 stay the same — blue and green always preserved */
-      }
     </style>
   </defs>
   <g>
