@@ -10,10 +10,10 @@ import { toast } from "sonner";
 interface ChatMsg {
   id: string;
   mensaje: string;
-  es_de_admin: boolean;
-  huesped_id?: string;
-  huesped_nombre?: string;
-  created_at: string;
+  esDeAdmin: boolean;
+  huespedId?: string;
+  huespedNombre?: string;
+  createdAt: string;
 }
 
 export default function ChatPage() {
@@ -107,10 +107,10 @@ export default function ChatPage() {
         {messages.map((msg) => {
           const isOwner = user?.rol === "PROPIETARIO";
           const isOwn = isGuest
-            ? !!msg.huesped_id           // huésped: sus mensajes tienen huesped_id
+            ? !!msg.huespedId            // huésped: sus mensajes tienen huespedId
             : isOwner
-              ? !msg.huesped_id          // propietario: sus mensajes NO tienen huesped_id
-              : !msg.es_de_admin;        // admin/residente: lógica original
+              ? !msg.huespedId           // propietario: sus mensajes NO tienen huespedId
+              : !msg.esDeAdmin;          // admin/residente: lógica original
           return (
             <div key={msg.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
               <div
@@ -122,8 +122,8 @@ export default function ChatPage() {
               >
                 <p className="text-sm">{msg.mensaje}</p>
                 <p className="text-[10px] mt-1 opacity-60 text-right">
-                  {msg.huesped_nombre && <span className="mr-2">{msg.huesped_nombre}</span>}
-                  {formatTime(msg.created_at)}
+                  {msg.huespedNombre && <span className="mr-2">{msg.huespedNombre}</span>}
+                  {formatTime(msg.createdAt)}
                 </p>
               </div>
             </div>
