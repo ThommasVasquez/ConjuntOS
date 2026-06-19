@@ -62,9 +62,9 @@ export default function ChatPage() {
   const isGuest = user?.rol === "HUESPED_TEMPORAL";
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col">
-      <ProfileHeader />
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+    <div className="min-h-screen bg-primary flex flex-col pt-16 pb-32">
+      <ProfileHeader className="px-4" />
+      <div className="flex-1 overflow-y-auto px-4 space-y-3">
         {messages.length === 0 && (
           <p className="text-text-secondary text-center text-sm mt-8">
             No hay mensajes aún. Escribe uno para contactar a tu {isGuest ? "anfitrión" : "administración"}.
@@ -95,14 +95,14 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={handleSend} className="p-3 border-t border-border bg-surface-2">
+      <form onSubmit={handleSend} className="mx-3 mb-2 p-3 border border-border rounded-3xl bg-surface-2">
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Escribe un mensaje..."
-            className="flex-1 bg-primary border border-border rounded-full px-4 py-2.5 text-sm text-text focus:outline-none focus:border-accent"
+            className="flex-1 bg-surface-2 border border-border rounded-full px-4 py-2.5 text-sm text-text focus:outline-none focus:border-accent"
           />
           <button
             type="submit"
