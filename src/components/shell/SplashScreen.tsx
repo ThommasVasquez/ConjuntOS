@@ -19,7 +19,7 @@ export default function SplashScreen() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const splashSrc = isDark ? "/SplashWHITE.png" : "/SplashBLACK.png";
+  const splashSrc = isDark ? "/SplashBLACK.png" : "/SplashWHITE.png";
 
   useEffect(() => {
     const hasShown = sessionStorage.getItem("conjuntos_splash_shown");
