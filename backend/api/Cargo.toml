@@ -40,6 +40,7 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 utoipa = { version = "5", features = ["axum_extras", "uuid", "chrono", "decimal"] }
 uuid.workspace = true
+rand = "0.8"
 webpki-roots.workspace = true
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 rust-s3 = { version = "0.35", default-features = false, features = ["tokio-rustls-tls"] }
