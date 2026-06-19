@@ -63,7 +63,7 @@ export default function Navbar() {
                 />
               ) : (
                 <img 
-                  src="/splash-white.png" 
+                  src="/SplashWHITE.png" 
                   alt="ConjuntOS" 
                   className="w-full h-full object-contain"
                 />
