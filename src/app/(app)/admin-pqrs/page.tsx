@@ -304,7 +304,7 @@ export default function AdminPQRSPage() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
+            className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap transition-all ${
               tab === key
                 ? "bg-accent text-primary shadow-md"
                 : "text-text hover:text-text"
@@ -327,7 +327,7 @@ export default function AdminPQRSPage() {
             onClick={() =>
               setFiltroCategoria((prev) => (prev === cat.key ? null : cat.key))
             }
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-all ${
               filtroCategoria === cat.key
                 ? "bg-[#009df2]/15 text-[#009df2] border-[#009df2]/30"
                 : "bg-surface-2 border-border text-text hover:border-text/30"
@@ -342,7 +342,7 @@ export default function AdminPQRSPage() {
 
         <button
           onClick={() => setFiltroUrgente((prev) => !prev)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-all ${
             filtroUrgente
               ? "bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30"
               : "bg-surface-2 border-border text-text hover:border-text/30"

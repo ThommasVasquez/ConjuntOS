@@ -87,7 +87,8 @@ pub fn router() -> Router<AppState> {
         .route("/admin/solicitudes", get(listar_admin))
         .route("/admin/solicitudes/stats", get(stats_admin))
         .route("/admin/solicitudes/{id}", put(actualizar))
-        .route("/admin/solicitudes/{id}/comentarios", post(agregar_comentario))
+        .route("/admin/solicitudes/{id}/comentarios", get(listar_comentarios).post(agregar_comentario))
+        .route("/admin/solicitudes/{id}/historial", get(listar_transiciones))
 }
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -179,4 +180,63 @@ async fn agregar_comentario(
         ticket_id: id, usuario_id: user.id, contenido: req.contenido.trim().to_string(),
     }).await?;
     Ok(Json(serde_json::json!({"status": "ok"})))
+}
+
+// ── DTOs for comentarios / transiciones ─────────────────────────────────────
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ComentarioDto {
+    pub id: Uuid,
+    pub ticket_id: Uuid,
+    pub usuario_id: Uuid,
+    pub contenido: String,
+    pub created_at: DateTime<Utc>,
+}
+
+impl From<crate::domains::solicitudes::models::TicketComentario> for ComentarioDto {
+    fn from(c: crate::domains::solicitudes::models::TicketComentario) -> Self {
+        Self { id: c.id, ticket_id: c.ticket_id, usuario_id: c.usuario_id, contenido: c.contenido, created_at: c.created_at }
+    }
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct TransicionDto {
+    pub id: Uuid,
+    pub ticket_id: Uuid,
+    pub estado_anterior: String,
+    pub estado_nuevo: String,
+    pub usuario_id: Uuid,
+    pub created_at: DateTime<Utc>,
+}
+
+impl From<crate::domains::solicitudes::models::TicketTransicion> for TransicionDto {
+    fn from(t: crate::domains::solicitudes::models::TicketTransicion) -> Self {
+        Self { id: t.id, ticket_id: t.ticket_id, estado_anterior: t.estado_anterior, estado_nuevo: t.estado_nuevo, usuario_id: t.usuario_id, created_at: t.created_at }
+    }
+}
+
+// ── Handlers: listar comentarios / transiciones ──────────────────────────────
+
+async fn listar_comentarios(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<Vec<ComentarioDto>>> {
+    guard::require_admin(&user)?;
+    let mut conn = state.pool.get().await?;
+    let comentarios = repo::comentarios_por_ticket(&mut conn, id).await?;
+    Ok(Json(comentarios.into_iter().map(ComentarioDto::from).collect()))
+}
+
+async fn listar_transiciones(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<Vec<TransicionDto>>> {
+    guard::require_admin(&user)?;
+    let mut conn = state.pool.get().await?;
+    let transiciones = repo::transiciones_por_ticket(&mut conn, id).await?;
+    Ok(Json(transiciones.into_iter().map(TransicionDto::from).collect()))
 }
