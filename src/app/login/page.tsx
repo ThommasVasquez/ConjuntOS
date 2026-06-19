@@ -32,7 +32,12 @@ export default function LoginPage() {
     password: ""
   });
 
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+    return true; // default dark (SSR)
+  });
 
   // Already logged in → redirect to dashboard
   useEffect(() => {
