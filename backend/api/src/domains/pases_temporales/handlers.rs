@@ -131,6 +131,7 @@ async fn crear_pase(
 
     let mut dto = PaseTemporalDto::from(pase);
     dto.vehiculos = vehiculos_dto;
+    dto.usuario_id = usuario_id;
 
     // Broadcast por WebSocket
     state
