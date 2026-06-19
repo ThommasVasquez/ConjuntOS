@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import ProfileHeader from "@/components/shell/ProfileHeader";
@@ -22,11 +22,31 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const justSentRef = useRef(false);
+
+  const scrollToBottom = useCallback((smooth = true) => {
+    bottomRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+  }, []);
+
+  // Detect if user manually scrolled up
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const threshold = 100; // px from bottom to consider "near bottom"
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distFromBottom < threshold;
+  }, []);
 
   const fetchMessages = async () => {
     try {
       const data = await api.get<ChatMsg[]>("/chat");
-      setMessages(data);
+      setMessages((prev) => {
+        // Only trigger scroll effect if messages actually changed
+        if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+        return data;
+      });
     } catch {}
   };
 
@@ -36,8 +56,17 @@ export default function ChatPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-scroll on new messages: only if user is near bottom or just sent
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (justSentRef.current) {
+      // After sending, always scroll
+      scrollToBottom(true);
+      justSentRef.current = false;
+    } else if (isNearBottomRef.current) {
+      // Poll found new messages and user is reading at bottom → scroll
+      scrollToBottom(true);
+    }
+    // If user scrolled up (not near bottom), don't interrupt
   }, [messages]);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -47,7 +76,8 @@ export default function ChatPage() {
     try {
       await api.post("/chat", { mensaje: input.trim() });
       setInput("");
-      fetchMessages();
+      justSentRef.current = true;
+      await fetchMessages();
     } catch {
       toast.error("Error al enviar mensaje");
     } finally {
@@ -64,15 +94,17 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-primary flex flex-col pt-16 pb-32">
       <ProfileHeader className="px-4" />
-      <div className="flex-1 overflow-y-auto px-4 space-y-3">
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-4 space-y-3"
+      >
         {messages.length === 0 && (
           <p className="text-text-secondary text-center text-sm mt-8">
             No hay mensajes aún. Escribe uno para contactar a tu {isGuest ? "anfitrión" : "administración"}.
           </p>
         )}
         {messages.map((msg) => {
-          // HUESPED_TEMPORAL: huesped_id presente = propio (right), ausente = propietario (left)
-          // Otros roles: es_de_admin=false = propio (right), true = admin (left)
           const isOwn = isGuest ? !!msg.huesped_id : !msg.es_de_admin;
           return (
             <div key={msg.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
