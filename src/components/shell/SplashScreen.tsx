@@ -82,14 +82,14 @@ export default function SplashScreen() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-[#009df2]/8 blur-[120px] rounded-full" />
       
       <div className="relative flex flex-col items-center">
-        <div ref={logoRef} className="w-[92vw] max-w-[600px] h-auto aspect-[810/260] relative">
+        <div ref={logoRef} className="relative w-[95vw] max-w-[700px] aspect-[3/1]">
           <Image 
-            src={splashSrc}
-            alt="ConjuntOS" 
+            src={isDarkMode ? "/SplashBLACK.png" : "/SplashWHITE.png"}
+            alt="ConjuntOS"
             fill
             className="object-contain"
             priority
-            unoptimized
+            sizes="(max-width: 700px) 95vw, 700px"
           />
         </div>
 
