@@ -103,21 +103,16 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-linear-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
         
         <div className="text-center mb-10 flex flex-col items-center">
-          <div className="fade-in-element w-full max-w-[450px] mb-4 mx-auto text-center">
+          <div className="fade-in-element w-full max-w-[450px] mb-4 mx-auto">
              {/* eslint-disable-next-line @next/next/no-img-element */}
-             <img 
-               src="/ConjuntOS_Vertical.svg"
-               alt="ConjuntOS"
-               className="logo-light"
-               style={{ width: '100%', maxWidth: '450px', height: 'auto', margin: '0 auto' }}
-             />
-             {/* eslint-disable-next-line @next/next/no-img-element */}
-             <img 
-               src="/ConjuntOS_Vertical_Dark.svg"
-               alt="ConjuntOS"
-               className="logo-dark"
-               style={{ width: '100%', maxWidth: '450px', height: 'auto', margin: '0 auto' }}
-             />
+             <picture>
+               <source srcSet="/ConjuntOS_Vertical_Dark.svg" media="(prefers-color-scheme: dark)" />
+               <img 
+                 src="/ConjuntOS_Vertical.svg"
+                 alt="ConjuntOS"
+                 style={{ width: '100%', maxWidth: '450px', height: 'auto', display: 'block', margin: '0 auto' }}
+               />
+             </picture>
           </div>
           <p className="fade-in-element text-text-muted text-sm font-medium tracking-wide">Tu comunidad, sincronizada en la nube.</p>
         </div>
@@ -201,13 +196,6 @@ export default function LoginPage() {
       
       <style dangerouslySetInnerHTML={{__html: `
         .text-glow { text-shadow: 0 0 30px rgba(0,0,0,0.3); }
-        .logo-light, .logo-dark { display: block; }
-        @media (prefers-color-scheme: light) {
-          .logo-dark { display: none; }
-        }
-        @media (prefers-color-scheme: dark) {
-          .logo-light { display: none; }
-        }
       `}} />
     </div>
   );
