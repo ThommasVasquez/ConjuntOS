@@ -33,10 +33,10 @@ export default function LoginPage() {
   });
 
   // Logo: SSR defaults to light (black), client corrects if dark mode
-  const [logoSrc, setLogoSrc] = useState("/ConjuntOS_Vertical.svg");
+  const [logoSrc, setLogoSrc] = useState("/logo-vertical.svg");
   useEffect(() => {
     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setLogoSrc("/ConjuntOS_Vertical_Dark.svg");
+      setLogoSrc("/logo-verticalW.svg");
     }
   }, []);
 
