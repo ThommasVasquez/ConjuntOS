@@ -106,7 +106,7 @@ export default function LoginPage() {
           <div className="fade-in-element w-full max-w-[450px] mb-4 mx-auto">
              {/* eslint-disable-next-line @next/next/no-img-element */}
              <picture>
-               <source srcSet="/ConjuntOS_Vertical_Dark.svg" media="(prefers-color-scheme: dark)" />
+               <source {...{"srcset": "/ConjuntOS_Vertical_Dark.svg"}} media="(prefers-color-scheme: dark)" />
                <img 
                  src="/ConjuntOS_Vertical.svg"
                  alt="ConjuntOS"
