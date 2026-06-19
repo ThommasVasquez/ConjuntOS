@@ -44,7 +44,10 @@ export default function LoginPage() {
   useEffect(() => {
     if (user) {
       const params = new URLSearchParams(window.location.search);
-      router.replace(safeCallback(params.get("callbackUrl")));
+      const callback = safeCallback(params.get("callbackUrl"));
+      // HUESPED_TEMPORAL always goes to /mi-estancia
+      const dest = user.rol === "HUESPED_TEMPORAL" ? "/mi-estancia" : callback;
+      router.replace(dest);
     }
   }, [user, router]);
 
@@ -80,7 +83,8 @@ export default function LoginPage() {
       await login(formData.email, formData.password);
       toast.success("¡Bienvenido! Sesión iniciada con éxito.");
       const params = new URLSearchParams(window.location.search);
-      const dest = safeCallback(params.get("callbackUrl"));
+      const callback = safeCallback(params.get("callbackUrl"));
+      const dest = user?.rol === "HUESPED_TEMPORAL" ? "/mi-estancia" : callback;
       setTimeout(() => {
         router.push(dest);
         router.refresh();

@@ -46,6 +46,12 @@ export default function BottomNav() {
       { name: "Pases", path: "/pases-temporales", icon: Ticket },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
+  } else if (role === 'HUESPED_TEMPORAL') {
+    tabs = [
+      { name: "Estancia", path: "/mi-estancia", icon: Home },
+      { name: "Chat", path: "/chat", icon: MessageCircle },
+      { name: "Perfil", path: "/perfil", icon: User },
+    ];
   } else {
     // RESIDENTES por defecto
     tabs = [

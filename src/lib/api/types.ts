@@ -18,7 +18,8 @@ export type Rol =
   | 'VIGILANTE'
   | 'SUPERVISOR_VIGILANCIA'
   | 'ENCARGADO_PARQUEADERO'
-  | 'SUPER_ADMIN';
+  | 'SUPER_ADMIN'
+  | 'HUESPED_TEMPORAL';
 
 export type Plan = 'BASICO' | 'PRO' | 'PREMIUM';
 
@@ -845,6 +846,7 @@ export interface PaseTemporalDto {
   permiso_asamblea: boolean;
   estado: "ACTIVO" | "EXPIRADO" | "REVOCADO";
   created_at: string;
+  usuario_id?: string;
   vehiculos: VehiculoTemporalDto[];
 }
 
