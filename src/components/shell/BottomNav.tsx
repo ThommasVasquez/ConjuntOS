@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DollarSign, Building2, Home, ListMusic, Map, Package, Phone, User, Users, MessageCircle } from "lucide-react";
+import { DollarSign, Building2, Home, ListMusic, Map, Package, Phone, Ticket, User, Users, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 // BUILD_REVISION: 1.2.0 - MANDATORY ICON: Building2 (Buildings)
@@ -34,6 +34,15 @@ export default function BottomNav() {
       { name: "Mensajes", path: "/admin-mensajes", icon: MessageCircle },
       { name: "Novedades", path: "/admin-novedades", icon: Building2 },
       { name: "Finanzas", path: "/admin-finanzas", icon: DollarSign },
+      { name: "Perfil", path: "/perfil", icon: User },
+    ];
+  } else if (role === 'PROPIETARIO') {
+    tabs = [
+      { name: "Inicio", path: "/inicio", icon: Home },
+      { name: "Citofonía", path: "/citofonia", icon: Phone }, 
+      { name: "Reservas", path: "/reservas", icon: ListMusic },
+      { name: "Cartelera", path: "/cartelera", icon: Building2 },
+      { name: "Pases", path: "/pases-temporales", icon: Ticket },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
   } else {
