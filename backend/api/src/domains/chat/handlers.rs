@@ -43,12 +43,23 @@ async fn list_messages(
 ) -> ApiResult<Json<Vec<ChatMensajeDto>>> {
     let mut conn = state.pool.get().await?;
     let rows = if user.rol == Rol::HuespedTemporal {
-        // Huésped ve conversación con su propietario (mensajes donde huesped_id = user.id)
-        repo::list_huesped_messages(&mut conn, user.conjunto_id, user.id).await?
+        // Huésped ve TODO el hilo con su propietario: usuario_id = propietario_id
+        let pase = pases_repo::pase_activo_por_usuario(&mut conn, user.id).await?
+            .ok_or_else(|| ApiError::NotFound("No tienes un pase temporal activo".into()))?;
+        repo::list_user_messages(&mut conn, user.conjunto_id, pase.propietario_id).await?
     } else {
         repo::list_user_messages(&mut conn, user.conjunto_id, user.id).await?
     };
-    Ok(Json(rows.into_iter().map(ChatMensajeDto::from).collect()))
+    let mut dtos: Vec<ChatMensajeDto> = rows.into_iter().map(ChatMensajeDto::from).collect();
+    // Para HUESPED_TEMPORAL, marcar quién es huésped en la UI
+    if user.rol == Rol::HuespedTemporal {
+        for dto in &mut dtos {
+            if dto.huesped_id == Some(user.id) {
+                dto.huesped_nombre = Some(user.nombre.clone());
+            }
+        }
+    }
+    Ok(Json(dtos))
 }
 
 /// Resident: send a chat message (optionally with audio).
@@ -282,6 +293,7 @@ async fn admin_send(
         audio_url,
         transcripcion: req.transcripcion,
         es_de_admin: true,
+        huesped_id: None,
     };
     let msg = repo::insert_message(&mut conn, nuevo).await?;
     let dto = ChatMensajeDto::from(msg);
