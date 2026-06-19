@@ -57,7 +57,7 @@ export default function Navbar() {
  }`}>
    {scrolled ? (
      <img 
-       src="/solo.svg" 
+       src="/solo-dark.svg" 
        alt="ConjuntOS" 
        className="w-full h-full object-contain"
      />
