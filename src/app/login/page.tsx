@@ -109,14 +109,14 @@ export default function LoginPage() {
                src="/ConjuntOS_Vertical.svg"
                alt="ConjuntOS"
                className="logo-light"
-               style={{ width: '100%', maxWidth: '450px', height: 'auto', display: 'block', margin: '0 auto' }}
+               style={{ width: '100%', maxWidth: '450px', height: 'auto', margin: '0 auto' }}
              />
              {/* eslint-disable-next-line @next/next/no-img-element */}
              <img 
                src="/ConjuntOS_Vertical_Dark.svg"
                alt="ConjuntOS"
                className="logo-dark"
-               style={{ width: '100%', maxWidth: '450px', height: 'auto', display: 'block', margin: '0 auto' }}
+               style={{ width: '100%', maxWidth: '450px', height: 'auto', margin: '0 auto' }}
              />
           </div>
           <p className="fade-in-element text-text-muted text-sm font-medium tracking-wide">Tu comunidad, sincronizada en la nube.</p>
@@ -201,13 +201,12 @@ export default function LoginPage() {
       
       <style dangerouslySetInnerHTML={{__html: `
         .text-glow { text-shadow: 0 0 30px rgba(0,0,0,0.3); }
+        .logo-light, .logo-dark { display: block; }
         @media (prefers-color-scheme: light) {
           .logo-dark { display: none; }
-          .logo-light { display: block; }
         }
         @media (prefers-color-scheme: dark) {
           .logo-light { display: none; }
-          .logo-dark { display: block; }
         }
       `}} />
     </div>
