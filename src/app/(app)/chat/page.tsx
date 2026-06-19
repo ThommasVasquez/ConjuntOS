@@ -105,7 +105,12 @@ export default function ChatPage() {
           </p>
         )}
         {messages.map((msg) => {
-          const isOwn = isGuest ? !!msg.huesped_id : !msg.es_de_admin;
+          const isOwner = user?.rol === "PROPIETARIO";
+          const isOwn = isGuest
+            ? !!msg.huesped_id           // huésped: sus mensajes tienen huesped_id
+            : isOwner
+              ? !msg.huesped_id          // propietario: sus mensajes NO tienen huesped_id
+              : !msg.es_de_admin;        // admin/residente: lógica original
           return (
             <div key={msg.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
               <div
