@@ -57,14 +57,14 @@ async fn crear_pase(
     guard::require(&user, ROLES_PASE)?;
 
     if body.fecha_fin <= body.fecha_inicio {
-        return Err(ApiError::Validation(
+        return Err(ApiError::BadRequest(
             "La fecha de fin debe ser posterior a la fecha de inicio".into(),
         ));
     }
 
     let codigo = generar_codigo();
 
-    let mut conn = state.db()?;
+    let mut conn = state.pool.get().await?;
     let pase = repo::crear_pase(
         &mut conn,
         NuevoPaseTemporal {
@@ -107,9 +107,18 @@ async fn crear_pase(
     dto.vehiculos = vehiculos_dto;
 
     // Broadcast por WebSocket
-    if let Some(ref hub) = state.ws_hub {
-        let _ = hub.broadcast(WsEvent::new("pase_temporal_creado", &dto));
-    }
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "pase_temporal".into(),
+                action: "creado".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
 
     Ok(Json(dto))
 }
@@ -127,7 +136,7 @@ async fn mis_pases(
 ) -> ApiResult<Json<Vec<PaseTemporalDto>>> {
     guard::require(&user, ROLES_PASE)?;
 
-    let mut conn = state.db()?;
+    let mut conn = state.pool.get().await?;
     let pases = repo::pases_por_propietario(&mut conn, user.id)?;
 
     let mut result = vec![];
@@ -153,7 +162,7 @@ async fn validar_pase(
     State(state): State<AppState>,
     Path(codigo): Path<String>,
 ) -> ApiResult<Json<ValidacionPaseDto>> {
-    let mut conn = state.db()?;
+    let mut conn = state.pool.get().await?;
     let pase = repo::pase_por_codigo(&mut conn, &codigo)?
         .ok_or_else(|| ApiError::NotFound("Código de acceso no encontrado".into()))?;
 
@@ -211,7 +220,7 @@ async fn revocar_pase(
 ) -> ApiResult<Json<serde_json::Value>> {
     guard::require(&user, ROLES_PASE)?;
 
-    let mut conn = state.db()?;
+    let mut conn = state.pool.get().await?;
     let pase = repo::pase_por_id(&mut conn, pase_id)?
         .ok_or_else(|| ApiError::NotFound("Pase no encontrado".into()))?;
 
