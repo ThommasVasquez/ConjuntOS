@@ -22,7 +22,7 @@ use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
 
-const ROLES_PASE: &[Rol] = &[Rol::Propietario];
+const ROLES_PASE: &[Rol] = &[Rol::Propietario, Rol::Administrador];
 
 /// Genera un código de acceso único de 8 caracteres alfanuméricos.
 fn generar_codigo() -> String {
