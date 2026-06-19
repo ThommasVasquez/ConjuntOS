@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DollarSign, Building2, Home, ListMusic, Map, Package, Phone, Ticket, User, Users, MessageCircle } from "lucide-react";
+import { DollarSign, Building2, Home, ListMusic, Map, Package, Phone, Ticket, User, Users, MessageCircle, Scale } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 // BUILD_REVISION: 1.2.0 - MANDATORY ICON: Building2 (Buildings)
@@ -33,6 +33,7 @@ export default function BottomNav() {
       { name: "Panel", path: "/inicio", icon: Home },
       { name: "Mensajes", path: "/admin-mensajes", icon: MessageCircle },
       { name: "Novedades", path: "/admin-novedades", icon: Building2 },
+      { name: "Comité", path: "/comite-convivencia", icon: Scale },
       { name: "Finanzas", path: "/admin-finanzas", icon: DollarSign },
       { name: "Perfil", path: "/perfil", icon: User },
     ];

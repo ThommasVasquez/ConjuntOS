@@ -852,3 +852,73 @@ export interface PermisosDto {
   asamblea: boolean;
 }
 
+// ===========================================================================
+// Comité de Convivencia
+// ===========================================================================
+
+export type TipoCasoConvivencia =
+  | 'RUIDO'
+  | 'MASCOTAS'
+  | 'OLORES'
+  | 'PARQUEADERO'
+  | 'BASURAS'
+  | 'OBRAS'
+  | 'AMENAZAS'
+  | 'OTRO';
+
+export type EstadoCasoConvivencia =
+  | 'REPORTADO'
+  | 'EN_MEDIACION'
+  | 'RESUELTO'
+  | 'ESCALADO'
+  | 'ARCHIVADO';
+
+export interface UnidadEmbedDto {
+  id: string;
+  torre?: string | null;
+  numero: string;
+  nombre_residente?: string | null;
+}
+
+export interface CreadorEmbedDto {
+  id: string;
+  nombre: string;
+}
+
+export interface CasoConvivenciaDto {
+  id: string;
+  tipo: TipoCasoConvivencia;
+  descripcion: string;
+  unidad_reporta: UnidadEmbedDto;
+  unidad_reportada: UnidadEmbedDto | null;
+  creado_por: CreadorEmbedDto;
+  estado: EstadoCasoConvivencia;
+  resolucion: string | null;
+  fecha_mediacion: string | null;
+  acta_reunion: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StatsConvivenciaDto {
+  total: number;
+  reportados: number;
+  en_mediacion: number;
+  resueltos: number;
+  escalados: number;
+}
+
+export interface CrearCasoConvivenciaRequest {
+  tipo: TipoCasoConvivencia;
+  descripcion: string;
+  unidad_reporta_id: string;
+  unidad_reportada_id?: string;
+}
+
+export interface ActualizarCasoConvivenciaRequest {
+  estado?: EstadoCasoConvivencia;
+  resolucion?: string;
+  fecha_mediacion?: string;
+  acta_reunion?: string;
+}
+

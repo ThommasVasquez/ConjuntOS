@@ -200,6 +200,41 @@ text_enum!(EstadoPaseTemporal {
     Revocado => "REVOCADO",
 });
 
+text_enum!(TipoCasoConvivencia {
+    Ruido => "RUIDO",
+    Mascotas => "MASCOTAS",
+    Olores => "OLORES",
+    Parqueadero => "PARQUEADERO",
+    Basuras => "BASURAS",
+    Obras => "OBRAS",
+    Amenazas => "AMENAZAS",
+    ZonasComunes => "ZONAS_COMUNES",
+    Danos => "DAÑOS",
+    Otro => "OTRO",
+});
+
+text_enum!(EstadoCasoConvivencia {
+    Reportado => "REPORTADO",
+    Asignado => "ASIGNADO",
+    EnMediacion => "EN_MEDIACION",
+    Acuerdo => "ACUERDO",
+    SinAcuerdo => "SIN_ACUERDO",
+    Escalado => "ESCALADO",
+    Archivado => "ARCHIVADO",
+});
+
+text_enum!(CalidadMiembro {
+    Propietario => "PROPIETARIO",
+    Residente => "RESIDENTE",
+});
+
+text_enum!(TipoFirmaActa {
+    ParteReportante => "PARTE_REPORTANTE",
+    ParteReportada => "PARTE_REPORTADA",
+    MiembroComite => "MIEMBRO_COMITE",
+    Administrador => "ADMINISTRADOR",
+});
+
 text_enum!(TipoPqr {
     Peticion => "PETICION",
     Queja => "QUEJA",

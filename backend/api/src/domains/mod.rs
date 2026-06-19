@@ -9,6 +9,7 @@ pub mod auth_routes;
 pub mod chat;
 pub mod citofonia;
 pub mod clasificados;
+pub mod comite_convivencia;
 pub mod comunicaciones;
 pub mod conjuntos;
 pub mod inmuebles;

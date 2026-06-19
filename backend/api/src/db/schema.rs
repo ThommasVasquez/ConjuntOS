@@ -468,6 +468,70 @@ diesel::table! {
 }
 
 diesel::table! {
+    comite_historicos (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        periodo_inicio -> Date,
+        periodo_fin -> Date,
+        elegido_en_asamblea_id -> Nullable<Uuid>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    comite_miembros (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        comite_historico_id -> Uuid,
+        usuario_id -> Uuid,
+        calidad -> Text,
+        unidad_id -> Uuid,
+        activo -> Bool,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    casos_convivencia (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        tipo -> Text,
+        descripcion -> Text,
+        unidad_reporta_id -> Uuid,
+        unidad_reportada_id -> Nullable<Uuid>,
+        creado_por -> Uuid,
+        miembro_asignado_id -> Nullable<Uuid>,
+        estado -> Text,
+        resolucion -> Nullable<Text>,
+        sesion_mediacion_fecha -> Nullable<Date>,
+        sesion_mediacion_notas -> Nullable<Text>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    actas_convivencia (id) {
+        id -> Uuid,
+        caso_id -> Uuid,
+        contenido -> Text,
+        pdf_url -> Nullable<Text>,
+        firmada -> Bool,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    firmas_actas (id) {
+        id -> Uuid,
+        acta_id -> Uuid,
+        usuario_id -> Uuid,
+        tipo -> Text,
+        firmado_en -> Timestamptz,
+    }
+}
+
+diesel::table! {
     recibos_publicos (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -798,6 +862,17 @@ diesel::joinable!(visitas -> usuarios (usuario_id));
 diesel::joinable!(pases_temporales -> conjuntos (conjunto_id));
 diesel::joinable!(pases_temporales -> usuarios (propietario_id));
 diesel::joinable!(pases_temporales -> unidades (unidad_id));
+diesel::joinable!(casos_convivencia -> conjuntos (conjunto_id));
+diesel::joinable!(casos_convivencia -> unidades (unidad_reporta_id));
+diesel::joinable!(casos_convivencia -> usuarios (creado_por));
+diesel::joinable!(comite_historicos -> conjuntos (conjunto_id));
+diesel::joinable!(comite_miembros -> conjuntos (conjunto_id));
+diesel::joinable!(comite_miembros -> comite_historicos (comite_historico_id));
+diesel::joinable!(comite_miembros -> usuarios (usuario_id));
+diesel::joinable!(comite_miembros -> unidades (unidad_id));
+diesel::joinable!(actas_convivencia -> casos_convivencia (caso_id));
+diesel::joinable!(firmas_actas -> actas_convivencia (acta_id));
+diesel::joinable!(firmas_actas -> usuarios (usuario_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     ad_spaces,
@@ -847,4 +922,9 @@ diesel::allow_tables_to_appear_in_same_query!(
     vehiculos_temporales,
     visitas,
     pases_temporales,
+    casos_convivencia,
+    comite_historicos,
+    comite_miembros,
+    actas_convivencia,
+    firmas_actas,
 );
