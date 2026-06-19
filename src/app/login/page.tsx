@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
+import { useTheme } from "@/components/providers/ThemeContext";
 import { Mail, Lock, ArrowRight, Loader2, Star, Eye, EyeOff } from "lucide-react";
 
 // Validate a post-login redirect target: only same-origin relative paths.
@@ -32,13 +33,9 @@ export default function LoginPage() {
     password: ""
   });
 
-  // Logo: SSR defaults to light (black), client corrects if dark mode
-  const [logoSrc, setLogoSrc] = useState("/logo-vertical.svg");
-  useEffect(() => {
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setLogoSrc("/logo-verticalW.svg");
-    }
-  }, []);
+  // Logo: responde al tema de la APP (ThemeProvider), no al del SO
+  const { theme } = useTheme();
+  const logoSrc = theme === "light" ? "/logo-vertical.svg" : "/logo-verticalW.svg";
 
   // Already logged in → redirect to dashboard
   useEffect(() => {
