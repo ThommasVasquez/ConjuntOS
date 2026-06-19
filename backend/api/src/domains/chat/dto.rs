@@ -15,6 +15,8 @@ pub struct ChatMensajeDto {
     pub es_de_admin: bool,
     pub leido: bool,
     pub created_at: DateTime<Utc>,
+    pub huesped_id: Option<Uuid>,
+    pub huesped_nombre: Option<String>,
 }
 
 impl From<ChatMessage> for ChatMensajeDto {
@@ -27,6 +29,8 @@ impl From<ChatMessage> for ChatMensajeDto {
             es_de_admin: m.es_de_admin,
             leido: m.leido,
             created_at: m.created_at,
+            huesped_id: m.huesped_id,
+            huesped_nombre: None,
         }
     }
 }

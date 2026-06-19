@@ -13,6 +13,7 @@ use crate::domains::chat::dto::{
 };
 use crate::domains::chat::models::NuevoChatMessage;
 use crate::domains::chat::repo;
+use crate::domains::pases_temporales::repo as pases_repo;
 use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
@@ -41,7 +42,12 @@ async fn list_messages(
     user: AuthUser,
 ) -> ApiResult<Json<Vec<ChatMensajeDto>>> {
     let mut conn = state.pool.get().await?;
-    let rows = repo::list_user_messages(&mut conn, user.conjunto_id, user.id).await?;
+    let rows = if user.rol == Rol::HuespedTemporal {
+        // Huésped ve conversación con su propietario (mensajes donde huesped_id = user.id)
+        repo::list_huesped_messages(&mut conn, user.conjunto_id, user.id).await?
+    } else {
+        repo::list_user_messages(&mut conn, user.conjunto_id, user.id).await?
+    };
     Ok(Json(rows.into_iter().map(ChatMensajeDto::from).collect()))
 }
 
@@ -86,10 +92,20 @@ async fn send_message(
             "debe enviar un mensaje o un audio".into(),
         ));
     }
+    let mut conn = state.pool.get().await?;
+
+    // Si es HUESPED_TEMPORAL, rutear mensaje al propietario
+    let (target_usuario_id, huesped_id) = if user.rol == Rol::HuespedTemporal {
+        let pase = pases_repo::pase_activo_por_usuario(&mut conn, user.id).await?
+            .ok_or_else(|| ApiError::NotFound("No tienes un pase temporal activo".into()))?;
+        (pase.propietario_id, Some(user.id))
+    } else {
+        (user.id, None)
+    };
 
     let nuevo = NuevoChatMessage {
         conjunto_id: user.conjunto_id,
-        usuario_id: user.id,
+        usuario_id: target_usuario_id,
         mensaje: if mensaje.trim().is_empty() {
             "[audio]".to_string()
         } else {
@@ -98,10 +114,11 @@ async fn send_message(
         audio_url,
         transcripcion: req.transcripcion,
         es_de_admin: false,
+        huesped_id,
     };
-    let mut conn = state.pool.get().await?;
     let msg = repo::insert_message(&mut conn, nuevo).await?;
-    let dto = ChatMensajeDto::from(msg);
+    let mut dto = ChatMensajeDto::from(msg);
+    dto.huesped_nombre = if user.rol == Rol::HuespedTemporal { Some(user.nombre.clone()) } else { None };
     state
         .ws_hub
         .publish(
@@ -110,7 +127,7 @@ async fn send_message(
                 domain: "chat".into(),
                 action: "message".into(),
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-                target_user_id: None,
+                target_user_id: Some(target_usuario_id),
             },
         )
         .await;

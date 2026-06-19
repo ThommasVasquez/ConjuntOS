@@ -183,6 +183,7 @@ diesel::table! {
         transcripcion -> Nullable<Text>,
         es_de_admin -> Bool,
         leido -> Bool,
+        huesped_id -> Nullable<Uuid>,
         created_at -> Timestamptz,
     }
 }

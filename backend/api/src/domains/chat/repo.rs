@@ -35,6 +35,24 @@ pub async fn list_user_messages(
     Ok(rows)
 }
 
+/// Last 50 messages where a specific huésped is the sender or the conversation
+/// is about them (huesped_id = usuario_id). Used by HUESPED_TEMPORAL users.
+pub async fn list_huesped_messages(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    huesped_id: Uuid,
+) -> ApiResult<Vec<ChatMessage>> {
+    let rows = chat_admin::table
+        .filter(chat_admin::conjunto_id.eq(conjunto_id))
+        .filter(chat_admin::huesped_id.eq(huesped_id))
+        .order(chat_admin::created_at.asc())
+        .limit(50)
+        .select(ChatMessage::as_select())
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
 pub async fn insert_message(conn: &mut DbConn, nuevo: NuevoChatMessage) -> ApiResult<ChatMessage> {
     let row = diesel::insert_into(chat_admin::table)
         .values(&nuevo)

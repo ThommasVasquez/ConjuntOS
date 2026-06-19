@@ -15,6 +15,7 @@ pub struct ChatMessage {
     pub transcripcion: Option<String>,
     pub es_de_admin: bool,
     pub leido: bool,
+    pub huesped_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -27,4 +28,5 @@ pub struct NuevoChatMessage {
     pub audio_url: Option<String>,
     pub transcripcion: Option<String>,
     pub es_de_admin: bool,
+    pub huesped_id: Option<Uuid>,
 }
