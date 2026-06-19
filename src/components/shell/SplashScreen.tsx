@@ -9,6 +9,17 @@ export default function SplashScreen() {
   const logoRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const splashSrc = isDark ? "/splash-white.png" : "/splash-black.png";
 
   useEffect(() => {
     const hasShown = sessionStorage.getItem("conjuntos_splash_shown");
@@ -71,16 +82,14 @@ export default function SplashScreen() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-[#009df2]/8 blur-[120px] rounded-full" />
       
       <div className="relative flex flex-col items-center">
-        {/* Logo from GitHub public/logo.svg — auto-updates on redeploy.
-            filter inverts black parts to white on dark background */}
         <div ref={logoRef} className="w-[88vw] max-w-[460px] h-auto aspect-[810/260] relative">
           <Image 
-            src="/logo.svg" 
+            src={splashSrc}
             alt="ConjuntOS" 
             fill
             className="object-contain"
-            style={{ filter: "brightness(0) invert(1)" }}
             priority
+            unoptimized
           />
         </div>
 
