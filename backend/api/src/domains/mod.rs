@@ -15,6 +15,7 @@ pub mod inmuebles;
 pub mod notificaciones;
 pub mod pagos;
 pub mod parqueadero;
+pub mod pases_temporales;
 pub mod reservas;
 pub mod solicitudes;
 pub mod tramites;

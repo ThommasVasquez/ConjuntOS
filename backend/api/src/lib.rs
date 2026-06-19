@@ -59,7 +59,8 @@ pub fn build_router(state: AppState) -> Router {
         .merge(domains::chat::router())
         .merge(domains::citofonia::router())
         .merge(domains::asamblea::router())
-        .merge(domains::ai::router());
+        .merge(domains::ai::router())
+        .merge(domains::pases_temporales::router());
 
     Router::new()
         .route("/healthz", get(routes::healthz))

@@ -84,7 +84,7 @@ export default function SplashScreen() {
       <div className="relative flex flex-col items-center">
         <div ref={logoRef} className="relative w-[95vw] max-w-[700px] aspect-[3/1]">
           <Image 
-            src={isDarkMode ? "/SplashBLACK.png" : "/SplashWHITE.png"}
+            src={splashSrc}
             alt="ConjuntOS"
             fill
             className="object-contain"

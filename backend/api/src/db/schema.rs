@@ -434,6 +434,40 @@ diesel::table! {
 }
 
 diesel::table! {
+    pases_temporales (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        propietario_id -> Uuid,
+        unidad_id -> Uuid,
+        nombre_anfitrion -> Text,
+        nombre_huesped -> Text,
+        email_huesped -> Nullable<Text>,
+        telefono_huesped -> Nullable<Text>,
+        codigo_acceso -> Text,
+        fecha_inicio -> Date,
+        fecha_fin -> Date,
+        permiso_gimnasio -> Bool,
+        permiso_piscina -> Bool,
+        permiso_entrada_salida -> Bool,
+        permiso_vehiculo -> Bool,
+        permiso_asamblea -> Bool,
+        estado -> Text,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    vehiculos_temporales (id) {
+        id -> Uuid,
+        pase_id -> Uuid,
+        placa -> Text,
+        marca -> Nullable<Text>,
+        modelo -> Nullable<Text>,
+        color -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
     recibos_publicos (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -758,8 +792,12 @@ diesel::joinable!(usuarios -> conjuntos (conjunto_id));
 diesel::joinable!(usuarios -> unidades (unidad_id));
 diesel::joinable!(vehiculos -> conjuntos (conjunto_id));
 diesel::joinable!(vehiculos -> usuarios (usuario_id));
+diesel::joinable!(vehiculos_temporales -> pases_temporales (pase_id));
 diesel::joinable!(visitas -> conjuntos (conjunto_id));
 diesel::joinable!(visitas -> usuarios (usuario_id));
+diesel::joinable!(pases_temporales -> conjuntos (conjunto_id));
+diesel::joinable!(pases_temporales -> usuarios (propietario_id));
+diesel::joinable!(pases_temporales -> unidades (unidad_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     ad_spaces,
@@ -806,5 +844,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     unidades,
     usuarios,
     vehiculos,
+    vehiculos_temporales,
     visitas,
+    pases_temporales,
 );

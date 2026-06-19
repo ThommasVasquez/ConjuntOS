@@ -779,3 +779,76 @@ export interface LiveKitTokenDto {
   token: string;
   url: string;
 }
+
+// ===========================================================================
+// Pases Temporales (AirBnB / Alquiler Corto)
+// ===========================================================================
+
+export interface PaseTemporalDto {
+  id: string;
+  nombre_anfitrion: string;
+  nombre_huesped: string;
+  email_huesped?: string;
+  telefono_huesped?: string;
+  codigo_acceso: string;
+  fecha_inicio: string; // YYYY-MM-DD
+  fecha_fin: string;    // YYYY-MM-DD
+  permiso_gimnasio: boolean;
+  permiso_piscina: boolean;
+  permiso_entrada_salida: boolean;
+  permiso_vehiculo: boolean;
+  permiso_asamblea: boolean;
+  estado: "ACTIVO" | "EXPIRADO" | "REVOCADO";
+  created_at: string;
+  vehiculos: VehiculoTemporalDto[];
+}
+
+export interface VehiculoTemporalDto {
+  id: string;
+  placa: string;
+  marca?: string;
+  modelo?: string;
+  color?: string;
+}
+
+export interface CrearPaseTemporalRequest {
+  unidad_id: string;
+  nombre_anfitrion: string;
+  nombre_huesped: string;
+  email_huesped?: string;
+  telefono_huesped?: string;
+  fecha_inicio: string; // YYYY-MM-DD
+  fecha_fin: string;    // YYYY-MM-DD
+  permiso_gimnasio: boolean;
+  permiso_piscina: boolean;
+  permiso_entrada_salida: boolean;
+  permiso_vehiculo: boolean;
+  permiso_asamblea: boolean;
+  vehiculos?: VehiculoTemporalInput[];
+}
+
+export interface VehiculoTemporalInput {
+  placa: string;
+  marca?: string;
+  modelo?: string;
+  color?: string;
+}
+
+export interface ValidacionPaseDto {
+  valido: boolean;
+  nombre_huesped: string;
+  unidad: string;
+  dias_restantes: number;
+  permisos: PermisosDto;
+  vehiculos: VehiculoTemporalDto[];
+  motivo?: string;
+}
+
+export interface PermisosDto {
+  gimnasio: boolean;
+  piscina: boolean;
+  entrada_salida: boolean;
+  vehiculo: boolean;
+  asamblea: boolean;
+}
+

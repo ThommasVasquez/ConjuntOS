@@ -88,6 +88,7 @@ text_enum!(Rol {
     SupervisorVigilancia => "SUPERVISOR_VIGILANCIA",
     EncargadoParqueadero => "ENCARGADO_PARQUEADERO",
     SuperAdmin => "SUPER_ADMIN",
+    HuespedTemporal => "HUESPED_TEMPORAL",
 });
 
 text_enum!(TipoUnidad {
@@ -191,6 +192,12 @@ text_enum!(EstadoSolicitud {
     Asignada => "ASIGNADA",
     EnProgreso => "EN_PROGRESO",
     Completada => "COMPLETADA",
+});
+
+text_enum!(EstadoPaseTemporal {
+    Activo => "ACTIVO",
+    Expirado => "EXPIRADO",
+    Revocado => "REVOCADO",
 });
 
 text_enum!(TipoPqr {

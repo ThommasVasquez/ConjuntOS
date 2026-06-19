@@ -93,6 +93,10 @@ use utoipa::OpenApi;
         crate::domains::inmuebles::handlers::listar_inmuebles,
         crate::domains::inmuebles::handlers::crear_inmueble,
         crate::domains::admin_stats::admin_stats,
+        crate::domains::pases_temporales::handlers::crear_pase,
+        crate::domains::pases_temporales::handlers::mis_pases,
+        crate::domains::pases_temporales::handlers::validar_pase,
+        crate::domains::pases_temporales::handlers::revocar_pase,
     ),
     tags(
         (name = "ops", description = "Health and operational endpoints"),
