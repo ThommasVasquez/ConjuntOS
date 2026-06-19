@@ -95,6 +95,7 @@ use utoipa::OpenApi;
         crate::domains::admin_stats::admin_stats,
         crate::domains::pases_temporales::handlers::crear_pase,
         crate::domains::pases_temporales::handlers::mis_pases,
+        crate::domains::pases_temporales::handlers::mi_pase,
         crate::domains::pases_temporales::handlers::validar_pase,
         crate::domains::pases_temporales::handlers::revocar_pase,
     ),

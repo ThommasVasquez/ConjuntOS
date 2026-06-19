@@ -6,6 +6,7 @@ use rand::Rng;
 use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
+use crate::auth::password;
 use crate::auth::guard;
 use crate::db::enums::{EstadoPaseTemporal, Rol};
 use crate::domains::pases_temporales::dto::{
@@ -16,6 +17,7 @@ use crate::domains::pases_temporales::models::{
     NuevoPaseTemporal, NuevoVehiculoTemporal,
 };
 use crate::domains::pases_temporales::repo;
+use crate::domains::pases_temporales::repo::upsert_usuario_huesped;
 use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
@@ -33,6 +35,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/pases-temporales", post(crear_pase))
         .route("/pases-temporales/mis-pases", get(mis_pases))
+        .route("/pases-temporales/mi-pase", get(mi_pase))
         .route("/pases-temporales/validar/{codigo}", get(validar_pase))
         .route("/pases-temporales/{id}/revocar", put(revocar_pase))
 }
@@ -64,6 +67,11 @@ async fn crear_pase(
 
     let codigo = generar_codigo();
 
+    // Clonar antes de mover a NuevoPaseTemporal
+    let codigo_clone = codigo.clone();
+    let email_clone = body.email_huesped.clone();
+    let nombre_clone = body.nombre_huesped.clone();
+
     let mut conn = state.pool.get().await?;
     let pase = repo::crear_pase(
         &mut conn,
@@ -83,8 +91,26 @@ async fn crear_pase(
             permiso_entrada_salida: body.permiso_entrada_salida,
             permiso_vehiculo: body.permiso_vehiculo,
             permiso_asamblea: body.permiso_asamblea,
+            usuario_id: None,
         },
     ).await?;
+
+    // Si el pase tiene email del huésped, crear/activar usuario HUESPED_TEMPORAL
+    let usuario_id = if let Some(ref email) = email_clone {
+        let hash = password::hash_password_blocking(codigo_clone).await?;
+        let usuario = upsert_usuario_huesped(
+            &mut conn,
+            user.conjunto_id,
+            &nombre_clone,
+            email,
+            &hash,
+            body.unidad_id,
+        ).await?;
+        repo::vincular_usuario(&mut conn, pase.id, usuario.id).await?;
+        Some(usuario.id)
+    } else {
+        None
+    };
 
     let mut vehiculos_dto = vec![];
     if let Some(vehiculos) = body.vehiculos {
@@ -148,6 +174,28 @@ async fn mis_pases(
     }
 
     Ok(Json(result))
+}
+
+/// GET /api/v1/pases-temporales/mi-pase — El huésped autenticado ve su pase activo.
+#[utoipa::path(
+    get,
+    path = "/api/v1/pases-temporales/mi-pase",
+    tag = "pases-temporales",
+    responses((status = 200, body = PaseTemporalDto), (status = 404))
+)]
+async fn mi_pase(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<PaseTemporalDto>> {
+    let mut conn = state.pool.get().await?;
+    let pase = repo::pase_activo_por_usuario(&mut conn, user.id).await?
+        .ok_or_else(|| ApiError::NotFound("No tienes un pase temporal activo".into()))?;
+
+    let vehiculos = repo::vehiculos_por_pase(&mut conn, pase.id).await?;
+    let mut dto = PaseTemporalDto::from(pase);
+    dto.vehiculos = vehiculos.into_iter().map(VehiculoTemporalDto::from).collect();
+
+    Ok(Json(dto))
 }
 
 /// GET /api/v1/pases-temporales/validar/{codigo} — Valida un código de acceso (uso en portería).

@@ -452,6 +452,7 @@ diesel::table! {
         permiso_vehiculo -> Bool,
         permiso_asamblea -> Bool,
         estado -> Text,
+        usuario_id -> Nullable<Uuid>,
         created_at -> Timestamptz,
     }
 }

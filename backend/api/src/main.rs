@@ -26,6 +26,9 @@ async fn main() -> anyhow::Result<()> {
     // Scheduler de cobros de parqueadero de visitante (avisos 20 min + inicio cobro).
     enconjunto_api::domains::parqueadero::sesiones::spawn_scheduler(state.clone());
 
+    // Scheduler de expiración de pases temporales (desactiva usuarios huésped cada 30 min).
+    enconjunto_api::domains::pases_temporales::spawn_scheduler(state.clone());
+
     let app = build_router(state);
 
     let listener = tokio::net::TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;

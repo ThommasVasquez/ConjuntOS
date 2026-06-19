@@ -23,6 +23,7 @@ pub struct PaseTemporal {
     pub permiso_entrada_salida: bool,
     pub permiso_vehiculo: bool,
     pub permiso_asamblea: bool,
+    pub usuario_id: Option<Uuid>,
     pub estado: EstadoPaseTemporal,
     pub created_at: DateTime<Utc>,
 }
@@ -45,6 +46,14 @@ pub struct NuevoPaseTemporal {
     pub permiso_entrada_salida: bool,
     pub permiso_vehiculo: bool,
     pub permiso_asamblea: bool,
+    pub usuario_id: Option<Uuid>,
+}
+
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
+#[diesel(table_name = pases_temporales, check_for_backend(diesel::pg::Pg))]
+pub struct PaseTemporalUsuario {
+    pub id: Uuid,
+    pub usuario_id: Option<Uuid>,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Associations, Debug, Clone)]

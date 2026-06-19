@@ -399,6 +399,7 @@ mod tests {
             "SUPERVISOR_VIGILANCIA",
             "ENCARGADO_PARQUEADERO",
             "SUPER_ADMIN",
+            "HUESPED_TEMPORAL",
         ] {
             let rol: Rol = raw.parse().unwrap();
             assert_eq!(rol.as_str(), raw);

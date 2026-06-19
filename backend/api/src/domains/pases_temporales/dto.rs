@@ -22,6 +22,7 @@ pub struct PaseTemporalDto {
     pub permiso_asamblea: bool,
     pub estado: String,
     pub created_at: String,
+    pub usuario_id: Option<Uuid>,
     pub vehiculos: Vec<VehiculoTemporalDto>,
 }
 
@@ -43,6 +44,7 @@ impl From<PaseTemporal> for PaseTemporalDto {
             permiso_asamblea: p.permiso_asamblea,
             estado: p.estado.to_string(),
             created_at: p.created_at.to_rfc3339(),
+            usuario_id: p.usuario_id,
             vehiculos: vec![],
         }
     }
