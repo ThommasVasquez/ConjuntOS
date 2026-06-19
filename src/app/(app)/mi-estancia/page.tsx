@@ -158,13 +158,8 @@ export default function MiEstanciaPage() {
         {/* Contactar anfitrión */}
         <div className="bg-surface-2 rounded-xl p-4 border border-border">
           <h2 className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-3">Contactar anfitrión</h2>
-          <p className="text-text mb-3">{pase.nombre_anfitrion}</p>
-          <button
-            onClick={() => router.push("/chat")}
-            className="w-full bg-accent text-white rounded-lg py-2.5 font-medium hover:opacity-90 transition-opacity"
-          >
-            Enviar mensaje al chat
-          </button>
+          <p className="text-text text-lg font-medium">{pase.nombre_anfitrion}</p>
+          <p className="text-text-secondary text-sm mt-1">Comunícate con tu anfitrión a través de los canales acordados para cualquier consulta durante tu estancia.</p>
         </div>
 
       </div>
