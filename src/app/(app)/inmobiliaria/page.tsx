@@ -114,8 +114,8 @@ export default function InmobiliariaPage() {
     <div ref={containerRef} className="min-h-screen pb-32">
       <ProfileHeader className="pt-16 px-6" />
 
-      <div className="pt-8 pb-14 px-6 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto relative z-10">
+      <div className="pt-8 pb-14 relative overflow-hidden">
+        <div className="relative z-10">
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-3 text-text">
               <Building2 size={18} className="text-accent" />
@@ -188,7 +188,7 @@ export default function InmobiliariaPage() {
         
       </div>
 
-      <div className="px-6 max-w-6xl mx-auto">
+      <div>
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
