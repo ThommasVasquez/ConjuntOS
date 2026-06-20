@@ -397,8 +397,8 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
     <div className="fixed inset-0 z-100 flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
       <div className="absolute inset-0 bg-primary/95 dark:bg-[#000000]/95 backdrop-blur-xl" onClick={onClose} />
       
-      <div className="relative w-full h-full max-w-xl bg-primary dark:bg-[#000000] overflow-hidden md:rounded-[40px] border border-border flex flex-col shadow-2xl">
-        <div className="absolute top-6 left-6 z-50">
+      <div className="relative w-full h-full max-w-xl bg-primary dark:bg-[#000000] overflow-hidden md:rounded-[40px] border border-border flex flex-col shadow-2xl pt-[env(safe-area-inset-top)]">
+        <div className="absolute top-6 left-6 z-50" style={{top: 'calc(24px + env(safe-area-inset-top))'}}>
           <button onClick={onClose} className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all">
             <X size={20} />
           </button>
@@ -480,7 +480,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
               </div>
             </div>
 
-            <div className="p-6 bg-primary border-t border-border">
+            <div className="p-6 bg-primary border-t border-border pb-[calc(env(safe-area-inset-bottom)+24px)]">
                <button 
                 onClick={startLeasing}
                 className="w-full h-16 rounded-2xl bg-accent text-primary font-black shadow-xl shadow-accent/20 flex items-center justify-center gap-3 active:scale-95 transition-all text-lg"
