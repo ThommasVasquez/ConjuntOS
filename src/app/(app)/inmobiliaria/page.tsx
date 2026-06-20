@@ -5,7 +5,6 @@ import Image from "next/image";
 import {
   Building2,
   Search,
-  Filter,
   Plus,
   Bed,
   Bath,
@@ -108,7 +107,11 @@ export default function InmobiliariaPage() {
     <div ref={containerRef} className="min-h-screen pb-32">
       <ProfileHeader className="pt-16 px-6" />
 
-      <div className="pt-8 pb-10 px-6 relative overflow-hidden bg-linear-to-b from-accent/10 to-transparent">
+      <div className="pt-8 pb-14 px-6 relative overflow-hidden" style={{
+        background: "linear-gradient(180deg, rgba(0,157,242,0.12) 0%, rgba(0,157,242,0.06) 40%, rgba(0,157,242,0.02) 70%, transparent 100%)",
+        maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)"
+      }}>
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="flex items-center gap-3 mb-2 text-text">
             <Building2 size={18} className="text-accent" />
@@ -117,23 +120,17 @@ export default function InmobiliariaPage() {
           <h1 className="text-4xl font-bold mb-6 text-text tracking-tight">Encuentra tu proximo hogar aqui mismo.</h1>
           
           <div className="flex flex-col gap-4">
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-text group-focus-within:text-accent transition-colors">
-                <Search size={20} />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-text/50">
+                <Search size={18} />
               </div>
               <input 
                 type="text"
-                placeholder="Que buscas? (ej. Apartamento 3 alcobas)"
-                className="w-full h-14 pl-12 pr-6 rounded-xl bg-surface-2 border border-border focus:border-accent/50 outline-none transition-all focus:bg-surface-2/80 text-text placeholder:text-text text-lg"
+                placeholder="Buscar inmuebles..."
+                className="w-full h-12 pl-11 pr-4 rounded-xl bg-surface-2/60 border border-border focus:border-accent/40 outline-none transition-all text-text placeholder:text-text/40 text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <div className="absolute inset-y-0 right-2 flex items-center">
-                 <button className="h-10 px-4 rounded-xl bg-surface-2 border border-border hover:bg-surface-2/80 transition-colors flex items-center gap-2 text-sm font-medium text-text">
-                    <Filter size={16} />
-                    <span>Filtros</span>
-                 </button>
-              </div>
             </div>
 
             <div className="flex gap-2 p-1 rounded-xl bg-surface-2 border border-border w-fit">
