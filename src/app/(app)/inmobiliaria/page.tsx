@@ -212,15 +212,6 @@ export default function InmobiliariaPage() {
         )}
       </div>
 
-      {isPropietario && (
-        <button 
-          onClick={() => setIsPosting(true)}
-          className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-accent text-primary shadow-2xl shadow-accent/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group"
-        >
-          <Plus size={32} className="group-hover:rotate-90 transition-transform duration-500" />
-        </button>
-      )}
-
       {selectedInmueble && (
         <PropertyDetail 
           item={selectedInmueble} 
@@ -230,7 +221,7 @@ export default function InmobiliariaPage() {
         />
       )}
 
-      <BottomSheet isOpen={isPosting} onClose={() => { setIsPosting(false); setEditingItem(null); }} title={editingItem ? "Editar Inmueble" : "Publicar Inmueble"} fullWidth>
+      <BottomSheet isOpen={isPosting} onClose={() => { setIsPosting(false); setEditingItem(null); }} title={editingItem ? "Editar Inmueble" : "Publicar Inmueble"}>
          <PostingForm 
            onSuccess={() => { setIsPosting(false); setEditingItem(null); setFilterType("TODOS"); }} 
            editItem={editingItem}
