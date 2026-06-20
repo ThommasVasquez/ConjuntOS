@@ -741,7 +741,7 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-text uppercase pl-1">Precio</label>
               <div className="flex gap-1">
