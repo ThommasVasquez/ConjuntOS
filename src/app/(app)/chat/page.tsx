@@ -109,7 +109,7 @@ export default function ChatPage() {
           const isOwn = isGuest
             ? !!msg.huespedId            // huésped: sus mensajes tienen huespedId
             : isOwner
-              ? !msg.huespedId           // propietario: sus mensajes NO tienen huespedId
+              ? !msg.huespedId && !msg.esDeAdmin  // propietario: solo los suyos (sin huespedId ni admin)
               : !msg.esDeAdmin;          // admin/residente: lógica original
           return (
             <div key={msg.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
