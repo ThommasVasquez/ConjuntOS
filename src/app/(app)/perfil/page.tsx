@@ -594,7 +594,7 @@ function ProfileContent() {
         </div>
  
         {/* 🧭 UNIFIED 6-GRID STATUS BAR (Stage 68 - High Fidelity Refinement) */}
-        <div className="fade-up grid grid-cols-4 gap-2.5 w-full mb-10 text-center">
+        <div className={`fade-up grid ${isGuest ? 'grid-cols-2' : 'grid-cols-4'} gap-2.5 w-full mb-10 text-center`}>
           {statusIcons.map((stat, i) => (
             <button 
               key={i} 
