@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { Calendar, Clock, Car, User, DoorOpen, Dumbbell, Waves, QrCode } from "lucide-react";
+import { Calendar, Clock, Car, User, DoorOpen, Dumbbell, Waves, QrCode, X, Maximize2 } from "lucide-react";
 import ReservaSection from "@/components/reservas/ReservaSection";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ export default function MiEstanciaPage() {
   const router = useRouter();
   const [pase, setPase] = useState<MiPaseDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -159,8 +160,44 @@ export default function MiEstanciaPage() {
           <QrCode size={24} className="mx-auto text-accent mb-2" />
           <p className="text-text-secondary text-xs mb-1">Tu código de acceso</p>
           <p className="text-3xl font-mono font-bold text-accent tracking-[0.3em] select-all">{pase.codigo_acceso}</p>
+          <button
+            onClick={() => setShowQR(true)}
+            className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-surface border border-border text-text text-sm font-medium hover:bg-surface-2 transition-colors"
+          >
+            <Maximize2 size={16} />
+            Mostrar código QR
+          </button>
           <p className="text-text-secondary text-xs mt-2">Muéstralo en portería al ingresar</p>
         </div>
+
+        {/* Modal QR */}
+        {showQR && (
+          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
+            <div
+              className="bg-primary border border-border rounded-[28px] p-6 flex flex-col items-center gap-4 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between w-full">
+                <h2 className="text-lg font-bold text-text">Código QR de acceso</h2>
+                <button onClick={() => setShowQR(false)} className="text-text/60 hover:text-text">
+                  <X size={22} />
+                </button>
+              </div>
+              <div className="bg-white rounded-2xl p-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pase.codigo_acceso)}`}
+                  alt="QR de acceso"
+                  width={250}
+                  height={250}
+                  className="rounded-lg"
+                />
+              </div>
+              <p className="text-3xl font-mono font-bold text-accent tracking-[0.3em] select-all">{pase.codigo_acceso}</p>
+              <p className="text-text-secondary text-xs text-center">Muestra este QR en portería para validar tu ingreso</p>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
