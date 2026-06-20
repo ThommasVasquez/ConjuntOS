@@ -105,6 +105,10 @@ pub async fn actualizar_inmueble(
         let target = dsl::inmuebles.filter(dsl::id.eq(id));
         diesel::update(target).set(dsl::area.eq(area)).execute(conn).await?;
     }
+    if let Some(moneda) = &req.moneda {
+        let target = dsl::inmuebles.filter(dsl::id.eq(id));
+        diesel::update(target).set(dsl::moneda.eq(moneda)).execute(conn).await?;
+    }
     if let Some(imagenes) = &req.imagenes {
         let target = dsl::inmuebles.filter(dsl::id.eq(id));
         let imagenes_json = serde_json::to_value(imagenes)

@@ -4,6 +4,7 @@ use axum::{Json, Router};
 use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
+use crate::db::enums::Moneda;
 use crate::domains::inmuebles::dto::{CreateInmuebleRequest, InmuebleDto, InmueblesQuery, UpdateInmuebleRequest};
 use crate::domains::inmuebles::models::NuevoInmueble;
 use crate::domains::inmuebles::repo;
@@ -84,6 +85,7 @@ pub async fn crear_inmueble(
             habitaciones: req.habitaciones.unwrap_or(0),
             banos: req.banos.unwrap_or(0),
             area: req.area,
+            moneda: req.moneda.unwrap_or(Moneda::Cop),
             imagenes,
             caracteristicas,
         },

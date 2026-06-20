@@ -256,6 +256,11 @@ text_enum!(TipoNegocio {
     Alquiler => "ALQUILER",
 });
 
+text_enum!(Moneda {
+    Cop => "COP",
+    Usd => "USD",
+});
+
 text_enum!(EstadoInmueble {
     Disponible => "DISPONIBLE",
     Vendido => "VENDIDO",

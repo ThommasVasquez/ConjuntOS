@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use uuid::Uuid;
 
-use crate::db::enums::{EstadoInmueble, TipoNegocio, TipoUnidad};
+use crate::db::enums::{EstadoInmueble, Moneda, TipoNegocio, TipoUnidad};
 use crate::db::schema::inmuebles;
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
@@ -20,6 +20,7 @@ pub struct Inmueble {
     pub habitaciones: i32,
     pub banos: i32,
     pub area: Option<BigDecimal>,
+    pub moneda: Moneda,
     /// `Vec<String>` of image URLs validated at the boundary (Law 6).
     pub imagenes: serde_json::Value,
     /// `Vec<String>` of feature labels validated at the boundary (Law 6).
@@ -43,6 +44,7 @@ pub struct NuevoInmueble {
     pub habitaciones: i32,
     pub banos: i32,
     pub area: Option<BigDecimal>,
+    pub moneda: Moneda,
     pub imagenes: serde_json::Value,
     pub caracteristicas: serde_json::Value,
 }

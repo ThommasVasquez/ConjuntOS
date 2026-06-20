@@ -32,6 +32,7 @@ interface Inmueble {
   titulo: string;
   descripcion: string;
   precio: string;
+  moneda: "COP" | "USD";
   tipoNegocio: "VENTA" | "ALQUILER";
   tipoUnidad: string;
   habitaciones: number;
@@ -237,9 +238,9 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
   const mainImage = imagenes[0] || "/placeholder.svg";
   const isOwner = currentUserId && item.usuarioId === currentUserId;
 
-  const formattedPrecio = new Intl.NumberFormat("es-CO", {
+  const formattedPrecio = new Intl.NumberFormat(item.moneda === "USD" ? "en-US" : "es-CO", {
     style: "currency",
-    currency: "COP",
+    currency: item.moneda || "COP",
     maximumFractionDigits: 0,
     notation: Number(item.precio || 0) >= 1000000 ? "compact" : "standard"
   } as Intl.NumberFormatOptions).format(Number(item.precio || 0));
@@ -359,9 +360,9 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
   const imagenes = item.imagenes || [];
   const mainImage = imagenes[0] || "/placeholder.svg";
 
-  const formattedPrecio = new Intl.NumberFormat("es-CO", {
+  const formattedPrecio = new Intl.NumberFormat(item.moneda === "USD" ? "en-US" : "es-CO", {
     style: "currency",
-    currency: "COP",
+    currency: item.moneda || "COP",
     maximumFractionDigits: 0
   }).format(Number(item.precio || 0));
 

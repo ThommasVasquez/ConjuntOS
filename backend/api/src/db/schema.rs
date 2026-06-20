@@ -250,6 +250,7 @@ diesel::table! {
         habitaciones -> Int4,
         banos -> Int4,
         area -> Nullable<Numeric>,
+        moneda -> Text,
         imagenes -> Jsonb,
         caracteristicas -> Jsonb,
         estado -> Text,

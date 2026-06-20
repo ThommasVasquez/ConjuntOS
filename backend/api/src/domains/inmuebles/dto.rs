@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
-use crate::db::enums::{EstadoInmueble, TipoNegocio, TipoUnidad};
+use crate::db::enums::{EstadoInmueble, Moneda, TipoNegocio, TipoUnidad};
 use crate::domains::inmuebles::models::Inmueble;
 
 #[derive(Serialize, ToSchema)]
@@ -24,6 +24,7 @@ pub struct InmuebleDto {
     /// m², serialized as string (Law 6).
     #[schema(value_type = Option<String>)]
     pub area: Option<BigDecimal>,
+    pub moneda: Moneda,
     pub imagenes: Vec<String>,
     pub caracteristicas: Vec<String>,
     pub estado: EstadoInmueble,
@@ -47,6 +48,7 @@ impl From<Inmueble> for InmuebleDto {
             habitaciones: i.habitaciones,
             banos: i.banos,
             area: i.area,
+            moneda: i.moneda,
             imagenes,
             caracteristicas,
             estado: i.estado,
@@ -80,6 +82,7 @@ pub struct CreateInmuebleRequest {
     /// m² as string-decimal (Law 6).
     #[schema(value_type = Option<String>)]
     pub area: Option<BigDecimal>,
+    pub moneda: Option<Moneda>,
     pub imagenes: Option<Vec<String>>,
     pub caracteristicas: Option<Vec<String>>,
 }
@@ -97,6 +100,7 @@ pub struct UpdateInmuebleRequest {
     pub banos: Option<i32>,
     #[schema(value_type = Option<String>)]
     pub area: Option<BigDecimal>,
+    pub moneda: Option<Moneda>,
     pub imagenes: Option<Vec<String>>,
     pub caracteristicas: Option<Vec<String>>,
     pub estado: Option<EstadoInmueble>,
