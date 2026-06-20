@@ -96,7 +96,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
 
   const containerClass = compact
     ? "flex flex-col"
-    : "min-h-screen bg-primary flex flex-col pt-16 pb-32";
+    : "flex flex-col flex-1";
 
   return (
     <div className={containerClass}>
