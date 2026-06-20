@@ -526,6 +526,7 @@ export default function CitofoniaPage() {
                    </button>
                 </div>
              </div>
+             )}
           </div>
         )}
 
