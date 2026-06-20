@@ -34,15 +34,7 @@ export default function RoleSwitcher() {
 
   // Only testers see this control.
   if (!user) return null;
-  // TEMP DEBUG: show banner when isTester is false
-  if (!user.isTester) {
-    console.log('[RoleSwitcher] hidden — isTester:', user.isTester, 'user:', user.email, user.rol);
-    return (
-      <div className="relative w-full mb-4 z-[60] p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-center">
-        ⚠️ RoleSwitcher hidden — isTester=false (user: {user.email}, rol: {user.rol})
-      </div>
-    );
-  }
+  if (!user.isTester) return null;
 
   const currentLabel =
     ROLES.find((r) => r.value === user.rol)?.label ?? user.rol;
