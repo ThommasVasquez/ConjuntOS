@@ -226,7 +226,7 @@ export default function InmobiliariaPage() {
         />
       )}
 
-      <BottomSheet isOpen={isPosting} onClose={() => setIsPosting(false)} title="Publicar Inmueble">
+      <BottomSheet isOpen={isPosting} onClose={() => setIsPosting(false)} title="Publicar Inmueble" fullWidth>
          <PostingForm onSuccess={() => { setIsPosting(false); setFilterType("TODOS"); }} />
       </BottomSheet>
     </div>

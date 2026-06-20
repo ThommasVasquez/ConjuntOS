@@ -14,9 +14,10 @@ interface BottomSheetProps {
   onClose: () => void;
   children: ReactNode;
   title?: string;
+  fullWidth?: boolean;
 }
 
-export default function BottomSheet({ isOpen, onClose, children, title }: BottomSheetProps) {
+export default function BottomSheet({ isOpen, onClose, children, title, fullWidth }: BottomSheetProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
@@ -108,7 +109,7 @@ export default function BottomSheet({ isOpen, onClose, children, title }: Bottom
       
       <div 
         ref={sheetRef}
-        className="absolute bottom-0 w-full max-w-[430px] left-1/2 -translate-x-1/2 bg-surface rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
+        className={`absolute bottom-0 w-full left-1/2 -translate-x-1/2 bg-surface rounded-t-3xl shadow-2xl overflow-hidden flex flex-col ${fullWidth ? '' : 'max-w-[430px]'}`}
         style={{ maxHeight: '90dvh' }}
       >
         {/* Handle for dragging */}
