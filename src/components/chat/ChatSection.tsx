@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Image, Camera, Paperclip, Mic } from "lucide-react";
 import { toast } from "sonner";
 
 interface ChatMsg {
@@ -30,6 +30,9 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const justSentRef = useRef(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = useCallback((smooth = true) => {
     bottomRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
@@ -85,6 +88,20 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    toast.info(`Archivo seleccionado: ${file.name} (${(file.size / 1024).toFixed(0)} KB)`);
+    // TODO: implementar subida al backend
+    // Reset input para permitir re-seleccionar el mismo archivo
+    e.target.value = "";
+  };
+
+  const handleVoiceRecord = () => {
+    toast.info("Mensajes de voz próximamente");
   };
 
   const formatTime = (ts: string) => {
@@ -144,6 +161,67 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Attachment bar — solo en modo completo */}
+      {!compact && (
+        <div className="flex items-center justify-center gap-4 px-4 py-2">
+          <button
+            type="button"
+            onClick={() => galleryInputRef.current?.click()}
+            className="text-text/50 hover:text-accent transition-colors p-2"
+            aria-label="Galería de fotos"
+          >
+            <Image size={22} />
+          </button>
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="text-text/50 hover:text-accent transition-colors p-2"
+            aria-label="Tomar foto"
+          >
+            <Camera size={22} />
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="text-text/50 hover:text-accent transition-colors p-2"
+            aria-label="Adjuntar archivo"
+          >
+            <Paperclip size={22} />
+          </button>
+          <button
+            type="button"
+            onClick={handleVoiceRecord}
+            className="text-text/50 hover:text-accent transition-colors p-2"
+            aria-label="Grabar mensaje de voz"
+          >
+            <Mic size={22} />
+          </button>
+        </div>
+      )}
+
+      {/* Hidden file inputs */}
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+      />
 
       {/* Input area */}
       <form onSubmit={handleSend} className={compact
