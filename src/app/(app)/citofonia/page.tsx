@@ -45,9 +45,12 @@ interface DirectorioUser {
   apto?: string | null;
 }
 
+import { useAuth } from "@/hooks/useAuth";
 import { useCall } from "@/components/providers/CallContext";
 
 export default function CitofoniaPage() {
+  const { user } = useAuth();
+  const isGuest = user?.rol === 'HUESPED_TEMPORAL';
   const [activeTab, setActiveTab] = useState<Tab>("CITOFONIA");
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -384,11 +387,13 @@ export default function CitofoniaPage() {
 
          {/* TAB SELECTOR */}
          <div className="flex bg-text/5 p-1 rounded-2xl border border-border">
-            {[
+            {(isGuest
+              ? [{ id: "CITOFONIA", icon: Phone, label: "Portería" }]
+              : [
               { id: "CITOFONIA", icon: Phone, label: "Portería" },
               { id: "VISITAS", icon: Users, label: "Visitas" },
               { id: "RECEPCION", icon: Package, label: "Recibir" }
-            ].map((t) => (
+            ]).map((t) => (
               <button 
                 key={t.id}
                 onClick={() => setActiveTab(t.id as Tab)}
@@ -405,7 +410,8 @@ export default function CitofoniaPage() {
       <main className="flex-1">
         {activeTab === "CITOFONIA" && (
           <div className="fade-up space-y-6 animate-in slide-in-from-bottom-5 duration-500">
-             {/* SEARCH RESIDENTS */}
+             {/* SEARCH RESIDENTS — oculto para huéspedes */}
+             {!isGuest && (
              <div className="liquid-glass-card rounded-[28px] p-4 border border-border text-text">
                 <div className="flex items-center gap-2 bg-text/5 rounded-2xl px-4 py-3 border border-border">
                    <Search size={18} className="text-text/50" />
@@ -448,6 +454,7 @@ export default function CitofoniaPage() {
                    <p className="mt-3 text-center text-xs text-text/40">Sin resultados</p>
                 )}
              </div>
+             )}
 
              {/* QUICK CONTACTS */}
              <div className="grid grid-cols-2 gap-4 text-text">
@@ -458,6 +465,15 @@ export default function CitofoniaPage() {
                    <ShieldCheck size={28} className="text-accent" />
                    <span className="text-xs font-bold">Portería Principal</span>
                 </button>
+                {isGuest ? (
+                <button 
+                  onClick={() => { setDialNum("E"); handleCall("E"); }}
+                  className="p-6 rounded-[28px] bg-primary-light border border-border flex flex-col items-center gap-3 active:scale-95 transition-transform cursor-pointer"
+                >
+                   <Car size={28} className="text-secondary" />
+                   <span className="text-xs font-bold">Estacionamientos</span>
+                </button>
+                ) : (
                 <button 
                   onClick={() => { setDialNum("A"); handleCall("A"); }}
                   className="p-6 rounded-[28px] bg-primary-light border border-border flex flex-col items-center gap-3 active:scale-95 transition-transform cursor-pointer"
@@ -465,9 +481,11 @@ export default function CitofoniaPage() {
                    <Users size={28} className="text-secondary" />
                    <span className="text-xs font-bold">Administración</span>
                 </button>
+                )}
              </div>
 
-             {/* NUMERIC DIALER */}
+             {/* NUMERIC DIALER — oculto para huéspedes */}
+             {!isGuest && (
              <div className="liquid-glass-card rounded-[40px] p-8 border border-border flex flex-col items-center gap-8 relative overflow-hidden">
                 <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-transparent via-accent to-transparent opacity-30" />
                 

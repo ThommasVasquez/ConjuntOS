@@ -477,6 +477,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
     } else if (dialed === "A") {
       targetPeerId = `${conjuntoId}-ADMINISTRADOR`;
       if (!displayName) name = "Administración";
+    } else if (dialed === "E") {
+      targetPeerId = `${conjuntoId}-ENCARGADO_PARQUEADERO`;
+      if (!displayName) name = "Estacionamientos";
     } else {
       // Plain dialed digits -> internal number (resolved to a user by the backend).
       targetPeerId = `numero-${dialed}`;
