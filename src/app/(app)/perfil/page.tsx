@@ -6,7 +6,7 @@
  */
 
 import { 
-  LogOut, ArrowRight, ChevronLeft, Search, MoreHorizontal,
+  LogOut, ArrowRight, ChevronLeft, MoreHorizontal,
   Edit, Camera, Car, PawPrint, ShieldCheck, Mail, Phone,
   CheckCircle2, X, Plus, FileText, Info, ClipboardList, Lock, 
   HelpCircle, CreditCard, Calendar, Package, User as UserIcon,
@@ -484,9 +484,6 @@ function ProfileContent() {
         </button>
         
         <div className="flex gap-3 relative pointer-events-auto">
-          <button className="w-12 h-12 rounded-full liquid-glass flex items-center justify-center text-text hover:text-text transition-all">
-            <Search size={20} />
-          </button>
           <button 
             onClick={() => setShowMenu(!showMenu)}
             className="w-12 h-12 rounded-full liquid-glass flex items-center justify-center text-text hover:text-text transition-all active:scale-90 shadow-2xl"
@@ -533,8 +530,8 @@ function ProfileContent() {
       <div 
         className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden bg-primary transition-colors duration-300"
         style={{ 
-          maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)'
+          maskImage: 'linear-gradient(to bottom, black 40%, black 70%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 40%, black 70%, transparent 100%)'
         }}
       >
         
@@ -547,8 +544,8 @@ function ProfileContent() {
         <div 
           className="absolute inset-0 z-10 w-full h-full"
           style={{ 
-            maskImage: 'linear-gradient(to bottom, black 0%, black 50%, rgba(0,0,0,0.5) 75%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, rgba(0,0,0,0.5) 75%, transparent 100%)'
+            maskImage: 'linear-gradient(to bottom, black 0%, black 40%, rgba(0,0,0,0.6) 65%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 40%, rgba(0,0,0,0.6) 65%, transparent 100%)'
           }}
         >
           <Image src={profilePic} alt="" fill className="object-cover object-top scale-105" unoptimized />
@@ -563,8 +560,8 @@ function ProfileContent() {
           }}
         />
         
-        {/* Layer 3: HUD Contrast Gradient & Base Shadow */}
-        <div className="absolute inset-x-0 bottom-0 h-[450px] bg-linear-to-t from-primary via-primary/95 via-primary/40 to-transparent transition-all duration-300 z-20" />
+        {/* Layer 3: HUD Contrast Gradient & Base Shadow — gradiente extendido y suave */}
+        <div className="absolute inset-x-0 bottom-0 h-[550px] bg-linear-to-t from-primary via-primary/95 via-primary/70 via-primary/30 to-transparent transition-all duration-300 z-20" />
       </div>
 
       <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
