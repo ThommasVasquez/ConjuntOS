@@ -13,7 +13,9 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const session = req.cookies.get("ec_session")?.value;
 
-  // Authenticated user on "/" or "/login" → redirect to dashboard
+  // Authenticated user on "/" or "/login" → redirect to dashboard.
+  // The client-side dashboard will re-route role-specific views (e.g.
+  // HUESPED_TEMPORAL → /mi-estancia).
   if ((pathname === "/" || pathname === "/login") && session) {
     return NextResponse.redirect(new URL("/inicio", req.url));
   }

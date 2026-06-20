@@ -973,6 +973,22 @@ function HomeAdmin() {
 export default function InicioDashboard() {
   const { user } = useAuth();
   const role = user?.rol;
+  const router = useRouter();
+
+  // HUESPED_TEMPORAL must never see the propietario/residente dashboard
+  useEffect(() => {
+    if (role === 'HUESPED_TEMPORAL') {
+      router.replace('/mi-estancia');
+    }
+  }, [role, router]);
+
+  if (role === 'HUESPED_TEMPORAL') {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') return <HomeVigilante />;
   if (role === 'ENCARGADO_PARQUEADERO') return <HomeEstacionamiento />;

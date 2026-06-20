@@ -64,7 +64,7 @@ export default function PaqueteriaPage() {
       return;
     }
 
-    const allowed = ['VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ADMINISTRADOR', 'SUPER_ADMIN'];
+    const allowed = ['VIGILANTE', 'SUPERVISOR_VIGILANCIA', 'ADMINISTRADOR', 'SUPER_ADMIN', 'HUESPED_TEMPORAL'];
     if (!role || !allowed.includes(role)) {
       toast.error("No tienes permisos para acceder a esta sección.");
       router.push("/inicio");
