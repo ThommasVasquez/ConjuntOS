@@ -105,11 +105,14 @@ async fn send_message(
     }
     let mut conn = state.pool.get().await?;
 
-    // Si es HUESPED_TEMPORAL, rutear mensaje al propietario
+    // Si es HUESPED_TEMPORAL, rutear mensaje al propietario.
+    // Si es PROPIETARIO con huesped_id, asociar al huésped específico.
     let (target_usuario_id, huesped_id) = if user.rol == Rol::HuespedTemporal {
         let pase = pases_repo::pase_activo_por_usuario(&mut conn, user.id).await?
             .ok_or_else(|| ApiError::NotFound("No tienes un pase temporal activo".into()))?;
         (pase.propietario_id, Some(user.id))
+    } else if user.rol == Rol::Propietario {
+        (user.id, req.huesped_id)
     } else {
         (user.id, None)
     };

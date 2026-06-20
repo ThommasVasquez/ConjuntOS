@@ -44,7 +44,6 @@ export default function BottomNav() {
       { name: "Reservas", path: "/reservas", icon: ListMusic },
       { name: "Cartelera", path: "/cartelera", icon: Building2 },
       { name: "Pases", path: "/pases-temporales", icon: Ticket },
-      { name: "Chat", path: "/chat", icon: MessageCircle },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
   } else if (role === 'HUESPED_TEMPORAL') {

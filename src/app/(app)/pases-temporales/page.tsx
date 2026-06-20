@@ -7,7 +7,7 @@ import type { PaseTemporalDto, CrearPaseTemporalRequest, VehiculoTemporalInput }
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { ArrowRight, Calendar, Car, ClipboardList, DoorOpen, Dumbbell, Megaphone, Pencil, PlusCircle, ShieldAlert, Trash2, Users, Waves, XCircle } from "lucide-react";
+import { ArrowRight, Calendar, Car, ClipboardList, DoorOpen, Dumbbell, Megaphone, MessageCircle, Pencil, PlusCircle, ShieldAlert, Trash2, Users, Waves, XCircle } from "lucide-react";
 
 type FormData = Omit<CrearPaseTemporalRequest, "fecha_inicio" | "fecha_fin"> & {
   fecha_inicio: string;
@@ -487,6 +487,14 @@ export default function PasesTemporalesPage() {
 
                   {pase.estado === "ACTIVO" && (
                     <div className="flex items-center gap-2">
+                      {pase.usuario_id && (
+                        <button
+                          onClick={() => router.push(`/chat?huespedId=${pase.usuario_id}`)}
+                          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#57bf00] bg-[#57bf00]/10 border border-[#57bf00]/30 rounded-full px-3 py-1 hover:bg-[#57bf00]/20 active:scale-95 transition-all"
+                        >
+                          <MessageCircle size={12} /> Mensajes
+                        </button>
+                      )}
                       <button
                         onClick={() => startEditing(pase)}
                         className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-accent bg-accent/10 border border-accent/30 rounded-full px-3 py-1 hover:bg-accent/20 active:scale-95 transition-all"

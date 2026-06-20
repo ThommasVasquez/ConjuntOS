@@ -19,9 +19,10 @@ interface ChatMsg {
 
 interface ChatSectionProps {
   compact?: boolean;
+  huespedId?: string;
 }
 
-export default function ChatSection({ compact = false }: ChatSectionProps) {
+export default function ChatSection({ compact = false, huespedId }: ChatSectionProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
@@ -61,9 +62,12 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
   const fetchMessages = useCallback(async () => {
     try {
       const data = await api.get<ChatMsg[]>("/chat");
+      const filtered = huespedId
+        ? data.filter((m: ChatMsg) => !m.huespedId || m.huespedId === huespedId)
+        : data;
       setMessages((prev) => {
-        if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-        return data;
+        if (JSON.stringify(prev) === JSON.stringify(filtered)) return prev;
+        return filtered;
       });
     } catch {} finally {
       setLoading(false);
@@ -123,7 +127,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
       const { url, isImage } = await uploadAndGetUrl(file);
       const prefix = isImage ? "[imagen]" : "[archivo]";
       const name = file.name;
-      await api.post("/chat", { mensaje: `${prefix}${name}|${url}` });
+      await api.post("/chat", { mensaje: `${prefix}${name}|${url}`, ...(huespedId ? { huespedId } : {}) });
       justSentRef.current = true;
       await fetchMessages();
       toast.success(isImage ? "Imagen enviada" : "Archivo enviado");
@@ -192,6 +196,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
       await api.post("/chat", {
         mensaje: "[audio]",
         audioBase64: base64,
+        ...(huespedId ? { huespedId } : {}),
       });
       justSentRef.current = true;
       await fetchMessages();
@@ -254,7 +259,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
     if (!input.trim() || sending) return;
     setSending(true);
     try {
-      await api.post("/chat", { mensaje: input.trim() });
+      await api.post("/chat", { mensaje: input.trim(), ...(huespedId ? { huespedId } : {}) });
       setInput("");
       justSentRef.current = true;
       await fetchMessages();
@@ -352,7 +357,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
           </div>
         ) : messages.length === 0 ? (
           <p className="text-text-secondary text-center text-sm mt-8">
-            No hay mensajes aún. Escribe uno para contactar a tu {isGuest ? "anfitrión" : "administración"}.
+            No hay mensajes aún. Escribe uno para contactar a tu {isGuest ? "anfitrión" : huespedId ? "huésped" : "administración"}.
           </p>
         ) : (
           messages.map((msg) => {

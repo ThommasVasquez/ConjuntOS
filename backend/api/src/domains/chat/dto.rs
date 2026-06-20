@@ -43,6 +43,9 @@ pub struct CreateChatRequest {
     /// Base64-encoded audio; if present, uploaded to Storage before insert.
     pub audio_base64: Option<String>,
     pub transcripcion: Option<String>,
+    /// When a PROPIETARIO messages a specific guest, tag the message so the
+    /// guest can see it in their thread.
+    pub huesped_id: Option<Uuid>,
 }
 
 /// Admin POST body — accepts either a ready URL or raw base64 audio.
