@@ -343,8 +343,8 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
         ref={messagesContainerRef}
         onScroll={handleScroll}
         className={compact
-          ? "overflow-y-auto px-4 space-y-2 max-h-48"
-          : "flex-1 overflow-y-auto px-4 space-y-3 min-h-0"}
+          ? "overflow-y-auto overflow-x-hidden px-4 space-y-2 max-h-48"
+          : "flex-1 overflow-y-auto overflow-x-hidden px-4 space-y-3 min-h-0"}
       >
         {loading || !user ? (
           <div className="flex items-center justify-center py-8">
