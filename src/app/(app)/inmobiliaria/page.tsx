@@ -112,10 +112,10 @@ export default function InmobiliariaPage() {
   );
 
   return (
-    <div ref={containerRef} className="min-h-screen pb-32">
+    <div ref={containerRef} className="min-h-screen pb-32 overflow-x-hidden">
       <ProfileHeader className="pt-16 px-6" />
 
-      <div className="pt-8 pb-14 relative overflow-hidden">
+      <div className="pt-8 pb-14 px-4 relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-3 text-text">
