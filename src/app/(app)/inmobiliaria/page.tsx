@@ -196,7 +196,7 @@ export default function InmobiliariaPage() {
             ))}
           </div>
         ) : filteredInmuebles.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 gap-5">
             {filteredInmuebles.map((inv) => (
               <PropertyCard key={inv.id} item={inv} onClick={() => setSelectedInmueble(inv)} currentUserId={currentUserId} onEdit={(item) => { setEditingItem(item); setIsPosting(true); }} />
             ))}
