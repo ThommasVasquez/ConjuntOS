@@ -49,8 +49,9 @@ export default function BottomNav() {
     ];
   } else if (role === 'HUESPED_TEMPORAL') {
     tabs = [
-      { name: "Reservas", path: "/reservas", icon: ListMusic },
-      { name: "Paquetería", path: "/paqueteria", icon: Package },
+      { name: "Estancia", path: "/mi-estancia", icon: Home },
+      { name: "Chat", path: "/chat", icon: MessageCircle },
+      { name: "Perfil", path: "/perfil", icon: User },
     ];
   } else {
     // RESIDENTES por defecto
