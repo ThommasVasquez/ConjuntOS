@@ -71,7 +71,7 @@ export default function MiEstanciaPage() {
   const diasRestantes = Math.ceil((fin.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="min-h-screen bg-primary pt-16 pb-32">
+    <div className="min-h-screen bg-primary pt-16 pb-28">
       <ProfileHeader className="px-4" />
       <div className="p-4 space-y-4 max-w-lg mx-auto">
 

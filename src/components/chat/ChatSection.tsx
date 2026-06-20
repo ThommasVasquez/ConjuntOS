@@ -105,7 +105,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
         ref={messagesContainerRef}
         onScroll={handleScroll}
         className={compact
-          ? "overflow-y-auto px-4 space-y-2 max-h-80"
+          ? "overflow-y-auto px-4 space-y-2 max-h-48"
           : "flex-1 overflow-y-auto px-4 space-y-3"}
       >
         {loading ? (
