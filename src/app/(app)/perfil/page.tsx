@@ -70,7 +70,7 @@ function ProfileContent() {
   interface FinanceFetch { pagos?: Pago[]; recibos?: Recibo[]; }
 
   const [userData, setUserData] = useState<UserData>({
-    name: "Residente",
+    name: "Cargando...",
     apto: "S/N",
     torre: "S/T",
     phone: "",

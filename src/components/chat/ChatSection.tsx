@@ -108,7 +108,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
           ? "overflow-y-auto px-4 space-y-2 max-h-48"
           : "flex-1 overflow-y-auto px-4 space-y-3 min-h-0"}
       >
-        {loading ? (
+        {loading || !user ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 size={20} className="animate-spin text-accent" />
           </div>

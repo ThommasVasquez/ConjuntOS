@@ -72,7 +72,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
 
         if (profileData) {
           const u = profileData;
-          const mapped = { name: u.nombre || "Residente", gender: u.genero || "neutro" };
+          const mapped = { name: u.nombre || (user?.rol === 'HUESPED_TEMPORAL' ? 'Huésped' : 'Residente'), gender: u.genero || "neutro" };
           setUserData(mapped);
           if (u.avatar) setProfilePic(u.avatar);
           localStorage.setItem(`conjuntos_profile_data_${userId}`, JSON.stringify(mapped));
