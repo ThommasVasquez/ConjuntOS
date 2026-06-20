@@ -112,7 +112,7 @@ export default function InmobiliariaPage() {
   );
 
   return (
-    <div ref={containerRef} className="min-h-screen pb-32 overflow-x-hidden">
+    <div ref={containerRef} className="min-h-screen pb-32">
       <ProfileHeader className="pt-16 px-6" />
 
       <div className="pt-8 pb-14 px-4 relative overflow-hidden">
@@ -189,7 +189,7 @@ export default function InmobiliariaPage() {
         
       </div>
 
-      <div>
+      <div className="px-4">
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
