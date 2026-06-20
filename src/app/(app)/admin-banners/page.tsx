@@ -149,7 +149,7 @@ export default function AdminBannersPage() {
           </div>
           <button
             onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }}
-            className="bg-accent text-white rounded-full p-3 hover:opacity-90 transition-opacity"
+            className="bg-accent text-on-accent rounded-full p-3 hover:opacity-90 transition-opacity"
           >
             <Plus size={20} />
           </button>
@@ -253,7 +253,7 @@ export default function AdminBannersPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-2xl bg-accent text-white text-sm font-bold"
+                  className="flex-1 py-2.5 rounded-2xl bg-accent text-on-accent text-sm font-bold"
                 >
                   {editingId ? "Guardar" : "Crear"}
                 </button>

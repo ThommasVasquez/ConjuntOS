@@ -128,7 +128,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                     isOwn
-                      ? "bg-accent text-white rounded-tr-sm"
+                      ? "bg-accent text-on-accent rounded-tr-sm"
                       : "bg-surface-2 text-text rounded-tl-sm"
                   }`}
                 >
@@ -155,12 +155,12 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Escribe un mensaje..."
-            className="flex-1 bg-surface-2 border border-border rounded-full px-4 py-2.5 text-sm text-text focus:outline-none focus:border-accent"
+            className="flex-1 bg-primary border border-border rounded-full px-4 py-2.5 text-sm text-text placeholder:text-text/40 focus:outline-none focus:border-accent"
           />
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="bg-accent text-white rounded-full p-2.5 disabled:opacity-50 hover:opacity-90 transition-opacity"
+            className="bg-accent text-on-accent rounded-full p-2.5 disabled:opacity-50 hover:opacity-90 transition-opacity"
           >
             {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
           </button>

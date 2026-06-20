@@ -138,7 +138,7 @@ export default function ReservaSection() {
       {/* Botón Reservar */}
       <button
         onClick={() => setShowModal(true)}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-white text-sm font-bold hover:opacity-90 transition-opacity"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-on-accent text-sm font-bold hover:opacity-90 transition-opacity"
       >
         <Plus size={18} />
         Reservar área común
@@ -213,7 +213,7 @@ export default function ReservaSection() {
               <button
                 onClick={handleReservar}
                 disabled={!selectedArea || submitting}
-                className="flex-1 py-2.5 rounded-2xl bg-accent text-white text-sm font-bold disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-2xl bg-accent text-on-accent text-sm font-bold disabled:opacity-50"
               >
                 {submitting ? "Reservando..." : "Reservar"}
               </button>
