@@ -112,11 +112,22 @@ export default function InmobiliariaPage() {
     <div ref={containerRef} className="min-h-screen pb-32">
       <ProfileHeader className="pt-16 px-6" />
 
-      <div className="pt-8 pb-14 px-6 relative overflow-hidden bg-surface-2/20">
+      <div className="pt-8 pb-14 px-6 relative overflow-hidden">
         <div className="max-w-4xl mx-auto relative z-10">
-          <div className="flex items-center gap-3 mb-2 text-text">
-            <Building2 size={18} className="text-accent" />
-            <span className="text-xs font-semibold tracking-widest uppercase">Inmobiliaria Interna</span>
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-3 text-text">
+              <Building2 size={18} className="text-accent" />
+              <span className="text-xs font-semibold tracking-widest uppercase">Inmobiliaria Interna</span>
+            </div>
+            {isPropietario && (
+              <button
+                onClick={() => setIsPosting(true)}
+                className="px-4 py-2 rounded-xl bg-accent text-primary text-sm font-bold shadow-lg shadow-accent/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+              >
+                <Plus size={16} />
+                <span>Publicar Oferta</span>
+              </button>
+            )}
           </div>
           <h1 className="text-4xl font-bold mb-6 text-text tracking-tight">Encuentra tu proximo hogar aqui mismo.</h1>
           
@@ -173,8 +184,6 @@ export default function InmobiliariaPage() {
           </div>
         </div>
         
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-accent/20 rounded-full blur-[120px] pointer-events-none opacity-30 dark:opacity-100" />
-        <div className="absolute top-40 -left-20 w-60 h-60 bg-text/10 rounded-full blur-[100px] pointer-events-none opacity-30 dark:opacity-100" />
       </div>
 
       <div className="px-6 max-w-6xl mx-auto">
