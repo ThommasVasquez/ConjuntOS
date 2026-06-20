@@ -14,7 +14,9 @@ import {
   X,
   ArrowRight,
   MapPin,
-  ShieldCheck
+  ShieldCheck,
+  Upload,
+  Image as ImageIcon
 } from "lucide-react";
 import { gsap } from "gsap";
 import { api } from "@/lib/api/client";
@@ -23,6 +25,7 @@ import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import BottomSheet from "@/components/shell/BottomSheet";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Inmueble {
   id: string;
@@ -53,6 +56,8 @@ export default function InmobiliariaPage() {
   const [searchQuery, setSearchQuery] = useState("");
   
   const containerRef = useRef(null);
+  const { user } = useAuth();
+  const isPropietario = user?.rol === "PROPIETARIO";
 
   // Real-time WebSocket subscription
   useWsSubscription('inmueble', () => {
@@ -107,11 +112,7 @@ export default function InmobiliariaPage() {
     <div ref={containerRef} className="min-h-screen pb-32">
       <ProfileHeader className="pt-16 px-6" />
 
-      <div className="pt-8 pb-14 px-6 relative overflow-hidden" style={{
-        background: "linear-gradient(180deg, rgba(0,157,242,0.12) 0%, rgba(0,157,242,0.06) 40%, rgba(0,157,242,0.02) 70%, transparent 100%)",
-        maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
-        WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)"
-      }}>
+      <div className="pt-8 pb-14 px-6 relative overflow-hidden bg-surface-2/20">
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="flex items-center gap-3 mb-2 text-text">
             <Building2 size={18} className="text-accent" />
@@ -200,12 +201,14 @@ export default function InmobiliariaPage() {
         )}
       </div>
 
-      <button 
-        onClick={() => setIsPosting(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-accent text-primary shadow-2xl shadow-accent/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group"
-      >
-        <Plus size={32} className="group-hover:rotate-90 transition-transform duration-500" />
-      </button>
+      {isPropietario && (
+        <button 
+          onClick={() => setIsPosting(true)}
+          className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-accent text-primary shadow-2xl shadow-accent/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group"
+        >
+          <Plus size={32} className="group-hover:rotate-90 transition-transform duration-500" />
+        </button>
+      )}
 
       {selectedInmueble && (
         <PropertyDetail 
@@ -577,6 +580,8 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
 
 function PostingForm({ onSuccess }: { onSuccess: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     titulo: "",
     descripcion: "",
@@ -589,14 +594,58 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
     imagenes: [] as string[]
   });
 
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Error leyendo archivo"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    if (selected.length === 0) return;
+    setFiles(prev => [...prev, ...selected]);
+    const newPreviews = selected.map(f => URL.createObjectURL(f));
+    setPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+    URL.revokeObjectURL(previews[index]);
+    setPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.post('/inmuebles', formData);
+      // Upload files first
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const dataUrl = await fileToDataUrl(file);
+        const isImage = file.type.startsWith("image/");
+        if (isImage) {
+          const res = await api.post<{ url: string }>("/uploads/imagen", {
+            data: dataUrl,
+            carpeta: "inmobiliaria",
+          });
+          uploadedUrls.push(res.url);
+        } else {
+          const res = await api.post<{ url: string; content_type: string }>("/uploads/archivo", {
+            data: dataUrl,
+            nombre: file.name,
+          });
+          uploadedUrls.push(res.url);
+        }
+      }
+      
+      await api.post('/inmuebles', { ...formData, imagenes: uploadedUrls });
       onSuccess();
     } catch (err) {
       console.error(err);
+      toast.error("Error al publicar el inmueble");
     } finally {
       setIsSubmitting(false);
     }
@@ -620,6 +669,30 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
                  {type === "ALQUILER" ? "Arrendar" : "Vender"}
                </button>
             ))}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-text uppercase pl-1">Tipo de Unidad</label>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { key: "APARTAMENTO", label: "Apartamento" },
+                { key: "PARQUEADERO", label: "Parqueadero" },
+                { key: "LOCAL", label: "Habitación" },
+              ] as const).map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFormData({...formData, tipoUnidad: key})}
+                  className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                    formData.tipoUnidad === key
+                      ? "bg-accent border-accent text-primary"
+                      : "border-border bg-surface-2 text-text"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -661,17 +734,17 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
             <div className="space-y-1.5">
                <label className="text-[10px] font-bold text-text uppercase pl-1">Alcobas</label>
                <div className="flex items-center bg-surface-2 rounded-2xl border border-border overflow-hidden">
-                  <button type="button" onClick={() => setFormData({...formData, habitaciones: Math.max(0, formData.habitaciones-1)})} className="flex-1 h-14 hover:bg-surface-2/80">-</button>
+                  <button type="button" onClick={() => setFormData({...formData, habitaciones: Math.max(0, formData.habitaciones-1)})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">−</button>
                   <span className="flex-1 text-center font-bold text-accent">{formData.habitaciones}</span>
-                  <button type="button" onClick={() => setFormData({...formData, habitaciones: formData.habitaciones+1})} className="flex-1 h-14 hover:bg-surface-2/80">+</button>
+                  <button type="button" onClick={() => setFormData({...formData, habitaciones: formData.habitaciones+1})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">+</button>
                </div>
             </div>
             <div className="space-y-1.5">
                <label className="text-[10px] font-bold text-text uppercase pl-1">Banos</label>
                <div className="flex items-center bg-surface-2 rounded-2xl border border-border overflow-hidden">
-                  <button type="button" onClick={() => setFormData({...formData, banos: Math.max(0, formData.banos-1)})} className="flex-1 h-14 hover:bg-surface-2/80">-</button>
+                  <button type="button" onClick={() => setFormData({...formData, banos: Math.max(0, formData.banos-1)})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">−</button>
                   <span className="flex-1 text-center font-bold text-accent">{formData.banos}</span>
-                  <button type="button" onClick={() => setFormData({...formData, banos: formData.banos+1})} className="flex-1 h-14 hover:bg-surface-2/80">+</button>
+                  <button type="button" onClick={() => setFormData({...formData, banos: formData.banos+1})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">+</button>
                </div>
             </div>
           </div>
@@ -682,10 +755,47 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
               required
               rows={3}
               className="w-full rounded-2xl bg-surface-2 border border-border p-4 focus:border-accent text-text outline-none transition-all placeholder:text-text"
-              placeholder="Cuentanos mas sobre el inmueble..."
+              placeholder="Detalles del inmueble: acabados, ubicacion, servicios cercanos..."
               value={formData.descripcion}
               onChange={e => setFormData({...formData, descripcion: e.target.value})}
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-text uppercase pl-1">Fotos / Videos</label>
+            <div className="flex flex-wrap gap-2">
+              {previews.map((url, i) => {
+                const isVideo = files[i]?.type.startsWith("video/");
+                return (
+                  <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-border">
+                    {isVideo ? (
+                      <video src={url} className="w-full h-full object-cover" />
+                    ) : (
+                      <Image src={url} alt={`Preview ${i}`} fill className="object-cover" unoptimized />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center"
+                    >
+                      <X size={10} className="text-white" />
+                    </button>
+                  </div>
+                );
+              })}
+              <label className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-accent/50 transition-colors bg-surface-2/40">
+                <Upload size={18} className="text-text/50" />
+                <span className="text-[8px] text-text/50 font-semibold">Subir</span>
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <p className="text-[9px] text-text/40 pl-1">Fotos o videos del inmueble. Max 16 MB por archivo.</p>
           </div>
        </div>
 
