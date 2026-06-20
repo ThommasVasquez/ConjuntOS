@@ -83,3 +83,21 @@ pub struct CreateInmuebleRequest {
     pub imagenes: Option<Vec<String>>,
     pub caracteristicas: Option<Vec<String>>,
 }
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateInmuebleRequest {
+    pub titulo: Option<String>,
+    pub descripcion: Option<String>,
+    #[schema(value_type = Option<String>)]
+    pub precio: Option<BigDecimal>,
+    pub tipo_negocio: Option<TipoNegocio>,
+    pub tipo_unidad: Option<TipoUnidad>,
+    pub habitaciones: Option<i32>,
+    pub banos: Option<i32>,
+    #[schema(value_type = Option<String>)]
+    pub area: Option<BigDecimal>,
+    pub imagenes: Option<Vec<String>>,
+    pub caracteristicas: Option<Vec<String>>,
+    pub estado: Option<EstadoInmueble>,
+}

@@ -53,11 +53,13 @@ export default function InmobiliariaPage() {
   const [filterUnidad, setFilterUnidad] = useState<"TODOS" | "APARTAMENTO" | "PARQUEADERO" | "LOCAL">("TODOS");
   const [isPosting, setIsPosting] = useState(false);
   const [selectedInmueble, setSelectedInmueble] = useState<Inmueble | null>(null);
+  const [editingItem, setEditingItem] = useState<Inmueble | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   
   const containerRef = useRef(null);
   const { user } = useAuth();
   const isPropietario = user?.rol === "PROPIETARIO";
+  const currentUserId = user?.id;
 
   // Real-time WebSocket subscription
   useWsSubscription('inmueble', () => {
@@ -196,7 +198,7 @@ export default function InmobiliariaPage() {
         ) : filteredInmuebles.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {filteredInmuebles.map((inv) => (
-              <PropertyCard key={inv.id} item={inv} onClick={() => setSelectedInmueble(inv)} />
+              <PropertyCard key={inv.id} item={inv} onClick={() => setSelectedInmueble(inv)} currentUserId={currentUserId} onEdit={(item) => { setEditingItem(item); setIsPosting(true); }} />
             ))}
           </div>
         ) : (
@@ -222,21 +224,27 @@ export default function InmobiliariaPage() {
       {selectedInmueble && (
         <PropertyDetail 
           item={selectedInmueble} 
-          onClose={() => setSelectedInmueble(null)} 
+          onClose={() => setSelectedInmueble(null)}
+          currentUserId={currentUserId}
+          onEdit={(item) => { setSelectedInmueble(null); setEditingItem(item); setIsPosting(true); }}
         />
       )}
 
-      <BottomSheet isOpen={isPosting} onClose={() => setIsPosting(false)} title="Publicar Inmueble" fullWidth>
-         <PostingForm onSuccess={() => { setIsPosting(false); setFilterType("TODOS"); }} />
+      <BottomSheet isOpen={isPosting} onClose={() => { setIsPosting(false); setEditingItem(null); }} title={editingItem ? "Editar Inmueble" : "Publicar Inmueble"} fullWidth>
+         <PostingForm 
+           onSuccess={() => { setIsPosting(false); setEditingItem(null); setFilterType("TODOS"); }} 
+           editItem={editingItem}
+         />
       </BottomSheet>
     </div>
   );
 }
 
-function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }) {
+function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble, onClick: () => void; currentUserId?: string; onEdit?: (item: Inmueble) => void }) {
   const [isLiked, setIsLiked] = useState(false);
   const imagenes = item.imagenes || [];
   const mainImage = imagenes[0] || "/placeholder.svg";
+  const isOwner = currentUserId && item.usuarioId === currentUserId;
 
   const formattedPrecio = new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -337,16 +345,25 @@ function PropertyCard({ item, onClick }: { item: Inmueble, onClick: () => void }
           <div className="px-2 py-1 rounded-lg bg-accent/10 border border-accent/20">
             <span className="text-[9px] font-bold text-accent uppercase">{item.tipoNegocio}</span>
           </div>
+          {isOwner && onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+              className="px-2 py-1 rounded-lg bg-surface-2 border border-border text-text text-[9px] font-bold hover:bg-accent/10 hover:border-accent/30 transition-colors"
+            >
+              Editar
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void }) {
+function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueble; onClose: () => void; currentUserId?: string; onEdit?: (item: Inmueble) => void }) {
   const [step, setStep] = useState<"DETAILS" | "DOCS" | "SIGNING" | "SUCCESS">("DETAILS");
   const [docProgress, setDocProgress] = useState(0);
   const [signed, setSigned] = useState(false);
+  const isOwner = currentUserId && item.usuarioId === currentUserId;
   
   const imagenes = item.imagenes || [];
   const mainImage = imagenes[0] || "/placeholder.svg";
@@ -394,6 +411,16 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
             <X size={20} />
           </button>
         </div>
+        {isOwner && onEdit && (
+          <div className="absolute top-6 right-6 z-50">
+            <button 
+              onClick={() => onEdit(item)}
+              className="px-3 py-2 rounded-full bg-accent text-primary text-xs font-bold shadow-lg active:scale-95 transition-all"
+            >
+              Editar
+            </button>
+          </div>
+        )}
 
         {step === "DETAILS" && (
           <>
@@ -587,20 +614,22 @@ function PropertyDetail({ item, onClose }: { item: Inmueble, onClose: () => void
   );
 }
 
-function PostingForm({ onSuccess }: { onSuccess: () => void }) {
+function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?: Inmueble | null }) {
+  const isEditing = !!editItem;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [previews, setPreviews] = useState<string[]>(editItem?.imagenes || []);
+  const [existingUrls] = useState<string[]>(editItem?.imagenes || []);
   const [formData, setFormData] = useState({
-    titulo: "",
-    descripcion: "",
-    precio: "",
-    tipoNegocio: "ALQUILER",
-    tipoUnidad: "APARTAMENTO",
-    habitaciones: 2,
-    banos: 1,
-    area: "",
-    imagenes: [] as string[]
+    titulo: editItem?.titulo || "",
+    descripcion: editItem?.descripcion || "",
+    precio: editItem?.precio || "",
+    tipoNegocio: editItem?.tipoNegocio || "ALQUILER",
+    tipoUnidad: editItem?.tipoUnidad || "APARTAMENTO",
+    habitaciones: editItem?.habitaciones || 2,
+    banos: editItem?.banos || 1,
+    area: editItem?.area || "",
+    imagenes: editItem?.imagenes || [] as string[]
   });
 
   const fileToDataUrl = (file: File): Promise<string> => {
@@ -650,7 +679,12 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
         }
       }
       
-      await api.post('/inmuebles', { ...formData, imagenes: uploadedUrls });
+      const allUrls = [...existingUrls, ...uploadedUrls];
+      if (isEditing && editItem) {
+        await api.put(`/inmuebles/${editItem.id}`, { ...formData, imagenes: allUrls });
+      } else {
+        await api.post('/inmuebles', { ...formData, imagenes: allUrls });
+      }
       onSuccess();
     } catch (err) {
       console.error(err);
@@ -818,7 +852,7 @@ function PostingForm({ onSuccess }: { onSuccess: () => void }) {
          ) : (
            <>
              <CheckCircle2 size={20} />
-             <span>Publicar Anuncio Ahora</span>
+             <span>{isEditing ? "Guardar Cambios" : "Publicar Anuncio Ahora"}</span>
            </>
          )}
        </button>

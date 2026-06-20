@@ -1,9 +1,10 @@
-use axum::extract::{Query, State};
-use axum::routing::get;
+use axum::extract::{Path, Query, State};
+use axum::routing::{get, put};
 use axum::{Json, Router};
+use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
-use crate::domains::inmuebles::dto::{CreateInmuebleRequest, InmuebleDto, InmueblesQuery};
+use crate::domains::inmuebles::dto::{CreateInmuebleRequest, InmuebleDto, InmueblesQuery, UpdateInmuebleRequest};
 use crate::domains::inmuebles::models::NuevoInmueble;
 use crate::domains::inmuebles::repo;
 use crate::error::{ApiError, ApiResult};
@@ -11,7 +12,9 @@ use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/inmuebles", get(listar_inmuebles).post(crear_inmueble))
+    Router::new()
+        .route("/inmuebles", get(listar_inmuebles).post(crear_inmueble))
+        .route("/inmuebles/{id}", put(actualizar_inmueble))
 }
 
 #[utoipa::path(
@@ -100,4 +103,32 @@ pub async fn crear_inmueble(
         )
         .await;
     Ok(Json(dto))
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/v1/inmuebles/{id}",
+    tag = "inmuebles",
+    params(("id" = Uuid, Path, description = "Listing id")),
+    request_body = UpdateInmuebleRequest,
+    responses(
+        (status = 200, description = "Listing updated", body = InmuebleDto),
+        (status = 403, description = "Not the owner"),
+        (status = 404, description = "Not found")
+    )
+)]
+pub async fn actualizar_inmueble(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateInmuebleRequest>,
+) -> ApiResult<Json<InmuebleDto>> {
+    let mut conn = state.pool.get().await?;
+    // Verify ownership
+    let existing = repo::obtener_inmueble(&mut conn, id).await?;
+    if existing.usuario_id != user.id {
+        return Err(ApiError::Forbidden);
+    }
+    let updated = repo::actualizar_inmueble(&mut conn, id, req).await?;
+    Ok(Json(InmuebleDto::from(updated)))
 }
