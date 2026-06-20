@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { Calendar, Clock, Car, User, DoorOpen, Dumbbell, Waves, QrCode } from "lucide-react";
+import { Calendar, Clock, Car, User, DoorOpen, Dumbbell, Waves, QrCode, MessageCircle } from "lucide-react";
+import ChatSection from "@/components/chat/ChatSection";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -155,11 +156,13 @@ export default function MiEstanciaPage() {
           <p className="text-text-secondary text-xs mt-2">Muéstralo en portería al ingresar</p>
         </div>
 
-        {/* Contactar anfitrión */}
+        {/* Chat con el anfitrión */}
         <div className="bg-surface-2 rounded-xl p-4 border border-border">
-          <h2 className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-3">Contactar anfitrión</h2>
-          <p className="text-text text-lg font-medium">{pase.nombre_anfitrion}</p>
-          <p className="text-text-secondary text-sm mt-1">Comunícate con tu anfitrión a través de los canales acordados para cualquier consulta durante tu estancia.</p>
+          <h2 className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-3 flex items-center gap-2">
+            <MessageCircle size={14} className="text-accent" />
+            Chat con {pase.nombre_anfitrion}
+          </h2>
+          <ChatSection compact />
         </div>
 
       </div>
