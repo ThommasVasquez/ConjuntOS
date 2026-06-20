@@ -615,6 +615,7 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
     titulo: editItem?.titulo || "",
     descripcion: editItem?.descripcion || "",
     precio: editItem?.precio || "",
+    moneda: (editItem as any)?.moneda || "COP",
     tipoNegocio: editItem?.tipoNegocio || "ALQUILER",
     tipoUnidad: editItem?.tipoUnidad || "APARTAMENTO",
     habitaciones: editItem?.habitaciones || 2,
@@ -743,23 +744,49 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-text uppercase pl-1">Precio</label>
-              <input 
-                required
-                type="number"
-                className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none"
-                placeholder="0.00"
-                value={formData.precio}
-                onChange={e => setFormData({...formData, precio: e.target.value})}
-              />
+              <div className="flex gap-1">
+                <input 
+                  required
+                  type="text"
+                  inputMode="decimal"
+                  className="flex-1 h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none"
+                  placeholder="0.00"
+                  value={formData.precio}
+                  onChange={e => {
+                    const v = e.target.value.replace(/[^0-9.,']/g, '');
+                    setFormData({...formData, precio: v});
+                  }}
+                />
+                <div className="flex rounded-2xl bg-surface-2 border border-border overflow-hidden shrink-0">
+                  {(["COP", "USD"] as const).map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setFormData({...formData, moneda: c})}
+                      className={`h-14 px-3 text-xs font-bold transition-all ${
+                        formData.moneda === c
+                          ? "bg-accent text-primary"
+                          : "text-text/60 hover:text-text"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-text uppercase pl-1">Area (m2)</label>
+              <label className="text-[10px] font-bold text-text uppercase pl-1">Area (m²)</label>
               <input 
-                type="number"
+                type="text"
+                inputMode="decimal"
                 className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none"
-                placeholder="0"
+                placeholder="0.00"
                 value={formData.area}
-                onChange={e => setFormData({...formData, area: e.target.value})}
+                onChange={e => {
+                  const v = e.target.value.replace(/[^0-9.,]/g, '');
+                  setFormData({...formData, area: v});
+                }}
               />
             </div>
           </div>

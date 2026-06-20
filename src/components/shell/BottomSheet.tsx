@@ -101,7 +101,7 @@ export default function BottomSheet({ isOpen, onClose, children, title, fullWidt
   return (
     <div 
       ref={overlayRef}
-      className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm opacity-0 hidden"
+      className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm opacity-0 hidden"
       aria-modal="true"
       role="dialog"
     >
