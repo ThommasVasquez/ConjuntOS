@@ -42,7 +42,7 @@ export default function BottomNav() {
       { name: "Inicio", path: "/inicio", icon: Home },
       { name: "Citofonía", path: "/citofonia", icon: Phone }, 
       { name: "Reservas", path: "/reservas", icon: ListMusic },
-      { name: "Cartelera", path: "/cartelera", icon: Building2 },
+      { name: "Inmobiliaria", path: "/inmobiliaria", icon: Building2 },
       { name: "Pases", path: "/pases-temporales", icon: Ticket },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
@@ -59,7 +59,7 @@ export default function BottomNav() {
       { name: "Inicio", path: "/inicio", icon: Home },
       { name: "Citofonía", path: "/citofonia", icon: Phone }, 
       { name: "Reservas", path: "/reservas", icon: ListMusic },
-      { name: "Cartelera", path: "/cartelera", icon: Building2 },
+      { name: "Inmobiliaria", path: "/inmobiliaria", icon: Building2 },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
   }
