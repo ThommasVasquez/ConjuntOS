@@ -96,7 +96,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
 
   const containerClass = compact
     ? "flex flex-col"
-    : "flex flex-col flex-1";
+    : "flex flex-col flex-1 min-h-0";
 
   return (
     <div className={containerClass}>
@@ -106,7 +106,7 @@ export default function ChatSection({ compact = false }: ChatSectionProps) {
         onScroll={handleScroll}
         className={compact
           ? "overflow-y-auto px-4 space-y-2 max-h-48"
-          : "flex-1 overflow-y-auto px-4 space-y-3"}
+          : "flex-1 overflow-y-auto px-4 space-y-3 min-h-0"}
       >
         {loading ? (
           <div className="flex items-center justify-center py-8">
