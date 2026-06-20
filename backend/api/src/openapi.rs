@@ -83,6 +83,7 @@ use utoipa::OpenApi;
         crate::domains::comunicaciones::handlers::eliminar_anuncio,
         crate::domains::comunicaciones::handlers::directorio,
         crate::domains::uploads::handlers::subir_imagen,
+        crate::domains::uploads::handlers::subir_archivo,
         crate::domains::solicitudes::handlers::listar_solicitudes,
         crate::domains::solicitudes::handlers::crear_solicitud,
         crate::domains::tramites::handlers::listar_tramites,
