@@ -64,7 +64,7 @@ export default function RootLayout({
         <link rel="icon" type="image/svg+xml" href="/solo-dark.svg"  media="(prefers-color-scheme: dark)" />
         <link rel="apple-touch-icon" href="/solo-light.svg" />
       </head>
-      <body className="antialiased selection:bg-primary/20 min-h-screen">
+      <body className="antialiased selection:bg-primary/20 min-h-dvh">
         <Providers>
           <SplashScreen />
           {children}

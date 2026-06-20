@@ -8,7 +8,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="app-shell flex flex-col min-h-screen relative overflow-hidden">
+    <div className="app-shell flex flex-col relative overflow-hidden">
       {/* GLOBAL BACKGROUND ELEMENTS (PREMIUM DESIGN SYSTEM) */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-primary transition-colors duration-300">
         {/* Ambient Orbs - Extremely Subtle */}
