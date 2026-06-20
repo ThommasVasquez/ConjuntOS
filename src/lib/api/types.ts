@@ -969,3 +969,74 @@ export interface ActualizarCasoConvivenciaRequest {
   acta_reunion?: string;
 }
 
+// ===========================================================================
+// Analytics (demografía)
+// ===========================================================================
+
+export interface ConteoRolDto {
+  rol: string;
+  cantidad: number;
+}
+
+export interface ConteoTorreDto {
+  torre: string;
+  cantidad: number;
+}
+
+export interface DemografiaDto {
+  totalUnidades: number;
+  totalUsuarios: number;
+  porRol: ConteoRolDto[];
+  porTorre: ConteoTorreDto[];
+  nuevosEsteMes: number;
+  activos30d: number;
+}
+
+// ===========================================================================
+// Ad Spaces (publicidad)
+// ===========================================================================
+
+export interface AdSpaceDto {
+  id: string;
+  nombre: string;
+  posicion: "FEED_TOP" | "FEED_MID" | "FEED_BOTTOM";
+  imagenUrl: string | null;
+  linkUrl: string | null;
+  activo: boolean;
+  empresa: string | null;
+  inicioEn: string;
+  finEn: string;
+  impresiones: number;
+  clics: number;
+}
+
+export interface AdSpaceFeedDto {
+  id: string;
+  nombre: string;
+  posicion: string;
+  imagenUrl: string | null;
+  linkUrl: string | null;
+  empresa: string | null;
+}
+
+export interface CreateAdSpaceRequest {
+  nombre: string;
+  posicion: string;
+  imagenUrl?: string;
+  linkUrl?: string;
+  empresa?: string;
+  inicioEn: string;
+  finEn: string;
+}
+
+export interface UpdateAdSpaceRequest {
+  nombre?: string;
+  posicion?: string;
+  imagenUrl?: string;
+  linkUrl?: string;
+  activo?: boolean;
+  empresa?: string;
+  inicioEn?: string;
+  finEn?: string;
+}
+

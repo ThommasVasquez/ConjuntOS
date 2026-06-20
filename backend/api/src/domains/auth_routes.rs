@@ -12,10 +12,13 @@ use crate::auth::extract::AuthUser;
 use crate::auth::{jwt, password};
 use crate::config::Config;
 use crate::db::enums::Rol;
+use chrono::Utc;
 use crate::domains::usuarios::dto::UserDto;
 use crate::domains::usuarios::repo;
 use crate::error::{ApiError, ApiResult};
 use crate::state::AppState;
+use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -79,6 +82,13 @@ pub async fn login(
     if !user.activo {
         return Err(ApiError::Forbidden);
     }
+
+    // Update last_login_at
+    use crate::db::schema::usuarios;
+    diesel::update(usuarios::table.filter(usuarios::id.eq(user.id)))
+        .set(usuarios::last_login_at.eq(Some(Utc::now())))
+        .execute(&mut conn)
+        .await?;
 
     let token = jwt::issue(
         user.id,

@@ -777,6 +777,7 @@ diesel::table! {
         created_at -> Timestamptz,
         password_changed_at -> Timestamptz,
         numero_interno -> Text,
+        last_login_at -> Nullable<Timestamptz>,
     }
 }
 

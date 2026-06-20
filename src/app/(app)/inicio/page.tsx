@@ -45,6 +45,7 @@ import type {
   PagoDto,
   ReciboDto,
   PagosResponse,
+  AdSpaceFeedDto,
 } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { getNotifTarget } from "@/lib/notif-routing";
@@ -79,6 +80,7 @@ function HomeResidente() {
   ];
 
   const [anuncios, setAnuncios] = useState<AnuncioDto[]>([]);
+  const [ads, setAds] = useState<AdSpaceFeedDto[]>([]);
   const [isLoadingAnuncios, setIsLoadingAnuncios] = useState(true);
   const [userData, setUserData] = useState<ProfileResponse | null>(null);
   const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string } | null>(null);
@@ -93,6 +95,13 @@ function HomeResidente() {
     } finally {
       setIsLoadingAnuncios(false);
     }
+  }, []);
+
+  const fetchAds = useCallback(async () => {
+    try {
+      const data = await api.get<AdSpaceFeedDto[]>('/ad-spaces/active');
+      setAds(data);
+    } catch { /* silently ignore */ }
   }, []);
 
   const fetchNotificaciones = useCallback(async () => {
@@ -218,6 +227,7 @@ function HomeResidente() {
       fetchFinance();
       fetchUserData();
       fetchAnuncios();
+      fetchAds();
       fetchActiveAsamblea();
       fetchSolicitudesParqueadero();
       fetchCargosRetenidos();
@@ -226,7 +236,7 @@ function HomeResidente() {
       gsap.fromTo(".fade-up-home", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 });
     }, containerRef);
     return () => ctx.revert();
-  }, [user, fetchNotificaciones, fetchFinance, fetchUserData, fetchAnuncios, fetchActiveAsamblea, fetchSolicitudesParqueadero, fetchCargosRetenidos]);
+  }, [user, fetchNotificaciones, fetchFinance, fetchUserData, fetchAnuncios, fetchAds, fetchActiveAsamblea, fetchSolicitudesParqueadero, fetchCargosRetenidos]);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-16 pb-32">
@@ -515,11 +525,21 @@ function HomeResidente() {
              <Megaphone size={32} className="text-text" />
              <span className="text-[10px] font-bold text-text uppercase tracking-widest">Sin novedades por ahora</span>
            </div>
-         ) : anuncios.map((anuncio) => (
-            <div key={anuncio.id} onClick={() => setSelectedFeedItem(anuncio)} className="cursor-pointer">
-              <AnuncioCard anuncio={anuncio} />
-            </div>
-          ))}
+         ) : (
+          anuncios.map((anuncio, idx) => {
+            const items = [
+              <div key={anuncio.id} onClick={() => setSelectedFeedItem(anuncio)} className="cursor-pointer">
+                <AnuncioCard anuncio={anuncio} />
+              </div>
+            ];
+            // Insertar ad cada 3 anuncios
+            if ((idx + 1) % 3 === 0 && ads.length > 0) {
+              const ad = ads[Math.floor(idx / 3) % ads.length];
+              items.push(<BannerAdCard key={`ad-${ad.id}-${idx}`} ad={ad} />);
+            }
+            return items;
+          })
+        )}
        </section>
 
        {selectedFeedItem && (
@@ -586,6 +606,48 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
             Ver más <ChevronLeft size={14} className="rotate-180" />
          </span>
       </div>
+    </div>
+  );
+}
+
+function BannerAdCard({ ad }: { ad: AdSpaceFeedDto }) {
+  const handleClick = () => {
+    api.post(`/ad-spaces/${ad.id}/click`, {}).catch(() => {});
+    if (ad.linkUrl) window.open(ad.linkUrl, "_blank");
+  };
+
+  // Registrar impresión al montar
+  useEffect(() => {
+    api.post(`/ad-spaces/${ad.id}/impress`, {}).catch(() => {});
+  }, [ad.id]);
+
+  return (
+    <div
+      onClick={handleClick}
+      className="fade-up-home cursor-pointer rounded-[28px] overflow-hidden border border-accent/20 relative bg-surface-2"
+    >
+      {ad.imagenUrl ? (
+        <Image
+          src={ad.imagenUrl}
+          alt={ad.nombre}
+          width={400}
+          height={200}
+          className="w-full h-48 object-cover"
+          unoptimized
+        />
+      ) : (
+        <div className="w-full h-32 bg-gradient-to-r from-accent/20 to-accent/5 flex items-center justify-center">
+          <span className="text-text/40 text-sm">{ad.nombre}</span>
+        </div>
+      )}
+      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
+        Publicidad
+      </div>
+      {ad.empresa && (
+        <div className="p-3 text-center text-[10px] text-text/60 bg-surface-2">
+          {ad.empresa}
+        </div>
+      )}
     </div>
   );
 }

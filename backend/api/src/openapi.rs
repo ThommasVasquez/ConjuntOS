@@ -93,6 +93,7 @@ use utoipa::OpenApi;
         crate::domains::inmuebles::handlers::listar_inmuebles,
         crate::domains::inmuebles::handlers::crear_inmueble,
         crate::domains::admin_stats::admin_stats,
+        crate::domains::analytics::handlers::demografia,
         crate::domains::pases_temporales::handlers::crear_pase,
         crate::domains::pases_temporales::handlers::mis_pases,
         crate::domains::pases_temporales::handlers::mi_pase,
