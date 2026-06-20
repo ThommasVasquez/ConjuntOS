@@ -6,6 +6,7 @@ import { api } from "@/lib/api/client";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { Calendar, Clock, Car, User, DoorOpen, Dumbbell, Waves, QrCode, MessageCircle } from "lucide-react";
 import ChatSection from "@/components/chat/ChatSection";
+import ReservaSection from "@/components/reservas/ReservaSection";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -124,6 +125,12 @@ export default function MiEstanciaPage() {
           {!pase.permiso_entrada_salida && !pase.permiso_gimnasio && !pase.permiso_piscina && !pase.permiso_vehiculo && !pase.permiso_asamblea && (
             <p className="text-text-secondary text-sm">Sin permisos especiales</p>
           )}
+        </div>
+
+        {/* Reservar áreas comunes */}
+        <div className="bg-surface-2 rounded-xl p-4 border border-border">
+          <h2 className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-3">Reservar áreas</h2>
+          <ReservaSection />
         </div>
 
         {/* Vehículos */}
