@@ -648,6 +648,35 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
     setPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  const cleanNumber = (raw: string): string => {
+    if (!raw) return raw;
+    // Remove apostrophes used as thousands separators
+    let s = raw.replace(/'/g, '');
+    // If both , and . exist, the last one is the decimal separator
+    const commaPos = s.lastIndexOf(',');
+    const dotPos = s.lastIndexOf('.');
+    if (commaPos >= 0 && dotPos >= 0) {
+      // Both present: last one is decimal separator
+      if (commaPos > dotPos) {
+        // , is decimal: remove all . then replace last , with .
+        s = s.replace(/\./g, '');
+        s = s.substring(0, commaPos).replace(/,/g, '') + '.' + s.substring(commaPos + 1);
+      } else {
+        // . is decimal: remove all ,
+        s = s.replace(/,/g, '');
+      }
+    } else if (commaPos >= 0) {
+      // Only comma: if it's near the end (1-2 digits after), treat as decimal
+      const after = s.length - commaPos - 1;
+      if (after <= 2 && after > 0 && commaPos > 0) {
+        s = s.substring(0, commaPos) + '.' + s.substring(commaPos + 1);
+      } else {
+        s = s.replace(/,/g, '');
+      }
+    }
+    return s;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -673,10 +702,16 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
       }
       
       const allUrls = [...existingUrls, ...uploadedUrls];
+      const payload = {
+        ...formData,
+        precio: cleanNumber(formData.precio),
+        area: cleanNumber(formData.area) || null,
+        imagenes: allUrls,
+      };
       if (isEditing && editItem) {
-        await api.put(`/inmuebles/${editItem.id}`, { ...formData, imagenes: allUrls });
+        await api.put(`/inmuebles/${editItem.id}`, payload);
       } else {
-        await api.post('/inmuebles', { ...formData, imagenes: allUrls });
+        await api.post('/inmuebles', payload);
       }
       onSuccess();
     } catch (err) {
