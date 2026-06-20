@@ -456,7 +456,9 @@ function ProfileContent() {
 
   const userRole = user?.rol || "RESIDENTE";
 
-  const statusIcons = [
+  const isGuest = user?.rol === 'HUESPED_TEMPORAL';
+
+  const allStatusIcons = [
     { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, color: 'bg-linear-to-br from-text to-text text-black ring-4 ring-text/20 shadow-black/10', icon: <CreditCard size={12}/>, view: 'deuda' },
     { label: 'Trámites', val: tramites.length.toString(), color: 'bg-text/5 text-text', icon: <ClipboardList size={12}/>, view: 'requests' },
     { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-text/5 text-text', icon: <PawPrint size={12}/>, view: 'pets' },
@@ -464,6 +466,10 @@ function ProfileContent() {
     { label: 'Reservas', val: activeReservas.length.toString(), color: 'bg-text/5 text-text', icon: <Calendar size={12}/>, view: 'reservas' },
     { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={12}/>, view: 'paquetes' }
   ];
+
+  const statusIcons = isGuest
+    ? allStatusIcons.filter(s => s.view === 'reservas' || s.view === 'paquetes')
+    : allStatusIcons;
 
   return (
     <div ref={containerRef} className="flex flex-col min-h-screen relative overflow-x-hidden pb-32">
