@@ -29,12 +29,20 @@ pub struct InmuebleDto {
     pub caracteristicas: Vec<String>,
     pub estado: EstadoInmueble,
     pub destacado: bool,
+    /// WhatsApp-capable phone of the listing owner (null if not set).
+    pub telefono_contacto: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 impl From<Inmueble> for InmuebleDto {
     fn from(i: Inmueble) -> Self {
+        (i, None).into()
+    }
+}
+
+impl From<(Inmueble, Option<String>)> for InmuebleDto {
+    fn from((i, telefono): (Inmueble, Option<String>)) -> Self {
         let imagenes = serde_json::from_value(i.imagenes).unwrap_or_default();
         let caracteristicas = serde_json::from_value(i.caracteristicas).unwrap_or_default();
         Self {
@@ -53,6 +61,7 @@ impl From<Inmueble> for InmuebleDto {
             caracteristicas,
             estado: i.estado,
             destacado: i.destacado,
+            telefono_contacto: telefono,
             created_at: i.created_at,
             updated_at: i.updated_at,
         }

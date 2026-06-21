@@ -3,7 +3,7 @@ use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
 use crate::db::enums::{EstadoInmueble, TipoNegocio, TipoUnidad};
-use crate::db::schema::inmuebles;
+use crate::db::schema::{inmuebles, usuarios};
 use crate::db::DbConn;
 use crate::domains::inmuebles::dto::UpdateInmuebleRequest;
 use crate::domains::inmuebles::models::{Inmueble, NuevoInmueble};
@@ -11,6 +11,7 @@ use crate::error::{ApiError, ApiResult};
 
 /// Conjunto-scoped marketplace view: DISPONIBLE listings plus everything the
 /// caller owns (so owners keep seeing their VENDIDO/ALQUILADO/OCULTO rows).
+/// Returns (Inmueble, propietario_telefono) from a left join.
 pub async fn listar_inmuebles(
     conn: &mut DbConn,
     conjunto_id: Uuid,
@@ -18,7 +19,7 @@ pub async fn listar_inmuebles(
     tipo_negocio: Option<TipoNegocio>,
     tipo_unidad: Option<TipoUnidad>,
     habitaciones: Option<i32>,
-) -> ApiResult<Vec<Inmueble>> {
+) -> ApiResult<Vec<(Inmueble, Option<String>)>> {
     let mut query = inmuebles::table
         .filter(inmuebles::conjunto_id.eq(conjunto_id))
         .filter(
@@ -26,6 +27,7 @@ pub async fn listar_inmuebles(
                 .eq(EstadoInmueble::Disponible)
                 .or(inmuebles::usuario_id.eq(usuario_id)),
         )
+        .left_join(usuarios::table.on(inmuebles::usuario_id.eq(usuarios::id)))
         .into_boxed();
     if let Some(tipo_negocio) = tipo_negocio {
         query = query.filter(inmuebles::tipo_negocio.eq(tipo_negocio));
@@ -39,8 +41,8 @@ pub async fn listar_inmuebles(
     let rows = query
         .order(inmuebles::created_at.desc())
         .limit(50)
-        .select(Inmueble::as_select())
-        .load(conn)
+        .select((Inmueble::as_select(), usuarios::telefono.nullable()))
+        .load::<(Inmueble, Option<String>)>(conn)
         .await?;
     Ok(rows)
 }
