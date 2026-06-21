@@ -66,7 +66,7 @@ export default function InmobiliariaPage() {
   // Real-time WebSocket subscription
   useWsSubscription('inmueble', () => {
     const params = new URLSearchParams();
-    if (filterType !== "TODOS") params.set("tipo", filterType);
+    if (filterType !== "TODOS") params.set("tipoNegocio", filterType);
     if (filterUnidad !== "TODOS") params.set("tipoUnidad", filterUnidad);
     const qp = params.toString() ? `?${params.toString()}` : '';
     api.get<Inmueble[]>(`/inmuebles${qp}`)
@@ -79,7 +79,7 @@ export default function InmobiliariaPage() {
       try {
         let qp = '';
         const params = new URLSearchParams();
-        if (filterType !== "TODOS") params.set("tipo", filterType);
+        if (filterType !== "TODOS") params.set("tipoNegocio", filterType);
         if (filterUnidad !== "TODOS") params.set("tipoUnidad", filterUnidad);
         qp = params.toString() ? `?${params.toString()}` : '';
         
