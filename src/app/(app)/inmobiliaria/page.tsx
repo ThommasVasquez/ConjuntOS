@@ -239,11 +239,12 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
   const mainImage = imagenes[0] || "/placeholder.svg";
   const isOwner = currentUserId && item.usuarioId === currentUserId;
 
+  const isCompact = Number(item.precio || 0) >= 1_000_000;
   const formattedPrecio = new Intl.NumberFormat(item.moneda === "USD" ? "en-US" : "es-CO", {
     style: "currency",
     currency: item.moneda || "COP",
-    maximumFractionDigits: 0,
-    notation: Number(item.precio || 0) >= 1000000 ? "compact" : "standard"
+    maximumFractionDigits: isCompact ? 1 : 0,
+    notation: isCompact ? "compact" : "standard"
   } as Intl.NumberFormatOptions).format(Number(item.precio || 0));
 
   const isParking = item.tipoUnidad === "PARQUEADERO";
