@@ -56,6 +56,7 @@ export default function InmobiliariaPage() {
   const [selectedInmueble, setSelectedInmueble] = useState<Inmueble | null>(null);
   const [editingItem, setEditingItem] = useState<Inmueble | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   
   const containerRef = useRef(null);
   const { user } = useAuth();
@@ -92,7 +93,7 @@ export default function InmobiliariaPage() {
       }
     }
     loadInmuebles();
-  }, [filterType, filterUnidad]);
+  }, [filterType, filterUnidad, refreshKey]);
 
   useEffect(() => {
     if (!isLoading && inmuebles.length > 0) {
@@ -224,7 +225,7 @@ export default function InmobiliariaPage() {
 
       <BottomSheet isOpen={isPosting} onClose={() => { setIsPosting(false); setEditingItem(null); }} title={editingItem ? "Editar Inmueble" : "Publicar Inmueble"}>
          <PostingForm 
-           onSuccess={() => { setIsPosting(false); setEditingItem(null); setFilterType("TODOS"); }} 
+           onSuccess={() => { setIsPosting(false); setEditingItem(null); setRefreshKey(k => k + 1); }} 
            editItem={editingItem}
          />
       </BottomSheet>
