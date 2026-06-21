@@ -249,6 +249,8 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
 
   const isParking = item.tipoUnidad === "PARQUEADERO";
   const isRoom = item.tipoUnidad === "LOCAL";
+  const tipoVehiculo = isParking ? (item.caracteristicas || []).find(c => ["Moto","Carro","Bici"].includes(c)) : null;
+  const vehiculoLabel = tipoVehiculo === "Moto" ? "🏍️ Moto" : tipoVehiculo === "Carro" ? "🚗 Carro" : tipoVehiculo === "Bici" ? "🚲 Bici" : null;
 
   const negocioColor = item.tipoNegocio === "VENTA"
     ? "bg-text/90 text-white"
@@ -293,7 +295,7 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
           {isParking ? (
             <>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
-                <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
+                {vehiculoLabel || "Parqueadero"}
               </span>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 Parqueadero Cubierto
@@ -355,6 +357,9 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
 
 function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueble; onClose: () => void; currentUserId?: string; onEdit?: (item: Inmueble) => void }) {
   const isOwner = currentUserId && item.usuarioId === currentUserId;
+  const isParking = item.tipoUnidad === "PARQUEADERO";
+  const tipoVehiculo = isParking ? (item.caracteristicas || []).find(c => ["Moto","Carro","Bici"].includes(c)) : null;
+  const vehiculoLabel = tipoVehiculo === "Moto" ? "🏍️ Moto" : tipoVehiculo === "Carro" ? "🚗 Carro" : tipoVehiculo === "Bici" ? "🚲 Bici" : "Parqueadero";
   
   const imagenes = item.imagenes || [];
   const mainImage = imagenes[0] || "/placeholder.svg";
@@ -423,29 +428,41 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
                </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-               <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+            {isParking ? (
+              <div className="grid grid-cols-1 gap-4">
+                <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                  <span className="text-3xl">{tipoVehiculo === "Moto" ? "🏍️" : tipoVehiculo === "Carro" ? "🚗" : "🚲"}</span>
+                  <div>
+                    <p className="text-lg font-bold text-text leading-none">{vehiculoLabel}</p>
+                    <p className="text-[10px] text-text font-bold uppercase">Vehículo</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
                   <Bed size={22} className="text-accent" />
                   <div>
                     <p className="text-lg font-bold text-text leading-none">{item.habitaciones}</p>
                     <p className="text-[10px] text-text font-bold uppercase">Hab.</p>
                   </div>
-               </div>
-               <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                </div>
+                <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
                   <Bath size={22} className="text-accent" />
                   <div>
                     <p className="text-lg font-bold text-text leading-none">{item.banos}</p>
                     <p className="text-[10px] text-text font-bold uppercase">Banos</p>
                   </div>
-               </div>
-               <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                </div>
+                <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
                   <Maximize2 size={22} className="text-accent" />
                   <div>
                     <p className="text-lg font-bold text-text leading-none">{item.area || "—"}</p>
                     <p className="text-[10px] text-text font-black uppercase">m2</p>
                   </div>
-               </div>
-            </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
                <div className="flex items-center gap-2">
@@ -505,6 +522,7 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
     area: editItem?.area || "",
     telefonoContacto: editItem?.telefonoContacto || "",
     whatsappContacto: editItem?.whatsappContacto || "",
+    tipoVehiculo: (editItem?.caracteristicas || []).find(c => ["Moto","Carro","Bici"].includes(c)) || "Carro",
     imagenes: editItem?.imagenes || [] as string[]
   });
 
@@ -594,11 +612,15 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
       }
       
       const allUrls = [...existingUrls, ...uploadedUrls];
+      const baseCaracteristicas = editItem?.caracteristicas || [];
+      const vehiculoTag = formData.tipoUnidad === "PARQUEADERO" ? [formData.tipoVehiculo] : [];
+      const caracteristicas = [...new Set([...baseCaracteristicas.filter(c => !["Moto","Carro","Bici"].includes(c)), ...vehiculoTag])];
       const payload = {
         ...formData,
         precio: cleanNumber(formData.precio),
         area: cleanNumber(formData.area) || null,
         imagenes: allUrls,
+        caracteristicas,
       };
       if (isEditing && editItem) {
         await api.put(`/inmuebles/${editItem.id}`, payload);
@@ -703,20 +725,42 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
                 </div>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-text uppercase pl-1">Area (m²)</label>
-              <input 
-                type="text"
-                inputMode="decimal"
-                className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none"
-                placeholder="0.00"
-                value={formData.area}
-                onChange={e => {
-                  const v = e.target.value.replace(/[^0-9.,]/g, '');
-                  setFormData({...formData, area: v});
-                }}
-              />
-            </div>
+            {formData.tipoUnidad !== "PARQUEADERO" ? (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text uppercase pl-1">Area (m²)</label>
+                <input 
+                  type="text"
+                  inputMode="decimal"
+                  className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none"
+                  placeholder="0.00"
+                  value={formData.area}
+                  onChange={e => {
+                    const v = e.target.value.replace(/[^0-9.,]/g, '');
+                    setFormData({...formData, area: v});
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text uppercase pl-1">Tipo de Vehículo</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["Moto", "Carro", "Bici"] as const).map(tipo => (
+                    <button
+                      key={tipo}
+                      type="button"
+                      onClick={() => setFormData({...formData, tipoVehiculo: tipo})}
+                      className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                        formData.tipoVehiculo === tipo
+                          ? "bg-accent border-accent text-primary"
+                          : "border-border bg-surface-2 text-text"
+                      }`}
+                    >
+                      {tipo === "Moto" ? "🏍️ Moto" : tipo === "Carro" ? "🚗 Carro" : "🚲 Bici"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -740,24 +784,26 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-               <label className="text-[10px] font-bold text-text uppercase pl-1">Alcobas</label>
-               <div className="flex items-center bg-surface-2 rounded-2xl border border-border overflow-hidden">
-                  <button type="button" onClick={() => setFormData({...formData, habitaciones: Math.max(0, formData.habitaciones-1)})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">−</button>
-                  <span className="flex-1 text-center font-bold text-accent">{formData.habitaciones}</span>
-                  <button type="button" onClick={() => setFormData({...formData, habitaciones: formData.habitaciones+1})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">+</button>
-               </div>
+          {formData.tipoUnidad !== "PARQUEADERO" && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                 <label className="text-[10px] font-bold text-text uppercase pl-1">Alcobas</label>
+                 <div className="flex items-center bg-surface-2 rounded-2xl border border-border overflow-hidden">
+                    <button type="button" onClick={() => setFormData({...formData, habitaciones: Math.max(0, formData.habitaciones-1)})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">−</button>
+                    <span className="flex-1 text-center font-bold text-accent">{formData.habitaciones}</span>
+                    <button type="button" onClick={() => setFormData({...formData, habitaciones: formData.habitaciones+1})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">+</button>
+                 </div>
+              </div>
+              <div className="space-y-1.5">
+                 <label className="text-[10px] font-bold text-text uppercase pl-1">Banos</label>
+                 <div className="flex items-center bg-surface-2 rounded-2xl border border-border overflow-hidden">
+                    <button type="button" onClick={() => setFormData({...formData, banos: Math.max(0, formData.banos-1)})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">−</button>
+                    <span className="flex-1 text-center font-bold text-accent">{formData.banos}</span>
+                    <button type="button" onClick={() => setFormData({...formData, banos: formData.banos+1})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">+</button>
+                 </div>
+              </div>
             </div>
-            <div className="space-y-1.5">
-               <label className="text-[10px] font-bold text-text uppercase pl-1">Banos</label>
-               <div className="flex items-center bg-surface-2 rounded-2xl border border-border overflow-hidden">
-                  <button type="button" onClick={() => setFormData({...formData, banos: Math.max(0, formData.banos-1)})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">−</button>
-                  <span className="flex-1 text-center font-bold text-accent">{formData.banos}</span>
-                  <button type="button" onClick={() => setFormData({...formData, banos: formData.banos+1})} className="flex-1 h-14 hover:bg-surface-2/80 text-text font-bold">+</button>
-               </div>
-            </div>
-          </div>
+          )}
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-text uppercase pl-1">Descripcion</label>
