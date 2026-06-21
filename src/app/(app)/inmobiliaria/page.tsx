@@ -370,7 +370,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
   }, []);
 
   const whatsappUrl = item.telefonoContacto
-    ? `https://wa.me/${item.telefonoContacto.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola, vi tu publicación "${item.titulo}" en ConjuntOS y me interesa. ¿Podemos hablar?`)}`
+    ? `https://wa.me/${item.telefonoContacto.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola, vi tu publicación "${item.titulo}" en *ConjuntOS®* 🏘️ y me interesa. ¿Me puedes dar más información por favor?`)}`
     : null;
 
   return (
