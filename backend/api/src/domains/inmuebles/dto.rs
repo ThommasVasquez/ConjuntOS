@@ -29,20 +29,16 @@ pub struct InmuebleDto {
     pub caracteristicas: Vec<String>,
     pub estado: EstadoInmueble,
     pub destacado: bool,
-    /// WhatsApp-capable phone of the listing owner (null if not set).
+    /// Phone for calls, set by the lister (null if not provided).
     pub telefono_contacto: Option<String>,
+    /// WhatsApp number, set by the lister (null if not provided).
+    pub whatsapp_contacto: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 impl From<Inmueble> for InmuebleDto {
     fn from(i: Inmueble) -> Self {
-        (i, None).into()
-    }
-}
-
-impl From<(Inmueble, Option<String>)> for InmuebleDto {
-    fn from((i, telefono): (Inmueble, Option<String>)) -> Self {
         let imagenes = serde_json::from_value(i.imagenes).unwrap_or_default();
         let caracteristicas = serde_json::from_value(i.caracteristicas).unwrap_or_default();
         Self {
@@ -61,7 +57,8 @@ impl From<(Inmueble, Option<String>)> for InmuebleDto {
             caracteristicas,
             estado: i.estado,
             destacado: i.destacado,
-            telefono_contacto: telefono,
+            telefono_contacto: i.telefono_contacto,
+            whatsapp_contacto: i.whatsapp_contacto,
             created_at: i.created_at,
             updated_at: i.updated_at,
         }
@@ -92,6 +89,8 @@ pub struct CreateInmuebleRequest {
     #[schema(value_type = Option<String>)]
     pub area: Option<BigDecimal>,
     pub moneda: Option<Moneda>,
+    pub telefono_contacto: Option<String>,
+    pub whatsapp_contacto: Option<String>,
     pub imagenes: Option<Vec<String>>,
     pub caracteristicas: Option<Vec<String>>,
 }
@@ -110,6 +109,8 @@ pub struct UpdateInmuebleRequest {
     #[schema(value_type = Option<String>)]
     pub area: Option<BigDecimal>,
     pub moneda: Option<Moneda>,
+    pub telefono_contacto: Option<String>,
+    pub whatsapp_contacto: Option<String>,
     pub imagenes: Option<Vec<String>>,
     pub caracteristicas: Option<Vec<String>>,
     pub estado: Option<EstadoInmueble>,

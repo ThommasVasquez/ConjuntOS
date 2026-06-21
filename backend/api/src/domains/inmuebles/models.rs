@@ -21,6 +21,8 @@ pub struct Inmueble {
     pub banos: i32,
     pub area: Option<BigDecimal>,
     pub moneda: Moneda,
+    pub telefono_contacto: Option<String>,
+    pub whatsapp_contacto: Option<String>,
     /// `Vec<String>` of image URLs validated at the boundary (Law 6).
     pub imagenes: serde_json::Value,
     /// `Vec<String>` of feature labels validated at the boundary (Law 6).
@@ -45,6 +47,8 @@ pub struct NuevoInmueble {
     pub banos: i32,
     pub area: Option<BigDecimal>,
     pub moneda: Moneda,
+    pub telefono_contacto: Option<String>,
+    pub whatsapp_contacto: Option<String>,
     pub imagenes: serde_json::Value,
     pub caracteristicas: serde_json::Value,
 }

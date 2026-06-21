@@ -251,6 +251,8 @@ diesel::table! {
         banos -> Int4,
         area -> Nullable<Numeric>,
         moneda -> Text,
+        telefono_contacto -> Nullable<Text>,
+        whatsapp_contacto -> Nullable<Text>,
         imagenes -> Jsonb,
         caracteristicas -> Jsonb,
         estado -> Text,

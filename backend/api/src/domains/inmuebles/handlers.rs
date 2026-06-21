@@ -86,6 +86,8 @@ pub async fn crear_inmueble(
             banos: req.banos.unwrap_or(0),
             area: req.area,
             moneda: req.moneda.unwrap_or(Moneda::Cop),
+            telefono_contacto: req.telefono_contacto,
+            whatsapp_contacto: req.whatsapp_contacto,
             imagenes,
             caracteristicas,
         },

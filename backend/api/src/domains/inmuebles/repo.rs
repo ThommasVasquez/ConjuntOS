@@ -3,7 +3,7 @@ use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
 use crate::db::enums::{EstadoInmueble, TipoNegocio, TipoUnidad};
-use crate::db::schema::{inmuebles, usuarios};
+use crate::db::schema::inmuebles;
 use crate::db::DbConn;
 use crate::domains::inmuebles::dto::UpdateInmuebleRequest;
 use crate::domains::inmuebles::models::{Inmueble, NuevoInmueble};
@@ -11,7 +11,6 @@ use crate::error::{ApiError, ApiResult};
 
 /// Conjunto-scoped marketplace view: DISPONIBLE listings plus everything the
 /// caller owns (so owners keep seeing their VENDIDO/ALQUILADO/OCULTO rows).
-/// Returns (Inmueble, propietario_telefono) from a left join.
 pub async fn listar_inmuebles(
     conn: &mut DbConn,
     conjunto_id: Uuid,
@@ -19,7 +18,7 @@ pub async fn listar_inmuebles(
     tipo_negocio: Option<TipoNegocio>,
     tipo_unidad: Option<TipoUnidad>,
     habitaciones: Option<i32>,
-) -> ApiResult<Vec<(Inmueble, Option<String>)>> {
+) -> ApiResult<Vec<Inmueble>> {
     let mut query = inmuebles::table
         .filter(inmuebles::conjunto_id.eq(conjunto_id))
         .filter(
@@ -27,7 +26,6 @@ pub async fn listar_inmuebles(
                 .eq(EstadoInmueble::Disponible)
                 .or(inmuebles::usuario_id.eq(usuario_id)),
         )
-        .left_join(usuarios::table.on(inmuebles::usuario_id.eq(usuarios::id)))
         .into_boxed();
     if let Some(tipo_negocio) = tipo_negocio {
         query = query.filter(inmuebles::tipo_negocio.eq(tipo_negocio));
@@ -41,8 +39,8 @@ pub async fn listar_inmuebles(
     let rows = query
         .order(inmuebles::created_at.desc())
         .limit(50)
-        .select((Inmueble::as_select(), usuarios::telefono.nullable()))
-        .load::<(Inmueble, Option<String>)>(conn)
+        .select(Inmueble::as_select())
+        .load(conn)
         .await?;
     Ok(rows)
 }
@@ -110,6 +108,14 @@ pub async fn actualizar_inmueble(
     if let Some(moneda) = &req.moneda {
         let target = dsl::inmuebles.filter(dsl::id.eq(id));
         diesel::update(target).set(dsl::moneda.eq(moneda)).execute(conn).await?;
+    }
+    if let Some(telefono) = &req.telefono_contacto {
+        let target = dsl::inmuebles.filter(dsl::id.eq(id));
+        diesel::update(target).set(dsl::telefono_contacto.eq(telefono)).execute(conn).await?;
+    }
+    if let Some(whatsapp) = &req.whatsapp_contacto {
+        let target = dsl::inmuebles.filter(dsl::id.eq(id));
+        diesel::update(target).set(dsl::whatsapp_contacto.eq(whatsapp)).execute(conn).await?;
     }
     if let Some(imagenes) = &req.imagenes {
         let target = dsl::inmuebles.filter(dsl::id.eq(id));

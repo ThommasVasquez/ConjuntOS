@@ -41,6 +41,7 @@ interface Inmueble {
   estado: string;
   destacado: boolean;
   telefonoContacto: string | null;
+  whatsappContacto: string | null;
   usuarioId: string;
   createdAt: string;
   updatedAt: string;
@@ -369,8 +370,9 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
     return () => { document.body.style.overflow = "auto"; };
   }, []);
 
-  const whatsappUrl = item.telefonoContacto
-    ? `https://wa.me/${item.telefonoContacto.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola, vi tu publicación "${item.titulo}" en *ConjuntOS®* 🏘️ y me interesa. ¿Me puedes dar más información por favor?`)}`
+  const telefonoWhatsapp = item.whatsappContacto || item.telefonoContacto;
+  const whatsappUrl = telefonoWhatsapp
+    ? `https://wa.me/${telefonoWhatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola, vi tu publicación "${item.titulo}" en *ConjuntOS®* 🏘️ y me interesa. ¿Me puedes dar más información por favor?`)}`
     : null;
 
   return (
@@ -501,6 +503,8 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
     habitaciones: editItem?.habitaciones || 2,
     banos: editItem?.banos || 1,
     area: editItem?.area || "",
+    telefonoContacto: editItem?.telefonoContacto || "",
+    whatsappContacto: editItem?.whatsappContacto || "",
     imagenes: editItem?.imagenes || [] as string[]
   });
 
@@ -713,6 +717,27 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
                 }}
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-text uppercase pl-1">Teléfono de contacto</label>
+            <input 
+              type="tel"
+              className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none"
+              placeholder="+57 315 705 2810"
+              value={formData.telefonoContacto}
+              onChange={e => setFormData({...formData, telefonoContacto: e.target.value})}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-text uppercase pl-1">WhatsApp</label>
+            <input 
+              type="tel"
+              className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none"
+              placeholder="+57 315 705 2810"
+              value={formData.whatsappContacto}
+              onChange={e => setFormData({...formData, whatsappContacto: e.target.value})}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
