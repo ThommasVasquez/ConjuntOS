@@ -651,23 +651,32 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
 
   const cleanNumber = (raw: string): string => {
     if (!raw) return raw;
-    // Remove apostrophes used as thousands separators
+    const hasApostrophe = raw.includes("'");
+    // Remove apostrophes (always thousands separator)
     let s = raw.replace(/'/g, '');
-    // If both , and . exist, the last one is the decimal separator
     const commaPos = s.lastIndexOf(',');
     const dotPos = s.lastIndexOf('.');
+
+    if (hasApostrophe) {
+      // Colombian millions notation: dots are thousands separators, comma is decimal
+      s = s.replace(/\./g, '');           // remove all dots (thousands)
+      if (commaPos >= 0) {
+        // Replace last comma with dot (decimal)
+        s = s.substring(0, s.lastIndexOf(',')) + '.' + s.substring(s.lastIndexOf(',') + 1);
+      }
+      return s;
+    }
+
+    // No apostrophe: standard ambiguous . and ,
     if (commaPos >= 0 && dotPos >= 0) {
       // Both present: last one is decimal separator
       if (commaPos > dotPos) {
-        // , is decimal: remove all . then replace last , with .
         s = s.replace(/\./g, '');
-        s = s.substring(0, commaPos).replace(/,/g, '') + '.' + s.substring(commaPos + 1);
+        s = s.substring(0, s.lastIndexOf(',')).replace(/,/g, '') + '.' + s.substring(s.lastIndexOf(',') + 1);
       } else {
-        // . is decimal: remove all ,
         s = s.replace(/,/g, '');
       }
     } else if (commaPos >= 0) {
-      // Only comma: if it's near the end (1-2 digits after), treat as decimal
       const after = s.length - commaPos - 1;
       if (after <= 2 && after > 0 && commaPos > 0) {
         s = s.substring(0, commaPos) + '.' + s.substring(commaPos + 1);
