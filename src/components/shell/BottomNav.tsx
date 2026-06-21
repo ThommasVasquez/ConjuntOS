@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DollarSign, Building2, Home, ListMusic, Map, Package, Phone, Ticket, User, Users, MessageCircle, Scale } from "lucide-react";
+import { DollarSign, Building2, Home, Map, Package, Phone, Ticket, User, Users, MessageCircle, Scale } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 // BUILD_REVISION: 1.2.0 - MANDATORY ICON: Building2 (Buildings)
@@ -41,7 +41,6 @@ export default function BottomNav() {
     tabs = [
       { name: "Inicio", path: "/inicio", icon: Home },
       { name: "Citofonía", path: "/citofonia", icon: Phone }, 
-      { name: "Reservas", path: "/reservas", icon: ListMusic },
       { name: "Inmobiliaria", path: "/inmobiliaria", icon: Building2 },
       { name: "Pases", path: "/pases-temporales", icon: Ticket },
       { name: "Perfil", path: "/perfil", icon: User },
@@ -58,7 +57,6 @@ export default function BottomNav() {
     tabs = [
       { name: "Inicio", path: "/inicio", icon: Home },
       { name: "Citofonía", path: "/citofonia", icon: Phone }, 
-      { name: "Reservas", path: "/reservas", icon: ListMusic },
       { name: "Inmobiliaria", path: "/inmobiliaria", icon: Building2 },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
