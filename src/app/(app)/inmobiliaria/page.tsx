@@ -251,6 +251,12 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
   const isRoom = item.tipoUnidad === "LOCAL";
   const tipoVehiculo = isParking ? (item.caracteristicas || []).find(c => ["Moto","Carro","Bici"].includes(c)) : null;
   const vehiculoLabel = tipoVehiculo === "Moto" ? "🏍️ Moto" : tipoVehiculo === "Carro" ? "🚗 Carro" : tipoVehiculo === "Bici" ? "🚲 Bici" : null;
+  const roomBano = (item.caracteristicas || []).find(c => ["Baño propio","Baño compartido","Sin baño"].includes(c));
+  const roomAmoblada = (item.caracteristicas || []).includes("Amoblada");
+  const roomTv = (item.caracteristicas || []).find(c => c.startsWith("TV "));
+  const roomCama = (item.caracteristicas || []).find(c => ["Cama sencilla","Cama doble"].includes(c));
+  const roomLavado = (item.caracteristicas || []).includes("Lavado ropa cama");
+  const roomAguaCaliente = (item.caracteristicas || []).includes("Agua caliente");
 
   const negocioColor = item.tipoNegocio === "VENTA"
     ? "bg-text/90 text-white"
@@ -304,14 +310,34 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
           ) : isRoom ? (
             <>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
-                <Bed size={11} className="text-accent/70" /> Privada
-              </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
-                <Bath size={11} className="text-accent/70" /> {item.banos === 1 ? "Propio" : "Compartido"}
-              </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
                 <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
               </span>
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                <Bath size={11} className="text-accent/70" /> {roomBano || "Baño"}
+              </span>
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                {roomAmoblada ? "🛋️ Amoblada" : "📦 No amoblada"}
+              </span>
+              {roomAmoblada && roomTv && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                  📺 {roomTv}
+                </span>
+              )}
+              {roomAmoblada && roomCama && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                  {roomCama}
+                </span>
+              )}
+              {roomAmoblada && roomLavado && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                  🧺 Lavado incluido
+                </span>
+              )}
+              {roomAguaCaliente && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                  🔥 Agua caliente
+                </span>
+              )}
             </>
           ) : (
             <>
@@ -358,8 +384,15 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
 function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueble; onClose: () => void; currentUserId?: string; onEdit?: (item: Inmueble) => void }) {
   const isOwner = currentUserId && item.usuarioId === currentUserId;
   const isParking = item.tipoUnidad === "PARQUEADERO";
+  const isRoom = item.tipoUnidad === "LOCAL";
   const tipoVehiculo = isParking ? (item.caracteristicas || []).find(c => ["Moto","Carro","Bici"].includes(c)) : null;
   const vehiculoLabel = tipoVehiculo === "Moto" ? "🏍️ Moto" : tipoVehiculo === "Carro" ? "🚗 Carro" : tipoVehiculo === "Bici" ? "🚲 Bici" : "Parqueadero";
+  const roomBano = (item.caracteristicas || []).find(c => ["Baño propio","Baño compartido","Sin baño"].includes(c));
+  const roomAmoblada = (item.caracteristicas || []).includes("Amoblada");
+  const roomTv = (item.caracteristicas || []).find(c => c.startsWith("TV "));
+  const roomCama = (item.caracteristicas || []).find(c => ["Cama sencilla","Cama doble"].includes(c));
+  const roomLavado = (item.caracteristicas || []).includes("Lavado ropa cama");
+  const roomAguaCaliente = (item.caracteristicas || []).includes("Agua caliente");
   
   const imagenes = item.imagenes || [];
   const mainImage = imagenes[0] || "/placeholder.svg";
@@ -437,6 +470,45 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
                     <p className="text-[10px] text-text font-bold uppercase">Vehículo</p>
                   </div>
                 </div>
+              </div>
+            ) : isRoom ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                  <Maximize2 size={22} className="text-accent" />
+                  <div><p className="text-lg font-bold text-text leading-none">{item.area || "—"}</p><p className="text-[10px] text-text font-bold uppercase">m²</p></div>
+                </div>
+                <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                  <Bath size={22} className="text-accent" />
+                  <div><p className="text-lg font-bold text-text leading-none">{roomBano || "—"}</p><p className="text-[10px] text-text font-bold uppercase">Baño</p></div>
+                </div>
+                <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                  <span className="text-2xl">{roomAmoblada ? "🛋️" : "📦"}</span>
+                  <div><p className="text-sm font-bold text-text leading-none">{roomAmoblada ? "Amoblada" : "No amoblada"}</p></div>
+                </div>
+                {roomAmoblada && roomCama && (
+                  <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                    <span className="text-2xl">{roomCama === "Cama doble" ? "🛏️🛏️" : "🛏️"}</span>
+                    <div><p className="text-sm font-bold text-text leading-none">{roomCama}</p></div>
+                  </div>
+                )}
+                {roomAmoblada && roomTv && (
+                  <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                    <span className="text-2xl">📺</span>
+                    <div><p className="text-sm font-bold text-text leading-none">{roomTv}</p></div>
+                  </div>
+                )}
+                {roomLavado && (
+                  <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                    <span className="text-2xl">🧺</span>
+                    <div><p className="text-sm font-bold text-text leading-none">Lavado incluido</p></div>
+                  </div>
+                )}
+                {roomAguaCaliente && (
+                  <div className="p-4 rounded-3xl bg-surface-2 border border-border flex flex-col items-center text-center gap-2">
+                    <span className="text-2xl">🔥</span>
+                    <div><p className="text-sm font-bold text-text leading-none">Agua caliente</p></div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-4">
@@ -523,6 +595,12 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
     telefonoContacto: editItem?.telefonoContacto || "",
     whatsappContacto: editItem?.whatsappContacto || "",
     tipoVehiculo: (editItem?.caracteristicas || []).find(c => ["Moto","Carro","Bici"].includes(c)) || "Carro",
+    tieneBano: (editItem?.caracteristicas || []).find(c => ["Baño propio","Baño compartido","Sin baño"].includes(c))?.replace("Baño ","").replace("Sin baño","no") || "propio",
+    amoblada: (editItem?.caracteristicas || []).includes("Amoblada"),
+    tvPulgadas: ((editItem?.caracteristicas || []).find(c => c.startsWith('TV ')) || "").replace("TV ","").replace('"',""),
+    tipoCama: (editItem?.caracteristicas || []).find(c => ["Cama sencilla","Cama doble"].includes(c))?.replace("Cama ","") || "doble",
+    lavadoRopa: (editItem?.caracteristicas || []).includes("Lavado ropa cama"),
+    aguaCaliente: (editItem?.caracteristicas || []).includes("Agua caliente"),
     imagenes: editItem?.imagenes || [] as string[]
   });
 
@@ -614,7 +692,23 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
       const allUrls = [...existingUrls, ...uploadedUrls];
       const baseCaracteristicas = editItem?.caracteristicas || [];
       const vehiculoTag = formData.tipoUnidad === "PARQUEADERO" ? [formData.tipoVehiculo] : [];
-      const caracteristicas = [...new Set([...baseCaracteristicas.filter(c => !["Moto","Carro","Bici"].includes(c)), ...vehiculoTag])];
+      const roomTags: string[] = [];
+      if (formData.tipoUnidad === "LOCAL") {
+        roomTags.push(formData.tieneBano === "propio" ? "Baño propio" : formData.tieneBano === "compartido" ? "Baño compartido" : "Sin baño");
+        if (formData.amoblada) {
+          roomTags.push("Amoblada");
+          if (formData.tvPulgadas) roomTags.push(`TV ${formData.tvPulgadas}"`);
+          roomTags.push(formData.tipoCama === "sencilla" ? "Cama sencilla" : "Cama doble");
+          if (formData.lavadoRopa) roomTags.push("Lavado ropa cama");
+          if (formData.aguaCaliente) roomTags.push("Agua caliente");
+        }
+      }
+      const vehiculoRoomKeys = ["Moto","Carro","Bici","Baño propio","Baño compartido","Sin baño","Amoblada","Cama sencilla","Cama doble","Lavado ropa cama","Agua caliente"];
+      const caracteristicas = [...new Set([
+        ...baseCaracteristicas.filter(c => !vehiculoRoomKeys.includes(c) && !c.startsWith("TV ")),
+        ...vehiculoTag,
+        ...roomTags
+      ])];
       const payload = {
         ...formData,
         precio: cleanNumber(formData.precio),
@@ -640,20 +734,25 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
     <form onSubmit={handleSubmit} className="space-y-6 pb-10">
        <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            {(["ALQUILER", "VENTA"] as const).map(type => (
+            {(["ALQUILER", "VENTA"] as const).map(type => {
+               const isDisabled = type === "VENTA" && formData.tipoUnidad === "LOCAL";
+               return (
                <button
                  key={type}
                  type="button"
+                 disabled={isDisabled}
                  onClick={() => setFormData({...formData, tipoNegocio: type})}
                  className={`py-3 rounded-2xl border text-sm font-bold transition-all ${
                    formData.tipoNegocio === type 
                    ? "bg-accent border-accent text-primary" 
-                   : "border-border bg-surface-2 text-text"
+                   : isDisabled ? "border-border bg-surface-2 text-text/30 cursor-not-allowed" : "border-border bg-surface-2 text-text"
                  }`}
                >
                  {type === "ALQUILER" ? "Arrendar" : "Vender"}
+                 {isDisabled && <span className="block text-[8px] text-text/40">(solo arriendo)</span>}
                </button>
-            ))}
+               );
+            })}
           </div>
 
           <div className="space-y-1.5">
@@ -667,7 +766,7 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setFormData({...formData, tipoUnidad: key})}
+                  onClick={() => setFormData({...formData, tipoUnidad: key, ...(key === "LOCAL" ? { tipoNegocio: "ALQUILER" } : {})})}
                   className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${
                     formData.tipoUnidad === key
                       ? "bg-accent border-accent text-primary"
@@ -763,6 +862,88 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
             )}
           </div>
 
+          {formData.tipoUnidad === "LOCAL" && (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text uppercase pl-1">Baño</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["propio", "compartido", "no"] as const).map(tipo => (
+                    <button
+                      key={tipo}
+                      type="button"
+                      onClick={() => setFormData({...formData, tieneBano: tipo})}
+                      className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                        formData.tieneBano === tipo
+                          ? "bg-accent border-accent text-primary"
+                          : "border-border bg-surface-2 text-text"
+                      }`}
+                    >
+                      {tipo === "propio" ? "🚿 Propio" : tipo === "compartido" ? "👥 Compartido" : "❌ No tiene"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text uppercase pl-1">¿Amoblada?</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setFormData({...formData, amoblada: true})}
+                    className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${formData.amoblada ? "bg-accent border-accent text-primary" : "border-border bg-surface-2 text-text"}`}
+                  >🛋️ Sí, amoblada</button>
+                  <button type="button" onClick={() => setFormData({...formData, amoblada: false})}
+                    className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${!formData.amoblada ? "bg-accent border-accent text-primary" : "border-border bg-surface-2 text-text"}`}
+                  >📦 No amoblada</button>
+                </div>
+              </div>
+
+              {formData.amoblada && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text uppercase pl-1">TV (pulgadas)</label>
+                    <input type="text" inputMode="numeric"
+                      className="w-full h-14 rounded-2xl bg-surface-2 border border-border px-4 focus:border-accent text-text outline-none"
+                      placeholder='Ej: 42"'
+                      value={formData.tvPulgadas}
+                      onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); setFormData({...formData, tvPulgadas: v}); }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text uppercase pl-1">Tipo de Cama</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["sencilla", "doble"] as const).map(tipo => (
+                        <button key={tipo} type="button" onClick={() => setFormData({...formData, tipoCama: tipo})}
+                          className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${formData.tipoCama === tipo ? "bg-accent border-accent text-primary" : "border-border bg-surface-2 text-text"}`}
+                        >{tipo === "sencilla" ? "🛏️ Sencilla" : "🛏️🛏️ Doble"}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text uppercase pl-1">Lavado de ropa de cama</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => setFormData({...formData, lavadoRopa: true})}
+                        className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${formData.lavadoRopa ? "bg-accent border-accent text-primary" : "border-border bg-surface-2 text-text"}`}
+                      >✅ Incluido</button>
+                      <button type="button" onClick={() => setFormData({...formData, lavadoRopa: false})}
+                        className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${!formData.lavadoRopa ? "bg-accent border-accent text-primary" : "border-border bg-surface-2 text-text"}`}
+                      >❌ No incluido</button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text uppercase pl-1">Agua caliente en baño</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => setFormData({...formData, aguaCaliente: true})}
+                        className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${formData.aguaCaliente ? "bg-accent border-accent text-primary" : "border-border bg-surface-2 text-text"}`}
+                      >🔥 Sí</button>
+                      <button type="button" onClick={() => setFormData({...formData, aguaCaliente: false})}
+                        className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${!formData.aguaCaliente ? "bg-accent border-accent text-primary" : "border-border bg-surface-2 text-text"}`}
+                      >🚿 No</button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-text uppercase pl-1">Teléfono de contacto</label>
             <input 
@@ -784,7 +965,7 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
             />
           </div>
 
-          {formData.tipoUnidad !== "PARQUEADERO" && (
+          {formData.tipoUnidad !== "PARQUEADERO" && formData.tipoUnidad !== "LOCAL" && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                  <label className="text-[10px] font-bold text-text uppercase pl-1">Alcobas</label>
