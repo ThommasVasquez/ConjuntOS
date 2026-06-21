@@ -479,11 +479,18 @@ export default function PasesTemporalesPage() {
                 </div>
 
                 {/* Código y vehículos */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ClipboardList size={14} className="text-text" />
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(pase.codigo_acceso);
+                      toast.success("Código copiado al portapapeles");
+                    }}
+                    className="flex items-center gap-2 text-accent hover:text-accent/80 active:scale-95 transition-all"
+                    title="Copiar código de acceso"
+                  >
+                    <ClipboardList size={14} />
                     <span className="text-[10px] font-mono text-text font-bold tracking-wider">{pase.codigo_acceso}</span>
-                  </div>
+                  </button>
 
                   {pase.estado === "ACTIVO" && (
                     <div className="flex items-center gap-2">
