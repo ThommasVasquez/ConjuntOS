@@ -397,7 +397,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
     <div className="fixed inset-0 z-100 flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
       <div className="absolute inset-0 bg-primary/95 dark:bg-[#000000]/95 backdrop-blur-xl" onClick={onClose} />
       
-      <div className="relative w-full h-full max-w-xl bg-primary dark:bg-[#000000] overflow-hidden md:rounded-[40px] border border-border flex flex-col shadow-2xl pt-[env(safe-area-inset-top)]">
+      <div className="relative w-full h-full max-w-xl bg-primary dark:bg-[#000000] md:rounded-[40px] border border-border flex flex-col shadow-2xl pt-[env(safe-area-inset-top)]">
         <div className="absolute top-6 left-6 z-50" style={{top: 'calc(24px + env(safe-area-inset-top))'}}>
           <button onClick={onClose} className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all">
             <X size={20} />
@@ -417,24 +417,24 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
         {step === "DETAILS" && (
           <>
             <div className="flex-1 overflow-y-auto hide-scrollbar">
-              <div className="relative h-[45vh] w-full">
+              <div className="relative h-[45vh] w-full overflow-hidden rounded-t-[40px] md:rounded-t-[40px]">
                 <Image src={mainImage} alt={item.titulo} fill className="object-cover" unoptimized />
                 <div className="absolute inset-0 bg-linear-to-t from-primary via-transparent to-transparent" />
                 <div className="absolute bottom-6 left-6">
                    <span className="px-3 py-1 rounded-full bg-accent text-primary text-[10px] font-black uppercase tracking-tight mb-2 inline-block">
                      {item.tipoNegocio}
                    </span>
-                   <h1 className="text-3xl font-bold text-text tracking-tight drop-shadow-md">{item.titulo}</h1>
+                   <h1 className="text-3xl font-bold text-text tracking-tight drop-shadow-md break-words line-clamp-2">{item.titulo}</h1>
                 </div>
               </div>
 
               <div className="p-6 space-y-8">
-                <div className="flex items-center justify-between pb-6 border-b border-border">
-                   <div>
+                <div className="flex items-center justify-between pb-6 border-b border-border gap-2 min-w-0">
+                   <div className="min-w-0">
                      <p className="text-text text-xs font-bold uppercase tracking-widest mb-1">Precio solicitado</p>
-                     <p className="text-3xl font-black text-accent">{formattedPrecio} <span className="text-sm font-medium text-text">{item.tipoNegocio === "ALQUILER" ? "/ mes" : ""}</span></p>
+                     <p className="text-3xl font-black text-accent truncate">{formattedPrecio} <span className="text-sm font-medium text-text">{item.tipoNegocio === "ALQUILER" ? "/ mes" : ""}</span></p>
                    </div>
-                   <div className="flex flex-col items-end">
+                   <div className="flex flex-col items-end shrink-0">
                       <div className="flex items-center gap-1.5 text-accent/80 text-xs font-bold">
                          <ShieldCheck size={14} />
                          <span>Publicacion Verificada</span>
@@ -485,7 +485,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: { item: Inmueb
                 onClick={startLeasing}
                 className="w-full h-16 rounded-2xl bg-accent text-primary font-black shadow-xl shadow-accent/20 flex items-center justify-center gap-3 active:scale-95 transition-all text-lg"
                >
-                 <span>Iniciar Proceso de {item.tipoNegocio === "ALQUILER" ? "Arriendo" : "Compra"}</span>
+                 <span className="truncate">Iniciar Proceso de {item.tipoNegocio === "ALQUILER" ? "Arriendo" : "Compra"}</span>
                  <ArrowRight size={20} />
                </button>
             </div>
