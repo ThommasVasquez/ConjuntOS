@@ -16,6 +16,7 @@ use crate::domains::ai::repo;
 use crate::domains::asamblea::repo as asamblea_repo;
 use crate::error::{ApiError, ApiResult};
 use crate::services::gemini::GeminiClient;
+use crate::services::pdf::{render_and_store, PdfDoc};
 use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
 
@@ -27,6 +28,8 @@ pub fn router() -> Router<AppState> {
         .route("/asambleas/copilot/translate", post(translate))
         .route("/asambleas/{id}/copilot/consensuar", post(consensuar))
         .route("/asambleas/{id}/acta", get(get_acta).post(generate_acta))
+        .route("/asambleas/{id}/acta/pdf", get(acta_pdf))
+        .route("/ai/asistente", post(asistente))
         .route(
             "/asambleas/{id}/subtitulos",
             get(list_subtitulos).post(create_subtitulo),
@@ -386,4 +389,82 @@ async fn search(
         respuesta,
         fuentes: vec![],
     }))
+}
+
+// ── Acta PDF export (F8) ──────────────────────────────────────────────────
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ActaPdfResponse {
+    url: String,
+}
+
+/// Export a stored acta to an archived, downloadable PDF (reuses services::pdf).
+async fn acta_pdf(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(asamblea_id): Path<Uuid>,
+) -> ApiResult<Json<ActaPdfResponse>> {
+    let mut conn = state.pool.get().await?;
+    let asamblea =
+        asamblea_repo::verify_asamblea_tenant(&mut conn, asamblea_id, user.conjunto_id).await?;
+    let acta = repo::get_acta(&mut conn, asamblea_id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("acta no encontrada para esta asamblea".into()))?;
+
+    let doc = PdfDoc {
+        title: format!("Acta — {}", asamblea.titulo),
+        lines: acta.contenido.lines().map(|l| l.to_string()).collect(),
+    };
+    let path = format!("actas/{asamblea_id}.pdf");
+    let url = render_and_store(state.storage.as_ref(), "documentos", &path, &doc)
+        .await
+        .map_err(|e| ApiError::Upstream(format!("No se pudo generar el PDF: {e}")))?;
+    Ok(Json(ActaPdfResponse { url }))
+}
+
+// ── Resident assistant: Ley 675 / reglamento (F9) ─────────────────────────
+
+#[derive(serde::Deserialize)]
+struct AsistenteRequest {
+    pregunta: String,
+}
+
+#[derive(serde::Serialize)]
+struct AsistenteResponse {
+    respuesta: String,
+}
+
+/// Resident-facing assistant grounded in Ley 675 + propiedad horizontal. Open to
+/// any authenticated resident; guardrails keep it in-scope, cited, and non-actioning.
+async fn asistente(
+    State(state): State<AppState>,
+    _user: AuthUser,
+    Json(req): Json<AsistenteRequest>,
+) -> ApiResult<Json<AsistenteResponse>> {
+    if req.pregunta.trim().is_empty() {
+        return Err(ApiError::BadRequest("pregunta es obligatoria".into()));
+    }
+    let gemini = require_gemini(&state)?;
+
+    let prompt = format!(
+        "Eres un asistente legal para residentes de un conjunto en Colombia, experto \
+         en la Ley 675 de 2001 (propiedad horizontal) y la convivencia en copropiedades.\n\n\
+         Reglas estrictas:\n\
+         - Responde SOLO preguntas sobre Ley 675, propiedad horizontal, reglamento interno \
+         o convivencia. Si la pregunta está fuera de ese alcance, responde exactamente: \
+         \"Esa consulta está fuera de mi alcance. Por favor contacta a la administración.\"\n\
+         - Cita el artículo de la Ley 675 cuando aplique.\n\
+         - No realizas acciones (no pagas, no creas trámites, no apruebas nada): solo informas.\n\
+         - Si no estás seguro, recomienda contactar a la administración del conjunto.\n\
+         - Responde en español, claro y breve.\n\n\
+         Pregunta del residente: {pregunta}",
+        pregunta = req.pregunta.trim(),
+    );
+
+    let respuesta = gemini
+        .generate(&prompt, 1024, 0.3)
+        .await
+        .map_err(|e| ApiError::Upstream(format!("Error del servicio de IA: {e}")))?;
+    Ok(Json(AsistenteResponse { respuesta }))
 }
