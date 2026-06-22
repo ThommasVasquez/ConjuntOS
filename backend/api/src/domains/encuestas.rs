@@ -24,7 +24,7 @@ use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::{ws_events, WsEvent};
 use crate::state::AppState;
 
-const ADMIN_ROLES: &[Rol] = &[Rol::Administrador, Rol::Concejo];
+const ADMIN_ROLES: &[Rol] = &[Rol::Administrador, Rol::Concejo, Rol::SuperAdmin];
 
 // ── Model ────────────────────────────────────────────────────────────────────
 
