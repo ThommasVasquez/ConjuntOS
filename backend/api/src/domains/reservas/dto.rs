@@ -82,3 +82,19 @@ pub struct CreateReservaRequest {
     pub fecha_fin: DateTime<Utc>,
     pub notas: Option<String>,
 }
+
+/// Admin view: reservation + resident name + unit for area operators.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ReservaAdminDto {
+    pub id: Uuid,
+    pub area_id: Uuid,
+    pub area_nombre: String,
+    pub usuario_nombre: String,
+    pub usuario_torre: Option<String>,
+    pub usuario_apto: Option<String>,
+    pub fecha_inicio: DateTime<Utc>,
+    pub fecha_fin: DateTime<Utc>,
+    pub estado: EstadoReserva,
+    pub notas: Option<String>,
+}

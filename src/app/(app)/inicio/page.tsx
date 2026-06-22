@@ -17,6 +17,7 @@ import CelebrationModal from "@/components/modals/CelebrationModal";
 import ContentActionModal from "@/components/modals/ContentActionModal";
 import SearchModal from "@/components/search/SearchModal";
 import SosPanicButton from "@/components/sos/SosPanicButton";
+import AreaAdminDashboard from "@/components/sos/AreaAdminDashboard";
 import { useEffect, useRef, useState, useCallback } from "react";
 
 /** Solicitud de parqueadero de visitante que el inquilino debe aprobar/rechazar. */
@@ -1028,7 +1029,8 @@ export default function InicioDashboard() {
     );
   }
 
-  if (role === 'ADMINISTRADOR_PISCINA' || role === 'ADMINISTRADOR_GYM' || role === 'MANTENIMIENTO_LOCATIVO' || role === 'OPERARIO_LIMPIEZA') return <HomeOperativo />;
+  if (role === 'ADMINISTRADOR_PISCINA' || role === 'ADMINISTRADOR_GYM') return <AreaAdminDashboard />;
+  if (role === 'MANTENIMIENTO_LOCATIVO' || role === 'OPERARIO_LIMPIEZA') return <HomeOperativo />;
 
   if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') return <HomeVigilante />;
   if (role === 'ENCARGADO_PARQUEADERO') return <HomeEstacionamiento />;

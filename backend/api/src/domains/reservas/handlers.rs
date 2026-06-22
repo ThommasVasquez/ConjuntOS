@@ -4,8 +4,10 @@ use axum::{Json, Router};
 use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
+use crate::auth::guard;
+use crate::db::enums::Rol;
 use crate::domains::reservas::dto::{
-    AreaComunDto, CreateReservaRequest, ReservaDto, SlotDto, SlotsQuery,
+    AreaComunDto, CreateReservaRequest, ReservaAdminDto, ReservaDto, SlotDto, SlotsQuery,
 };
 use crate::domains::reservas::repo;
 use crate::error::{ApiError, ApiResult};
@@ -17,6 +19,8 @@ pub fn router() -> Router<AppState> {
         .route("/areas-comunes", get(listar_areas))
         .route("/areas-comunes/{id}/slots", get(slots))
         .route("/reservas", get(listar_reservas).post(crear_reserva))
+        .route("/reservas/area/{area_id}/hoy", get(listar_reservas_area_hoy))
+        .route("/reservas/{id}/verificar", get(verificar_reserva))
 }
 
 #[utoipa::path(
@@ -160,5 +164,86 @@ pub async fn crear_reserva(
             },
         )
         .await;
+    Ok(Json(dto))
+}
+
+/// List today's reservations for a specific area. Guard: area admins only.
+pub async fn listar_reservas_area_hoy(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(area_id): Path<Uuid>,
+) -> ApiResult<Json<Vec<ReservaAdminDto>>> {
+    guard::require(
+        &user,
+        &[
+            Rol::AdministradorPiscina,
+            Rol::AdministradorGym,
+            Rol::Administrador,
+        ],
+    )?;
+
+    // Area admins can only see their own area.
+    if user.rol == Rol::AdministradorPiscina || user.rol == Rol::AdministradorGym {
+        let area = repo::find_area(&mut state.pool.get().await?, user.conjunto_id, area_id)
+            .await?
+            .ok_or_else(|| ApiError::NotFound("área no encontrada".into()))?;
+        let expected = if user.rol == Rol::AdministradorPiscina { "Piscina" } else { "Gimnasio" };
+        if area.nombre.to_lowercase() != expected.to_lowercase() {
+            return Err(ApiError::Forbidden);
+        }
+    }
+
+    let mut conn = state.pool.get().await?;
+    let rows = repo::reservas_hoy_por_area(&mut conn, user.conjunto_id, area_id).await?;
+    let dtos: Vec<ReservaAdminDto> = rows
+        .into_iter()
+        .map(|(r, area_nombre, usuario_nombre, torre, apto)| ReservaAdminDto {
+            id: r.id,
+            area_id: r.area_id,
+            area_nombre,
+            usuario_nombre,
+            usuario_torre: torre,
+            usuario_apto: apto,
+            fecha_inicio: r.fecha_inicio,
+            fecha_fin: r.fecha_fin,
+            estado: r.estado,
+            notas: r.notas,
+        })
+        .collect();
+    Ok(Json(dtos))
+}
+
+/// Verify a reservation by ID (QR scan). Returns full details for area admin verification.
+pub async fn verificar_reserva(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<ReservaAdminDto>> {
+    guard::require(
+        &user,
+        &[
+            Rol::AdministradorPiscina,
+            Rol::AdministradorGym,
+            Rol::Administrador,
+        ],
+    )?;
+
+    let mut conn = state.pool.get().await?;
+    let (r, area_nombre, usuario_nombre, torre, apto) = repo::find_reserva_by_id(&mut conn, user.conjunto_id, id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("reserva no encontrada".into()))?;
+
+    let dto = ReservaAdminDto {
+        id: r.id,
+        area_id: r.area_id,
+        area_nombre,
+        usuario_nombre,
+        usuario_torre: torre,
+        usuario_apto: apto,
+        fecha_inicio: r.fecha_inicio,
+        fecha_fin: r.fecha_fin,
+        estado: r.estado,
+        notas: r.notas,
+    };
     Ok(Json(dto))
 }

@@ -5,7 +5,7 @@ use diesel_async::{AsyncConnection, RunQueryDsl};
 use uuid::Uuid;
 
 use crate::db::enums::EstadoReserva;
-use crate::db::schema::{areas_comunes, reservas};
+use crate::db::schema::{areas_comunes, reservas, usuarios};
 use crate::db::DbConn;
 use crate::domains::reservas::models::{AreaComun, Reserva};
 use crate::error::{ApiError, ApiResult};
@@ -81,6 +81,66 @@ pub async fn reservas_propias(
         .load(conn)
         .await?;
     Ok(rows)
+}
+
+/// Today's active reservations for a specific area, joined with user info.
+/// Used by area admins (Piscina, Gym) to see who has reserved today.
+pub async fn reservas_hoy_por_area(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    area_id: Uuid,
+) -> ApiResult<Vec<(Reserva, String, String, Option<String>, Option<String>)>> {
+    let now = Utc::now();
+    let today_end = now
+        .date_naive()
+        .and_hms_opt(23, 59, 59)
+        .unwrap()
+        .and_utc();
+    let rows = reservas::table
+        .inner_join(areas_comunes::table.on(reservas::area_id.eq(areas_comunes::id)))
+        .inner_join(usuarios::table.on(reservas::usuario_id.eq(usuarios::id)))
+        .filter(reservas::conjunto_id.eq(conjunto_id))
+        .filter(reservas::area_id.eq(area_id))
+        .filter(reservas::estado.ne(EstadoReserva::Cancelada))
+        .filter(reservas::fecha_inicio.le(today_end))
+        .filter(reservas::fecha_fin.ge(now))
+        .order(reservas::fecha_inicio.asc())
+        .select((
+            Reserva::as_select(),
+            areas_comunes::nombre,
+            usuarios::nombre,
+            usuarios::torre.nullable(),
+            usuarios::apto.nullable(),
+        ))
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
+/// Overlap check + insert in one transaction.
+
+/// Find a single reservation by ID with user + area info.
+pub async fn find_reserva_by_id(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    id: Uuid,
+) -> ApiResult<Option<(Reserva, String, String, Option<String>, Option<String>)>> {
+    let row = reservas::table
+        .inner_join(areas_comunes::table.on(reservas::area_id.eq(areas_comunes::id)))
+        .inner_join(usuarios::table.on(reservas::usuario_id.eq(usuarios::id)))
+        .filter(reservas::conjunto_id.eq(conjunto_id))
+        .filter(reservas::id.eq(id))
+        .select((
+            Reserva::as_select(),
+            areas_comunes::nombre,
+            usuarios::nombre,
+            usuarios::torre.nullable(),
+            usuarios::apto.nullable(),
+        ))
+        .first(conn)
+        .await
+        .optional()?;
+    Ok(row)
 }
 
 /// Overlap check + insert in one transaction. Estado is derived from the

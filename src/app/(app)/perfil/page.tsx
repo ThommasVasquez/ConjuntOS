@@ -9,7 +9,7 @@ import {
   LogOut, ArrowRight, ChevronLeft, MoreHorizontal,
   Edit, Camera, Car, PawPrint, ShieldCheck, Mail, Phone,
   CheckCircle2, X, Plus, FileText, Info, ClipboardList, Lock, 
-  HelpCircle, CreditCard, Calendar, Package, User as UserIcon,
+  HelpCircle, CreditCard, Calendar, Package, User as UserIcon, QrCode,
   Sun, Moon
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
@@ -50,7 +50,7 @@ function ProfileContent() {
   interface Tramite { id: string; tipo: string; estado: string; createdAt: string; }
   interface Pago { id: string; concepto: string; monto: number; estado: string; fechaVencimiento: string; fechaPago?: string; createdAt?: string; }
   interface Recibo { id: string; servicio: string; monto: number; pagado: boolean; vencimiento: string; fechaPago?: string; createdAt?: string; }
-  interface ReservaActiva { estado?: string; fechaInicio: string; fechaFin: string; areaNombre?: string; areaImagenUrl?: string; }
+  interface ReservaActiva { id: string; estado?: string; fechaInicio: string; fechaFin: string; areaNombre?: string; areaImagenUrl?: string; }
   interface PaqueteActivo { remitente?: string; origen?: string; guia?: string; fechaLlegada: string; }
   interface ProfileFetch {
     nombre?: string;
@@ -115,6 +115,9 @@ function ProfileContent() {
   
   // 📝 REGISTRATION MODAL STATE (Stage 36)
   const [showRegModal, setShowRegModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrReservaId, setQrReservaId] = useState<string>("");
+  const [qrReservaNombre, setQrReservaNombre] = useState<string>("");
   const [regType, setRegType] = useState<"VEHICULO" | "MASCOTA" | "OTRO">("VEHICULO");
   const [isRegSubmitting, setIsRegSubmitting] = useState(false);
   const [regForm, setRegForm] = useState({
@@ -745,6 +748,18 @@ function ProfileContent() {
                                 <span className="text-[10px] text-text font-mono tracking-tighter">
                                   {new Date(res.fechaInicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} • {new Date(res.fechaFin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setQrReservaId(res.id);
+                                    setQrReservaNombre(res.areaNombre || "Área");
+                                    setShowQrModal(true);
+                                  }}
+                                  className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center text-accent hover:bg-accent/30 transition-colors"
+                                  title="Mostrar QR de acceso"
+                                >
+                                  <QrCode size={14} />
+                                </button>
                               </div>
                            </div>
                         </div>
@@ -1355,6 +1370,40 @@ function ProfileContent() {
         </div>
       )}
  
+      {/* 📱 QR MODAL — Código de acceso a la reserva */}
+      {showQrModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80"
+          onClick={() => setShowQrModal(false)}
+        >
+          <div
+            className="bg-primary border border-border rounded-[32px] p-6 flex flex-col items-center gap-4 max-w-sm w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowQrModal(false)}
+              className="self-end text-text/50 hover:text-text"
+            >
+              <X size={20} />
+            </button>
+            <h3 className="text-lg font-bold text-text">QR de Reserva</h3>
+            <p className="text-xs text-text/60 -mt-2">{qrReservaNombre}</p>
+            <div className="bg-white rounded-2xl p-4">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrReservaId)}`}
+                alt="QR Reserva"
+                width={250}
+                height={250}
+                className="rounded-lg"
+              />
+            </div>
+            <p className="text-[10px] text-text/40 text-center">
+              Muestra este código al administrador del área para verificar tu reserva.
+            </p>
+          </div>
+        </div>
+      )}
+
       <BrandedFooter />
     </div>
   );
