@@ -16,6 +16,7 @@ pub mod comunicaciones;
 pub mod conjuntos;
 pub mod encuestas;
 pub mod inmuebles;
+pub mod multas;
 pub mod notificaciones;
 pub mod pagos;
 pub mod parqueadero;

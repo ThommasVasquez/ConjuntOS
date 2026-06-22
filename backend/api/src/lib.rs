@@ -65,7 +65,8 @@ pub fn build_router(state: AppState) -> Router {
         .merge(domains::pases_temporales::router())
         .merge(domains::comite_convivencia::router())
         .merge(domains::sos::router())
-        .merge(domains::encuestas::router());
+        .merge(domains::encuestas::router())
+        .merge(domains::multas::router());
 
     Router::new()
         .route("/healthz", get(routes::healthz))

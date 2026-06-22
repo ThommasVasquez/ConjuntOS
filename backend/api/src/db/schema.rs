@@ -951,6 +951,23 @@ diesel::table! {
 }
 
 diesel::table! {
+    multas (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        caso_id -> Nullable<Uuid>,
+        usuario_id -> Uuid,
+        pago_id -> Nullable<Uuid>,
+        monto -> Numeric,
+        motivo -> Text,
+        estado -> Text,
+        fecha_limite -> Nullable<Date>,
+        pdf_url -> Nullable<Text>,
+        creada_por -> Uuid,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     sos_alertas (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -1006,6 +1023,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     juntas,
     locales,
     mascotas,
+    multas,
     notificaciones,
     novedades_seguridad,
     pagos,

@@ -171,6 +171,13 @@ text_enum!(EstadoSos {
     Resuelta => "RESUELTA",
 });
 
+text_enum!(EstadoMulta {
+    Impuesta => "IMPUESTA",
+    Pagada => "PAGADA",
+    Apelada => "APELADA",
+    Anulada => "ANULADA",
+});
+
 text_enum!(CatGasto {
     Mantenimiento => "MANTENIMIENTO",
     Nomina => "NOMINA",
