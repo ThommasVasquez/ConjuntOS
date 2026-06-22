@@ -9,7 +9,7 @@ import {
   ArrowRight, Bell, Building2, Calendar, Car, CreditCard, DollarSign,
   Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, ShieldAlert,
   Search, SlidersHorizontal, ShoppingBag, User as UserIcon,
-  Users, Wrench, MapPin, BarChart3, Scale
+  Users, Wrench, MapPin, BarChart3, Scale, CheckCircle, AlertTriangle, Clock
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
@@ -977,37 +977,226 @@ function HomeAdmin() {
   );
 }
 
-// ── HomeOperativo: vista básica para roles de piscina, gym, mantenimiento y limpieza ──
+// ── HomeOperativo: dashboard real de mantenimiento y limpieza ──
 function HomeOperativo() {
   const { user } = useAuth();
-  const role = user?.rol;
   const router = useRouter();
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [notas, setNotas] = useState("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const roleLabel = 
-    role === 'ADMINISTRADOR_PISCINA' ? 'Administrador de Piscina' :
-    role === 'ADMINISTRADOR_GYM' ? 'Administrador de Gym' :
-    role === 'MANTENIMIENTO_LOCATIVO' ? 'Mantenimiento Locativo' :
-    'Operario de Limpieza';
+  const isMantenimiento = user?.rol === 'MANTENIMIENTO_LOCATIVO';
+  const roleLabel = isMantenimiento ? '🔧 Mantenimiento Locativo' : '🧹 Operario de Limpieza';
+
+  const fetchTickets = useCallback(async () => {
+    try {
+      const data = await api.get<any[]>('/solicitudes/mis-asignadas');
+      setTickets(data || []);
+    } catch (e) {
+      console.error('Error fetching assigned tickets:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
+
+  const handleAction = async (ticketId: string, estado: string, notasOpt?: string) => {
+    setActionLoading(ticketId);
+    try {
+      await api.put(`/solicitudes/${ticketId}/estado`, {
+        estado,
+        notas: notasOpt || undefined,
+      });
+      toast.success(estado === 'EN_PROGRESO' ? 'Ticket aceptado. Ya puedes trabajar en él.' : 'Ticket completado exitosamente.');
+      setSelectedTicket(null);
+      setNotas("");
+      fetchTickets();
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al actualizar ticket');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Tickets activos
+  const activos = tickets.filter(t => t.estado === 'ASIGNADA' || t.estado === 'EN_PROGRESO');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6 gap-6 pt-16 pb-32">
+        <ProfileHeader />
+        <RoleSwitcher />
+        <Clock className="text-accent animate-pulse" size={32} />
+        <p className="text-text/50 text-sm">Cargando tickets asignados...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6 gap-6 pt-16 pb-32">
+    <div className="min-h-screen bg-primary flex flex-col p-4 pt-16 pb-32 gap-4">
       <ProfileHeader />
       <RoleSwitcher />
-      <div className="liquid-glass-card rounded-[32px] p-8 border border-border text-center max-w-sm w-full space-y-4">
-        <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mx-auto text-accent">
-          <Calendar size={28} />
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-text">{roleLabel}</h1>
+          <p className="text-xs text-text/50">
+            {activos.length} ticket{activos.length !== 1 ? 's' : ''} pendiente{activos.length !== 1 ? 's' : ''}
+          </p>
         </div>
-        <h2 className="text-xl font-bold text-text">{roleLabel}</h2>
-        <p className="text-sm text-text/60">
-          Módulo en desarrollo. Desde aquí podrás gestionar tus funciones operativas.
-        </p>
         <button
-          onClick={() => router.push('/perfil')}
-          className="w-full py-3 rounded-2xl bg-accent text-on-accent text-sm font-bold"
+          onClick={fetchTickets}
+          className="text-xs px-3 py-1.5 rounded-xl bg-surface-2 text-text/70 hover:text-accent transition-colors"
         >
-          Ir a mi Perfil
+          Actualizar
         </button>
       </div>
+
+      {/* Tickets list */}
+      {activos.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12">
+          <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
+            <CheckCircle size={32} className="text-accent" />
+          </div>
+          <p className="text-text/70 font-medium">Sin tickets pendientes</p>
+          <p className="text-xs text-text/40 text-center max-w-xs">
+            No tienes tickets de mantenimiento asignados. Cuando un administrador te asigne uno, aparecerá aquí.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3 flex-1">
+          {activos.map((ticket) => (
+            <div
+              key={ticket.id}
+              className="rounded-2xl border border-border bg-surface p-4 space-y-3"
+            >
+              {/* Priority badge */}
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                  ticket.prioridad === 'URGENTE' ? 'bg-red-500/20 text-red-400' :
+                  ticket.prioridad === 'ALTA' ? 'bg-orange-500/20 text-orange-400' :
+                  'bg-text/10 text-text/60'
+                }`}>
+                  {ticket.prioridad}
+                </span>
+                <span className="text-[10px] text-text/40 uppercase">{ticket.categoria}</span>
+                <span className={`text-[10px] font-bold uppercase ml-auto px-2 py-0.5 rounded-full ${
+                  ticket.estado === 'EN_PROGRESO' ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-400'
+                }`}>
+                  {ticket.estado === 'EN_PROGRESO' ? 'En progreso' : 'Asignada'}
+                </span>
+              </div>
+
+              {/* Description */}
+              <p className="text-sm text-text leading-relaxed">{ticket.descripcion}</p>
+
+              {/* SLA */}
+              {ticket.slaVencimiento && (
+                <p className="text-[10px] text-text/40 flex items-center gap-1">
+                  <AlertTriangle size={10} />
+                  Vence: {new Date(ticket.slaVencimiento).toLocaleDateString('es-CO')}
+                </p>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
+                {ticket.estado === 'ASIGNADA' && (
+                  <button
+                    onClick={() => handleAction(ticket.id, 'EN_PROGRESO')}
+                    disabled={actionLoading === ticket.id}
+                    className="flex-1 py-2.5 rounded-xl bg-accent text-on-accent text-xs font-bold disabled:opacity-50"
+                  >
+                    {actionLoading === ticket.id ? 'Aceptando...' : '✅ Aceptar y empezar'}
+                  </button>
+                )}
+                {ticket.estado === 'EN_PROGRESO' && (
+                  <button
+                    onClick={() => setSelectedTicket(ticket)}
+                    className="flex-1 py-2.5 rounded-xl bg-green-500/20 text-green-400 text-xs font-bold"
+                  >
+                    ✅ Marcar como completado
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedTicket(ticket)}
+                  className="py-2.5 px-4 rounded-xl bg-surface-2 text-text/60 text-xs"
+                >
+                  Ver detalle
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal: completar ticket */}
+      {selectedTicket && (
+        <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60" onClick={() => { setSelectedTicket(null); setNotas(""); }}>
+          <div className="bg-primary rounded-t-[28px] p-6 w-full max-w-[430px] space-y-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 rounded-full bg-text/20 mx-auto" />
+
+            <div>
+              <h3 className="text-lg font-bold text-text">
+                {selectedTicket.estado === 'EN_PROGRESO' ? 'Completar ticket' : 'Ticket'}
+              </h3>
+              <p className="text-xs text-text/50 mt-1">{selectedTicket.categoria} · {selectedTicket.prioridad}</p>
+            </div>
+
+            <p className="text-sm text-text bg-surface-2 rounded-xl p-3">{selectedTicket.descripcion}</p>
+
+            {selectedTicket.estado === 'EN_PROGRESO' && (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase text-text/40">Notas de resolución</label>
+                  <textarea
+                    value={notas}
+                    onChange={e => setNotas(e.target.value)}
+                    placeholder="Describe brevemente qué hiciste..."
+                    rows={3}
+                    className="w-full bg-surface-2 border border-border rounded-xl p-3 text-sm text-text placeholder:text-text/30 resize-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setSelectedTicket(null); setNotas(""); }}
+                    className="flex-1 py-3 rounded-xl bg-surface-2 text-text/70 text-xs font-bold"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => handleAction(selectedTicket.id, 'RESUELTA', notas)}
+                    disabled={actionLoading === selectedTicket.id}
+                    className="flex-1 py-3 rounded-xl bg-green-500 text-white text-xs font-bold disabled:opacity-50"
+                  >
+                    {actionLoading === selectedTicket.id ? 'Completando...' : '✅ Marcar completado'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Transitions timeline */}
+            {selectedTicket.transiciones && selectedTicket.transiciones.length > 0 && (
+              <div className="space-y-1.5 pt-2 border-t border-border">
+                <p className="text-[10px] font-bold uppercase text-text/40">Historial</p>
+                {selectedTicket.transiciones.map((tr: any) => (
+                  <div key={tr.id} className="flex items-center gap-2 text-xs text-text/50">
+                    <Clock size={10} />
+                    <span>{tr.estadoAnterior} → {tr.estadoNuevo}</span>
+                    <span className="text-text/20">·</span>
+                    <span>{new Date(tr.createdAt).toLocaleString('es-CO')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
