@@ -7,7 +7,7 @@ Decisions: payments=**Nequi** · multas issuer=**administrador** only · AI=**Ge
 
 ## Phase 1 — Foundations (build first)
 - [x] 1.1 Realtime event taxonomy (`sos`/`encuesta`/`multa`/`recordatorio`) — `ws_hub.rs` constants + `WsEvent::broadcast`/`to_user` + 3 serialization tests; frontend dispatch already tolerates unknown domains · S
-- [ ] 1.2 Reusable expiry-reminder scheduler (`ReminderSource`, idempotent) — `services/scheduler*`, `notificaciones` · M
+- [x] 1.2 Reusable expiry-reminder engine — `services/reminders.rs` (pure idempotent `select_unsent` + `DueReminder`/`ReminderKey`, 4 unit tests), DB `run_reminders`/`dispatch` (notif+WS recordatorio+push), `recordatorios_enviados` table (migration + UNIQUE backstop), `spawn_scheduler` wired in main (no-op until F6/F7 add sources via `gather_due`) · M
 - [ ] 1.3 PDF render service (`services/pdf.rs` → MinIO) · M
 - [ ] 1.4 QR code service (`services/qr.rs`, round-trip) · S
 - [ ] ✅ Checkpoint: cargo build+clippy, pnpm build, WS/scheduler/PDF/QR tests green → human review

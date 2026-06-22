@@ -29,6 +29,10 @@ async fn main() -> anyhow::Result<()> {
     // Scheduler de expiración de pases temporales (desactiva usuarios huésped cada 30 min).
     enconjunto_api::domains::pases_temporales::spawn_scheduler(state.clone());
 
+    // Scheduler de recordatorios de vencimiento (documentos de vehículo, vacunas de
+    // mascotas, …). Sin fuentes registradas aún → no-op hasta F6/F7.
+    enconjunto_api::services::reminders::spawn_scheduler(state.clone());
+
     let app = build_router(state);
 
     let listener = tokio::net::TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;
