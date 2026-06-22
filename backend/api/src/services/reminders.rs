@@ -21,6 +21,21 @@ use crate::services::push::PushSubscriptionInfo;
 use crate::services::ws_hub::{ws_events, WsEvent};
 use crate::state::AppState;
 
+/// Raw row returned by the reservation reminder query.
+#[derive(QueryableByName)]
+struct ReservaReminderRow {
+    #[diesel(sql_type = diesel::sql_types::Uuid)]
+    id: Uuid,
+    #[diesel(sql_type = diesel::sql_types::Uuid)]
+    conjunto_id: Uuid,
+    #[diesel(sql_type = diesel::sql_types::Uuid)]
+    usuario_id: Uuid,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    area_nombre: String,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    hora: String,
+}
+
 /// A reminder a source reports as due right now, for one lead-time bucket.
 #[derive(Clone, Debug)]
 pub struct DueReminder {
@@ -78,8 +93,39 @@ pub fn select_unsent(
 /// tecnomecánica) and F7 (pet vaccine boosters) each return the rows whose date
 /// falls in a lead-time bucket today. Empty until the first source lands, so the
 /// scheduler is a harmless no-op in the meantime.
-pub async fn gather_due(_conn: &mut DbConn, _today: NaiveDate) -> ApiResult<Vec<DueReminder>> {
-    Ok(Vec::new())
+pub async fn gather_due(conn: &mut DbConn, _today: NaiveDate) -> ApiResult<Vec<DueReminder>> {
+    let mut reminders = Vec::new();
+
+    // ── Reserva recordatorio: 30 minutos antes del inicio ──
+    let reservas_due: Vec<ReservaReminderRow> = diesel::sql_query(
+        "SELECT r.id, r.conjunto_id, r.usuario_id,
+                a.nombre AS area_nombre,
+                to_char(r.fecha_inicio AT TIME ZONE 'America/Bogota', 'HH24:MI') AS hora
+         FROM reservas r
+         JOIN areas_comunes a ON a.id = r.area_id
+         WHERE r.fecha_inicio > now()
+           AND r.fecha_inicio <= now() + interval '30 minutes'
+           AND r.estado IN ('CONFIRMADA', 'PENDIENTE')",
+    )
+    .load(conn)
+    .await?;
+
+    for row in reservas_due {
+        reminders.push(DueReminder {
+            conjunto_id: row.conjunto_id,
+            usuario_id: row.usuario_id,
+            source: "reserva_recordatorio".into(),
+            row_id: row.id,
+            lead_dias: 0, // 30-minute lead time
+            titulo: "⏰ Tu reserva está por comenzar".into(),
+            mensaje: format!(
+                "Tu reserva de {} está programada para las {}. ¡No la pierdas!",
+                row.area_nombre, row.hora
+            ),
+        });
+    }
+
+    Ok(reminders)
 }
 
 /// Persist + notify a single reminder: in-app notice, realtime events, web push.

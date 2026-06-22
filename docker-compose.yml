@@ -51,6 +51,7 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:soporte@conjuntos.app}
+      REMINDER_TICK_SECS: "60"
     depends_on:
       db:
         condition: service_healthy

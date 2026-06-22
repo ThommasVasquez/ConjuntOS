@@ -50,7 +50,7 @@ function ProfileContent() {
   interface Tramite { id: string; tipo: string; estado: string; createdAt: string; }
   interface Pago { id: string; concepto: string; monto: number; estado: string; fechaVencimiento: string; fechaPago?: string; createdAt?: string; }
   interface Recibo { id: string; servicio: string; monto: number; pagado: boolean; vencimiento: string; fechaPago?: string; createdAt?: string; }
-  interface ReservaActiva { estado?: string; fechaInicio: string; fechaFin: string; area?: { nombre?: string; imagenUrl?: string }; }
+  interface ReservaActiva { estado?: string; fechaInicio: string; fechaFin: string; areaNombre?: string; areaImagenUrl?: string; }
   interface PaqueteActivo { remitente?: string; origen?: string; guia?: string; fechaLlegada: string; }
   interface ProfileFetch {
     nombre?: string;
@@ -644,6 +644,62 @@ function ProfileContent() {
                     </div>
                  </div>
               </div>
+
+            {/* ── PRÓXIMA RESERVA ── */}
+            {(() => {
+              const ahora = new Date();
+              const futuras = activeReservas
+                .filter(r => r.estado !== 'CANCELADA' && new Date(r.fechaInicio) > ahora)
+                .sort((a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
+              const proxima = futuras[0];
+              if (!proxima) return null;
+              const minutosPara = Math.round((new Date(proxima.fechaInicio).getTime() - ahora.getTime()) / 60000);
+              const countdown = minutosPara <= 60
+                ? `⏰ En ${minutosPara} min`
+                : minutosPara < 1440
+                ? `En ${Math.round(minutosPara / 60)}h ${minutosPara % 60}m`
+                : new Date(proxima.fechaInicio).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+
+              return (
+                <div className="liquid-glass-card rounded-[32px] overflow-hidden border border-accent/30 bg-primary-light/30">
+                  <button
+                    onClick={() => setViewMode('reservas')}
+                    className="w-full flex items-stretch text-left cursor-pointer"
+                  >
+                    <div className="relative w-28 h-28 shrink-0">
+                      {proxima.areaImagenUrl ? (
+                        <Image src={proxima.areaImagenUrl} alt="" fill className="object-cover" unoptimized />
+                      ) : (
+                        <div className="w-full h-full bg-text/5 flex items-center justify-center">
+                          <Calendar size={32} className="text-accent/40" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4 flex flex-col justify-between flex-1 min-w-0">
+                      <div>
+                        <p className="text-[10px] font-black text-accent uppercase tracking-widest">Próxima Reserva</p>
+                        <h4 className="text-base font-bold text-text leading-tight truncate">{proxima.areaNombre || "Área común"}</h4>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-black uppercase tracking-tight ${minutosPara <= 30 ? 'text-[#FACC15]' : 'text-accent'}`}>
+                            {countdown}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-text font-mono">
+                          {new Date(proxima.fechaInicio).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                          {" → "}
+                          {new Date(proxima.fechaFin).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center pr-3">
+                      <ArrowRight size={18} className="text-accent" />
+                    </div>
+                  </button>
+                </div>
+              );
+            })()}
             </div>
           )}
 
@@ -665,8 +721,8 @@ function ProfileContent() {
                        <div key={i} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/30">
                         <div className="flex">
                            <div className="relative w-24 h-24 shrink-0">
-                             {res.area?.imagenUrl ? (
-                               <Image src={res.area.imagenUrl} alt="" fill className="object-cover" unoptimized />
+                             {res.areaImagenUrl ? (
+                               <Image src={res.areaImagenUrl} alt="" fill className="object-cover" unoptimized />
                              ) : (
                                <div className="w-full h-full bg-text/5 flex items-center justify-center opacity-20"><Calendar size={24} /></div>
                              )}
@@ -674,7 +730,7 @@ function ProfileContent() {
                            <div className="p-4 flex flex-col justify-between flex-1">
                               <div>
                                 <div className="flex justify-between items-start mb-1">
-                                  <span className="text-[10px] font-black text-accent uppercase tracking-widest">{res.area?.nombre || "Cargando..."}</span>
+                                  <span className="text-[10px] font-black text-accent uppercase tracking-widest">{res.areaNombre || "Cargando..."}</span>
                                   <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
                                     res.estado === "CONFIRMADA" ? "bg-text/20 text-text" : "bg-text/20 text-text"
                                   }`}>
