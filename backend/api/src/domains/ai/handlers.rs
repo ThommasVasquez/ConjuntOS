@@ -425,6 +425,13 @@ async fn acta_pdf(
 
 // ── Resident assistant: Ley 675 / reglamento (F9) ─────────────────────────
 
+/// Full text of Ley 675 de 2001 (Diario Oficial consolidated), compiled into the
+/// binary. ~40k tokens — fits easily in gemini-2.0-flash's 1M-token context, so we
+/// ground the assistant by injecting the whole law instead of a vector RAG.
+/// ponytail: full-context injection beats RAG for a single document; revisit RAG
+/// only when per-conjunto reglamentos (many private docs) need indexing.
+const LEY_675: &str = include_str!("ley_675_2001.md");
+
 #[derive(serde::Deserialize)]
 struct AsistenteRequest {
     pregunta: String,
@@ -450,21 +457,41 @@ async fn asistente(
     let prompt = format!(
         "Eres un asistente legal para residentes de un conjunto en Colombia, experto \
          en la Ley 675 de 2001 (propiedad horizontal) y la convivencia en copropiedades.\n\n\
+         A continuación tienes el TEXTO OFICIAL COMPLETO de la Ley 675 de 2001. Es tu \
+         fuente autoritativa: basa tus respuestas en él y NO inventes artículos ni cifras.\n\
+         <LEY_675>\n{ley}\n</LEY_675>\n\n\
          Reglas estrictas:\n\
          - Responde SOLO preguntas sobre Ley 675, propiedad horizontal, reglamento interno \
          o convivencia. Si la pregunta está fuera de ese alcance, responde exactamente: \
          \"Esa consulta está fuera de mi alcance. Por favor contacta a la administración.\"\n\
-         - Cita el artículo de la Ley 675 cuando aplique.\n\
+         - Fundamenta cada respuesta en el texto de la ley anterior y CITA el número de \
+         artículo (ej: \"Artículo 23\"); cuando ayude, transcribe la frase exacta entre comillas.\n\
+         - Si la ley no cubre el punto (p. ej. depende del reglamento interno del conjunto), \
+         dilo explícitamente y recomienda consultar el reglamento o a la administración.\n\
          - No realizas acciones (no pagas, no creas trámites, no apruebas nada): solo informas.\n\
          - Si no estás seguro, recomienda contactar a la administración del conjunto.\n\
-         - Responde en español, claro y breve.\n\n\
+         - Responde en español, claro y conciso.\n\n\
          Pregunta del residente: {pregunta}",
+        ley = LEY_675,
         pregunta = req.pregunta.trim(),
     );
 
     let respuesta = gemini
-        .generate(&prompt, 1024, 0.3)
+        .generate(&prompt, 1536, 0.3)
         .await
         .map_err(|e| ApiError::Upstream(format!("Error del servicio de IA: {e}")))?;
     Ok(Json(AsistenteResponse { respuesta }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LEY_675;
+
+    /// Guard the embedded law: must be the real Ley 675 text, not empty/wrong file.
+    #[test]
+    fn ley_675_is_embedded() {
+        assert!(LEY_675.len() > 50_000, "embedded Ley 675 looks truncated");
+        assert!(LEY_675.contains("675"), "missing law number");
+        assert!(LEY_675.contains("Artículo") || LEY_675.contains("ARTÍCULO"), "no articles found");
+    }
 }
