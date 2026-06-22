@@ -53,8 +53,13 @@ http = "1"
 # Offline PDF generation (actas, multa notices), pure-Rust with built-in fonts —
 # default features off to skip image codecs and keep the build OpenSSL-free.
 printpdf = { version = "0.7", default-features = false }
+# QR generation (visitor passes), pure-Rust. image is PNG-only to stay lean.
+qrcode = { version = "0.14", default-features = false, features = ["image"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 [dev-dependencies]
 http-body-util = "0.1"
 tower = { version = "0.5", features = ["util"] }
 wiremock = "0.6"
+# QR decoder — only for round-trip tests of services::qr.
+rqrr = "0.9"

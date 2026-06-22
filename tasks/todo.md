@@ -9,8 +9,8 @@ Decisions: payments=**Nequi** · multas issuer=**administrador** only · AI=**Ge
 - [x] 1.1 Realtime event taxonomy (`sos`/`encuesta`/`multa`/`recordatorio`) — `ws_hub.rs` constants + `WsEvent::broadcast`/`to_user` + 3 serialization tests; frontend dispatch already tolerates unknown domains · S
 - [x] 1.2 Reusable expiry-reminder engine — `services/reminders.rs` (pure idempotent `select_unsent` + `DueReminder`/`ReminderKey`, 4 unit tests), DB `run_reminders`/`dispatch` (notif+WS recordatorio+push), `recordatorios_enviados` table (migration + UNIQUE backstop), `spawn_scheduler` wired in main (no-op until F6/F7 add sources via `gather_due`) · M
 - [x] 1.3 PDF render service — `services/pdf.rs` pure-Rust printpdf (built-in Helvetica, OpenSSL-free), `render_pdf` paginates → valid %PDF (2 tests), `render_and_store` persists via existing StorageService → URL · M
-- [ ] 1.4 QR code service (`services/qr.rs`, round-trip) · S
-- [ ] ✅ Checkpoint: cargo build+clippy, pnpm build, WS/scheduler/PDF/QR tests green → human review
+- [x] 1.4 QR code service — `services/qr.rs` pure-Rust qrcode+image(PNG only), `make_qr_png` → scannable PNG, round-trip decode test (rqrr) + empty-token guard · S
+- [x] ✅ Checkpoint: cargo build+clippy clean; 36 lib tests green (WS/scheduler/PDF/QR); OpenSSL-free verified. (Frontend untouched in Phase 1 → no pnpm build needed.) → ready for push+VPS + human review
 
 ## Phase 2 — Safety & daily-use
 - [ ] 2.1 SOS/panic button — backend (`domains/sos/`, push to vigilancia <2s, rate-limited) · M
