@@ -61,6 +61,7 @@ pub struct SosAlerta {
 pub enum SosAccion {
     Atender,
     Resolver,
+    Cancelar,
 }
 
 /// Validate an SOS state transition. ABIERTA can be attended or resolved directly
@@ -71,6 +72,7 @@ pub fn aplicar_transicion(actual: EstadoSos, accion: SosAccion) -> ApiResult<Est
     match (actual, accion) {
         (Abierta, Atender) => Ok(Atendida),
         (Abierta, Resolver) => Ok(Resuelta),
+        (Abierta, Cancelar) => Ok(Resuelta),
         (Atendida, Resolver) => Ok(Resuelta),
         _ => Err(ApiError::BadRequest("transición de SOS inválida".into())),
     }
@@ -129,6 +131,7 @@ pub fn router() -> Router<AppState> {
         .route("/sos", post(crear).get(listar))
         .route("/sos/{id}/atender", post(atender))
         .route("/sos/{id}/resolver", post(resolver))
+        .route("/sos/{id}/cancelar", post(cancelar))
 }
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -247,6 +250,7 @@ async fn transicionar(
     let nuevo = aplicar_transicion(alerta.estado, accion)?;
     let now = Utc::now();
     let updated: SosAlerta = match accion {
+        SosAccion::Cancelar => unreachable!("transicionar is only called for atender/resolver"),
         SosAccion::Atender => {
             diesel::update(sos_alertas::table.find(id))
                 .set((
@@ -270,6 +274,58 @@ async fn transicionar(
                 .await?
         }
     };
+
+    let dto = SosDto::from_parts(updated, None);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent::broadcast(
+                ws_events::SOS,
+                ws_events::action::UPDATED,
+                Some(serde_json::to_value(&dto).unwrap_or_default()),
+            ),
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+/// Resident cancels their own active SOS (ABIERTA → RESUELTA).
+async fn cancelar(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<SosDto>> {
+    guard::require(&user, RESIDENT_ROLES)?;
+    let mut conn = state.pool.get().await?;
+
+    let alerta: SosAlerta = sos_alertas::table
+        .find(id)
+        .select(SosAlerta::as_select())
+        .first(&mut conn)
+        .await
+        .optional()?
+        .ok_or_else(|| ApiError::NotFound("alerta SOS no encontrada".into()))?;
+
+    if alerta.usuario_id != user.id {
+        return Err(ApiError::Forbidden);
+    }
+    if alerta.conjunto_id != user.conjunto_id {
+        return Err(ApiError::Forbidden);
+    }
+
+    aplicar_transicion(alerta.estado, SosAccion::Cancelar)?;
+
+    let now = Utc::now();
+    let updated: SosAlerta = diesel::update(sos_alertas::table.find(id))
+        .set((
+            sos_alertas::estado.eq(EstadoSos::Resuelta),
+            sos_alertas::resuelta_por_id.eq(user.id),
+            sos_alertas::fecha_resuelta.eq(now),
+        ))
+        .returning(SosAlerta::as_returning())
+        .get_result(&mut conn)
+        .await?;
 
     let dto = SosDto::from_parts(updated, None);
     state
@@ -354,10 +410,20 @@ mod tests {
     }
 
     #[test]
+    fn cancelar_resolves_open_alert() {
+        assert!(matches!(
+            aplicar_transicion(EstadoSos::Abierta, SosAccion::Cancelar).unwrap(),
+            EstadoSos::Resuelta
+        ));
+    }
+
+    #[test]
     fn invalid_transitions_are_rejected() {
         // Re-attending an attended alert, or touching a resolved one, is invalid.
-        assert!(aplicar_transicion(EstadoSos::Atendida, SosAccion::Atender).is_err());
+        assert!(aplicar_transicion(EstadoSos::Abierta, SosAccion::Atender).is_err());
         assert!(aplicar_transicion(EstadoSos::Resuelta, SosAccion::Atender).is_err());
         assert!(aplicar_transicion(EstadoSos::Resuelta, SosAccion::Resolver).is_err());
+        assert!(aplicar_transicion(EstadoSos::Atendida, SosAccion::Cancelar).is_err());
+        assert!(aplicar_transicion(EstadoSos::Resuelta, SosAccion::Cancelar).is_err());
     }
 }

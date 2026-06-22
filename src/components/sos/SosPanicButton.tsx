@@ -24,6 +24,7 @@ const TIPOS: { value: TipoSos; label: string; emoji: string }[] = [
 export default function SosPanicButton() {
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [active, setActive] = useState<SosDto | null>(null);
   const role = useAuth((s) => s.user?.rol);
 
@@ -56,19 +57,42 @@ export default function SosPanicButton() {
     }
   }
 
+  async function cancelar() {
+    if (!active) return;
+    setCancelling(true);
+    try {
+      await api.post(`/sos/${active.id}/cancelar`);
+      setActive(null);
+      toast.success("Alerta SOS cancelada.");
+    } catch {
+      toast.error("No se pudo cancelar la alerta.");
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   // Residents only — security/admin have their own console.
   if (!role || !RESIDENT_ROLES.includes(role)) return null;
 
   if (active) {
     return (
-      <div className="liquid-glass rounded-2xl p-4 border border-red-500/40 bg-red-500/10 flex items-center gap-3 animate-pulse">
-        <AlertTriangle className="text-red-400" size={22} />
-        <div className="flex-1">
-          <p className="text-sm font-bold text-red-300">Alerta SOS activa</p>
-          <p className="text-[11px] text-text/60">
-            Seguridad fue notificada y está en camino.
-          </p>
+      <div className="liquid-glass rounded-2xl p-4 border border-red-500/40 bg-red-500/10 animate-pulse">
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="text-red-400 shrink-0" size={22} />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-red-300">Alerta SOS activa</p>
+            <p className="text-[11px] text-text/60">
+              Seguridad fue notificada y está en camino.
+            </p>
+          </div>
         </div>
+        <button
+          onClick={cancelar}
+          disabled={cancelling}
+          className="mt-3 w-full text-center text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl py-2 transition-colors disabled:opacity-50"
+        >
+          {cancelling ? "Cancelando..." : "Cancelar alerta"}
+        </button>
       </div>
     );
   }
