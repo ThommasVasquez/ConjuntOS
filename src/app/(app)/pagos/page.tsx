@@ -260,12 +260,12 @@ export default function PagosPage() {
                onClick={() => activeTab === 'PENDIENTES' && setSelectedPayment(p)}
                className="fade-up liquid-glass-card rounded-[32px] p-5 flex items-center justify-between border border-border hover:border-accent/30 transition-all cursor-pointer group shadow-xl"
              >
-                <div className="flex items-center gap-4">
-                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border ${getStatusStyle(p.estado)}`}>
+                <div className="flex items-center gap-4 min-w-0">
+                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shrink-0 ${getStatusStyle(p.estado)}`}>
                       <DollarSign size={24} />
                    </div>
-                   <div className="flex flex-col">
-                      <h4 className="text-text font-bold text-base leading-none mb-1.5 group-hover:text-accent transition-colors">{p.concepto}</h4>
+                   <div className="flex flex-col min-w-0">
+                      <h4 className="text-text font-bold text-base leading-none mb-1.5 truncate group-hover:text-accent transition-colors">{p.concepto}</h4>
                       <div className="flex items-center gap-3">
                          <span className="text-accent text-xs font-bold">$ {p.monto.toLocaleString()}</span>
                          <span className="text-text-muted text-[10px] font-medium tracking-tight">Vence {new Date(p.fechaVencimiento).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>

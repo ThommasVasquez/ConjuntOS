@@ -75,17 +75,17 @@ export default function AsistentePage() {
         )}
       </div>
 
-      <div className="fixed bottom-24 left-0 right-0 px-6">
-        <div className="flex gap-2 max-w-2xl mx-auto">
-          <input value={pregunta} onChange={(e) => setPregunta(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && preguntar(pregunta)}
-            placeholder="Escribe tu consulta…"
-            className="flex-1 bg-surface-2 border border-border rounded-2xl py-3.5 px-4 text-sm text-text shadow-xl focus:outline-none focus:border-accent" />
-          <button onClick={() => preguntar(pregunta)} disabled={loading || !pregunta.trim()}
-            className="px-5 rounded-2xl bg-accent text-primary font-bold disabled:opacity-50 shadow-xl">
-            <Send size={18} />
-          </button>
-        </div>
+      {/* ponytail: align to the 430px app-shell frame like BottomNav (.app-shell has no transform,
+          so `fixed` resolves to the viewport — left-0/right-0 would spill outside the frame on desktop). */}
+      <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[80] w-[92%] max-w-[400px] flex gap-2">
+        <input value={pregunta} onChange={(e) => setPregunta(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && preguntar(pregunta)}
+          placeholder="Escribe tu consulta…"
+          className="flex-1 min-w-0 bg-surface-2 border border-border rounded-2xl py-3.5 px-4 text-sm text-text shadow-xl focus:outline-none focus:border-accent" />
+        <button onClick={() => preguntar(pregunta)} disabled={loading || !pregunta.trim()}
+          className="shrink-0 px-5 rounded-2xl bg-accent text-primary font-bold disabled:opacity-50 shadow-xl">
+          <Send size={18} />
+        </button>
       </div>
 
       <p className="text-[10px] text-text/30 text-center mt-2">

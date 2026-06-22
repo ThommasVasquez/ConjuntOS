@@ -570,7 +570,7 @@ interface RondaConCheckpointsDto extends RondaDto {
                           ? <Check size={14} className="text-emerald-400 shrink-0" />
                           : <div className="w-3.5 h-3.5 rounded-full border-2 border-text/20 shrink-0" />
                         }
-                        <span className={verificado ? "text-emerald-400 font-medium" : "text-text/60"}>
+                        <span className={`min-w-0 truncate ${verificado ? "text-emerald-400 font-medium" : "text-text/60"}`}>
                           {punto.nombre}
                         </span>
                         {punto.ubicacion && (

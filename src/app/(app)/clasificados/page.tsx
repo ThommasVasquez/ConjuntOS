@@ -175,7 +175,7 @@ export default function ClasificadosPage() {
       {/* FAB: POST NEW */}
       <button 
         onClick={() => setIsPostingOpen(true)}
-        className="fixed bottom-32 right-6 md:right-[calc(50%-180px)] w-16 h-16 rounded-full bg-accent text-primary shadow-2xl shadow-accent/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group"
+        className="fixed bottom-32 right-[calc(50%-180px)] w-16 h-16 rounded-full bg-accent text-primary shadow-2xl shadow-accent/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group"
       >
         <Plus size={32} className="group-hover:rotate-90 transition-transform duration-500" />
       </button>
