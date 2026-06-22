@@ -12,6 +12,7 @@ import {
   SearchX
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
+import MultasResidente from "@/components/multas/MultasResidente";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
@@ -178,6 +179,8 @@ export default function PagosPage() {
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-8">
       <ProfileHeader className="fade-up" />
+
+      <MultasResidente />
 
       {/* WALLET HERO CARD */}
       <section className="fade-up w-full relative group">

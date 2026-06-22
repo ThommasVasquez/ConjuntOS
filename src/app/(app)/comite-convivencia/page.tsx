@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
+import ImponerMulta from "@/components/multas/ImponerMulta";
 import {
   Heart, Users, Scale, AlertTriangle, Clock, CheckCircle2,
   ChevronLeft, ChevronRight, RefreshCw, X, Loader2, ArrowUpDown,
@@ -325,6 +326,8 @@ export default function ComiteConvivenciaPage() {
   return (
     <div ref={containerRef} className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden">
       <ProfileHeader />
+
+      <ImponerMulta />
 
       {/* Header */}
       <div className="fade-up flex items-center justify-between">
