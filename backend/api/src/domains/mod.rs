@@ -14,6 +14,7 @@ pub mod clasificados;
 pub mod comite_convivencia;
 pub mod comunicaciones;
 pub mod conjuntos;
+pub mod encuestas;
 pub mod inmuebles;
 pub mod notificaciones;
 pub mod pagos;

@@ -916,6 +916,41 @@ diesel::joinable!(firmas_actas -> actas_convivencia (acta_id));
 diesel::joinable!(firmas_actas -> usuarios (usuario_id));
 
 diesel::table! {
+    encuestas (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        creado_por -> Uuid,
+        titulo -> Text,
+        descripcion -> Nullable<Text>,
+        opciones -> Jsonb,
+        multiple -> Bool,
+        anonima -> Bool,
+        cierra_at -> Nullable<Timestamptz>,
+        cerrada -> Bool,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    encuesta_participacion (id) {
+        id -> Uuid,
+        encuesta_id -> Uuid,
+        usuario_id -> Uuid,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    encuesta_votos (id) {
+        id -> Uuid,
+        encuesta_id -> Uuid,
+        opcion_id -> Text,
+        usuario_id -> Nullable<Uuid>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     sos_alertas (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -963,6 +998,9 @@ diesel::allow_tables_to_appear_in_same_query!(
     conjuntos,
     correspondencia,
     documentos,
+    encuesta_participacion,
+    encuesta_votos,
+    encuestas,
     gastos,
     inmuebles,
     juntas,
