@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { gsap } from "gsap";
 import { api } from "@/lib/api/client";
+import SosConsole from "@/components/sos/SosConsole";
 
 interface VigilanciaStats {
   visitasHoy: number;
@@ -197,6 +198,9 @@ export default function VigilanciaDashboard() {
           </div>
         ))}
       </div>
+
+      {/* LIVE SOS ALERTS (renders only when the queue is non-empty) */}
+      <SosConsole />
 
       {/* QUICK-ACCESS NAVIGATION GRID */}
       <div className="fade-up flex flex-col gap-3">
