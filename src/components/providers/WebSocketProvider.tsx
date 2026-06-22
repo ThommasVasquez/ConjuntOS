@@ -14,27 +14,30 @@ const WS_URL_BASE =
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const user = useAuth((s) => s.user);
   const setConnected = useWsStore((s) => s.setConnected);
+  const setCurrentUserId = useWsStore((s) => s.setCurrentUserId);
   const dispatch = useWsStore((s) => s.dispatch);
+  const reset = useWsStore((s) => s.reset);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const attemptRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    // WS-6: reset store on auth change (clears stale handlers/state)
+    reset();
+
     if (!user) {
-      // Not authenticated — close any existing connection
-      wsRef.current?.close();
       wsRef.current = null;
-      setConnected(false);
       return;
     }
 
+    setCurrentUserId(user.id);
     let cancelled = false;
+    let attemptId = 0;
     attemptRef.current = 0;
 
     function scheduleReconnect() {
       if (cancelled) return;
-      // Exponential backoff capped at WS_RECONNECT_MAX (replaces the old fixed 3s
-      // tight loop). Keeps retrying transient outages without hammering the server.
       const delay = Math.min(
         WS_RECONNECT_BASE * 2 ** attemptRef.current,
         WS_RECONNECT_MAX,
@@ -46,14 +49,20 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     async function connect() {
       if (cancelled) return;
 
-      // Fetch a short-lived WS ticket, authenticated by the httpOnly cookie /
-      // in-memory bearer. We never persist a long-lived token for the WS URL.
+      const localAttemptId = ++attemptId;
+
+      // WS-5: cancel any in-flight ticket fetch
+      abortRef.current?.abort();
+      const abort = new AbortController();
+      abortRef.current = abort;
+
       let ticket: string;
       try {
-        ticket = (await api.get<{ ticket: string }>('/auth/ws-ticket')).ticket;
+        ticket = (await api.get<{ ticket: string }>('/auth/ws-ticket', { signal: abort.signal })).ticket;
       } catch (e) {
-        // Auth rejected → stop retrying; the auth layer redirects to /login.
+        if (cancelled) return;
         if (e instanceof ApiError && e.status === 401) {
+          setCurrentUserId(null);
           setConnected(false);
           return;
         }
@@ -70,34 +79,33 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       wsRef.current = ws;
 
       ws.onopen = () => {
+        if (cancelled || ws !== wsRef.current) return;
         attemptRef.current = 0;
         setConnected(true);
       };
 
       ws.onmessage = (e) => {
-        // Parse + dispatch fuera del propio callback del socket. Dispatch ejecuta
-        // los handlers sincronicamente (setState -> re-render en cascada); si eso
-        // corre dentro de onmessage, Chrome lo atribuye al "'message' handler" y
-        // dispara el Violation de >50ms ademas de retrasar el siguiente frame del
-        // socket. queueMicrotask devuelve el control de inmediato y deja que el
-        // trabajo de React ocurra en su propio tick.
         let parsed: unknown;
         try {
           parsed = JSON.parse(e.data);
         } catch {
-          // Ignore malformed messages
           return;
         }
         queueMicrotask(() => dispatch(parsed as Parameters<typeof dispatch>[0]));
       };
 
       ws.onclose = () => {
+        if (cancelled || ws !== wsRef.current) return;
         setConnected(false);
+        setCurrentUserId(null);
         scheduleReconnect();
       };
 
       ws.onerror = () => {
+        if (cancelled || ws !== wsRef.current) return;
+        ws.onclose = null;
         ws.close();
+        wsRef.current = null;
       };
     }
 
@@ -105,12 +113,17 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      abortRef.current?.abort();
       clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
-      wsRef.current = null;
+      if (wsRef.current) {
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+        wsRef.current = null;
+      }
       setConnected(false);
+      setCurrentUserId(null);
     };
-  }, [user, setConnected, dispatch]);
+  }, [user?.id, user?.conjuntoId, setConnected, setCurrentUserId, dispatch, reset]);
 
   return <>{children}</>;
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { PaseTemporalDto, CrearPaseTemporalRequest, VehiculoTemporalInput } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -56,6 +57,8 @@ export default function PasesTemporalesPage() {
       setLoading(false);
     }
   };
+
+  useWsSubscription('pase_temporal', () => fetchPases());
 
   const fetchUnidades = () => {
     // Use user's unit from auth context — each propietario has one unit

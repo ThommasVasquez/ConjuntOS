@@ -49,6 +49,8 @@ interface RequestOptions {
   raw?: boolean;
   /** Override default no-store cache policy */
   cache?: RequestCache;
+  /** AbortSignal for cancellation */
+  signal?: AbortSignal;
 }
 
 /**
@@ -69,6 +71,7 @@ export async function apiFetch<T = unknown>(
     headers = {},
     raw = false,
     cache: cachePolicy = 'no-store',
+    signal,
   } = options;
 
   const url = `${API_BASE}/api/v1${path}`;
@@ -92,6 +95,7 @@ export async function apiFetch<T = unknown>(
     body: body ? JSON.stringify(body) : undefined,
     credentials: 'include', // always send ec_session cookie
     cache: cachePolicy,
+    signal,
   });
 
   if (!response.ok) {

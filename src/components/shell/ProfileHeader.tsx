@@ -42,8 +42,10 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
     } catch {}
   }, [userId]);
 
-  // Real-time WebSocket subscription
+  // Real-time WebSocket subscriptions
   useWsSubscription('notification', () => refetchNotifications());
+  // COV-2: recordatorio emitted for vehicle docs / pet vaccines / dues expiry
+  useWsSubscription('recordatorio', () => refetchNotifications());
 
   useEffect(() => {
     const MAX_RETRIES = 2;

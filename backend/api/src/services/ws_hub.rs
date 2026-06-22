@@ -79,6 +79,8 @@ pub mod ws_events {
 #[derive(Clone, Default)]
 pub struct WsHub {
     channels: Arc<RwLock<HashMap<Uuid, broadcast::Sender<WsEvent>>>>,
+    /// WS-7: per-user channels for private events (targeted at a single user).
+    user_channels: Arc<RwLock<HashMap<(Uuid, Uuid), broadcast::Sender<WsEvent>>>>,
 }
 
 impl WsHub {
@@ -88,14 +90,12 @@ impl WsHub {
 
     /// Get or create a broadcast sender for a conjunto.
     pub async fn get_sender(&self, conjunto_id: Uuid) -> broadcast::Sender<WsEvent> {
-        // Fast path: read lock
         {
             let channels = self.channels.read().await;
             if let Some(tx) = channels.get(&conjunto_id) {
                 return tx.clone();
             }
         }
-        // Slow path: write lock to insert
         let mut channels = self.channels.write().await;
         channels
             .entry(conjunto_id)
@@ -108,11 +108,74 @@ impl WsHub {
         self.get_sender(conjunto_id).await.subscribe()
     }
 
-    /// Publish an event to all subscribers in a conjunto.
+    /// WS-7: subscribe to a user's private event channel.
+    pub async fn subscribe_user(&self, conjunto_id: Uuid, user_id: Uuid) -> broadcast::Receiver<WsEvent> {
+        let key = (conjunto_id, user_id);
+        {
+            let channels = self.user_channels.read().await;
+            if let Some(tx) = channels.get(&key) {
+                return tx.subscribe();
+            }
+        }
+        let mut channels = self.user_channels.write().await;
+        channels
+            .entry(key)
+            .or_insert_with(|| broadcast::channel(CHANNEL_CAPACITY).0)
+            .subscribe()
+    }
+
+    /// WS-7: publish routes to per-user channel if targeted, else conjunto broadcast.
     /// Silently ignores if no one is listening.
     pub async fn publish(&self, conjunto_id: Uuid, event: WsEvent) {
-        let tx = self.get_sender(conjunto_id).await;
-        let _ = tx.send(event);
+        if let Some(user_id) = event.target_user_id {
+            // Private event — use per-user channel (WS-7)
+            let key = (conjunto_id, user_id);
+            let tx = {
+                let channels = self.user_channels.read().await;
+                channels.get(&key).cloned()
+            };
+            if let Some(tx) = tx {
+                let _ = tx.send(event);
+            }
+            // No channel = user not connected, drop silently
+        } else {
+            // Broadcast event — use conjunto channel
+            let tx = self.get_sender(conjunto_id).await;
+            let _ = tx.send(event);
+        }
+    }
+
+    /// WS-4: remove the conjunto channel entry if no receivers remain.
+    pub async fn maybe_reap(&self, conjunto_id: Uuid) {
+        let reap = {
+            let channels = self.channels.read().await;
+            channels.get(&conjunto_id).map_or(false, |tx| tx.receiver_count() == 0)
+        };
+        if reap {
+            let mut channels = self.channels.write().await;
+            if let Some(tx) = channels.get(&conjunto_id) {
+                if tx.receiver_count() == 0 {
+                    channels.remove(&conjunto_id);
+                }
+            }
+        }
+    }
+
+    /// WS-7: remove the per-user channel entry if no receivers remain.
+    pub async fn maybe_reap_user(&self, conjunto_id: Uuid, user_id: Uuid) {
+        let key = (conjunto_id, user_id);
+        let reap = {
+            let channels = self.user_channels.read().await;
+            channels.get(&key).map_or(false, |tx| tx.receiver_count() == 0)
+        };
+        if reap {
+            let mut channels = self.user_channels.write().await;
+            if let Some(tx) = channels.get(&key) {
+                if tx.receiver_count() == 0 {
+                    channels.remove(&key);
+                }
+            }
+        }
     }
 }
 

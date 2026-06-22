@@ -23,6 +23,10 @@ pub struct Claims {
     pub nombre: String,
     pub iat: i64,
     pub exp: i64,
+    /// Token audience discriminator. `"ws"` for WebSocket tickets (WS-2); absent
+    /// for session JWTs. Backward-compatible via Option + serde(default).
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub aud: Option<String>,
 }
 
 pub fn issue(
@@ -39,6 +43,7 @@ pub fn issue(
         nombre,
         secret,
         Duration::days(SESSION_DAYS),
+        None,
     )
 }
 
@@ -57,6 +62,7 @@ pub fn issue_ws_ticket(
         nombre,
         secret,
         Duration::seconds(WS_TICKET_SECONDS),
+        Some("ws".to_string()),
     )
 }
 
@@ -67,6 +73,7 @@ fn issue_with_ttl(
     nombre: &str,
     secret: &str,
     ttl: Duration,
+    aud: Option<String>,
 ) -> ApiResult<String> {
     let now = Utc::now();
     let claims = Claims {
@@ -76,6 +83,7 @@ fn issue_with_ttl(
         nombre: nombre.to_string(),
         iat: now.timestamp(),
         exp: (now + ttl).timestamp(),
+        aud,
     };
     encode(
         &Header::default(),
@@ -86,10 +94,14 @@ fn issue_with_ttl(
 }
 
 pub fn verify(token: &str, secret: &str) -> ApiResult<Claims> {
+    let mut validation = Validation::default();
+    // jsonwebtoken 9.x validates aud by default. We check it manually in
+    // ws_handler (WS-2) so disable the built-in audience check.
+    validation.validate_aud = false;
     decode::<Claims>(
         token,
         &DecodingKey::from_secret(secret.as_bytes()),
-        &Validation::default(),
+        &validation,
     )
     .map(|data| data.claims)
     .map_err(|_| ApiError::Unauthorized)
@@ -136,5 +148,24 @@ mod tests {
             verify("not.a.jwt", "secret"),
             Err(ApiError::Unauthorized)
         ));
+    }
+
+    #[test]
+    fn ws_ticket_has_aud_ws() {
+        let user = Uuid::new_v4();
+        let conjunto = Uuid::new_v4();
+        let token = issue_ws_ticket(user, conjunto, Rol::Propietario, "Luna", "secret").unwrap();
+        let claims = verify(&token, "secret").unwrap();
+        assert_eq!(claims.sub, user);
+        assert_eq!(claims.aud, Some("ws".to_string()));
+    }
+
+    #[test]
+    fn session_token_has_no_aud() {
+        let user = Uuid::new_v4();
+        let conjunto = Uuid::new_v4();
+        let token = issue(user, conjunto, Rol::Administrador, "Admin", "secret").unwrap();
+        let claims = verify(&token, "secret").unwrap();
+        assert_eq!(claims.aud, None);
     }
 }
