@@ -6,7 +6,7 @@
 //! active alert so a panicking user can't flood the queue.
 
 use axum::extract::{Path, State};
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
