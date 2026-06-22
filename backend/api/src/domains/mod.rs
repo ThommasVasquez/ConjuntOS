@@ -21,6 +21,7 @@ pub mod parqueadero;
 pub mod pases_temporales;
 pub mod reservas;
 pub mod solicitudes;
+pub mod sos;
 pub mod tramites;
 pub mod uploads;
 pub mod usuarios;

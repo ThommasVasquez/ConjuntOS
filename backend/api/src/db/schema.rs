@@ -913,6 +913,23 @@ diesel::joinable!(firmas_actas -> actas_convivencia (acta_id));
 diesel::joinable!(firmas_actas -> usuarios (usuario_id));
 
 diesel::table! {
+    sos_alertas (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        usuario_id -> Uuid,
+        tipo -> Text,
+        estado -> Text,
+        nota -> Nullable<Text>,
+        ubicacion -> Nullable<Text>,
+        atendida_por_id -> Nullable<Uuid>,
+        fecha_atendida -> Nullable<Timestamptz>,
+        resuelta_por_id -> Nullable<Uuid>,
+        fecha_resuelta -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     recordatorios_enviados (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -967,6 +984,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     sesiones_parqueadero,
     solicitudes_parqueadero,
     solicitudes_servicio,
+    sos_alertas,
     tramites,
     unidades,
     usuarios,

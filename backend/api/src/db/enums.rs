@@ -154,6 +154,19 @@ text_enum!(MetodoPago {
     Efectivo => "EFECTIVO",
 });
 
+text_enum!(TipoSos {
+    Seguridad => "SEGURIDAD",
+    Medica => "MEDICA",
+    Incendio => "INCENDIO",
+    Otro => "OTRO",
+});
+
+text_enum!(EstadoSos {
+    Abierta => "ABIERTA",
+    Atendida => "ATENDIDA",
+    Resuelta => "RESUELTA",
+});
+
 text_enum!(CatGasto {
     Mantenimiento => "MANTENIMIENTO",
     Nomina => "NOMINA",

@@ -13,7 +13,7 @@ Decisions: payments=**Nequi** · multas issuer=**administrador** only · AI=**Ge
 - [x] ✅ Checkpoint: cargo build+clippy clean; 36 lib tests green (WS/scheduler/PDF/QR); OpenSSL-free verified. (Frontend untouched in Phase 1 → no pnpm build needed.) → ready for push+VPS + human review
 
 ## Phase 2 — Safety & daily-use
-- [ ] 2.1 SOS/panic button — backend (`domains/sos/`, push to vigilancia <2s, rate-limited) · M
+- [x] 2.1 SOS/panic button — backend: `domains/sos.rs` (POST /sos resident-gated, GET/atender/resolver security-gated), `sos_alertas` table + partial-unique-index rate limit (1 active/user), WS `sos` broadcast + web-push fan-out to vigilancia, pure `aplicar_transicion` state machine (2 tests) · M
 - [ ] 2.2 SOS — frontend resident trigger + security live console · M
 - [ ] 2.3 QR visitor pre-reg — backend (token+QR, `/visitas/scan`) · M
 - [ ] 2.4 QR visitor — frontend (`/visitantes` QR share, `/control-visitas` scanner) · M
