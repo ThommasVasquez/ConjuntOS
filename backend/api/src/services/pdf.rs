@@ -31,8 +31,7 @@ pub struct PdfDoc {
 
 /// Render `doc` to PDF bytes, paginating when content runs past the bottom margin.
 pub fn render_pdf(doc: &PdfDoc) -> anyhow::Result<Vec<u8>> {
-    let (pdf, page1, layer1) =
-        PdfDocument::new(&doc.title, Mm(PAGE_W), Mm(PAGE_H), "Layer 1");
+    let (pdf, page1, layer1) = PdfDocument::new(&doc.title, Mm(PAGE_W), Mm(PAGE_H), "Layer 1");
     let font = pdf.add_builtin_font(BuiltinFont::HelveticaBold)?;
     let font_regular = pdf.add_builtin_font(BuiltinFont::Helvetica)?;
 
@@ -88,7 +87,11 @@ mod tests {
 
         // Valid PDFs begin with the %PDF magic bytes and carry real content.
         assert!(bytes.starts_with(b"%PDF"), "missing %PDF header");
-        assert!(bytes.len() > 200, "PDF suspiciously small: {} bytes", bytes.len());
+        assert!(
+            bytes.len() > 200,
+            "PDF suspiciously small: {} bytes",
+            bytes.len()
+        );
     }
 
     #[test]

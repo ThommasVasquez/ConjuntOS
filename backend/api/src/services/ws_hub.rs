@@ -150,7 +150,12 @@ mod tests {
     #[test]
     fn targeted_event_serializes_with_camelcase_target_user() {
         let uid = Uuid::nil();
-        let event = WsEvent::to_user(uid, ws_events::RECORDATORIO, ws_events::action::CREATED, None);
+        let event = WsEvent::to_user(
+            uid,
+            ws_events::RECORDATORIO,
+            ws_events::action::CREATED,
+            None,
+        );
         let v: serde_json::Value = serde_json::to_value(&event).unwrap();
 
         assert_eq!(v["domain"], "recordatorio");
