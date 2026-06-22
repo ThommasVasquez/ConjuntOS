@@ -1,33 +1,48 @@
-# TODO — 016 Citofonía LiveKit + TURN (production-ready)
+# TODO — EN-CONJUNTO market-leading features
 
-Ref: `tasks/plan.md` · Spec: `specs/016-citofonia-livekit/spec.md`
+Full plan: `tasks/plan.md`. Order is dependency-correct. Check off as `/build` completes each.
+After Phase 1, features F1/F2/F4/F6+F7/F9 can run in parallel. F3 is isolated (needs Nequi creds).
+Decisions: payments=**Nequi** · multas issuer=**administrador** only · AI=**Gemini** · voting=**online only** · surveys=**/encuestas** page.
+(Prior 016 Citofonía/LiveKit todo is shipped — archived alongside `tasks/plan-016-citofonia-livekit.archive.md`.)
 
-## Fase A — Fundaciones
-- [x] T1 · VAPID keys + env documentados (`DEPLOYMENT_ENV.md`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`)
-- [x] T2 · Sanity LiveKit dev (compose `livekit`, devkey/devsecret)
+## Phase 1 — Foundations (build first)
+- [x] 1.1 Realtime event taxonomy (`sos`/`encuesta`/`multa`/`recordatorio`) — `ws_hub.rs` constants + `WsEvent::broadcast`/`to_user` + 3 serialization tests; frontend dispatch already tolerates unknown domains · S
+- [ ] 1.2 Reusable expiry-reminder scheduler (`ReminderSource`, idempotent) — `services/scheduler*`, `notificaciones` · M
+- [ ] 1.3 PDF render service (`services/pdf.rs` → MinIO) · M
+- [ ] 1.4 QR code service (`services/qr.rs`, round-trip) · S
+- [ ] ✅ Checkpoint: cargo build+clippy, pnpm build, WS/scheduler/PDF/QR tests green → human review
 
-## Fase B — Backend push VAPID
-- [x] T3 · `web-push` crate + `WebPushSender` (reqwest rustls) + factory real/`UnconfiguredPushSender` + unit tests (3/3)
+## Phase 2 — Safety & daily-use
+- [ ] 2.1 SOS/panic button — backend (`domains/sos/`, push to vigilancia <2s, rate-limited) · M
+- [ ] 2.2 SOS — frontend resident trigger + security live console · M
+- [ ] 2.3 QR visitor pre-reg — backend (token+QR, `/visitas/scan`) · M
+- [ ] 2.4 QR visitor — frontend (`/visitantes` QR share, `/control-visitas` scanner) · M
+- [ ] ✅ Checkpoint: SOS <2s; QR pre-reg→scan→admit across 2 devices → human review
 
-## Fase C — Backend endpoints
-- [x] T4 · `POST /citofonia/call` (room + token + push + sent real)
-- [x] T5 · `GET /citofonia/token?room=` (tenancy del room → 403 cross-tenant)
-- [x] T6 · Payload `room` + tests `m5b_test.rs`
-- [x] **CP1** · `cargo test` m5b 11/11 verde
+## Phase 3 — Real payments via Nequi (GATE: Nequi sandbox creds)
+- [ ] 3.1 Gateway trait + NequiGateway (push-to-app) + MockGateway (`services/payments/`) · M
+- [ ] 3.2 Nequi status notification/poll + idempotent reconciliation + EXPIRADO + receipt · M
+- [ ] 3.3 Nequi checkout — frontend `/pagos` (enter phone → approve in app → live status) · M
+- [ ] ✅ Checkpoint: sandbox push→approve→PAGADO→receipt→KPI; expiry clean; creds security review → go/no-go prod keys
 
-## Fase D/E/F — Frontend
-- [x] T7 · `CallContext.tsx` → `livekit-client` (audio-only), tonos/UI/voz conservados
-- [x] T8 · `sw.js` con `room` + `INCOMING_CALL` (timbre con app abierta) / `ANSWER_CALL`
-- [x] T9 · Quitar `peerjs` (package.json + lockfile + 0 refs en src/public)
-- [x] **CP2** · `pnpm build` verde, sin peerjs
+## Phase 4 — Governance & community
+- [ ] 4.1 Encuestas — backend (`domains/encuestas/`, one-vote, live results, anon) · M
+- [ ] 4.2 Encuestas — frontend live charts (new standalone `/encuestas` page + nav) · M
+- [ ] 4.3 Multas — backend (administrador-only: comité caso → multa monto, cartera link, PDF notice) · M
+- [ ] 4.4 Multas — frontend (issue from caso; resident view + appeal) · M
+- [ ] ✅ Checkpoint: live survey tally; fine issue→cartera→appeal → human review
 
-## Fase G — Docker prod + TURN/TLS
-- [x] T10 · `livekit.yaml` prod (TURN embebido TLS + UDP mux 7882)
-- [x] T11 · `docker-compose.prod.yml` (TURN 5349, certs, env real VAPID/LIVEKIT)
-- [x] T12 · `DEPLOYMENT_ENV.md` (VAPID/LIVEKIT/TURN + runbook) + `FEATURES.md`
-- [x] **CP3** · `docker compose ... config` válido
+## Phase 5 — Compliance reminders (reuse 1.2)
+- [ ] 5.1 Vehicle docs — backend (SOAT/tecnomecánica cols + ReminderSource) · S–M
+- [ ] 5.2 Pet vaccines — backend (`mascotas_vacunas` + ReminderSource) · S–M
+- [ ] 5.3 Vehicle docs & vaccines — frontend (`/perfil`, `/admin-residentes`, expiry badges) · M
+- [ ] ✅ Checkpoint: reminders fire once/lead-time; badges correct → human review
 
-## Fase H — Verificación
-- [x] T13 · `cargo check --all-targets` ✅ · push unit 3/3 ✅ · m5b 11/11 ✅ · `pnpm build` ✅ · `graphify update`
-- [ ] T14 · E2E manual (audio / push wake / NAT relay) — **requiere host con IP pública + cert TURN; no reproducible en sandbox**
-- [~] **CP4** · Todo lo automatizable verde; E2E de TURN/NAT pendiente de entorno real
+## Phase 6 — Module upgrades (offline voting dropped — online only)
+- [ ] 6.1 Assembly acta PDF export (reuse 1.3) · S–M
+- [ ] 6.2 Resident Otto AI (Ley 675/reglamento RAG, Gemini, guardrails, role-gated) · M
+- [ ] ✅ Checkpoint complete: all criteria met; commit→push main→update VPS; migrations via runner (never hand-edit DB)
+
+## Remaining external dependency
+- Nequi **sandbox/merchant credentials** — needed only for the Phase-3 go/no-go. Every other phase proceeds without it.
+- Per-conjunto **reglamento document** to ingest for resident AI (6.2).

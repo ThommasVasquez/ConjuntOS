@@ -24,6 +24,57 @@ pub struct WsEvent {
     pub target_user_id: Option<Uuid>,
 }
 
+impl WsEvent {
+    /// Build a conjunto-wide broadcast event (no specific target user).
+    pub fn broadcast(domain: &str, action: &str, payload: Option<serde_json::Value>) -> Self {
+        Self {
+            domain: domain.to_owned(),
+            action: action.to_owned(),
+            payload,
+            target_user_id: None,
+        }
+    }
+
+    /// Build an event addressed to a single user within the conjunto.
+    pub fn to_user(
+        target_user_id: Uuid,
+        domain: &str,
+        action: &str,
+        payload: Option<serde_json::Value>,
+    ) -> Self {
+        Self {
+            domain: domain.to_owned(),
+            action: action.to_owned(),
+            payload,
+            target_user_id: Some(target_user_id),
+        }
+    }
+}
+
+/// Canonical names for real-time event domains and actions.
+///
+/// Publishers (Rust) and subscribers (`useWsSubscription('<domain>', ...)` on the
+/// web client) must agree on these exact strings. Existing domains stay as plain
+/// string literals at their call sites; new feature work references these constants
+/// to avoid typo-drift between backend and frontend.
+pub mod ws_events {
+    /// Panic / SOS emergency alerts (F1).
+    pub const SOS: &str = "sos";
+    /// Resident surveys / polls (F4).
+    pub const ENCUESTA: &str = "encuesta";
+    /// Monetary fines from the comité de convivencia (F5).
+    pub const MULTA: &str = "multa";
+    /// Expiry reminders: vehicle docs, pet vaccines, dues (F6/F7).
+    pub const RECORDATORIO: &str = "recordatorio";
+
+    /// Common action verbs shared across domains.
+    pub mod action {
+        pub const CREATED: &str = "created";
+        pub const UPDATED: &str = "updated";
+        pub const RESOLVED: &str = "resolved";
+    }
+}
+
 /// Per-tenant broadcast hub.  Thread-safe, cheap to clone.
 #[derive(Clone, Default)]
 pub struct WsHub {
@@ -62,5 +113,49 @@ impl WsHub {
     pub async fn publish(&self, conjunto_id: Uuid, event: WsEvent) {
         let tx = self.get_sender(conjunto_id).await;
         let _ = tx.send(event);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn new_domain_constants_have_stable_names() {
+        // Subscribers on the web (useWsSubscription('sos', ...)) and the Rust
+        // publishers must agree on these exact strings, so pin them.
+        assert_eq!(ws_events::SOS, "sos");
+        assert_eq!(ws_events::ENCUESTA, "encuesta");
+        assert_eq!(ws_events::MULTA, "multa");
+        assert_eq!(ws_events::RECORDATORIO, "recordatorio");
+    }
+
+    #[test]
+    fn broadcast_event_serializes_without_target_user() {
+        let event = WsEvent::broadcast(
+            ws_events::SOS,
+            ws_events::action::CREATED,
+            Some(json!({ "id": "abc", "tipo": "seguridad" })),
+        );
+        let v: serde_json::Value = serde_json::to_value(&event).unwrap();
+
+        assert_eq!(v["domain"], "sos");
+        assert_eq!(v["action"], "created");
+        assert_eq!(v["payload"]["tipo"], "seguridad");
+        // camelCase + skip-if-none: a broadcast event must not carry targetUserId.
+        assert!(v.get("targetUserId").is_none());
+    }
+
+    #[test]
+    fn targeted_event_serializes_with_camelcase_target_user() {
+        let uid = Uuid::nil();
+        let event = WsEvent::to_user(uid, ws_events::RECORDATORIO, ws_events::action::CREATED, None);
+        let v: serde_json::Value = serde_json::to_value(&event).unwrap();
+
+        assert_eq!(v["domain"], "recordatorio");
+        assert_eq!(v["targetUserId"], uid.to_string());
+        // payload None must be omitted, not serialized as null.
+        assert!(v.get("payload").is_none());
     }
 }
