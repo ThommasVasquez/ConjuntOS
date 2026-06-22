@@ -113,7 +113,7 @@ async fn listar_admin(
             }
         }).collect()
     });
-    let rows = repo::listar_solicitudes(&mut conn, user.conjunto_id, None, estados).await?;
+    let rows = repo::listar_solicitudes(&mut conn, user.conjunto_id, None, estados, None).await?;
     Ok(Json(rows.into_iter().map(SolicitudServicioDto::from).collect()))
 }
 

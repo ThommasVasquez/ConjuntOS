@@ -21,6 +21,7 @@ pub async fn listar_solicitudes(
     conjunto_id: Uuid,
     solo_usuario: Option<Uuid>,
     estados: Option<Vec<EstadoSolicitud>>,
+    asignado_a: Option<Uuid>,
 ) -> ApiResult<Vec<Solicitud>> {
     let mut query = solicitudes_servicio::table
         .filter(solicitudes_servicio::conjunto_id.eq(conjunto_id))
@@ -32,6 +33,9 @@ pub async fn listar_solicitudes(
         if !est_list.is_empty() {
             query = query.filter(solicitudes_servicio::estado.eq_any(est_list));
         }
+    }
+    if let Some(uid) = asignado_a {
+        query = query.filter(solicitudes_servicio::asignado_a_id.eq(uid));
     }
     query.order(solicitudes_servicio::created_at.desc())
         .limit(100)
