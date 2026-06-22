@@ -790,6 +790,20 @@ function HomeConsejo() {
             <p className="text-[9px] text-text">Ver circulares y anuncios generales</p>
           </div>
         </div>
+
+        {/* ENCUESTAS */}
+        <div
+          onClick={() => router.push('/encuestas')}
+          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
+            <BarChart3 size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-text mb-0.5">Encuestas</h4>
+            <p className="text-[9px] text-text">Crear y ver resultados en vivo</p>
+          </div>
+        </div>
       </div>
 
       {/* Resumen Agregado */}
@@ -946,6 +960,20 @@ function HomeAdmin() {
           <div>
             <h4 className="text-xs font-bold text-text mb-0.5">Áreas</h4>
             <p className="text-[8px] text-text">Espacios comunes</p>
+          </div>
+        </div>
+
+        {/* ENCUESTAS CARD */}
+        <div
+          onClick={() => router.push('/encuestas')}
+          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+        >
+          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
+            <BarChart3 size={18} />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-text mb-0.5">Encuestas</h4>
+            <p className="text-[8px] text-text">Crear y ver resultados</p>
           </div>
         </div>
       </div>

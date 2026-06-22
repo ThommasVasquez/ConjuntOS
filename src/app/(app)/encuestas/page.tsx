@@ -25,7 +25,9 @@ interface Encuesta {
   resultados: Conteo[];
 }
 
-const ADMIN_ROLES = ["ADMINISTRADOR", "CONCEJO", "SUPER_ADMIN"];
+// Must match backend encuestas ADMIN_ROLES (Administrador, Concejo) — SuperAdmin is
+// cross-tenant and the backend rejects it, so don't show it a button that 403s.
+const ADMIN_ROLES = ["ADMINISTRADOR", "CONCEJO"];
 
 export default function EncuestasPage() {
   const role = useAuth((s) => s.user?.rol);
