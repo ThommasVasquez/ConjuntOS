@@ -6,6 +6,7 @@ import { api } from "@/lib/api/client";
 import { QrCode, Camera, X, Check, Clock, User, MapPin, Home, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import ProfileHeader from "@/components/shell/ProfileHeader";
+import RoleSwitcher from "@/components/shell/RoleSwitcher";
 
 interface ReservaAdmin {
   id: string;
@@ -137,6 +138,7 @@ export default function AreaAdminDashboard() {
   return (
     <div className="min-h-screen bg-primary flex flex-col p-6 pt-16 pb-32 gap-6">
       <ProfileHeader />
+      <RoleSwitcher />
 
       {/* Header */}
       <div className="text-center space-y-1">
