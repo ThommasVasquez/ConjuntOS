@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
+import DocsVacunas from "@/components/docs/DocsVacunas";
 import { useTheme } from "@/components/providers/ThemeContext";
 
 export default function PerfilPage() {
@@ -826,6 +827,10 @@ function ProfileContent() {
                  ))
                )}
             </div>
+          )}
+
+          {(viewMode === "pets" || viewMode === "vehicles") && (
+            <div className="mt-2"><DocsVacunas /></div>
           )}
 
           {viewMode === "requests" && (
