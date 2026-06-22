@@ -23,6 +23,8 @@ pub struct Vehiculo {
     pub color: Option<String>,
     pub tipo: TipoVehiculo,
     pub created_at: DateTime<Utc>,
+    pub soat_vence: Option<chrono::NaiveDate>,
+    pub tecnomecanica_vence: Option<chrono::NaiveDate>,
 }
 
 #[derive(Insertable, Debug)]

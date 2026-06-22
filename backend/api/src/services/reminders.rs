@@ -14,7 +14,9 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
-use crate::db::schema::{push_subscriptions, recordatorios_enviados};
+use crate::db::schema::{
+    mascotas, mascotas_vacunas, push_subscriptions, recordatorios_enviados, vehiculos,
+};
 use crate::db::DbConn;
 use crate::error::ApiResult;
 use crate::services::push::PushSubscriptionInfo;
@@ -93,7 +95,8 @@ pub fn select_unsent(
 /// tecnomecánica) and F7 (pet vaccine boosters) each return the rows whose date
 /// falls in a lead-time bucket today. Empty until the first source lands, so the
 /// scheduler is a harmless no-op in the meantime.
-pub async fn gather_due(conn: &mut DbConn, _today: NaiveDate) -> ApiResult<Vec<DueReminder>> {
+#[allow(clippy::type_complexity)] // local query tuples; aliases would hurt readability here
+pub async fn gather_due(conn: &mut DbConn, today: NaiveDate) -> ApiResult<Vec<DueReminder>> {
     let mut reminders = Vec::new();
 
     // ── Reserva recordatorio: 30 minutos antes del inicio ──
@@ -123,6 +126,72 @@ pub async fn gather_due(conn: &mut DbConn, _today: NaiveDate) -> ApiResult<Vec<D
                 row.area_nombre, row.hora
             ),
         });
+    }
+
+    // Notify at these day-thresholds before a date lapses (the engine dedups per day).
+    const BUCKETS: [i64; 5] = [30, 15, 7, 3, 1];
+
+    // F6 — vehicle SOAT / tecnomecánica expiry.
+    let vehs: Vec<(Uuid, Uuid, Uuid, String, Option<NaiveDate>, Option<NaiveDate>)> =
+        vehiculos::table
+            .select((
+                vehiculos::id,
+                vehiculos::conjunto_id,
+                vehiculos::usuario_id,
+                vehiculos::placa,
+                vehiculos::soat_vence,
+                vehiculos::tecnomecanica_vence,
+            ))
+            .load(conn)
+            .await?;
+    for (id, conjunto_id, usuario_id, placa, soat, tecno) in vehs {
+        for (etiqueta, fecha) in [("SOAT", soat), ("Tecnomecánica", tecno)] {
+            if let Some(d) = fecha {
+                let dias = (d - today).num_days();
+                if BUCKETS.contains(&dias) {
+                    reminders.push(DueReminder {
+                        conjunto_id,
+                        usuario_id,
+                        source: format!("vehiculo_{}", etiqueta.to_ascii_lowercase()),
+                        row_id: id,
+                        lead_dias: dias as i32,
+                        titulo: format!("{etiqueta} por vencer"),
+                        mensaje: format!(
+                            "El {etiqueta} de tu vehículo {placa} vence en {dias} día(s)."
+                        ),
+                    });
+                }
+            }
+        }
+    }
+
+    // F7 — pet vaccine boosters.
+    let vacs: Vec<(Uuid, Uuid, Uuid, String, Option<NaiveDate>)> = mascotas_vacunas::table
+        .inner_join(mascotas::table.on(mascotas::id.eq(mascotas_vacunas::mascota_id)))
+        .select((
+            mascotas_vacunas::id,
+            mascotas_vacunas::conjunto_id,
+            mascotas::usuario_id,
+            mascotas_vacunas::vacuna,
+            mascotas_vacunas::proxima,
+        ))
+        .load(conn)
+        .await?;
+    for (id, conjunto_id, usuario_id, vacuna, proxima) in vacs {
+        if let Some(d) = proxima {
+            let dias = (d - today).num_days();
+            if BUCKETS.contains(&dias) {
+                reminders.push(DueReminder {
+                    conjunto_id,
+                    usuario_id,
+                    source: "mascota_vacuna".into(),
+                    row_id: id,
+                    lead_dias: dias as i32,
+                    titulo: "Refuerzo de vacuna".into(),
+                    mensaje: format!("La vacuna {vacuna} de tu mascota vence en {dias} día(s)."),
+                });
+            }
+        }
     }
 
     Ok(reminders)

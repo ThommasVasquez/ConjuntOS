@@ -795,6 +795,8 @@ diesel::table! {
         color -> Nullable<Text>,
         tipo -> Text,
         created_at -> Timestamptz,
+        soat_vence -> Nullable<Date>,
+        tecnomecanica_vence -> Nullable<Date>,
     }
 }
 
@@ -951,6 +953,19 @@ diesel::table! {
 }
 
 diesel::table! {
+    mascotas_vacunas (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        mascota_id -> Uuid,
+        vacuna -> Text,
+        fecha_aplicacion -> Nullable<Date>,
+        proxima -> Nullable<Date>,
+        certificado_url -> Nullable<Text>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     multas (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -1023,6 +1038,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     juntas,
     locales,
     mascotas,
+    mascotas_vacunas,
     multas,
     notificaciones,
     novedades_seguridad,

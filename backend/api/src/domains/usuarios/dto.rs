@@ -98,6 +98,8 @@ pub struct VehiculoPerfilDto {
     pub modelo: Option<String>,
     pub color: Option<String>,
     pub tipo: crate::db::enums::TipoVehiculo,
+    pub soat_vence: Option<chrono::NaiveDate>,
+    pub tecnomecanica_vence: Option<chrono::NaiveDate>,
 }
 
 impl From<crate::domains::parqueadero::models::Vehiculo> for VehiculoPerfilDto {
@@ -109,6 +111,8 @@ impl From<crate::domains::parqueadero::models::Vehiculo> for VehiculoPerfilDto {
             modelo: v.modelo,
             color: v.color,
             tipo: v.tipo,
+            soat_vence: v.soat_vence,
+            tecnomecanica_vence: v.tecnomecanica_vence,
         }
     }
 }
