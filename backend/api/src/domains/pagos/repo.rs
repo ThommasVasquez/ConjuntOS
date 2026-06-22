@@ -57,14 +57,36 @@ pub async fn recibos_de_unidad(
     Ok(rows)
 }
 
-/// Simulated payment (legacy parity): only the owner can pay their pago.
-pub async fn pagar(
+/// Fetch a pago the caller owns (needed to read its amount before charging).
+pub async fn pago_por_id(
     conn: &mut DbConn,
     conjunto_id: Uuid,
     usuario_id: Uuid,
     pago_id: Uuid,
-    metodo: MetodoPago,
 ) -> ApiResult<Option<Pago>> {
+    let row = pagos::table
+        .filter(pagos::id.eq(pago_id))
+        .filter(pagos::conjunto_id.eq(conjunto_id))
+        .filter(pagos::usuario_id.eq(usuario_id))
+        .select(Pago::as_select())
+        .first(conn)
+        .await
+        .optional()?;
+    Ok(row)
+}
+
+/// Apply a gateway outcome to an owned pago: set estado/metodo/provider-ref,
+/// stamping fecha_pago only when actually paid. Only the owner can pay their pago.
+pub async fn aplicar_estado_pago(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    usuario_id: Uuid,
+    pago_id: Uuid,
+    estado: EstadoPago,
+    metodo: MetodoPago,
+    referencia: &str,
+) -> ApiResult<Option<Pago>> {
+    let fecha_pago = (estado == EstadoPago::Pagado).then(Utc::now);
     let row = diesel::update(
         pagos::table
             .filter(pagos::id.eq(pago_id))
@@ -72,9 +94,10 @@ pub async fn pagar(
             .filter(pagos::usuario_id.eq(usuario_id)),
     )
     .set((
-        pagos::estado.eq(EstadoPago::Pagado),
-        pagos::fecha_pago.eq(Utc::now()),
+        pagos::estado.eq(estado),
         pagos::metodo.eq(metodo),
+        pagos::wompi_ref.eq(referencia),
+        pagos::fecha_pago.eq(fecha_pago),
     ))
     .returning(Pago::as_returning())
     .get_result(conn)

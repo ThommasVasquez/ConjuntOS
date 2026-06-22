@@ -89,4 +89,6 @@ pub struct PagosResponse {
 #[serde(rename_all = "camelCase")]
 pub struct PagarRequest {
     pub metodo: MetodoPago,
+    /// Payer's Nequi phone (required when the live Nequi gateway is active).
+    pub telefono: Option<String>,
 }

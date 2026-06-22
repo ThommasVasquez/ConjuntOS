@@ -14,6 +14,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/pagos", get(listar_pagos))
         .route("/pagos/{id}/pagar", put(pagar))
+        .route("/pagos/{id}/estado", get(estado_pago))
 }
 
 #[utoipa::path(
@@ -63,10 +64,83 @@ pub async fn pagar(
     Json(req): Json<PagarRequest>,
 ) -> ApiResult<Json<PagoDto>> {
     let mut conn = state.pool.get().await?;
-    let pago = repo::pagar(&mut conn, user.conjunto_id, user.id, id, req.metodo)
+    // Read the owned pago first (we need its amount to charge it).
+    let pago = repo::pago_por_id(&mut conn, user.conjunto_id, user.id, id)
         .await?
         .ok_or_else(|| ApiError::NotFound("pago no encontrado".into()))?;
-    let dto = PagoDto::from(pago);
+
+    // Request the charge through the configured gateway (Mock approves instantly;
+    // Nequi pushes to the payer's app and returns Pending until they approve).
+    let result = state
+        .payment_gateway
+        .cobrar(req.telefono.as_deref(), &pago.monto, &pago.id.to_string())
+        .await
+        .map_err(|e| ApiError::ServiceUnavailable(format!("pasarela de pago: {e}")))?;
+
+    let updated = repo::aplicar_estado_pago(
+        &mut conn,
+        user.conjunto_id,
+        user.id,
+        id,
+        result.estado.to_estado(),
+        req.metodo,
+        &result.referencia,
+    )
+    .await?
+    .ok_or_else(|| ApiError::NotFound("pago no encontrado".into()))?;
+
+    let dto = PagoDto::from(updated);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "pago".into(),
+                action: "updated".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+/// Poll the gateway for a pending payment's outcome and reconcile it. Idempotent:
+/// an already-paid pago stays paid; a still-pending one is left untouched.
+pub async fn estado_pago(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<PagoDto>> {
+    let mut conn = state.pool.get().await?;
+    let pago = repo::pago_por_id(&mut conn, user.conjunto_id, user.id, id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("pago no encontrado".into()))?;
+
+    // Only reconcile a pending pago that carries a provider reference.
+    let referencia = match (&pago.estado, &pago.wompi_ref) {
+        (crate::db::enums::EstadoPago::Pendiente, Some(r)) => r.clone(),
+        _ => return Ok(Json(PagoDto::from(pago))),
+    };
+
+    let outcome = state
+        .payment_gateway
+        .estado(&referencia)
+        .await
+        .map_err(|e| ApiError::ServiceUnavailable(format!("pasarela de pago: {e}")))?;
+    let nuevo = outcome.to_estado();
+    if nuevo == pago.estado {
+        return Ok(Json(PagoDto::from(pago)));
+    }
+
+    let metodo = pago.metodo.unwrap_or(crate::db::enums::MetodoPago::Nequi);
+    let updated = repo::aplicar_estado_pago(
+        &mut conn, user.conjunto_id, user.id, id, nuevo, metodo, &referencia,
+    )
+    .await?
+    .ok_or_else(|| ApiError::NotFound("pago no encontrado".into()))?;
+
+    let dto = PagoDto::from(updated);
     state
         .ws_hub
         .publish(

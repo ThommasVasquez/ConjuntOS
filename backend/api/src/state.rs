@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::config::Config;
 use crate::db::DbPool;
 use crate::services::gemini::GeminiClient;
+use crate::services::payments::PaymentGateway;
 use crate::services::push::PushSender;
 use crate::services::storage::StorageService;
 use crate::services::ws_hub::WsHub;
@@ -15,6 +16,7 @@ pub struct AppState {
     pub storage: Arc<dyn StorageService>,
     pub gemini: Option<GeminiClient>,
     pub ws_hub: WsHub,
+    pub payment_gateway: PaymentGateway,
 }
 
 impl AppState {
@@ -32,6 +34,7 @@ impl AppState {
             storage,
             gemini,
             ws_hub: WsHub::new(),
+            payment_gateway: crate::services::payments::PaymentGateway::from_env(),
         }
     }
 }
