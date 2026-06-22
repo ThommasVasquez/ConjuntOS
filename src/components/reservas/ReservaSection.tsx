@@ -112,7 +112,13 @@ export default function ReservaSection() {
           </h3>
           {reservasActivas.map(r => (
             <div key={r.id} className="flex items-center gap-3 bg-surface rounded-lg p-3">
-              <Calendar size={16} className="text-accent shrink-0" />
+              {r.areaImagenUrl ? (
+                <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0">
+                  <img src={r.areaImagenUrl} alt={r.areaNombre} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <Calendar size={16} className="text-accent shrink-0" />
+              )}
               <div className="flex-1 min-w-0">
                 <span className="text-sm text-text font-medium block truncate">{r.areaNombre}</span>
                 <span className="text-[10px] text-text/60">
@@ -169,7 +175,12 @@ export default function ReservaSection() {
               const area = areas.find(a => a.id === selectedArea);
               if (!area) return null;
               return (
-                <div className="bg-surface-2 rounded-xl p-3 text-xs text-text/70 space-y-1">
+                <div className="bg-surface-2 rounded-xl p-3 text-xs text-text/70 space-y-2">
+                  {area.imagenUrl && (
+                    <div className="relative w-full h-32 rounded-lg overflow-hidden mb-2">
+                      <img src={area.imagenUrl} alt={area.nombre} className="w-full h-full object-cover" />
+                    </div>
+                  )}
                   {area.descripcion && <p>{area.descripcion}</p>}
                   <p className="flex items-center gap-1"><Clock size={12} /> {area.horaApertura} → {area.horaCierre}</p>
                   <p className="flex items-center gap-1"><MapPin size={12} /> Capacidad: {area.capacidadMax} personas</p>

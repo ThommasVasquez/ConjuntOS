@@ -257,7 +257,7 @@ type PagoRow = (
     Option<&'static str>,
     i32,
 );
-/// (nombre, descripcion, cap, requiere_deposito, deposito_monto, apertura, cierre, dias, slot_min)
+/// (nombre, descripcion, cap, requiere_deposito, deposito_monto, apertura, cierre, dias, slot_min, imagen_url)
 type AreaRow = (
     &'static str,
     &'static str,
@@ -268,6 +268,7 @@ type AreaRow = (
     &'static str,
     &'static str,
     i32,
+    Option<&'static str>,
 );
 /// (email, nombre, tipo, vehiculo_tipo, placa, tiene_parqueadero, day_offset)
 type VisitaRow = (
@@ -499,6 +500,7 @@ async fn seed_content(target: &Client, conjunto_id: Uuid) -> Result<()> {
             "22:00",
             "LUN,MAR,MIE,JUE,VIE,SAB,DOM",
             240,
+            Some("https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80"),
         ),
         (
             "Piscina",
@@ -510,6 +512,7 @@ async fn seed_content(target: &Client, conjunto_id: Uuid) -> Result<()> {
             "20:00",
             "LUN,MAR,MIE,JUE,VIE,SAB,DOM",
             120,
+            Some("https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=800&q=80"),
         ),
         (
             "Zona BBQ",
@@ -521,6 +524,7 @@ async fn seed_content(target: &Client, conjunto_id: Uuid) -> Result<()> {
             "22:00",
             "VIE,SAB,DOM",
             180,
+            Some("https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=80"),
         ),
         (
             "Gimnasio",
@@ -532,14 +536,15 @@ async fn seed_content(target: &Client, conjunto_id: Uuid) -> Result<()> {
             "23:00",
             "LUN,MAR,MIE,JUE,VIE,SAB",
             60,
+            Some("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80"),
         ),
     ];
-    for (nombre, descripcion, cap, req_dep, dep_monto, ap, cierre, dias, slot) in areas {
+    for (nombre, descripcion, cap, req_dep, dep_monto, ap, cierre, dias, slot, img_url) in areas {
         target
             .execute(
-                "INSERT INTO areas_comunes (id, conjunto_id, nombre, descripcion, capacidad_max, requiere_deposito, deposito_monto, hora_apertura, hora_cierre, dias_disponibles, duracion_slot, activa)
-                 VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::text::numeric, $7, $8, $9, $10, true)",
-                &[&conjunto_id, nombre, descripcion, cap, req_dep, dep_monto, ap, cierre, dias, slot],
+                "INSERT INTO areas_comunes (id, conjunto_id, nombre, descripcion, capacidad_max, requiere_deposito, deposito_monto, hora_apertura, hora_cierre, dias_disponibles, duracion_slot, activa, imagen_url)
+                 VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::text::numeric, $7, $8, $9, $10, true, $11)",
+                &[&conjunto_id, nombre, descripcion, cap, req_dep, dep_monto, ap, cierre, dias, slot, img_url],
             )
             .await?;
     }
