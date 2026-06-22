@@ -50,6 +50,9 @@ sha2 = "0.10"
 # build OpenSSL-free. We sign+encrypt with this crate and send via reqwest (rustls).
 web-push-native = { version = "0.4", features = ["vapid"] }
 http = "1"
+# Offline PDF generation (actas, multa notices), pure-Rust with built-in fonts —
+# default features off to skip image codecs and keep the build OpenSSL-free.
+printpdf = { version = "0.7", default-features = false }
 
 [dev-dependencies]
 http-body-util = "0.1"

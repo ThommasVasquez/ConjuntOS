@@ -1,5 +1,6 @@
 pub mod gemini;
 pub mod livekit;
+pub mod pdf;
 pub mod push;
 pub mod reminders;
 pub mod storage;
