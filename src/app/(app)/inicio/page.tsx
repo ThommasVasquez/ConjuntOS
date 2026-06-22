@@ -990,6 +990,7 @@ function HomeOperativo() {
   return (
     <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6 gap-6 pt-16 pb-32">
       <ProfileHeader />
+      <RoleSwitcher />
       <div className="liquid-glass-card rounded-[32px] p-8 border border-border text-center max-w-sm w-full space-y-4">
         <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mx-auto text-accent">
           <Calendar size={28} />
