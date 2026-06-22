@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiError } from "@/lib/api/client";
@@ -70,6 +70,15 @@ export default function SosPanicButton() {
       setCancelling(false);
     }
   }
+
+  // Restore active SOS from server on page reload.
+  useEffect(() => {
+    if (!role || !RESIDENT_ROLES.includes(role)) return;
+    api
+      .get<SosDto | null>("/sos/activa")
+      .then((dto) => { if (dto) setActive(dto); })
+      .catch(() => {});
+  }, [role]);
 
   // Residents only — security/admin have their own console.
   if (!role || !RESIDENT_ROLES.includes(role)) return null;

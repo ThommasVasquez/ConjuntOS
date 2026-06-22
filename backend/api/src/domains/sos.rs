@@ -129,6 +129,7 @@ impl SosDto {
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/sos", post(crear).get(listar))
+        .route("/sos/activa", get(mi_activa))
         .route("/sos/{id}/atender", post(atender))
         .route("/sos/{id}/resolver", post(resolver))
         .route("/sos/{id}/cancelar", post(cancelar))
@@ -209,6 +210,27 @@ async fn listar(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json
             .map(|(a, nombre)| SosDto::from_parts(a, Some(nombre)))
             .collect(),
     ))
+}
+
+/// Resident fetches their own active SOS (if any) — restore state on page reload.
+async fn mi_activa(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Option<SosDto>>> {
+    guard::require(&user, RESIDENT_ROLES)?;
+    let mut conn = state.pool.get().await?;
+
+    let alerta: Option<(SosAlerta, String)> = sos_alertas::table
+        .inner_join(usuarios::table.on(usuarios::id.eq(sos_alertas::usuario_id)))
+        .filter(sos_alertas::usuario_id.eq(user.id))
+        .filter(sos_alertas::conjunto_id.eq(user.conjunto_id))
+        .filter(sos_alertas::estado.eq_any(vec![EstadoSos::Abierta, EstadoSos::Atendida]))
+        .select((SosAlerta::as_select(), usuarios::nombre))
+        .first(&mut conn)
+        .await
+        .optional()?;
+
+    Ok(Json(alerta.map(|(a, nombre)| SosDto::from_parts(a, Some(nombre)))))
 }
 
 async fn atender(
