@@ -77,14 +77,14 @@ export default function SosPanicButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="w-full liquid-glass-card rounded-2xl p-4 border border-red-500/40 bg-gradient-to-br from-red-500/20 to-red-600/5 flex items-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"
+        className="w-full rounded-2xl p-4 border-2 border-red-500 bg-red-600 hover:bg-red-500 flex items-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-red-600/30"
       >
-        <div className="w-11 h-11 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+        <div className="w-11 h-11 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white">
           <AlertTriangle size={24} />
         </div>
         <div className="text-left">
-          <h4 className="text-sm font-bold text-text">Botón de Pánico (SOS)</h4>
-          <p className="text-[10px] text-text/50 mt-0.5">
+          <h4 className="text-sm font-bold text-white">Botón de Pánico (SOS)</h4>
+          <p className="text-[10px] text-white/70 mt-0.5">
             Emergencia — notifica a seguridad al instante
           </p>
         </div>
