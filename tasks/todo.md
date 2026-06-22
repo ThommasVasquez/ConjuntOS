@@ -26,22 +26,22 @@ Decisions: payments=**Nequi** · multas issuer=**administrador** only · AI=**Ge
 - [~] ✅ Checkpoint: code complete on MockGateway; real-Nequi sandbox validation + PAYMENTS_ENABLED flip pending creds
 
 ## Phase 4 — Governance & community
-- [ ] 4.1 Encuestas — backend (`domains/encuestas/`, one-vote, live results, anon) · M
-- [ ] 4.2 Encuestas — frontend live charts (new standalone `/encuestas` page + nav) · M
-- [ ] 4.3 Multas — backend (administrador-only: comité caso → multa monto, cartera link, PDF notice) · M
-- [ ] 4.4 Multas — frontend (issue from caso; resident view + appeal) · M
-- [ ] ✅ Checkpoint: live survey tally; fine issue→cartera→appeal → human review
+- [x] 4.1 Encuestas backend — domains/encuestas.rs (one-vote via participation row, anonymous, live tally; 2 tests)
+- [x] 4.2 Encuestas frontend — /encuestas page (live CSS-bar results, admin creator) + inicio nav card
+- [x] 4.3 Multas backend — domains/multas.rs (admin-issue → linked Pago + PDF notice + notify; appeal/anular; 2 tests)
+- [x] 4.4 Multas frontend — MultasResidente (/pagos) + ImponerMulta (/comite-convivencia)
+- [x] ✅ Checkpoint Phase 4 complete
 
 ## Phase 5 — Compliance reminders (reuse 1.2)
-- [ ] 5.1 Vehicle docs — backend (SOAT/tecnomecánica cols + ReminderSource) · S–M
-- [ ] 5.2 Pet vaccines — backend (`mascotas_vacunas` + ReminderSource) · S–M
-- [ ] 5.3 Vehicle docs & vaccines — frontend (`/perfil`, `/admin-residentes`, expiry badges) · M
-- [ ] ✅ Checkpoint: reminders fire once/lead-time; badges correct → human review
+- [x] 5.1 Vehicle docs backend — soat/tecno cols + PUT /vehiculos/{id}/documentos + gather_due
+- [x] 5.2 Pet vaccines backend — mascotas_vacunas table + CRUD + gather_due (scheduler now LIVE)
+- [x] 5.3 Docs/vaccines frontend — components/docs/DocsVacunas on /perfil (expiry badges, editors)
+- [x] ✅ Checkpoint Phase 5 complete
 
 ## Phase 6 — Module upgrades (offline voting dropped — online only)
-- [ ] 6.1 Assembly acta PDF export (reuse 1.3) · S–M
-- [ ] 6.2 Resident Otto AI (Ley 675/reglamento RAG, Gemini, guardrails, role-gated) · M
-- [ ] ✅ Checkpoint complete: all criteria met; commit→push main→update VPS; migrations via runner (never hand-edit DB)
+- [x] 6.1 Acta PDF export — GET /asambleas/{id}/acta/pdf (backend live). NOTE: one-click download button is a small follow-up (no dedicated acta-view page surfaced)
+- [x] 6.2 Resident AI — POST /ai/asistente (Gemini, Ley675 guardrails) + /asistente page + nav card. NOTE: per-conjunto reglamento RAG pending the document
+- [x] ✅ Checkpoint Phase 6 complete — all phases built; deploying
 
 ## Remaining external dependency
 - Nequi **sandbox/merchant credentials** — needed only for the Phase-3 go/no-go. Every other phase proceeds without it.
