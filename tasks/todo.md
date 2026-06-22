@@ -20,10 +20,10 @@ Decisions: payments=**Nequi** · multas issuer=**administrador** only · AI=**Ge
 - [x] ✅ Checkpoint: Phase 2 done (SOS backend+frontend, QR pre-reg backend+frontend). SOS WS<2s; QR generate→scan→admit wired. Backend deployed; frontend via Cloudflare on push.
 
 ## Phase 3 — Real payments via Nequi (GATE: Nequi sandbox creds)
-- [ ] 3.1 Gateway trait + NequiGateway (push-to-app) + MockGateway (`services/payments/`) · M
-- [ ] 3.2 Nequi status notification/poll + idempotent reconciliation + EXPIRADO + receipt · M
-- [ ] 3.3 Nequi checkout — frontend `/pagos` (enter phone → approve in app → live status) · M
-- [ ] ✅ Checkpoint: sandbox push→approve→PAGADO→receipt→KPI; expiry clean; creds security review → go/no-go prod keys
+- [x] 3.1 PaymentGateway enum (Mock default + Nequi push-to-app, env-gated) `services/payments.rs`; pure status-map tests
+- [x] 3.2 GET /pagos/{id}/estado idempotent reconcile; pagar charges via gateway, persists outcome+ref
+- [x] 3.3 /pagos: Nequi phone input + truthful server-state handling (PAGADO vs PENDIENTE). NOTE: PAYMENTS_ENABLED stays OFF + Nequi HTTP gated until sandbox creds
+- [~] ✅ Checkpoint: code complete on MockGateway; real-Nequi sandbox validation + PAYMENTS_ENABLED flip pending creds
 
 ## Phase 4 — Governance & community
 - [ ] 4.1 Encuestas — backend (`domains/encuestas/`, one-vote, live results, anon) · M

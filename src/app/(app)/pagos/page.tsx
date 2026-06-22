@@ -69,6 +69,7 @@ export default function PagosPage() {
 
   const [selectedPayment, setSelectedPayment] = useState<Transaction | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [nequiPhone, setNequiPhone] = useState('');
   const fetchLock = useRef(false);
   const initialFetchDone = useRef(false);
 
@@ -122,22 +123,35 @@ export default function PagosPage() {
     setIsProcessing(true);
     
     try {
-      await api.put(`/pagos/${selectedPayment.id}/pagar`, { metodo: 'PSE' });
-
-      await new Promise(resolve => setTimeout(resolve, 3500));
+      // The server reflects the gateway's real outcome: PAGADO (approved) or
+      // PENDIENTE (Nequi push awaiting the payer's approval in their app).
+      const updated = await api.put<{ estado: string; fechaPago?: string }>(
+        `/pagos/${selectedPayment.id}/pagar`,
+        { metodo: 'NEQUI', telefono: nequiPhone || undefined },
+      );
 
       setIsProcessing(false);
+      const paid = updated.estado === 'PAGADO';
+      const pagoId = selectedPayment.id;
+      const monto = selectedPayment.monto;
       setSelectedPayment(null);
-      
-      toast.success("¡Pago procesado con éxito!", {
-        description: "Tu recibo ha sido generado y persistido en el sistema."
-      });
 
-      // Recargar datos localmente
+      if (paid) {
+        toast.success("¡Pago procesado con éxito!", {
+          description: "Tu recibo ha sido generado y persistido en el sistema."
+        });
+      } else {
+        toast.info("Revisa tu app Nequi", {
+          description: "Aprueba el pago desde la notificación de Nequi para completarlo."
+        });
+      }
+
       setData(prev => ({
         ...prev,
-        totalDebt: Math.max(0, prev.totalDebt - selectedPayment.monto),
-        pagos: prev.pagos.map(p => p.id === selectedPayment.id ? { ...p, estado: 'PAGADO', fechaPago: new Date().toISOString() } : p)
+        totalDebt: paid ? Math.max(0, prev.totalDebt - monto) : prev.totalDebt,
+        pagos: prev.pagos.map(p => p.id === pagoId
+          ? { ...p, estado: paid ? 'PAGADO' : 'PENDIENTE', fechaPago: updated.fechaPago }
+          : p)
       }));
 
     } catch (error: unknown) {
@@ -304,12 +318,22 @@ export default function PagosPage() {
                         <div className="flex items-center gap-3 p-4 rounded-2xl bg-surface-2 dark:bg-[#171717] border border-accent/20">
                            <CreditCard size={18} className="text-accent" />
                            <div className="flex-1">
-                              <p className="text-text text-xs font-bold">Tarjeta de Crédito / PSE</p>
-                              <p className="text-text-muted text-[10px]">Pago seguro procesado por Wompi</p>
+                              <p className="text-text text-xs font-bold">Pago con Nequi</p>
+                              <p className="text-text-muted text-[10px]">Recibirás una notificación en tu app Nequi para aprobar</p>
                            </div>
                            <CheckCircle2 size={16} className="text-accent" />
                         </div>
-                        
+
+                        <input
+                           type="tel"
+                           inputMode="numeric"
+                           value={nequiPhone}
+                           onChange={e => setNequiPhone(e.target.value.replace(/\D/g, ''))}
+                           placeholder="Número Nequi (ej. 3001234567)"
+                           className="w-full bg-surface-2 dark:bg-[#171717] border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all"
+                        />
+
+
                         <div className="flex items-center gap-2 p-3 rounded-xl bg-text/10 border border-text/20">
                            <Info size={14} className="text-text dark:text-text" />
                            <p className="text-text dark:text-text text-[9px] font-bold leading-tight">Este pago incluye el descuento por pronto pago si se realiza antes del vencimiento.</p>
