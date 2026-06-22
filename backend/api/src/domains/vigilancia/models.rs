@@ -19,6 +19,10 @@ pub struct Visita {
     pub tiene_parqueadero: bool,
     pub observacion: Option<String>,
     pub created_at: DateTime<Utc>,
+    /// QR pre-registration: opaque single-use token (F2). NULL for plain visits.
+    pub token: Option<String>,
+    pub token_expira: Option<DateTime<Utc>>,
+    pub ingreso_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Insertable, Debug)]

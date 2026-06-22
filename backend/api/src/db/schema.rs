@@ -811,6 +811,9 @@ diesel::table! {
         tiene_parqueadero -> Bool,
         observacion -> Nullable<Text>,
         created_at -> Timestamptz,
+        token -> Nullable<Text>,
+        token_expira -> Nullable<Timestamptz>,
+        ingreso_at -> Nullable<Timestamptz>,
     }
 }
 

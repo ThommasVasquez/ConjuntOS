@@ -42,6 +42,8 @@ pub fn router() -> Router<AppState> {
         .route("/paquetes/mios", get(paquetes_mios))
         .route("/comunicaciones", get(comunicaciones))
         .route("/visitas", post(crear_visita_residente))
+        .route("/visitas/preregistro", post(super::preregistro::preregistrar))
+        .route("/visitas/scan", post(super::preregistro::escanear))
         .route(
             "/vigilancia/correspondencia",
             get(listar_correspondencia).post(crear_correspondencia),
