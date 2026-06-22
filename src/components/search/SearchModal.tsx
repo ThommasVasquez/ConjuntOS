@@ -162,7 +162,10 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
     setIsLoadingAI(true);
     setAiAnswer(null);
     try {
-      const data = await api.post<{ respuesta: string }>("/ai/asistente", { pregunta: q, contexto: context });
+      // contexto must be a string (backend AsistenteRequest.contexto: Option<String>);
+      // SearchContext is an object → stringify when non-empty, else omit (avoids 422).
+      const contexto = Object.keys(context).length ? JSON.stringify(context) : undefined;
+      const data = await api.post<{ respuesta: string }>("/ai/asistente", { pregunta: q, contexto });
       setAiAnswer({ text: data.respuesta });
     } catch {
       setAiAnswer({ text: "No pude procesar tu pregunta. Intenta de nuevo." });
