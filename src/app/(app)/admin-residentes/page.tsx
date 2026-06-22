@@ -114,6 +114,10 @@ const ROL_LABELS: Record<Rol, string> = {
   ENCARGADO_PARQUEADERO: "Encargado Parqueadero",
   SUPER_ADMIN: "Super Admin",
   HUESPED_TEMPORAL: "Huésped",
+  ADMINISTRADOR_PISCINA: "Admin. Piscina",
+  ADMINISTRADOR_GYM: "Admin. Gym",
+  MANTENIMIENTO_LOCATIVO: "Mantenimiento",
+  OPERARIO_LIMPIEZA: "Limpieza",
 };
 
 const ROL_FILTER_OPTIONS: { label: string; value: Rol | "TODOS" }[] = [

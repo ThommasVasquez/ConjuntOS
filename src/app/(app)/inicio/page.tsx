@@ -974,6 +974,40 @@ function HomeAdmin() {
   );
 }
 
+// ── HomeOperativo: vista básica para roles de piscina, gym, mantenimiento y limpieza ──
+function HomeOperativo() {
+  const { user } = useAuth();
+  const role = user?.rol;
+  const router = useRouter();
+
+  const roleLabel = 
+    role === 'ADMINISTRADOR_PISCINA' ? 'Administrador de Piscina' :
+    role === 'ADMINISTRADOR_GYM' ? 'Administrador de Gym' :
+    role === 'MANTENIMIENTO_LOCATIVO' ? 'Mantenimiento Locativo' :
+    'Operario de Limpieza';
+
+  return (
+    <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6 gap-6 pt-16 pb-32">
+      <ProfileHeader />
+      <div className="liquid-glass-card rounded-[32px] p-8 border border-border text-center max-w-sm w-full space-y-4">
+        <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mx-auto text-accent">
+          <Calendar size={28} />
+        </div>
+        <h2 className="text-xl font-bold text-text">{roleLabel}</h2>
+        <p className="text-sm text-text/60">
+          Módulo en desarrollo. Desde aquí podrás gestionar tus funciones operativas.
+        </p>
+        <button
+          onClick={() => router.push('/perfil')}
+          className="w-full py-3 rounded-2xl bg-accent text-on-accent text-sm font-bold"
+        >
+          Ir a mi Perfil
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function InicioDashboard() {
   const { user } = useAuth();
   const role = user?.rol;
@@ -993,6 +1027,8 @@ export default function InicioDashboard() {
       </div>
     );
   }
+
+  if (role === 'ADMINISTRADOR_PISCINA' || role === 'ADMINISTRADOR_GYM' || role === 'MANTENIMIENTO_LOCATIVO' || role === 'OPERARIO_LIMPIEZA') return <HomeOperativo />;
 
   if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') return <HomeVigilante />;
   if (role === 'ENCARGADO_PARQUEADERO') return <HomeEstacionamiento />;

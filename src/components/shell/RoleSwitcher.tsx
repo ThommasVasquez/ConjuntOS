@@ -25,6 +25,10 @@ const ROLES: { value: Rol; label: string }[] = [
   { value: "SUPERVISOR_VIGILANCIA", label: "Supervisor Vigilancia" },
   { value: "ENCARGADO_PARQUEADERO", label: "Encargado Parqueadero" },
   { value: "HUESPED_TEMPORAL", label: "Huésped" },
+  { value: "ADMINISTRADOR_PISCINA", label: "Admin. Piscina" },
+  { value: "ADMINISTRADOR_GYM", label: "Admin. Gym" },
+  { value: "MANTENIMIENTO_LOCATIVO", label: "Mantenimiento" },
+  { value: "OPERARIO_LIMPIEZA", label: "Limpieza" },
 ];
 
 export default function RoleSwitcher() {

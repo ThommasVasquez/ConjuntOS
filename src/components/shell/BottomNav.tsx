@@ -52,6 +52,11 @@ export default function BottomNav() {
       { name: "Chat", path: "/chat", icon: MessageCircle },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
+  } else if (role === 'ADMINISTRADOR_PISCINA' || role === 'ADMINISTRADOR_GYM' || role === 'MANTENIMIENTO_LOCATIVO' || role === 'OPERARIO_LIMPIEZA') {
+    tabs = [
+      { name: "Inicio", path: "/inicio", icon: Home },
+      { name: "Perfil", path: "/perfil", icon: User },
+    ];
   } else {
     // RESIDENTES por defecto
     tabs = [

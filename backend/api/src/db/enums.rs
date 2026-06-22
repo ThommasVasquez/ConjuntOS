@@ -89,6 +89,10 @@ text_enum!(Rol {
     EncargadoParqueadero => "ENCARGADO_PARQUEADERO",
     SuperAdmin => "SUPER_ADMIN",
     HuespedTemporal => "HUESPED_TEMPORAL",
+    AdministradorPiscina => "ADMINISTRADOR_PISCINA",
+    AdministradorGym => "ADMINISTRADOR_GYM",
+    MantenimientoLocativo => "MANTENIMIENTO_LOCATIVO",
+    OperarioLimpieza => "OPERARIO_LIMPIEZA",
 });
 
 text_enum!(TipoUnidad {
@@ -418,6 +422,10 @@ mod tests {
             "ENCARGADO_PARQUEADERO",
             "SUPER_ADMIN",
             "HUESPED_TEMPORAL",
+            "ADMINISTRADOR_PISCINA",
+            "ADMINISTRADOR_GYM",
+            "MANTENIMIENTO_LOCATIVO",
+            "OPERARIO_LIMPIEZA",
         ] {
             let rol: Rol = raw.parse().unwrap();
             assert_eq!(rol.as_str(), raw);
