@@ -68,6 +68,7 @@ export default function VisitantesPage() {
 
   const [visitors, setVisitors] = useState<VisitaDto[]>([]);
   const [lastVisit, setLastVisit] = useState<VisitaDto | null>(null);
+  const [qrData, setQrData] = useState<{ qrPngBase64: string; token: string; expira: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,17 +128,21 @@ export default function VisitantesPage() {
     }
     setSubmitting(true);
     try {
-      const newVisit = await api.post<VisitaDto>("/visitas", {
-        nombre: newVisitForm.name.trim(),
-        tipo: newVisitForm.tipo,
-        vehiculoTipo: newVisitForm.vehiculoTipo !== 'NINGUNO' ? newVisitForm.vehiculoTipo : undefined,
-        placa: newVisitForm.placa.trim() || undefined,
-        observacion: newVisitForm.observacion.trim() || undefined,
-      });
-      setVisitors(prev => [newVisit, ...prev]);
-      setLastVisit(newVisit);
+      const res = await api.post<{ visita: VisitaDto; token: string; qrPngBase64: string; expira: string }>(
+        "/visitas/preregistro",
+        {
+          nombre: newVisitForm.name.trim(),
+          tipo: newVisitForm.tipo,
+          vehiculoTipo: newVisitForm.vehiculoTipo !== 'NINGUNO' ? newVisitForm.vehiculoTipo : undefined,
+          placa: newVisitForm.placa.trim() || undefined,
+          observacion: newVisitForm.observacion.trim() || undefined,
+        },
+      );
+      setVisitors(prev => [res.visita, ...prev]);
+      setLastVisit(res.visita);
+      setQrData({ qrPngBase64: res.qrPngBase64, token: res.token, expira: res.expira });
       setIsQRModalOpen(true);
-      toast.success("Visita programada con exito");
+      toast.success("Pase QR generado con éxito");
       setNewVisitForm({ name: '', tipo: 'PEATONAL', vehiculoTipo: 'NINGUNO', placa: '', observacion: '' });
     } catch (e) {
       toast.error(e instanceof ApiError ? e.detail : "Error al crear la invitacion");
@@ -164,7 +169,8 @@ export default function VisitantesPage() {
       `• Fecha: ${fecha}`,
     ];
     if (visita.placa) lines.push(`• Placa: ${visita.placa}`);
-    lines.push(``, `Presenta este mensaje en portería para agilizar tu ingreso. 🛡️`);
+    if (qrData) lines.push(`• Código de acceso: ${qrData.token}`);
+    lines.push(``, `Muestra el código QR (o este código) en portería para tu ingreso. 🛡️`);
     return lines.join("\n");
   };
 
@@ -402,14 +408,18 @@ export default function VisitantesPage() {
                     <p className="text-text text-xs px-4">Comparte este codigo con tu invitado para agilizar su ingreso.</p>
                  </div>
 
-                 <div className="relative p-6 bg-white rounded-3xl shadow-[0_0_40px_rgba(255,255,255,0.1)] group">
-                    <div className="w-48 h-48 bg-text/10 flex items-center justify-center rounded-2xl border-4 border-white overflow-hidden">
-                       <QrCode size={160} className="text-[#171717]" />
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                       <div className="w-12 h-12 bg-[#171717] rounded-xl flex items-center justify-center text-white shadow-xl">
-                          <CheckCircle2 size={24} className="text-text" />
-                       </div>
+                 <div className="relative p-6 bg-white rounded-3xl shadow-[0_0_40px_rgba(255,255,255,0.1)]">
+                    <div className="w-48 h-48 flex items-center justify-center rounded-2xl border-4 border-white overflow-hidden bg-white">
+                       {qrData ? (
+                         // eslint-disable-next-line @next/next/no-img-element
+                         <img
+                           src={`data:image/png;base64,${qrData.qrPngBase64}`}
+                           alt="Código QR de acceso del visitante"
+                           className="w-full h-full object-contain"
+                         />
+                       ) : (
+                         <QrCode size={160} className="text-[#171717]" />
+                       )}
                     </div>
                  </div>
 

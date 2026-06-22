@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import QrScanner from "@/components/visitas/QrScanner";
 
 interface ResidenteDirectorio {
   id: string;
@@ -118,7 +119,10 @@ export default function ControlVisitas() {
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
        <ProfileHeader />
-       
+
+       {/* QR pass scanner — validates a pre-registered visitor in one tap */}
+       <QrScanner />
+
        <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
              <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent">

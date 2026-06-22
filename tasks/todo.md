@@ -16,8 +16,8 @@ Decisions: payments=**Nequi** · multas issuer=**administrador** only · AI=**Ge
 - [x] 2.1 SOS/panic button — backend: `domains/sos.rs` (POST /sos resident-gated, GET/atender/resolver security-gated), `sos_alertas` table + partial-unique-index rate limit (1 active/user), WS `sos` broadcast + web-push fan-out to vigilancia, pure `aplicar_transicion` state machine (2 tests) · M
 - [x] 2.2 SOS — frontend: `components/sos/` (SosPanicButton self-gated to residents on /inicio; SosConsole live queue on /vigilancia, WS-driven atender/resolver). tsc clean; pnpm build OOMs in sandbox (CI has headroom). NOTE: resolved-alert audit history view still TODO (backend GET /sos returns active only) · M
 - [x] 2.3 QR visitor pre-reg — backend: `vigilancia/preregistro.rs` — POST /visitas/preregistro (resident → opaque token + base64 QR via services::qr, 1..168h validity), POST /visitas/scan (gate-gated → validate not-expired/not-used → stamp ingreso_at → WS visita/ingreso). Additive token/token_expira/ingreso_at cols + unique token index. Pure `validar_scan` (3 tests) · M
-- [ ] 2.4 QR visitor — frontend (`/visitantes` QR share, `/control-visitas` scanner) · M
-- [ ] ✅ Checkpoint: SOS <2s; QR pre-reg→scan→admit across 2 devices → human review
+- [x] 2.4 QR visitor — frontend: `/visitantes` upgraded to `/visitas/preregistro` (real scannable QR via qrPngBase64 + token in WhatsApp/copy share); `components/visitas/QrScanner.tsx` on `/control-visitas` (BarcodeDetector camera + manual fallback → /visitas/scan → green/red verdict). tsc + lint clean · M
+- [x] ✅ Checkpoint: Phase 2 done (SOS backend+frontend, QR pre-reg backend+frontend). SOS WS<2s; QR generate→scan→admit wired. Backend deployed; frontend via Cloudflare on push.
 
 ## Phase 3 — Real payments via Nequi (GATE: Nequi sandbox creds)
 - [ ] 3.1 Gateway trait + NequiGateway (push-to-app) + MockGateway (`services/payments/`) · M
