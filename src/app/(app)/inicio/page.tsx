@@ -9,7 +9,7 @@ import {
   ArrowRight, Bell, Building2, Calendar, Car, CreditCard, DollarSign,
   Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, ShieldAlert,
   Search, SlidersHorizontal, ShoppingBag, User as UserIcon,
-  Users, Wrench, MapPin
+  Users, Wrench, MapPin, BarChart3
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
@@ -76,6 +76,7 @@ function HomeResidente() {
     { title: "Parqueo", icon: <Car size={20}/>, color: "from-text to-text", path: "/parqueadero" },
     { title: "Reservas", icon: <Calendar size={20}/>, color: "from-text to-text", path: "/reservas" },
     { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-text to-text", path: "/cartelera" },
+    { title: "Encuestas", icon: <BarChart3 size={20}/>, color: "from-text to-text", path: "/encuestas" },
     { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-text to-text", path: "/pqrs" },
     { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-text to-text", path: "/inmobiliaria" },
     { title: "Clasificados", icon: <ShoppingBag size={20}/>, color: "from-text to-text", path: "/clasificados" },
