@@ -26,7 +26,7 @@ interface Solicitud {
   categoria: string;
   descripcion: string;
   urgente: boolean;
-  estado: 'ABIERTA' | 'ASIGNADA' | 'EN_PROGRESO' | 'COMPLETADA';
+  estado: 'ABIERTA' | 'ASIGNADA' | 'EN_PROGRESO' | 'RESUELTA' | 'CERRADA';
   creadoEn: string;
 }
 
@@ -114,7 +114,8 @@ export default function PQRSPage() {
 
   const getStatusLabel = (status: string) => {
     switch(status) {
-      case 'COMPLETADA': return { text: "Resuelto", color: "text-text dark:text-text bg-text/10" };
+      case 'RESUELTA': return { text: "Resuelto", color: "text-green-400 bg-green-500/10" };
+      case 'CERRADA': return { text: "Cerrado", color: "text-text/40 bg-text/5" };
       case 'EN_PROGRESO': return { text: "En Proceso", color: "text-text dark:text-text bg-text/10" };
       case 'ASIGNADA': return { text: "Asignado", color: "text-text dark:text-text bg-text/10" };
       default: return { text: "Pendiente", color: "text-text dark:text-text bg-text/10" };
@@ -123,8 +124,8 @@ export default function PQRSPage() {
 
   const stats = [
     { label: "Total", value: solicitudes.length, icon: <MessageSquare size={16} />, color: "text-text" },
-    { label: "Abiertas", value: solicitudes.filter(s => s.estado !== 'COMPLETADA').length, icon: <Clock size={16} />, color: "text-text" },
-    { label: "Resueltas", value: solicitudes.filter(s => s.estado === 'COMPLETADA').length, icon: <CheckCircle2 size={16} />, color: "text-text" },
+    { label: "Abiertas", value: solicitudes.filter(s => s.estado !== 'RESUELTA' && s.estado !== 'CERRADA').length, icon: <Clock size={16} />, color: "text-text" },
+    { label: "Resueltas", value: solicitudes.filter(s => s.estado === 'RESUELTA' || s.estado === 'CERRADA').length, icon: <CheckCircle2 size={16} />, color: "text-text" },
   ];
 
   return (
