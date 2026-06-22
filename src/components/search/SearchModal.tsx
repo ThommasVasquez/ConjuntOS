@@ -162,8 +162,8 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
     setIsLoadingAI(true);
     setAiAnswer(null);
     try {
-      const data = await api.post<{ answer: string }>("/search", { query: q, context });
-      setAiAnswer({ text: data.answer });
+      const data = await api.post<{ respuesta: string }>("/ai/asistente", { pregunta: q, contexto: context });
+      setAiAnswer({ text: data.respuesta });
     } catch {
       setAiAnswer({ text: "No pude procesar tu pregunta. Intenta de nuevo." });
     } finally {

@@ -61,7 +61,9 @@ impl GeminiClient {
                 .build()
                 .expect("reqwest client"),
             api_key,
-            model: "gemini-2.0-flash".to_string(),
+            // gemini-2.0-flash has no free-tier quota on some projects (429 limit:0);
+            // 2.5-flash works on free tier. Override with GEMINI_MODEL if needed.
+            model: std::env::var("GEMINI_MODEL").unwrap_or_else(|_| "gemini-2.5-flash".to_string()),
         }
     }
 

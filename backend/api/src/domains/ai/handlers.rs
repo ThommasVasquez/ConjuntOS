@@ -8,8 +8,7 @@ use crate::auth::guard;
 use crate::db::enums::Rol;
 use crate::domains::ai::dto::{
     ActaDto, ConsensuarRequest, ConsensuarResponse, CopilotRequest, CopilotResponse,
-    CreateSubtituloRequest, GenerateActaRequest, SearchRequest, SearchResponse, SubtituloDto,
-    TranslateRequest, TranslateResponse,
+    CreateSubtituloRequest, GenerateActaRequest, SubtituloDto, TranslateRequest, TranslateResponse,
 };
 use crate::domains::ai::models::NuevoSubtitulo;
 use crate::domains::ai::repo;
@@ -34,7 +33,6 @@ pub fn router() -> Router<AppState> {
             "/asambleas/{id}/subtitulos",
             get(list_subtitulos).post(create_subtitulo),
         )
-        .route("/search", post(search))
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -347,50 +345,6 @@ async fn create_subtitulo(
     Ok(Json(dto))
 }
 
-// ── Search ──────────────────────────────────────────────────────────────
-
-async fn search(
-    State(state): State<AppState>,
-    _user: AuthUser,
-    Json(req): Json<SearchRequest>,
-) -> ApiResult<Json<SearchResponse>> {
-    let gemini = require_gemini(&state)?;
-
-    if req.query.trim().len() < 2 {
-        return Err(ApiError::BadRequest("query muy corto".into()));
-    }
-
-    let contexto_extra = req
-        .contexto
-        .filter(|c| !c.is_empty())
-        .map(|c| format!("\nContexto del residente: {c}"))
-        .unwrap_or_default();
-
-    let prompt = format!(
-        "Eres el asistente de ConjuntOS, plataforma de gestión residencial \
-         para conjuntos cerrados en Colombia.\n\n\
-         Módulos disponibles: Pagos, Reservas, Parqueadero, Paquetería, PQRS, \
-         Visitas, Citofonía, Cartelera, Inmobiliaria, Asamblea.\n\n\
-         Reglas:\n\
-         - Responde SIEMPRE en español, de forma amable y concisa (máximo 3 oraciones)\n\
-         - Si necesitas dirigir al usuario a un módulo, di exactamente cuál\n\
-         - Nunca inventes datos concretos (montos, fechas) que no estén en el contexto\n\
-         {contexto_extra}\n\n\
-         Pregunta del residente: \"{query}\"",
-        query = req.query,
-    );
-
-    let respuesta = gemini
-        .generate(&prompt, 512, 0.7)
-        .await
-        .map_err(|e| ApiError::Upstream(format!("Error del servicio de IA: {e}")))?;
-
-    Ok(Json(SearchResponse {
-        respuesta,
-        fuentes: vec![],
-    }))
-}
-
 // ── Acta PDF export (F8) ──────────────────────────────────────────────────
 
 #[derive(serde::Serialize)]
@@ -426,7 +380,7 @@ async fn acta_pdf(
 // ── Resident assistant: Ley 675 / reglamento (F9) ─────────────────────────
 
 /// Full text of Ley 675 de 2001 (Diario Oficial consolidated), compiled into the
-/// binary. ~40k tokens — fits easily in gemini-2.0-flash's 1M-token context, so we
+/// binary. ~40k tokens — fits easily in gemini-2.5-flash's 1M-token context, so we
 /// ground the assistant by injecting the whole law instead of a vector RAG.
 /// ponytail: full-context injection beats RAG for a single document; revisit RAG
 /// only when per-conjunto reglamentos (many private docs) need indexing.
@@ -435,6 +389,9 @@ const LEY_675: &str = include_str!("ley_675_2001.md");
 #[derive(serde::Deserialize)]
 struct AsistenteRequest {
     pregunta: String,
+    /// Optional context (e.g. the screen the user is on) sent by the global search box.
+    #[serde(default)]
+    contexto: Option<String>,
 }
 
 #[derive(serde::Serialize)]
@@ -442,8 +399,10 @@ struct AsistenteResponse {
     respuesta: String,
 }
 
-/// Resident-facing assistant grounded in Ley 675 + propiedad horizontal. Open to
-/// any authenticated resident; guardrails keep it in-scope, cited, and non-actioning.
+/// Unified AI assistant for ConjuntOS — the single endpoint for ALL free-form AI
+/// questions (the /asistente page and the global search box both call this). Answers
+/// anything helpfully; its specialty is Ley 675 / propiedad horizontal, grounded in the
+/// embedded law text. Informational only — performs no actions.
 async fn asistente(
     State(state): State<AppState>,
     _user: AuthUser,
@@ -454,25 +413,36 @@ async fn asistente(
     }
     let gemini = require_gemini(&state)?;
 
+    let contexto_extra = req
+        .contexto
+        .as_deref()
+        .map(str::trim)
+        .filter(|c| !c.is_empty())
+        .map(|c| format!("\nContexto (pantalla actual del usuario): {c}\n"))
+        .unwrap_or_default();
+
     let prompt = format!(
-        "Eres un asistente legal para residentes de un conjunto en Colombia, experto \
-         en la Ley 675 de 2001 (propiedad horizontal) y la convivencia en copropiedades.\n\n\
-         A continuación tienes el TEXTO OFICIAL COMPLETO de la Ley 675 de 2001. Es tu \
-         fuente autoritativa: basa tus respuestas en él y NO inventes artículos ni cifras.\n\
+        "Eres Otto, el asistente de ConjuntOS, una plataforma de gestión para conjuntos \
+         residenciales en Colombia. Ayuda al residente con CUALQUIER pregunta de forma útil y amable.\n\n\
+         Tu especialidad es la Ley 675 de 2001 (propiedad horizontal) y la convivencia en \
+         copropiedades. Tienes el TEXTO OFICIAL COMPLETO de la ley como fuente autoritativa; \
+         úsalo cuando la pregunta sea legal o de reglamento y NO inventes artículos ni cifras.\n\
          <LEY_675>\n{ley}\n</LEY_675>\n\n\
-         Reglas estrictas:\n\
-         - Responde SOLO preguntas sobre Ley 675, propiedad horizontal, reglamento interno \
-         o convivencia. Si la pregunta está fuera de ese alcance, responde exactamente: \
-         \"Esa consulta está fuera de mi alcance. Por favor contacta a la administración.\"\n\
-         - Fundamenta cada respuesta en el texto de la ley anterior y CITA el número de \
-         artículo (ej: \"Artículo 23\"); cuando ayude, transcribe la frase exacta entre comillas.\n\
-         - Si la ley no cubre el punto (p. ej. depende del reglamento interno del conjunto), \
-         dilo explícitamente y recomienda consultar el reglamento o a la administración.\n\
+         Módulos de la app a los que puedes dirigir al usuario: Pagos, Reservas, Parqueadero, \
+         Paquetería, PQRS, Visitas, Citofonía, Cartelera, Inmobiliaria, Asamblea, Encuestas, \
+         Multas, Mascotas, Vehículos, Perfil.\n\n\
+         Reglas:\n\
+         - Responde en español, claro y conciso.\n\
+         - Si la pregunta es sobre la Ley 675 o el reglamento, fundaméntala en el texto de la ley \
+         y CITA el número de artículo (ej: \"Artículo 23\").\n\
+         - Si es sobre la app, indica exactamente a qué módulo ir.\n\
+         - Si es una pregunta general, respóndela normalmente.\n\
+         - No inventes datos concretos del conjunto (montos, fechas, nombres) que no tengas.\n\
          - No realizas acciones (no pagas, no creas trámites, no apruebas nada): solo informas.\n\
-         - Si no estás seguro, recomienda contactar a la administración del conjunto.\n\
-         - Responde en español, claro y conciso.\n\n\
-         Pregunta del residente: {pregunta}",
+         {contexto_extra}\n\
+         Pregunta del usuario: {pregunta}",
         ley = LEY_675,
+        contexto_extra = contexto_extra,
         pregunta = req.pregunta.trim(),
     );
 

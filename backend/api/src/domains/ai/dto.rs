@@ -81,22 +81,6 @@ impl From<AsambleaActa> for ActaDto {
     }
 }
 
-// ── Search ──────────────────────────────────────────────────────────────
-
-#[derive(Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct SearchRequest {
-    pub query: String,
-    pub contexto: Option<String>,
-}
-
-#[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct SearchResponse {
-    pub respuesta: String,
-    pub fuentes: Vec<String>,
-}
-
 // ── Subtítulos ──────────────────────────────────────────────────────────
 
 #[derive(Deserialize, ToSchema)]
