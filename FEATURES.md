@@ -118,7 +118,10 @@ Conjunto Demo totalmente poblado e idempotente: 10 usuarios (1+ por rol), 5 unid
 - **Smoke** (`e2e/01-*`…`14-*`) — cada vista carga sin rebotar a `/login`.
 - **`e2e/realistic-journeys.spec.ts`** — 38 journeys "usuario real": abre cada vista por rol,
   rellena inputs visibles, abre formularios y cancela (o envía con `SUBMIT=1`). Corre contra
-  el stack local (`baseURL=localhost:3000`).
+  el stack local (`baseURL=localhost:3000`). Tabla de páginas compartida en `e2e/pages.ts`.
+- **`e2e/prod-pages.spec.ts`** — las 38 vistas en el dominio real **app.conjuntos.app**, por rol,
+  **solo lectura** (login vía api.conjuntos.app, abre la vista, verifica render real, rellena
+  inputs; sin submits ni clics mutadores). **Resultado real (2026-06-23): 38/38 OK** en 2.3 min.
 - **`e2e/prod-1000users.spec.ts`** — 1000 lecturas concurrentes contra prod (solo lectura, sin
   escrituras), cubriendo **117 pares (rol,endpoint)** = todos los GET sin parámetros por rol.
   Verifica ≥95% 2xx **y** ≥1 lectura 2xx por endpoint. `LOAD_USERS=N` ajusta el volumen.
