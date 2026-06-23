@@ -120,8 +120,10 @@ Conjunto Demo totalmente poblado e idempotente: 10 usuarios (1+ por rol), 5 unid
   rellena inputs visibles, abre formularios y cancela (o envía con `SUBMIT=1`). Corre contra
   el stack local (`baseURL=localhost:3000`).
 - **`e2e/prod-1000users.spec.ts`** — 1000 lecturas concurrentes contra prod (solo lectura, sin
-  escrituras). `LOAD_USERS=N` ajusta el volumen. Verificado a 30 → 100% OK, p95 ~615ms.
-  ⚠️ `api.conjuntos.app` está tras Cloudflare: una ráfaga de 1000 puede gatillar rate-limit de CF.
+  escrituras), cubriendo **117 pares (rol,endpoint)** = todos los GET sin parámetros por rol.
+  Verifica ≥95% 2xx **y** ≥1 lectura 2xx por endpoint. `LOAD_USERS=N` ajusta el volumen.
+  **Resultado real (2026-06-23, post-deploy): 1000/1000 OK (100%), 117/117 cubiertos,
+  ~263 req/s, p95 3.4s.** ⚠️ `api.conjuntos.app` está tras Cloudflare.
 
 ## Estado de verificación (ground truth)
 
@@ -132,4 +134,4 @@ Conjunto Demo totalmente poblado e idempotente: 10 usuarios (1+ por rol), 5 unid
 | `cargo fmt --check` (migrate) | ✅ limpio |
 | `--seed-demo` contra Postgres real | ✅ idempotente |
 | `pnpm playwright test --list` | ✅ 39 tests (38 journeys + 1 carga) |
-| `prod-1000users` @ LOAD_USERS=30 | ✅ 30/30 OK (100%) |
+| `prod-1000users` @ LOAD_USERS=1000 | ✅ 1000/1000 OK (100%), 117/117 endpoints cubiertos, p95 3.4s |
