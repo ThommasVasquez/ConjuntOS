@@ -77,6 +77,11 @@ export default function SosConsole() {
               {TIPO_LABEL[a.tipo] ?? a.tipo} — {a.usuarioNombre ?? "Residente"}
             </p>
             <p className="text-[11px] text-text/60">
+              {(a.torre || a.apto) && (
+                <span className="text-accent font-semibold">
+                  Torre {a.torre ?? "—"} Apto {a.apto ?? "—"} ·{" "}
+                </span>
+              )}
               {a.ubicacion || "Ubicación no especificada"} ·{" "}
               {a.estado === "ATENDIDA" ? "En atención" : "Sin atender"}
             </p>

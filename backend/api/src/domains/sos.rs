@@ -94,6 +94,8 @@ pub struct SosDto {
     pub id: Uuid,
     pub usuario_id: Uuid,
     pub usuario_nombre: Option<String>,
+    pub torre: Option<String>,
+    pub apto: Option<String>,
     pub tipo: TipoSos,
     pub estado: EstadoSos,
     pub nota: Option<String>,
@@ -106,11 +108,18 @@ pub struct SosDto {
 }
 
 impl SosDto {
-    fn from_parts(a: SosAlerta, usuario_nombre: Option<String>) -> Self {
+    fn from_parts(
+        a: SosAlerta,
+        usuario_nombre: Option<String>,
+        torre: Option<String>,
+        apto: Option<String>,
+    ) -> Self {
         Self {
             id: a.id,
             usuario_id: a.usuario_id,
             usuario_nombre,
+            torre,
+            apto,
             tipo: a.tipo,
             estado: a.estado,
             nota: a.nota,
@@ -170,7 +179,15 @@ async fn crear(
         .get_result(&mut conn)
         .await?;
 
-    let dto = SosDto::from_parts(alerta, Some(user.nombre.clone()));
+    // Fetch the resident's torre/apto so security knows exactly where to go.
+    let (torre, apto): (Option<String>, Option<String>) = usuarios::table
+        .find(user.id)
+        .select((usuarios::torre, usuarios::apto))
+        .first(&mut conn)
+        .await
+        .unwrap_or((None, None));
+
+    let dto = SosDto::from_parts(alerta, Some(user.nombre.clone()), torre, apto);
 
     // Realtime: broadcast on the `sos` domain — only security screens subscribe.
     state
@@ -196,18 +213,23 @@ async fn listar(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json
     guard::require(&user, SECURITY_ROLES)?;
     let mut conn = state.pool.get().await?;
 
-    let rows: Vec<(SosAlerta, String)> = sos_alertas::table
+    let rows: Vec<(SosAlerta, String, Option<String>, Option<String>)> = sos_alertas::table
         .inner_join(usuarios::table.on(usuarios::id.eq(sos_alertas::usuario_id)))
         .filter(sos_alertas::conjunto_id.eq(user.conjunto_id))
         .filter(sos_alertas::estado.eq_any(vec![EstadoSos::Abierta, EstadoSos::Atendida]))
         .order(sos_alertas::created_at.desc())
-        .select((SosAlerta::as_select(), usuarios::nombre))
+        .select((
+            SosAlerta::as_select(),
+            usuarios::nombre,
+            usuarios::torre,
+            usuarios::apto,
+        ))
         .load(&mut conn)
         .await?;
 
     Ok(Json(
         rows.into_iter()
-            .map(|(a, nombre)| SosDto::from_parts(a, Some(nombre)))
+            .map(|(a, nombre, torre, apto)| SosDto::from_parts(a, Some(nombre), torre, apto))
             .collect(),
     ))
 }
@@ -220,17 +242,24 @@ async fn mi_activa(
     guard::require(&user, RESIDENT_ROLES)?;
     let mut conn = state.pool.get().await?;
 
-    let alerta: Option<(SosAlerta, String)> = sos_alertas::table
+    let alerta: Option<(SosAlerta, String, Option<String>, Option<String>)> = sos_alertas::table
         .inner_join(usuarios::table.on(usuarios::id.eq(sos_alertas::usuario_id)))
         .filter(sos_alertas::usuario_id.eq(user.id))
         .filter(sos_alertas::conjunto_id.eq(user.conjunto_id))
         .filter(sos_alertas::estado.eq_any(vec![EstadoSos::Abierta, EstadoSos::Atendida]))
-        .select((SosAlerta::as_select(), usuarios::nombre))
+        .select((
+            SosAlerta::as_select(),
+            usuarios::nombre,
+            usuarios::torre,
+            usuarios::apto,
+        ))
         .first(&mut conn)
         .await
         .optional()?;
 
-    Ok(Json(alerta.map(|(a, nombre)| SosDto::from_parts(a, Some(nombre)))))
+    Ok(Json(
+        alerta.map(|(a, nombre, torre, apto)| SosDto::from_parts(a, Some(nombre), torre, apto)),
+    ))
 }
 
 async fn atender(
@@ -297,7 +326,7 @@ async fn transicionar(
         }
     };
 
-    let dto = SosDto::from_parts(updated, None);
+    let dto = SosDto::from_parts(updated, None, None, None);
     state
         .ws_hub
         .publish(
@@ -349,7 +378,7 @@ async fn cancelar(
         .get_result(&mut conn)
         .await?;
 
-    let dto = SosDto::from_parts(updated, None);
+    let dto = SosDto::from_parts(updated, None, None, None);
     state
         .ws_hub
         .publish(
@@ -393,9 +422,19 @@ async fn notificar_seguridad(
 
     let quien = dto.usuario_nombre.as_deref().unwrap_or("Un residente");
     let donde = dto.ubicacion.as_deref().unwrap_or("");
+    let unidad = match (&dto.torre, &dto.apto) {
+        (Some(t), Some(a)) => format!("Torre {t} Apto {a}"),
+        (Some(t), None) => format!("Torre {t}"),
+        _ => String::new(),
+    };
+    let body = if unidad.is_empty() {
+        format!("{quien} solicita ayuda. {donde}").trim().to_string()
+    } else {
+        format!("{quien} solicita ayuda — {unidad}. {donde}").trim().to_string()
+    };
     let payload = serde_json::json!({
         "title": format!("🚨 SOS — {}", dto.tipo.as_str()),
-        "body": format!("{quien} solicita ayuda. {donde}").trim(),
+        "body": body,
         "data": { "url": "/vigilancia", "sosId": dto.id },
     });
     let bytes = serde_json::to_vec(&payload).unwrap_or_default();

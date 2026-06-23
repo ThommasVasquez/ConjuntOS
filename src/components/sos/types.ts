@@ -6,6 +6,8 @@ export interface SosDto {
   id: string;
   usuarioId: string;
   usuarioNombre: string | null;
+  torre: string | null;
+  apto: string | null;
   tipo: TipoSos;
   estado: EstadoSos;
   nota: string | null;
