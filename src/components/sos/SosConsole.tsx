@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Check, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
@@ -20,14 +20,63 @@ const TIPO_LABEL: Record<string, string> = {
  */
 export default function SosConsole() {
   const [alertas, setAlertas] = useState<SosDto[]>([]);
+  const prevIdsRef = useRef<Set<string>>(new Set());
 
+  // ── Poll every 5 s: reliable fallback for when WebSocket delivery is racey ──
   useEffect(() => {
-    api
-      .get<SosDto[]>("/sos")
-      .then(setAlertas)
-      .catch(() => {});
+    let cancelled = false;
+
+    async function poll() {
+      if (cancelled) return;
+      try {
+        const fresh = await api.get<SosDto[]>("/sos");
+        if (cancelled || !fresh) return;
+
+        setAlertas((prev) => {
+          // Build a map keyed by id so we merge WS-driven state with server truth
+          const byId = new Map<string, SosDto>();
+          for (const a of prev) byId.set(a.id, a);
+          // Server is authoritative for the list of ACTIVE alerts
+          const merged: SosDto[] = [];
+          const freshIds = new Set<string>();
+          for (const f of fresh) {
+            freshIds.add(f.id);
+            // Prefer our local copy if we have one (keeps WS-updated estado /
+            // atendidaPorId / etc.), otherwise use the fresh server row.
+            merged.push(byId.get(f.id) ?? f);
+          }
+
+          // Toast for genuinely new alerts (not seen in last poll)
+          const prevIds = prevIdsRef.current;
+          for (const id of freshIds) {
+            if (!prevIds.has(id)) {
+              const alerta = fresh.find((a) => a.id === id);
+              if (alerta) {
+                toast.error(
+                  `🚨 SOS — ${alerta.usuarioNombre ?? "Residente"}`,
+                  { duration: 10000 },
+                );
+              }
+            }
+          }
+          prevIdsRef.current = freshIds;
+          return merged;
+        });
+      } catch {
+        // network hiccup — next poll will catch up
+      }
+    }
+
+    // Initial fetch
+    poll();
+    const interval = setInterval(poll, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
+  // ── WebSocket fast-path (best-effort; polling above is the safety net) ──
   useWsSubscription("sos", (event) => {
     const dto = event.payload as SosDto | undefined;
     if (!dto) return;
@@ -35,9 +84,6 @@ export default function SosConsole() {
       setAlertas((prev) =>
         prev.some((a) => a.id === dto.id) ? prev : [dto, ...prev],
       );
-      toast.error(`🚨 SOS — ${dto.usuarioNombre ?? "Residente"}`, {
-        duration: 10000,
-      });
     } else if (event.action === "updated") {
       setAlertas((prev) =>
         dto.estado === "RESUELTA"
