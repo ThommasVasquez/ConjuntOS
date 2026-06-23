@@ -16,7 +16,6 @@ import RoleSwitcher from "@/components/shell/RoleSwitcher";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import ContentActionModal from "@/components/modals/ContentActionModal";
 import SearchModal from "@/components/search/SearchModal";
-import SosPanicButton from "@/components/sos/SosPanicButton";
 import AreaAdminDashboard from "@/components/sos/AreaAdminDashboard";
 import { useEffect, useRef, useState, useCallback } from "react";
 
@@ -280,9 +279,6 @@ function HomeResidente() {
           </button>
         </div>
       </header>
-
-      {/* PANIC / SOS — residents only (component self-gates by role) */}
-      <SosPanicButton />
 
       {/* ASSEMBLY LIVE BANNER — only shown when there's an active assembly */}
       {activeAsamblea && (

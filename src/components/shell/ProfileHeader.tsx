@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { getNotifTarget } from "@/lib/notif-routing";
+import SosPanicButton from "@/components/sos/SosPanicButton";
 
 interface ProfileHeaderProps {
   className?: string;
@@ -216,55 +217,58 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
         </div>
       </div>
 
-      <div className="relative" ref={notificationsRef}>
-        <button 
-          onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-          className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-border active:scale-95 ${isNotificationsOpen ? 'bg-accent text-on-accent border-accent/50' : 'liquid-glass text-text hover:text-text'}`}
-        >
-          <Bell size={22} />
-          {notifications.some(n => !n.leida) && (
-            <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2 border-primary shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></span>
-          )}
-        </button>
+      <div className="flex items-center gap-2">
+        <SosPanicButton compact />
+        <div className="relative" ref={notificationsRef}>
+          <button 
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl group border border-border active:scale-95 ${isNotificationsOpen ? 'bg-accent text-on-accent border-accent/50' : 'liquid-glass text-text hover:text-text'}`}
+          >
+            <Bell size={22} />
+            {notifications.some(n => !n.leida) && (
+              <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2 border-primary shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></span>
+            )}
+          </button>
 
-        {isNotificationsOpen && (
-          <div className="absolute top-14 right-0 w-[280px] liquid-glass backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-border overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
-             <div className="p-4 border-b border-border bg-surface/50 flex justify-between items-center">
-                <span className="text-sm font-bold text-text tracking-wide">Notificaciones</span>
-                <button onClick={clearAllNotifications} className="text-[10px] text-accent font-bold uppercase hover:underline">Limpiar</button>
-             </div>
-             <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar">
-                {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-text">
-                    No tienes notificaciones
-                  </div>
-                ) : (
-                  notifications.map((notif) => {
-                    const iconStyle = getNotifIcon(notif.tipo);
-                    return (
-                      <div 
-                        key={notif.id} 
-                        onClick={() => handleNotifClick(notif)}
-                        className={`w-full px-5 py-3.5 flex items-start gap-4 hover:bg-text/5 transition-colors border-b border-border last:border-0 relative cursor-pointer ${notif.leida ? 'opacity-60' : ''}`}
-                      >
-                        {!notif.leida && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#EF4444] shadow-[0_0_6px_rgba(239,68,68,0.7)]"></span>}
-                        <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center ${iconStyle.color}`}>
-                           {iconStyle.icon}
+          {isNotificationsOpen && (
+            <div className="absolute top-14 right-0 w-[280px] liquid-glass backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-border overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
+               <div className="p-4 border-b border-border bg-surface/50 flex justify-between items-center">
+                  <span className="text-sm font-bold text-text tracking-wide">Notificaciones</span>
+                  <button onClick={clearAllNotifications} className="text-[10px] text-accent font-bold uppercase hover:underline">Limpiar</button>
+               </div>
+               <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar">
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-text">
+                      No tienes notificaciones
+                    </div>
+                  ) : (
+                    notifications.map((notif) => {
+                      const iconStyle = getNotifIcon(notif.tipo);
+                      return (
+                        <div 
+                          key={notif.id} 
+                          onClick={() => handleNotifClick(notif)}
+                          className={`w-full px-5 py-3.5 flex items-start gap-4 hover:bg-text/5 transition-colors border-b border-border last:border-0 relative cursor-pointer ${notif.leida ? 'opacity-60' : ''}`}
+                        >
+                          {!notif.leida && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#EF4444] shadow-[0_0_6px_rgba(239,68,68,0.7)]"></span>}
+                          <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center ${iconStyle.color}`}>
+                             {iconStyle.icon}
+                          </div>
+                          <div className="flex flex-col flex-1">
+                             <div className="flex justify-between items-center mb-0.5">
+                                <span className="text-[11px] font-bold text-text">{notif.titulo}</span>
+                                <span className="text-[8px] text-text">{formatTime(notif.createdAt)}</span>
+                             </div>
+                             <p className="text-[10px] text-text leading-tight">{notif.mensaje}</p>
+                          </div>
                         </div>
-                        <div className="flex flex-col flex-1">
-                           <div className="flex justify-between items-center mb-0.5">
-                              <span className="text-[11px] font-bold text-text">{notif.titulo}</span>
-                              <span className="text-[8px] text-text">{formatTime(notif.createdAt)}</span>
-                           </div>
-                           <p className="text-[10px] text-text leading-tight">{notif.mensaje}</p>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-             </div>
-          </div>
-        )}
+                      );
+                    })
+                  )}
+               </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
