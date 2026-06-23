@@ -58,7 +58,7 @@ export const useWsStore = create<WsState>((set, get) => ({
     }
   },
 
-  reset: () => set({ connected: false, currentUserId: null, handlers: new Map() }),
+  reset: () => set({ connected: false, currentUserId: null }),
 }));
 
 export function useWsSubscription(domain: string, handler: EventHandler) {
