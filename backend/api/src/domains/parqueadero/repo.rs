@@ -508,9 +508,13 @@ pub async fn registrar_checkpoint(
 pub async fn ronda_por_id(
     conn: &mut DbConn,
     ronda_id: Uuid,
+    conjunto_id: Uuid,
 ) -> ApiResult<Option<RondaParqueadero>> {
+    // conjunto_id filter closes a cross-tenant IDOR: a ronda UUID from another
+    // conjunto must not resolve here.
     let row = rondas_parqueadero::table
         .filter(rondas_parqueadero::id.eq(ronda_id))
+        .filter(rondas_parqueadero::conjunto_id.eq(conjunto_id))
         .select(RondaParqueadero::as_select())
         .first(conn)
         .await

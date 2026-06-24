@@ -155,7 +155,7 @@ pub async fn ver_solicitud(
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<SolicitudDto>> {
     let mut conn = state.pool.get().await?;
-    let s = repo::solicitud_por_id(&mut conn, id).await?
+    let s = repo::solicitud_por_id(&mut conn, id, user.conjunto_id).await?
         .ok_or(ApiError::NotFound("ticket no encontrado".into()))?;
     // Only allow the assigned worker, admin, or the creator
     if s.asignado_a_id != Some(user.id)
@@ -204,7 +204,7 @@ pub async fn cambiar_estado(
     Json(req): Json<CambiarEstadoRequest>,
 ) -> ApiResult<Json<SolicitudDto>> {
     let mut conn = state.pool.get().await?;
-    let s = repo::solicitud_por_id(&mut conn, id).await?
+    let s = repo::solicitud_por_id(&mut conn, id, user.conjunto_id).await?
         .ok_or(ApiError::NotFound("ticket no encontrado".into()))?;
 
     // Only assigned worker or admin can change state
@@ -328,7 +328,7 @@ pub async fn agregar_comentario(
     Json(req): Json<AgregarComentarioRequest>,
 ) -> ApiResult<Json<TicketComentarioDto>> {
     let mut conn = state.pool.get().await?;
-    let s = repo::solicitud_por_id(&mut conn, id).await?
+    let s = repo::solicitud_por_id(&mut conn, id, user.conjunto_id).await?
         .ok_or(ApiError::NotFound("ticket no encontrado".into()))?;
     // Only assigned worker, admin, or ticket creator can comment
     if s.asignado_a_id != Some(user.id)

@@ -386,6 +386,9 @@ pub async fn editar_usuario(
         }
         _ => None,
     };
+    if let Some(r) = rol {
+        ensure_assignable_rol(&user, r)?;
+    }
 
     let mut conn = state.pool.get().await?;
     let updated = update_user(
@@ -449,6 +452,7 @@ pub async fn invitar_residente(
 
     let rol: Rol = req.rol.trim().parse::<Rol>()
         .map_err(|_| ApiError::BadRequest(format!("rol inválido: {}", req.rol)))?;
+    ensure_assignable_rol(&user, rol)?;
 
     // Temporary password: "temp_" + UUID v4; must_change_password = true.
     let temp_password = format!("temp_{}", Uuid::new_v4());
@@ -486,6 +490,17 @@ pub async fn invitar_residente(
             created_at: created.created_at,
         }),
     ))
+}
+
+/// A conjunto admin must not be able to mint a SUPER_ADMIN — that role is a
+/// cross-tenant god account (see auth/guard.rs), so assigning it from an
+/// admin-scoped endpoint is privilege escalation out of the tenant. Only an
+/// existing super-admin may grant it.
+fn ensure_assignable_rol(actor: &AuthUser, target: Rol) -> ApiResult<()> {
+    if matches!(target, Rol::SuperAdmin) && !matches!(actor.rol, Rol::SuperAdmin) {
+        return Err(ApiError::Forbidden);
+    }
+    Ok(())
 }
 
 // ── Repository helpers (inline, flat-module style) ──────────────────────────

@@ -95,9 +95,18 @@ pub async fn crear_solicitud_con_notificaciones(
     }).await
 }
 
-pub async fn solicitud_por_id(conn: &mut DbConn, id: Uuid) -> ApiResult<Option<Solicitud>> {
+/// Tenant-scoped lookup: a ticket is only visible within its own conjunto.
+/// Filtering by conjunto_id here closes a cross-tenant IDOR — callers that only
+/// checked the caller's *role* (admin) could otherwise read/modify another
+/// conjunto's tickets by guessing the ticket UUID.
+pub async fn solicitud_por_id(
+    conn: &mut DbConn,
+    id: Uuid,
+    conjunto_id: Uuid,
+) -> ApiResult<Option<Solicitud>> {
     solicitudes_servicio::table
         .filter(solicitudes_servicio::id.eq(id))
+        .filter(solicitudes_servicio::conjunto_id.eq(conjunto_id))
         .first(conn).await.optional()
         .map_err(|e| ApiError::Internal(anyhow::anyhow!("{e}")))
 }
