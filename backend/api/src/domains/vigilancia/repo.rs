@@ -92,6 +92,7 @@ pub async fn paquetes_conjunto(
     let rows = paquetes::table
         .inner_join(usuarios::table)
         .filter(paquetes::conjunto_id.eq(conjunto_id))
+        .filter(paquetes::estado.eq(EstadoPaquete::EnPorteria))
         .order(paquetes::fecha_llegada.desc())
         .limit(50)
         .select((
