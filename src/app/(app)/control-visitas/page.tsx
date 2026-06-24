@@ -19,11 +19,14 @@ interface ResidenteDirectorio {
 }
 
 interface VisitaItem {
+  id?: string;
   nombre: string;
   tipo: string;
   placa: string | null;
-  creadoEn: string;
+  createdAt: string;
+  fecha: string;
   residente?: {
+    nombre?: string;
     torre: string | null;
     apto: string | null;
   } | null;
@@ -105,7 +108,13 @@ export default function ControlVisitas() {
      try {
        const newVisita = await api.post<VisitaItem>('/vigilancia/visitas', formData);
        toast.success("Visita registrada exitosamente");
-       setVisitas([newVisita, ...visitas]);
+       // POST returns VisitaDto (no residente), enrich from local state
+       const residenteInfo = residentes.find(r => r.id === formData.usuarioId);
+       const enriched: VisitaItem = {
+         ...newVisita,
+         residente: residenteInfo ? { nombre: residenteInfo.nombre, torre: residenteInfo.torre, apto: residenteInfo.apto } : null,
+       };
+       setVisitas([enriched, ...visitas]);
        setFormData({...formData, nombre: "", placa: "", observacion: ""});
      } catch {
        toast.error("Error de conexión");
@@ -208,7 +217,7 @@ export default function ControlVisitas() {
                      <p className="text-text text-xs">Visita a: {v.residente?.torre} - {v.residente?.apto}</p>
                    </div>
                    <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
-                      {new Date(v.creadoEn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      {(() => { const d = new Date(v.createdAt || v.fecha); return isNaN(d.getTime()) ? '--:--' : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); })()}
                    </div>
                 </div>
                 <div className="flex bg-surface/50 p-2 rounded-xl gap-4 items-center border border-border/30">

@@ -130,7 +130,7 @@ pub async fn crear_visita_vigilancia(
                 domain: "visita".into(),
                 action: "created".into(),
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-                target_user_id: None,
+                target_user_id: Some(req.usuario_id),
             },
         )
         .await;
