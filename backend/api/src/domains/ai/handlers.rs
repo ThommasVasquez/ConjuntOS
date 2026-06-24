@@ -449,7 +449,10 @@ async fn asistente(
     let respuesta = gemini
         .generate(&prompt, 1536, 0.3)
         .await
-        .map_err(|e| ApiError::Upstream(format!("Error del servicio de IA: {e}")))?;
+        .map_err(|e| {
+            tracing::error!(error = %e, "Gemini API falló");
+            ApiError::Upstream(format!("Error del servicio de IA: {e}"))
+        })?;
     Ok(Json(AsistenteResponse { respuesta }))
 }
 

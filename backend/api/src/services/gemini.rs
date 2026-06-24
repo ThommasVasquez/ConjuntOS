@@ -57,7 +57,7 @@ impl GeminiClient {
     pub fn new(api_key: String) -> Self {
         Self {
             client: Client::builder()
-                .timeout(std::time::Duration::from_secs(30))
+                .timeout(std::time::Duration::from_secs(60))
                 .build()
                 .expect("reqwest client"),
             api_key,
