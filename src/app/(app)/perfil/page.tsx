@@ -477,8 +477,8 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
     { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-text/5 text-text', icon: <PawPrint size={12}/>, view: 'pets' },
     { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-text/5 text-text', icon: <Car size={12}/>, view: 'vehicles' },
     { label: 'Reservas', val: activeReservas.length.toString(), color: 'bg-text/5 text-text', icon: <Calendar size={12}/>, view: 'reservas' },
-    { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={12}/>, view: 'paquetes' },
-    { label: 'Visitas', val: visitasHistorial.length.toString(), color: 'bg-text/5 text-text', icon: <UserIcon size={12}/>, view: 'visitas' }
+    { label: 'Visitas', val: visitasHistorial.length.toString(), color: 'bg-text/5 text-text', icon: <UserIcon size={12}/>, view: 'visitas' },
+    { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={12}/>, view: 'paquetes' }
   ];
 
   const statusIcons = isGuest
