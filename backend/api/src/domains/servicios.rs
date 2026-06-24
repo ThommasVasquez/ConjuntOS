@@ -125,7 +125,7 @@ async fn actualizar(
 ) -> ApiResult<Json<SolicitudServicioDto>> {
     guard::require_admin(&user)?;
     let mut conn = state.pool.get().await?;
-    let existing = repo::solicitud_por_id(&mut conn, id).await?
+    let existing = repo::solicitud_por_id(&mut conn, id, user.conjunto_id).await?
         .ok_or_else(|| ApiError::NotFound("solicitud no encontrada".into()))?;
     if existing.conjunto_id != user.conjunto_id { return Err(ApiError::Forbidden); }
 
@@ -174,7 +174,7 @@ async fn agregar_comentario(
         return Err(ApiError::BadRequest("contenido es obligatorio".into()));
     }
     let mut conn = state.pool.get().await?;
-    let _ = repo::solicitud_por_id(&mut conn, id).await?
+    let _ = repo::solicitud_por_id(&mut conn, id, user.conjunto_id).await?
         .ok_or_else(|| ApiError::NotFound("solicitud no encontrada".into()))?;
     repo::agregar_comentario(&mut conn, crate::domains::solicitudes::models::NuevoComentario {
         ticket_id: id, usuario_id: user.id, contenido: req.contenido.trim().to_string(),

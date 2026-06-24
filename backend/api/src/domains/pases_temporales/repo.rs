@@ -280,45 +280,65 @@ pub async fn actualizar_pase(
     permiso_vehiculo: Option<bool>,
     permiso_asamblea: Option<bool>,
 ) -> ApiResult<PaseTemporal> {
-    let mut sql = String::from(
-        "UPDATE pases_temporales SET id = id"
-    );
-    if let Some(v) = nombre_anfitrion {
-        sql.push_str(&format!(", nombre_anfitrion = '{}'", v.replace('\'', "''")));
+    // Typed changeset — None fields are skipped. Replaces the previous raw
+    // format!()-built SQL, which interpolated date fields with no escaping
+    // (SQL injection). Diesel binds every value as a parameter.
+    #[derive(AsChangeset)]
+    #[diesel(table_name = pases_temporales)]
+    struct PaseChanges<'a> {
+        nombre_anfitrion: Option<&'a str>,
+        nombre_huesped: Option<&'a str>,
+        email_huesped: Option<&'a str>,
+        telefono_huesped: Option<&'a str>,
+        fecha_inicio: Option<chrono::NaiveDate>,
+        fecha_fin: Option<chrono::NaiveDate>,
+        permiso_gimnasio: Option<bool>,
+        permiso_piscina: Option<bool>,
+        permiso_entrada_salida: Option<bool>,
+        permiso_vehiculo: Option<bool>,
+        permiso_asamblea: Option<bool>,
     }
-    if let Some(v) = nombre_huesped {
-        sql.push_str(&format!(", nombre_huesped = '{}'", v.replace('\'', "''")));
-    }
-    if let Some(v) = email_huesped {
-        sql.push_str(&format!(", email_huesped = '{}'", v.replace('\'', "''")));
-    }
-    if let Some(v) = telefono_huesped {
-        sql.push_str(&format!(", telefono_huesped = '{}'", v.replace('\'', "''")));
-    }
-    if let Some(v) = fecha_inicio {
-        sql.push_str(&format!(", fecha_inicio = '{}'", v));
-    }
-    if let Some(v) = fecha_fin {
-        sql.push_str(&format!(", fecha_fin = '{}'", v));
-    }
-    if let Some(v) = permiso_gimnasio {
-        sql.push_str(&format!(", permiso_gimnasio = {}", v));
-    }
-    if let Some(v) = permiso_piscina {
-        sql.push_str(&format!(", permiso_piscina = {}", v));
-    }
-    if let Some(v) = permiso_entrada_salida {
-        sql.push_str(&format!(", permiso_entrada_salida = {}", v));
-    }
-    if let Some(v) = permiso_vehiculo {
-        sql.push_str(&format!(", permiso_vehiculo = {}", v));
-    }
-    if let Some(v) = permiso_asamblea {
-        sql.push_str(&format!(", permiso_asamblea = {}", v));
-    }
-    sql.push_str(&format!(" WHERE id = '{}' RETURNING *", pase_id));
 
-    let pase: PaseTemporal = diesel::sql_query(&sql).get_result(conn).await?;
+    let has_changes = nombre_anfitrion.is_some()
+        || nombre_huesped.is_some()
+        || email_huesped.is_some()
+        || telefono_huesped.is_some()
+        || fecha_inicio.is_some()
+        || fecha_fin.is_some()
+        || permiso_gimnasio.is_some()
+        || permiso_piscina.is_some()
+        || permiso_entrada_salida.is_some()
+        || permiso_vehiculo.is_some()
+        || permiso_asamblea.is_some();
+
+    // Empty changeset would make diesel error; just return the row unchanged.
+    if !has_changes {
+        return Ok(pases_temporales::table
+            .find(pase_id)
+            .select(PaseTemporal::as_select())
+            .first(conn)
+            .await?);
+    }
+
+    let changes = PaseChanges {
+        nombre_anfitrion,
+        nombre_huesped,
+        email_huesped,
+        telefono_huesped,
+        fecha_inicio,
+        fecha_fin,
+        permiso_gimnasio,
+        permiso_piscina,
+        permiso_entrada_salida,
+        permiso_vehiculo,
+        permiso_asamblea,
+    };
+
+    let pase: PaseTemporal = diesel::update(pases_temporales::table.find(pase_id))
+        .set(changes)
+        .returning(PaseTemporal::as_returning())
+        .get_result(conn)
+        .await?;
     Ok(pase)
 }
 

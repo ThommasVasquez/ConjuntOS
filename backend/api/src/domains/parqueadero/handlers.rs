@@ -1383,6 +1383,11 @@ pub async fn registrar_checkpoint(
     let punto = repo::punto_por_nfc(&mut conn, user.conjunto_id, req.nfc_uid.trim())
         .await?
         .ok_or_else(|| ApiError::BadRequest("punto NFC no encontrado o inactivo".into()))?;
+    // The ronda must belong to the caller's conjunto — otherwise a checkpoint
+    // could be written against another tenant's round (cross-tenant write).
+    repo::ronda_por_id(&mut conn, req.ronda_id, user.conjunto_id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("ronda no encontrada".into()))?;
     let cp = repo::registrar_checkpoint(&mut conn, req.ronda_id, punto.id, req.nfc_uid.trim()).await?;
     let dto = CheckpointRondaDto {
         id: cp.id,
@@ -1423,7 +1428,7 @@ pub async fn checkpoints_de_ronda(
 ) -> ApiResult<Json<RondaConCheckpointsDto>> {
     guard::require(&user, ROLES_RONDAS)?;
     let mut conn = state.pool.get().await?;
-    let ronda = repo::ronda_por_id(&mut conn, id)
+    let ronda = repo::ronda_por_id(&mut conn, id, user.conjunto_id)
         .await?
         .ok_or_else(|| ApiError::NotFound("ronda no encontrada".into()))?;
     let checkpoints = repo::checkpoints_de_ronda(&mut conn, ronda.id).await?;
