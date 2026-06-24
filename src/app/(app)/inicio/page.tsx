@@ -457,27 +457,25 @@ function HomeResidente() {
           <p className="text-[11px] text-text/70 px-1 -mt-1">
             Estas visitas fueron registradas por el vigilante. El visitante <b>NO puede ingresar</b> hasta que las apruebes.
           </p>
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
+          <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap items-stretch">
             {visitasPendientes.map((v) => (
-              <div key={v.id} className="min-w-[290px] liquid-glass-card rounded-[28px] p-5 border border-amber-500/40 flex flex-col gap-4 shrink-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-amber-500/15 flex items-center justify-center border border-amber-500/30 shrink-0">
-                      <UserIcon size={20} className="text-amber-400" />
-                    </div>
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-base font-bold text-text truncate">{v.nombre}</span>
-                      {v.documento && <span className="text-[10px] text-text/50 font-mono truncate">{v.documento}</span>}
-                      <span className="text-[10px] text-text/50 flex items-center gap-1">
-                        <Clock size={10} /> {new Date(v.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full w-fit ${v.tipo === 'VEHICULAR' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'bg-text/10 text-text border border-text/20'}`}>
-                        {v.tipo}
-                      </span>
-                    </div>
+              <div key={v.id} className="min-w-[290px] max-w-[320px] liquid-glass-card rounded-[28px] p-5 border border-amber-500/40 flex flex-col gap-3 shrink-0">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-500/15 flex items-center justify-center border border-amber-500/30 shrink-0 mt-0.5">
+                    <UserIcon size={20} className="text-amber-400" />
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                    <span className="text-base font-bold text-text truncate">{v.nombre}</span>
+                    {v.documento && <span className="text-[10px] text-text/50 font-mono truncate">{v.documento}</span>}
+                    <span className="text-[10px] text-text/50 flex items-center gap-1">
+                      <Clock size={10} /> {new Date(v.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full w-fit ${v.tipo === 'VEHICULAR' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'bg-text/10 text-text border border-text/20'}`}>
+                      {v.tipo}
+                    </span>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-auto">
                   <button
                     disabled={busyAprob === v.id}
                     onClick={() => resolverVisitaPendiente(v.id, false)}
