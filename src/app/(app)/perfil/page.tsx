@@ -10,7 +10,7 @@ import {
   Edit, Camera, Car, PawPrint, ShieldCheck, Mail, Phone,
   CheckCircle2, X, Plus, FileText, Info, ClipboardList, Lock, 
   HelpCircle, CreditCard, Calendar, Package, User as UserIcon, QrCode,
-  Sun, Moon
+  Sun, Moon, Clock
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -53,6 +53,7 @@ function ProfileContent() {
   interface Recibo { id: string; servicio: string; monto: number; pagado: boolean; vencimiento: string; fechaPago?: string; createdAt?: string; }
   interface ReservaActiva { id: string; estado?: string; fechaInicio: string; fechaFin: string; areaNombre?: string; areaImagenUrl?: string; }
   interface PaqueteActivo { remitente?: string; origen?: string; guia?: string; fechaLlegada: string; }
+interface VisitaPerfil { id: string; nombre: string; documento?: string | null; tipo: string; fecha: string; estado: string; placa?: string | null; }
   interface ProfileFetch {
     nombre?: string;
     apto?: string;
@@ -85,10 +86,11 @@ function ProfileContent() {
   const [tramites, setTramites] = useState<Tramite[]>([]);
   
   // Vistas y Modales
-  type ViewMode = "profile" | "vehicles" | "pets" | "deuda" | "requests" | "reservas" | "paquetes";
+  type ViewMode = "profile" | "vehicles" | "pets" | "deuda" | "requests" | "reservas" | "paquetes" | "visitas";
   const [viewMode, setViewMode] = useState<ViewMode>("profile");
   const [activeReservas, setActiveReservas] = useState<ReservaActiva[]>([]);
   const [activePaquetes, setActivePaquetes] = useState<PaqueteActivo[]>([]);
+  const [visitasHistorial, setVisitasHistorial] = useState<VisitaPerfil[]>([]);
   
   // ... rest of the component state ...
 
@@ -102,6 +104,13 @@ function ProfileContent() {
       } catch (e) {
         console.error("Error loading packages", e);
         setActivePaquetes([]);
+      }
+      try {
+        const data = await api.get<{ visitas: VisitaPerfil[] }>('/comunicaciones');
+        setVisitasHistorial(data.visitas || []);
+      } catch (e) {
+        console.error("Error loading visitas", e);
+        setVisitasHistorial([]);
       }
     }
     if (hasMounted && user) loadData();
@@ -468,7 +477,8 @@ function ProfileContent() {
     { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-text/5 text-text', icon: <PawPrint size={12}/>, view: 'pets' },
     { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-text/5 text-text', icon: <Car size={12}/>, view: 'vehicles' },
     { label: 'Reservas', val: activeReservas.length.toString(), color: 'bg-text/5 text-text', icon: <Calendar size={12}/>, view: 'reservas' },
-    { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={12}/>, view: 'paquetes' }
+    { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={12}/>, view: 'paquetes' },
+    { label: 'Visitas', val: visitasHistorial.length.toString(), color: 'bg-text/5 text-text', icon: <UserIcon size={12}/>, view: 'visitas' }
   ];
 
   const statusIcons = isGuest
@@ -1033,6 +1043,61 @@ function ProfileContent() {
                    <Info size={16} className="text-text shrink-0" />
                    <p className="text-[10px] text-text leading-relaxed uppercase tracking-tighter italic">Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {viewMode === "visitas" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center px-2">
+                <h3 className="text-text text-lg font-bold flex items-center gap-2">Historial de Visitas <UserIcon size={18} className="text-accent" /></h3>
+                <button onClick={() => router.push('/visitantes')} className="text-[10px] font-black uppercase text-accent/80 hover:text-accent tracking-tighter transition-colors">
+                  Gestionar Visitas
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {visitasHistorial.length === 0 ? (
+                  <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
+                    <UserIcon className="mx-auto text-text mb-3" size={40} />
+                    <p className="text-text text-xs italic text-pretty">No hay visitas registradas en tu historial.</p>
+                  </div>
+                ) : (
+                  visitasHistorial.map((v) => (
+                    <div key={v.id} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/50 p-5 flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                        v.estado === 'PENDIENTE' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                        v.estado === 'APROBADA' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                        v.estado === 'RECHAZADA' ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
+                        'bg-text/10 text-text'
+                      }`}>
+                        <UserIcon size={22} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-sm font-bold text-text truncate">{v.nombre}</span>
+                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ${
+                            v.estado === 'PENDIENTE' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                            v.estado === 'APROBADA' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                            v.estado === 'RECHAZADA' ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
+                            'bg-text/10 text-text border border-border'
+                          }`}>
+                            {v.estado}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {v.documento && <span className="text-[10px] text-text/50 font-mono">{v.documento}</span>}
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-text/10 text-text border border-text/20">
+                            {v.tipo}
+                          </span>
+                          <span className="text-[10px] text-text/50 flex items-center gap-1">
+                            <Clock size={10} /> {new Date(v.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

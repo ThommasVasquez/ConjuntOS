@@ -47,6 +47,7 @@ import type {
   ReciboDto,
   PagosResponse,
   AdSpaceFeedDto,
+  VisitaDto,
 } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { getNotifTarget } from "@/lib/notif-routing";
@@ -167,6 +168,31 @@ function HomeResidente() {
     }
   };
 
+  // Visitas PENDIENTES de aprobación: visitas no programadas registradas por vigilancia
+  // que el residente debe aprobar o rechazar para que el visitante pueda ingresar.
+  const [visitasPendientes, setVisitasPendientes] = useState<VisitaDto[]>([]);
+
+  const fetchVisitasPendientes = useCallback(async () => {
+    try {
+      const data = await api.get<{ visitas: VisitaDto[]; paquetes: unknown[] }>("/comunicaciones");
+      const pendientes = (data.visitas || []).filter(v => v.estado === 'PENDIENTE');
+      setVisitasPendientes(pendientes);
+    } catch { /* no aplica / sin datos */ }
+  }, []);
+
+  const resolverVisitaPendiente = async (id: string, aprobada: boolean) => {
+    setBusyAprob(id);
+    try {
+      await api.put(`/visitas/${id}/aprobar`, { aprobada });
+      toast.success(aprobada ? "Visita aprobada. El visitante puede ingresar." : "Visita rechazada.");
+      fetchVisitasPendientes();
+    } catch (e: unknown) {
+      toast.error((e instanceof Error ? e.message : String(e)) || "No se pudo procesar");
+    } finally {
+      setBusyAprob(null);
+    }
+  };
+
   const resolverSolicitudParqueadero = async (id: string, accion: 'aprobar' | 'rechazar') => {
     setBusyAprob(id);
     try {
@@ -208,6 +234,7 @@ function HomeResidente() {
   useWsSubscription('pago', () => fetchFinance());
   useWsSubscription('anuncio', () => fetchAnuncios());
   useWsSubscription('parqueadero', () => { fetchSolicitudesParqueadero(); fetchCargosRetenidos(); });
+  useWsSubscription('visita', () => fetchVisitasPendientes());
 
   const fetchActiveAsamblea = useCallback(async () => {
     try {
@@ -234,6 +261,7 @@ function HomeResidente() {
       fetchActiveAsamblea();
       fetchSolicitudesParqueadero();
       fetchCargosRetenidos();
+      fetchVisitasPendientes();
     }
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up-home", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 });
@@ -407,6 +435,61 @@ function HomeResidente() {
                   className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyAprob === s.id ? "Procesando..." : "Aprobar"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* 🚪 VISITAS PENDIENTES DE APROBACIÓN — visitas no programadas que requieren acción del residente */}
+      {visitasPendientes.length > 0 && (
+        <section className="fade-up-home flex flex-col gap-3">
+          <div className="flex items-center gap-2 px-1">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
+            </span>
+            <h2 className="text-text font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+              <UserIcon size={14} className="text-amber-400" /> Visitas por aprobar — ingreso bloqueado
+            </h2>
+          </div>
+          <p className="text-[11px] text-text/70 px-1 -mt-1">
+            Estas visitas fueron registradas por el vigilante. El visitante <b>NO puede ingresar</b> hasta que las apruebes.
+          </p>
+          {visitasPendientes.map((v) => (
+            <div key={v.id} className="liquid-glass-card rounded-[28px] p-5 border border-amber-500/40 flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-500/15 flex items-center justify-center border border-amber-500/30">
+                    <UserIcon size={20} className="text-amber-400" />
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-base font-bold text-text">{v.nombre}</span>
+                    {v.documento && <span className="text-[10px] text-text/50 font-mono">{v.documento}</span>}
+                    <span className="text-[10px] text-text/50 flex items-center gap-1">
+                      <Clock size={10} /> {new Date(v.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full w-fit ${v.tipo === 'VEHICULAR' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'bg-text/10 text-text border border-text/20'}`}>
+                      {v.tipo}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  disabled={busyAprob === v.id}
+                  onClick={() => resolverVisitaPendiente(v.id, false)}
+                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  Rechazar
+                </button>
+                <button
+                  disabled={busyAprob === v.id}
+                  onClick={() => resolverVisitaPendiente(v.id, true)}
+                  className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {busyAprob === v.id ? "Procesando..." : "Aprobar ingreso"}
                 </button>
               </div>
             </div>
