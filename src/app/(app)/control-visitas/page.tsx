@@ -236,6 +236,7 @@ export default function ControlVisitas() {
                      {v.estado === 'RECHAZADA' && <span className="bg-red-500/15 text-red-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-red-500/30">RECHAZADA</span>}
                      <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
                       {(() => { const d = new Date(v.createdAt || v.fecha); return isNaN(d.getTime()) ? '--:--' : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); })()}
+                     </div>
                    </div>
                 </div>
                 <div className="flex bg-surface/50 p-2 rounded-xl gap-4 items-center border border-border/30">
