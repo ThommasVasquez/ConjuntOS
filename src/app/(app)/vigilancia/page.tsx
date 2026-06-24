@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { gsap } from "gsap";
 import { api } from "@/lib/api/client";
 import SosConsole from "@/components/sos/SosConsole";
+import RoleSwitcher from "@/components/shell/RoleSwitcher";
 
 interface VigilanciaStats {
   visitasHoy: number;
@@ -161,6 +162,9 @@ export default function VigilanciaDashboard() {
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden">
       <ProfileHeader />
+
+      {/* ROLE SWITCHER (solo visible para testers) */}
+      <RoleSwitcher />
 
       {/* HEADER TITLE */}
       <div className="fade-up flex items-center gap-3">
