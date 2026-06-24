@@ -216,7 +216,7 @@ export default function SeguridadPage() {
 
 interface RondaDto {
   id: string;
-  hallazgos: string | null;
+  hallazgos: { descripcion: string; celda?: string | null }[];
   completada: boolean;
   fecha: string;
 }
@@ -274,7 +274,7 @@ interface RondaConCheckpointsDto extends RondaDto {
     try {
       const data = await api.get<RondaDto | null>('/parqueadero/rondas');
       setRondaHoy(data);
-      if (data?.hallazgos) setHallazgos(data.hallazgos);
+      if (data?.hallazgos) setHallazgos(data.hallazgos.map(h => h.descripcion).join("\n"));
       if (data?.id) {
         try {
           const cp = await api.get<RondaConCheckpointsDto>(`/parqueadero/rondas/${data.id}/checkpoints`);
@@ -301,7 +301,7 @@ interface RondaConCheckpointsDto extends RondaDto {
   const startRound = async () => {
     setRondaLoading(true);
     try {
-      const r = await api.post<RondaDto>('/parqueadero/rondas', { hallazgos: "", completada: false });
+      const r = await api.post<RondaDto>('/parqueadero/rondas', { hallazgos: [], completada: false });
       setRondaHoy(r);
       setCheckpoints([]);
       setCompletadaNfc(false);
@@ -322,7 +322,7 @@ interface RondaConCheckpointsDto extends RondaDto {
     }
     setRondaLoading(true);
     try {
-      const r = await api.post<RondaDto>('/parqueadero/rondas', { hallazgos: hallazgos.trim(), completada: true });
+      const r = await api.post<RondaDto>('/parqueadero/rondas', { hallazgos: [{ descripcion: hallazgos.trim() }], completada: true });
       setRondaHoy(r);
       toast.success("Ronda completada y registrada");
     } catch {
@@ -664,8 +664,12 @@ interface RondaConCheckpointsDto extends RondaDto {
                     ))}
                   </div>
                 )}
-                {rondaHoy.hallazgos && (
-                  <p className="text-xs text-text/70 italic pl-7">«{rondaHoy.hallazgos}»</p>
+                {rondaHoy.hallazgos && rondaHoy.hallazgos.length > 0 && (
+                  <div className="text-xs text-text/70 italic pl-7 space-y-1">
+                    {rondaHoy.hallazgos.map((h: { descripcion: string; celda?: string | null }, i: number) => (
+                      <p key={i}>«{h.descripcion}»{h.celda ? ` [Celda ${h.celda}]` : ''}</p>
+                    ))}
+                  </div>
                 )}
                 <button
                   onClick={startRound}
