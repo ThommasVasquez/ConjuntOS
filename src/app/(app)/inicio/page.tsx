@@ -1318,6 +1318,9 @@ export default function InicioDashboard() {
     if (role === 'HUESPED_TEMPORAL') {
       router.replace('/mi-estancia');
     }
+    if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') {
+      router.replace('/vigilancia');
+    }
   }, [role, router]);
 
   if (role === 'HUESPED_TEMPORAL') {
@@ -1328,10 +1331,16 @@ export default function InicioDashboard() {
     );
   }
 
+  if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   if (role === 'ADMINISTRADOR_PISCINA' || role === 'ADMINISTRADOR_GYM') return <AreaAdminDashboard />;
   if (role === 'MANTENIMIENTO_LOCATIVO' || role === 'OPERARIO_LIMPIEZA') return <HomeOperativo />;
-
-  if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') return <HomeVigilante />;
   if (role === 'ENCARGADO_PARQUEADERO') return <HomeEstacionamiento />;
   if (role === 'CONCEJO') return <HomeConsejo />;
   if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN') return <HomeAdmin />;
