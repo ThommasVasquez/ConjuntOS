@@ -479,7 +479,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
     { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-text/5 text-text', icon: <PawPrint size={16}/>, view: 'pets' },
     { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-text/5 text-text', icon: <Car size={16}/>, view: 'vehicles' },
     { label: 'Reservas', val: activeReservas.length.toString(), color: 'bg-text/5 text-text', icon: <Calendar size={16}/>, view: 'reservas' },
-    { label: 'Visitas', val: visitasHistorial.length.toString(), color: 'bg-text/5 text-text', icon: <UserIcon size={16}/>, view: 'visitas' },
+    { label: 'Visitas', val: visitasHistorial.filter(v => v.estado === 'PENDIENTE').length.toString(), color: 'bg-text/5 text-text', icon: <UserIcon size={16}/>, view: 'visitas' },
     { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={16}/>, view: 'paquetes' }
   ];
 
