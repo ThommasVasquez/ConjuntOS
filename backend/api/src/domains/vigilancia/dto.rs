@@ -154,6 +154,7 @@ pub struct VigilanciaStatsDto {
 pub struct ComunicacionesDto {
     pub visitas: Vec<VisitaDto>,
     pub paquetes: Vec<PaqueteDto>,
+    pub correspondencia: Vec<CorrespondenciaDto>,
 }
 
 // ── Correspondencia ────────────────────────────────────────────────────

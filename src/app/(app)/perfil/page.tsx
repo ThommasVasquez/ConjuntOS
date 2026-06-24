@@ -23,6 +23,7 @@ import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import DocsVacunas from "@/components/docs/DocsVacunas";
 import { useTheme } from "@/components/providers/ThemeContext";
+import type { CorrespondenciaDto } from "@/lib/api/types";
 
 export default function PerfilPage() {
   return (
@@ -86,11 +87,12 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
   const [tramites, setTramites] = useState<Tramite[]>([]);
   
   // Vistas y Modales
-  type ViewMode = "profile" | "vehicles" | "pets" | "deuda" | "requests" | "reservas" | "paquetes" | "visitas";
+  type ViewMode = "profile" | "vehicles" | "pets" | "deuda" | "requests" | "reservas" | "paquetes" | "visitas" | "correspondencia";
   const [viewMode, setViewMode] = useState<ViewMode>("profile");
   const [activeReservas, setActiveReservas] = useState<ReservaActiva[]>([]);
   const [activePaquetes, setActivePaquetes] = useState<PaqueteActivo[]>([]);
   const [visitasHistorial, setVisitasHistorial] = useState<VisitaPerfil[]>([]);
+  const [correspondenciaPendiente, setCorrespondenciaPendiente] = useState<CorrespondenciaDto[]>([]);
   
   // ... rest of the component state ...
 
@@ -106,11 +108,13 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
         setActivePaquetes([]);
       }
       try {
-        const data = await api.get<{ visitas: VisitaPerfil[] }>('/comunicaciones');
+        const data = await api.get<{ visitas: VisitaPerfil[]; correspondencia: CorrespondenciaDto[] }>('/comunicaciones');
         setVisitasHistorial(data.visitas || []);
+        setCorrespondenciaPendiente((data.correspondencia || []).filter(c => c.estado === 'EN_PORTERIA'));
       } catch (e) {
-        console.error("Error loading visitas", e);
+        console.error("Error loading visitas/correspondencia", e);
         setVisitasHistorial([]);
+        setCorrespondenciaPendiente([]);
       }
     }
     if (hasMounted && user) loadData();
@@ -480,7 +484,8 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
     { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-text/5 text-text', icon: <Car size={16}/>, view: 'vehicles' },
     { label: 'Reservas', val: activeReservas.length.toString(), color: 'bg-text/5 text-text', icon: <Calendar size={16}/>, view: 'reservas' },
     { label: 'Visitas', val: visitasHistorial.filter(v => v.estado === 'PENDIENTE').length.toString(), color: 'bg-text/5 text-text', icon: <UserIcon size={16}/>, view: 'visitas' },
-    { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={16}/>, view: 'paquetes' }
+    { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={16}/>, view: 'paquetes' },
+    { label: 'Corresp.', val: correspondenciaPendiente.length.toString(), color: 'bg-text/5 text-text', icon: <Mail size={16}/>, view: 'correspondencia' }
   ];
 
   const statusIcons = isGuest
@@ -1078,6 +1083,73 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                     </div>
                   );
                 })()}
+              </div>
+            </div>
+          )}
+
+          {viewMode === "correspondencia" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center px-2 mb-2">
+                <h3 className="text-text text-lg font-bold flex items-center gap-2">Correspondencia <Mail size={18} className="text-accent" /></h3>
+                <span className="text-[10px] font-black text-text uppercase tracking-widest bg-surface-2 px-3 py-1 rounded-full">{correspondenciaPendiente.length} en portería</span>
+              </div>
+
+              <div className="space-y-3">
+                {correspondenciaPendiente.length === 0 ? (
+                  <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
+                    <Mail className="mx-auto text-text mb-3" size={40} />
+                    <p className="text-text text-xs italic text-pretty">No tienes correspondencia pendiente en portería.</p>
+                  </div>
+                ) : (
+                  correspondenciaPendiente.map((corr, i) => {
+                    const tipoLabel: Record<string, string> = {
+                      CARTA: "Carta",
+                      DOCUMENTO: "Documento",
+                      REVISTA: "Revista",
+                      ENERGIA: "Recibo Energía",
+                      AGUA: "Recibo Agua",
+                      GAS: "Recibo Gas",
+                      OTRO: "Otro"
+                    };
+                    const tipoLogo: Record<string, string> = {
+                      ENERGIA: "/recibo-servicios-logo.jpg",
+                      AGUA: "/recibo-agua-logo.jpg",
+                      GAS: "/recibo-gas-logo.jpg"
+                    };
+                    const esRecibo = ['ENERGIA', 'AGUA', 'GAS'].includes(corr.tipo);
+                    return (
+                      <div key={i} className={`liquid-glass-card rounded-[28px] overflow-hidden border p-5 flex items-center gap-4 ${esRecibo ? 'border-accent/40 bg-accent/5' : 'border-border bg-primary-light/50'}`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg overflow-hidden ${esRecibo ? '' : 'bg-text/10 text-text shadow-text/5'}`}>
+                          {esRecibo ? (
+                            <img src={tipoLogo[corr.tipo]} alt={tipoLabel[corr.tipo]} className="w-full h-full object-cover" />
+                          ) : (
+                            <Mail size={24} />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${esRecibo ? 'text-accent' : 'text-text'}`}>
+                              {tipoLabel[corr.tipo] || corr.tipo}
+                            </span>
+                            <span className="text-[8px] font-black text-text uppercase bg-surface-2 px-2 py-0.5 rounded-full">{corr.remitente}</span>
+                          </div>
+                          <h4 className="text-sm font-bold text-text mb-1">{corr.descripcion || "Sin descripción"}</h4>
+                          <p className="text-[10px] text-text uppercase tracking-tighter">
+                            Recibido: {new Date(corr.fechaLlegada).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                           <div className={`w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_rgba(137,137,137,0.5)] ${esRecibo ? 'bg-accent' : 'bg-text/10'}`}></div>
+                           <span className="text-[8px] font-black text-text uppercase tracking-tighter">Portería</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div className="mt-8 p-4 rounded-3xl bg-text/5 border border-text/20 flex gap-3 items-center">
+                   <Info size={16} className="text-text shrink-0" />
+                   <p className="text-[10px] text-text leading-relaxed uppercase tracking-tighter italic">Presenta tu identificación en la portería para reclamar tu correspondencia.</p>
+                </div>
               </div>
             </div>
           )}

@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import type { CorrespondenciaDto } from "@/lib/api/types";
 
 interface ResidenteDirectorio {
   id: string;
@@ -127,8 +128,17 @@ export default function CorrespondenciaPage() {
     CARTA: "Carta",
     DOCUMENTO: "Documento",
     REVISTA: "Revista",
+    ENERGIA: "Recibo Energía",
+    AGUA: "Recibo Agua",
+    GAS: "Recibo Gas",
     OTRO: "Otro"
   };
+  const tipoLogo: Record<string, string> = {
+    ENERGIA: "/recibo-servicios-logo.jpg",
+    AGUA: "/recibo-agua-logo.jpg",
+    GAS: "/recibo-gas-logo.jpg"
+  };
+  const esRecibo = (tipo: string) => ['ENERGIA', 'AGUA', 'GAS'].includes(tipo);
 
   if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
 
@@ -172,6 +182,9 @@ export default function CorrespondenciaPage() {
                         <option value="CARTA" className="bg-primary text-text">Carta</option>
                         <option value="DOCUMENTO" className="bg-primary text-text">Documento</option>
                         <option value="REVISTA" className="bg-primary text-text">Revista</option>
+                        <option value="ENERGIA" className="bg-primary text-text">⚡ Recibo de Energía</option>
+                        <option value="AGUA" className="bg-primary text-text">💧 Recibo de Agua</option>
+                        <option value="GAS" className="bg-primary text-text">🔥 Recibo de Gas</option>
                         <option value="OTRO" className="bg-primary text-text">Otro</option>
                      </select>
                   </div>
@@ -221,7 +234,10 @@ export default function CorrespondenciaPage() {
                 <div className="flex justify-between items-start relative z-10">
                    <div>
                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-surface-2 px-2.5 py-0.5 rounded-full text-text border border-border">
+                        {esRecibo(p.tipo) && (
+                          <img src={tipoLogo[p.tipo]} alt={tipoLabel[p.tipo]} className="w-10 h-10 rounded-xl object-cover border border-accent/30 shadow-lg" />
+                        )}
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${esRecibo(p.tipo) ? 'bg-accent/15 text-accent border-accent/30' : 'bg-surface-2 text-text border-border'}`}>
                           {tipoLabel[p.tipo] || p.tipo}
                         </span>
                      </div>

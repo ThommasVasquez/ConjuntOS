@@ -365,9 +365,12 @@ pub async fn comunicaciones(
     let visitas = repo::visitas_propias(&mut conn, user.conjunto_id, user.id, 20).await?;
     let paquetes =
         repo::paquetes_propios_en_porteria(&mut conn, user.conjunto_id, user.id, 20).await?;
+    let correspondencia =
+        repo::correspondencia_propios_en_porteria(&mut conn, user.conjunto_id, user.id, 20).await?;
     Ok(Json(ComunicacionesDto {
         visitas: visitas.into_iter().map(VisitaDto::from).collect(),
         paquetes: paquetes.into_iter().map(PaqueteDto::from).collect(),
+        correspondencia: correspondencia.into_iter().map(CorrespondenciaDto::from).collect(),
     }))
 }
 

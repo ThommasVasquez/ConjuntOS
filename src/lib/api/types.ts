@@ -507,6 +507,18 @@ export interface VigilanciaStatsDto {
 export interface ComunicacionesVigilanciaDto {
   visitas: VisitaDto[];
   paquetes: PaqueteDto[];
+  correspondencia: CorrespondenciaDto[];
+}
+
+export interface CorrespondenciaDto {
+  id: string;
+  usuarioId: string;
+  tipo: string;
+  remitente: string;
+  descripcion: string | null;
+  estado: string;
+  fechaLlegada: string;
+  entregadoEn: string | null;
 }
 
 // ===========================================================================

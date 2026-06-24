@@ -49,6 +49,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico, manifest.json, sw.js, public assets
      */
-    "/((?!api|_next/static|_next/image|favicon\\.ico|favicon\\.svg|solo-light\\.svg|solo-dark\\.svg|solo\\.svg|logo\\.svg|logo-vertical\\.svg|logo-verticalW\\.svg|ConjuntOS_Vertical\\.svg|SplashWHITE\\.png|SplashBLACK\\.png|logo\\.png|manifest\\.json|sw\\.js|workbox-.*\\.js).*)",
+    "/((?!api|_next/static|_next/image|favicon\\.ico|favicon\\.svg|solo-light\\.svg|solo-dark\\.svg|solo\\.svg|logo\\.svg|logo-vertical\\.svg|logo-verticalW\\.svg|ConjuntOS_Vertical\\.svg|SplashWHITE\\.png|SplashBLACK\\.png|logo\\.png|recibo-servicios-logo\\.jpg|recibo-agua-logo\\.jpg|recibo-gas-logo\\.jpg|manifest\\.json|sw\\.js|workbox-.*\\.js).*)",
   ],
 };

@@ -253,14 +253,28 @@ pub async fn crear_correspondencia_con_notificacion(
                 .get_result(conn)
                 .await?;
 
+            let es_recibo = matches!(tipo, TipoCorrespondencia::Energia | TipoCorrespondencia::Agua | TipoCorrespondencia::Gas);
+            let notif_tipo = if es_recibo { "RECIBO" } else { "CORRESPONDENCIA" };
+            let notif_titulo = if es_recibo {
+                "Recibo de servicios públicos en portería"
+            } else {
+                "Correspondencia en portería"
+            };
+            let notif_mensaje = if es_recibo {
+                format!("Llegó un recibo de {tipo} de {remitente} a tu nombre{}",
+                    descripcion.map_or(String::new(), |d| format!(": {d}")))
+            } else {
+                format!("Tienes {tipo} de {remitente} en portería{}",
+                    descripcion.map_or(String::new(), |d| format!(": {d}")))
+            };
+
             create_notificacion(
                 conn,
                 conjunto_id,
                 destinatario_id,
-                "PAQUETE",
-                "Correspondencia en portería",
-                &format!("Tienes {tipo} de {remitente} en portería{}",
-                    descripcion.map_or(String::new(), |d| format!(": {d}"))),
+                notif_tipo,
+                notif_titulo,
+                &notif_mensaje,
                 None,
             )
             .await?;
@@ -291,6 +305,24 @@ pub async fn entregar_correspondencia(
     .await
     .optional()?;
     Ok(row)
+}
+
+pub async fn correspondencia_propios_en_porteria(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    usuario_id: Uuid,
+    limit: i64,
+) -> ApiResult<Vec<Correspondencia>> {
+    let rows = correspondencia::table
+        .filter(correspondencia::conjunto_id.eq(conjunto_id))
+        .filter(correspondencia::usuario_id.eq(usuario_id))
+        .filter(correspondencia::estado.eq(EstadoCorrespondencia::EnPorteria))
+        .order(correspondencia::fecha_llegada.desc())
+        .limit(limit)
+        .select(Correspondencia::as_select())
+        .load(conn)
+        .await?;
+    Ok(rows)
 }
 
 // ── Novedades ──────────────────────────────────────────────────────────

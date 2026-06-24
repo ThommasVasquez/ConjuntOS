@@ -313,6 +313,9 @@ text_enum!(TipoCorrespondencia {
     Documento => "DOCUMENTO",
     Revista => "REVISTA",
     Otro => "OTRO",
+    Energia => "ENERGIA",
+    Agua => "AGUA",
+    Gas => "GAS",
 });
 
 text_enum!(EstadoCorrespondencia {
