@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { Users, Car, Eye, PlusCircle } from "lucide-react";
+import { Users, Car, Eye, PlusCircle, Clock, ShieldCheck, X } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,6 +53,7 @@ export default function ControlVisitas() {
     observacion: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingModal, setPendingModal] = useState<{ nombre: string; residente: string; unidad: string } | null>(null);
 
   const refetchVisitas = async () => {
     try {
@@ -110,7 +111,6 @@ export default function ControlVisitas() {
      setIsSubmitting(true);
      try {
        const newVisita = await api.post<VisitaItem>('/vigilancia/visitas', formData);
-       toast.success("Visita registrada exitosamente");
        // POST returns VisitaDto (no residente), enrich from local state
        const residenteInfo = residentes.find(r => r.id === formData.usuarioId);
        const enriched: VisitaItem = {
@@ -119,6 +119,12 @@ export default function ControlVisitas() {
        };
        setVisitas([enriched, ...visitas]);
        setFormData({...formData, nombre: "", documento: "", placa: "", observacion: ""});
+       // Show pending approval modal
+       setPendingModal({
+         nombre: formData.nombre,
+         residente: residenteInfo?.nombre || "Residente",
+         unidad: residenteInfo?.torre && residenteInfo?.apto ? `Torre ${residenteInfo.torre} - Apto ${residenteInfo.apto}` : "",
+       });
      } catch {
        toast.error("Error de conexión");
      } finally {
@@ -248,6 +254,47 @@ export default function ControlVisitas() {
              </div>
           ))}
        </div>
+
+      {/* MODAL: Visita pendiente de aprobación */}
+      {pendingModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
+           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setPendingModal(null)} />
+           <div className="relative w-full max-w-sm bg-primary border border-amber-500/40 rounded-[32px] shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-300">
+              <div className="p-8 flex flex-col items-center gap-5">
+                 <button onClick={() => setPendingModal(null)} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/50 hover:text-text transition-colors cursor-pointer">
+                    <X size={18} />
+                 </button>
+                 <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
+                    <Clock size={32} className="text-amber-400" />
+                 </div>
+                 <div className="flex flex-col items-center text-center gap-2">
+                    <h3 className="text-xl font-display font-bold text-text">Visita Registrada</h3>
+                    <p className="text-text/70 text-sm">El ingreso está <span className="text-amber-400 font-bold">pendiente de aprobación</span> por el residente.</p>
+                 </div>
+                 <div className="w-full bg-amber-500/5 rounded-2xl p-4 border border-amber-500/15 space-y-3">
+                    <div className="flex items-center gap-3">
+                       <ShieldCheck size={18} className="text-amber-400 shrink-0" />
+                       <div>
+                          <p className="text-text font-bold text-sm">{pendingModal.nombre}</p>
+                          <p className="text-text/50 text-xs">{pendingModal.residente}{pendingModal.unidad ? ` · ${pendingModal.unidad}` : ""}</p>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-amber-400/80">
+                       <Clock size={14} />
+                       <span>El visitante NO puede ingresar hasta que el residente acepte.</span>
+                    </div>
+                 </div>
+                 <button
+                    onClick={() => setPendingModal(null)}
+                    className="w-full bg-amber-500/15 hover:bg-amber-500/25 py-4 rounded-2xl font-bold text-amber-400 text-sm border border-amber-500/30 transition-all cursor-pointer"
+                 >
+                    Entendido
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
+
     </div>
   );
 }
