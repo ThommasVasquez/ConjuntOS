@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::db::enums::{EstadoCorrespondencia, EstadoNovedad, EstadoPaquete, SeveridadNovedad, TipoCorrespondencia, TipoNovedad, TipoVehiculoVisita, TipoVisita};
+use crate::db::enums::{EstadoCorrespondencia, EstadoNovedad, EstadoPaquete, EstadoVisita, SeveridadNovedad, TipoCorrespondencia, TipoNovedad, TipoVehiculoVisita, TipoVisita};
 use crate::domains::vigilancia::models::{Correspondencia, Novedad, Paquete, Visita};
 
 /// Recipient summary joined from `usuarios` for gate views.
@@ -38,6 +38,8 @@ pub struct VisitaDto {
     pub tiene_parqueadero: bool,
     pub observacion: Option<String>,
     pub created_at: DateTime<Utc>,
+    pub documento: Option<String>,
+    pub estado: EstadoVisita,
 }
 
 impl From<Visita> for VisitaDto {
@@ -53,6 +55,8 @@ impl From<Visita> for VisitaDto {
             tiene_parqueadero: v.tiene_parqueadero,
             observacion: v.observacion,
             created_at: v.created_at,
+            documento: v.documento,
+            estado: v.estado,
         }
     }
 }
@@ -71,6 +75,7 @@ pub struct CreateVisitaVigilanciaRequest {
     /// Resident the visitor is going to (must belong to the same conjunto).
     pub usuario_id: Uuid,
     pub nombre: String,
+    pub documento: Option<String>,
     pub tipo: TipoVisita,
     pub vehiculo_tipo: Option<TipoVehiculoVisita>,
     pub placa: Option<String>,
@@ -253,4 +258,11 @@ pub struct CreateNovedadRequest {
 #[serde(rename_all = "camelCase")]
 pub struct ResolverNovedadRequest {
     pub resolucion: String,
+}
+
+/// Resident approves or rejects a pending visit registered by gate staff.
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AprobarVisitaRequest {
+    pub aprobada: bool,
 }

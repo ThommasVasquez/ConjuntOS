@@ -1,0 +1,3 @@
+ALTER TABLE visitas DROP CONSTRAINT IF EXISTS visitas_estado_check;
+ALTER TABLE visitas DROP COLUMN IF EXISTS estado;
+ALTER TABLE visitas DROP COLUMN IF EXISTS documento;

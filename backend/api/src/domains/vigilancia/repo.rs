@@ -356,3 +356,34 @@ pub async fn resolver_novedad(
     .optional()?;
     Ok(row)
 }
+
+
+pub async fn aprobar_visita(
+    conn: &mut DbConn,
+    visita_id: Uuid,
+    usuario_id: Uuid,
+    conjunto_id: Uuid,
+    aprobada: bool,
+) -> ApiResult<Visita> {
+    use crate::db::enums::EstadoVisita;
+    let estado = if aprobada {
+        EstadoVisita::Aprobada
+    } else {
+        EstadoVisita::Rechazada
+    };
+    let row = diesel::update(
+        visitas::table
+            .filter(visitas::id.eq(visita_id))
+            .filter(visitas::usuario_id.eq(usuario_id))
+            .filter(visitas::conjunto_id.eq(conjunto_id)),
+    )
+    .set(visitas::estado.eq(estado))
+    .returning(Visita::as_returning())
+    .get_result(conn)
+    .await
+    .optional()?
+    .ok_or_else(|| ApiError::NotFound(
+        "visita no encontrada o no te pertenece".into()
+    ))?;
+    Ok(row)
+}

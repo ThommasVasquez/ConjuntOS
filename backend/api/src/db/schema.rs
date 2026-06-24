@@ -816,6 +816,8 @@ diesel::table! {
         token -> Nullable<Text>,
         token_expira -> Nullable<Timestamptz>,
         ingreso_at -> Nullable<Timestamptz>,
+        documento -> Nullable<Text>,
+        estado -> Text,
     }
 }
 

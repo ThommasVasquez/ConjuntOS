@@ -191,6 +191,16 @@ export default function VisitantesPage() {
     }
   };
 
+  const handleAprobarVisita = async (visitaId: string, aprobada: boolean) => {
+    try {
+      await api.put(`/visitas/${visitaId}/aprobar`, { aprobada });
+      toast.success(aprobada ? "Visita aprobada" : "Visita rechazada");
+      refetchVisitors();
+    } catch {
+      toast.error("Error al procesar la visita");
+    }
+  };
+
   const activeVisitors = visitors.filter(v => getVisitStatus(v) === 'ACTIVO');
   const scheduledVisitors = visitors.filter(v => getVisitStatus(v) === 'PROGRAMADO');
   const pastVisitors = visitors.filter(v => getVisitStatus(v) === 'HISTORIAL');
@@ -318,7 +328,11 @@ export default function VisitantesPage() {
                    </div>
                    <div>
                      <h4 className="text-text font-bold text-base leading-none mb-1.5">{visitor.nombre}</h4>
-                     <div className="flex items-center gap-3">
+                     <div className="flex items-center gap-3 flex-wrap">
+                        {visitor.documento && <span className="text-[10px] text-text/50 font-mono">{visitor.documento}</span>}
+                        {visitor.estado === 'PENDIENTE' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">PENDIENTE</span>}
+                        {visitor.estado === 'APROBADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">APROBADA</span>}
+                        {visitor.estado === 'RECHAZADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30">RECHAZADA</span>}
                         <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${visitor.tipo === 'VEHICULAR' ? 'bg-text/10 text-text border-text/20' : 'bg-text/10 text-text border-text/20'}`}>
                            {visitor.tipo}
                         </span>
@@ -329,12 +343,19 @@ export default function VisitantesPage() {
                      </div>
                    </div>
                 </div>
+                {visitor.estado === 'PENDIENTE' ? (
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => handleAprobarVisita(visitor.id, true)} className="px-3 py-2 rounded-xl bg-emerald-500/15 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 hover:bg-emerald-500/25 transition-all cursor-pointer">✓ Aprobar</button>
+                    <button onClick={() => handleAprobarVisita(visitor.id, false)} className="px-3 py-2 rounded-xl bg-red-500/15 text-red-400 text-[10px] font-bold border border-red-500/30 hover:bg-red-500/25 transition-all cursor-pointer">✗ Rechazar</button>
+                  </div>
+                ) : (
                 <button
                    onClick={() => { setLastVisit(visitor); setIsQRModalOpen(true); }}
                    className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text hover:text-text transition-all ring-1 ring-border cursor-pointer"
                 >
                    <MoreHorizontal size={20} />
                 </button>
+                )}
               </div>
             ))}
          </div>

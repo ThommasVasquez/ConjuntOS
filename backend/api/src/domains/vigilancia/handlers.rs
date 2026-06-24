@@ -6,9 +6,9 @@ use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
-use crate::db::enums::{Rol, SeveridadNovedad, TipoCorrespondencia, TipoNovedad};
+use crate::db::enums::{EstadoVisita, Rol, SeveridadNovedad, TipoCorrespondencia, TipoNovedad};
 use crate::domains::vigilancia::dto::{
-    ComunicacionesDto, CorrespondenciaDto, CorrespondenciaVigilanciaDto,
+    AprobarVisitaRequest, ComunicacionesDto, CorrespondenciaDto, CorrespondenciaVigilanciaDto,
     CreateCorrespondenciaRequest, CreateNovedadRequest, CreatePaqueteRequest,
     CreateVisitaResidenteRequest, CreateVisitaVigilanciaRequest, NovedadDto,
     NovedadVigilanciaDto, PaqueteDto, PaqueteVigilanciaDto, ResolverNovedadRequest,
@@ -42,6 +42,7 @@ pub fn router() -> Router<AppState> {
         .route("/paquetes/mios", get(paquetes_mios))
         .route("/comunicaciones", get(comunicaciones))
         .route("/visitas", post(crear_visita_residente))
+        .route("/visitas/{id}/aprobar", put(aprobar_visita))
         .route("/visitas/preregistro", post(super::preregistro::preregistrar))
         .route("/visitas/scan", post(super::preregistro::escanear))
         .route(
@@ -118,6 +119,8 @@ pub async fn crear_visita_vigilancia(
             fecha: req.fecha.unwrap_or_else(Utc::now),
             tiene_parqueadero: req.tiene_parqueadero.unwrap_or(false),
             observacion: req.observacion,
+            documento: req.documento,
+            estado: EstadoVisita::Pendiente,
         },
     )
     .await?;
@@ -168,6 +171,8 @@ pub async fn crear_visita_residente(
             fecha: req.fecha.unwrap_or_else(Utc::now),
             tiene_parqueadero: req.tiene_parqueadero.unwrap_or(false),
             observacion: req.observacion,
+            documento: None,
+            estado: EstadoVisita::Pendiente,
         },
     )
     .await?;
@@ -513,6 +518,50 @@ async fn entregar_correspondencia_handler(
             WsEvent {
                 domain: "correspondencia".into(),
                 action: "delivered".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+/// Resident approves or rejects a pending visit registered by gate staff.
+#[utoipa::path(
+    put,
+    path = "/api/v1/visitas/{id}/aprobar",
+    tag = "vigilancia",
+    params(("id" = Uuid, Path, description = "Visit id")),
+    request_body = AprobarVisitaRequest,
+    responses(
+        (status = 200, description = "Visit approved or rejected", body = VisitaDto),
+        (status = 403, description = "Not the target resident"),
+        (status = 404, description = "Visit not found")
+    )
+)]
+pub async fn aprobar_visita(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<AprobarVisitaRequest>,
+) -> ApiResult<Json<VisitaDto>> {
+    let mut conn = state.pool.get().await?;
+    let visita = repo::aprobar_visita(
+        &mut conn,
+        id,
+        user.id,
+        user.conjunto_id,
+        req.aprobada,
+    )
+    .await?;
+    let dto = VisitaDto::from(visita);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "visita".into(),
+                action: if req.aprobada { "approved".into() } else { "rejected".into() },
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
                 target_user_id: None,
             },

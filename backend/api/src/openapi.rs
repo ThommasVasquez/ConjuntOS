@@ -30,6 +30,7 @@ use utoipa::OpenApi;
         crate::domains::vigilancia::handlers::listar_visitas_hoy,
         crate::domains::vigilancia::handlers::crear_visita_vigilancia,
         crate::domains::vigilancia::handlers::crear_visita_residente,
+        crate::domains::vigilancia::handlers::aprobar_visita,
         crate::domains::vigilancia::handlers::listar_paquetes,
         crate::domains::vigilancia::handlers::crear_paquete,
         crate::domains::vigilancia::handlers::entregar_paquete,

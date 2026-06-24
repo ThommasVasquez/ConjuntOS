@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use uuid::Uuid;
 
-use crate::db::enums::{EstadoNovedad, EstadoCorrespondencia, EstadoPaquete, SeveridadNovedad, TipoCorrespondencia, TipoNovedad, TipoVehiculoVisita, TipoVisita};
+use crate::db::enums::{EstadoCorrespondencia, EstadoNovedad, EstadoPaquete, EstadoVisita, SeveridadNovedad, TipoCorrespondencia, TipoNovedad, TipoVehiculoVisita, TipoVisita};
 use crate::db::schema::{correspondencia, novedades_seguridad, paquetes, visitas};
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
@@ -23,6 +23,8 @@ pub struct Visita {
     pub token: Option<String>,
     pub token_expira: Option<DateTime<Utc>>,
     pub ingreso_at: Option<DateTime<Utc>>,
+    pub documento: Option<String>,
+    pub estado: EstadoVisita,
 }
 
 #[derive(Insertable, Debug)]
@@ -37,6 +39,8 @@ pub struct NuevaVisita {
     pub fecha: DateTime<Utc>,
     pub tiene_parqueadero: bool,
     pub observacion: Option<String>,
+    pub documento: Option<String>,
+    pub estado: EstadoVisita,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]

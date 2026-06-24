@@ -297,6 +297,12 @@ text_enum!(TipoVisita {
     Vehicular => "VEHICULAR",
 });
 
+text_enum!(EstadoVisita {
+    Pendiente => "PENDIENTE",
+    Aprobada => "APROBADA",
+    Rechazada => "RECHAZADA",
+});
+
 text_enum!(EstadoPaquete {
     EnPorteria => "EN_PORTERIA",
     Entregado => "ENTREGADO",

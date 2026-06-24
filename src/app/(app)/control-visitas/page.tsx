@@ -25,6 +25,8 @@ interface VisitaItem {
   placa: string | null;
   createdAt: string;
   fecha: string;
+  documento: string | null;
+  estado: string;
   residente?: {
     nombre?: string;
     torre: string | null;
@@ -44,6 +46,7 @@ export default function ControlVisitas() {
   const [formData, setFormData] = useState({
     usuarioId: "",
     nombre: "",
+    documento: "",
     tipo: "PEATONAL",
     vehiculoTipo: "NINGUNO",
     placa: "",
@@ -115,7 +118,7 @@ export default function ControlVisitas() {
          residente: residenteInfo ? { nombre: residenteInfo.nombre, torre: residenteInfo.torre, apto: residenteInfo.apto } : null,
        };
        setVisitas([enriched, ...visitas]);
-       setFormData({...formData, nombre: "", placa: "", observacion: ""});
+       setFormData({...formData, nombre: "", documento: "", placa: "", observacion: ""});
      } catch {
        toast.error("Error de conexión");
      } finally {
@@ -172,6 +175,17 @@ export default function ControlVisitas() {
                 />
              </div>
 
+             <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Documento de Identidad</label>
+                <input 
+                   type="text" 
+                   placeholder="CC / Pasaporte del visitante" 
+                   value={formData.documento}
+                   onChange={e => setFormData({...formData, documento: e.target.value})}
+                   className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
+                />
+             </div>
+
              <div className="flex gap-4">
                 <div className="flex-1 flex flex-col gap-1.5">
                    <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Tipo de Ingreso</label>
@@ -213,10 +227,14 @@ export default function ControlVisitas() {
              <div key={i} className="liquid-glass p-4 rounded-3xl border border-border/50 flex flex-col gap-3">
                 <div className="flex justify-between items-start">
                    <div>
-                     <p className="text-text font-bold">{v.nombre}</p>
+                     <p className="text-text font-bold">{v.nombre}{v.documento ? <span className="text-text/50 text-xs ml-2 font-mono">{v.documento}</span> : null}</p>
                      <p className="text-text text-xs">Visita a: {v.residente?.torre} - {v.residente?.apto}</p>
                    </div>
-                   <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
+                   <div className="flex items-center gap-2">
+                     {v.estado === 'PENDIENTE' && <span className="bg-amber-500/15 text-amber-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30">PENDIENTE</span>}
+                     {v.estado === 'APROBADA' && <span className="bg-emerald-500/15 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">APROBADA</span>}
+                     {v.estado === 'RECHAZADA' && <span className="bg-red-500/15 text-red-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-red-500/30">RECHAZADA</span>}
+                     <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
                       {(() => { const d = new Date(v.createdAt || v.fecha); return isNaN(d.getTime()) ? '--:--' : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); })()}
                    </div>
                 </div>

@@ -446,7 +446,11 @@ export interface VisitaDto {
   tieneParqueadero: boolean;
   observacion: string | null;
   createdAt: string;
+  documento: string | null;
+  estado: EstadoVisita;
 }
+
+export type EstadoVisita = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
 
 export interface VisitaVigilanciaDto extends VisitaDto {
   residente: ResidenteRefDto;
@@ -455,6 +459,7 @@ export interface VisitaVigilanciaDto extends VisitaDto {
 export interface CreateVisitaVigilanciaRequest {
   usuarioId: string;
   nombre: string;
+  documento?: string;
   tipo: TipoVisita;
   vehiculoTipo?: TipoVehiculoVisita;
   placa?: string;
