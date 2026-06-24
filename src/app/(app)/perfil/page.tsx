@@ -116,6 +116,8 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
     if (hasMounted && user) loadData();
   }, [userId, hasMounted, user]);
   const [financialTab, setFinancialTab] = useState<"pendientes" | "historial">("pendientes");
+  const [visitasTab, setVisitasTab] = useState<"pendientes" | "historial">("pendientes");
+  const [paquetesTab, setPaquetesTab] = useState<"pendientes" | "historial">("pendientes");
   const [financialData, setFinancialData] = useState<{pagos: Pago[], recibos: Recibo[], totalDebt: number}>({ pagos: [], recibos: [], totalDebt: 0 });
   const [isPaying, setIsPaying] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1016,66 +1018,103 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
 
           {viewMode === "paquetes" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center px-2">
-                <h3 className="text-text text-lg font-bold flex items-center gap-2">Paquetes en Portería <Package size={18} className="text-accent" /></h3>
-                <span className="bg-accent/10 text-accent text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
-                  {activePaquetes.length} {activePaquetes.length === 1 ? 'Pendiente' : 'Pendientes'}
-                </span>
+              <div className="flex justify-between items-center px-2 mb-2">
+                <h3 className="text-text text-lg font-bold flex items-center gap-2">Paquetería <Package size={18} className="text-accent" /></h3>
+                <div className="flex gap-2 liquid-glass p-1 rounded-full border border-border">
+                  {["pendientes", "historial"].map((tab) => (
+                    <button 
+                       key={tab}
+                       onClick={() => setPaquetesTab(tab as "pendientes" | "historial")}
+                       className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${paquetesTab === tab ? "bg-accent text-primary shadow-lg" : "text-text"}`}
+                    >
+                       {tab}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-3">
-                {activePaquetes.length === 0 ? (
-                  <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
-                    <Package className="mx-auto text-text mb-3" size={40} />
-                    <p className="text-text text-xs italic text-pretty">No hay paquetes registrados a tu nombre en este momento.</p>
-                  </div>
-                ) : (
-                  activePaquetes.map((pkg, i) => (
-                    <div key={i} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/50 p-5 flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center text-accent shrink-0 shadow-lg shadow-accent/5">
-                        <Package size={24} />
+                {(() => {
+                  if (paquetesTab === "pendientes") {
+                    if (activePaquetes.length === 0) return (
+                      <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
+                        <Package className="mx-auto text-text mb-3" size={40} />
+                        <p className="text-text text-xs italic text-pretty">No hay paquetes pendientes en portería.</p>
                       </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-[10px] font-black text-text uppercase tracking-widest leading-none">{pkg.remitente || "Remitente Desconocido"}</span>
-                          <span className="text-[8px] font-black text-accent uppercase bg-accent/10 px-2 py-0.5 rounded-full ring-1 ring-accent/20">{pkg.origen || "Nacional"}</span>
+                    );
+                    return (
+                      <>
+                        {activePaquetes.map((pkg, i) => (
+                          <div key={i} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/50 p-5 flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center text-accent shrink-0 shadow-lg shadow-accent/5">
+                              <Package size={24} />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="text-[10px] font-black text-text uppercase tracking-widest leading-none">{pkg.remitente || "Remitente Desconocido"}</span>
+                                <span className="text-[8px] font-black text-accent uppercase bg-accent/10 px-2 py-0.5 rounded-full ring-1 ring-accent/20">{pkg.origen || "Nacional"}</span>
+                              </div>
+                              <h4 className="text-sm font-bold text-text mb-1">Guía: {pkg.guia || "S/G"}</h4>
+                              <p className="text-[10px] text-text uppercase tracking-tighter">Recibido: {new Date(pkg.fechaLlegada).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                            </div>
+                            <div className="flex flex-col items-center gap-1">
+                               <div className="w-2 h-2 rounded-full bg-text/10 animate-pulse shadow-[0_0_10px_rgba(137,137,137,0.5)]"></div>
+                               <span className="text-[8px] font-black text-text uppercase tracking-tighter">Listo</span>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="mt-8 p-4 rounded-3xl bg-text/5 border border-text/20 flex gap-3 items-center">
+                           <Info size={16} className="text-text shrink-0" />
+                           <p className="text-[10px] text-text leading-relaxed uppercase tracking-tighter italic">Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.</p>
                         </div>
-                        <h4 className="text-sm font-bold text-text mb-1">Guía: {pkg.guia || "S/G"}</h4>
-                        <p className="text-[10px] text-text uppercase tracking-tighter">Recibido: {new Date(pkg.fechaLlegada).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
-                      </div>
-                      <div className="flex flex-col items-center gap-1">
-                         <div className="w-2 h-2 rounded-full bg-text/10 animate-pulse shadow-[0_0_10px_rgba(137,137,137,0.5)]"></div>
-                         <span className="text-[8px] font-black text-text uppercase tracking-tighter">Listo</span>
-                      </div>
+                      </>
+                    );
+                  }
+                  // Historial de paquetes
+                  return (
+                    <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
+                      <Package className="mx-auto text-text mb-3" size={40} />
+                      <p className="text-text text-xs italic text-pretty">El historial de paquetes retirados estará disponible próximamente.</p>
                     </div>
-                  ))
-                )}
-
-                <div className="mt-8 p-4 rounded-3xl bg-text/5 border border-text/20 flex gap-3 items-center">
-                   <Info size={16} className="text-text shrink-0" />
-                   <p className="text-[10px] text-text leading-relaxed uppercase tracking-tighter italic">Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.</p>
-                </div>
+                  );
+                })()}
               </div>
             </div>
           )}
 
           {viewMode === "visitas" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center px-2">
-                <h3 className="text-text text-lg font-bold flex items-center gap-2">Historial de Visitas <UserIcon size={18} className="text-accent" /></h3>
-                <button onClick={() => router.push('/visitantes')} className="text-[10px] font-black uppercase text-accent/80 hover:text-accent tracking-tighter transition-colors">
-                  Gestionar Visitas
-                </button>
+              <div className="flex justify-between items-center px-2 mb-2">
+                <h3 className="text-text text-lg font-bold flex items-center gap-2">Visitas <UserIcon size={18} className="text-accent" /></h3>
+                <div className="flex gap-2 liquid-glass p-1 rounded-full border border-border">
+                  {["pendientes", "historial"].map((tab) => (
+                    <button 
+                       key={tab}
+                       onClick={() => setVisitasTab(tab as "pendientes" | "historial")}
+                       className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${visitasTab === tab ? "bg-accent text-primary shadow-lg" : "text-text"}`}
+                    >
+                       {tab}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-3">
-                {visitasHistorial.length === 0 ? (
-                  <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
-                    <UserIcon className="mx-auto text-text mb-3" size={40} />
-                    <p className="text-text text-xs italic text-pretty">No hay visitas registradas en tu historial.</p>
-                  </div>
-                ) : (
-                  visitasHistorial.map((v) => (
+                {(() => {
+                  const filtered = visitasTab === "pendientes"
+                    ? visitasHistorial.filter(v => v.estado === 'PENDIENTE')
+                    : visitasHistorial.filter(v => v.estado !== 'PENDIENTE');
+                  
+                  if (filtered.length === 0) return (
+                    <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
+                      <UserIcon className="mx-auto text-text mb-3" size={40} />
+                      <p className="text-text text-xs italic text-pretty">
+                        {visitasTab === "pendientes" ? "No hay visitas pendientes de aprobación." : "No hay visitas en el historial."}
+                      </p>
+                    </div>
+                  );
+
+                  return filtered.map((v) => (
                     <div key={v.id} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/50 p-5 flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
                         v.estado === 'PENDIENTE' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
@@ -1108,8 +1147,8 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                         </div>
                       </div>
                     </div>
-                  ))
-                )}
+                  ));
+                })()}
               </div>
             </div>
           )}
