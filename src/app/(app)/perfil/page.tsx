@@ -472,13 +472,13 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
   const isGuest = user?.rol === 'HUESPED_TEMPORAL';
 
   const allStatusIcons = [
-    { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, color: 'bg-linear-to-br from-text to-text text-black ring-4 ring-text/20 shadow-black/10', icon: <CreditCard size={12}/>, view: 'deuda' },
-    { label: 'Trámites', val: tramites.length.toString(), color: 'bg-text/5 text-text', icon: <ClipboardList size={12}/>, view: 'requests' },
-    { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-text/5 text-text', icon: <PawPrint size={12}/>, view: 'pets' },
-    { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-text/5 text-text', icon: <Car size={12}/>, view: 'vehicles' },
-    { label: 'Reservas', val: activeReservas.length.toString(), color: 'bg-text/5 text-text', icon: <Calendar size={12}/>, view: 'reservas' },
-    { label: 'Visitas', val: visitasHistorial.length.toString(), color: 'bg-text/5 text-text', icon: <UserIcon size={12}/>, view: 'visitas' },
-    { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={12}/>, view: 'paquetes' }
+    { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, color: 'bg-text/5 text-text', icon: <CreditCard size={16}/>, view: 'deuda' },
+    { label: 'Trámites', val: tramites.length.toString(), color: 'bg-text/5 text-text', icon: <ClipboardList size={16}/>, view: 'requests' },
+    { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-text/5 text-text', icon: <PawPrint size={16}/>, view: 'pets' },
+    { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-text/5 text-text', icon: <Car size={16}/>, view: 'vehicles' },
+    { label: 'Reservas', val: activeReservas.length.toString(), color: 'bg-text/5 text-text', icon: <Calendar size={16}/>, view: 'reservas' },
+    { label: 'Visitas', val: visitasHistorial.length.toString(), color: 'bg-text/5 text-text', icon: <UserIcon size={16}/>, view: 'visitas' },
+    { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={16}/>, view: 'paquetes' }
   ];
 
   const statusIcons = isGuest
@@ -617,7 +617,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                 
                 {/* ICONS (Improved Visibility) */}
                 {stat.icon && stat.label !== 'Deuda' && (
-                  <div className="opacity-60 scale-90 -mb-0.5 group-hover:opacity-100 transition-opacity">{stat.icon}</div>
+                  <div className="opacity-80 group-hover:opacity-100 transition-opacity">{stat.icon}</div>
                 )}
                 <span className="text-[11px] font-black leading-none mt-auto mb-auto text-text">{stat.val}</span>
               </div>
@@ -635,7 +635,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                 <span className="text-[10px] text-text uppercase tracking-[0.15em] font-black leading-none">{stat.label}</span>
                 <div className={`w-full h-[62px] flex flex-col items-center justify-center gap-1.5 rounded-[22px] border border-border transition-all group-active:scale-95 ${stat.color} shadow-xl shadow-black/10 dark:shadow-black/40`}>
                   {stat.icon && stat.label !== 'Deuda' && (
-                    <div className="opacity-60 scale-90 -mb-0.5 group-hover:opacity-100 transition-opacity">{stat.icon}</div>
+                    <div className="opacity-80 group-hover:opacity-100 transition-opacity">{stat.icon}</div>
                   )}
                   <span className="text-[11px] font-black leading-none mt-auto mb-auto text-text">{stat.val}</span>
                 </div>
