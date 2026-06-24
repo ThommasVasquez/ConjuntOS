@@ -17,9 +17,9 @@ export default function BottomNav() {
   if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') {
     tabs = [
       { name: "Panel", path: "/vigilancia", icon: Home },
+      { name: "Citofonía", path: "/citofonia", icon: Phone },
       { name: "Visitas", path: "/control-visitas", icon: Users },
       { name: "Paquetes", path: "/paqueteria", icon: Package },
-      { name: "Cartas", path: "/correspondencia", icon: MessageCircle },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
   } else if (role === 'ENCARGADO_PARQUEADERO') {
