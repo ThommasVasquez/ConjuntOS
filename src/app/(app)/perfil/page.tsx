@@ -606,11 +606,11 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
  
         {/* 🧭 UNIFIED 6-GRID STATUS BAR (Stage 68 - High Fidelity Refinement) */}
         <div className={`fade-up grid ${isGuest ? 'grid-cols-2' : 'grid-cols-4'} gap-2.5 w-full mb-10 text-center`}>
-          {statusIcons.map((stat, i) => (
+          {statusIcons.slice(0, isGuest ? 2 : 4).map((stat, i) => (
             <button 
               key={i} 
               onClick={() => setViewMode(stat.view as ViewMode)}
-              className={`flex flex-col items-center gap-2 group ${i === 4 ? 'col-start-2' : ''}`}
+              className="flex flex-col items-center gap-2 group"
             >
               <span className="text-[10px] text-text uppercase tracking-[0.15em] font-black leading-none">{stat.label}</span>
               <div className={`w-full h-[62px] flex flex-col items-center justify-center gap-1.5 rounded-[22px] border border-border transition-all group-active:scale-95 ${stat.color} shadow-xl shadow-black/10 dark:shadow-black/40`}>
@@ -619,18 +619,30 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                 {stat.icon && stat.label !== 'Deuda' && (
                   <div className="opacity-60 scale-90 -mb-0.5 group-hover:opacity-100 transition-opacity">{stat.icon}</div>
                 )}
-
-                {/* VALUES (Dense/Plate style for Vehicles - No extra box as per feedback) */}
-                <span className={`
-                  ${stat.label === 'Vehículos' ? 'font-mono text-[14px] tracking-tight' : 'font-sans text-[12px]'} 
-                  font-black uppercase truncate w-full px-1
-                `}>
-                  {stat.val}
-                </span>
+                <span className="text-[11px] font-black leading-none mt-auto mb-auto text-text">{stat.val}</span>
               </div>
             </button>
           ))}
         </div>
+        {!isGuest && statusIcons.length > 4 && (
+          <div className="fade-up flex justify-center gap-2.5 w-full mb-10 -mt-8">
+            {statusIcons.slice(4).map((stat, i) => (
+              <button 
+                key={i} 
+                onClick={() => setViewMode(stat.view as ViewMode)}
+                className="flex flex-col items-center gap-2 group w-[calc((100%-0.625rem)/4)] max-w-[100px]"
+              >
+                <span className="text-[10px] text-text uppercase tracking-[0.15em] font-black leading-none">{stat.label}</span>
+                <div className={`w-full h-[62px] flex flex-col items-center justify-center gap-1.5 rounded-[22px] border border-border transition-all group-active:scale-95 ${stat.color} shadow-xl shadow-black/10 dark:shadow-black/40`}>
+                  {stat.icon && stat.label !== 'Deuda' && (
+                    <div className="opacity-60 scale-90 -mb-0.5 group-hover:opacity-100 transition-opacity">{stat.icon}</div>
+                  )}
+                  <span className="text-[11px] font-black leading-none mt-auto mb-auto text-text">{stat.val}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* DYNAMIC VIEW CONTENT */}
         <main className="fade-up space-y-4 mb-10">
