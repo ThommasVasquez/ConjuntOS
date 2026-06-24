@@ -610,7 +610,10 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
             <button 
               key={i} 
               onClick={() => setViewMode(stat.view as ViewMode)}
-              className={`flex flex-col items-center gap-2 group ${i >= 6 ? 'col-span-2 mx-auto w-1/2' : ''}`}
+              className={`flex flex-col items-center gap-2 group ${
+                i === 5 ? 'col-span-2 mx-auto w-1/2' :
+                i >= 4 ? 'col-span-1 mx-auto w-1/2' : ''
+              }`}
             >
               <span className="text-[10px] text-text uppercase tracking-[0.15em] font-black leading-none">{stat.label}</span>
               <div className={`w-full h-[62px] flex flex-col items-center justify-center gap-1.5 rounded-[22px] border border-border transition-all group-active:scale-95 ${stat.color} shadow-xl shadow-black/10 dark:shadow-black/40`}>
