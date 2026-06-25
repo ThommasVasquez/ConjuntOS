@@ -128,10 +128,17 @@ export default function MiEstanciaPage() {
         </div>
 
         {/* Reservar áreas comunes */}
-        <div className="bg-surface-2 rounded-xl p-4 border border-border">
-          <h2 className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-3">Reservar áreas</h2>
-          <ReservaSection />
-        </div>
+        {(() => {
+          const excludedAreas: string[] = [];
+          if (!pase.permiso_gimnasio) excludedAreas.push("Gimnasio");
+          if (!pase.permiso_piscina) excludedAreas.push("Piscina");
+          return (
+            <div className="bg-surface-2 rounded-xl p-4 border border-border">
+              <h2 className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-3">Reservar áreas</h2>
+              <ReservaSection excludedAreas={excludedAreas} />
+            </div>
+          );
+        })()}
 
         {/* Vehículos */}
         {pase.vehiculos && pase.vehiculos.length > 0 && (
