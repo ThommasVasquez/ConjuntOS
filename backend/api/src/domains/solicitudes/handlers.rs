@@ -121,8 +121,9 @@ pub async fn mis_asignadas(
     State(state): State<AppState>,
     user: AuthUser,
 ) -> ApiResult<Json<Vec<SolicitudDto>>> {
-    // Restrict to MANTENIMIENTO_LOCATIVO (and admin/concejo/superadmin)
-    guard::require(&user, &[Rol::MantenimientoLocativo, Rol::Administrador, Rol::SuperAdmin, Rol::Concejo])?;
+    // Restrict to the operative roles whose home dashboard lists assigned tickets
+    // (MANTENIMIENTO_LOCATIVO + OPERARIO_LIMPIEZA) plus admin/concejo/superadmin.
+    guard::require(&user, &[Rol::MantenimientoLocativo, Rol::OperarioLimpieza, Rol::Administrador, Rol::SuperAdmin, Rol::Concejo])?;
     let mut conn = state.pool.get().await?;
     let rows = repo::listar_solicitudes(
         &mut conn,
@@ -246,21 +247,14 @@ pub async fn cambiar_estado(
         }).await?;
     }
 
-    // Handle images if provided (append to existing)
+    // Handle images if provided (append to existing). Typed, bind-parameterized
+    // update — the previous raw-SQL path silently dropped all images.
     if let Some(imgs) = req.imagenes.filter(|i| !i.is_empty()) {
         let mut existing: Vec<String> = serde_json::from_value(actualizado.imagenes.clone()).unwrap_or_default();
         existing.extend(imgs);
         let json = serde_json::to_value(&existing)
             .map_err(|e| ApiError::BadRequest(format!("imagenes invalidas: {e}")))?;
-        let sql = format!(
-            "UPDATE solicitudes_servicio SET imagenes = '{}' WHERE id = '{}'",
-            json.as_str().unwrap_or("[]").replace('\'', "''"),
-            id
-        );
-        diesel_async::RunQueryDsl::execute(
-            diesel::sql_query(&sql),
-            &mut conn,
-        ).await.map_err(|e| ApiError::Internal(anyhow::anyhow!("{e}")))?;
+        repo::set_imagenes(&mut conn, id, json).await?;
     }
 
     // WebSocket notify the ticket creator

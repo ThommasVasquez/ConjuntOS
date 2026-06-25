@@ -69,6 +69,13 @@ pub async fn pagar(
         .await?
         .ok_or_else(|| ApiError::NotFound("pago no encontrado".into()))?;
 
+    // Only PENDIENTE pagos may be charged. Without this guard, re-submitting an
+    // already-paid pago hits the gateway again → double-charge (TOCTOU). Pending
+    // gateway flows (Nequi) are reconciled via estado_pago, not by re-charging.
+    if pago.estado != crate::db::enums::EstadoPago::Pendiente {
+        return Err(ApiError::BadRequest("el pago no está pendiente".into()));
+    }
+
     // Request the charge through the configured gateway (Mock approves instantly;
     // Nequi pushes to the payer's app and returns Pending until they approve).
     let result = state

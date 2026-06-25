@@ -345,12 +345,14 @@ pub async fn actualizar_pase(
 /// Elimina todos los vehículos de un pase y los reemplaza con los nuevos.
 pub async fn reemplazar_vehiculos(
     conn: &mut DbConn,
-    pase_id: Uuid,
+    pase: Uuid,
     vehiculos: &[crate::domains::pases_temporales::models::NuevoVehiculoTemporal],
 ) -> ApiResult<Vec<VehiculoTemporal>> {
     use crate::db::schema::vehiculos_temporales::dsl::*;
-    // Borrar existentes
-    diesel::delete(vehiculos_temporales.filter(pase_id.eq(pase_id)))
+    // Borrar existentes — el parámetro NO debe llamarse `pase_id`: el glob import
+    // trae la columna `pase_id`, y `pase_id.eq(pase_id)` compararía la columna
+    // consigo misma (siempre true), borrando TODOS los vehículos de la tabla.
+    diesel::delete(vehiculos_temporales.filter(pase_id.eq(pase)))
         .execute(conn)
         .await?;
     // Insertar nuevos

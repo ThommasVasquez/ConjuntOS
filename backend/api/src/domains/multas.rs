@@ -268,11 +268,28 @@ async fn transicionar(
 ) -> ApiResult<Json<MultaDto>> {
     let nuevo = aplicar_transicion(multa.estado, accion)?;
     let usuario_id = multa.usuario_id;
+    let pago_id = multa.pago_id;
     let updated: Multa = diesel::update(multas::table.find(multa.id))
         .set(multas::estado.eq(nuevo))
         .returning(Multa::as_returning())
         .get_result(conn)
         .await?;
+
+    // Anular una multa debe anular también su pago autogenerado; de lo contrario el
+    // residente sigue debiendo una multa que ya no existe (deuda huérfana en cartera).
+    // EstadoPago no tiene un estado "anulado", así que eliminamos el cobro pendiente.
+    if matches!(accion, MultaAccion::Anular) {
+        if let Some(pid) = pago_id {
+            diesel::delete(
+                pagos::table
+                    .find(pid)
+                    .filter(pagos::conjunto_id.eq(conjunto_id)),
+            )
+            .execute(conn)
+            .await?;
+        }
+    }
+
     let dto = MultaDto::from(updated);
     publish(state, conjunto_id, usuario_id, ws_events::action::UPDATED, &dto).await;
     Ok(Json(dto))

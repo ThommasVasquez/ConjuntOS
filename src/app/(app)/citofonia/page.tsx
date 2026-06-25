@@ -89,46 +89,31 @@ export default function CitofoniaPage() {
     }
 
     const isVehicular = visitaVehiculoTipo !== "NINGUNO";
-    if (isVehicular) {
-      if (!visitaHoraLlegada || !visitaHoraSalida) {
-        toast.error("Para visitas con vehículo, debes ingresar la hora estimada de llegada y salida.");
-        return;
-      }
-    }
 
     setIsSubmittingVisita(true);
     try {
-      const res = await fetch("/api/user/comunicaciones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre: visitaNombre,
-          tipo: isVehicular ? "VEHICULAR" : "PEATONAL",
-          vehiculoTipo: visitaVehiculoTipo === "NINGUNO" ? null : visitaVehiculoTipo,
-          placa: isVehicular ? visitaPlaca : null,
-          fecha: new Date().toISOString(),
-          tieneParqueadero: isVehicular,
-          horaLlegadaEstimada: isVehicular ? visitaHoraLlegada : null,
-          horaSalidaEstimada: isVehicular ? visitaHoraSalida : null
-        })
+      // Resident self-service endpoint (uses the caller's id server-side). The
+      // previous path ("/api/user/comunicaciones") was never routed, so the visit
+      // was silently lost; "/vigilancia/visitas" is the staff-only variant.
+      await api.post("/visitas", {
+        nombre: visitaNombre.trim(),
+        tipo: isVehicular ? "VEHICULAR" : "PEATONAL",
+        vehiculoTipo: visitaVehiculoTipo,
+        placa: isVehicular ? (visitaPlaca.trim() || null) : null,
+        tieneParqueadero: isVehicular,
+        observacion: null,
       });
-
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Visita agendada correctamente");
-        setIsAddingVisita(false);
-        // Reset form
-        setVisitaNombre("");
-        setVisitaVehiculoTipo("NINGUNO");
-        setVisitaPlaca("");
-        setVisitaHoraLlegada("");
-        setVisitaHoraSalida("");
-        fetchData();
-      } else {
-        toast.error(data.error || "Error al programar la visita");
-      }
-    } catch (err) {
-      toast.error("Error de conexión al programar visita");
+      toast.success("Visita agendada correctamente");
+      setIsAddingVisita(false);
+      // Reset form
+      setVisitaNombre("");
+      setVisitaVehiculoTipo("NINGUNO");
+      setVisitaPlaca("");
+      setVisitaHoraLlegada("");
+      setVisitaHoraSalida("");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.message || "Error al programar la visita");
     } finally {
       setIsSubmittingVisita(false);
     }
@@ -652,13 +637,13 @@ export default function CitofoniaPage() {
                  <div className="space-y-6">
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-text uppercase tracking-widest">Nombre del Invitado</label>
-                       <input type="text" placeholder="Ej: Diana Prince" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text placeholder:text-text focus:border-accent outline-none transition-all" />
+                       <input type="text" placeholder="Ej: Diana Prince" value={visitaNombre} onChange={(e) => setVisitaNombre(e.target.value)} className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text placeholder:text-text focus:border-accent outline-none transition-all" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-2">
                           <label className="text-[10px] font-black text-text uppercase tracking-widest">Tipo de Vehículo</label>
-                          <select className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none">
+                          <select value={visitaVehiculoTipo} onChange={(e) => setVisitaVehiculoTipo(e.target.value)} className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none">
                              <option className="bg-primary text-text" value="NINGUNO">Peatonal</option>
                              <option className="bg-primary text-text" value="CARRO">Carro</option>
                              <option className="bg-primary text-text" value="MOTO">Moto</option>
@@ -666,7 +651,7 @@ export default function CitofoniaPage() {
                        </div>
                        <div className="space-y-2">
                           <label className="text-[10px] font-black text-text uppercase tracking-widest">Placa (Si aplica)</label>
-                          <input type="text" placeholder="ABC-123" className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none placeholder:text-text uppercase" />
+                          <input type="text" placeholder="ABC-123" value={visitaPlaca} onChange={(e) => setVisitaPlaca(e.target.value)} className="w-full bg-text/5 border border-border rounded-2xl px-5 py-4 text-text outline-none placeholder:text-text uppercase" />
                        </div>
                     </div>
 
@@ -675,15 +660,12 @@ export default function CitofoniaPage() {
                        <p className="text-[10px] text-text font-medium leading-relaxed">Al activar el parqueadero, se reservará un cupo automáticamente por 2 horas desde la llegada.</p>
                     </div>
 
-                    <button 
-                      onClick={() => {
-                        toast.success("Visita agendada correctamente");
-                        setIsAddingVisita(false);
-                        fetchData();
-                      }}
-                      className="w-full py-5 rounded-2xl bg-accent text-on-accent font-black text-base shadow-xl shadow-accent/20 active:scale-95 transition-all mt-4 cursor-pointer"
+                    <button
+                      onClick={handleSaveVisita}
+                      disabled={isSubmittingVisita}
+                      className="w-full py-5 rounded-2xl bg-accent text-on-accent font-black text-base shadow-xl shadow-accent/20 active:scale-95 transition-all mt-4 cursor-pointer disabled:opacity-60"
                     >
-                      PROGRAMAR AHORA
+                      {isSubmittingVisita ? "PROGRAMANDO..." : "PROGRAMAR AHORA"}
                     </button>
                  </div>
               </div>

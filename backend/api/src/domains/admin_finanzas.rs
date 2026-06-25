@@ -474,6 +474,11 @@ pub async fn crear_gasto(
     Json(req): Json<CrearGastoRequest>,
 ) -> ApiResult<(axum::http::StatusCode, Json<GastoDto>)> {
     guard::require_admin(&user)?;
+    // Reject non-positive amounts: a negative gasto would inflate the budget and
+    // corrupt finance totals/morosidad math.
+    if req.monto <= BigDecimal::from(0) {
+        return Err(ApiError::BadRequest("el monto debe ser mayor que cero".into()));
+    }
     let mut conn = state.pool.get().await?;
 
     let now = Utc::now();
