@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { loginTester, switchTo } from './journey-helpers';
-import { ALL_ROLES, type Rol } from './roles';
+import { loginTester, loginAs, switchTo } from './journey-helpers';
+import { ALL_ROLES, DEMO_ACCOUNTS, type Rol } from './roles';
 
 /**
  * Provisioning flow — proves the platform can stand up a new tenant and a full
@@ -22,8 +22,8 @@ test.describe('Aprovisionamiento — crear conjunto y todos los perfiles', () =>
 
   test('SUPER_ADMIN crea un conjunto', async ({ page }) => {
     test.setTimeout(60_000);
-    await loginTester(page);
-    await switchTo(page, 'SUPER_ADMIN');
+    // SUPER_ADMIN is not switch-able (escalation guard) — use the real account.
+    await loginAs(page, DEMO_ACCOUNTS.SUPER_ADMIN);
 
     const sub = 'e2e-prov';
     const res = await page.request.post('/api/v1/superadmin/conjuntos', {

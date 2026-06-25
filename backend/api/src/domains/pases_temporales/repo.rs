@@ -38,11 +38,15 @@ pub async fn pases_por_propietario(
 
 pub async fn pase_por_codigo(
     conn: &mut DbConn,
+    p_conjunto_id: Uuid,
     codigo: &str,
 ) -> ApiResult<Option<PaseTemporal>> {
     use crate::db::schema::pases_temporales::dsl::*;
+    // p_conjunto_id is intentionally NOT named `conjunto_id`: the dsl glob brings the
+    // column into scope and `conjunto_id.eq(conjunto_id)` would self-compare (always true).
     Ok(pases_temporales
         .filter(codigo_acceso.eq(codigo))
+        .filter(conjunto_id.eq(p_conjunto_id))
         .select(PaseTemporal::as_select())
         .first(conn)
         .await

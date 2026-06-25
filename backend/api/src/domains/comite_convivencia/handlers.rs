@@ -188,7 +188,10 @@ async fn desactivar_miembro(
 ) -> ApiResult<Json<serde_json::Value>> {
     guard::require(&user, ADMIN_CONVIVENCIA)?;
     let mut conn = state.pool.get().await?;
-    repo::desactivar_miembro(&mut conn, miembro_id).await?;
+    let affected = repo::desactivar_miembro(&mut conn, user.conjunto_id, miembro_id).await?;
+    if affected == 0 {
+        return Err(ApiError::NotFound("miembro no encontrado".into()));
+    }
     Ok(Json(serde_json::json!({"status": "ok"})))
 }
 
@@ -419,6 +422,16 @@ async fn firmar_acta(
     let acta = repo::acta_por_id(&mut conn, acta_id)
         .await?
         .ok_or_else(|| ApiError::NotFound("Acta no encontrada".into()))?;
+
+    // Tenant scope: actas have no conjunto_id of their own — verify via the linked
+    // case so a user can't sign an acta belonging to another conjunto by guessing
+    // its UUID.
+    let caso = repo::caso_por_id(&mut conn, acta.caso_id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("Acta no encontrada".into()))?;
+    if caso.conjunto_id != user.conjunto_id {
+        return Err(ApiError::Forbidden);
+    }
 
     let firma = repo::firmar_acta(&mut conn, NuevaFirmaActa {
         acta_id,

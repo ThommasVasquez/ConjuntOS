@@ -215,8 +215,13 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
 
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const numero = (item.whatsapp || "").replace(/\D/g, "");
+    if (!numero) {
+      toast.error("Este anuncio no tiene un número de WhatsApp de contacto.");
+      return;
+    }
     const text = `Hola ${item.propietario?.nombre || "Vendedor"}, vi tu anuncio de "${item.nombre}" en el Mercadillo de EnConjunto y me interesa más información.`;
-    window.open(`https://wa.me/57${item.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/57${numero}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   return (

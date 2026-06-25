@@ -107,6 +107,18 @@ pub fn verify(token: &str, secret: &str) -> ApiResult<Claims> {
     .map_err(|_| ApiError::Unauthorized)
 }
 
+/// Verify a token for REST/session authentication. Rejects WebSocket tickets
+/// (any token carrying an `aud` claim): a short-lived `aud="ws"` ticket travels
+/// in a query string (logs, history, Referer) and must NOT be replayable against
+/// the REST API. Session tokens never set `aud`.
+pub fn verify_session(token: &str, secret: &str) -> ApiResult<Claims> {
+    let claims = verify(token, secret)?;
+    if claims.aud.is_some() {
+        return Err(ApiError::Unauthorized);
+    }
+    Ok(claims)
+}
+
 pub fn session_max_age_seconds() -> i64 {
     SESSION_DAYS * 24 * 60 * 60
 }

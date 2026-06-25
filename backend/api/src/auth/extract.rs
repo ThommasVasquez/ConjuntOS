@@ -33,7 +33,9 @@ impl FromRequestParts<AppState> for AuthUser {
         let token = bearer_token(parts)
             .or_else(|| cookie_token(parts))
             .ok_or(ApiError::Unauthorized)?;
-        let claims = jwt::verify(&token, &state.config.jwt_secret)?;
+        // verify_session rejects WebSocket tickets (aud="ws") so they can't be
+        // replayed against the REST API.
+        let claims = jwt::verify_session(&token, &state.config.jwt_secret)?;
 
         // Stateless-JWT revocation: reject any token issued before the user's last
         // password change (set on password change / unknown user → 401). One indexed

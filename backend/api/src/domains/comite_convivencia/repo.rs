@@ -88,14 +88,19 @@ pub async fn agregar_miembro(
 
 pub async fn desactivar_miembro(
     conn: &mut DbConn,
+    conjunto_id: Uuid,
     miembro_id: Uuid,
-) -> ApiResult<()> {
-    diesel::update(comite_miembros::table.filter(comite_miembros::id.eq(miembro_id)))
+) -> ApiResult<usize> {
+    // Tenant scope: an admin must not deactivate another conjunto's committee member.
+    diesel::update(
+        comite_miembros::table
+            .filter(comite_miembros::id.eq(miembro_id))
+            .filter(comite_miembros::conjunto_id.eq(conjunto_id)),
+    )
         .set(comite_miembros::activo.eq(false))
         .execute(conn)
         .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Error desactivando miembro: {e}")))?;
-    Ok(())
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Error desactivando miembro: {e}")))
 }
 
 pub async fn historico_comites(

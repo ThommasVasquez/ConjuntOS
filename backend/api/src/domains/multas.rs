@@ -140,6 +140,22 @@ async fn emitir(
 
     let mut conn = state.pool.get().await?;
 
+    // If a convivencia case is linked, it must belong to the same conjunto —
+    // otherwise an admin could forge a cross-tenant FK to another conjunto's case.
+    if let Some(caso_id) = req.caso_id {
+        use crate::db::schema::casos_convivencia;
+        let belongs: Option<Uuid> = casos_convivencia::table
+            .filter(casos_convivencia::id.eq(caso_id))
+            .filter(casos_convivencia::conjunto_id.eq(user.conjunto_id))
+            .select(casos_convivencia::id)
+            .first(&mut conn)
+            .await
+            .optional()?;
+        if belongs.is_none() {
+            return Err(ApiError::BadRequest("caso de convivencia inválido".into()));
+        }
+    }
+
     // The fine becomes payable through the resident's cartera, which needs a unit.
     let unidad_id: Uuid = usuarios::table
         .filter(usuarios::id.eq(req.usuario_id))

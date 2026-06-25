@@ -70,7 +70,7 @@ export const NAV_TABS: Record<Rol, { name: string; path: string }[]> = {
   ],
   ARRENDATARIO: [
     { name: 'Inicio', path: '/inicio' }, { name: 'Citofonía', path: '/citofonia' },
-    { name: 'Inmobiliaria', path: '/inmobiliaria' }, { name: 'Perfil', path: '/perfil' },
+    { name: 'Perfil', path: '/perfil' },
   ],
   HUESPED_TEMPORAL: [
     { name: 'Estancia', path: '/mi-estancia' }, { name: 'Citofonía', path: '/citofonia' },

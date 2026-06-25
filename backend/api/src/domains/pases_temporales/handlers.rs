@@ -210,10 +210,14 @@ async fn mi_pase(
 )]
 async fn validar_pase(
     State(state): State<AppState>,
+    user: AuthUser,
     Path(codigo): Path<String>,
 ) -> ApiResult<Json<ValidacionPaseDto>> {
+    // Requires authentication (gate staff) and is scoped to the caller's conjunto:
+    // previously anonymous and unscoped, it leaked guest/host/permission/plate data
+    // across tenants to anyone who could guess a code.
     let mut conn = state.pool.get().await?;
-    let pase = repo::pase_por_codigo(&mut conn, &codigo).await?
+    let pase = repo::pase_por_codigo(&mut conn, user.conjunto_id, &codigo).await?
         .ok_or_else(|| ApiError::NotFound("Código de acceso no encontrado".into()))?;
 
     let hoy = Utc::now().date_naive();

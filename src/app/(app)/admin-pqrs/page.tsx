@@ -269,16 +269,20 @@ export default function AdminPQRSPage() {
   // Mutation: change status
   // -----------------------------------------------------------------------
 
-  const handleCambiarEstado = async () => {
+  const handleCambiarEstado = async (estadoOverride?: EstadoSolicitud) => {
     if (!selected) return;
+    // Quick-action buttons call setNuevoEstado() then this handler synchronously;
+    // setState is async, so reading nuevoEstado here would use the stale value.
+    // Accept an explicit override so the intended estado is always sent.
+    const estado = estadoOverride ?? nuevoEstado;
     setIsProcessing(true);
     try {
       await api.put(`/admin/solicitudes/${selected.id}`, {
-        estado: nuevoEstado,
+        estado,
         prioridad: nuevaPrioridad,
         proveedor_id: proveedorId.trim() || undefined,
       });
-      toast.success(`Solicitud actualizada a "${nuevoEstado}"`);
+      toast.success(`Solicitud actualizada a "${estado}"`);
       setSelected(null);
       setProveedorId("");
       setImgIdx(0);
@@ -787,7 +791,7 @@ export default function AdminPQRSPage() {
 
               <button
                 disabled={isProcessing}
-                onClick={handleCambiarEstado}
+                onClick={() => handleCambiarEstado()}
                 className="w-full py-3 rounded-full bg-[#57bf00] text-white shadow-xl shadow-[#57bf00]/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isProcessing ? (
@@ -809,7 +813,7 @@ export default function AdminPQRSPage() {
               <button
                 onClick={() => {
                   setNuevoEstado("CERRADA");
-                  handleCambiarEstado();
+                  handleCambiarEstado("CERRADA");
                 }}
                 disabled={isProcessing || selected.estado === "CERRADA"}
                 className="flex-1 py-3 rounded-full border border-[#6B7280]/30 text-[#6B7280] font-bold text-xs tracking-wide hover:bg-[#6B7280]/10 transition-colors disabled:opacity-40"
@@ -819,7 +823,7 @@ export default function AdminPQRSPage() {
               <button
                 onClick={() => {
                   setNuevoEstado("ABIERTA");
-                  handleCambiarEstado();
+                  handleCambiarEstado("ABIERTA");
                 }}
                 disabled={isProcessing || selected.estado === "ABIERTA"}
                 className="flex-1 py-3 rounded-full border border-[#EAB308]/30 text-[#EAB308] font-bold text-xs tracking-wide hover:bg-[#EAB308]/10 transition-colors disabled:opacity-40"

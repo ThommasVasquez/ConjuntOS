@@ -325,7 +325,7 @@ export default function ReservasPage() {
                                    selectedSlotIndex === index ? 'bg-accent text-on-accent border-accent shadow-xl' : 'bg-text/5 border-border text-text hover:bg-text/10'}
                                `}
                              >
-                                <span className={selectedSlotIndex === index ? 'opacity-50 text-[10px]' : 'text-accent/70 text-[10px]'}>MIE {selectedDay?.getDate()}</span>
+                                <span className={selectedSlotIndex === index ? 'opacity-50 text-[10px]' : 'text-accent/70 text-[10px]'}>{selectedDay ? ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'][selectedDay.getDay()] : ''} {selectedDay?.getDate()}</span>
                                 <span>{st} - {ed}</span>
                              </button>
                            )

@@ -5,10 +5,15 @@ export function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Log in any account via the API (sets the session cookie). */
+export async function loginAs(page: Page, creds: { email: string; password: string }) {
+  const res = await page.request.post('/api/v1/auth/login', { data: creds, timeout: 30_000 });
+  if (!res.ok()) throw new Error(`login ${creds.email} failed: ${res.status()}`);
+}
+
 /** Log in the tester account via the API (sets the Lax session cookie). */
 export async function loginTester(page: Page) {
-  const res = await page.request.post('/api/v1/auth/login', { data: TESTER, timeout: 30_000 });
-  if (!res.ok()) throw new Error(`login failed: ${res.status()}`);
+  return loginAs(page, TESTER);
 }
 
 /** Switch the tester's real role server-side, then reload so the UI re-fetches. */

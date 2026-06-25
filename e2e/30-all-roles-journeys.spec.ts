@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { ALL_ROLES, NAV_TABS, routesForRole, type Rol } from './roles';
+import { ALL_ROLES, NAV_TABS, routesForRole, DEMO_ACCOUNTS, type Rol } from './roles';
 import {
-  loginTester, switchTo, assertRendered, exerciseFormsCapped, clickNavTabs, collectErrors,
+  loginTester, loginAs, switchTo, assertRendered, exerciseFormsCapped, clickNavTabs, collectErrors,
 } from './journey-helpers';
 
 /**
@@ -45,8 +45,14 @@ test.describe('Todos los roles — recorrido completo de la UI', () => {
       test.setTimeout(300_000);
       const getErrors = collectErrors(page);
 
-      await loginTester(page);
-      await switchTo(page, role as Rol);
+      // SUPER_ADMIN can no longer be switched into (privilege-escalation guard),
+      // so exercise it via its dedicated account; all other roles via the tester.
+      if (role === 'SUPER_ADMIN') {
+        await loginAs(page, DEMO_ACCOUNTS.SUPER_ADMIN);
+      } else {
+        await loginTester(page);
+        await switchTo(page, role as Rol);
+      }
 
       // 1. Land on home
       await page.goto('/inicio', { waitUntil: 'domcontentloaded' });
