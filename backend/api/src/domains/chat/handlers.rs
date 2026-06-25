@@ -112,7 +112,10 @@ async fn send_message(
             .ok_or_else(|| ApiError::NotFound("No tienes un pase temporal activo".into()))?;
         (pase.propietario_id, Some(user.id))
     } else if user.rol == Rol::Propietario {
-        (user.id, req.huesped_id)
+        // El mensaje del propietario NUNCA debe tener huesped_id,
+        // incluso si el frontend envía uno. El huesped_id solo
+        // identifica mensajes enviados POR el huésped.
+        (user.id, None)
     } else {
         (user.id, None)
     };
