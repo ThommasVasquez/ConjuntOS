@@ -127,8 +127,8 @@ export default function MiEstanciaPage() {
           )}
         </div>
 
-        {/* Reservar áreas comunes */}
-        {(() => {
+        {/* Reservar áreas comunes — solo si tiene al menos un permiso de área */}
+        {(pase.permiso_gimnasio || pase.permiso_piscina) && (() => {
           const excludedAreas: string[] = [];
           if (!pase.permiso_gimnasio) excludedAreas.push("Gimnasio");
           if (!pase.permiso_piscina) excludedAreas.push("Piscina");
