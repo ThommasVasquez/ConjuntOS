@@ -12,7 +12,7 @@ EN-CONJUNTO es la plataforma integral que digitaliza la administración de conju
 Cada residente, administrador y vigilante accede con credenciales únicas. El sistema protege los datos con encriptación de grado bancario y sesiones seguras.
 
 ### Roles y Permisos
-La plataforma se adapta a cada perfil: residentes, administradores, concejo, vigilantes y encargados de parqueadero. Cada rol ve exactamente lo que necesita, sin información innecesaria.
+La plataforma se adapta a cada perfil: propietarios y arrendatarios, administradores, concejo, vigilantes y supervisores, encargados de parqueadero, personal de mantenimiento y limpieza, y huéspedes temporales. Cada rol ve exactamente lo que necesita, sin información innecesaria.
 
 ### Perfil Personal
 Cada usuario tiene su panel personal con datos de contacto, unidad, estado de cuenta, mascotas registradas, vehículos y paquetes pendientes. Todo centralizado y siempre actualizado.
@@ -135,8 +135,8 @@ El administrador configura las áreas comunes, define horarios, crea slots y vis
 ### Estado de Cuenta
 Cada residente consulta su saldo, pagos realizados y recibos pendientes. Visualización clara del historial financiero.
 
-### Pagos Digitales
-Realiza pagos de administración directamente desde la plataforma. Recibos digitales generados automáticamente.
+### Pagos Digitales con Nequi
+Realiza pagos de administración directamente desde la plataforma con Nequi: ingresas tu celular y el sistema reconcilia el estado del pago en tiempo real. Recibos digitales generados automáticamente.
 
 ### Panel Financiero (Admin)
 Dashboard con indicadores clave: recaudo del mes, morosidad, gastos operativos. Filtros por período y categoría para análisis detallado.
@@ -166,13 +166,99 @@ Guía completa de residentes con búsqueda por nombre, torre o apartamento. Acce
 
 ---
 
-## 🗳️ Asambleas
+## 🗳️ Asambleas en Vivo
 
-### Convocatoria y Votación
-La administración convoca asambleas generales con temario, fecha y requisitos de quórum. Los residentes confirman asistencia y votan desde la plataforma.
+### Sesión con Video en Tiempo Real
+La asamblea se transmite en vivo con video (LiveKit). Los residentes entran desde un banner de "Sesión en Vivo", siguen el orden del día punto por punto y participan sin salir de casa.
 
-### Acta Digital
-Al finalizar la asamblea, se genera un acta automática con las decisiones tomadas, visible para todos los participantes.
+### Votación Ponderada por Coeficiente
+Cada voto pesa según el coeficiente de copropiedad de la unidad, conforme a la Ley 675. El sistema previene el doble voto, suma los poderes verificados y muestra los resultados en vivo. Solo una votación activa a la vez para evitar confusiones.
+
+### Asistencia, Quórum y Poderes
+Registro de asistencia virtual con cálculo automático del quórum (coeficiente presente vs. total). La administración gestiona los poderes (otorgante y apoderado) con verificación exclusiva, evitando suplantaciones.
+
+### Turnos de Palabra y Muro de Opiniones
+Los asistentes piden turno de palabra y ven la cola en tiempo real (En espera / Hablando). Un muro de opiniones recoge la voz de los copropietarios durante la sesión.
+
+### Acta Automática y Traducción
+Al cerrar, la IA genera el acta oficial en formato legal, exportable a PDF. Subtítulos y traducción en vivo (inglés, portugués, francés) hacen la asamblea accesible para todos.
+
+---
+
+## 🆘 Botón de Pánico (SOS)
+
+### Alerta de Emergencia con un Toque
+Cualquier residente activa una alerta SOS desde su celular indicando el tipo de emergencia, una nota y su ubicación. La alerta llega al instante a la seguridad de turno por notificación en tiempo real y push del navegador.
+
+### Consola de Seguridad
+Vigilancia ve las alertas activas con el nombre, torre y apartamento de quien reporta, y las gestiona por estados (Abierta → Atendida → Resuelta) con auditoría de quién atendió y cuándo. El residente puede cancelar su propia alerta mientras siga abierta.
+
+---
+
+## ⚖️ Multas y Sanciones
+
+### Imposición Conforme a la Ley 675
+La administración o el concejo imponen multas, opcionalmente ligadas a un caso del comité de convivencia. Cada multa genera automáticamente un cobro en la cartera del residente (con vencimiento) y un documento de notificación en PDF.
+
+### Apelación y Trazabilidad
+El residente ve sus multas y puede apelar una sanción. Una máquina de estados (Impuesta → Apelada → Anulada/Pagada) garantiza un proceso transparente; anular una multa retira el cobro asociado para no dejar deuda huérfana.
+
+---
+
+## 📊 Encuestas
+
+### Consulta a la Comunidad
+La administración crea encuestas con varias opciones, en modo de selección única o múltiple, anónimas si se requiere, y con fecha de cierre. Ideal para decisiones rápidas sin convocar una asamblea.
+
+### Resultados en Vivo
+Los residentes votan una sola vez y ven los resultados actualizándose en tiempo real con conteo y porcentaje. La encuesta se cierra manualmente o al llegar su fecha límite.
+
+---
+
+## 🤝 Comité de Convivencia
+
+### Comité Conforme a la Norma
+Gestión del comité de convivencia (Ley 675/2001): períodos vigentes con alerta de vencimiento, validación legal de mínimo 3 miembros en número impar, y administración de integrantes.
+
+### Casos y Mediación
+Registro y seguimiento de casos entre unidades, asignación de un miembro responsable, sesiones de mediación (con o sin acuerdo) y generación del acta de mediación (Art. 58), firmable digitalmente por todas las partes.
+
+---
+
+## 🎟️ Pases Temporales para Huéspedes
+
+### Acceso Controlado para Invitados
+El propietario emite un pase temporal con un código único, fechas de inicio y fin, y permisos específicos por área (gimnasio, piscina, entrada/salida, vehículo, asamblea). Si se indica un correo, se crea automáticamente una cuenta de huésped.
+
+### Validación en Portería y Expiración Automática
+La portería valida el código y ve los permisos y vehículos autorizados. Los pases vencidos se marcan como expirados automáticamente y desactivan la cuenta del huésped; el propietario puede revocar un pase en cualquier momento.
+
+---
+
+## 🤖 Asistente con Inteligencia Artificial
+
+### "Otto", tu Asistente Legal y de la App
+Un asistente conversacional fundamentado en la Ley 675 de 2001 resuelve dudas de los residentes y los orienta entre los módulos de la aplicación, con preguntas sugeridas para empezar.
+
+### Copiloto del Administrador
+Durante la asamblea, la IA responde sobre el orden del día y la gestión del conjunto, redacta el acta oficial y concilia las opiniones de los copropietarios en un resumen de consenso.
+
+---
+
+## 📄 Documentos y Recordatorios
+
+### Vencimientos al Día
+Registro de las fechas de vencimiento del SOAT y la tecnomecánica de cada vehículo, y del carné de vacunas de las mascotas. El sistema avisa antes de que algo venza, para que nada se pase por alto.
+
+---
+
+## 📣 Publicidad y Analítica
+
+### Espacios Publicitarios
+La administración crea banners programables (con imagen, enlace, empresa y vigencia) que se muestran a los residentes, con métricas de impresiones, clics y CTR por anuncio.
+
+### Panel Demográfico
+Tablero con la composición del conjunto: total de unidades y usuarios, nuevos registros del mes, usuarios activos y distribución por rol y por torre — datos útiles para la administración y los anunciantes.
 
 ---
 
