@@ -31,6 +31,7 @@ interface SosPanicButtonProps {
  */
 export default function SosPanicButton({ compact = false }: SosPanicButtonProps) {
   const [open, setOpen] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [sending, setSending] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [active, setActive] = useState<SosDto | null>(null);
@@ -106,7 +107,7 @@ export default function SosPanicButton({ compact = false }: SosPanicButtonProps)
             </div>
           </div>
           <button
-            onClick={cancelar}
+            onClick={() => setConfirmCancel(true)}
             disabled={cancelling}
             className="mt-3 w-full text-center text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl py-2 transition-colors disabled:opacity-50"
           >
@@ -117,9 +118,11 @@ export default function SosPanicButton({ compact = false }: SosPanicButtonProps)
     }
 
     // ── Active SOS indicator (compact mode): glowing red button ──
+    // ⚠️  Opens a confirmation dialog — NOT a direct cancel. Touching the pulsating
+    // red button out of curiosity should not immediately cancel the SOS.
     return (
       <button
-        onClick={cancelar}
+        onClick={() => setConfirmCancel(true)}
         disabled={cancelling}
         className="relative w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl border active:scale-95 bg-red-500/20 border-red-500/50 text-red-400 animate-pulse"
         title={cancelling ? "Cancelando..." : "Alerta SOS activa — toca para cancelar"}
@@ -157,6 +160,43 @@ export default function SosPanicButton({ compact = false }: SosPanicButtonProps)
             </p>
           </div>
         </button>
+      )}
+
+      {confirmCancel && (
+        <div
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 p-4"
+          onClick={() => setConfirmCancel(false)}
+        >
+          <div
+            className="bg-primary rounded-3xl p-5 border border-red-500/40 w-full max-w-sm shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle size={22} className="text-red-400 shrink-0" />
+              <div>
+                <h3 className="text-base font-bold text-text">¿Cancelar alerta SOS?</h3>
+                <p className="text-[11px] text-text/50 mt-0.5">
+                  Esto notificará a seguridad que ya no necesitas ayuda.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmCancel(false)}
+                className="flex-1 py-3 rounded-xl border border-border text-text/70 text-sm font-semibold active:scale-95 transition-all"
+              >
+                No, mantener
+              </button>
+              <button
+                onClick={() => { setConfirmCancel(false); cancelar(); }}
+                disabled={cancelling}
+                className="flex-1 py-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 text-sm font-bold active:scale-95 transition-all disabled:opacity-50"
+              >
+                {cancelling ? "Cancelando..." : "Sí, cancelar"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {open && (
