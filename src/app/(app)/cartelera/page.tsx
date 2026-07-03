@@ -101,6 +101,10 @@ export default function CarteleraPage() {
     try {
       await api.post('/chat', { mensaje: tempMsg.mensaje });
     } catch {
+      // Roll back the optimistic message and restore the draft instead of leaving
+      // a message the server never received stuck in the thread.
+      setChatMessages(prev => prev.filter(m => m !== tempMsg));
+      setNewMessage(tempMsg.mensaje);
       toast.error("Error de conexión");
     } finally {
       setIsSending(false);

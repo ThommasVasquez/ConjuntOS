@@ -34,9 +34,11 @@ pub async fn list_active_for_feed(
     Ok(rows.into_iter().map(AdSpaceFeedDto::from).collect())
 }
 
-pub async fn find_by_id(conn: &mut DbConn, id: Uuid) -> ApiResult<Option<AdSpace>> {
+pub async fn find_by_id(conn: &mut DbConn, conjunto_id: Uuid, id: Uuid) -> ApiResult<Option<AdSpace>> {
     let row = ad_spaces::table
         .filter(ad_spaces::id.eq(id))
+        // Tenant scope: an admin must not read another conjunto's ad space (IDOR).
+        .filter(ad_spaces::conjunto_id.eq(conjunto_id))
         .select(AdSpace::as_select())
         .first(conn)
         .await
@@ -55,10 +57,16 @@ pub async fn create(conn: &mut DbConn, nuevo: NuevoAdSpace) -> ApiResult<AdSpace
 
 pub async fn update(
     conn: &mut DbConn,
+    conjunto_id: Uuid,
     id: Uuid,
     changes: AdSpaceChangeset,
 ) -> ApiResult<Option<AdSpace>> {
-    let row = diesel::update(ad_spaces::table.filter(ad_spaces::id.eq(id)))
+    let row = diesel::update(
+        ad_spaces::table
+            .filter(ad_spaces::id.eq(id))
+            // Tenant scope: prevent cross-conjunto IDOR write.
+            .filter(ad_spaces::conjunto_id.eq(conjunto_id)),
+    )
         .set(&changes)
         .returning(AdSpace::as_returning())
         .get_result(conn)

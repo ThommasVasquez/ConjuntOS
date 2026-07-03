@@ -365,7 +365,7 @@ export default function ChatSection({ compact = false, huespedId }: ChatSectionP
               ? !!msg.huespedId
               : isOwner
                 ? !msg.huespedId && !msg.esDeAdmin
-                : !msg.esDeAdmin;
+                : msg.esDeAdmin;
             return (
               <div key={msg.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
                 <div

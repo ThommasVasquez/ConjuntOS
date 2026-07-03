@@ -1,7 +1,8 @@
 //! Admin dashboard counters + status config toggles. Flat module like
 //! auth_routes.rs — endpoints + queries in one file.
 
-use std::sync::RwLock;
+use std::collections::HashMap;
+use std::sync::{LazyLock, RwLock};
 
 use axum::extract::State;
 use axum::routing::get;
@@ -9,6 +10,7 @@ use axum::{Json, Router};
 use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
@@ -35,17 +37,18 @@ impl Default for AdminStatus {
     }
 }
 
-/// Shared mutable state. Default-constructs on first access.
-static STATUS: RwLock<Option<AdminStatus>> = RwLock::new(None);
+/// Shared mutable state, keyed by conjunto. Previously a single process-global
+/// slot, which bled one tenant's availability status into every other tenant.
+static STATUS: LazyLock<RwLock<HashMap<Uuid, AdminStatus>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
-fn read_status() -> AdminStatus {
-    let guard = STATUS.read().unwrap();
-    guard.clone().unwrap_or_default()
+fn read_status(conjunto_id: Uuid) -> AdminStatus {
+    STATUS.read().unwrap().get(&conjunto_id).cloned().unwrap_or_default()
 }
 
-fn update_status(llamadas: Option<bool>, mensajes: Option<bool>) -> AdminStatus {
+fn update_status(conjunto_id: Uuid, llamadas: Option<bool>, mensajes: Option<bool>) -> AdminStatus {
     let mut guard = STATUS.write().unwrap();
-    let entry = guard.get_or_insert_with(AdminStatus::default);
+    let entry = guard.entry(conjunto_id).or_default();
     if let Some(v) = llamadas {
         entry.activo_llamadas = v;
     }
@@ -131,7 +134,7 @@ pub async fn admin_stats(
 /// GET /api/v1/admin/status-config — read admin availability toggles.
 async fn get_status(State(_state): State<AppState>, user: AuthUser) -> ApiResult<Json<StatusResponse>> {
     guard::require(&user, &[Rol::Administrador, Rol::Concejo])?;
-    Ok(Json(read_status().into()))
+    Ok(Json(read_status(user.conjunto_id).into()))
 }
 
 /// POST /api/v1/admin/status-config — update admin availability toggles.
@@ -141,6 +144,6 @@ async fn update_status_handler(
     Json(payload): Json<StatusUpdate>,
 ) -> ApiResult<Json<StatusResponse>> {
     guard::require(&user, &[Rol::Administrador, Rol::Concejo])?;
-    let status = update_status(payload.activo_llamadas, payload.activo_mensajes);
+    let status = update_status(user.conjunto_id, payload.activo_llamadas, payload.activo_mensajes);
     Ok(Json(status.into()))
 }

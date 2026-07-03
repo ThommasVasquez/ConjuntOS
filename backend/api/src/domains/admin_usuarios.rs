@@ -455,7 +455,11 @@ pub async fn invitar_residente(
     ensure_assignable_rol(&user, rol)?;
 
     // Temporary password: "temp_" + UUID v4; must_change_password = true.
+    // It MUST be hashed before storage — insert_user writes the value verbatim
+    // into password_hash, so passing the plaintext would (a) store a credential in
+    // the clear and (b) make login impossible (verify_password expects an Argon2 hash).
     let temp_password = format!("temp_{}", Uuid::new_v4());
+    let temp_password_hash = crate::auth::password::hash_password_blocking(temp_password.clone()).await?;
 
     let mut conn = state.pool.get().await?;
 
@@ -467,7 +471,7 @@ pub async fn invitar_residente(
         user.conjunto_id,
         &nombre,
         &email,
-        &temp_password,
+        &temp_password_hash,
         rol,
         req.torre.as_deref(),
         req.apto.as_deref(),

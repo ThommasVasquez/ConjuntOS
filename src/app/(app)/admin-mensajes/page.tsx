@@ -236,6 +236,9 @@ export default function AdminMensajesPage() {
         });
       fetchChatHistory(selectedUserId);
     } catch {
+      // Roll back the optimistic message and restore the draft so the admin can retry.
+      setMessages(prev => prev.filter(m => m.id !== temp.id));
+      if (!audioData) setNewMessage(temp.mensaje);
       toast.error("Fallo de red");
     } finally {
       setSending(false);

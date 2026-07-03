@@ -156,6 +156,23 @@ pub async fn actualizar_ticket(
         .map_err(|e| ApiError::Internal(anyhow::anyhow!("Error actualizando ticket: {e}")))
 }
 
+/// Overwrite a ticket's `imagenes` (Jsonb) with a typed, bind-parameterized
+/// update. Replaces a previous raw `format!`-built UPDATE that (a) used no bind
+/// parameters and (b) called `Value::as_str()` on a JSON array — which is always
+/// `None`, so it silently persisted `[]` and dropped every image.
+pub async fn set_imagenes(
+    conn: &mut DbConn,
+    ticket_id: Uuid,
+    imagenes: serde_json::Value,
+) -> ApiResult<()> {
+    diesel::update(solicitudes_servicio::table.filter(solicitudes_servicio::id.eq(ticket_id)))
+        .set(solicitudes_servicio::imagenes.eq(imagenes))
+        .execute(conn)
+        .await
+        .map(|_| ())
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Error actualizando imágenes: {e}")))
+}
+
 // ── Comentarios ────────────────────────────────────────────────────────────
 
 pub async fn agregar_comentario(

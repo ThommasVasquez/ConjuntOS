@@ -38,6 +38,11 @@ const TIPO_CONFIG = {
   MANTENIMIENTO: { icon: <Wrench size={18}/>, color: "text-text", bg: "bg-text/10 border-text/20" },
 };
 
+// Fallback so an unknown/new backend `tipo` renders safely instead of crashing the
+// whole list with `TIPO_CONFIG[tipo].bg` on undefined.
+const TIPO_FALLBACK = { icon: <FileText size={18}/>, color: "text-text", bg: "bg-text/10 border-text/20" };
+const tipoCfg = (t: string) => TIPO_CONFIG[t as keyof typeof TIPO_CONFIG] ?? TIPO_FALLBACK;
+
 export default function PQRSPage() {
   const { user } = useAuth();
   const userId = user?.id;
@@ -187,8 +192,8 @@ export default function PQRSPage() {
              <div key={s.id} className="fade-up-pqrs liquid-glass-card rounded-[32px] p-6 border border-border flex flex-col gap-4 shadow-xl hover:border-accent/20 transition-all cursor-pointer group">
                 <div className="flex justify-between items-start">
                    <div className="flex items-center gap-3">
-                      <div className={`p-2.5 rounded-2xl ${TIPO_CONFIG[s.tipo as keyof typeof TIPO_CONFIG].bg} ${TIPO_CONFIG[s.tipo as keyof typeof TIPO_CONFIG].color}`}>
-                         {TIPO_CONFIG[s.tipo as keyof typeof TIPO_CONFIG].icon}
+                      <div className={`p-2.5 rounded-2xl ${tipoCfg(s.tipo).bg} ${tipoCfg(s.tipo).color}`}>
+                         {tipoCfg(s.tipo).icon}
                       </div>
                       <div>
                          <h4 className="text-text font-bold text-sm tracking-tight">{s.tipo}</h4>

@@ -140,6 +140,22 @@ async fn emitir(
 
     let mut conn = state.pool.get().await?;
 
+    // If a convivencia case is linked, it must belong to the same conjunto —
+    // otherwise an admin could forge a cross-tenant FK to another conjunto's case.
+    if let Some(caso_id) = req.caso_id {
+        use crate::db::schema::casos_convivencia;
+        let belongs: Option<Uuid> = casos_convivencia::table
+            .filter(casos_convivencia::id.eq(caso_id))
+            .filter(casos_convivencia::conjunto_id.eq(user.conjunto_id))
+            .select(casos_convivencia::id)
+            .first(&mut conn)
+            .await
+            .optional()?;
+        if belongs.is_none() {
+            return Err(ApiError::BadRequest("caso de convivencia inválido".into()));
+        }
+    }
+
     // The fine becomes payable through the resident's cartera, which needs a unit.
     let unidad_id: Uuid = usuarios::table
         .filter(usuarios::id.eq(req.usuario_id))
@@ -268,11 +284,28 @@ async fn transicionar(
 ) -> ApiResult<Json<MultaDto>> {
     let nuevo = aplicar_transicion(multa.estado, accion)?;
     let usuario_id = multa.usuario_id;
+    let pago_id = multa.pago_id;
     let updated: Multa = diesel::update(multas::table.find(multa.id))
         .set(multas::estado.eq(nuevo))
         .returning(Multa::as_returning())
         .get_result(conn)
         .await?;
+
+    // Anular una multa debe anular también su pago autogenerado; de lo contrario el
+    // residente sigue debiendo una multa que ya no existe (deuda huérfana en cartera).
+    // EstadoPago no tiene un estado "anulado", así que eliminamos el cobro pendiente.
+    if matches!(accion, MultaAccion::Anular) {
+        if let Some(pid) = pago_id {
+            diesel::delete(
+                pagos::table
+                    .find(pid)
+                    .filter(pagos::conjunto_id.eq(conjunto_id)),
+            )
+            .execute(conn)
+            .await?;
+        }
+    }
+
     let dto = MultaDto::from(updated);
     publish(state, conjunto_id, usuario_id, ws_events::action::UPDATED, &dto).await;
     Ok(Json(dto))

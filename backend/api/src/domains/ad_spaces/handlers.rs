@@ -108,7 +108,7 @@ async fn get_one(
 ) -> ApiResult<Json<AdSpaceDto>> {
     guard::require(&user, ADMIN_ROLES)?;
     let mut conn = state.pool.get().await?;
-    let ad = repo::find_by_id(&mut conn, id)
+    let ad = repo::find_by_id(&mut conn, user.conjunto_id, id)
         .await?
         .ok_or_else(|| ApiError::NotFound("espacio publicitario no encontrado".into()))?;
     Ok(Json(AdSpaceDto::from(ad)))
@@ -146,7 +146,7 @@ async fn update(
         inicio_en: req.inicio_en,
         fin_en: req.fin_en,
     };
-    let ad = repo::update(&mut conn, id, changes)
+    let ad = repo::update(&mut conn, user.conjunto_id, id, changes)
         .await?
         .ok_or_else(|| ApiError::NotFound("espacio publicitario no encontrado".into()))?;
     Ok(Json(AdSpaceDto::from(ad)))

@@ -60,6 +60,18 @@ export default function AreaAdminDashboard() {
     if (user) fetchReservas();
   }, [user]);
 
+  // Release the camera + scan interval if the component unmounts mid-scan
+  // (e.g. the operator navigates away) so the camera light/track doesn't leak.
+  useEffect(() => {
+    return () => {
+      if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    };
+  }, []);
+
   const startScanner = async () => {
     setScanning(true);
     setVerificada(null);

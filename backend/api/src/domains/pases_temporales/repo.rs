@@ -38,11 +38,15 @@ pub async fn pases_por_propietario(
 
 pub async fn pase_por_codigo(
     conn: &mut DbConn,
+    p_conjunto_id: Uuid,
     codigo: &str,
 ) -> ApiResult<Option<PaseTemporal>> {
     use crate::db::schema::pases_temporales::dsl::*;
+    // p_conjunto_id is intentionally NOT named `conjunto_id`: the dsl glob brings the
+    // column into scope and `conjunto_id.eq(conjunto_id)` would self-compare (always true).
     Ok(pases_temporales
         .filter(codigo_acceso.eq(codigo))
+        .filter(conjunto_id.eq(p_conjunto_id))
         .select(PaseTemporal::as_select())
         .first(conn)
         .await
@@ -345,12 +349,14 @@ pub async fn actualizar_pase(
 /// Elimina todos los vehículos de un pase y los reemplaza con los nuevos.
 pub async fn reemplazar_vehiculos(
     conn: &mut DbConn,
-    pase_id: Uuid,
+    pase: Uuid,
     vehiculos: &[crate::domains::pases_temporales::models::NuevoVehiculoTemporal],
 ) -> ApiResult<Vec<VehiculoTemporal>> {
     use crate::db::schema::vehiculos_temporales::dsl::*;
-    // Borrar existentes
-    diesel::delete(vehiculos_temporales.filter(pase_id.eq(pase_id)))
+    // Borrar existentes — el parámetro NO debe llamarse `pase_id`: el glob import
+    // trae la columna `pase_id`, y `pase_id.eq(pase_id)` compararía la columna
+    // consigo misma (siempre true), borrando TODOS los vehículos de la tabla.
+    diesel::delete(vehiculos_temporales.filter(pase_id.eq(pase)))
         .execute(conn)
         .await?;
     // Insertar nuevos

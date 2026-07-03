@@ -103,9 +103,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
       ws.onerror = () => {
         if (cancelled || ws !== wsRef.current) return;
+        // We null onclose and close manually, so onclose won't fire — the error
+        // path must schedule its own reconnect, otherwise real-time updates stop
+        // permanently after any transient WS error.
         ws.onclose = null;
         ws.close();
         wsRef.current = null;
+        setConnected(false);
+        setCurrentUserId(null);
+        scheduleReconnect();
       };
     }
 

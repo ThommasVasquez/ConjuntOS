@@ -164,6 +164,13 @@ pub async fn switch_role(
     let nuevo_rol = Rol::from_str(req.rol.trim())
         .map_err(|_| ApiError::BadRequest(format!("rol inválido: {}", req.rol)))?;
 
+    // Testers must not be able to self-escalate to the platform-level SUPER_ADMIN
+    // role via this testing utility. SUPER_ADMIN is provisioned explicitly, never
+    // switched into.
+    if matches!(nuevo_rol, Rol::SuperAdmin) {
+        return Err(ApiError::Forbidden);
+    }
+
     // Persist the role change — the new role is fully real (DB + JWT), not simulated.
     let actualizado = repo::update_rol(&mut conn, usuario.id, nuevo_rol).await?;
 

@@ -45,6 +45,14 @@ export default function BottomNav() {
       { name: "Pases", path: "/pases-temporales", icon: Ticket },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
+  } else if (role === 'ARRENDATARIO') {
+    // Tenants don't get the Inmobiliaria (real-estate marketplace) tab — that is
+    // for owners listing/finding properties.
+    tabs = [
+      { name: "Inicio", path: "/inicio", icon: Home },
+      { name: "Citofonía", path: "/citofonia", icon: Phone },
+      { name: "Perfil", path: "/perfil", icon: User },
+    ];
   } else if (role === 'HUESPED_TEMPORAL') {
     tabs = [
       { name: "Estancia", path: "/mi-estancia", icon: Home },

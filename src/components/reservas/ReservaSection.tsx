@@ -33,7 +33,7 @@ interface ReservaDto {
   areaImagenUrl?: string;
 }
 
-export default function ReservaSection() {
+export default function ReservaSection({ excludedAreas }: { excludedAreas?: string[] }) {
   const { user } = useAuth();
   const [areas, setAreas] = useState<AreaComunDto[]>([]);
   const [reservas, setReservas] = useState<ReservaDto[]>([]);
@@ -53,7 +53,12 @@ export default function ReservaSection() {
         api.get<AreaComunDto[]>("/areas-comunes"),
         api.get<ReservaDto[]>("/reservas"),
       ]);
-      setAreas(areasData.filter(a => a.activa));
+      const activas = areasData.filter(a => a.activa);
+      // Filtrar áreas excluidas por permisos (piscina, gimnasio)
+      const filtradas = excludedAreas
+        ? activas.filter(a => !excludedAreas.some(e => a.nombre.toLowerCase().includes(e.toLowerCase())))
+        : activas;
+      setAreas(filtradas);
       setReservas(reservasData);
     } catch { /* silently ignore */ }
     finally { setLoading(false); }
@@ -141,7 +146,8 @@ export default function ReservaSection() {
         </div>
       )}
 
-      {/* Botón Reservar */}
+      {/* Botón Reservar — solo si hay áreas disponibles */}
+      {areas.length > 0 && (
       <button
         onClick={() => setShowModal(true)}
         className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-on-accent text-sm font-bold hover:opacity-90 transition-opacity"
@@ -149,6 +155,11 @@ export default function ReservaSection() {
         <Plus size={18} />
         Reservar área común
       </button>
+      )}
+
+      {areas.length === 0 && !loading && (
+        <p className="text-text/40 text-xs text-center py-2">No tienes áreas disponibles para reservar</p>
+      )}
 
       {/* Modal de Reserva */}
       {showModal && (
