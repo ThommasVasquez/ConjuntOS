@@ -13,10 +13,9 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const session = req.cookies.get("ec_session")?.value;
 
-  // Authenticated user on "/" or "/login" → redirect to dashboard.
-  // The client-side dashboard will re-route role-specific views (e.g.
-  // HUESPED_TEMPORAL → /mi-estancia).
-  if ((pathname === "/" || pathname === "/login") && session) {
+  // Authenticated user on "/login" → redirect to dashboard.
+  // "/" stays the public landing page for everyone, logged in or not.
+  if (pathname === "/login" && session) {
     return NextResponse.redirect(new URL("/inicio", req.url));
   }
 
@@ -49,6 +48,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico, manifest.json, sw.js, public assets
      */
-    "/((?!api|_next/static|_next/image|favicon\\.ico|favicon\\.svg|solo-light\\.svg|solo-dark\\.svg|solo\\.svg|logo\\.svg|logo-vertical\\.svg|logo-verticalW\\.svg|ConjuntOS_Vertical\\.svg|SplashWHITE\\.png|SplashBLACK\\.png|logo\\.png|recibo-servicios-logo\\.jpg|recibo-agua-logo\\.jpg|recibo-gas-logo\\.jpg|manifest\\.json|sw\\.js|workbox-.*\\.js).*)",
+    "/((?!api|_next/static|_next/image|img/|favicon\\.ico|favicon\\.svg|solo-light\\.svg|solo-dark\\.svg|solo\\.svg|logo\\.svg|logo-vertical\\.svg|logo-verticalW\\.svg|ConjuntOS_Vertical\\.svg|SplashWHITE\\.png|SplashBLACK\\.png|logo\\.png|recibo-servicios-logo\\.jpg|recibo-agua-logo\\.jpg|recibo-gas-logo\\.jpg|manifest\\.json|sw\\.js|workbox-.*\\.js).*)",
   ],
 };

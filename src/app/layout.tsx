@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans, JetBrains_Mono, Montserrat } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, JetBrains_Mono, Montserrat, Tinos, Pinyon_Script } from "next/font/google";
 import "./globals.css";
 import "./view-transitions.css";
+import "lenis/dist/lenis.css";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,6 +21,21 @@ const jetbrainsMono = JetBrains_Mono({
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
+  subsets: ["latin"],
+});
+
+// Elegant editorial serif (same family libellula uses) for a "expensive" feel.
+const tinos = Tinos({
+  variable: "--font-serif",
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  subsets: ["latin"],
+});
+
+// Cursive script (libellula's flourish font) for accent words.
+const pinyonScript = Pinyon_Script({
+  variable: "--font-script",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -57,7 +73,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} ${montserrat.variable}`}>
+    <html lang="es" className={`light ${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} ${montserrat.variable} ${tinos.variable} ${pinyonScript.variable}`}>
       <head>
         {/* Favicon con detección automática de modo oscuro/claro */}
         <link rel="icon" type="image/svg+xml" href="/solo-light.svg" media="(prefers-color-scheme: light)" />

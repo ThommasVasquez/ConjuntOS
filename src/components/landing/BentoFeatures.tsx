@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
-import { Mic, Shield, CreditCard, Box, Calendar, MessageSquare } from "lucide-react";
+import { Vote, Sparkles, Siren, PhoneCall, Car, Scale } from "lucide-react";
+import RevealText from "./RevealText";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -11,46 +12,46 @@ if (typeof window !== "undefined") {
 
 const features = [
   {
-    title: "Citofonía Inteligente",
-    description: "Mensajes de voz con transcripción automática en tiempo real.",
-    icon: Mic,
-    className: "md:col-span-2 md:row-span-2 bg-[#FFFFFF]/10 border-[#FFFFFF]/20",
+    title: "Asamblea 100% en Vivo",
+    description: "Video en tiempo real, voto ponderado por coeficiente de copropiedad (Ley 675), acta oficial redactada por IA y traducción simultánea. La asamblea, desde casa y sin papeleo.",
+    icon: Vote,
+    className: "md:col-span-2 md:row-span-2 bg-text/10 border-text/20",
     iconColor: "text-[#FFFFFF]"
   },
   {
-    title: "Pagos Transparentes",
-    description: "Trazabilidad total de cuotas y certificados automáticos.",
-    icon: CreditCard,
+    title: "Otto, tu Asistente con IA",
+    description: "Resuelve dudas fundamentado en la Ley 675 de 2001 y te guía por cada módulo de la app.",
+    icon: Sparkles,
     className: "bg-text/10 border-text/20",
-    iconColor: "text-black"
+    iconColor: "text-white/70"
   },
   {
-    title: "Control de Accesos",
-    description: "Pre-registro de visitantes y seguridad proactiva.",
-    icon: Shield,
+    title: "Botón de Pánico (SOS)",
+    description: "Alerta de emergencia con un toque; llega al instante a la seguridad de turno por push.",
+    icon: Siren,
     className: "bg-text/10 border-text/20",
-    iconColor: "text-black"
+    iconColor: "text-white/70"
   },
   {
-    title: "Paquetería Digital",
-    description: "Notificaciones instantáneas de tus entregas.",
-    icon: Box,
+    title: "Portero en tu Celular",
+    description: "Recibe la llamada de portería y abre la puerta estés donde estés, sin citófono físico.",
+    icon: PhoneCall,
     className: "bg-text/10 border-text/20",
-    iconColor: "text-black"
+    iconColor: "text-white/70"
   },
   {
-    title: "Reservas de Áreas",
-    description: "Disponibilidad en tiempo real para tus zonas comunes.",
-    icon: Calendar,
+    title: "Parqueadero Inteligente",
+    description: "Cupos de visitante con 2 horas de cortesía, cobro prorrateado y aprobación del residente.",
+    icon: Car,
     className: "bg-text/10 border-text/20",
-    iconColor: "text-black"
+    iconColor: "text-white/70"
   },
   {
-    title: "Comunidad Conectada",
-    description: "Clasificados y comunicaciones oficiales en HD.",
-    icon: MessageSquare,
+    title: "Cumplimiento Ley 675 Nativo",
+    description: "Multas con cobro automático, comité de convivencia, actas de mediación y quórum — todo conforme a la norma colombiana de propiedad horizontal.",
+    icon: Scale,
     className: "md:col-span-2 bg-text/10 border-text/20",
-    iconColor: "text-black"
+    iconColor: "text-white/70"
   }
 ];
 
@@ -76,14 +77,14 @@ export default function BentoFeatures() {
   }, []);
 
   return (
-    <section ref={containerRef} className="py-24 px-6 bg-[#000000]">
+    <section ref={containerRef} className="py-24 px-6 bg-primary">
       <div className="max-w-6xl mx-auto space-y-16">
         <div className="space-y-4 text-center md:text-left">
-          <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
-            Todo lo que tu <span className="text-[#FFFFFF]">Conjunto</span> necesita
-          </h2>
-          <p className="text-white max-w-xl font-medium">
-            Módulos integrados bajo una misma identidad visual. Eficiencia operativa envuelta en diseño de clase mundial.
+          <RevealText as="h2" className="text-3xl md:text-5xl font-bold text-text tracking-tight font-[family-name:var(--font-serif)]">
+            Lo que hace único a <span className="text-accent">ConjuntOS</span>
+          </RevealText>
+          <p className="text-text max-w-xl font-medium">
+            No es otra app de anuncios. Es la única plataforma que lleva la asamblea, el cumplimiento de la Ley 675 y la inteligencia artificial al día a día de tu copropiedad.
           </p>
         </div>
 
@@ -93,11 +94,11 @@ export default function BentoFeatures() {
               key={i} 
               className={`feature-card group p-8 rounded-[32px] border backdrop-blur-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-default ${f.className}`}
             >
-              <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-6 border border-white/10 group-hover:rotate-6 transition-transform ${f.iconColor}`}>
+              <div className={`w-12 h-12 rounded-2xl bg-text/5 flex items-center justify-center mb-6 border border-text/10 group-hover:rotate-6 transition-transform ${f.iconColor}`}>
                 <f.icon className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{f.title}</h3>
-              <p className="text-white text-sm font-medium leading-relaxed">{f.description}</p>
+              <h3 className="text-xl font-bold text-text mb-2">{f.title}</h3>
+              <p className="text-text text-sm font-medium leading-relaxed">{f.description}</p>
             </div>
           ))}
         </div>
