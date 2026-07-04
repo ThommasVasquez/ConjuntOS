@@ -63,8 +63,11 @@ export default function BentoFeatures() {
       gsap.from(".feature-card", {
         scrollTrigger: {
           trigger: containerRef.current,
-          start: "top 80%",
+          start: "top 85%",
         },
+        // immediateRender:false — cards render visible until the trigger fires,
+        // so a stale/misfired ScrollTrigger can never leave them stuck invisible.
+        immediateRender: false,
         y: 40,
         opacity: 0,
         duration: 0.8,

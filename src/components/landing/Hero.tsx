@@ -1,6 +1,7 @@
 "use client";
 
 import { useViewTransition } from "@/components/providers/ViewTransitionContext";
+import { useTheme } from "@/components/providers/ThemeContext";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import Image from "next/image";
@@ -12,6 +13,7 @@ const slides = [
     title: "Gestión residencial\ncon alma, creada\npara la comunidad",
     description: "Simplifica tu vida en copropiedad. Accede a servicios, pagos y comunicación con tu administración desde una sola plataforma intuitiva y elegante.",
     image: "/img/hero-residente.webp",
+    imageLight: "/img/hero-light-residente.webp",
     features: [
       {
         title: "Reserva de Áreas",
@@ -36,6 +38,7 @@ const slides = [
     title: "Administración\neficiente, clara\ny 100% digital",
     description: "Toma el control total de tu copropiedad. Herramientas financieras y operativas diseñadas para administradores modernos que buscan transparencia.",
     image: "/img/hero-admin.webp",
+    imageLight: "/img/hero-light-admin.webp",
     features: [
       {
         title: "Asambleas Virtuales",
@@ -60,6 +63,7 @@ const slides = [
     title: "Seguridad total\npara lo que\nmás importa",
     description: "Empodera a tu equipo de seguridad. Tecnología de vigilancia y control preventivo para garantizar la tranquilidad de todas las familias.",
     image: "/img/hero-seguridad.webp",
+    imageLight: "/img/hero-light-seguridad.webp",
     features: [
       {
         title: "Control de Acceso",
@@ -84,6 +88,7 @@ const slides = [
     title: "Optimización\ny orden en cada\nmétro cuadrado",
     description: "Gestiona el parqueo de visitantes y residentes con inteligencia. Elimina conflictos y maximiza el uso de espacios compartidos.",
     image: "/img/hero-parqueadero.webp",
+    imageLight: "/img/hero-light-parqueadero.webp",
     features: [
       {
         title: "Reserva de Cupos",
@@ -106,6 +111,8 @@ const slides = [
 
 export default function Hero() {
   const { navigate } = useViewTransition();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const heroRef = useRef<HTMLElement>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeFeature, setActiveFeature] = useState(0);
@@ -159,70 +166,72 @@ export default function Hero() {
   const currentFeature = current.features[activeFeature];
 
   return (
-    <section ref={heroRef} className="relative w-full h-screen p-6 bg-primary">
-      <div className="relative w-full h-full rounded-[48px] overflow-hidden bg-[#000000] isolate">
-        {/* Background Layers for Crossfade */}
+    <section ref={heroRef} className={`relative w-full h-screen ${isLight ? "bg-white" : "bg-[#000000]"}`}>
+      <div className={`relative w-full h-full overflow-hidden isolate ${isLight ? "bg-white" : "bg-[#000000]"}`}>
+        {/* Background Layers for Crossfade — bright images in light theme, dark in dark */}
         {slides.map((slide, idx) => (
-          <div 
+          <div
             key={`bg-${slide.id}`}
             className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
-            style={{ 
-              backgroundImage: `url('${slide.image}')`,
-              opacity: activeSlide === idx ? 0.4 : 0,
+            style={{
+              backgroundImage: `url('${isLight ? slide.imageLight : slide.image}')`,
+              opacity: activeSlide === idx ? (isLight ? 1 : 0.4) : 0,
               zIndex: activeSlide === idx ? 1 : 0,
               transform: activeSlide === idx ? "scale(1)" : "scale(1.05)",
               visibility: activeSlide === idx || Math.abs(activeSlide - idx) <= 1 ? 'visible' : 'hidden'
             }}
           />
         ))}
-        
-        {/* Ambient Orbs - Matching the App's UI style */}
-        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[70%] bg-[#FFFFFF]/15 blur-[130px] rounded-full pointer-events-none z-10" />
-        <div className="absolute bottom-[-15%] left-[-15%] w-[80%] h-[70%] bg-[#262626]/10 blur-[130px] rounded-full pointer-events-none z-10" />
-        
-        {/* Dark Glass Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#000000]/95 via-[#000000]/80 to-transparent z-10" />
+
+        {/* Ambient Orbs */}
+        <div className={`absolute top-[-10%] right-[-10%] w-[80%] h-[70%] blur-[130px] rounded-full pointer-events-none z-10 ${isLight ? "bg-white/40" : "bg-[#FFFFFF]/15"}`} />
+        <div className={`absolute bottom-[-15%] left-[-15%] w-[80%] h-[70%] blur-[130px] rounded-full pointer-events-none z-10 ${isLight ? "bg-black/5" : "bg-[#262626]/10"}`} />
+
+        {/* Readability scrim — lightens (light) / darkens (dark) the left where the text sits */}
+        <div className={`absolute inset-0 z-10 ${isLight ? "bg-gradient-to-tr from-white/95 via-white/60 to-white/10" : "bg-gradient-to-tr from-[#000000]/95 via-[#000000]/80 to-transparent"}`} />
 
         <div className="relative z-20 w-full h-full flex items-center justify-between px-8 md:px-20">
-          <div className="hero-text max-w-2xl text-white">
-            
-            <div className="inline-flex items-center gap-1 mb-8 p-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10">
+          <div className={`hero-text max-w-2xl ${isLight ? "text-neutral-900" : "text-white"}`}>
+
+            <div className={`inline-flex items-center gap-1 mb-8 p-1.5 rounded-full backdrop-blur-md border ${isLight ? "bg-black/[0.04] border-black/10" : "bg-white/5 border-white/10"}`}>
               {slides.map((slide, idx) => (
-                <button 
+                <button
                   key={slide.id}
                   onClick={() => handleSlideChange(idx)}
                   className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all duration-300 ${
-                    activeSlide === idx ? "bg-accent text-on-accent shadow-[0_0_15px_rgba(0,0,0,0.3)]" : "text-white/60 hover:text-white"
+                    activeSlide === idx
+                      ? "bg-accent text-on-accent shadow-[0_0_15px_rgba(0,0,0,0.15)]"
+                      : isLight ? "text-neutral-500 hover:text-neutral-900" : "text-white/60 hover:text-white"
                   }`}
                 >
                   {slide.label}
                 </button>
               ))}
-              <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center ml-2">
-                 <div 
-                    className="w-2 h-2 rounded-full bg-accent animate-pulse" 
+              <div className={`w-8 h-8 rounded-full border flex items-center justify-center ml-2 ${isLight ? "border-black/15" : "border-white/20"}`}>
+                 <div
+                    className="w-2 h-2 rounded-full bg-accent animate-pulse"
                     style={{ animationDuration: '3s' }}
                   />
               </div>
             </div>
-            
-            <h1 className="text-4xl md:text-6xl lg:text-[4.5rem] font-medium leading-[1.1] mb-6 font-[family-name:var(--font-serif)] tracking-tight whitespace-pre-line text-glow">
+
+            <h1 className={`text-4xl md:text-6xl lg:text-[4.5rem] font-medium leading-[1.1] mb-6 font-[family-name:var(--font-serif)] tracking-tight whitespace-pre-line ${isLight ? "" : "text-glow"}`}>
               {current.title}
             </h1>
-            
-            <p className="text-white text-base md:text-lg mb-10 max-w-lg font-[family-name:var(--font-inter)] leading-relaxed">
+
+            <p className={`text-base md:text-lg mb-10 max-w-lg font-[family-name:var(--font-inter)] leading-relaxed ${isLight ? "text-neutral-700" : "text-white"}`}>
               {current.description}
             </p>
 
             <div className="flex items-center gap-8">
-              <button 
+              <button
                 onClick={() => navigate("/login")}
-                className="bg-accent text-on-accent px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:scale-[1.03] active:scale-95 transition-all shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_30px_rgba(0,0,0,0.3)] cursor-pointer"
+                className="bg-accent text-on-accent px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:scale-[1.03] active:scale-95 transition-all shadow-lg cursor-pointer"
               >
                 Comenzar Ahora
               </button>
-              <button className="text-white flex items-center gap-2 text-xs font-bold tracking-widest uppercase hover:text-white transition-colors">
-                <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors">
+              <button className={`flex items-center gap-2 text-xs font-bold tracking-widest uppercase transition-colors ${isLight ? "text-neutral-900" : "text-white"}`}>
+                <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${isLight ? "border-black/15 hover:bg-black/5" : "border-white/10 hover:bg-white/5"}`}>
                   <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10 6L0.25 11.1962L0.25 0.803848L10 6Z" fill="currentColor"/>
                   </svg>
@@ -233,10 +242,10 @@ export default function Hero() {
           </div>
 
           {/* Interactive Feature Card */}
-          <div className="hero-card liquid-glass-card p-10 rounded-[40px] w-[480px] shadow-2xl relative overflow-hidden border border-text/10">
+          <div className={`hero-card backdrop-blur-xl p-10 rounded-[40px] w-[480px] shadow-2xl relative overflow-hidden border ${isLight ? "bg-white/75 border-black/10" : "bg-white/5 border-white/10"}`}>
             <div className="relative z-10">
               <div className="feature-content">
-                <div className="w-20 h-20 rounded-2xl bg-text/5 border border-text/10 overflow-hidden mb-8 flex items-center justify-center">
+                <div className={`w-20 h-20 rounded-2xl overflow-hidden mb-8 flex items-center justify-center border ${isLight ? "bg-black/5 border-black/10" : "bg-white/5 border-white/10"}`}>
                    <Image
                       width={64}
                       height={64}
@@ -246,10 +255,10 @@ export default function Hero() {
                     />
                 </div>
                 <div>
-                  <h3 className="text-3xl font-medium text-text font-[family-name:var(--font-serif)] mb-4">{currentFeature.title}</h3>
-                  <p className="text-base text-text leading-relaxed mb-8 h-20">{currentFeature.desc}</p>
-                  
-                  <button className="w-full py-4 rounded-full border border-text/10 text-on-accent text-xs font-bold tracking-widest uppercase hover:bg-accent hover:border-accent transition-all duration-300">
+                  <h3 className={`text-3xl font-medium font-[family-name:var(--font-serif)] mb-4 ${isLight ? "text-neutral-900" : "text-white"}`}>{currentFeature.title}</h3>
+                  <p className={`text-base leading-relaxed mb-8 h-20 ${isLight ? "text-neutral-700" : "text-white/80"}`}>{currentFeature.desc}</p>
+
+                  <button className={`w-full py-4 rounded-full border text-xs font-bold tracking-widest uppercase hover:text-on-accent hover:bg-accent hover:border-accent transition-all duration-300 ${isLight ? "border-black/15 text-neutral-900" : "border-white/15 text-white"}`}>
                     Ver cómo funciona
                   </button>
                 </div>
@@ -258,9 +267,9 @@ export default function Hero() {
               {/* Step Indicators */}
               <div className="flex gap-2 mt-8">
                 {[0, 1, 2].map((i) => (
-                  <div 
-                    key={i} 
-                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent shadow-[0_0_10px_rgba(0,0,0,0.3)]" : "bg-text/20"}`}
+                  <div
+                    key={i}
+                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent" : isLight ? "bg-black/15" : "bg-white/20"}`}
                   />
                 ))}
               </div>
