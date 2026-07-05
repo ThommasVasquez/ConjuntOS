@@ -148,20 +148,20 @@ export default function FeaturesCollage() {
   const activeItem = features[activeIndex];
 
   return (
-    <section ref={containerRef} className="relative py-16 bg-[#000000] overflow-hidden">
+    <section ref={containerRef} className="relative py-16 bg-primary overflow-hidden">
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+           style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
       <div className="max-w-full mx-auto relative flex flex-col pt-10">
         {/* Dynamic Testimonial Headline */}
         <div className="w-full flex justify-center py-6 px-6 relative z-40">
           <div className="flex flex-col items-center testimonial-content">
-            <span className="text-white font-black tracking-[0.3em] text-sm mb-4 uppercase">TESTIMONIO REAL</span>
+            <span className="text-text font-black tracking-[0.3em] text-sm mb-4 uppercase">TESTIMONIO REAL</span>
             <h2 
               ref={headlineRef} 
               key={activeIndex}
-              className="text-[4.2vw] font-black italic text-white tracking-tighter text-center uppercase leading-[0.9]"
+              className="text-[4.2vw] font-black italic text-text tracking-tighter text-center uppercase leading-[0.9]"
             >
               {`"${activeItem.quote}"`}
             </h2>
@@ -172,7 +172,7 @@ export default function FeaturesCollage() {
         <div className="hidden md:flex absolute left-10 top-1/2 -translate-y-1/2 z-40">
           <button 
             onClick={() => scrollRef.current?.scrollBy({ left: -400, behavior: 'smooth' })}
-            className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-[#666666] transition-all duration-300 group shadow-2xl"
+            className="w-16 h-16 rounded-full bg-text/5 backdrop-blur-xl border border-text/10 flex items-center justify-center text-text hover:bg-[#666666] transition-all duration-300 group shadow-2xl"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="group-hover:-translate-x-1 transition-transform">
               <path d="M15 18l-6-6 6-6" />
@@ -182,7 +182,7 @@ export default function FeaturesCollage() {
         <div className="hidden md:flex absolute right-10 top-1/2 -translate-y-1/2 z-40">
           <button 
             onClick={() => scrollRef.current?.scrollBy({ left: 400, behavior: 'smooth' })}
-            className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-[#666666] transition-all duration-300 group shadow-2xl"
+            className="w-16 h-16 rounded-full bg-text/5 backdrop-blur-xl border border-text/10 flex items-center justify-center text-text hover:bg-[#666666] transition-all duration-300 group shadow-2xl"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="group-hover:translate-x-1 transition-transform">
               <path d="M9 18l6-6-6-6" />
@@ -223,8 +223,9 @@ export default function FeaturesCollage() {
         </div>
 
         {/* Scrollable Background Track */}
-        <div 
+        <div
           ref={scrollRef}
+          data-lenis-prevent
           className="relative overflow-x-auto no-scrollbar snap-x snap-mandatory h-[700px] flex items-center z-10"
         >
           <div className="flex items-center gap-20 px-[50vw] min-w-max h-full">
@@ -235,15 +236,15 @@ export default function FeaturesCollage() {
                    i % 2 === 0 ? 'translate-y-24' : '-translate-y-24'
                 }`}
               >
-                <div className="liquid-glass-card p-2.5 rounded-[32px] shadow-2xl border border-white/10 relative group">
+                <div className="liquid-glass-card p-2.5 rounded-[32px] shadow-2xl border border-text/10 relative group">
                   <div className="relative aspect-[4/5.5] rounded-[24px] overflow-hidden mb-4">
                     <Image src={f.img} alt={f.name} fill className="object-cover opacity-45 grayscale group-hover:grayscale-0 transition-all duration-500" unoptimized />
-                    <div className={`absolute bottom-4 left-4 ${f.color} text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg`}>
+                    <div className={`absolute bottom-4 left-4 ${f.color} text-text px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg`}>
                       {f.role}
                     </div>
                   </div>
                   <div className="px-4 pb-3 flex items-center justify-between">
-                     <h4 className="font-black text-sm text-white tracking-tight uppercase italic">{f.name}</h4>
+                     <h4 className="font-black text-sm text-text tracking-tight uppercase italic">{f.name}</h4>
                      <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-on-accent shadow-[0_0_15px_rgba(0,0,0,0.3)]">
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3"><path d="M2 6H10M10 6L6 2M10 6L6 10"/></svg>
                      </div>
@@ -256,16 +257,16 @@ export default function FeaturesCollage() {
       </div>
 
       {/* Marquee Ticker */}
-      <div className="mt-10 bg-[#0A0A0A] py-3 scale-105 border-y border-accent/20 z-50 relative shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+      <div className="mt-10 bg-primary-light py-3 scale-105 border-y border-accent/20 z-50 relative shadow-[0_0_30px_rgba(0,0,0,0.3)]">
         <div className="flex whitespace-nowrap overflow-hidden">
           <div className="flex whitespace-nowrap animate-marquee items-center">
             {[1,2,3,4,5,6,7,8].map(i => (
               <div key={i} className="flex items-center gap-10 px-5">
-                <span className="text-accent font-black italic text-sm uppercase tracking-widest text-glow">PRUEBA CONJUNTOS</span>
+                <span className="text-accent font-black italic text-sm uppercase tracking-widest">PRUEBA CONJUNTOS</span>
                 <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(0,0,0,0.3)]" />
-                <span className="text-accent font-black italic text-sm uppercase tracking-widest text-glow">GESTIÓN INTELIGENTE</span>
+                <span className="text-accent font-black italic text-sm uppercase tracking-widest">GESTIÓN INTELIGENTE</span>
                 <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(0,0,0,0.3)]" />
-                <span className="text-accent font-black italic text-sm uppercase tracking-widest text-glow">COMUNIDAD ACTIVA</span>
+                <span className="text-accent font-black italic text-sm uppercase tracking-widest">COMUNIDAD ACTIVA</span>
                 <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(0,0,0,0.3)]" />
               </div>
             ))}

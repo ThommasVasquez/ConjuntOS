@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useAuth } from "@/hooks/useAuth";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   const { navigate } = useViewTransition();
@@ -53,7 +54,7 @@ export default function Navbar() {
             className="flex items-center cursor-pointer group"
           >
             <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center ${
-              scrolled ? "h-10 w-10 text-white" : "h-10 w-[140px]"
+              scrolled ? "h-10 w-10 text-text" : "h-10 w-[140px]"
             }`}>
               {scrolled ? (
                 <img 
@@ -82,7 +83,7 @@ export default function Navbar() {
                   if (item === "Asambleas") navigate("/asamblea");
                 }}
                 className={`transition-all duration-500 text-[11px] font-bold tracking-widest uppercase hover:text-accent cursor-pointer ${
-                  scrolled ? "text-white" : "text-white"
+                  scrolled ? "text-text" : "text-white"
                 }`}
               >
                 {item}
@@ -96,13 +97,14 @@ export default function Navbar() {
           <button className="text-white hover:text-accent transition-colors duration-300">
             <Search size={16} strokeWidth={2.5} />
           </button>
-          <div className="h-4 w-[1px] bg-white/10 mx-1" />
+          <ThemeToggle className="text-white" />
+          <div className="h-4 w-[1px] bg-text/10 mx-1" />
           <button 
             onClick={() => navigate(user ? "/inicio" : "/login")} 
             className={`transition-all duration-300 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase whitespace-nowrap hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,0,0,0.3)] ${
               scrolled 
-                ? "text-on-accent bg-white/5 border border-white/10 hover:bg-accent" 
-                : "text-on-accent border border-white/20 hover:bg-accent hover:border-accent"
+                ? "text-text bg-text/5 border border-text/10 hover:bg-accent hover:text-on-accent"
+                : "text-white border border-text/20 hover:bg-accent hover:border-accent hover:text-on-accent"
             }`}
           >
             {user ? "Mi Panel" : "Ingresar"}

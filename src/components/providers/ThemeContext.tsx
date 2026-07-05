@@ -12,7 +12,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("conjuntos_theme") as Theme | null;
@@ -20,8 +20,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setTheme(savedTheme);
       updateDocumentTheme(savedTheme);
     } else {
-      setTheme("dark");
-      updateDocumentTheme("dark");
+      setTheme("light");
+      updateDocumentTheme("light");
     }
   }, []);
 
@@ -41,17 +41,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
     
-    // Smooth cinematic view transition during theme swap if supported
-    if (document.startViewTransition) {
-      document.startViewTransition(() => {
-        setTheme(nextTheme);
-        localStorage.setItem("conjuntos_theme", nextTheme);
-        updateDocumentTheme(nextTheme);
-      });
-    } else {
+    const applyTheme = () => {
       setTheme(nextTheme);
       localStorage.setItem("conjuntos_theme", nextTheme);
       updateDocumentTheme(nextTheme);
+    };
+
+    // Smooth cinematic view transition during theme swap if supported.
+    if (document.startViewTransition) {
+      const vt = document.startViewTransition(applyTheme);
+      // Overlapping toggles/navigations abort the transition and reject these
+      // promises; swallow so they don't surface as unhandled errors. The DOM
+      // swap in applyTheme still runs, so the theme change is unaffected.
+      vt.ready?.catch(() => {});
+      vt.finished?.catch(() => {});
+    } else {
+      applyTheme();
     }
   };
 

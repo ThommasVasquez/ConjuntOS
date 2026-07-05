@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
+import RevealText from "./RevealText";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -35,28 +36,28 @@ export default function CraftsmanshipSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-[#000000]">
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-primary">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
         
         <div className="craft-text flex-1 space-y-6">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#FFFFFF]"></div>
-            <span className="text-sm font-semibold text-black uppercase tracking-widest">Nuestra esencia</span>
+            <div className="w-2 h-2 rounded-full bg-accent"></div>
+            <span className="text-sm font-semibold text-text/70 uppercase tracking-widest">Nuestra esencia</span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-montserrat)]">
+          <RevealText as="h2" className="text-4xl md:text-5xl font-bold text-text font-[family-name:var(--font-serif)]">
             Innovación<br/>y Calidad
-          </h2>
-          <p className="text-black text-lg max-w-sm">
+          </RevealText>
+          <p className="text-text/70 text-lg max-w-sm">
             El detalle de cada función está cuidadosamente pensado por nuestro equipo para brindarte la máxima fiabilidad, como una obra de arte creada para perdurar.
           </p>
         </div>
 
         <div className="flex-1 relative h-[500px] w-full">
           <div className="craft-img-1 absolute top-0 left-0 w-3/5 h-64 rounded-[32px] shadow-lg z-10 overflow-hidden">
-            <Image fill sizes="(max-width: 768px) 60vw, 360px" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" alt="Data analysis" className="object-cover" />
+            <Image fill sizes="(max-width: 768px) 60vw, 360px" src="/img/craft-tablet.webp" alt="Tecnología de gestión residencial" className="object-cover" unoptimized />
           </div>
           <div className="craft-img-2 absolute bottom-0 right-0 w-3/5 h-[350px] rounded-[32px] shadow-lg overflow-hidden">
-            <Image fill sizes="(max-width: 768px) 60vw, 360px" src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80" alt="Team collaborating" className="object-cover" />
+            <Image fill sizes="(max-width: 768px) 60vw, 360px" src="/img/hero-admin.webp" alt="Equipo de administración" className="object-cover" unoptimized />
           </div>
         </div>
 

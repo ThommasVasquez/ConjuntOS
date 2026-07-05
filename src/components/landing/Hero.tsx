@@ -11,7 +11,7 @@ const slides = [
     label: "Residentes",
     title: "Gestión residencial\ncon alma, creada\npara la comunidad",
     description: "Simplifica tu vida en copropiedad. Accede a servicios, pagos y comunicación con tu administración desde una sola plataforma intuitiva y elegante.",
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1600",
+    image: "/img/hero-residente.webp",
     features: [
       {
         title: "Reserva de Áreas",
@@ -35,7 +35,7 @@ const slides = [
     label: "Administración",
     title: "Administración\neficiente, clara\ny 100% digital",
     description: "Toma el control total de tu copropiedad. Herramientas financieras y operativas diseñadas para administradores modernos que buscan transparencia.",
-    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1600",
+    image: "/img/hero-admin.webp",
     features: [
       {
         title: "Asambleas Virtuales",
@@ -59,11 +59,11 @@ const slides = [
     label: "Seguridad",
     title: "Seguridad total\npara lo que\nmás importa",
     description: "Empodera a tu equipo de seguridad. Tecnología de vigilancia y control preventivo para garantizar la tranquilidad de todas las familias.",
-    image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=1600",
+    image: "/img/hero-seguridad.webp",
     features: [
       {
         title: "Control de Acceso",
-        desc: "Registro fotográfico y biométrico de personal externo y domicilios con alertas instantáneas.",
+        desc: "Registro de visitantes y domicilios con pases QR de un solo uso y aprobación del residente en tiempo real.",
         img: "https://images.unsplash.com/photo-1551808198-b30a64776194?auto=format&fit=crop&w=500&q=80"
       },
       {
@@ -83,7 +83,7 @@ const slides = [
     label: "Estacionamientos",
     title: "Optimización\ny orden en cada\nmétro cuadrado",
     description: "Gestiona el parqueo de visitantes y residentes con inteligencia. Elimina conflictos y maximiza el uso de espacios compartidos.",
-    image: "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&q=80&w=1600",
+    image: "/img/hero-parqueadero.webp",
     features: [
       {
         title: "Reserva de Cupos",
@@ -142,25 +142,24 @@ export default function Hero() {
   }, [activeSlide]);
 
   const handleSlideChange = (index: number) => {
-    const tl = gsap.timeline();
-    tl.to([".hero-text", ".hero-card"], {
-      opacity: 0,
-      y: 10,
-      duration: 0.3,
-      onComplete: () => {
+    if (index === activeSlide) return;
+    // Single self-contained timeline: fade out → swap slide → fade back in.
+    // Always ends at opacity 1, so it can't get stuck hidden even if a
+    // re-render or a duplicated timer interrupts mid-transition.
+    gsap.timeline({ overwrite: "auto" })
+      .to([".hero-text", ".hero-card"], { opacity: 0, y: 10, duration: 0.3, ease: "power2.in" })
+      .add(() => {
         setActiveSlide(index);
-        setActiveFeature(0); 
-        gsap.to(".hero-text", { y: 0, opacity: 1, duration: 0.6, delay: 0.2 });
-        gsap.to(".hero-card", { x: 0, opacity: 1, duration: 0.6, delay: 0.3, ease: "back.out" });
-      }
-    });
+        setActiveFeature(0);
+      })
+      .to([".hero-text", ".hero-card"], { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" });
   };
 
   const current = slides[activeSlide];
   const currentFeature = current.features[activeFeature];
 
   return (
-    <section ref={heroRef} className="relative w-full h-screen p-6 bg-[#000000]">
+    <section ref={heroRef} className="relative w-full h-screen p-6 bg-primary">
       <div className="relative w-full h-full rounded-[48px] overflow-hidden bg-[#000000] isolate">
         {/* Background Layers for Crossfade */}
         {slides.map((slide, idx) => (
@@ -169,7 +168,7 @@ export default function Hero() {
             className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
             style={{ 
               backgroundImage: `url('${slide.image}')`,
-              opacity: activeSlide === idx ? 0.25 : 0,
+              opacity: activeSlide === idx ? 0.4 : 0,
               zIndex: activeSlide === idx ? 1 : 0,
               transform: activeSlide === idx ? "scale(1)" : "scale(1.05)",
               visibility: activeSlide === idx || Math.abs(activeSlide - idx) <= 1 ? 'visible' : 'hidden'
@@ -193,7 +192,7 @@ export default function Hero() {
                   key={slide.id}
                   onClick={() => handleSlideChange(idx)}
                   className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all duration-300 ${
-                    activeSlide === idx ? "bg-accent text-on-accent shadow-[0_0_15px_rgba(0,0,0,0.3)]" : "text-on-accent/60 hover:text-on-accent"
+                    activeSlide === idx ? "bg-accent text-on-accent shadow-[0_0_15px_rgba(0,0,0,0.3)]" : "text-white/60 hover:text-white"
                   }`}
                 >
                   {slide.label}
@@ -207,7 +206,7 @@ export default function Hero() {
               </div>
             </div>
             
-            <h1 className="text-4xl md:text-6xl lg:text-[4.5rem] font-medium leading-[1.1] mb-6 font-[family-name:var(--font-montserrat)] tracking-tight whitespace-pre-line text-glow">
+            <h1 className="text-4xl md:text-6xl lg:text-[4.5rem] font-medium leading-[1.1] mb-6 font-[family-name:var(--font-serif)] tracking-tight whitespace-pre-line text-glow">
               {current.title}
             </h1>
             
@@ -234,10 +233,10 @@ export default function Hero() {
           </div>
 
           {/* Interactive Feature Card */}
-          <div className="hero-card liquid-glass-card p-10 rounded-[40px] w-[480px] shadow-2xl relative overflow-hidden border border-white/10">
+          <div className="hero-card liquid-glass-card p-10 rounded-[40px] w-[480px] shadow-2xl relative overflow-hidden border border-text/10">
             <div className="relative z-10">
               <div className="feature-content">
-                <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 overflow-hidden mb-8 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-2xl bg-text/5 border border-text/10 overflow-hidden mb-8 flex items-center justify-center">
                    <Image
                       width={64}
                       height={64}
@@ -247,10 +246,10 @@ export default function Hero() {
                     />
                 </div>
                 <div>
-                  <h3 className="text-3xl font-medium text-white font-[family-name:var(--font-montserrat)] mb-4">{currentFeature.title}</h3>
-                  <p className="text-base text-white leading-relaxed mb-8 h-20">{currentFeature.desc}</p>
+                  <h3 className="text-3xl font-medium text-text font-[family-name:var(--font-serif)] mb-4">{currentFeature.title}</h3>
+                  <p className="text-base text-text leading-relaxed mb-8 h-20">{currentFeature.desc}</p>
                   
-                  <button className="w-full py-4 rounded-full border border-white/10 text-on-accent text-xs font-bold tracking-widest uppercase hover:bg-accent hover:border-accent transition-all duration-300">
+                  <button className="w-full py-4 rounded-full border border-text/10 text-on-accent text-xs font-bold tracking-widest uppercase hover:bg-accent hover:border-accent transition-all duration-300">
                     Ver cómo funciona
                   </button>
                 </div>
@@ -261,7 +260,7 @@ export default function Hero() {
                 {[0, 1, 2].map((i) => (
                   <div 
                     key={i} 
-                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent shadow-[0_0_10px_rgba(0,0,0,0.3)]" : "bg-white/20"}`}
+                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent shadow-[0_0_10px_rgba(0,0,0,0.3)]" : "bg-text/20"}`}
                   />
                 ))}
               </div>
