@@ -34,9 +34,9 @@ export default function CookieConsent() {
     <div
       role="dialog"
       aria-label="Aviso de cookies"
-      className="fixed inset-x-0 bottom-0 z-[100] p-4 sm:p-6"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] p-4 sm:p-6"
     >
-      <div className="mx-auto flex max-w-3xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-2xl backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
+      <div className="pointer-events-auto mx-auto flex max-w-3xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-2xl backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
         <p className="flex-1 text-sm leading-relaxed text-text-muted">
           Usamos cookies propias y de terceros para el funcionamiento, la seguridad y la mejora de la
           plataforma. Consulta nuestra{" "}
