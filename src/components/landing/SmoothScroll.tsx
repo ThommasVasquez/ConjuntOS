@@ -30,7 +30,17 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     gsap.ticker.add(ticker);
     gsap.ticker.lagSmoothing(0);
 
+    // The pinned DoorHero and late-loading images change the total scroll
+    // height AFTER downstream ScrollTriggers are created, leaving their start
+    // positions stale (reveals never fire → sections stuck invisible). Recalc
+    // all trigger positions once things settle.
+    const refresh = () => ScrollTrigger.refresh();
+    window.addEventListener("load", refresh);
+    const timers = [setTimeout(refresh, 600), setTimeout(refresh, 2000)];
+
     return () => {
+      window.removeEventListener("load", refresh);
+      timers.forEach(clearTimeout);
       gsap.ticker.remove(ticker);
       lenis.destroy();
     };

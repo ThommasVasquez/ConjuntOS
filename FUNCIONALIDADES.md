@@ -29,6 +29,19 @@ Directorio completo con búsqueda por nombre, torre o apartamento. Filtrado por 
 
 ---
 
+## 🏢 Plataforma Multi-Conjunto (SuperAdmin)
+
+### Registro de Copropiedades
+EN-CONJUNTO opera como plataforma multi-conjunto: desde el panel de SuperAdmin se dan de alta nuevas copropiedades con su nombre comercial, NIT, dirección, municipio y número total de unidades privadas. Cada conjunto queda aislado con su propio subdominio único (tenant), de modo que sus datos nunca se mezclan con los de otro.
+
+### Datos Legales de Constitución
+Se registra la información oficial de cada copropiedad: matrícula principal de la Oficina de Registro, número y fecha de la escritura pública, notaría del reglamento de propiedad horizontal y representante legal (administrador). Todo queda documentado para respaldo legal y administrativo.
+
+### Marca Blanca por Conjunto
+Cada copropiedad personaliza su identidad visual con su logotipo y color de marca primario, para que residentes y administradores vivan la plataforma con la imagen de su propio conjunto. Las copropiedades existentes se editan y mantienen actualizadas desde el mismo panel.
+
+---
+
 ## 📢 Comunicación
 
 ### Cartelera Digital
@@ -46,6 +59,9 @@ Alertas instantáneas cuando llega un paquete, se aprueba un trámite o hay nove
 
 ### Registro de Visitas
 La portería registra ingresos peatonales y vehiculares en segundos. Se selecciona el residente destino, se ingresa el nombre del visitante y queda registrado en la bitácora con fecha y hora exacta.
+
+### Pre-registro de Visitas con Código QR
+El residente anuncia a su visitante desde la app y el sistema genera un código QR con vigencia configurable (por defecto 24 horas, ajustable entre 1 y 168). Al llegar, la portería escanea el QR para validar el ingreso al instante: agiliza la entrada, evita filas y rechaza automáticamente los códigos vencidos.
 
 ### Historial de Accesos
 Registro completo de todas las visitas del día. Cada entrada muestra quién ingresó, a qué unidad se dirige y el tipo de acceso. Transparencia total para la seguridad del conjunto.
@@ -232,6 +248,9 @@ El propietario emite un pase temporal con un código único, fechas de inicio y 
 
 ### Validación en Portería y Expiración Automática
 La portería valida el código y ve los permisos y vehículos autorizados. Los pases vencidos se marcan como expirados automáticamente y desactivan la cuenta del huésped; el propietario puede revocar un pase en cualquier momento.
+
+### Mi Estancia (Vista del Huésped)
+El huésped tiene su propio panel "Mi Estancia": ve quién es su anfitrión, las fechas de check-in y check-out, los permisos concedidos por área y, si su pase lo habilita, puede reservar zonas comunes durante su visita. Todo sin acceder a información privada del conjunto.
 
 ---
 
