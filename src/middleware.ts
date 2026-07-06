@@ -7,7 +7,7 @@ import type { NextRequest } from "next/server";
  * Public paths are allowed without auth; everything else redirects to /login.
  */
 
-const PUBLIC_PATHS = ["/about", "/pricing", "/contact"];
+const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

@@ -12,6 +12,7 @@ import Footer from '@/components/landing/Footer';
 import SmoothScroll from '@/components/landing/SmoothScroll';
 import DoorHero from '@/components/landing/DoorHero';
 import AboutStatement from '@/components/landing/AboutStatement';
+import CookieConsent from '@/components/landing/CookieConsent';
 
 export const metadata: Metadata = {
   title: 'ConjuntOS - Gestión Residencial Inteligente',
@@ -20,21 +21,25 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <SmoothScroll>
-      <main className="min-h-screen bg-primary text-text selection:bg-text/20 selection:text-primary overflow-hidden">
-        <Navbar />
-        <DoorHero />
-        <Hero />
-        <AboutStatement />
-        <StorySection />
-        <CraftsmanshipSection />
-        <TeamSection />
-        <ProductsSection />
-        <BentoFeatures />
-        <ShowcaseSection />
-        <FaqSection />
-        <Footer />
-      </main>
-    </SmoothScroll>
+    <>
+      <SmoothScroll>
+        <main className="min-h-screen bg-primary text-text selection:bg-text/20 selection:text-primary overflow-hidden">
+          <Navbar />
+          <DoorHero />
+          <Hero />
+          <AboutStatement />
+          <StorySection />
+          <CraftsmanshipSection />
+          <TeamSection />
+          <ProductsSection />
+          <BentoFeatures />
+          <ShowcaseSection />
+          <FaqSection />
+          <Footer />
+        </main>
+      </SmoothScroll>
+      {/* Outside SmoothScroll so position:fixed isn't clipped by its transform */}
+      <CookieConsent />
+    </>
   );
 }
