@@ -3,6 +3,7 @@
 <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml" />
 <link rel="alternate icon" href="favicon.ico?v=2" type="image/x-icon" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/transition-style@0.1.4/transition.min.css" />
 <style>
   :root {
     --font-display:
@@ -220,6 +221,10 @@
     position: relative;
     min-height: 0;
     overflow: hidden;
+  }
+  [transition-style] {
+    --transition__duration: 0.9s;
+    --transition__easing: cubic-bezier(0.25, 1, 0.30, 1);
   }
   .slide {
     position: absolute;
@@ -1148,77 +1153,46 @@
       activeTimeline = gsap.timeline();
 
       if (isDesktop) {
-        // --- DESKTOP FILMSTRIP PARALLAX TRANSITION ---
-        const xOffsetOut = isForward ? -100 : 100;
-        const xOffsetIn = isForward ? 100 : -100;
+        // --- DESKTOP CLIP-PATH TRANSITION (transition-style) ---
+        const effect = isForward ? "in:circle:hesitate" : "in:circle:center";
 
-        // Make sure both slides are visible during the transition
+        // Reset and prepare slides visibility
+        slides.forEach((el, idx) => {
+          if (idx !== i && idx !== prevIndex) {
+            gsap.set(el, { visibility: "hidden", opacity: 0 });
+          }
+        });
+
+        // Set both slides visible so the clip-path transitions on top of the old slide
         gsap.set(prevSlide, { visibility: "visible", opacity: 1, xPercent: 0, scale: 1 });
-        gsap.set(newSlide, { visibility: "visible", opacity: 1, xPercent: xOffsetIn, scale: 1 });
+        gsap.set(newSlide, { visibility: "visible", opacity: 1, xPercent: 0, scale: 1 });
+
+        // Apply clip-path class or attribute
+        newSlide.setAttribute("transition-style", effect);
 
         // Select elements
-        const prevMedia = prevSlide.querySelector(".media");
-        const prevBody = prevSlide.querySelector(".body");
         const newMedia = newSlide.querySelector(".media");
-        const newBody = newSlide.querySelector(".body");
 
-        // Animate out prevSlide with parallax
-        activeTimeline.to(prevSlide, {
-          xPercent: xOffsetOut,
-          duration: 0.8,
-          ease: "power4.inOut"
-        }, 0);
-
-        if (prevMedia) {
-          activeTimeline.to(prevMedia, {
-            x: isForward ? -150 : 150,
-            opacity: 0,
-            duration: 0.8,
-            ease: "power4.inOut"
-          }, 0);
-        }
-        if (prevBody) {
-          activeTimeline.to(prevBody, {
-            x: isForward ? -100 : 100,
-            opacity: 0,
-            duration: 0.8,
-            ease: "power4.inOut"
-          }, 0);
-        }
-
-        // Reset and animate in newSlide
-        if (newMedia) {
-          gsap.set(newMedia, { x: isForward ? 150 : -150, opacity: 0 });
-        }
-        if (newBody) {
-          gsap.set(newBody, { x: isForward ? 100 : -100, opacity: 0 });
-        }
-
-        activeTimeline.to(newSlide, {
-          xPercent: 0,
-          duration: 0.8,
-          ease: "power4.inOut",
+        // Prepare GSAP timeline for inner elements and cleanup
+        activeTimeline = gsap.timeline({
           onComplete: () => {
             // Hide the old slide after transition finishes
-            gsap.set(prevSlide, { visibility: "hidden", xPercent: 0 });
+            gsap.set(prevSlide, { visibility: "hidden", opacity: 0 });
+            // Clean up attribute to prevent any style pollution
+            newSlide.removeAttribute("transition-style");
           }
-        }, 0);
+        });
 
+        // Animate incoming mascot
         if (newMedia) {
+          gsap.set(newMedia, { x: isForward ? 40 : -40, opacity: 0, scale: 0.93 });
           activeTimeline.to(newMedia, {
             x: 0,
             opacity: 1,
-            duration: 0.8,
-            ease: "power4.inOut"
-          }, 0.05);
-        }
-        if (newBody) {
-          activeTimeline.to(newBody, {
-            x: 0,
-            opacity: 1,
-            duration: 0.8,
-            ease: "power4.inOut"
-          }, 0.08);
+            scale: 1,
+            duration: 0.85,
+            ease: "back.out(1.2)"
+          }, 0.1);
         }
 
         // Stagger inner elements inside the new slide's body once it starts settling
@@ -1249,7 +1223,7 @@
             stagger: 0.06,
             duration: 0.45,
             ease: "power2.out"
-          }, 0.45);
+          }, 0.35);
 
           if (chips.length) {
             activeTimeline.to(chips, {
@@ -1258,7 +1232,7 @@
               stagger: 0.04,
               duration: 0.4,
               ease: "power2.out"
-            }, 0.55);
+            }, 0.45);
           }
           if (cards.length) {
             activeTimeline.to(cards, {
@@ -1267,7 +1241,7 @@
               stagger: 0.06,
               duration: 0.5,
               ease: "power2.out"
-            }, 0.55);
+            }, 0.45);
           }
           if (closeContent.length) {
             activeTimeline.to(closeContent, {
@@ -1276,7 +1250,7 @@
               stagger: 0.08,
               duration: 0.5,
               ease: "power2.out"
-            }, 0.6);
+            }, 0.5);
           }
         }
       } else {
