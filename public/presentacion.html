@@ -1171,7 +1171,9 @@
         newSlide.setAttribute("transition-style", effect);
 
         // Select elements
-        const newMedia = newSlide.querySelector(".media");
+        const frame = newSlide.querySelector(".media__frame");
+        const tag = newSlide.querySelector(".media__tag");
+        const no = newSlide.querySelector(".media__no");
 
         // Prepare GSAP timeline for inner elements and cleanup
         activeTimeline = gsap.timeline({
@@ -1183,16 +1185,45 @@
           }
         });
 
-        // Animate incoming mascot
-        if (newMedia) {
-          gsap.set(newMedia, { x: isForward ? 40 : -40, opacity: 0, scale: 0.93 });
-          activeTimeline.to(newMedia, {
-            x: 0,
+        // Animate incoming mascot (playful pop & tilt)
+        if (frame) {
+          gsap.set(frame, { 
+            y: 80, 
+            opacity: 0, 
+            scale: 0.85, 
+            rotation: isForward ? 8 : -8,
+            transformOrigin: "bottom center"
+          });
+          activeTimeline.to(frame, {
+            y: 0,
             opacity: 1,
             scale: 1,
-            duration: 0.85,
-            ease: "back.out(1.2)"
+            rotation: 0,
+            duration: 0.95,
+            ease: "back.out(1.5)"
           }, 0.1);
+        }
+
+        // Animate text tag next to capybara (staggered pop)
+        if (tag) {
+          gsap.set(tag, { scale: 0, opacity: 0, transformOrigin: "left bottom" });
+          activeTimeline.to(tag, {
+            scale: 1,
+            opacity: 1,
+            duration: 0.55,
+            ease: "back.out(1.8)"
+          }, 0.45);
+        }
+
+        // Animate slide number indicator (staggered pop)
+        if (no) {
+          gsap.set(no, { y: -20, opacity: 0 });
+          activeTimeline.to(no, {
+            y: 0,
+            opacity: 1,
+            duration: 0.5,
+            ease: "back.out(1.2)"
+          }, 0.5);
         }
 
         // Stagger inner elements inside the new slide's body once it starts settling
