@@ -236,6 +236,21 @@
     align-items: center;
     opacity: 0;
     visibility: hidden;
+    background: var(--bg);
+  }
+  .slide::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 55% at 82% 12%, var(--glow), transparent 60%),
+      radial-gradient(
+        50% 50% at 8% 90%,
+        rgba(32, 48, 138, 0.16),
+        transparent 60%
+      );
   }
   .slide.is-active {
     opacity: 1;
