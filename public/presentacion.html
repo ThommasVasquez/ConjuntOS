@@ -231,16 +231,10 @@
     align-items: center;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(14px) scale(0.99);
-    transition:
-      opacity 0.5s ease,
-      transform 0.5s ease,
-      visibility 0.5s;
   }
   .slide.is-active {
     opacity: 1;
     visibility: visible;
-    transform: none;
   }
   .slide.rev {
     grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
@@ -609,8 +603,12 @@
 <div class="deck">
   <header class="topbar">
     <div class="brand">
-      <img src="ConjuntOS_Horizontal.svg?v=2" alt="ConjuntOS Logo" style="height: 38px; display: block;" />
-      <span>· Funcionalidades</span>
+      <img
+        src="ConjuntOS_Horizontal.svg?v=2"
+        alt="ConjuntOS Logo"
+        style="height: 38px; display: block"
+      />
+      <span>· Manual de Funciones! </span>
     </div>
     <div class="spacer"></div>
     <button
@@ -649,6 +647,7 @@
   </footer>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
   // auto-generated capybara mascot data URIs
   const CAPI = {
@@ -677,7 +676,7 @@
     {
       kind: "cover",
       img: "hero",
-      eyebrow: "Guía de funcionalidades",
+      eyebrow: "Manual de funciones",
       title: "El sistema operativo de los conjuntos residenciales!",
       lede: "ConjuntOS® 🏘️ digitaliza toda la administración de tu conjunto residencial: del control de acceso a las finanzas, en un solo lugar y desde cualquier dispositivo.",
       chips: [
@@ -1107,22 +1106,175 @@
     go(0, true);
   }
 
+  let activeTimeline = null;
+
   function go(n, silent) {
+    const prevIndex = i;
     i = Math.max(0, Math.min(total - 1, n));
-    document
-      .querySelectorAll(".slide")
-      .forEach((el, idx) => el.classList.toggle("is-active", idx === i));
-    document.querySelectorAll(".dot").forEach((el, idx) => {
+
+    if (activeTimeline) {
+      activeTimeline.kill();
+    }
+
+    const slides = document.querySelectorAll(".slide");
+    const dots = document.querySelectorAll(".dot");
+
+    dots.forEach((el, idx) => {
       el.classList.toggle("on", idx === i);
       el.setAttribute("aria-selected", idx === i ? "true" : "false");
     });
+
     $("#cur").textContent = String(i + 1).padStart(2, "0");
     $("#tbar").style.width = ((i + 1) / total) * 100 + "%";
     $("#prev").disabled = i === 0;
     $("#next").disabled = i === total - 1;
+
+    const prevSlide = slides[prevIndex];
+    const newSlide = slides[i];
+
+    // Toggle active class (handles display in mobile)
+    slides.forEach((el, idx) => {
+      el.classList.toggle("is-active", idx === i);
+    });
+
     if (!silent) {
-      const a = document.querySelectorAll(".slide")[i];
-      if (a) a.scrollIntoView({ block: "nearest" });
+      if (newSlide) newSlide.scrollIntoView({ block: "nearest" });
+    }
+
+    if (prevIndex !== i && prevSlide && newSlide) {
+      const isForward = i > prevIndex;
+      const xOffset = isForward ? 60 : -60;
+
+      activeTimeline = gsap.timeline();
+
+      // Animate out the old slide
+      activeTimeline.to(prevSlide, {
+        opacity: 0,
+        x: -xOffset * 0.5,
+        scale: 0.98,
+        duration: 0.35,
+        ease: "power2.inOut",
+        onComplete: () => {
+          gsap.set(prevSlide, { visibility: "hidden", x: 0, scale: 1 });
+        }
+      }, 0);
+
+      // Reset new slide internal elements before entrance
+      const media = newSlide.querySelector(".media");
+      const eyebrow = newSlide.querySelector(".eyebrow");
+      const title = newSlide.querySelector(".title");
+      const ledeOrIntro = newSlide.querySelector(".lede, .intro");
+      const chips = newSlide.querySelectorAll(".chip");
+      const cards = newSlide.querySelectorAll(".card");
+      const closeContent = newSlide.querySelectorAll(".close");
+
+      gsap.set(newSlide, { visibility: "visible", opacity: 0, x: xOffset, scale: 1 });
+      if (media) gsap.set(media, { opacity: 0, y: 30, scale: 0.93 });
+      if (eyebrow) gsap.set(eyebrow, { opacity: 0, y: 15 });
+      if (title) gsap.set(title, { opacity: 0, y: 15 });
+      if (ledeOrIntro) gsap.set(ledeOrIntro, { opacity: 0, y: 15 });
+      if (chips.length) gsap.set(chips, { opacity: 0, y: 10, scale: 0.9 });
+      if (cards.length) gsap.set(cards, { opacity: 0, y: 20 });
+      if (closeContent.length) gsap.set(closeContent, { opacity: 0, y: 20 });
+
+      // Animate in the new slide container
+      activeTimeline.to(newSlide, {
+        opacity: 1,
+        x: 0,
+        duration: 0.55,
+        ease: "power3.out"
+      }, 0.1);
+
+      // Staggered animate in new slide contents
+      if (media) {
+        activeTimeline.to(media, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.7,
+          ease: "back.out(1.15)"
+        }, 0.15);
+      }
+      if (eyebrow) {
+        activeTimeline.to(eyebrow, {
+          opacity: 1,
+          y: 0,
+          duration: 0.45
+        }, 0.2);
+      }
+      if (title) {
+        activeTimeline.to(title, {
+          opacity: 1,
+          y: 0,
+          duration: 0.45
+        }, 0.25);
+      }
+      if (ledeOrIntro) {
+        activeTimeline.to(ledeOrIntro, {
+          opacity: 1,
+          y: 0,
+          duration: 0.45
+        }, 0.3);
+      }
+      if (chips.length) {
+        activeTimeline.to(chips, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          stagger: 0.04,
+          duration: 0.4
+        }, 0.35);
+      }
+      if (cards.length) {
+        activeTimeline.to(cards, {
+          opacity: 1,
+          y: 0,
+          stagger: 0.07,
+          duration: 0.55,
+          ease: "power2.out"
+        }, 0.35);
+      }
+      if (closeContent.length) {
+        activeTimeline.to(closeContent, {
+          opacity: 1,
+          y: 0,
+          stagger: 0.08,
+          duration: 0.55,
+          ease: "power2.out"
+        }, 0.4);
+      }
+    } else {
+      // First load or silent initialization
+      if (newSlide) {
+        gsap.set(slides, { opacity: 0, visibility: "hidden", x: 0 });
+        gsap.set(newSlide, { opacity: 1, visibility: "visible", x: 0 });
+
+        const media = newSlide.querySelector(".media");
+        const eyebrow = newSlide.querySelector(".eyebrow");
+        const title = newSlide.querySelector(".title");
+        const ledeOrIntro = newSlide.querySelector(".lede, .intro");
+        const chips = newSlide.querySelectorAll(".chip");
+        const cards = newSlide.querySelectorAll(".card");
+        const closeContent = newSlide.querySelectorAll(".close");
+
+        activeTimeline = gsap.timeline();
+        if (media) gsap.set(media, { opacity: 0, y: 20, scale: 0.95 });
+        if (eyebrow) gsap.set(eyebrow, { opacity: 0, y: 10 });
+        if (title) gsap.set(title, { opacity: 0, y: 10 });
+        if (ledeOrIntro) gsap.set(ledeOrIntro, { opacity: 0, y: 10 });
+        if (chips.length) gsap.set(chips, { opacity: 0, y: 5, scale: 0.95 });
+        if (cards.length) gsap.set(cards, { opacity: 0, y: 15 });
+        if (closeContent.length) gsap.set(closeContent, { opacity: 0, y: 15 });
+
+        activeTimeline.to(newSlide, { opacity: 1, duration: 0.35 });
+        if (media) activeTimeline.to(media, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "back.out(1.1)" }, 0.1);
+        if (eyebrow) activeTimeline.to(eyebrow, { opacity: 1, y: 0, duration: 0.35 }, 0.15);
+        if (title) activeTimeline.to(title, { opacity: 1, y: 0, duration: 0.35 }, 0.2);
+        if (ledeOrIntro) activeTimeline.to(ledeOrIntro, { opacity: 1, y: 0, duration: 0.35 }, 0.25);
+        if (chips.length) activeTimeline.to(chips, { opacity: 1, y: 0, scale: 1, stagger: 0.03, duration: 0.35 }, 0.3);
+        if (cards.length) activeTimeline.to(cards, { opacity: 1, y: 0, stagger: 0.05, duration: 0.45 }, 0.3);
+        if (closeContent.length) activeTimeline.to(closeContent, { opacity: 1, y: 0, stagger: 0.06, duration: 0.45 }, 0.35);
+      }
     }
   }
 
