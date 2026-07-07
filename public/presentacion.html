@@ -1163,9 +1163,10 @@
           }
         });
 
-        // Set both slides visible so the clip-path transitions on top of the old slide
-        gsap.set(prevSlide, { visibility: "visible", opacity: 1, xPercent: 0, scale: 1 });
-        gsap.set(newSlide, { visibility: "visible", opacity: 1, xPercent: 0, scale: 1 });
+        // Set both slides visible so the clip-path transitions on top of the old slide,
+        // explicitly setting zIndex so newSlide is ALWAYS painted on top.
+        gsap.set(prevSlide, { visibility: "visible", opacity: 1, xPercent: 0, scale: 1, zIndex: 1 });
+        gsap.set(newSlide, { visibility: "visible", opacity: 1, xPercent: 0, scale: 1, zIndex: 2 });
 
         // Apply clip-path class or attribute
         newSlide.setAttribute("transition-style", effect);
@@ -1179,7 +1180,8 @@
         activeTimeline = gsap.timeline({
           onComplete: () => {
             // Hide the old slide after transition finishes
-            gsap.set(prevSlide, { visibility: "hidden", opacity: 0 });
+            gsap.set(prevSlide, { visibility: "hidden", opacity: 0, zIndex: "" });
+            gsap.set(newSlide, { zIndex: "" });
             // Clean up attribute to prevent any style pollution
             newSlide.removeAttribute("transition-style");
           }
