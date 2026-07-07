@@ -223,7 +223,7 @@
     overflow: hidden;
   }
   [transition-style] {
-    --transition__duration: 0.9s;
+    --transition__duration: 0.65s;
     --transition__easing: cubic-bezier(0.25, 1, 0.30, 1);
   }
   .slide {
@@ -1169,7 +1169,7 @@
 
       if (isDesktop) {
         // --- DESKTOP CLIP-PATH TRANSITION (transition-style) ---
-        const effect = isForward ? "in:circle:hesitate" : "in:circle:center";
+        const effect = "in:circle:center";
 
         // Reset and prepare slides visibility
         slides.forEach((el, idx) => {
@@ -1205,10 +1205,10 @@
         // Animate incoming mascot (playful pop & tilt)
         if (frame) {
           gsap.set(frame, { 
-            y: 80, 
+            y: 35, 
             opacity: 0, 
-            scale: 0.85, 
-            rotation: isForward ? 8 : -8,
+            scale: 0.9, 
+            rotation: isForward ? 3 : -3,
             transformOrigin: "bottom center"
           });
           activeTimeline.to(frame, {
@@ -1216,9 +1216,9 @@
             opacity: 1,
             scale: 1,
             rotation: 0,
-            duration: 0.95,
-            ease: "back.out(1.5)"
-          }, 0.1);
+            duration: 0.7,
+            ease: "back.out(1.4)"
+          }, 0.05);
         }
 
         // Animate text tag next to capybara (staggered pop)
@@ -1227,20 +1227,20 @@
           activeTimeline.to(tag, {
             scale: 1,
             opacity: 1,
-            duration: 0.55,
-            ease: "back.out(1.8)"
-          }, 0.45);
+            duration: 0.45,
+            ease: "back.out(1.6)"
+          }, 0.25);
         }
 
         // Animate slide number indicator (staggered pop)
         if (no) {
-          gsap.set(no, { y: -20, opacity: 0 });
+          gsap.set(no, { y: -15, opacity: 0 });
           activeTimeline.to(no, {
             y: 0,
             opacity: 1,
-            duration: 0.5,
+            duration: 0.4,
             ease: "back.out(1.2)"
-          }, 0.5);
+          }, 0.3);
         }
 
         // Stagger inner elements inside the new slide's body once it starts settling
@@ -1268,37 +1268,37 @@
           activeTimeline.to(staggerElements, {
             opacity: 1,
             y: 0,
-            stagger: 0.06,
-            duration: 0.45,
+            stagger: 0.05,
+            duration: 0.4,
             ease: "power2.out"
-          }, 0.35);
+          }, 0.25);
 
           if (chips.length) {
             activeTimeline.to(chips, {
               opacity: 1,
               y: 0,
               stagger: 0.04,
-              duration: 0.4,
+              duration: 0.35,
               ease: "power2.out"
-            }, 0.45);
+            }, 0.3);
           }
           if (cards.length) {
             activeTimeline.to(cards, {
               opacity: 1,
               y: 0,
-              stagger: 0.06,
-              duration: 0.5,
+              stagger: 0.05,
+              duration: 0.4,
               ease: "power2.out"
-            }, 0.45);
+            }, 0.3);
           }
           if (closeContent.length) {
             activeTimeline.to(closeContent, {
               opacity: 1,
               y: 0,
-              stagger: 0.08,
-              duration: 0.5,
+              stagger: 0.06,
+              duration: 0.4,
               ease: "power2.out"
-            }, 0.5);
+            }, 0.35);
           }
         }
       } else {
