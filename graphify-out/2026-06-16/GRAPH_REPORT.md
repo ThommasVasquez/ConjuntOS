@@ -1,4 +1,4 @@
-# Graph Report - EN-CONJUNTO  (2026-06-15)
+# Graph Report - ConjuntOS® 🏘️  (2026-06-15)
 
 ## Corpus Check
 - 287 files · ~303,054 words
@@ -481,7 +481,7 @@ Nodes (10): 1. DNS, 2. Certificados TLS, 3. Firewall (abrir en el host), 4. Leva
 
 ### Community 74 - "Edge Routing Worker"
 Cohesion: 0.18
-Nodes (10): Blockers fixed, Build/test ground truth, Counts, Critical (1), CRITICAL-1 **[BLOCKER]** — All Decimal/NUMERIC columns silently migrate as 0 — tokio-postgres has no decimal feature enabled, Deferred (documented, not fixed), EN-CONJUNTO — Production-Readiness Review, ✅ Fixes applied (2026-06-11) (+2 more)
+Nodes (10): Blockers fixed, Build/test ground truth, Counts, Critical (1), CRITICAL-1 **[BLOCKER]** — All Decimal/NUMERIC columns silently migrate as 0 — tokio-postgres has no decimal feature enabled, Deferred (documented, not fixed), ConjuntOS® 🏘️ — Production-Readiness Review, ✅ Fixes applied (2026-06-11) (+2 more)
 
 ### Community 75 - "Transform Phase Analysis"
 Cohesion: 0.38
@@ -625,7 +625,7 @@ Nodes (5): Result, String, generate_token(), LiveKitClaims, VideoGrant
 
 ### Community 111 - "Gemini Chat Client"
 Cohesion: 0.22
-Nodes (8): EN-CONJUNTO Backend Constitution, Law 1 — Stack invariants, Law 2 — Tenancy, Law 3 — Auth, Law 4 — Errors, Law 5 — API contract, Law 6 — Data, Law 7 — Testing
+Nodes (8): ConjuntOS® 🏘️ Backend Constitution, Law 1 — Stack invariants, Law 2 — Tenancy, Law 3 — Auth, Law 4 — Errors, Law 5 — API contract, Law 6 — Data, Law 7 — Testing
 
 ### Community 112 - "Request URL Parsing"
 Cohesion: 0.25

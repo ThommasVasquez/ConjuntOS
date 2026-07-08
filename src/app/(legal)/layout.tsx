@@ -8,7 +8,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
       <header className="border-b border-border">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-6">
           <Link href="/" className="font-bold tracking-tight">
-            EN-CONJUNTO
+            ConjuntOS® 🏘️
           </Link>
           <Link
             href="/"
@@ -23,7 +23,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-3xl flex-col justify-between gap-2 px-6 py-8 text-xs text-text-muted sm:flex-row">
-          <span>© 2026 ENERGYSOFTmedia — EN-CONJUNTO</span>
+          <span>© 2026 ENERGYSOFTmedia — ConjuntOS® 🏘️</span>
           <span className="flex gap-4">
             <Link href="/privacidad" className="transition-colors hover:text-text">
               Política de Privacidad

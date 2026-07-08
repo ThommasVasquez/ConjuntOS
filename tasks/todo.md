@@ -1,4 +1,4 @@
-# TODO — EN-CONJUNTO market-leading features
+# TODO — ConjuntOS® 🏘️ market-leading features
 
 Full plan: `tasks/plan.md`. Order is dependency-correct. Check off as `/build` completes each.
 After Phase 1, features F1/F2/F4/F6+F7/F9 can run in parallel. F3 is isolated (needs Nequi creds).

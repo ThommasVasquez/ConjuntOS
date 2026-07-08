@@ -1,6 +1,6 @@
-# EN-CONJUNTO — Inventario de funcionalidades
+# ConjuntOS® 🏘️ — Inventario de funcionalidades
 
-EN-CONJUNTO es una plataforma multi-conjunto (multi-tenant) para la gestión integral de conjuntos residenciales: acceso y seguridad, portería, parqueadero, finanzas, convivencia, asambleas, comunicaciones y asistentes de IA. Toda la operación está aislada por `conjunto_id` y los flujos sensibles se notifican en tiempo real por WebSocket y Web Push.
+ConjuntOS® 🏘️ es una plataforma multi-conjunto (multi-tenant) para la gestión integral de conjuntos residenciales: acceso y seguridad, portería, parqueadero, finanzas, convivencia, asambleas, comunicaciones y asistentes de IA. Toda la operación está aislada por `conjunto_id` y los flujos sensibles se notifican en tiempo real por WebSocket y Web Push.
 
 ## Totales
 

@@ -5,8 +5,8 @@ use utoipa::OpenApi;
 #[derive(OpenApi)]
 #[openapi(
     info(
-        title = "EN-CONJUNTO API",
-        description = "Rust backend for the EN-CONJUNTO residential-complex platform. \
+        title = "ConjuntOS® 🏘️ API",
+        description = "Rust backend for the ConjuntOS® 🏘️ residential-complex platform. \
                        Contract per specs/constitution.md Law 5.",
         version = "0.1.0"
     ),
@@ -134,7 +134,7 @@ pub async fn docs_html() -> Html<&'static str> {
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>EN-CONJUNTO API docs</title>
+  <title>ConjuntOS® 🏘️ API docs</title>
   <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
 </head>
 <body>

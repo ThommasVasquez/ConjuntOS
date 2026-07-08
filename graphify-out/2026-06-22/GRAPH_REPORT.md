@@ -1,4 +1,4 @@
-# Graph Report - EN-CONJUNTO  (2026-06-22)
+# Graph Report - ConjuntOS® 🏘️  (2026-06-22)
 
 ## Corpus Check
 - 395 files · ~404,202 words
@@ -538,7 +538,7 @@ Nodes (10): 1. DNS, 2. Certificados TLS, 3. Firewall (abrir en el host), 4. Leva
 
 ### Community 74 - "Edge Routing Worker"
 Cohesion: 0.18
-Nodes (10): Blockers fixed, Build/test ground truth, Counts, Critical (1), CRITICAL-1 **[BLOCKER]** — All Decimal/NUMERIC columns silently migrate as 0 — tokio-postgres has no decimal feature enabled, Deferred (documented, not fixed), EN-CONJUNTO — Production-Readiness Review, ✅ Fixes applied (2026-06-11) (+2 more)
+Nodes (10): Blockers fixed, Build/test ground truth, Counts, Critical (1), CRITICAL-1 **[BLOCKER]** — All Decimal/NUMERIC columns silently migrate as 0 — tokio-postgres has no decimal feature enabled, Deferred (documented, not fixed), ConjuntOS® 🏘️ — Production-Readiness Review, ✅ Fixes applied (2026-06-11) (+2 more)
 
 ### Community 75 - "Transform Phase Analysis"
 Cohesion: 0.38
@@ -634,7 +634,7 @@ Nodes (20): DateTime, EstadoCorrespondencia, EstadoNovedad, EstadoPaquete, Optio
 
 ### Community 99 - "Stream and Header Handling"
 Cohesion: 0.22
-Nodes (8): Phase 1 — Foundations (build first), Phase 2 — Safety & daily-use, Phase 3 — Real payments via Nequi (GATE: Nequi sandbox creds), Phase 4 — Governance & community, Phase 5 — Compliance reminders (reuse 1.2), Phase 6 — Module upgrades (offline voting dropped — online only), Remaining external dependency, TODO — EN-CONJUNTO market-leading features
+Nodes (8): Phase 1 — Foundations (build first), Phase 2 — Safety & daily-use, Phase 3 — Real payments via Nequi (GATE: Nequi sandbox creds), Phase 4 — Governance & community, Phase 5 — Compliance reminders (reuse 1.2), Phase 6 — Module upgrades (offline voting dropped — online only), Remaining external dependency, TODO — ConjuntOS® 🏘️ market-leading features
 
 ### Community 100 - "Cookies and URL State"
 Cohesion: 0.25
@@ -682,7 +682,7 @@ Nodes (5): Result, String, generate_token(), LiveKitClaims, VideoGrant
 
 ### Community 111 - "Gemini Chat Client"
 Cohesion: 0.22
-Nodes (8): EN-CONJUNTO Backend Constitution, Law 1 — Stack invariants, Law 2 — Tenancy, Law 3 — Auth, Law 4 — Errors, Law 5 — API contract, Law 6 — Data, Law 7 — Testing
+Nodes (8): ConjuntOS® 🏘️ Backend Constitution, Law 1 — Stack invariants, Law 2 — Tenancy, Law 3 — Auth, Law 4 — Errors, Law 5 — API contract, Law 6 — Data, Law 7 — Testing
 
 ### Community 112 - "Request URL Parsing"
 Cohesion: 0.25
@@ -902,7 +902,7 @@ Nodes (11): AdminResidenteDetalle, AdminResidenteItem, AdminResidentesPage(), Ed
 
 ### Community 201 - "Community 201"
 Cohesion: 0.17
-Nodes (11): 1. Payment flows are simulated end-to-end (5 confirmed blockers), 2. Auth + deploy domain/cookie model breaks in production (3–4 confirmed/unverified), A. Blockers that need YOUR decision (product / infra), B. Code bugs safe to fix now (no product decision required), Build health (this session) — ✅ GREEN, C. Important, non-blocking (sample of 48), ✅ Fixed & shipped since the audit (commits through `c30267b`), Production Readiness — EN-CONJUNTO (+3 more)
+Nodes (11): 1. Payment flows are simulated end-to-end (5 confirmed blockers), 2. Auth + deploy domain/cookie model breaks in production (3–4 confirmed/unverified), A. Blockers that need YOUR decision (product / infra), B. Code bugs safe to fix now (no product decision required), Build health (this session) — ✅ GREEN, C. Important, non-blocking (sample of 48), ✅ Fixed & shipped since the audit (commits through `c30267b`), Production Readiness — ConjuntOS® 🏘️ (+3 more)
 
 ### Community 202 - "Community 202"
 Cohesion: 0.17
@@ -942,7 +942,7 @@ Nodes (4): Result, Vec, make_qr_png(), qr_png_round_trips_to_the_exact_token()
 
 ### Community 211 - "Community 211"
 Cohesion: 0.33
-Nodes (5): Acta Digital, 🗳️ Asambleas, Convocatoria y Votación, EN-CONJUNTO — Plataforma de Gestión Residencial, 🔒 Seguridad y Confiabilidad
+Nodes (5): Acta Digital, 🗳️ Asambleas, Convocatoria y Votación, ConjuntOS® 🏘️ — Plataforma de Gestión Residencial, 🔒 Seguridad y Confiabilidad
 
 ### Community 212 - "Community 212"
 Cohesion: 0.33

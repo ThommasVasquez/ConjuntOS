@@ -3,9 +3,9 @@ import Link from "next/link";
 import { Section, P, UL, Note } from "@/components/legal/Prose";
 
 export const metadata: Metadata = {
-  title: "Protección de Datos | EN-CONJUNTO",
+  title: "Protección de Datos | ConjuntOS® 🏘️",
   description:
-    "Tus derechos como titular de datos personales (Habeas Data) y cómo ejercerlos ante EN-CONJUNTO, conforme a la Ley 1581 de 2012.",
+    "Tus derechos como titular de datos personales (Habeas Data) y cómo ejercerlos ante ConjuntOS® 🏘️, conforme a la Ley 1581 de 2012.",
 };
 
 export default function ProteccionDatosPage() {

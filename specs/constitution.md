@@ -1,4 +1,4 @@
-# EN-CONJUNTO Backend Constitution
+# ConjuntOS® 🏘️ Backend Constitution
 
 Non-negotiable laws governing the Rust backend (`backend/`) and its migration. Every spec, plan,
 and PR is reviewed against this document. Amendments require an explicit decision recorded here.

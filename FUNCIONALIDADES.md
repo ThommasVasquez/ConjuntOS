@@ -1,8 +1,8 @@
-# EN-CONJUNTO — Plataforma de Gestión Residencial
+# ConjuntOS® 🏘️ — Plataforma de Gestión Residencial
 
 **Tu comunidad, sincronizada en la nube.**
 
-EN-CONJUNTO es la plataforma integral que digitaliza la administración de conjuntos residenciales. Desde el control de acceso hasta las finanzas, todo en un solo lugar, accessible desde cualquier dispositivo.
+ConjuntOS® 🏘️ es la plataforma integral que digitaliza la administración de conjuntos residenciales. Desde el control de acceso hasta las finanzas, todo en un solo lugar, accessible desde cualquier dispositivo.
 
 ---
 
@@ -32,7 +32,7 @@ Directorio completo con búsqueda por nombre, torre o apartamento. Filtrado por 
 ## 🏢 Plataforma Multi-Conjunto (SuperAdmin)
 
 ### Registro de Copropiedades
-EN-CONJUNTO opera como plataforma multi-conjunto: desde el panel de SuperAdmin se dan de alta nuevas copropiedades con su nombre comercial, NIT, dirección, municipio y número total de unidades privadas. Cada conjunto queda aislado con su propio subdominio único (tenant), de modo que sus datos nunca se mezclan con los de otro.
+ConjuntOS® 🏘️ opera como plataforma multi-conjunto: desde el panel de SuperAdmin se dan de alta nuevas copropiedades con su nombre comercial, NIT, dirección, municipio y número total de unidades privadas. Cada conjunto queda aislado con su propio subdominio único (tenant), de modo que sus datos nunca se mezclan con los de otro.
 
 ### Datos Legales de Constitución
 Se registra la información oficial de cada copropiedad: matrícula principal de la Oficina de Registro, número y fecha de la escritura pública, notaría del reglamento de propiedad horizontal y representante legal (administrador). Todo queda documentado para respaldo legal y administrativo.
@@ -307,4 +307,4 @@ Elige entre tema claro y oscuro según tu preferencia o condiciones de luz. La i
 **¿Listo para transformar la gestión de tu conjunto residencial?**  
 Contáctanos para una demostración personalizada.
 
-*EN-CONJUNTO — Tecnología que une comunidades.*
+*ConjuntOS® 🏘️ — Tecnología que une comunidades.*

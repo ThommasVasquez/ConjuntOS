@@ -3,9 +3,9 @@ import Link from "next/link";
 import { Section, P, UL, Note } from "@/components/legal/Prose";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidad y Tratamiento de Datos | EN-CONJUNTO",
+  title: "Política de Privacidad y Tratamiento de Datos | ConjuntOS® 🏘️",
   description:
-    "Política de Tratamiento de Datos Personales y Aviso de Privacidad de EN-CONJUNTO, conforme a la Ley 1581 de 2012 y el Decreto 1074 de 2015.",
+    "Política de Tratamiento de Datos Personales y Aviso de Privacidad de ConjuntOS® 🏘️, conforme a la Ley 1581 de 2012 y el Decreto 1074 de 2015.",
 };
 
 export default function PrivacidadPage() {
@@ -33,7 +33,7 @@ export default function PrivacidadPage() {
       <Section id="responsable" title="1. Responsable del tratamiento">
         <P>
           El responsable del tratamiento de los datos personales recolectados a través de la
-          plataforma EN-CONJUNTO es <strong>ENERGYSOFTmedia S.A.S.</strong> (o la copropiedad
+          plataforma ConjuntOS® 🏘️ es <strong>ENERGYSOFTmedia S.A.S.</strong> (o la copropiedad
           administradora que corresponda), identificada con NIT <strong>[NIT]</strong>, con domicilio
           en <strong>[ciudad, Colombia]</strong>.
         </P>
@@ -110,7 +110,7 @@ export default function PrivacidadPage() {
 
       <Section id="transferencia" title="8. Transferencia y transmisión internacional de datos">
         <P>
-          La infraestructura de EN-CONJUNTO está alojada en servidores ubicados en los{" "}
+          La infraestructura de ConjuntOS® 🏘️ está alojada en servidores ubicados en los{" "}
           <strong>Estados Unidos de América</strong>. La legislación colombiana{" "}
           <strong>no exige</strong> que los datos se almacenen en Colombia; regula su transferencia
           internacional (art. 26 de la Ley 1581 de 2012).

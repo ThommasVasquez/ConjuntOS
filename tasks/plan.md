@@ -1,12 +1,12 @@
-# Implementation Plan: EN-CONJUNTO — Market-Leading Feature Set
+# Implementation Plan: ConjuntOS® 🏘️ — Market-Leading Feature Set
 
-> Goal: close every verified gap vs. competitor **miconjunto.co** (15 modules) so EN-CONJUNTO
+> Goal: close every verified gap vs. competitor **miconjunto.co** (15 modules) so ConjuntOS® 🏘️
 > matches or beats it on every axis. Flow: DEFINE ✅ → **PLAN (this doc)** → BUILD → VERIFY → REVIEW → SHIP.
 > (Previous plan for feature 016 Citofonía/LiveKit is shipped — archived in `tasks/plan-016-citofonia-livekit.archive.md`.)
 
 ## Verified gap baseline (DEFINE output)
 
-| # | Competitor module | EN-CONJUNTO today | Action |
+| # | Competitor module | ConjuntOS® 🏘️ today | Action |
 |---|---|---|---|
 | 1 | Seguridad — **botón de pánico** | ❌ missing | **BUILD** (F1) |
 | 2 | **Encuestas** (live results + charts) | ❌ missing (only assembly votes) | **BUILD** (F4) |

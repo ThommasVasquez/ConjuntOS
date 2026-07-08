@@ -1,4 +1,4 @@
-# Production Readiness — EN-CONJUNTO
+# Production Readiness — ConjuntOS® 🏘️
 
 _Generated 2026-06-16 from a 17-unit multi-agent audit (120 findings, 74 verified, 12 confirmed production blockers, 48 confirmed important). Each Critical/Important finding was independently re-checked by a skeptic agent; some cross-cutting verifications were cut short by a session limit and are marked `UNVERIFIED`._
 

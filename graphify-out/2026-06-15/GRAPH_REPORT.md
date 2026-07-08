@@ -1,4 +1,4 @@
-# Graph Report - EN-CONJUNTO  (2026-06-10)
+# Graph Report - ConjuntOS® 🏘️  (2026-06-10)
 
 ## Corpus Check
 - 251 files · ~250,586 words
@@ -447,7 +447,7 @@ Nodes (8): name, private, scripts, build, dev, lint, start, version
 
 ### Community 111 - "Gemini Chat Client"
 Cohesion: 0.22
-Nodes (8): EN-CONJUNTO Backend Constitution, Law 1 — Stack invariants, Law 2 — Tenancy, Law 3 — Auth, Law 4 — Errors, Law 5 — API contract, Law 6 — Data, Law 7 — Testing
+Nodes (8): ConjuntOS® 🏘️ Backend Constitution, Law 1 — Stack invariants, Law 2 — Tenancy, Law 3 — Auth, Law 4 — Errors, Law 5 — API contract, Law 6 — Data, Law 7 — Testing
 
 ### Community 112 - "Request URL Parsing"
 Cohesion: 0.25
