@@ -38,7 +38,7 @@
 - **Multi-dispositivo:** funciona en celular, tablet y computador
 - **Tiempo real:** todo se actualiza al instante
 - **Cumple Ley 675:** asambleas, comité y actas conforme a la norma colombiana
-- **Un solo login:** una contraseña para todo el conjunto
+- **Acceso personalizado:** cada residente tiene su propia contraseña
 - **Soporte incluido:** asistencia técnica permanente
 
 ---
