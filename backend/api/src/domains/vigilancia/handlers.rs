@@ -10,9 +10,9 @@ use crate::db::enums::{EstadoVisita, Rol, SeveridadNovedad, TipoCorrespondencia,
 use crate::domains::vigilancia::dto::{
     AprobarVisitaRequest, ComunicacionesDto, CorrespondenciaDto, CorrespondenciaVigilanciaDto,
     CreateCorrespondenciaRequest, CreateNovedadRequest, CreatePaqueteRequest,
-    CreateVisitaResidenteRequest, CreateVisitaVigilanciaRequest, NovedadDto,
-    NovedadVigilanciaDto, PaqueteDto, PaqueteVigilanciaDto, ResolverNovedadRequest,
-    VigilanciaStatsDto, VisitaDto, VisitaVigilanciaDto,
+    CreateVisitaResidenteRequest, CreateVisitaVigilanciaRequest, NovedadDto, NovedadVigilanciaDto,
+    PaqueteDto, PaqueteVigilanciaDto, ResolverNovedadRequest, VigilanciaStatsDto, VisitaDto,
+    VisitaVigilanciaDto,
 };
 use crate::domains::vigilancia::models::{NuevaNovedad, NuevaVisita};
 use crate::domains::vigilancia::repo;
@@ -43,18 +43,27 @@ pub fn router() -> Router<AppState> {
         .route("/comunicaciones", get(comunicaciones))
         .route("/visitas", post(crear_visita_residente))
         .route("/visitas/{id}/aprobar", put(aprobar_visita))
-        .route("/visitas/preregistro", post(super::preregistro::preregistrar))
+        .route(
+            "/visitas/preregistro",
+            post(super::preregistro::preregistrar),
+        )
         .route("/visitas/scan", post(super::preregistro::escanear))
         .route(
             "/vigilancia/correspondencia",
             get(listar_correspondencia).post(crear_correspondencia),
         )
-        .route("/vigilancia/correspondencia/{id}/entregar", put(entregar_correspondencia_handler))
+        .route(
+            "/vigilancia/correspondencia/{id}/entregar",
+            put(entregar_correspondencia_handler),
+        )
         .route(
             "/vigilancia/novedades",
             get(listar_novedades).post(crear_novedad_handler),
         )
-        .route("/vigilancia/novedades/{id}/resolver", put(resolver_novedad_handler))
+        .route(
+            "/vigilancia/novedades/{id}/resolver",
+            put(resolver_novedad_handler),
+        )
 }
 
 #[utoipa::path(
@@ -370,7 +379,10 @@ pub async fn comunicaciones(
     Ok(Json(ComunicacionesDto {
         visitas: visitas.into_iter().map(VisitaDto::from).collect(),
         paquetes: paquetes.into_iter().map(PaqueteDto::from).collect(),
-        correspondencia: correspondencia.into_iter().map(CorrespondenciaDto::from).collect(),
+        correspondencia: correspondencia
+            .into_iter()
+            .map(CorrespondenciaDto::from)
+            .collect(),
     }))
 }
 
@@ -489,6 +501,18 @@ async fn crear_novedad_handler(
     Ok(Json(dto))
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/v1/vigilancia/novedades/{id}/resolver",
+    tag = "vigilancia",
+    params(("id" = Uuid, Path, description = "Novedad id")),
+    request_body = ResolverNovedadRequest,
+    responses(
+        (status = 200, description = "Novedad marked resolved", body = NovedadDto),
+        (status = 403, description = "Requires gate staff or admin role"),
+        (status = 404, description = "Novedad not found in this conjunto")
+    )
+)]
 async fn resolver_novedad_handler(
     State(state): State<AppState>,
     user: AuthUser,
@@ -503,6 +527,17 @@ async fn resolver_novedad_handler(
     Ok(Json(novedad.into()))
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/v1/vigilancia/correspondencia/{id}/entregar",
+    tag = "vigilancia",
+    params(("id" = Uuid, Path, description = "Correspondencia id")),
+    responses(
+        (status = 200, description = "Correspondencia marked delivered", body = CorrespondenciaDto),
+        (status = 403, description = "Requires gate staff or admin role"),
+        (status = 404, description = "Correspondencia not found in this conjunto")
+    )
+)]
 async fn entregar_correspondencia_handler(
     State(state): State<AppState>,
     user: AuthUser,
@@ -549,14 +584,8 @@ pub async fn aprobar_visita(
     Json(req): Json<AprobarVisitaRequest>,
 ) -> ApiResult<Json<VisitaDto>> {
     let mut conn = state.pool.get().await?;
-    let visita = repo::aprobar_visita(
-        &mut conn,
-        id,
-        user.id,
-        user.conjunto_id,
-        req.aprobada,
-    )
-    .await?;
+    let visita =
+        repo::aprobar_visita(&mut conn, id, user.id, user.conjunto_id, req.aprobada).await?;
     let dto = VisitaDto::from(visita);
     state
         .ws_hub
@@ -564,7 +593,11 @@ pub async fn aprobar_visita(
             user.conjunto_id,
             WsEvent {
                 domain: "visita".into(),
-                action: if req.aprobada { "approved".into() } else { "rejected".into() },
+                action: if req.aprobada {
+                    "approved".into()
+                } else {
+                    "rejected".into()
+                },
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
                 target_user_id: None,
             },

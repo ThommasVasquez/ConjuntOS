@@ -64,12 +64,27 @@ pub struct NuevaVacunaRequest {
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/vehiculos/{id}/documentos", put(actualizar_documentos))
-        .route("/mascotas/{id}/vacunas", get(listar_vacunas).post(crear_vacuna))
+        .route(
+            "/mascotas/{id}/vacunas",
+            get(listar_vacunas).post(crear_vacuna),
+        )
         .route("/vacunas/{id}", delete(eliminar_vacuna))
 }
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
+#[utoipa::path(
+    put,
+    path = "/api/v1/vehiculos/{id}/documentos",
+    tag = "tramites",
+    params(("id" = uuid::Uuid, Path, description = "ID del vehículo")),
+    request_body = DocsRequest,
+    responses(
+        (status = 200, description = "Documentos del vehículo actualizados", body = VehiculoPerfilDto),
+        (status = 403, description = "El vehículo no pertenece al usuario"),
+        (status = 404, description = "Vehículo no encontrado")
+    )
+)]
 async fn actualizar_documentos(
     State(state): State<AppState>,
     user: AuthUser,
@@ -99,6 +114,17 @@ async fn actualizar_documentos(
     Ok(Json(VehiculoPerfilDto::from(updated)))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/mascotas/{id}/vacunas",
+    tag = "tramites",
+    params(("id" = uuid::Uuid, Path, description = "ID de la mascota")),
+    responses(
+        (status = 200, description = "Listado de vacunas de la mascota", body = [Vacuna]),
+        (status = 403, description = "La mascota no pertenece al usuario"),
+        (status = 404, description = "Mascota no encontrada")
+    )
+)]
 async fn listar_vacunas(
     State(state): State<AppState>,
     user: AuthUser,
@@ -115,6 +141,19 @@ async fn listar_vacunas(
     Ok(Json(rows))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/mascotas/{id}/vacunas",
+    tag = "tramites",
+    params(("id" = uuid::Uuid, Path, description = "ID de la mascota")),
+    request_body = NuevaVacunaRequest,
+    responses(
+        (status = 200, description = "Vacuna registrada", body = Vacuna),
+        (status = 400, description = "El nombre de la vacuna es obligatorio"),
+        (status = 403, description = "La mascota no pertenece al usuario"),
+        (status = 404, description = "Mascota no encontrada")
+    )
+)]
 async fn crear_vacuna(
     State(state): State<AppState>,
     user: AuthUser,
@@ -122,7 +161,9 @@ async fn crear_vacuna(
     Json(req): Json<NuevaVacunaRequest>,
 ) -> ApiResult<Json<Vacuna>> {
     if req.vacuna.trim().is_empty() {
-        return Err(ApiError::BadRequest("el nombre de la vacuna es obligatorio".into()));
+        return Err(ApiError::BadRequest(
+            "el nombre de la vacuna es obligatorio".into(),
+        ));
     }
     let mut conn = state.pool.get().await?;
     verificar_mascota(&mut conn, mascota_id, &user).await?;
@@ -141,6 +182,17 @@ async fn crear_vacuna(
     Ok(Json(row))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/v1/vacunas/{id}",
+    tag = "tramites",
+    params(("id" = uuid::Uuid, Path, description = "ID de la vacuna")),
+    responses(
+        (status = 200, description = "Vacuna eliminada"),
+        (status = 403, description = "La mascota no pertenece al usuario"),
+        (status = 404, description = "Vacuna no encontrada")
+    )
+)]
 async fn eliminar_vacuna(
     State(state): State<AppState>,
     user: AuthUser,

@@ -97,6 +97,17 @@ pub struct ScanRequest {
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
 /// Resident pre-registers a visitor and gets a shareable QR.
+#[utoipa::path(
+    post,
+    path = "/api/v1/visitas/preregistro",
+    tag = "vigilancia",
+    request_body = PreregistroRequest,
+    responses(
+        (status = 200, description = "Visit pre-registered; returns token and QR PNG", body = PreregistroResponse),
+        (status = 400, description = "Visitor name is required"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn preregistrar(
     State(state): State<AppState>,
     user: AuthUser,
@@ -143,6 +154,19 @@ pub async fn preregistrar(
 }
 
 /// Gate scans a visitor QR → validate the token and record entry.
+#[utoipa::path(
+    post,
+    path = "/api/v1/visitas/scan",
+    tag = "vigilancia",
+    request_body = ScanRequest,
+    responses(
+        (status = 200, description = "Visitor entry recorded", body = VisitaDto),
+        (status = 400, description = "Visit code expired"),
+        (status = 403, description = "Requires gate staff or admin role"),
+        (status = 404, description = "Visit code not valid"),
+        (status = 409, description = "Visit code already used")
+    )
+)]
 pub async fn escanear(
     State(state): State<AppState>,
     user: AuthUser,

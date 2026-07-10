@@ -9,13 +9,12 @@ use crate::auth::guard;
 use crate::db::enums::{CalidadMiembro, EstadoCasoConvivencia, Rol};
 use crate::domains::comite_convivencia::dto::{
     ActaConvivenciaDto, ActualizarCasoRequest, AgregarMiembroRequest, AsignarMiembroRequest,
-    CasoConvivenciaDto, ComiteActualDto, ComiteHistoricoDto, CrearCasoRequest,
-    CrearComiteRequest, FirmaActaDto, FirmarActaRequest, MiembroComiteDto,
-    RegistrarMediacionRequest, StatsConvivencia,
+    CasoConvivenciaDto, ComiteActualDto, ComiteHistoricoDto, CrearCasoRequest, CrearComiteRequest,
+    FirmaActaDto, FirmarActaRequest, MiembroComiteDto, RegistrarMediacionRequest, StatsConvivencia,
 };
 use crate::domains::comite_convivencia::models::{
-    NuevaActaConvivencia, NuevoCasoConvivencia, NuevoComiteHistorico, NuevoComiteMiembro,
-    NuevaFirmaActa,
+    NuevaActaConvivencia, NuevaFirmaActa, NuevoCasoConvivencia, NuevoComiteHistorico,
+    NuevoComiteMiembro,
 };
 use crate::domains::comite_convivencia::repo;
 use crate::error::{ApiError, ApiResult};
@@ -25,7 +24,9 @@ use crate::state::AppState;
 const ADMIN_CONVIVENCIA: &[Rol] = &[Rol::Administrador, Rol::SuperAdmin, Rol::Concejo];
 
 #[derive(Deserialize)]
-struct ListarQuery { estado: Option<String> }
+struct ListarQuery {
+    estado: Option<String>,
+}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -39,7 +40,10 @@ pub fn router() -> Router<AppState> {
         .route("/convivencia/casos/stats", get(stats))
         .route("/convivencia/casos/{id}", put(actualizar_caso))
         .route("/convivencia/casos/{id}/asignar", put(asignar_miembro))
-        .route("/convivencia/casos/{id}/mediacion", post(registrar_mediacion))
+        .route(
+            "/convivencia/casos/{id}/mediacion",
+            post(registrar_mediacion),
+        )
         // Actas
         .route("/convivencia/casos/{id}/acta", post(generar_acta))
         .route("/convivencia/actas/{id}/firmar", post(firmar_acta))
@@ -52,6 +56,16 @@ pub fn router() -> Router<AppState> {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// GET /api/v1/convivencia/comite — comité actual con alerta de vencimiento
+#[utoipa::path(
+    get,
+    path = "/api/v1/convivencia/comite",
+    tag = "convivencia",
+    responses(
+        (status = 200, description = "Comité actual con alerta de vencimiento", body = ComiteActualDto),
+        (status = 403, description = "Caller lacks convivencia admin role"),
+        (status = 404, description = "No hay comité de convivencia activo")
+    )
+)]
 async fn comite_actual(
     State(state): State<AppState>,
     user: AuthUser,
@@ -61,7 +75,11 @@ async fn comite_actual(
 
     let comite = repo::comite_actual(&mut conn, user.conjunto_id)
         .await?
-        .ok_or_else(|| ApiError::NotFound("No hay comité de convivencia activo. Debe elegirse en Asamblea.".into()))?;
+        .ok_or_else(|| {
+            ApiError::NotFound(
+                "No hay comité de convivencia activo. Debe elegirse en Asamblea.".into(),
+            )
+        })?;
 
     let miembros_raw = repo::miembros_activos(&mut conn, comite.id).await?;
     let mut miembros = vec![];
@@ -76,10 +94,23 @@ async fn comite_actual(
     let alerta_vencimiento = dias_restantes <= 30; // Alerta 30 días antes
 
     let dto = ComiteHistoricoDto::from_model(comite, miembros);
-    Ok(Json(ComiteActualDto { comite: dto, dias_restantes, alerta_vencimiento }))
+    Ok(Json(ComiteActualDto {
+        comite: dto,
+        dias_restantes,
+        alerta_vencimiento,
+    }))
 }
 
 /// GET /api/v1/convivencia/comite/historico — todos los comités pasados
+#[utoipa::path(
+    get,
+    path = "/api/v1/convivencia/comite/historico",
+    tag = "convivencia",
+    responses(
+        (status = 200, description = "Todos los comités pasados", body = [ComiteHistoricoDto]),
+        (status = 403, description = "Caller lacks convivencia admin role")
+    )
+)]
 async fn historico_comites(
     State(state): State<AppState>,
     user: AuthUser,
@@ -102,6 +133,17 @@ async fn historico_comites(
 }
 
 /// POST /api/v1/convivencia/comite — crear nuevo período de comité
+#[utoipa::path(
+    post,
+    path = "/api/v1/convivencia/comite",
+    tag = "convivencia",
+    request_body = CrearComiteRequest,
+    responses(
+        (status = 200, description = "Nuevo período de comité creado", body = ComiteHistoricoDto),
+        (status = 400, description = "El comité debe tener un número impar de miembros ≥ 3 (Ley 675/2001)"),
+        (status = 403, description = "Caller lacks convivencia admin role")
+    )
+)]
 async fn crear_comite(
     State(state): State<AppState>,
     user: AuthUser,
@@ -111,45 +153,74 @@ async fn crear_comite(
 
     // Validar número impar ≥ 3
     if body.miembros.len() < 3 {
-        return Err(ApiError::BadRequest("El comité debe tener al menos 3 miembros (Ley 675/2001)".into()));
+        return Err(ApiError::BadRequest(
+            "El comité debe tener al menos 3 miembros (Ley 675/2001)".into(),
+        ));
     }
     if body.miembros.len() % 2 == 0 {
-        return Err(ApiError::BadRequest("El comité debe tener un número impar de miembros (Ley 675/2001)".into()));
+        return Err(ApiError::BadRequest(
+            "El comité debe tener un número impar de miembros (Ley 675/2001)".into(),
+        ));
     }
 
     let mut conn = state.pool.get().await?;
-    let comite = repo::crear_comite(&mut conn, NuevoComiteHistorico {
-        conjunto_id: user.conjunto_id,
-        periodo_inicio: body.periodo_inicio,
-        periodo_fin: body.periodo_fin,
-        elegido_en_asamblea_id: body.elegido_en_asamblea_id,
-    }).await?;
+    let comite = repo::crear_comite(
+        &mut conn,
+        NuevoComiteHistorico {
+            conjunto_id: user.conjunto_id,
+            periodo_inicio: body.periodo_inicio,
+            periodo_fin: body.periodo_fin,
+            elegido_en_asamblea_id: body.elegido_en_asamblea_id,
+        },
+    )
+    .await?;
 
     let mut miembros_dto = vec![];
     for m in body.miembros {
-        let miembro = repo::agregar_miembro(&mut conn, NuevoComiteMiembro {
-            conjunto_id: user.conjunto_id,
-            comite_historico_id: comite.id,
-            usuario_id: m.usuario_id,
-            calidad: m.calidad,
-            unidad_id: m.unidad_id,
-        }).await?;
+        let miembro = repo::agregar_miembro(
+            &mut conn,
+            NuevoComiteMiembro {
+                conjunto_id: user.conjunto_id,
+                comite_historico_id: comite.id,
+                usuario_id: m.usuario_id,
+                calidad: m.calidad,
+                unidad_id: m.unidad_id,
+            },
+        )
+        .await?;
         let usuario = repo::usuario_embed(&mut conn, miembro.usuario_id).await?;
         let unidad = repo::unidad_embed(&mut conn, miembro.unidad_id).await?;
         miembros_dto.push(MiembroComiteDto::from_model(miembro, usuario, unidad));
     }
 
     let dto = ComiteHistoricoDto::from_model(comite, miembros_dto);
-    state.ws_hub.publish(user.conjunto_id, WsEvent {
-        domain: "convivencia".into(),
-        action: "comite_creado".into(),
-        payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-        target_user_id: None,
-    }).await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "convivencia".into(),
+                action: "comite_creado".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
     Ok(Json(dto))
 }
 
 /// POST /api/v1/convivencia/comite/miembros — agregar miembro al comité actual
+#[utoipa::path(
+    post,
+    path = "/api/v1/convivencia/comite/miembros",
+    tag = "convivencia",
+    request_body = AgregarMiembroRequest,
+    responses(
+        (status = 200, description = "Miembro agregado al comité actual", body = MiembroComiteDto),
+        (status = 400, description = "No hay comité activo o el comité quedaría con número par de miembros"),
+        (status = 403, description = "Caller lacks convivencia admin role")
+    )
+)]
 async fn agregar_miembro(
     State(state): State<AppState>,
     user: AuthUser,
@@ -158,21 +229,28 @@ async fn agregar_miembro(
     guard::require(&user, ADMIN_CONVIVENCIA)?;
     let mut conn = state.pool.get().await?;
 
-    let comite = repo::comite_actual(&mut conn, user.conjunto_id).await?
+    let comite = repo::comite_actual(&mut conn, user.conjunto_id)
+        .await?
         .ok_or_else(|| ApiError::BadRequest("No hay comité activo".into()))?;
 
-    let miembro = repo::agregar_miembro(&mut conn, NuevoComiteMiembro {
-        conjunto_id: user.conjunto_id,
-        comite_historico_id: comite.id,
-        usuario_id: body.usuario_id,
-        calidad: body.calidad,
-        unidad_id: body.unidad_id,
-    }).await?;
+    let miembro = repo::agregar_miembro(
+        &mut conn,
+        NuevoComiteMiembro {
+            conjunto_id: user.conjunto_id,
+            comite_historico_id: comite.id,
+            usuario_id: body.usuario_id,
+            calidad: body.calidad,
+            unidad_id: body.unidad_id,
+        },
+    )
+    .await?;
 
     // Validar número impar después de agregar
     let total = repo::contar_miembros_activos(&mut conn, comite.id).await?;
     if total % 2 == 0 {
-        return Err(ApiError::BadRequest("El comité debe mantener número impar de miembros. Agregue o remueva uno más.".into()));
+        return Err(ApiError::BadRequest(
+            "El comité debe mantener número impar de miembros. Agregue o remueva uno más.".into(),
+        ));
     }
 
     let usuario = repo::usuario_embed(&mut conn, miembro.usuario_id).await?;
@@ -181,6 +259,17 @@ async fn agregar_miembro(
 }
 
 /// PUT /api/v1/convivencia/comite/miembros/{id} — desactivar miembro
+#[utoipa::path(
+    put,
+    path = "/api/v1/convivencia/comite/miembros/{id}",
+    tag = "convivencia",
+    params(("id" = uuid::Uuid, Path, description = "ID del miembro del comité")),
+    responses(
+        (status = 200, description = "Miembro desactivado"),
+        (status = 403, description = "Caller lacks convivencia admin role"),
+        (status = 404, description = "Miembro no encontrado")
+    )
+)]
 async fn desactivar_miembro(
     State(state): State<AppState>,
     user: AuthUser,
@@ -200,6 +289,15 @@ async fn desactivar_miembro(
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// GET /api/v1/convivencia/casos — listar casos
+#[utoipa::path(
+    get,
+    path = "/api/v1/convivencia/casos",
+    tag = "convivencia",
+    responses(
+        (status = 200, description = "Listado de casos de convivencia", body = [CasoConvivenciaDto]),
+        (status = 403, description = "Caller lacks convivencia admin role")
+    )
+)]
 async fn listar_casos(
     State(state): State<AppState>,
     user: AuthUser,
@@ -217,6 +315,17 @@ async fn listar_casos(
 }
 
 /// POST /api/v1/convivencia/casos — crear caso (solo conflictos de convivencia)
+#[utoipa::path(
+    post,
+    path = "/api/v1/convivencia/casos",
+    tag = "convivencia",
+    request_body = CrearCasoRequest,
+    responses(
+        (status = 200, description = "Caso de convivencia creado", body = CasoConvivenciaDto),
+        (status = 400, description = "La descripción es obligatoria"),
+        (status = 403, description = "Caller lacks convivencia admin role")
+    )
+)]
 async fn crear_caso(
     State(state): State<AppState>,
     user: AuthUser,
@@ -227,25 +336,47 @@ async fn crear_caso(
         return Err(ApiError::BadRequest("La descripción es obligatoria".into()));
     }
     let mut conn = state.pool.get().await?;
-    let caso = repo::crear_caso(&mut conn, NuevoCasoConvivencia {
-        conjunto_id: user.conjunto_id,
-        tipo: body.tipo,
-        descripcion: body.descripcion,
-        unidad_reporta_id: body.unidad_reporta_id,
-        unidad_reportada_id: body.unidad_reportada_id,
-        creado_por: user.id,
-    }).await?;
+    let caso = repo::crear_caso(
+        &mut conn,
+        NuevoCasoConvivencia {
+            conjunto_id: user.conjunto_id,
+            tipo: body.tipo,
+            descripcion: body.descripcion,
+            unidad_reporta_id: body.unidad_reporta_id,
+            unidad_reportada_id: body.unidad_reportada_id,
+            creado_por: user.id,
+        },
+    )
+    .await?;
     let dto = caso_to_dto(&mut conn, caso).await?;
-    state.ws_hub.publish(user.conjunto_id, WsEvent {
-        domain: "convivencia".into(),
-        action: "caso_creado".into(),
-        payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-        target_user_id: None,
-    }).await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "convivencia".into(),
+                action: "caso_creado".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
     Ok(Json(dto))
 }
 
 /// PUT /api/v1/convivencia/casos/{id} — actualizar estado/resolución
+#[utoipa::path(
+    put,
+    path = "/api/v1/convivencia/casos/{id}",
+    tag = "convivencia",
+    params(("id" = uuid::Uuid, Path, description = "ID del caso de convivencia")),
+    request_body = ActualizarCasoRequest,
+    responses(
+        (status = 200, description = "Caso actualizado", body = CasoConvivenciaDto),
+        (status = 403, description = "Caller lacks role or caso belongs to another conjunto"),
+        (status = 404, description = "Caso no encontrado")
+    )
+)]
 async fn actualizar_caso(
     State(state): State<AppState>,
     user: AuthUser,
@@ -254,23 +385,49 @@ async fn actualizar_caso(
 ) -> ApiResult<Json<CasoConvivenciaDto>> {
     guard::require(&user, ADMIN_CONVIVENCIA)?;
     let mut conn = state.pool.get().await?;
-    let existing = repo::caso_por_id(&mut conn, caso_id).await?
+    let existing = repo::caso_por_id(&mut conn, caso_id)
+        .await?
         .ok_or_else(|| ApiError::NotFound("Caso no encontrado".into()))?;
     if existing.conjunto_id != user.conjunto_id {
         return Err(ApiError::Forbidden);
     }
-    let caso = repo::actualizar_caso(&mut conn, caso_id, body.estado, body.resolucion.map(|r| if r.is_empty() { None } else { Some(r) })).await?;
+    let caso = repo::actualizar_caso(
+        &mut conn,
+        caso_id,
+        body.estado,
+        body.resolucion
+            .map(|r| if r.is_empty() { None } else { Some(r) }),
+    )
+    .await?;
     let dto = caso_to_dto(&mut conn, caso).await?;
-    state.ws_hub.publish(user.conjunto_id, WsEvent {
-        domain: "convivencia".into(),
-        action: "caso_actualizado".into(),
-        payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-        target_user_id: None,
-    }).await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "convivencia".into(),
+                action: "caso_actualizado".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
     Ok(Json(dto))
 }
 
 /// PUT /api/v1/convivencia/casos/{id}/asignar — asignar miembro del comité
+#[utoipa::path(
+    put,
+    path = "/api/v1/convivencia/casos/{id}/asignar",
+    tag = "convivencia",
+    params(("id" = uuid::Uuid, Path, description = "ID del caso de convivencia")),
+    request_body = AsignarMiembroRequest,
+    responses(
+        (status = 200, description = "Miembro del comité asignado al caso", body = CasoConvivenciaDto),
+        (status = 403, description = "Caller lacks role or caso belongs to another conjunto"),
+        (status = 404, description = "Caso no encontrado")
+    )
+)]
 async fn asignar_miembro(
     State(state): State<AppState>,
     user: AuthUser,
@@ -279,23 +436,43 @@ async fn asignar_miembro(
 ) -> ApiResult<Json<CasoConvivenciaDto>> {
     guard::require(&user, ADMIN_CONVIVENCIA)?;
     let mut conn = state.pool.get().await?;
-    let existing = repo::caso_por_id(&mut conn, caso_id).await?
+    let existing = repo::caso_por_id(&mut conn, caso_id)
+        .await?
         .ok_or_else(|| ApiError::NotFound("Caso no encontrado".into()))?;
     if existing.conjunto_id != user.conjunto_id {
         return Err(ApiError::Forbidden);
     }
     let caso = repo::asignar_miembro(&mut conn, caso_id, body.miembro_id).await?;
     let dto = caso_to_dto(&mut conn, caso).await?;
-    state.ws_hub.publish(user.conjunto_id, WsEvent {
-        domain: "convivencia".into(),
-        action: "miembro_asignado".into(),
-        payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-        target_user_id: None,
-    }).await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "convivencia".into(),
+                action: "miembro_asignado".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
     Ok(Json(dto))
 }
 
 /// POST /api/v1/convivencia/casos/{id}/mediacion — registrar sesión de mediación
+#[utoipa::path(
+    post,
+    path = "/api/v1/convivencia/casos/{id}/mediacion",
+    tag = "convivencia",
+    params(("id" = uuid::Uuid, Path, description = "ID del caso de convivencia")),
+    request_body = RegistrarMediacionRequest,
+    responses(
+        (status = 200, description = "Sesión de mediación registrada", body = CasoConvivenciaDto),
+        (status = 400, description = "El resultado debe ser ACUERDO o SIN_ACUERDO"),
+        (status = 403, description = "Caller lacks role or caso belongs to another conjunto"),
+        (status = 404, description = "Caso no encontrado")
+    )
+)]
 async fn registrar_mediacion(
     State(state): State<AppState>,
     user: AuthUser,
@@ -304,34 +481,56 @@ async fn registrar_mediacion(
 ) -> ApiResult<Json<CasoConvivenciaDto>> {
     guard::require(&user, ADMIN_CONVIVENCIA)?;
     // Solo ACUERDO o SIN_ACUERDO como resultado
-    if !matches!(body.resultado, EstadoCasoConvivencia::Acuerdo | EstadoCasoConvivencia::SinAcuerdo) {
-        return Err(ApiError::BadRequest("El resultado debe ser ACUERDO o SIN_ACUERDO".into()));
+    if !matches!(
+        body.resultado,
+        EstadoCasoConvivencia::Acuerdo | EstadoCasoConvivencia::SinAcuerdo
+    ) {
+        return Err(ApiError::BadRequest(
+            "El resultado debe ser ACUERDO o SIN_ACUERDO".into(),
+        ));
     }
     let mut conn = state.pool.get().await?;
-    let existing = repo::caso_por_id(&mut conn, caso_id).await?
+    let existing = repo::caso_por_id(&mut conn, caso_id)
+        .await?
         .ok_or_else(|| ApiError::NotFound("Caso no encontrado".into()))?;
     if existing.conjunto_id != user.conjunto_id {
         return Err(ApiError::Forbidden);
     }
-    let caso = repo::registrar_mediacion(&mut conn, caso_id, body.fecha, body.notas, body.resultado).await?;
+    let caso =
+        repo::registrar_mediacion(&mut conn, caso_id, body.fecha, body.notas, body.resultado)
+            .await?;
     let dto = caso_to_dto(&mut conn, caso).await?;
-    state.ws_hub.publish(user.conjunto_id, WsEvent {
-        domain: "convivencia".into(),
-        action: "mediacion_registrada".into(),
-        payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-        target_user_id: None,
-    }).await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "convivencia".into(),
+                action: "mediacion_registrada".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
     Ok(Json(dto))
 }
 
 /// GET /api/v1/convivencia/casos/stats — estadísticas
-async fn stats(
-    State(state): State<AppState>,
-    user: AuthUser,
-) -> ApiResult<Json<StatsConvivencia>> {
+#[utoipa::path(
+    get,
+    path = "/api/v1/convivencia/casos/stats",
+    tag = "convivencia",
+    responses(
+        (status = 200, description = "Estadísticas de casos de convivencia", body = StatsConvivencia),
+        (status = 403, description = "Caller lacks convivencia admin role")
+    )
+)]
+async fn stats(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json<StatsConvivencia>> {
     guard::require(&user, ADMIN_CONVIVENCIA)?;
     let mut conn = state.pool.get().await?;
-    repo::stats_convivencia(&mut conn, user.conjunto_id).await.map(Json)
+    repo::stats_convivencia(&mut conn, user.conjunto_id)
+        .await
+        .map(Json)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -339,6 +538,18 @@ async fn stats(
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// POST /api/v1/convivencia/casos/{id}/acta — generar acta de mediación
+#[utoipa::path(
+    post,
+    path = "/api/v1/convivencia/casos/{id}/acta",
+    tag = "convivencia",
+    params(("id" = uuid::Uuid, Path, description = "ID del caso de convivencia")),
+    responses(
+        (status = 200, description = "Acta de mediación generada", body = ActaConvivenciaDto),
+        (status = 400, description = "Debe registrar la mediación antes de generar el acta"),
+        (status = 403, description = "Caller lacks role or caso belongs to another conjunto"),
+        (status = 404, description = "Caso no encontrado")
+    )
+)]
 async fn generar_acta(
     State(state): State<AppState>,
     user: AuthUser,
@@ -347,13 +558,16 @@ async fn generar_acta(
     guard::require(&user, ADMIN_CONVIVENCIA)?;
     let mut conn = state.pool.get().await?;
 
-    let caso = repo::caso_por_id(&mut conn, caso_id).await?
+    let caso = repo::caso_por_id(&mut conn, caso_id)
+        .await?
         .ok_or_else(|| ApiError::NotFound("Caso no encontrado".into()))?;
     if caso.conjunto_id != user.conjunto_id {
         return Err(ApiError::Forbidden);
     }
     if caso.sesion_mediacion_fecha.is_none() {
-        return Err(ApiError::BadRequest("Debe registrar la mediación antes de generar el acta".into()));
+        return Err(ApiError::BadRequest(
+            "Debe registrar la mediación antes de generar el acta".into(),
+        ));
     }
 
     let unidad_reporta = repo::unidad_embed(&mut conn, caso.unidad_reporta_id).await?;
@@ -379,7 +593,10 @@ async fn generar_acta(
          ---\n\
          *Esta acta se firma en cumplimiento de la Ley 675 de 2001, Art. 58.*\n\
          *El original reposa en los archivos de la administración del conjunto.*",
-        fecha = caso.sesion_mediacion_fecha.map(|d| d.to_string()).unwrap_or_default(),
+        fecha = caso
+            .sesion_mediacion_fecha
+            .map(|d| d.to_string())
+            .unwrap_or_default(),
         tipo = caso.tipo.as_str(),
         torre_r = unidad_reporta.torre.unwrap_or_default(),
         numero_r = unidad_reporta.numero,
@@ -389,10 +606,7 @@ async fn generar_acta(
         resultado = caso.estado.as_str(),
     );
 
-    let acta = repo::crear_acta(&mut conn, NuevaActaConvivencia {
-        caso_id,
-        contenido,
-    }).await?;
+    let acta = repo::crear_acta(&mut conn, NuevaActaConvivencia { caso_id, contenido }).await?;
 
     let firmas = repo::firmas_por_acta(&mut conn, acta.id).await?;
     let mut firmas_dto = vec![];
@@ -402,16 +616,34 @@ async fn generar_acta(
     }
 
     let dto = ActaConvivenciaDto::from_model(acta, firmas_dto);
-    state.ws_hub.publish(user.conjunto_id, WsEvent {
-        domain: "convivencia".into(),
-        action: "acta_generada".into(),
-        payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-        target_user_id: None,
-    }).await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "convivencia".into(),
+                action: "acta_generada".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
     Ok(Json(dto))
 }
 
 /// POST /api/v1/convivencia/actas/{id}/firmar — firmar acta
+#[utoipa::path(
+    post,
+    path = "/api/v1/convivencia/actas/{id}/firmar",
+    tag = "convivencia",
+    params(("id" = uuid::Uuid, Path, description = "ID del acta")),
+    request_body = FirmarActaRequest,
+    responses(
+        (status = 200, description = "Acta firmada", body = ActaConvivenciaDto),
+        (status = 403, description = "Acta belongs to another conjunto"),
+        (status = 404, description = "Acta no encontrada")
+    )
+)]
 async fn firmar_acta(
     State(state): State<AppState>,
     user: AuthUser,
@@ -433,15 +665,20 @@ async fn firmar_acta(
         return Err(ApiError::Forbidden);
     }
 
-    let firma = repo::firmar_acta(&mut conn, NuevaFirmaActa {
-        acta_id,
-        usuario_id: user.id,
-        tipo: body.tipo,
-    }).await?;
+    let firma = repo::firmar_acta(
+        &mut conn,
+        NuevaFirmaActa {
+            acta_id,
+            usuario_id: user.id,
+            tipo: body.tipo,
+        },
+    )
+    .await?;
 
     // Verificar si todas las firmas requeridas están (4 tipos: reportante, reportada, comité, admin)
     let todas = repo::firmas_por_acta(&mut conn, acta_id).await?;
-    let tipos_firmados: std::collections::HashSet<String> = todas.iter().map(|f| f.tipo.clone()).collect();
+    let tipos_firmados: std::collections::HashSet<String> =
+        todas.iter().map(|f| f.tipo.clone()).collect();
     if tipos_firmados.len() >= 4 {
         repo::marcar_acta_firmada(&mut conn, acta_id).await?;
     }
@@ -463,12 +700,18 @@ async fn firmar_acta(
         created_at: acta.created_at,
     };
 
-    state.ws_hub.publish(user.conjunto_id, WsEvent {
-        domain: "convivencia".into(),
-        action: "acta_firmada".into(),
-        payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-        target_user_id: None,
-    }).await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "convivencia".into(),
+                action: "acta_firmada".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
     Ok(Json(dto))
 }
 
@@ -483,11 +726,15 @@ async fn caso_to_dto(
     let unidad_reporta = repo::unidad_embed(conn, caso.unidad_reporta_id).await?;
     let unidad_reportada = if let Some(uid) = caso.unidad_reportada_id {
         Some(repo::unidad_embed(conn, uid).await?)
-    } else { None };
+    } else {
+        None
+    };
     let creador = repo::usuario_embed(conn, caso.creado_por).await?;
     let miembro = if let Some(mid) = caso.miembro_asignado_id {
         Some(repo::usuario_embed(conn, mid).await?)
-    } else { None };
+    } else {
+        None
+    };
 
     let acta = if let Some(a) = repo::acta_por_caso(conn, caso.id).await? {
         let firmas = repo::firmas_por_acta(conn, a.id).await?;
@@ -497,12 +744,30 @@ async fn caso_to_dto(
             firmas_dto.push(FirmaActaDto::from_model(f, u));
         }
         Some(ActaConvivenciaDto::from_model(a, firmas_dto))
-    } else { None };
+    } else {
+        None
+    };
 
-    Ok(CasoConvivenciaDto::from_model(caso, unidad_reporta, unidad_reportada, creador, miembro, acta))
+    Ok(CasoConvivenciaDto::from_model(
+        caso,
+        unidad_reporta,
+        unidad_reportada,
+        creador,
+        miembro,
+        acta,
+    ))
 }
 
 /// GET /api/v1/convivencia/unidades — list unidades for dropdown selectors
+#[utoipa::path(
+    get,
+    path = "/api/v1/convivencia/unidades",
+    tag = "convivencia",
+    responses(
+        (status = 200, description = "Listado de unidades para selectores", body = [crate::domains::comite_convivencia::dto::UnidadEmbed]),
+        (status = 403, description = "Caller lacks convivencia admin role")
+    )
+)]
 async fn listar_unidades(
     State(state): State<AppState>,
     user: AuthUser,

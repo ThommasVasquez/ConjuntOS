@@ -46,6 +46,20 @@ fn require_gemini(state: &AppState) -> ApiResult<&GeminiClient> {
 
 // ── Copilot ─────────────────────────────────────────────────────────────
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/asambleas/{id}/copilot",
+    tag = "asambleas",
+    params(("id" = uuid::Uuid, Path, description = "Asamblea identifier")),
+    request_body = CopilotRequest,
+    responses(
+        (status = 200, description = "Copilot answer generated", body = CopilotResponse),
+        (status = 400, description = "pregunta is required"),
+        (status = 403, description = "Caller is not an administrator"),
+        (status = 404, description = "Asamblea not found for this tenant"),
+        (status = 503, description = "AI service (GEMINI_API_KEY) not configured")
+    )
+)]
 async fn copilot(
     State(state): State<AppState>,
     user: AuthUser,
@@ -95,6 +109,17 @@ async fn copilot(
 
 // ── Translate ───────────────────────────────────────────────────────────
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/asambleas/copilot/translate",
+    tag = "asambleas",
+    request_body = TranslateRequest,
+    responses(
+        (status = 200, description = "Text translated", body = TranslateResponse),
+        (status = 400, description = "texto or idioma_destino is required"),
+        (status = 503, description = "AI service (GEMINI_API_KEY) not configured")
+    )
+)]
 async fn translate(
     State(state): State<AppState>,
     _user: AuthUser,
@@ -137,6 +162,20 @@ async fn translate(
 
 // ── Consensuar ──────────────────────────────────────────────────────────
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/asambleas/{id}/copilot/consensuar",
+    tag = "asambleas",
+    params(("id" = uuid::Uuid, Path, description = "Asamblea identifier")),
+    request_body = ConsensuarRequest,
+    responses(
+        (status = 200, description = "Consensus synthesis generated", body = ConsensuarResponse),
+        (status = 400, description = "At least one opinion is required"),
+        (status = 403, description = "Caller is not an administrator"),
+        (status = 404, description = "Asamblea not found for this tenant"),
+        (status = 503, description = "AI service (GEMINI_API_KEY) not configured")
+    )
+)]
 async fn consensuar(
     State(state): State<AppState>,
     user: AuthUser,
@@ -193,6 +232,16 @@ async fn consensuar(
 
 // ── Acta (GET / POST) ──────────────────────────────────────────────────
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/asambleas/{id}/acta",
+    tag = "asambleas",
+    params(("id" = uuid::Uuid, Path, description = "Asamblea identifier")),
+    responses(
+        (status = 200, description = "Stored acta for the asamblea", body = ActaDto),
+        (status = 404, description = "Asamblea or acta not found")
+    )
+)]
 async fn get_acta(
     State(state): State<AppState>,
     user: AuthUser,
@@ -208,6 +257,20 @@ async fn get_acta(
     Ok(Json(ActaDto::from(acta)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/asambleas/{id}/acta",
+    tag = "asambleas",
+    params(("id" = uuid::Uuid, Path, description = "Asamblea identifier")),
+    request_body = GenerateActaRequest,
+    responses(
+        (status = 200, description = "Acta generated and stored", body = ActaDto),
+        (status = 400, description = "At least one point is required"),
+        (status = 403, description = "Caller is not an administrator"),
+        (status = 404, description = "Asamblea not found for this tenant"),
+        (status = 503, description = "AI service (GEMINI_API_KEY) not configured")
+    )
+)]
 async fn generate_acta(
     State(state): State<AppState>,
     user: AuthUser,
@@ -354,6 +417,17 @@ struct ActaPdfResponse {
 }
 
 /// Export a stored acta to an archived, downloadable PDF (reuses services::pdf).
+#[utoipa::path(
+    get,
+    path = "/api/v1/asambleas/{id}/acta/pdf",
+    tag = "asambleas",
+    params(("id" = uuid::Uuid, Path, description = "Asamblea identifier")),
+    responses(
+        (status = 200, description = "Rendered acta PDF", content_type = "application/pdf"),
+        (status = 404, description = "Asamblea or acta not found"),
+        (status = 502, description = "PDF generation failed upstream")
+    )
+)]
 async fn acta_pdf(
     State(state): State<AppState>,
     user: AuthUser,
@@ -386,7 +460,7 @@ async fn acta_pdf(
 /// only when per-conjunto reglamentos (many private docs) need indexing.
 const LEY_675: &str = include_str!("ley_675_2001.md");
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, utoipa::ToSchema)]
 struct AsistenteRequest {
     pregunta: String,
     /// Optional context (e.g. the screen the user is on) sent by the global search box.
@@ -394,7 +468,7 @@ struct AsistenteRequest {
     contexto: Option<String>,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 struct AsistenteResponse {
     respuesta: String,
 }
@@ -403,6 +477,17 @@ struct AsistenteResponse {
 /// questions (the /asistente page and the global search box both call this). Answers
 /// anything helpfully; its specialty is Ley 675 / propiedad horizontal, grounded in the
 /// embedded law text. Informational only — performs no actions.
+#[utoipa::path(
+    post,
+    path = "/api/v1/ai/asistente",
+    tag = "ai",
+    request_body = AsistenteRequest,
+    responses(
+        (status = 200, description = "Assistant answer generated", body = AsistenteResponse),
+        (status = 400, description = "pregunta is required"),
+        (status = 503, description = "AI service (GEMINI_API_KEY) not configured")
+    )
+)]
 async fn asistente(
     State(state): State<AppState>,
     _user: AuthUser,
@@ -446,13 +531,10 @@ async fn asistente(
         pregunta = req.pregunta.trim(),
     );
 
-    let respuesta = gemini
-        .generate(&prompt, 1536, 0.3)
-        .await
-        .map_err(|e| {
-            tracing::error!(error = %e, "Gemini API falló");
-            ApiError::Upstream(format!("Error del servicio de IA: {e}"))
-        })?;
+    let respuesta = gemini.generate(&prompt, 1536, 0.3).await.map_err(|e| {
+        tracing::error!(error = %e, "Gemini API falló");
+        ApiError::Upstream(format!("Error del servicio de IA: {e}"))
+    })?;
     Ok(Json(AsistenteResponse { respuesta }))
 }
 
@@ -465,6 +547,9 @@ mod tests {
     fn ley_675_is_embedded() {
         assert!(LEY_675.len() > 50_000, "embedded Ley 675 looks truncated");
         assert!(LEY_675.contains("675"), "missing law number");
-        assert!(LEY_675.contains("Artículo") || LEY_675.contains("ARTÍCULO"), "no articles found");
+        assert!(
+            LEY_675.contains("Artículo") || LEY_675.contains("ARTÍCULO"),
+            "no articles found"
+        );
     }
 }

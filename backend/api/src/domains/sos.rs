@@ -147,6 +147,17 @@ pub fn router() -> Router<AppState> {
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
 /// Resident raises an SOS → persisted, then security is alerted (WS + push) < 2s.
+#[utoipa::path(
+    post,
+    path = "/api/v1/sos",
+    tag = "sos",
+    request_body = CrearSosRequest,
+    responses(
+        (status = 200, description = "SOS alert raised; security notified", body = SosDto),
+        (status = 403, description = "Caller is not a resident"),
+        (status = 409, description = "Resident already has an active alert")
+    )
+)]
 async fn crear(
     State(state): State<AppState>,
     user: AuthUser,
@@ -209,6 +220,15 @@ async fn crear(
 }
 
 /// Security console: active alerts (ABIERTA/ATENDIDA), newest first, with reporter name.
+#[utoipa::path(
+    get,
+    path = "/api/v1/sos",
+    tag = "sos",
+    responses(
+        (status = 200, description = "Active alerts (ABIERTA/ATENDIDA), newest first", body = [SosDto]),
+        (status = 403, description = "Caller is not security staff")
+    )
+)]
 async fn listar(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json<Vec<SosDto>>> {
     guard::require(&user, SECURITY_ROLES)?;
     let mut conn = state.pool.get().await?;
@@ -235,6 +255,15 @@ async fn listar(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json
 }
 
 /// Resident fetches their own active SOS (if any) — restore state on page reload.
+#[utoipa::path(
+    get,
+    path = "/api/v1/sos/activa",
+    tag = "sos",
+    responses(
+        (status = 200, description = "The caller's own active SOS, or null", body = Option<SosDto>),
+        (status = 403, description = "Caller is not a resident")
+    )
+)]
 async fn mi_activa(
     State(state): State<AppState>,
     user: AuthUser,
@@ -257,11 +286,22 @@ async fn mi_activa(
         .await
         .optional()?;
 
-    Ok(Json(
-        alerta.map(|(a, nombre, torre, apto)| SosDto::from_parts(a, Some(nombre), torre, apto)),
-    ))
+    Ok(Json(alerta.map(|(a, nombre, torre, apto)| {
+        SosDto::from_parts(a, Some(nombre), torre, apto)
+    })))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/sos/{id}/atender",
+    tag = "sos",
+    params(("id" = Uuid, Path, description = "SOS alert id")),
+    responses(
+        (status = 200, description = "Alert marked ATENDIDA", body = SosDto),
+        (status = 400, description = "Invalid state transition"),
+        (status = 404, description = "Alert not found")
+    )
+)]
 async fn atender(
     State(state): State<AppState>,
     user: AuthUser,
@@ -270,6 +310,17 @@ async fn atender(
     transicionar(state, user, id, SosAccion::Atender).await
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/sos/{id}/resolver",
+    tag = "sos",
+    params(("id" = Uuid, Path, description = "SOS alert id")),
+    responses(
+        (status = 200, description = "Alert marked RESUELTA", body = SosDto),
+        (status = 400, description = "Invalid state transition"),
+        (status = 404, description = "Alert not found")
+    )
+)]
 async fn resolver(
     State(state): State<AppState>,
     user: AuthUser,
@@ -342,6 +393,18 @@ async fn transicionar(
 }
 
 /// Resident cancels their own active SOS (ABIERTA → RESUELTA).
+#[utoipa::path(
+    post,
+    path = "/api/v1/sos/{id}/cancelar",
+    tag = "sos",
+    params(("id" = Uuid, Path, description = "SOS alert id")),
+    responses(
+        (status = 200, description = "Alert cancelled (RESUELTA)", body = SosDto),
+        (status = 400, description = "Invalid state transition"),
+        (status = 403, description = "Not the owner of the alert"),
+        (status = 404, description = "Alert not found")
+    )
+)]
 async fn cancelar(
     State(state): State<AppState>,
     user: AuthUser,
@@ -428,9 +491,13 @@ async fn notificar_seguridad(
         _ => String::new(),
     };
     let body = if unidad.is_empty() {
-        format!("{quien} solicita ayuda. {donde}").trim().to_string()
+        format!("{quien} solicita ayuda. {donde}")
+            .trim()
+            .to_string()
     } else {
-        format!("{quien} solicita ayuda — {unidad}. {donde}").trim().to_string()
+        format!("{quien} solicita ayuda — {unidad}. {donde}")
+            .trim()
+            .to_string()
     };
     let payload = serde_json::json!({
         "title": format!("🚨 SOS — {}", dto.tipo.as_str()),
@@ -481,7 +548,7 @@ mod tests {
     #[test]
     fn invalid_transitions_are_rejected() {
         // Re-attending an attended alert, or touching a resolved one, is invalid.
-        assert!(aplicar_transicion(EstadoSos::Abierta, SosAccion::Atender).is_err());
+        assert!(aplicar_transicion(EstadoSos::Atendida, SosAccion::Atender).is_err());
         assert!(aplicar_transicion(EstadoSos::Resuelta, SosAccion::Atender).is_err());
         assert!(aplicar_transicion(EstadoSos::Resuelta, SosAccion::Resolver).is_err());
         assert!(aplicar_transicion(EstadoSos::Atendida, SosAccion::Cancelar).is_err());

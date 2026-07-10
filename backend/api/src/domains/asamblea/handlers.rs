@@ -154,6 +154,15 @@ async fn update_session(
 
 // ── Pairing ──────────────────────────────────────────────────────────────
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/asambleas/pairing",
+    tag = "asambleas",
+    responses(
+        (status = 200, description = "Pairing linked to the caller", body = PairingDto),
+        (status = 404, description = "No pending pairing matches the PIN")
+    )
+)]
 async fn get_pairing(
     State(state): State<AppState>,
     user: AuthUser,
@@ -177,6 +186,16 @@ async fn get_pairing(
     Ok(Json(PairingDto::from(linked)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/asambleas/pairing",
+    tag = "asambleas",
+    request_body = CreatePairingRequest,
+    responses(
+        (status = 200, description = "Pairing created", body = PairingDto),
+        (status = 400, description = "PIN missing or expires_minutes invalid")
+    )
+)]
 async fn create_pairing(
     State(state): State<AppState>,
     user: AuthUser,
@@ -264,6 +283,21 @@ async fn create_votacion(
     Ok(Json(dto))
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/v1/asambleas/{id}/votaciones/{vid}",
+    tag = "asambleas",
+    params(
+        ("id" = uuid::Uuid, Path, description = "Assembly id"),
+        ("vid" = uuid::Uuid, Path, description = "Votación id")
+    ),
+    request_body = UpdateVotacionRequest,
+    responses(
+        (status = 200, description = "Votación updated", body = VotacionDto),
+        (status = 403, description = "Caller is not an administrator"),
+        (status = 404, description = "Assembly or votación not found")
+    )
+)]
 async fn update_votacion(
     State(state): State<AppState>,
     user: AuthUser,
@@ -293,6 +327,18 @@ async fn update_votacion(
 
 // ── Votos ────────────────────────────────────────────────────────────────
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/votaciones/{id}/votos",
+    tag = "asambleas",
+    params(
+        ("id" = uuid::Uuid, Path, description = "Votación id")
+    ),
+    responses(
+        (status = 200, description = "Votes for the votación", body = [VotoDto]),
+        (status = 404, description = "Votación not found")
+    )
+)]
 async fn list_votos(
     State(state): State<AppState>,
     user: AuthUser,
@@ -304,6 +350,21 @@ async fn list_votos(
     Ok(Json(rows.into_iter().map(VotoDto::from).collect()))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/votaciones/{id}/votos",
+    tag = "asambleas",
+    params(
+        ("id" = uuid::Uuid, Path, description = "Votación id")
+    ),
+    request_body = CreateVotoRequest,
+    responses(
+        (status = 200, description = "Vote cast", body = VotoDto),
+        (status = 400, description = "Votación inactive, invalid option, or caller has no unit"),
+        (status = 404, description = "Votación not found"),
+        (status = 409, description = "Vote will be cast by the caller's apoderado")
+    )
+)]
 async fn cast_voto(
     State(state): State<AppState>,
     user: AuthUser,
@@ -327,9 +388,13 @@ async fn cast_voto(
     }
 
     // Effective coeficiente (own + verified poderes), scoped to the caller's conjunto.
-    let (unidad_id, coeficiente) =
-        repo::compute_effective_coeficiente(&mut conn, votacion.asamblea_id, user.conjunto_id, user.id)
-            .await?;
+    let (unidad_id, coeficiente) = repo::compute_effective_coeficiente(
+        &mut conn,
+        votacion.asamblea_id,
+        user.conjunto_id,
+        user.id,
+    )
+    .await?;
 
     // A voter must own a unit. With a NULL unidad_id the unique (votacion_id,
     // unidad_id) constraint does not dedupe (NULL != NULL in Postgres), which would
@@ -554,6 +619,22 @@ async fn create_turno(
     Ok(Json(dto))
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/v1/asambleas/{id}/turnos/{tid}",
+    tag = "asambleas",
+    params(
+        ("id" = uuid::Uuid, Path, description = "Assembly id"),
+        ("tid" = uuid::Uuid, Path, description = "Turno id")
+    ),
+    request_body = UpdateTurnoRequest,
+    responses(
+        (status = 200, description = "Turno updated", body = TurnoDto),
+        (status = 400, description = "Invalid state transition"),
+        (status = 403, description = "Caller is not an administrator"),
+        (status = 404, description = "Assembly or turno not found")
+    )
+)]
 async fn update_turno(
     State(state): State<AppState>,
     user: AuthUser,
@@ -655,6 +736,21 @@ async fn create_poder(
     Ok(Json(dto))
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/v1/asambleas/{id}/poderes/{pid}",
+    tag = "asambleas",
+    params(
+        ("id" = uuid::Uuid, Path, description = "Assembly id"),
+        ("pid" = uuid::Uuid, Path, description = "Poder id")
+    ),
+    request_body = UpdatePoderRequest,
+    responses(
+        (status = 200, description = "Poder updated", body = PoderDto),
+        (status = 403, description = "Caller is not an administrator"),
+        (status = 404, description = "Assembly or poder not found")
+    )
+)]
 async fn update_poder(
     State(state): State<AppState>,
     user: AuthUser,
@@ -686,6 +782,19 @@ async fn update_poder(
 
 /// GET /api/v1/asambleas/{id}/livekit-token
 /// Returns a LiveKit access token for joining the assembly video room.
+#[utoipa::path(
+    get,
+    path = "/api/v1/asambleas/{id}/livekit-token",
+    tag = "asambleas",
+    params(
+        ("id" = uuid::Uuid, Path, description = "Assembly id")
+    ),
+    responses(
+        (status = 200, description = "LiveKit access token", body = LiveKitTokenDto),
+        (status = 404, description = "Assembly not found"),
+        (status = 503, description = "LiveKit not configured")
+    )
+)]
 async fn livekit_token(
     State(state): State<AppState>,
     user: AuthUser,

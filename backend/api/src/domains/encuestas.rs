@@ -54,7 +54,12 @@ pub struct Opcion {
 pub fn tally(opciones: &[Opcion], votos: &[String]) -> Vec<(String, i64)> {
     opciones
         .iter()
-        .map(|o| (o.id.clone(), votos.iter().filter(|v| **v == o.id).count() as i64))
+        .map(|o| {
+            (
+                o.id.clone(),
+                votos.iter().filter(|v| **v == o.id).count() as i64,
+            )
+        })
         .collect()
 }
 
@@ -156,6 +161,17 @@ async fn build_dto(conn: &mut DbConn, e: Encuesta, user_id: Uuid) -> ApiResult<E
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/encuestas",
+    tag = "encuestas",
+    request_body = CrearEncuestaRequest,
+    responses(
+        (status = 200, description = "Poll created", body = EncuestaDto),
+        (status = 400, description = "Invalid poll data"),
+        (status = 403, description = "Caller is not an administrator")
+    )
+)]
 async fn crear(
     State(state): State<AppState>,
     user: AuthUser,
@@ -172,7 +188,9 @@ async fn crear(
         .filter(|t| !t.is_empty())
         .collect();
     if textos.len() < 2 {
-        return Err(ApiError::BadRequest("se requieren al menos 2 opciones".into()));
+        return Err(ApiError::BadRequest(
+            "se requieren al menos 2 opciones".into(),
+        ));
     }
     let opciones: Vec<Opcion> = textos
         .into_iter()
@@ -205,7 +223,16 @@ async fn crear(
     Ok(Json(dto))
 }
 
-async fn listar(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json<Vec<EncuestaDto>>> {
+#[utoipa::path(
+    get,
+    path = "/api/v1/encuestas",
+    tag = "encuestas",
+    responses((status = 200, description = "Polls for the tenant, newest first", body = [EncuestaDto]))
+)]
+async fn listar(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<EncuestaDto>>> {
     let mut conn = state.pool.get().await?;
     let rows: Vec<Encuesta> = encuestas::table
         .filter(encuestas::conjunto_id.eq(user.conjunto_id))
@@ -221,6 +248,18 @@ async fn listar(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json
     Ok(Json(out))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/encuestas/{id}/votar",
+    tag = "encuestas",
+    params(("id" = Uuid, Path, description = "Poll id")),
+    request_body = VotarRequest,
+    responses(
+        (status = 200, description = "Vote recorded", body = EncuestaDto),
+        (status = 400, description = "Invalid option or already voted"),
+        (status = 404, description = "Poll not found")
+    )
+)]
 async fn votar(
     State(state): State<AppState>,
     user: AuthUser,
@@ -253,7 +292,9 @@ async fn votar(
         return Err(ApiError::BadRequest("selecciona una opción válida".into()));
     }
     if !e.multiple && seleccion.len() != 1 {
-        return Err(ApiError::BadRequest("esta encuesta admite una sola opción".into()));
+        return Err(ApiError::BadRequest(
+            "esta encuesta admite una sola opción".into(),
+        ));
     }
 
     // One vote per resident — the unique participation row is the race-proof gate.
@@ -294,6 +335,17 @@ async fn votar(
     Ok(Json(dto))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/encuestas/{id}/cerrar",
+    tag = "encuestas",
+    params(("id" = Uuid, Path, description = "Poll id")),
+    responses(
+        (status = 200, description = "Poll closed", body = EncuestaDto),
+        (status = 403, description = "Caller is not an administrator"),
+        (status = 404, description = "Poll not found")
+    )
+)]
 async fn cerrar(
     State(state): State<AppState>,
     user: AuthUser,
@@ -338,9 +390,18 @@ mod tests {
 
     fn ops() -> Vec<Opcion> {
         vec![
-            Opcion { id: "o1".into(), texto: "Sí".into() },
-            Opcion { id: "o2".into(), texto: "No".into() },
-            Opcion { id: "o3".into(), texto: "Abstención".into() },
+            Opcion {
+                id: "o1".into(),
+                texto: "Sí".into(),
+            },
+            Opcion {
+                id: "o2".into(),
+                texto: "No".into(),
+            },
+            Opcion {
+                id: "o3".into(),
+                texto: "Abstención".into(),
+            },
         ]
     }
 
@@ -348,7 +409,10 @@ mod tests {
     fn tally_counts_votes_per_option() {
         let votos = vec!["o1".to_string(), "o1".into(), "o2".into()];
         let result = tally(&ops(), &votos);
-        assert_eq!(result, vec![("o1".into(), 2), ("o2".into(), 1), ("o3".into(), 0)]);
+        assert_eq!(
+            result,
+            vec![("o1".into(), 2), ("o2".into(), 1), ("o3".into(), 0)]
+        );
     }
 
     #[test]

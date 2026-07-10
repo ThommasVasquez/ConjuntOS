@@ -125,6 +125,16 @@ pub fn router() -> Router<AppState> {
 
 // BigDecimal has no PartialOrd<i32>, so a zero literal won't compile here.
 #[allow(clippy::cmp_owned)]
+#[utoipa::path(
+    post,
+    path = "/api/v1/multas",
+    tag = "multas",
+    request_body = EmitirMultaRequest,
+    responses(
+        (status = 200, description = "Fine issued", body = MultaDto),
+        (status = 403, description = "Caller is not an administrator")
+    )
+)]
 async fn emitir(
     State(state): State<AppState>,
     user: AuthUser,
@@ -135,7 +145,9 @@ async fn emitir(
         return Err(ApiError::BadRequest("el motivo es obligatorio".into()));
     }
     if req.monto <= BigDecimal::from(0) {
-        return Err(ApiError::BadRequest("el monto debe ser mayor a cero".into()));
+        return Err(ApiError::BadRequest(
+            "el monto debe ser mayor a cero".into(),
+        ));
     }
 
     let mut conn = state.pool.get().await?;
@@ -211,16 +223,33 @@ async fn emitir(
         req.usuario_id,
         "multa",
         "Nueva multa",
-        &format!("Se te impuso una multa de ${}: {}", req.monto, req.motivo.trim()),
+        &format!(
+            "Se te impuso una multa de ${}: {}",
+            req.monto,
+            req.motivo.trim()
+        ),
         None,
     )
     .await;
 
     let dto = MultaDto::from(multa);
-    publish(&state, user.conjunto_id, req.usuario_id, ws_events::action::CREATED, &dto).await;
+    publish(
+        &state,
+        user.conjunto_id,
+        req.usuario_id,
+        ws_events::action::CREATED,
+        &dto,
+    )
+    .await;
     Ok(Json(dto))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/multas",
+    tag = "multas",
+    responses((status = 200, description = "Fines visible to the caller", body = [MultaDto]))
+)]
 async fn listar(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json<Vec<MultaDto>>> {
     let admin = guard::require(&user, ADMIN_ROLES).is_ok();
     let mut conn = state.pool.get().await?;
@@ -238,6 +267,16 @@ async fn listar(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json
     Ok(Json(rows.into_iter().map(MultaDto::from).collect()))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/multas/{id}/apelar",
+    tag = "multas",
+    params(("id" = Uuid, Path, description = "Fine id")),
+    responses(
+        (status = 200, description = "Appeal registered", body = MultaDto),
+        (status = 404, description = "Fine not found")
+    )
+)]
 async fn apelar(
     State(state): State<AppState>,
     user: AuthUser,
@@ -248,9 +287,27 @@ async fn apelar(
     if multa.usuario_id != user.id {
         return Err(ApiError::Forbidden);
     }
-    transicionar(&state, &mut conn, multa, MultaAccion::Apelar, user.conjunto_id).await
+    transicionar(
+        &state,
+        &mut conn,
+        multa,
+        MultaAccion::Apelar,
+        user.conjunto_id,
+    )
+    .await
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/multas/{id}/anular",
+    tag = "multas",
+    params(("id" = Uuid, Path, description = "Fine id")),
+    responses(
+        (status = 200, description = "Fine voided", body = MultaDto),
+        (status = 403, description = "Caller is not an administrator"),
+        (status = 404, description = "Fine not found")
+    )
+)]
 async fn anular(
     State(state): State<AppState>,
     user: AuthUser,
@@ -259,7 +316,14 @@ async fn anular(
     guard::require(&user, ADMIN_ROLES)?;
     let mut conn = state.pool.get().await?;
     let multa = cargar(&mut conn, id, user.conjunto_id).await?;
-    transicionar(&state, &mut conn, multa, MultaAccion::Anular, user.conjunto_id).await
+    transicionar(
+        &state,
+        &mut conn,
+        multa,
+        MultaAccion::Anular,
+        user.conjunto_id,
+    )
+    .await
 }
 
 // ── Internals ────────────────────────────────────────────────────────────────
@@ -307,7 +371,14 @@ async fn transicionar(
     }
 
     let dto = MultaDto::from(updated);
-    publish(state, conjunto_id, usuario_id, ws_events::action::UPDATED, &dto).await;
+    publish(
+        state,
+        conjunto_id,
+        usuario_id,
+        ws_events::action::UPDATED,
+        &dto,
+    )
+    .await;
     Ok(Json(dto))
 }
 
@@ -321,8 +392,7 @@ async fn generar_notice(state: &AppState, req: &EmitirMultaRequest) -> Option<St
                 .map(|d| format!("Fecha límite de pago: {d}"))
                 .unwrap_or_default(),
             String::new(),
-            "Conforme a la Ley 675 de 2001 y el reglamento de propiedad horizontal."
-                .to_string(),
+            "Conforme a la Ley 675 de 2001 y el reglamento de propiedad horizontal.".to_string(),
             "Puede presentar apelación desde la aplicación.".to_string(),
         ],
     };
@@ -332,7 +402,13 @@ async fn generar_notice(state: &AppState, req: &EmitirMultaRequest) -> Option<St
         .ok()
 }
 
-async fn publish(state: &AppState, conjunto_id: Uuid, usuario_id: Uuid, action: &str, dto: &MultaDto) {
+async fn publish(
+    state: &AppState,
+    conjunto_id: Uuid,
+    usuario_id: Uuid,
+    action: &str,
+    dto: &MultaDto,
+) {
     state
         .ws_hub
         .publish(

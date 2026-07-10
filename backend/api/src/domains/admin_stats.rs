@@ -43,7 +43,12 @@ static STATUS: LazyLock<RwLock<HashMap<Uuid, AdminStatus>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 fn read_status(conjunto_id: Uuid) -> AdminStatus {
-    STATUS.read().unwrap().get(&conjunto_id).cloned().unwrap_or_default()
+    STATUS
+        .read()
+        .unwrap()
+        .get(&conjunto_id)
+        .cloned()
+        .unwrap_or_default()
 }
 
 fn update_status(conjunto_id: Uuid, llamadas: Option<bool>, mensajes: Option<bool>) -> AdminStatus {
@@ -61,9 +66,10 @@ fn update_status(conjunto_id: Uuid, llamadas: Option<bool>, mensajes: Option<boo
 // ── Router ──────────────────────────────────────────────────────────────────
 
 pub fn router() -> Router<AppState> {
-    Router::new()
-        .route("/admin/stats", get(admin_stats))
-        .route("/admin/status-config", get(get_status).post(update_status_handler))
+    Router::new().route("/admin/stats", get(admin_stats)).route(
+        "/admin/status-config",
+        get(get_status).post(update_status_handler),
+    )
 }
 
 // ── DTOs ────────────────────────────────────────────────────────────────────
@@ -78,8 +84,8 @@ pub struct AdminStatsDto {
     pub reservas_pendientes: i64,
 }
 
-#[derive(Debug, Clone, Serialize)]
-struct StatusResponse {
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct StatusResponse {
     success: bool,
     #[serde(rename = "activoLlamadas")]
     activo_llamadas: bool,
@@ -97,8 +103,8 @@ impl From<AdminStatus> for StatusResponse {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct StatusUpdate {
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct StatusUpdate {
     #[serde(rename = "activoLlamadas")]
     activo_llamadas: Option<bool>,
     #[serde(rename = "activoMensajes")]
@@ -132,18 +138,44 @@ pub async fn admin_stats(
 }
 
 /// GET /api/v1/admin/status-config — read admin availability toggles.
-async fn get_status(State(_state): State<AppState>, user: AuthUser) -> ApiResult<Json<StatusResponse>> {
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/status-config",
+    tag = "admin",
+    responses(
+        (status = 200, description = "Current admin availability toggles", body = StatusResponse),
+        (status = 403, description = "Requires administrador or concejo role")
+    )
+)]
+pub async fn get_status(
+    State(_state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<StatusResponse>> {
     guard::require(&user, &[Rol::Administrador, Rol::Concejo])?;
     Ok(Json(read_status(user.conjunto_id).into()))
 }
 
 /// POST /api/v1/admin/status-config — update admin availability toggles.
-async fn update_status_handler(
+#[utoipa::path(
+    post,
+    path = "/api/v1/admin/status-config",
+    tag = "admin",
+    request_body = StatusUpdate,
+    responses(
+        (status = 200, description = "Updated admin availability toggles", body = StatusResponse),
+        (status = 403, description = "Requires administrador or concejo role")
+    )
+)]
+pub async fn update_status_handler(
     State(_state): State<AppState>,
     user: AuthUser,
     Json(payload): Json<StatusUpdate>,
 ) -> ApiResult<Json<StatusResponse>> {
     guard::require(&user, &[Rol::Administrador, Rol::Concejo])?;
-    let status = update_status(user.conjunto_id, payload.activo_llamadas, payload.activo_mensajes);
+    let status = update_status(
+        user.conjunto_id,
+        payload.activo_llamadas,
+        payload.activo_mensajes,
+    );
     Ok(Json(status.into()))
 }

@@ -17,6 +17,7 @@ macro_rules! text_enum {
         pub enum $name {
             $(
                 #[serde(rename = $value)]
+                #[schema(rename = $value)]
                 $variant,
             )+
         }

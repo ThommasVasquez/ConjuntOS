@@ -13,9 +13,9 @@ use crate::auth::guard;
 use crate::db::enums::{CatServicio, EstadoSolicitud, PrioridadTicket, Rol};
 use crate::db::schema::solicitudes_servicio;
 use crate::db::DbConn;
-use crate::domains::solicitudes::Solicitud;
 use crate::domains::solicitudes::dto::TicketStats;
 use crate::domains::solicitudes::repo;
+use crate::domains::solicitudes::Solicitud;
 use crate::error::{ApiError, ApiResult};
 use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
@@ -48,12 +48,23 @@ impl From<Solicitud> for SolicitudServicioDto {
     fn from(s: Solicitud) -> Self {
         let imagenes: Vec<String> = serde_json::from_value(s.imagenes).unwrap_or_default();
         Self {
-            id: s.id, usuario_id: s.usuario_id, categoria: s.categoria, tipo: s.tipo.as_str().to_string(),
-            descripcion: s.descripcion, urgente: s.urgente, imagenes, estado: s.estado,
-            proveedor_id: s.proveedor_id, prioridad: s.prioridad, sla_horas: s.sla_horas,
-            sla_vencimiento: s.sla_vencimiento, asignado_a_id: s.asignado_a_id,
-            fecha_asignacion: s.fecha_asignacion, fecha_resolucion: s.fecha_resolucion,
-            fecha_cierre: s.fecha_cierre, created_at: s.created_at,
+            id: s.id,
+            usuario_id: s.usuario_id,
+            categoria: s.categoria,
+            tipo: s.tipo.as_str().to_string(),
+            descripcion: s.descripcion,
+            urgente: s.urgente,
+            imagenes,
+            estado: s.estado,
+            proveedor_id: s.proveedor_id,
+            prioridad: s.prioridad,
+            sla_horas: s.sla_horas,
+            sla_vencimiento: s.sla_vencimiento,
+            asignado_a_id: s.asignado_a_id,
+            fecha_asignacion: s.fecha_asignacion,
+            fecha_resolucion: s.fecha_resolucion,
+            fecha_cierre: s.fecha_cierre,
+            created_at: s.created_at,
         }
     }
 }
@@ -87,12 +98,27 @@ pub fn router() -> Router<AppState> {
         .route("/admin/solicitudes", get(listar_admin))
         .route("/admin/solicitudes/stats", get(stats_admin))
         .route("/admin/solicitudes/{id}", put(actualizar))
-        .route("/admin/solicitudes/{id}/comentarios", get(listar_comentarios).post(agregar_comentario))
-        .route("/admin/solicitudes/{id}/historial", get(listar_transiciones))
+        .route(
+            "/admin/solicitudes/{id}/comentarios",
+            get(listar_comentarios).post(agregar_comentario),
+        )
+        .route(
+            "/admin/solicitudes/{id}/historial",
+            get(listar_transiciones),
+        )
 }
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/solicitudes",
+    tag = "solicitudes",
+    responses(
+        (status = 200, description = "List of service requests", body = [SolicitudServicioDto]),
+        (status = 403, description = "Caller is not an admin")
+    )
+)]
 async fn listar_admin(
     State(state): State<AppState>,
     user: AuthUser,
@@ -102,21 +128,35 @@ async fn listar_admin(
     let mut conn = state.pool.get().await?;
     // Use repo for full DTO support
     let estados: Option<Vec<EstadoSolicitud>> = filtros.estado.map(|s| {
-        s.split(',').filter_map(|p| {
-            match p.trim() {
+        s.split(',')
+            .filter_map(|p| match p.trim() {
                 "ABIERTA" => Some(EstadoSolicitud::Abierta),
                 "ASIGNADA" => Some(EstadoSolicitud::Asignada),
                 "EN_PROGRESO" => Some(EstadoSolicitud::EnProgreso),
                 "RESUELTA" => Some(EstadoSolicitud::Resuelta),
                 "CERRADA" => Some(EstadoSolicitud::Cerrada),
                 _ => None,
-            }
-        }).collect()
+            })
+            .collect()
     });
     let rows = repo::listar_solicitudes(&mut conn, user.conjunto_id, None, estados, None).await?;
-    Ok(Json(rows.into_iter().map(SolicitudServicioDto::from).collect()))
+    Ok(Json(
+        rows.into_iter().map(SolicitudServicioDto::from).collect(),
+    ))
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/v1/admin/solicitudes/{id}",
+    tag = "solicitudes",
+    params(("id" = uuid::Uuid, Path, description = "Service request id")),
+    request_body = UpdateSolicitudRequest,
+    responses(
+        (status = 200, description = "Updated service request", body = SolicitudServicioDto),
+        (status = 403, description = "Caller is not an admin or request belongs to another conjunto"),
+        (status = 404, description = "Service request not found")
+    )
+)]
 async fn actualizar(
     State(state): State<AppState>,
     user: AuthUser,
@@ -125,44 +165,86 @@ async fn actualizar(
 ) -> ApiResult<Json<SolicitudServicioDto>> {
     guard::require_admin(&user)?;
     let mut conn = state.pool.get().await?;
-    let existing = repo::solicitud_por_id(&mut conn, id, user.conjunto_id).await?
+    let existing = repo::solicitud_por_id(&mut conn, id, user.conjunto_id)
+        .await?
         .ok_or_else(|| ApiError::NotFound("solicitud no encontrada".into()))?;
-    if existing.conjunto_id != user.conjunto_id { return Err(ApiError::Forbidden); }
+    if existing.conjunto_id != user.conjunto_id {
+        return Err(ApiError::Forbidden);
+    }
 
     // Register transition
     if let Some(ref nuevo_estado) = req.estado {
-        let _ = repo::registrar_transicion(&mut conn, crate::domains::solicitudes::models::NuevaTransicion {
-            ticket_id: id,
-            estado_anterior: existing.estado.as_str().to_string(),
-            estado_nuevo: nuevo_estado.as_str().to_string(),
-            usuario_id: user.id,
-        }).await;
+        let _ = repo::registrar_transicion(
+            &mut conn,
+            crate::domains::solicitudes::models::NuevaTransicion {
+                ticket_id: id,
+                estado_anterior: existing.estado.as_str().to_string(),
+                estado_nuevo: nuevo_estado.as_str().to_string(),
+                usuario_id: user.id,
+            },
+        )
+        .await;
     }
 
     let actualizada = repo::actualizar_ticket(
-        &mut conn, id, req.estado,
+        &mut conn,
+        id,
+        req.estado,
         req.proveedor_id.map(|p| Some(p)),
         req.asignado_a_id.map(|a| Some(a)),
         req.prioridad,
-    ).await?;
+    )
+    .await?;
 
     let dto = SolicitudServicioDto::from(actualizada);
-    state.ws_hub.publish(user.conjunto_id, WsEvent {
-        domain: "solicitud".into(), action: "updated".into(),
-        payload: Some(serde_json::to_value(&dto).unwrap_or_default()), target_user_id: None,
-    }).await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "solicitud".into(),
+                action: "updated".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
     Ok(Json(dto))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/solicitudes/stats",
+    tag = "solicitudes",
+    responses(
+        (status = 200, description = "Ticket statistics", body = TicketStats),
+        (status = 403, description = "Caller is not an admin")
+    )
+)]
 async fn stats_admin(
     State(state): State<AppState>,
     user: AuthUser,
 ) -> ApiResult<Json<TicketStats>> {
     guard::require_admin(&user)?;
     let mut conn = state.pool.get().await?;
-    repo::ticket_stats(&mut conn, user.conjunto_id).await.map(Json)
+    repo::ticket_stats(&mut conn, user.conjunto_id)
+        .await
+        .map(Json)
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/admin/solicitudes/{id}/comentarios",
+    tag = "solicitudes",
+    params(("id" = uuid::Uuid, Path, description = "Service request id")),
+    request_body = AgregarComentarioRequest,
+    responses(
+        (status = 200, description = "Comment added"),
+        (status = 400, description = "Comment content is required"),
+        (status = 403, description = "Caller is not an admin"),
+        (status = 404, description = "Service request not found")
+    )
+)]
 async fn agregar_comentario(
     State(state): State<AppState>,
     user: AuthUser,
@@ -174,11 +256,18 @@ async fn agregar_comentario(
         return Err(ApiError::BadRequest("contenido es obligatorio".into()));
     }
     let mut conn = state.pool.get().await?;
-    let _ = repo::solicitud_por_id(&mut conn, id, user.conjunto_id).await?
+    let _ = repo::solicitud_por_id(&mut conn, id, user.conjunto_id)
+        .await?
         .ok_or_else(|| ApiError::NotFound("solicitud no encontrada".into()))?;
-    repo::agregar_comentario(&mut conn, crate::domains::solicitudes::models::NuevoComentario {
-        ticket_id: id, usuario_id: user.id, contenido: req.contenido.trim().to_string(),
-    }).await?;
+    repo::agregar_comentario(
+        &mut conn,
+        crate::domains::solicitudes::models::NuevoComentario {
+            ticket_id: id,
+            usuario_id: user.id,
+            contenido: req.contenido.trim().to_string(),
+        },
+    )
+    .await?;
     Ok(Json(serde_json::json!({"status": "ok"})))
 }
 
@@ -196,7 +285,13 @@ pub struct ComentarioDto {
 
 impl From<crate::domains::solicitudes::models::TicketComentario> for ComentarioDto {
     fn from(c: crate::domains::solicitudes::models::TicketComentario) -> Self {
-        Self { id: c.id, ticket_id: c.ticket_id, usuario_id: c.usuario_id, contenido: c.contenido, created_at: c.created_at }
+        Self {
+            id: c.id,
+            ticket_id: c.ticket_id,
+            usuario_id: c.usuario_id,
+            contenido: c.contenido,
+            created_at: c.created_at,
+        }
     }
 }
 
@@ -213,12 +308,29 @@ pub struct TransicionDto {
 
 impl From<crate::domains::solicitudes::models::TicketTransicion> for TransicionDto {
     fn from(t: crate::domains::solicitudes::models::TicketTransicion) -> Self {
-        Self { id: t.id, ticket_id: t.ticket_id, estado_anterior: t.estado_anterior, estado_nuevo: t.estado_nuevo, usuario_id: t.usuario_id, created_at: t.created_at }
+        Self {
+            id: t.id,
+            ticket_id: t.ticket_id,
+            estado_anterior: t.estado_anterior,
+            estado_nuevo: t.estado_nuevo,
+            usuario_id: t.usuario_id,
+            created_at: t.created_at,
+        }
     }
 }
 
 // ── Handlers: listar comentarios / transiciones ──────────────────────────────
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/solicitudes/{id}/comentarios",
+    tag = "solicitudes",
+    params(("id" = uuid::Uuid, Path, description = "Service request id")),
+    responses(
+        (status = 200, description = "List of comments", body = [ComentarioDto]),
+        (status = 403, description = "Caller is not an admin")
+    )
+)]
 async fn listar_comentarios(
     State(state): State<AppState>,
     user: AuthUser,
@@ -227,9 +339,21 @@ async fn listar_comentarios(
     guard::require_admin(&user)?;
     let mut conn = state.pool.get().await?;
     let comentarios = repo::comentarios_por_ticket(&mut conn, id).await?;
-    Ok(Json(comentarios.into_iter().map(ComentarioDto::from).collect()))
+    Ok(Json(
+        comentarios.into_iter().map(ComentarioDto::from).collect(),
+    ))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/solicitudes/{id}/historial",
+    tag = "solicitudes",
+    params(("id" = uuid::Uuid, Path, description = "Service request id")),
+    responses(
+        (status = 200, description = "List of state transitions", body = [TransicionDto]),
+        (status = 403, description = "Caller is not an admin")
+    )
+)]
 async fn listar_transiciones(
     State(state): State<AppState>,
     user: AuthUser,
@@ -238,5 +362,7 @@ async fn listar_transiciones(
     guard::require_admin(&user)?;
     let mut conn = state.pool.get().await?;
     let transiciones = repo::transiciones_por_ticket(&mut conn, id).await?;
-    Ok(Json(transiciones.into_iter().map(TransicionDto::from).collect()))
+    Ok(Json(
+        transiciones.into_iter().map(TransicionDto::from).collect(),
+    ))
 }
