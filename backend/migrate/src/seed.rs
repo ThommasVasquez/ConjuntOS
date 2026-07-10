@@ -179,6 +179,8 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
                  ON CONFLICT (email) DO UPDATE SET
                      password_hash = EXCLUDED.password_hash,
                      must_change_password = false,
+                     nombre = EXCLUDED.nombre,
+                     rol = EXCLUDED.rol,
                      telefono = EXCLUDED.telefono,
                      unidad_id = EXCLUDED.unidad_id,
                      torre = EXCLUDED.torre,
@@ -229,7 +231,10 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
             &[],
         )
         .await?;
-    tracing::info!(assigned, "citofonía: ensured internal numbers across all conjuntos");
+    tracing::info!(
+        assigned,
+        "citofonía: ensured internal numbers across all conjuntos"
+    );
 
     // Populate the resident-facing content layer (novedades, mascotas, pagos,
     // reservas, etc.) so the demo app is not empty on first login.

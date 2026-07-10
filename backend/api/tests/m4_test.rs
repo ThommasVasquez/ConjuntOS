@@ -30,6 +30,9 @@ fn test_db_url() -> String {
 }
 
 async fn test_state() -> AppState {
+    // Tests exercise the payment flow against the instant-approve mock gateway
+    // (no real NEQUI creds); opt in explicitly since prod now refuses to mock.
+    std::env::set_var("PAYMENTS_ALLOW_MOCK", "1");
     let url = test_db_url();
     MIGRATED
         .get_or_init(|| async {
@@ -170,7 +173,11 @@ async fn seed_celda(state: &AppState, conjunto_id: Uuid, numero: &str) -> Uuid {
         .values((
             parqueaderos::conjunto_id.eq(conjunto_id),
             parqueaderos::numero.eq(numero),
-            parqueaderos::tipo.eq("RESIDENTE"),
+            // VISITANTE (not RESIDENTE): a residente/user-assigned celda now
+            // requires admin approval when a non-admin (e.g. the encargado)
+            // changes it, so it would route through the solicitud flow instead
+            // of the direct update these audit/stats tests exercise.
+            parqueaderos::tipo.eq("VISITANTE"),
             parqueaderos::estado.eq("DISPONIBLE"),
         ))
         .returning(parqueaderos::id)
@@ -743,7 +750,11 @@ async fn celda_update_writes_audit_and_stats_reflect() {
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{body}");
-    assert_eq!(body["estado"], "OCUPADO");
+    // The update endpoint returns a MovimientoResultadoDto: the celda (with its
+    // new estado) is nested under `celda`, and `pendiente` is false for a
+    // directly-updatable celda.
+    assert_eq!(body["pendiente"], false);
+    assert_eq!(body["celda"]["estado"], "OCUPADO");
 
     // Audit row written in the same transaction.
     let (status, body) = request(

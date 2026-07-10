@@ -37,16 +37,37 @@ type Offender = { tag: string; cls: string; left: number; right: number };
 // Skips full-screen overlays (fixed elements that intentionally cover the viewport).
 async function frameOverflow(page: Page): Promise<Offender[]> {
   return page.evaluate(() => {
-    const shell = document.querySelector('.app-shell');
+    const shell = document.querySelector('.app-shell') as HTMLElement | null;
     if (!shell) return [];
     const f = shell.getBoundingClientRect();
     const tol = 2;
     const bad: Offender[] = [];
+    // An element only VISIBLY overflows the frame if nothing clips it. Per CSS,
+    // `overflow: hidden`/`clip`/`auto`/`scroll` on an ancestor clips normal-flow
+    // and `absolute` descendants, but a `position: fixed` element escapes that
+    // clip (it resolves against the viewport). `.app-shell` and the decorative
+    // `fixed inset-0 overflow-hidden` background layer both clip their children,
+    // so the blurred blobs and the giant watermark text (intentionally placed
+    // off-frame) are clipped and cannot spill. A viewport-wide fixed bar (the
+    // /asistente input bug this audit targets) is NOT clipped and is reported.
+    const isClipped = (el: HTMLElement): boolean => {
+      if (getComputedStyle(el).position === 'fixed') return false; // escapes ancestor overflow
+      let node: HTMLElement | null = el.parentElement;
+      while (node && node !== document.documentElement) {
+        const cs = getComputedStyle(node);
+        if (cs.overflowX !== 'visible') return true; // clipped by this ancestor
+        if (cs.position === 'fixed') return false; // containing block escapes higher clips
+        node = node.parentElement;
+      }
+      return false;
+    };
     document.querySelectorAll<HTMLElement>('.app-shell *').forEach((el) => {
       const s = getComputedStyle(el);
       if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') return;
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) return;
+      // Clipped by an ancestor's overflow → cannot visibly overflow the frame.
+      if (isClipped(el)) return;
       // intentional full-screen overlay/backdrop — not a frame element
       const fullscreenOverlay =
         s.position === 'fixed' && r.left <= tol && r.right >= window.innerWidth - tol;
