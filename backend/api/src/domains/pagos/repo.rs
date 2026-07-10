@@ -10,6 +10,27 @@ use crate::db::DbConn;
 use crate::domains::pagos::models::{Pago, ReciboPublico};
 use crate::error::ApiResult;
 
+/// Like `pago_por_id` but takes a `FOR UPDATE` row lock so a charge flow can
+/// serialize concurrent attempts on the same pago (prevents the TOCTOU
+/// double-charge race). Must be called inside a transaction.
+pub async fn pago_por_id_locked(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    usuario_id: Uuid,
+    pago_id: Uuid,
+) -> ApiResult<Option<Pago>> {
+    let row = pagos::table
+        .filter(pagos::id.eq(pago_id))
+        .filter(pagos::conjunto_id.eq(conjunto_id))
+        .filter(pagos::usuario_id.eq(usuario_id))
+        .select(Pago::as_select())
+        .for_update()
+        .first(conn)
+        .await
+        .optional()?;
+    Ok(row)
+}
+
 pub async fn unidad_de_usuario(
     conn: &mut DbConn,
     conjunto_id: Uuid,

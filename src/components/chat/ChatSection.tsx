@@ -6,6 +6,20 @@ import { api } from "@/lib/api/client";
 import { Send, Loader2, Image, Camera, Paperclip, Mic, X, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 
+/**
+ * Only allow http(s) URLs from message content. A crafted attachment could set
+ * url to `javascript:...` which, in an href/window.open, is stored XSS.
+ */
+function safeHttpUrl(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
+  try {
+    const u = new URL(url, window.location.origin);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 interface ChatMsg {
   id: string;
   mensaje: string;
@@ -303,26 +317,28 @@ export default function ChatSection({ compact = false, huespedId }: ChatSectionP
       return <span className="text-xs italic opacity-60">🎤 Mensaje de voz</span>;
     }
 
-    if (parsed.type === "image" && parsed.url) {
+    const safeUrl = safeHttpUrl(parsed.url);
+
+    if (parsed.type === "image" && safeUrl) {
       return (
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={parsed.url}
+            src={safeUrl}
             alt={parsed.fileName || "Imagen"}
             className="rounded-xl max-w-full max-h-64 object-cover cursor-pointer"
             loading="lazy"
-            onClick={() => window.open(parsed.url!, "_blank")}
+            onClick={() => window.open(safeUrl, "_blank", "noopener,noreferrer")}
           />
           {parsed.fileName && <p className="text-[10px] mt-1 opacity-60">{parsed.fileName}</p>}
         </div>
       );
     }
 
-    if (parsed.type === "file" && parsed.url) {
+    if (parsed.type === "file" && safeUrl) {
       return (
         <a
-          href={parsed.url}
+          href={safeUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 underline hover:opacity-80"

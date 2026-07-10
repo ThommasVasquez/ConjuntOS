@@ -1,9 +1,8 @@
-version: "3.8"
-
 services:
   db:
     image: postgres:16-alpine
     container_name: enconjunto-db
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
@@ -21,6 +20,7 @@ services:
   backend:
     build: ./backend
     container_name: enconjunto-backend
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
@@ -28,7 +28,11 @@ services:
       DATABASE_URL: postgresql://enconjunto:enconjunto123@db:5432/enconjunto
       RUN_MIGRATIONS: "true"
       DB_POOL_SIZE: "30"
-      JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me}
+      # Local-dev default only. It is >=32 chars so the backend's startup
+      # strength check passes for local work. PRODUCTION must supply its own
+      # JWT_SECRET via the environment — docker-compose.prod.yml marks it required
+      # (${JWT_SECRET:?...}) and config.rs rejects short/known-weak values.
+      JWT_SECRET: ${JWT_SECRET:-dev-local-insecure-jwt-secret-change-me-please-32b}
       ALLOWED_ORIGINS: http://localhost:3000,https://conjuntos.app,https://www.conjuntos.app,https://app.conjuntos.app
       COOKIE_DOMAIN: .conjuntos.app
       # Frontend (conjuntos.app) and API (api.conjuntos.app) are different origins:
@@ -39,8 +43,8 @@ services:
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1
       S3_BUCKET: enconjunto
-      S3_ACCESS_KEY: minioadmin
-      S3_SECRET_KEY: minioadmin123
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin123}
       S3_PUBLIC_URL: https://storage.conjuntos.app/enconjunto
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-devsecret}
@@ -55,6 +59,10 @@ services:
       # (no se versiona). Sin esta clave, /ai/* responde error (require_gemini).
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       REMINDER_TICK_SECS: "60"
+      # Local dev only: use the instant-approve mock payment gateway. In prod,
+      # leave this unset and configure NEQUI_* — otherwise charges are rejected
+      # (the backend refuses to silently mark bills as paid).
+      PAYMENTS_ALLOW_MOCK: ${PAYMENTS_ALLOW_MOCK:-1}
     depends_on:
       db:
         condition: service_healthy
@@ -64,13 +72,14 @@ services:
   minio:
     image: minio/minio:latest
     container_name: enconjunto-minio
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"   # S3 API
       - "9001:9001"   # Web console
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin123}
     volumes:
       - minio_data:/data
     healthcheck:
@@ -86,7 +95,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-        mc alias set local http://minio:9000 minioadmin minioadmin123 &&
+        mc alias set local http://minio:9000 ${S3_ACCESS_KEY:-minioadmin} ${S3_SECRET_KEY:-minioadmin123} &&
         mc mb --ignore-existing local/enconjunto &&
         mc anonymous set download local/enconjunto &&
         echo 'Bucket enconjunto ready'

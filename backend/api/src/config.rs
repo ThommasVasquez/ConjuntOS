@@ -7,6 +7,11 @@ pub enum ConfigError {
     #[error("invalid value for {0}: {1}")]
     Invalid(&'static str, String),
     #[error(
+        "JWT_SECRET is weak: it must be at least 32 characters and must not be a known \
+         development placeholder. Set a strong, unique JWT_SECRET in the environment."
+    )]
+    WeakJwtSecret,
+    #[error(
         "DATABASE_URL points at the Supabase transaction pooler (port 6543), which breaks \
          prepared statements. Use the session pooler (port 5432) instead. See \
          specs/constitution.md Law 6."
@@ -76,7 +81,7 @@ impl Config {
                 .ok()
                 .filter(|v| !v.is_empty()),
             db_pool_size,
-            jwt_secret: require("JWT_SECRET")?,
+            jwt_secret: require_strong_jwt_secret()?,
             allowed_origins: parse_origins(&env::var("ALLOWED_ORIGINS").unwrap_or_default()),
             run_migrations: env::var("RUN_MIGRATIONS").is_ok_and(|v| v == "true" || v == "1"),
             gemini_api_key: env::var("GEMINI_API_KEY").ok(),
@@ -106,6 +111,19 @@ fn require(name: &'static str) -> Result<String, ConfigError> {
         .ok()
         .filter(|v| !v.is_empty())
         .ok_or(ConfigError::Missing(name))
+}
+
+/// Known development placeholders that must never sign production tokens. The
+/// symmetric HS256 secret is the entire trust root — a leaked/guessable value
+/// lets anyone forge an admin session for any tenant.
+const WEAK_JWT_SECRETS: &[&str] = &["dev-only-jwt-secret-change-me", "changeme", "secret"];
+
+fn require_strong_jwt_secret() -> Result<String, ConfigError> {
+    let secret = require("JWT_SECRET")?;
+    if secret.len() < 32 || WEAK_JWT_SECRETS.contains(&secret.as_str()) {
+        return Err(ConfigError::WeakJwtSecret);
+    }
+    Ok(secret)
 }
 
 fn validate_not_transaction_pooler(url: &str) -> Result<(), ConfigError> {

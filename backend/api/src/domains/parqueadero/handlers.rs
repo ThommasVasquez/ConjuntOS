@@ -1,5 +1,5 @@
 use axum::extract::{Path, Query, State};
-use axum::routing::{get, post, put, delete};
+use axum::routing::{delete, get, post, put};
 use axum::{Json, Router};
 use uuid::Uuid;
 
@@ -11,11 +11,10 @@ use crate::db::enums::{
 };
 use crate::domains::parqueadero::dto::{
     AsignarCeldaRequest, CeldaDto, CeldaMapaDto, CerrarSesionRequest, CheckpointRondaDto,
-    CreateCeldaRequest, CreatePuntoRondaRequest, CreateRondaRequest, CreateVehiculoRequest,
-    CrearReservaVisitanteRequest, DisponibilidadCupoDto, EditarSolicitudRequest,
-    MovimientoResultadoDto, OcupanteDto, ParqueaderoMioDto, ParqueaderoStatsDto,
-    PuntoRondaDto, RegistroDto, RegistrarCheckpointRequest, ReservaVisitanteDto,
-    RondaConCheckpointsDto, RondaDto, SesionDto, SolicitudDto,
+    CrearReservaVisitanteRequest, CreateCeldaRequest, CreatePuntoRondaRequest, CreateRondaRequest,
+    CreateVehiculoRequest, DisponibilidadCupoDto, EditarSolicitudRequest, MovimientoResultadoDto,
+    OcupanteDto, ParqueaderoMioDto, ParqueaderoStatsDto, PuntoRondaDto, RegistrarCheckpointRequest,
+    RegistroDto, ReservaVisitanteDto, RondaConCheckpointsDto, RondaDto, SesionDto, SolicitudDto,
     UpdateCeldaRequest, VehiculoDto,
 };
 use crate::domains::parqueadero::models::{NuevaCelda, NuevaSolicitud, NuevoVehiculo};
@@ -103,14 +102,23 @@ pub fn router() -> Router<AppState> {
         .route("/parqueadero/celdas/{id}/liberar", post(liberar_celda))
         .route("/parqueadero/registros", get(registros))
         .route("/parqueadero/rondas", get(ronda_de_hoy).post(crear_ronda))
-        .route("/parqueadero/rondas/{id}/checkpoints", get(checkpoints_de_ronda))
+        .route(
+            "/parqueadero/rondas/{id}/checkpoints",
+            get(checkpoints_de_ronda),
+        )
         .route("/parqueadero/rondas/checkpoint", post(registrar_checkpoint))
-        .route("/parqueadero/puntos-ronda", get(puntos_ronda_handler).post(crear_punto_ronda))
+        .route(
+            "/parqueadero/puntos-ronda",
+            get(puntos_ronda_handler).post(crear_punto_ronda),
+        )
         .route("/parqueadero/stats", get(parqueadero_stats))
         // Log inmutable de movimientos + flujo de aprobación.
         .route("/parqueadero/solicitudes", get(listar_solicitudes))
         // Bandeja del inquilino: solicitudes de visitante que él debe aprobar.
-        .route("/parqueadero/solicitudes/mias", get(mis_solicitudes_inquilino))
+        .route(
+            "/parqueadero/solicitudes/mias",
+            get(mis_solicitudes_inquilino),
+        )
         .route(
             "/parqueadero/solicitudes/{id}/inquilino/aprobar",
             post(inquilino_aprobar),
@@ -141,12 +149,18 @@ pub fn router() -> Router<AppState> {
         .route("/parqueadero/cargos/{id}/rechazar", post(cargo_rechazar))
         // Reservas de cupo de visitante (el residente reserva con antelación).
         // Las rutas específicas van ANTES de /reservas/{id}.
-        .route("/parqueadero/reservas/disponibilidad", get(reservas_disponibilidad))
+        .route(
+            "/parqueadero/reservas/disponibilidad",
+            get(reservas_disponibilidad),
+        )
         .route("/parqueadero/reservas/mias", get(mis_reservas))
         .route("/parqueadero/reservas/proximas", get(reservas_proximas))
         .route("/parqueadero/reservas", post(crear_reserva))
         .route("/parqueadero/reservas/{id}", delete(cancelar_reserva))
-        .route("/parqueadero/reservas/{id}/llegada", post(reserva_marcar_llegada))
+        .route(
+            "/parqueadero/reservas/{id}/llegada",
+            post(reserva_marcar_llegada),
+        )
 }
 
 #[utoipa::path(
@@ -256,7 +270,9 @@ pub async fn crear_celdas(
     } else if let Some(n) = req.numero {
         let n = n.trim().to_string();
         if n.is_empty() {
-            return Err(ApiError::BadRequest("el número de celda es obligatorio".into()));
+            return Err(ApiError::BadRequest(
+                "el número de celda es obligatorio".into(),
+            ));
         }
         vec![n]
     } else {
@@ -381,14 +397,9 @@ pub async fn actualizar_celda(
         }));
     }
 
-    let celda = repo::actualizar_celda(
-        &mut conn,
-        user.conjunto_id,
-        id,
-        actor_de(&user),
-        req.estado,
-    )
-    .await?;
+    let celda =
+        repo::actualizar_celda(&mut conn, user.conjunto_id, id, actor_de(&user), req.estado)
+            .await?;
     let dto = CeldaDto::from(celda);
     notificar(
         &state,
@@ -496,10 +507,9 @@ pub async fn asignar_celda(
     // Requiere aprobación del administrador, salvo que el actor sea admin.
     if !puede_mover_residente_directo(&user) {
         let detalle = match req.meses {
-            Some(m) if m > 0 => format!(
-                "asignar celda {} a residente por {} meses",
-                celda.numero, m
-            ),
+            Some(m) if m > 0 => {
+                format!("asignar celda {} a residente por {} meses", celda.numero, m)
+            }
             _ => format!(
                 "asignar celda {} a residente (sin vencimiento)",
                 celda.numero
@@ -963,9 +973,12 @@ pub async fn mis_sesiones(
     user: AuthUser,
 ) -> ApiResult<Json<Vec<SesionDto>>> {
     let mut conn = state.pool.get().await?;
-    let rows = sesiones::sesiones_activas_de_residente(&mut conn, user.conjunto_id, user.id).await?;
+    let rows =
+        sesiones::sesiones_activas_de_residente(&mut conn, user.conjunto_id, user.id).await?;
     let ahora = chrono::Utc::now();
-    Ok(Json(rows.iter().map(|s| sesiones::to_dto(s, ahora)).collect()))
+    Ok(Json(
+        rows.iter().map(|s| sesiones::to_dto(s, ahora)).collect(),
+    ))
 }
 
 #[utoipa::path(
@@ -1039,7 +1052,13 @@ pub async fn cerrar_sesion(
     // Si quedó RETENIDA (cargo al apto esperando aprobación del residente), la
     // celda sigue OCUPADA y el vehículo NO puede salir hasta que aprueben.
     if resultado.liberar {
-        let _ = repo::liberar_celda(&mut conn, user.conjunto_id, celda_id, actor_de(&user)).await;
+        if let Err(e) =
+            repo::liberar_celda(&mut conn, user.conjunto_id, celda_id, actor_de(&user)).await
+        {
+            // Session closed but the cell didn't free — vehicle stuck OCUPADA.
+            // Surface it in logs so ops can intervene.
+            tracing::error!(error = ?e, %celda_id, "failed to release parking cell after session close");
+        }
     }
 
     // Si el cargo quedó RETENIDO esperando aprobación del residente, notificarle
@@ -1049,7 +1068,7 @@ pub async fn cerrar_sesion(
             .monto
             .clone()
             .unwrap_or_else(|| bigdecimal::BigDecimal::from(0));
-        let _ = repo::notificar_inquilino(
+        if let Err(e) = repo::notificar_inquilino(
             &mut conn,
             user.conjunto_id,
             cerrada.residente_id,
@@ -1060,7 +1079,12 @@ pub async fn cerrar_sesion(
                 monto.with_scale(0)
             ),
         )
-        .await;
+        .await
+        {
+            // Resident wasn't notified their vehicle is retained — log so the
+            // charge doesn't silently strand the visitor's car.
+            tracing::error!(error = ?e, residente_id = %cerrada.residente_id, "failed to notify resident of retained-vehicle charge");
+        }
     }
 
     notificar(&state, user.conjunto_id, "celda_liberada", None).await;
@@ -1087,7 +1111,9 @@ pub async fn mis_cargos_pendientes(
         sesiones::sesiones_cargo_pendiente_de_residente(&mut conn, user.conjunto_id, user.id)
             .await?;
     let ahora = chrono::Utc::now();
-    Ok(Json(rows.iter().map(|s| sesiones::to_dto(s, ahora)).collect()))
+    Ok(Json(
+        rows.iter().map(|s| sesiones::to_dto(s, ahora)).collect(),
+    ))
 }
 
 #[utoipa::path(
@@ -1182,9 +1208,14 @@ pub async fn reservas_disponibilidad(
 ) -> ApiResult<Json<DisponibilidadCupoDto>> {
     let mut conn = state.pool.get().await?;
     let categoria = reservas::normalizar_categoria(&q.categoria)?;
-    let disp =
-        reservas::disponibilidad(&mut conn, user.conjunto_id, &categoria, q.llegada, q.duracion_minutos)
-            .await?;
+    let disp = reservas::disponibilidad(
+        &mut conn,
+        user.conjunto_id,
+        &categoria,
+        q.llegada,
+        q.duracion_minutos,
+    )
+    .await?;
     Ok(Json(disp))
 }
 
@@ -1347,7 +1378,9 @@ pub async fn crear_punto_ronda(
 ) -> ApiResult<Json<PuntoRondaDto>> {
     guard::require_admin(&user)?;
     if req.nfc_uid.trim().is_empty() || req.nombre.trim().is_empty() {
-        return Err(ApiError::BadRequest("nfc_uid y nombre son obligatorios".into()));
+        return Err(ApiError::BadRequest(
+            "nfc_uid y nombre son obligatorios".into(),
+        ));
     }
     let mut conn = state.pool.get().await?;
     let punto = repo::crear_punto_ronda(
@@ -1388,7 +1421,8 @@ pub async fn registrar_checkpoint(
     repo::ronda_por_id(&mut conn, req.ronda_id, user.conjunto_id)
         .await?
         .ok_or_else(|| ApiError::NotFound("ronda no encontrada".into()))?;
-    let cp = repo::registrar_checkpoint(&mut conn, req.ronda_id, punto.id, req.nfc_uid.trim()).await?;
+    let cp =
+        repo::registrar_checkpoint(&mut conn, req.ronda_id, punto.id, req.nfc_uid.trim()).await?;
     let dto = CheckpointRondaDto {
         id: cp.id,
         punto_id: cp.punto_id,
@@ -1432,7 +1466,9 @@ pub async fn checkpoints_de_ronda(
         .await?
         .ok_or_else(|| ApiError::NotFound("ronda no encontrada".into()))?;
     let checkpoints = repo::checkpoints_de_ronda(&mut conn, ronda.id).await?;
-    let puntos_totales = repo::puntos_ronda_activos(&mut conn, user.conjunto_id).await?.len();
+    let puntos_totales = repo::puntos_ronda_activos(&mut conn, user.conjunto_id)
+        .await?
+        .len();
     let checkpoint_dtos: Vec<CheckpointRondaDto> = checkpoints
         .into_iter()
         .map(|(cp, nombre)| CheckpointRondaDto {

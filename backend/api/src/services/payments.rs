@@ -17,7 +17,12 @@ use crate::db::enums::EstadoPago;
 
 #[derive(Clone, Debug)]
 pub enum PaymentGateway {
+    /// Instant-approve stub. NEVER auto-selected in prod — only when
+    /// PAYMENTS_ALLOW_MOCK is explicitly set (local dev / tests).
     Mock,
+    /// No real gateway configured and mock not allowed: charges fail loudly
+    /// instead of silently marking bills as paid.
+    Disabled,
     Nequi(NequiConfig),
 }
 
@@ -83,7 +88,20 @@ impl PaymentGateway {
                     api_key,
                 })
             }
-            _ => Self::Mock,
+            _ => {
+                let allow_mock = env::var("PAYMENTS_ALLOW_MOCK")
+                    .map(|v| v == "1" || v == "true")
+                    .unwrap_or(false);
+                if allow_mock {
+                    Self::Mock
+                } else {
+                    tracing::warn!(
+                        "no payment gateway configured (NEQUI_* unset) and PAYMENTS_ALLOW_MOCK \
+                         is off — charges will be rejected until a gateway is configured"
+                    );
+                    Self::Disabled
+                }
+            }
         }
     }
 
@@ -103,6 +121,7 @@ impl PaymentGateway {
                 referencia: format!("MOCK-{}", Uuid::new_v4().simple()),
                 estado: PaymentOutcome::Approved,
             }),
+            Self::Disabled => Err(anyhow::anyhow!("pasarela de pago no configurada")),
             Self::Nequi(cfg) => {
                 let telefono = telefono
                     .ok_or_else(|| anyhow::anyhow!("se requiere el teléfono Nequi del pagador"))?;
@@ -115,6 +134,7 @@ impl PaymentGateway {
     pub async fn estado(&self, referencia: &str) -> anyhow::Result<PaymentOutcome> {
         match self {
             Self::Mock => Ok(PaymentOutcome::Approved),
+            Self::Disabled => Err(anyhow::anyhow!("pasarela de pago no configurada")),
             Self::Nequi(cfg) => nequi_estado(cfg, referencia).await,
         }
     }

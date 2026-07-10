@@ -18,6 +18,15 @@ services:
       -c max_connections=3500
       -c shared_buffers=512MB
 
+  minio:
+    # Object storage holds resident personal data. In prod: strong creds are
+    # required (no minioadmin default) and the S3/console ports are NOT published
+    # to the host — reach MinIO only over the internal compose network.
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?S3_ACCESS_KEY must be set in production}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?S3_SECRET_KEY must be set in production}
+    ports: !reset []
+
   livekit:
     # Pasa de modo --dev a config real con TURN/TLS embebido.
     command: --config /etc/livekit/livekit.yaml
@@ -37,6 +46,17 @@ services:
   backend:
     restart: unless-stopped
     environment:
+      # Trust root: MUST be supplied in prod. `:?` makes `compose up` fail fast if
+      # missing, instead of silently inheriting the base dev default.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in production}
+      # Object storage credentials — required in prod (no MinIO defaults).
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY must be set in production}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY must be set in production}
+      # Runtime role-switch (RoleSwitcher) is a tester-only backdoor: OFF by
+      # default in production. Set TESTER_EMAILS explicitly only for staging.
+      TESTER_EMAILS: ${TESTER_EMAILS:-}
+      # Never auto-approve payments in prod: mock is off unless explicitly opted in.
+      PAYMENTS_ALLOW_MOCK: ${PAYMENTS_ALLOW_MOCK:-}
       # Citofonía / Asamblea (LiveKit) — valores reales desde el entorno.
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
@@ -45,8 +65,6 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@conjuntos.app}
-      # Cuentas tester que pueden cambiar de rol en caliente (RoleSwitcher).
-      TESTER_EMAILS: ${TESTER_EMAILS:-thommy@conjuntos.app,camilo@conjuntos.app,raul@conjuntos.app,paulo@conjuntos.app}
       # ponytail: 100x DB pool (30→3000), requested explicitly. Must stay under the
       # db service's max_connections=3500. Rollback: set back to "30".
       DB_POOL_SIZE: ${DB_POOL_SIZE:-3000}

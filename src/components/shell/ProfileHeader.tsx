@@ -55,10 +55,15 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
     async function loadData() {
       if (!userId) return;
       
-      const savedPic = localStorage.getItem(`conjuntos_profile_pic_${userId}`);
-      const savedData = localStorage.getItem(`conjuntos_profile_data_${userId}`);
-      if (savedPic) setProfilePic(savedPic);
-      if (savedData) setUserData(JSON.parse(savedData));
+      // Corrupt/tampered cache must not crash the shell (JSON.parse throws).
+      try {
+        const savedPic = localStorage.getItem(`conjuntos_profile_pic_${userId}`);
+        const savedData = localStorage.getItem(`conjuntos_profile_data_${userId}`);
+        if (savedPic) setProfilePic(savedPic);
+        if (savedData) setUserData(JSON.parse(savedData));
+      } catch {
+        localStorage.removeItem(`conjuntos_profile_data_${userId}`);
+      }
 
       try {
         const [profileData, notifData, reservaData] = await Promise.all([

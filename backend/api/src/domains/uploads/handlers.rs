@@ -37,7 +37,8 @@ fn ext_imagen(content_type: &str) -> Option<&'static str> {
         "image/jpeg" | "image/jpg" => Some("jpg"),
         "image/webp" => Some("webp"),
         "image/gif" => Some("gif"),
-        "image/svg+xml" => Some("svg"),
+        // SVG is intentionally NOT allowed: it can embed <script> and, served
+        // from the storage origin, becomes a stored-XSS vector.
         _ => None,
     }
 }
@@ -90,9 +91,19 @@ pub async fn subir_imagen(
         .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
         .take(40)
         .collect();
-    let carpeta = if carpeta.is_empty() { "imagenes".to_string() } else { carpeta };
+    let carpeta = if carpeta.is_empty() {
+        "imagenes".to_string()
+    } else {
+        carpeta
+    };
 
-    let path = format!("{}/{}/{}.{}", carpeta, user.conjunto_id, Uuid::new_v4(), ext);
+    let path = format!(
+        "{}/{}/{}.{}",
+        carpeta,
+        user.conjunto_id,
+        Uuid::new_v4(),
+        ext
+    );
     let url = state
         .storage
         .upload("imagenes", &path, &data, &content_type)
@@ -149,14 +160,27 @@ fn extension_for(content_type: &str, nombre: Option<&str>) -> &'static str {
     if let Some(name) = nombre {
         if let Some(pos) = name.rfind('.') {
             return match name[pos + 1..].to_lowercase().as_str() {
-                "pdf" => "pdf", "doc" => "doc", "docx" => "docx",
-                "xls" => "xls", "xlsx" => "xlsx", "txt" => "txt",
-                "csv" => "csv", "zip" => "zip", "rar" => "rar",
-                "json" => "json", "xml" => "xml",
-                "png" => "png", "jpg" | "jpeg" => "jpg",
-                "webp" => "webp", "gif" => "gif", "svg" => "svg",
-                "webm" => "webm", "m4a" => "m4a", "mp3" => "mp3",
-                "ogg" => "ogg", "mp4" => "mp4",
+                "pdf" => "pdf",
+                "doc" => "doc",
+                "docx" => "docx",
+                "xls" => "xls",
+                "xlsx" => "xlsx",
+                "txt" => "txt",
+                "csv" => "csv",
+                "zip" => "zip",
+                "rar" => "rar",
+                "json" => "json",
+                "xml" => "xml",
+                "png" => "png",
+                "jpg" | "jpeg" => "jpg",
+                "webp" => "webp",
+                "gif" => "gif",
+                "svg" => "svg",
+                "webm" => "webm",
+                "m4a" => "m4a",
+                "mp3" => "mp3",
+                "ogg" => "ogg",
+                "mp4" => "mp4",
                 _ => "bin",
             };
         }
@@ -186,7 +210,11 @@ pub async fn subir_archivo(
             let (meta, payload) = rest
                 .split_once(",")
                 .ok_or_else(|| ApiError::BadRequest("data URL mal formado".into()))?;
-            let ct = meta.split(';').next().unwrap_or("application/octet-stream").to_string();
+            let ct = meta
+                .split(';')
+                .next()
+                .unwrap_or("application/octet-stream")
+                .to_string();
             (ct, payload.to_string())
         }
         None => ("application/octet-stream".to_string(), req.data.clone()),
@@ -201,7 +229,9 @@ pub async fn subir_archivo(
     }
 
     if data.len() > 16 * 1024 * 1024 {
-        return Err(ApiError::BadRequest("archivo demasiado grande (máx 16 MiB)".into()));
+        return Err(ApiError::BadRequest(
+            "archivo demasiado grande (máx 16 MiB)".into(),
+        ));
     }
 
     let ext = extension_for(&content_type, req.nombre.as_deref());

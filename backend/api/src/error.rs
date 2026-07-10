@@ -100,15 +100,20 @@ impl From<diesel::result::Error> for ApiError {
             diesel::result::Error::NotFound => ApiError::NotFound("resource not found".into()),
             diesel::result::Error::DatabaseError(kind, info) => {
                 if matches!(kind, DatabaseErrorKind::UniqueViolation) {
-                    ApiError::Conflict(info.message().to_string())
+                    // Don't leak the raw Postgres message (constraint names,
+                    // column values) to clients. Log it; return a generic 409.
+                    // Handlers that need a friendly message check for the
+                    // duplicate before hitting the DB and build their own.
+                    tracing::info!(detail = info.message(), "unique constraint violation");
+                    ApiError::Conflict("ya existe un registro con esos datos".into())
                 } else if info.constraint_name() == Some("reservas_no_overlap") {
                     // GiST exclusion violation (23P01) arrives as `Unknown`; it means
                     // an overlapping reservation already exists for this area.
                     ApiError::Conflict("el horario seleccionado ya está reservado".into())
                 } else {
-                    ApiError::Internal(anyhow::Error::new(
-                        diesel::result::Error::DatabaseError(kind, info),
-                    ))
+                    ApiError::Internal(anyhow::Error::new(diesel::result::Error::DatabaseError(
+                        kind, info,
+                    )))
                 }
             }
             other => ApiError::Internal(anyhow::Error::new(other)),

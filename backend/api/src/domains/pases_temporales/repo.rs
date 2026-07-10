@@ -11,10 +11,7 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
-pub async fn crear_pase(
-    conn: &mut DbConn,
-    data: NuevoPaseTemporal,
-) -> ApiResult<PaseTemporal> {
+pub async fn crear_pase(conn: &mut DbConn, data: NuevoPaseTemporal) -> ApiResult<PaseTemporal> {
     use crate::db::schema::pases_temporales::dsl::*;
     Ok(diesel::insert_into(pases_temporales)
         .values(&data)
@@ -53,10 +50,7 @@ pub async fn pase_por_codigo(
         .optional()?)
 }
 
-pub async fn pase_por_id(
-    conn: &mut DbConn,
-    pase_id: Uuid,
-) -> ApiResult<Option<PaseTemporal>> {
+pub async fn pase_por_id(conn: &mut DbConn, pase_id: Uuid) -> ApiResult<Option<PaseTemporal>> {
     use crate::db::schema::pases_temporales::dsl::*;
     Ok(pases_temporales
         .filter(id.eq(pase_id))
@@ -92,10 +86,7 @@ pub async fn revocar_pase(conn: &mut DbConn, pase_id: Uuid) -> ApiResult<()> {
     Ok(())
 }
 
-pub async fn vehiculos_por_pase(
-    conn: &mut DbConn,
-    pase: Uuid,
-) -> ApiResult<Vec<VehiculoTemporal>> {
+pub async fn vehiculos_por_pase(conn: &mut DbConn, pase: Uuid) -> ApiResult<Vec<VehiculoTemporal>> {
     use crate::db::schema::vehiculos_temporales::dsl::*;
     Ok(vehiculos_temporales
         .filter(pase_id.eq(pase))
@@ -139,6 +130,15 @@ pub async fn upsert_usuario_huesped(
         .optional()?;
 
     if let Some(user) = existente {
+        // SECURITY: only ever mutate an account that is itself a temporary guest.
+        // Otherwise a resident could issue a pass with a real resident's/admin's
+        // email and overwrite that account's password (returned as codigo_acceso),
+        // hijacking it and locking the victim out (vertical privilege escalation).
+        if user.rol != crate::db::enums::Rol::HuespedTemporal {
+            return Err(ApiError::Conflict(
+                "ese email ya pertenece a una cuenta registrada".into(),
+            ));
+        }
         // Reactivar: nueva contraseña + activo = true
         diesel::update(usuarios::table.filter(usuarios::id.eq(user.id)))
             .set((
@@ -195,11 +195,7 @@ pub async fn upsert_usuario_huesped(
 }
 
 /// Vincula un pase temporal a un usuario huésped.
-pub async fn vincular_usuario(
-    conn: &mut DbConn,
-    pase_id: Uuid,
-    usuario: Uuid,
-) -> ApiResult<()> {
+pub async fn vincular_usuario(conn: &mut DbConn, pase_id: Uuid, usuario: Uuid) -> ApiResult<()> {
     use crate::db::schema::pases_temporales::dsl::*;
     diesel::update(pases_temporales.filter(id.eq(pase_id)))
         .set(usuario_id.eq(Some(usuario)))

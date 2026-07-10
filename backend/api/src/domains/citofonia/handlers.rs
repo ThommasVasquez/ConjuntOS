@@ -97,7 +97,13 @@ pub fn parse_peer_id(peer_id: &str) -> PeerTarget {
         // 36 (uuid) + 1 (dash) + at least 1 char
         return PeerTarget::Invalid;
     }
-    let (uuid_part, rest) = peer_id.split_at(36);
+    // `split_at(36)` panics if byte 36 falls inside a multi-byte UTF-8 char
+    // (attacker-controlled input). `get(..36)` returns None instead — and a UUID
+    // is ASCII anyway, so a non-boundary here is simply invalid.
+    let Some(uuid_part) = peer_id.get(..36) else {
+        return PeerTarget::Invalid;
+    };
+    let rest = &peer_id[36..];
     let conjunto_id = match Uuid::parse_str(uuid_part) {
         Ok(id) => id,
         Err(_) => return PeerTarget::Invalid,
@@ -198,7 +204,10 @@ async fn resolve_targets(
 
 /// LiveKit `(api_key, api_secret, url)` or 503 if not configured.
 fn livekit_creds(state: &AppState) -> ApiResult<(String, String, String)> {
-    match (&state.config.livekit_api_key, &state.config.livekit_api_secret) {
+    match (
+        &state.config.livekit_api_key,
+        &state.config.livekit_api_secret,
+    ) {
         (Some(k), Some(s)) => {
             let url = state
                 .config
@@ -207,7 +216,9 @@ fn livekit_creds(state: &AppState) -> ApiResult<(String, String, String)> {
                 .unwrap_or_else(|| "ws://localhost:7880".to_string());
             Ok((k.clone(), s.clone(), url))
         }
-        _ => Err(ApiError::ServiceUnavailable("LiveKit no configurado".into())),
+        _ => Err(ApiError::ServiceUnavailable(
+            "LiveKit no configurado".into(),
+        )),
     }
 }
 
