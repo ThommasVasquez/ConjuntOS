@@ -4,11 +4,11 @@ use axum::{Json, Router};
 
 use crate::auth::extract::AuthUser;
 use crate::domains::notificaciones::dto::{
-    MarkReadRequest, MarkReadResponse, NotificacionDto, PushSubscribeRequest, PushSubscriptionDto,
-    PushUnsubscribeRequest,
+    MarkReadRequest, MarkReadResponse, NativePlatform, NotificacionDto, NativePushTokenDto,
+    PushSubscribeBody, PushSubscribeResponse, PushSubscriptionDto, PushUnsubscribeBody,
 };
 use crate::domains::notificaciones::repo;
-use crate::error::ApiResult;
+use crate::error::{ApiError, ApiResult};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -64,46 +64,84 @@ pub async fn mark_leidas(
     post,
     path = "/api/v1/usuarios/me/push-subscriptions",
     tag = "notificaciones",
-    request_body = PushSubscribeRequest,
+    request_body = PushSubscribeBody,
     responses(
-        (status = 200, description = "Subscription stored (upsert on endpoint)", body = PushSubscriptionDto),
+        (status = 200, description = "Subscription stored. Web-push upserts on endpoint; native upserts on token.", body = PushSubscribeResponse),
+        (status = 400, description = "Unsupported native push platform (only 'expo' is routed)"),
         (status = 401, description = "Not authenticated")
     )
 )]
 pub async fn subscribe_push(
     State(state): State<AppState>,
     user: AuthUser,
-    Json(req): Json<PushSubscribeRequest>,
-) -> ApiResult<Json<PushSubscriptionDto>> {
+    Json(body): Json<PushSubscribeBody>,
+) -> ApiResult<Json<PushSubscribeResponse>> {
     let mut conn = state.pool.get().await?;
-    let row = repo::upsert_push_subscription(
-        &mut conn,
-        user.conjunto_id,
-        user.id,
-        &req.endpoint,
-        &req.keys.p256dh,
-        &req.keys.auth,
-    )
-    .await?;
-    Ok(Json(row.into()))
+    match body {
+        PushSubscribeBody::Web(req) => {
+            let row = repo::upsert_push_subscription(
+                &mut conn,
+                user.conjunto_id,
+                user.id,
+                &req.endpoint,
+                &req.keys.p256dh,
+                &req.keys.auth,
+            )
+            .await?;
+            Ok(Json(PushSubscribeResponse::Web(PushSubscriptionDto::from(
+                row,
+            ))))
+        }
+        PushSubscribeBody::Native(req) => {
+            // Only the Expo transport is actually routed by the native push
+            // sender (FCM/APNs direct delivery is not implemented). Reject
+            // unusable platforms here so we never store a token that could
+            // never wake the device — better a 400 than a silent dead row.
+            if req.platform != NativePlatform::Expo {
+                return Err(ApiError::BadRequest(format!(
+                    "plataforma de push '{}' no soportada (solo 'expo')",
+                    req.platform.as_str()
+                )));
+            }
+            let row = repo::upsert_native_push_token(
+                &mut conn,
+                user.conjunto_id,
+                user.id,
+                req.platform.as_str(),
+                &req.token,
+                req.device_id.as_deref(),
+            )
+            .await?;
+            Ok(Json(PushSubscribeResponse::Native(NativePushTokenDto::from(
+                row,
+            ))))
+        }
+    }
 }
 
 #[utoipa::path(
     delete,
     path = "/api/v1/usuarios/me/push-subscriptions",
     tag = "notificaciones",
-    request_body = PushUnsubscribeRequest,
+    request_body = PushUnsubscribeBody,
     responses(
-        (status = 200, description = "Subscription removed (idempotent)"),
+        (status = 200, description = "Subscription removed (idempotent). Accepts {endpoint} (web) or {token} (native)."),
         (status = 401, description = "Not authenticated")
     )
 )]
 pub async fn unsubscribe_push(
     State(state): State<AppState>,
     user: AuthUser,
-    Json(req): Json<PushUnsubscribeRequest>,
+    Json(body): Json<PushUnsubscribeBody>,
 ) -> ApiResult<Json<serde_json::Value>> {
     let mut conn = state.pool.get().await?;
-    let deleted = repo::delete_push_subscription(&mut conn, user.id, &req.endpoint).await?;
+    let deleted = match body {
+        PushUnsubscribeBody::Web { endpoint } => {
+            repo::delete_push_subscription(&mut conn, user.id, &endpoint).await?
+        }
+        PushUnsubscribeBody::Native { token } => {
+            repo::delete_native_push_token(&mut conn, user.id, &token).await?
+        }
+    };
     Ok(Json(serde_json::json!({ "ok": true, "deleted": deleted })))
 }
