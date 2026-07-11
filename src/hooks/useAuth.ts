@@ -23,8 +23,12 @@ export const useAuth = create<AuthState>((set) => ({
   login: async (email: string, password: string) => {
     set({ loading: true, error: null });
     try {
+      let finalEmail = email.trim();
+      if (finalEmail && !finalEmail.includes('@')) {
+        finalEmail = `${finalEmail}@conjuntos.app`;
+      }
       const res = await api.post<LoginResponse>('/auth/login', {
-        email,
+        email: finalEmail,
         password,
       });
       // The Rust backend also sets an httpOnly ec_session cookie (the primary,
