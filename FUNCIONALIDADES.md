@@ -307,4 +307,4 @@ Elige entre tema claro y oscuro según tu preferencia o condiciones de luz. La i
 **¿Listo para transformar la gestión de tu conjunto residencial?**  
 Contáctanos para una demostración personalizada.
 
-*ConjuntOS® 🏘️ — Tecnología que une comunidades.*
+*ConjuntOS® 🏘️ — El sistema operativo de la propiedad horizontal.*
