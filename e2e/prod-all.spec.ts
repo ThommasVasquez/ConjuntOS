@@ -12,7 +12,7 @@ test.describe('PRD — All Modules Smoke Tests', () => {
       await expect(page).not.toHaveURL(/\/login/);
       // Check the page has some content
       const text = await page.textContent('body');
-      expect(text).toMatch(/asistente|otto|pregunta|ia/i);
+      expect(text).toMatch(/asistente|otto|capi|pregunta|ia/i);
     });
   });
 

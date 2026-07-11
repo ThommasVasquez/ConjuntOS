@@ -267,7 +267,7 @@ test.describe('PRD — Comprehensive: All Pages & Interactions', () => {
       await loginAsResidente(page);
       await page.goto('/asistente', { waitUntil: 'domcontentloaded', timeout: 30_000 });
       await sleep(3000);
-      const hasContent = await pageHasText(page, /asistente|otto|pregunta|ia|inteligencia|artificial|ley|675|ayuda|legal/i);
+      const hasContent = await pageHasText(page, /asistente|otto|capi|pregunta|ia|inteligencia|artificial|ley|675|ayuda|legal/i);
       expect(hasContent).toBeTruthy();
     });
 

@@ -224,7 +224,7 @@ Asamblea en vivo con video LiveKit, agenda, votaciones ponderadas, asistencia, q
 
 Copiloto de asamblea, asistente legal para residentes y herramientas de IA (Gemini) para actas, traducción y consenso.
 
-- Asistente "Otto" para residentes, fundamentado en la Ley 675 de 2001, con orientación entre módulos de la app y preguntas sugeridas (`/asistente`).
+- Asistente "Capi" para residentes, fundamentado en la Ley 675 de 2001, con orientación entre módulos de la app y preguntas sugeridas (`/asistente`).
 - Copiloto de IA para administradores durante la asamblea (responde sobre el orden del día y la gestión del conjunto).
 - Traducción en vivo de textos de la asamblea a inglés, portugués o francés.
 - Síntesis de consenso de IA que concilia las opiniones de los copropietarios.

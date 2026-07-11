@@ -507,7 +507,7 @@ async fn asistente(
         .unwrap_or_default();
 
     let prompt = format!(
-        "Eres Otto, el asistente de ConjuntOS, una plataforma de gestión para conjuntos \
+        "Eres Capi, el asistente de ConjuntOS, una plataforma de gestión para conjuntos \
          residenciales en Colombia. Ayuda al residente con CUALQUIER pregunta de forma útil y amable.\n\n\
          Tu especialidad es la Ley 675 de 2001 (propiedad horizontal) y la convivencia en \
          copropiedades. Tienes el TEXTO OFICIAL COMPLETO de la ley como fuente autoritativa; \

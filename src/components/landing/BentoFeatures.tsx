@@ -19,7 +19,7 @@ const features = [
     iconColor: "text-[#FFFFFF]"
   },
   {
-    title: "Otto, tu Asistente con IA",
+    title: "Capi, tu Asistente con IA",
     description: "Resuelve dudas fundamentado en la Ley 675 de 2001 y te guía por cada módulo de la app.",
     icon: Sparkles,
     className: "bg-text/10 border-text/20",
