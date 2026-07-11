@@ -579,6 +579,68 @@
     transform: none;
   }
 
+  /* ---------- profile benefits ---------- */
+  .profile-benefits {
+    margin-top: 14px;
+    border-top: 1px dashed var(--line);
+    padding-top: 10px;
+  }
+  .profile-benefits__title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 0.8rem;
+    color: var(--ink-2);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .profile-benefits__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .profile-benefits__tab {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.74rem;
+    color: var(--ink-2);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+  }
+  .profile-benefits__tab:hover {
+    color: var(--ink);
+    border-color: var(--brand);
+    transform: translateY(-1px);
+  }
+  .profile-benefits__tab.is-active {
+    background: linear-gradient(140deg, var(--brand), var(--accent));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: var(--shadow-sm);
+  }
+  .profile-benefits__box {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .profile-benefits__text {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: var(--ink);
+    display: inline-block;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * {
       animation: none !important;
@@ -912,6 +974,11 @@
           "El administrador ve residentes activos, finanzas del mes, solicitudes y alertas de un vistazo.",
         ],
       ],
+      benefits: [
+        { profile: "Administrador 🔑", text: "Control unificado de todos los accesos de la copropiedad, bitácora de auditoría y roles específicos para el personal." },
+        { profile: "Propietario 🏠", text: "Acceso seguro a su información personal, control de vehículos, mascotas y autorización directa de sus invitados." },
+        { profile: "Arrendatario 👤", text: "Inicio de sesión seguro para gestionar sus propios trámites y vehículos sin interferir en los datos privados del propietario." },
+      ],
     },
 
     {
@@ -938,6 +1005,9 @@
           "Directorio con búsqueda por torre o apartamento e invitación con un clic.",
         ],
       ],
+      benefits: [
+        { profile: "Administrador 🔑", text: "Gestión unificada de múltiples copropiedades bajo un mismo usuario y personalización visual con la marca propia del conjunto." },
+      ],
     },
 
     {
@@ -960,6 +1030,11 @@
           "Notificaciones en vivo",
           "Paquetes, trámites aprobados y novedades del conjunto llegan al instante y por push.",
         ],
+      ],
+      benefits: [
+        { profile: "Administrador 🔑", text: "Publicación inmediata de circulares y comunicados en cartelera digital, reduciendo el ruido en canales informales." },
+        { profile: "Propietario 🏠", text: "Visualización clara de anuncios oficiales y notificaciones en vivo de asambleas o estados de cuenta." },
+        { profile: "Arrendatario 👤", text: "Recepción de alertas críticas (cortes de servicios, mantenimientos) directamente en su celular." },
       ],
     },
 
@@ -999,6 +1074,11 @@
           "Portero digital en tu celular: autoriza ingresos y abre puertas desde donde estés.",
         ],
       ],
+      benefits: [
+        { profile: "Vigilante y Paquetería 📦", text: "Registro de visitas en segundos y control de rondas por tags NFC con progreso en tiempo real." },
+        { profile: "Vigilante de Estacionamientos 🚗", text: "Validación instantánea de vehículos autorizados por placa y asignación de celdas." },
+        { profile: "Propietario 🏠", text: "Generación de códigos QR temporales para agilizar el ingreso de sus visitas sin retrasos en portería." },
+      ],
     },
 
     {
@@ -1026,6 +1106,11 @@
           "Cartas, documentos y revistas clasificados por tipo y remitente.",
         ],
       ],
+      benefits: [
+        { profile: "Vigilante y Paquetería 📦", text: "Inventario de envíos ordenado por transportadora y descripción, con confirmación digital de entrega." },
+        { profile: "Arrendatario 👤", text: "Notificación push inmediata al recibir un paquete y trazabilidad de retiros pendientes en su perfil." },
+        { profile: "Propietario 🏠", text: "Avisos en tiempo real para recoger correspondencia oficial, correspondencia personal y encomiendas." },
+      ],
     },
 
     {
@@ -1051,6 +1136,12 @@
           "Reserva de áreas",
           "Gimnasio, piscina, salón social y BBQ, con disponibilidad por franjas y control de aforo.",
         ],
+      ],
+      benefits: [
+        { profile: "Vigilante de Estacionamientos 🚗", text: "Mapa interactivo de celdas (carro/moto) en tiempo real y bitácora automática de accesos peatonales y vehiculares." },
+        { profile: "Admin de Gym 🏋️‍♂️", text: "Control de reservas y aforos automáticos por franja horaria para evitar sobrecupos en las instalaciones." },
+        { profile: "Admin de Piscinas 🏊‍♂️", text: "Supervisión del cumplimiento de aforo y horarios permitidos para un uso ordenado de la piscina." },
+        { profile: "Propietario 🏠", text: "Reserva inmediata de áreas comunes como BBQ, salón social y gimnasio de forma autónoma desde la app." },
       ],
     },
 
@@ -1079,6 +1170,11 @@
           "Imposición conforme a la Ley 675 con cobro automático y PDF; apelación y estados trazables.",
         ],
       ],
+      benefits: [
+        { profile: "Administrador 🔑", text: "Automatización en la conciliación bancaria de recaudos, control de cartera morosa e imposición de multas con PDF." },
+        { profile: "Propietario 🏠", text: "Pago seguro y rápido de la cuota de administración mediante Nequi con generación de recibo digital al instante." },
+        { profile: "Arrendatario 👤", text: "Reporte directo de soportes de pago y visualización clara de saldos para mantener su cuenta al día." },
+      ],
     },
 
     {
@@ -1097,6 +1193,11 @@
           "Trámites administrativos",
           "Registro de mascotas, vehículos o mudanzas con flujo de aprobación y notificación automática al residente.",
         ],
+      ],
+      benefits: [
+        { profile: "Administrador 🔑", text: "Bandeja centralizada de PQRS con asignación de responsables y seguimiento del estado Abierta &rarr; Resuelta." },
+        { profile: "Propietario 🏠", text: "Trámite de mudanzas y registros de mascotas en línea con aprobaciones rápidas y flujo automatizado." },
+        { profile: "Arrendatario 👤", text: "Reportes rápidos de mantenimiento o daños en zonas comunes con fotos e historial de seguimiento." },
       ],
     },
 
@@ -1120,6 +1221,10 @@
           "Directorio de residentes",
           "Búsqueda por nombre, torre o apartamento, con acceso controlado según el rol.",
         ],
+      ],
+      benefits: [
+        { profile: "Propietario 🏠", text: "Publicación de venta o arriendo de inmuebles y parqueaderos en la inmobiliaria interna, libre de comisiones." },
+        { profile: "Arrendatario 👤", text: "Acceso al mercadillo vecinal para apoyar emprendimientos de sus vecinos y ofrecer servicios de forma segura." },
       ],
     },
 
@@ -1155,6 +1260,10 @@
           "Cola de intervenciones en vivo y muro de opiniones de los copropietarios.",
         ],
       ],
+      benefits: [
+        { profile: "Propietario 🏠", text: "Votación ponderada automática según coeficiente de copropiedad y delegación de poderes protegida contra suplantación." },
+        { profile: "Administrador 🔑", text: "Cálculo de quórum en vivo y redacción automatizada del acta legal mediante IA exportable a PDF." },
+      ],
     },
 
     {
@@ -1178,6 +1287,10 @@
           "Acta de mediación (Art. 58)",
           "Se genera el acta y queda firmable digitalmente por todas las partes.",
         ],
+      ],
+      benefits: [
+        { profile: "Administrador 🔑", text: "Mediación de conflictos documentada y generación de actas (Art. 58) firmadas digitalmente con validez formal." },
+        { profile: "Propietario 🏠", text: "Instancia formal y reglamentada para resolver diferencias con vecinos de manera pacífica y organizada." },
       ],
     },
 
@@ -1205,6 +1318,10 @@
           "El huésped ve a su anfitrión, check-in/out, permisos y puede reservar zonas comunes.",
         ],
       ],
+      benefits: [
+        { profile: "Propietario 🏠", text: "Generación de pases con código único y control total sobre el tiempo y las áreas comunes permitidas a sus invitados." },
+        { profile: "Vigilante y Paquetería 📦", text: "Validación ágil de ingresos de huéspedes mediante lectura de código sin interrumpir a los residentes." },
+      ],
     },
 
     {
@@ -1227,6 +1344,11 @@
           "Documentos y recordatorios",
           "Avisa antes de que venzan el SOAT, la tecnomecánica y el carné de vacunas de las mascotas.",
         ],
+      ],
+      benefits: [
+        { profile: "Propietario 🏠", text: "Respuestas 24/7 sobre deberes y derechos de copropiedad fundamentadas en la Ley 675 colombiana." },
+        { profile: "Administrador 🔑", text: "Asistente inteligente para la redacción de comunicados oficiales y consultas rápidas sobre reglamentos de copropiedad." },
+        { profile: "Arrendatario 👤", text: "Guía interactiva para aprender a usar los módulos de la aplicación y resolver inquietudes básicas." },
       ],
     },
 
@@ -1287,11 +1409,28 @@
         const cta = s.cta
           ? `<div class="close"><div class="cta"><button class="btn">Solicita una demostración</button><span class="hint">ConjuntOS® 🏘️</span></div><p class="sign">Tecnología que une comunidades.</p></div>`
           : "";
+        let benefitsHtml = "";
+        if (s.benefits && s.benefits.length > 0) {
+          const tabs = s.benefits.map((b, bIdx) =>
+            `<button class="profile-benefits__tab${bIdx === 0 ? " is-active" : ""}" data-slide="${idx}" data-benefit="${bIdx}">
+              ${b.profile}
+            </button>`
+          ).join("");
+          benefitsHtml = `
+            <div class="profile-benefits">
+              <div class="profile-benefits__title">Cómo beneficia a cada rol</div>
+              <div class="profile-benefits__tabs">${tabs}</div>
+              <div class="profile-benefits__box">
+                <span class="profile-benefits__text">${s.benefits[0].text}</span>
+              </div>
+            </div>
+          `;
+        }
         body = `<div class="body${s.kind === "close" ? " close" : ""}">
         <div class="eyebrow">${s.eyebrow}</div>
         <h2 class="title">${s.title}</h2>
         <p class="intro">${s.intro}</p>
-        ${cards}${cta}
+        ${cards}${cta}${benefitsHtml}
       </div>`;
       }
       return `<section class="slide${s.rev ? " rev" : ""}" role="group" aria-roledescription="diapositiva" aria-label="${idx + 1} de ${total}: ${s.title}">${media}${body}</section>`;
@@ -1461,6 +1600,9 @@
         const chips = newSlide.querySelectorAll(".chip");
         const cards = newSlide.querySelectorAll(".card");
         const closeContent = newSlide.querySelectorAll(".close");
+        const benefitsTitle = newSlide.querySelector(".profile-benefits__title");
+        const benefitTabs = newSlide.querySelectorAll(".profile-benefits__tab");
+        const benefitBox = newSlide.querySelector(".profile-benefits__box");
 
         const staggerElements = [];
         if (eyebrow) staggerElements.push(eyebrow);
@@ -1471,7 +1613,10 @@
           staggerElements.length ||
           chips.length ||
           cards.length ||
-          closeContent.length
+          closeContent.length ||
+          benefitsTitle ||
+          benefitTabs.length ||
+          benefitBox
         ) {
           // Preset hidden states
           if (eyebrow) gsap.set(eyebrow, { opacity: 0, y: 15 });
@@ -1481,6 +1626,9 @@
           if (cards.length) gsap.set(cards, { opacity: 0, y: 15 });
           if (closeContent.length)
             gsap.set(closeContent, { opacity: 0, y: 15 });
+          if (benefitsTitle) gsap.set(benefitsTitle, { opacity: 0, y: 10 });
+          if (benefitTabs.length) gsap.set(benefitTabs, { opacity: 0, y: 10 });
+          if (benefitBox) gsap.set(benefitBox, { opacity: 0, y: 15 });
 
           activeTimeline.to(
             staggerElements,
@@ -1533,6 +1681,27 @@
               0.35,
             );
           }
+          if (benefitsTitle) {
+            activeTimeline.to(
+              benefitsTitle,
+              { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" },
+              0.3
+            );
+          }
+          if (benefitTabs.length) {
+            activeTimeline.to(
+              benefitTabs,
+              { opacity: 1, y: 0, stagger: 0.03, duration: 0.35, ease: "power2.out" },
+              0.32
+            );
+          }
+          if (benefitBox) {
+            activeTimeline.to(
+              benefitBox,
+              { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
+              0.35
+            );
+          }
         }
       } else {
         // --- MOBILE TRANSITION (CLEAN FADE + SLIDE UP) ---
@@ -1567,6 +1736,9 @@
         const chips = newSlide.querySelectorAll(".chip");
         const cards = newSlide.querySelectorAll(".card");
         const closeContent = newSlide.querySelectorAll(".close");
+        const benefitsTitle = newSlide.querySelector(".profile-benefits__title");
+        const benefitTabs = newSlide.querySelectorAll(".profile-benefits__tab");
+        const benefitBox = newSlide.querySelector(".profile-benefits__box");
 
         activeTimeline = gsap.timeline();
         if (media) gsap.set(media, { opacity: 0, y: 20, scale: 0.95, x: 0 });
@@ -1576,6 +1748,9 @@
         if (chips.length) gsap.set(chips, { opacity: 0, y: 5, scale: 0.95 });
         if (cards.length) gsap.set(cards, { opacity: 0, y: 15 });
         if (closeContent.length) gsap.set(closeContent, { opacity: 0, y: 15 });
+        if (benefitsTitle) gsap.set(benefitsTitle, { opacity: 0, y: 10 });
+        if (benefitTabs.length) gsap.set(benefitTabs, { opacity: 0, y: 5 });
+        if (benefitBox) gsap.set(benefitBox, { opacity: 0, y: 15 });
 
         activeTimeline.to(newSlide, { opacity: 1, duration: 0.35 });
         if (media)
@@ -1622,6 +1797,24 @@
             { opacity: 1, y: 0, stagger: 0.06, duration: 0.45 },
             0.35,
           );
+        if (benefitsTitle)
+          activeTimeline.to(
+            benefitsTitle,
+            { opacity: 1, y: 0, duration: 0.35 },
+            0.3
+          );
+        if (benefitTabs.length)
+          activeTimeline.to(
+            benefitTabs,
+            { opacity: 1, y: 0, stagger: 0.03, duration: 0.35 },
+            0.32
+          );
+        if (benefitBox)
+          activeTimeline.to(
+            benefitBox,
+            { opacity: 1, y: 0, duration: 0.45 },
+            0.35
+          );
       }
     }
   }
@@ -1632,6 +1825,39 @@
     const b = e.target.closest(".dot");
     if (b) go(+b.dataset.i);
   };
+
+  // profile benefits tab click handler (interactive profile updates)
+  stage.addEventListener("click", (e) => {
+    const tab = e.target.closest(".profile-benefits__tab");
+    if (!tab) return;
+
+    const slideEl = tab.closest(".slide");
+    const tabs = slideEl.querySelectorAll(".profile-benefits__tab");
+    tabs.forEach(t => t.classList.remove("is-active"));
+    tab.classList.add("is-active");
+
+    const slideIdx = parseInt(tab.dataset.slide, 10);
+    const benefitIdx = parseInt(tab.dataset.benefit, 10);
+    const benefitText = SLIDES[slideIdx].benefits[benefitIdx].text;
+
+    const textBox = slideEl.querySelector(".profile-benefits__text");
+    if (textBox) {
+      gsap.to(textBox, {
+        opacity: 0,
+        y: -4,
+        duration: 0.12,
+        onComplete: () => {
+          textBox.textContent = benefitText;
+          gsap.to(textBox, {
+            opacity: 1,
+            y: 0,
+            duration: 0.22,
+            ease: "power2.out"
+          });
+        }
+      });
+    }
+  });
   addEventListener("keydown", (e) => {
     if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
       e.preventDefault();
