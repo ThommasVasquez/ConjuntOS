@@ -73,3 +73,63 @@ docker: Error response from daemon: failed to set up container networking: drive
 
 Run 'docker run --help' for more information
 no renewal needed (cert not within 30-day window)
+=== Mon Jun 29 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint hungry_shamir (ac2d8579248545ec23cee2e986a1c168468595cebd8830f2d3d614d2d8793af5): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Tue Jun 30 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint beautiful_wright (5253a36c26c43b4919bcfcf7b2d15b743d83a59c4536c508b0bad96ca4114e22): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Wed Jul  1 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint confident_goldstine (ba25e301e86de6f0e2604484c473aa87d00b9729ad36e0e7e6419493165eb600): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Thu Jul  2 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint sweet_dijkstra (6e07862d578a6a6b900769bc1cc95e15614d48187d676bc0597e314560823102): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Fri Jul  3 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint fervent_hawking (cf13c50b9f2ada9d94f01f7df18097466ea5f1a44dddf09e0a353d3a8f439c48): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Sat Jul  4 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint silly_lewin (2e308cff7bc4fb99c4e6d5a4657df352c296587206381812078dcd83bcf356c5): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Sun Jul  5 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint compassionate_antonelli (22cdbd60fc3e634d547ab89ee4a818a15483341d712ce55f783c3c5410e67949): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Mon Jul  6 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint naughty_kepler (df1fb9978c932d94889778f67cbbf5b6fc07c87d2897be0967ea52798b02df69): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Tue Jul  7 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint heuristic_babbage (a407bf5d7149c097cf85854130f4c0e6e74f4059b6441dab4d7c325c6effc42b): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Wed Jul  8 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint recursing_chaplygin (7f8e78e5b1c38bb56c5ae877a40538cdcace82d9cf1e3815a6349a4e0f49ce8c): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Thu Jul  9 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint jolly_zhukovsky (eca22d6044425fde400eb0d17981a3739a2fb14281a680dd600e460de6745c94): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
+=== Fri Jul 10 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint sleepy_pascal (9f6a043ea3f03ac46881f6ca6e5f33c7216e4300a0d72ca2c7fd0c16cc90f738): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
