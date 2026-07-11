@@ -171,7 +171,7 @@ Solicitudes formales como registro de mascotas, vehículos o mudanzas. Flujo de 
 
 ## 🏘️ Comunidad
 
-### Mercadillo Vecinal
+### Clasificados Internos
 Directorio de emprendimientos y servicios ofrecidos por los residentes del conjunto. Categorías: comida, tienda, lavandería, salud y otros. Apoya el talento local dentro de tu comunidad.
 
 ### Inmobiliaria Interna

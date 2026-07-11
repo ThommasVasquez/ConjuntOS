@@ -180,7 +180,7 @@ Leyenda de estado:
 
 ---
 
-## 12. Clasificados — Mercadillo Vecinal
+## 12. Clasificados — Clasificados Internos
 
 | # | Funcionalidad | Estado | Milestone | Notas |
 |---|---------------|--------|-----------|-------|

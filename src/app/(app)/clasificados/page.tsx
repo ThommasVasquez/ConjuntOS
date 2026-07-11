@@ -99,7 +99,7 @@ export default function ClasificadosPage() {
            >
              <ArrowLeft size={20} />
            </button>
-           <h1 className="text-3xl font-black text-text tracking-tight">Mercadillo <span className="text-accent underline decoration-border">Vecinal</span></h1>
+           <h1 className="text-3xl font-black text-text tracking-tight">Clasificados <span className="text-accent underline decoration-border">Internos</span></h1>
         </div>
         <p className="text-text text-sm font-medium leading-relaxed">Apoya el talento local de tu conjunto. Servicios, emprendimientos y ventas internas.</p>
       </div>
@@ -220,7 +220,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
       toast.error("Este anuncio no tiene un número de WhatsApp de contacto.");
       return;
     }
-    const text = `Hola ${item.propietario?.nombre || "Vendedor"}, vi tu anuncio de "${item.nombre}" en el Mercadillo de EnConjunto y me interesa más información.`;
+    const text = `Hola ${item.propietario?.nombre || "Vendedor"}, vi tu anuncio de "${item.nombre}" en los Clasificados Internos de EnConjunto y me interesa más información.`;
     window.open(`https://wa.me/57${numero}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -408,7 +408,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
   }, []);
 
   const handleWhatsApp = () => {
-    const text = `Hola ${item.propietario?.nombre || "Vendedor"}, vi tu anuncio de "${item.nombre}" en el Mercadillo de EnConjunto y me interesa más información.`;
+    const text = `Hola ${item.propietario?.nombre || "Vendedor"}, vi tu anuncio de "${item.nombre}" en los Clasificados Internos de EnConjunto y me interesa más información.`;
     window.open(`https://wa.me/57${item.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
