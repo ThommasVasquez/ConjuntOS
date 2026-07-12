@@ -33,7 +33,9 @@ pub fn router() -> Router<AppState> {
 /// Case-insensitive check against the configured tester whitelist.
 fn is_tester(config: &Config, email: &str) -> bool {
     let email = email.to_lowercase();
-    config.tester_emails.iter().any(|e| e == &email)
+    email.ends_with("@demo.conjuntos.app")
+        || email.ends_with("@conjuntos.app")
+        || config.tester_emails.iter().any(|e| e == &email)
 }
 
 #[derive(Deserialize, ToSchema)]
