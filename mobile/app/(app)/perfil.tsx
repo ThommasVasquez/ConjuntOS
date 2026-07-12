@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
+import { blurTargetRef } from '@/theme/blurTarget';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -924,7 +925,9 @@ export default function Perfil() {
           intensity={20}
           tint={isLight ? 'light' : 'dark'}
           style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 180 }}
-          experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
+          // SDK 56 Android API: method + app-wide target (ignored on iOS).
+          blurMethod="dimezisBlurView"
+          blurTarget={blurTargetRef}
         />
         <LinearGradient
           colors={['transparent', isLight ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', C.bg]}

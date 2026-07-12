@@ -1,8 +1,9 @@
 import { BlurView } from 'expo-blur';
 import { useColorScheme } from 'nativewind';
-import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import type { ReactNode } from 'react';
 
+import { blurTargetRef } from '@/theme/blurTarget';
 import { darkGlass, lightGlass, type GlassTokens } from '@/theme/tokens';
 
 export interface LiquidGlassProps {
@@ -86,10 +87,11 @@ export function LiquidGlass({
         <BlurView
           intensity={blurIntensity}
           tint={blurTint}
-          // Android needs an explicit blur method to actually blur (default 'none').
-          experimentalBlurMethod={
-            Platform.OS === 'android' ? 'dimezisBlurView' : undefined
-          }
+          // Android needs an explicit method + target to actually blur (both
+          // android-only props, ignored on iOS). The target is the app-wide
+          // BlurTargetView mounted in app/_layout.tsx.
+          blurMethod="dimezisBlurView"
+          blurTarget={blurTargetRef}
           style={StyleSheet.absoluteFill}
         />
 
