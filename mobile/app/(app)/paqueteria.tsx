@@ -55,6 +55,11 @@ interface ResidenteDirectorio {
   apto: string | null;
 }
 
+// NOTE: no HUESPED_TEMPORAL here (web's list includes it, but every
+// /vigilancia/paquetes endpoint is gated to ROLES_VIGILANCIA backend-side, so
+// a guest passing this client gate would just hit 403 on the initial load and
+// see a permanent error screen). A guest's own packages come from
+// GET /paquetes/mios (see perfil.tsx), not from the porter's list.
 const ALLOWED_ROLES = [
   'VIGILANTE',
   'SUPERVISOR_VIGILANCIA',

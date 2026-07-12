@@ -43,8 +43,14 @@ export const useAuth = create<AuthState>((set) => ({
   login: async (email: string, password: string) => {
     set({ loading: true, error: null });
     try {
+      // Mirror web commit 61463f380: bare usernames get the default domain
+      // appended so residents can log in with just their handle.
+      let finalEmail = email.trim();
+      if (finalEmail && !finalEmail.includes('@')) {
+        finalEmail = `${finalEmail}@conjuntos.app`;
+      }
       const res = await api.post<LoginResponse>('/auth/login', {
-        email,
+        email: finalEmail,
         password,
       });
       // Bearer-first on native: persist the token to SecureStore (and memory).

@@ -122,8 +122,21 @@ export default function ReservasScreen() {
     setSelectedArea(area);
 
     // Próximos ≤5 días dentro de una ventana de 15, filtrados por diasDisponibles.
-    const allowedDaysStr = area.diasDisponibles || '0,1,2,3,4,5,6';
-    const allowedDays = allowedDaysStr.split(',').map((d) => parseInt(d, 10));
+    // Backend returns day names (LUN,MAR,...), frontend maps to JS day numbers (mirrors web).
+    const DAY_MAP: Record<string, number> = {
+      DOM: 0, LUN: 1, MAR: 2, MIE: 3, JUE: 4, VIE: 5, SAB: 6,
+    };
+    const allowedDaysStr = area.diasDisponibles || 'LUN,MAR,MIE,JUE,VIE,SAB,DOM';
+    const allowedDays = allowedDaysStr
+      .split(',')
+      .map((d) => {
+        const token = d.trim().toUpperCase();
+        if (token in DAY_MAP) return DAY_MAP[token];
+        // Fallback: numeric values ("0".."6") or free text — invalid tokens are dropped.
+        const n = parseInt(token, 10);
+        return Number.isInteger(n) && n >= 0 && n <= 6 ? n : -1;
+      })
+      .filter((n) => n >= 0);
 
     const days: Date[] = [];
     const d = new Date();

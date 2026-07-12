@@ -14,12 +14,9 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
-use crate::db::schema::{
-    mascotas, mascotas_vacunas, push_subscriptions, recordatorios_enviados, vehiculos,
-};
+use crate::db::schema::{mascotas, mascotas_vacunas, recordatorios_enviados, vehiculos};
 use crate::db::DbConn;
 use crate::error::ApiResult;
-use crate::services::push::PushSubscriptionInfo;
 use crate::services::ws_hub::{ws_events, WsEvent};
 use crate::state::AppState;
 
@@ -197,28 +194,26 @@ pub async fn gather_due(conn: &mut DbConn, today: NaiveDate) -> ApiResult<Vec<Du
     Ok(reminders)
 }
 
-/// Persist + notify a single reminder: in-app notice, realtime events, web push.
+/// Persist + notify a single reminder: in-app notice, realtime events, and push
+/// over BOTH transports (web VAPID + native Expo), following citofonia's dual
+/// fan-out via the shared notificaciones helper.
 async fn dispatch_reminder(conn: &mut DbConn, state: &AppState, r: &DueReminder) -> ApiResult<()> {
-    crate::domains::notificaciones::repo::create_notificacion(
+    // Creates the in-app notice, publishes `notification.created` (bell refresh)
+    // and fans out web + native push. Push is best-effort inside the helper.
+    crate::domains::notificaciones::repo::create_notificacion_with_push(
         conn,
+        state,
         r.conjunto_id,
         r.usuario_id,
         "recordatorio",
         &r.titulo,
         &r.mensaje,
-        None,
+        serde_json::json!({ "url": "/perfil" }),
     )
     .await?;
 
-    // Refresh the notification bell, plus a dedicated `recordatorio` event for any
-    // screen subscribed to it (vehicle docs / pet vaccines).
-    state
-        .ws_hub
-        .publish(
-            r.conjunto_id,
-            WsEvent::to_user(r.usuario_id, "notification", "created", None),
-        )
-        .await;
+    // Dedicated `recordatorio` event for any screen subscribed to it
+    // (vehicle docs / pet vaccines).
     let payload = serde_json::json!({
         "source": r.source,
         "rowId": r.row_id,
@@ -239,33 +234,6 @@ async fn dispatch_reminder(conn: &mut DbConn, state: &AppState, r: &DueReminder)
         )
         .await;
 
-    // Best-effort web push to the resident's registered devices.
-    let subs: Vec<(String, String, String)> = push_subscriptions::table
-        .filter(push_subscriptions::conjunto_id.eq(r.conjunto_id))
-        .filter(push_subscriptions::usuario_id.eq(r.usuario_id))
-        .select((
-            push_subscriptions::endpoint,
-            push_subscriptions::p256dh,
-            push_subscriptions::auth,
-        ))
-        .load(conn)
-        .await?;
-    let push_payload = serde_json::json!({
-        "title": r.titulo,
-        "body": r.mensaje,
-        "data": { "url": "/perfil" },
-    });
-    let bytes = serde_json::to_vec(&push_payload).unwrap_or_default();
-    for (endpoint, p256dh, auth) in subs {
-        let info = PushSubscriptionInfo {
-            endpoint: endpoint.clone(),
-            p256dh,
-            auth,
-        };
-        if let Err(e) = state.push_sender.send(&info, &bytes).await {
-            tracing::warn!(endpoint = %endpoint, error = ?e, "reminder push failed");
-        }
-    }
     Ok(())
 }
 

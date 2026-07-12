@@ -6,6 +6,9 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
+import { useTheme } from '@/providers/ThemeProvider';
+import { tokensFor } from '@/theme/tokens';
+
 export interface SheetProps {
   open: boolean;
   onClose: () => void;
@@ -23,6 +26,8 @@ export interface SheetProps {
 export function Sheet({ open, onClose, children, snapPoints }: SheetProps) {
   const ref = useRef<BottomSheet>(null);
   const points = useMemo(() => snapPoints ?? ['50%'], [snapPoints]);
+  const { theme } = useTheme();
+  const tokens = tokensFor(theme);
 
   useEffect(() => {
     if (open) {
@@ -67,6 +72,15 @@ export function Sheet({ open, onClose, children, snapPoints }: SheetProps) {
       enablePanDownToClose
       onChange={handleChange}
       backdropComponent={renderBackdrop}
+      // Theme the sheet surface per scheme: elevated neutral (#141414 dark /
+      // #FFFFFF light) with a subtle glass border and a token-tinted handle,
+      // instead of the library's default white card.
+      backgroundStyle={{
+        backgroundColor: tokens.primaryLight,
+        borderWidth: 1,
+        borderColor: tokens.border,
+      }}
+      handleIndicatorStyle={{ backgroundColor: tokens.border, width: 44 }}
     >
       <BottomSheetView style={{ flex: 1 }}>{children}</BottomSheetView>
     </BottomSheet>

@@ -11,8 +11,14 @@ export interface LiquidGlassProps {
   intensity?: number;
   /** Override the auto-derived BlurView tint. */
   tint?: 'light' | 'dark' | 'default';
-  /** NativeWind classes applied to the outer wrapper (layout, radius, etc). */
+  /** NativeWind classes applied to the outer wrapper (width, radius, etc). */
   className?: string;
+  /**
+   * Applied to the INNER content View — the one that actually holds
+   * `children` — so padding/flexDirection/gap lay out the content as callers
+   * expect (previously this landed on the outer shadow wrapper, where flex
+   * layout affected nothing and children silently stacked in a column).
+   */
   style?: StyleProp<ViewStyle>;
   /**
    * `card` reproduces `.liquid-glass-card` (gradient-ish fill, softer border);
@@ -73,7 +79,6 @@ export function LiquidGlass({
           // Android elevation.
           elevation: g.elevation,
         },
-        style,
       ]}
     >
       {/* Clip layer: keeps blur/fill/border inside the rounded corners. */}
@@ -117,7 +122,7 @@ export function LiquidGlass({
         />
 
         {/* Content sits above all decorative layers. */}
-        <View style={styles.content}>{children}</View>
+        <View style={[styles.content, style]}>{children}</View>
       </View>
     </View>
   );

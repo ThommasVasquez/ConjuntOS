@@ -31,7 +31,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setCurrentUserId(user.id);
+    const userId = user.id;
+    setCurrentUserId(userId);
     let cancelled = false;
     let attemptId = 0;
     attemptRef.current = 0;
@@ -81,6 +82,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       ws.onopen = () => {
         if (cancelled || ws !== wsRef.current) return;
         attemptRef.current = 0;
+        // Re-assert the user id on every (re)connect: the dispatch filter drops
+        // any event whose targetUserId !== currentUserId, so a stale/null id
+        // would silently kill targeted events after the first reconnect.
+        setCurrentUserId(userId);
         setConnected(true);
       };
 
@@ -94,10 +99,12 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         queueMicrotask(() => dispatch(parsed as Parameters<typeof dispatch>[0]));
       };
 
+      // NOTE: transient close/error must NOT clear currentUserId — the id is
+      // an auth identity, not a connection state. It is only cleared on 401
+      // (auth rejected) and in the effect cleanup (logout / identity change).
       ws.onclose = () => {
         if (cancelled || ws !== wsRef.current) return;
         setConnected(false);
-        setCurrentUserId(null);
         scheduleReconnect();
       };
 
@@ -110,7 +117,6 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         ws.close();
         wsRef.current = null;
         setConnected(false);
-        setCurrentUserId(null);
         scheduleReconnect();
       };
     }

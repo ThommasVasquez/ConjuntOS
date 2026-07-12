@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useColorScheme } from 'nativewind';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Bike,
   Car,
@@ -33,6 +33,7 @@ import type {
   DirectorioUsuarioDto,
   TipoVehiculoVisita,
 } from '@/lib/api/types';
+import { useAuth } from '@/hooks/useAuth';
 import { useCall } from '@/providers/CallProvider';
 import { Screen } from '@/components/ui/Screen';
 import { LiquidGlass } from '@/components/ui/LiquidGlass';
@@ -79,8 +80,22 @@ export default function Citofonia() {
   const router = useRouter();
   const { colorScheme } = useColorScheme();
   const t = tokensFor(colorScheme === 'light' ? 'light' : 'dark');
+  const { user } = useAuth();
+  // Huéspedes temporales solo ven la pestaña de citófono (sin directorio ni
+  // marcador) y su marcación rápida apunta a Estacionamientos, igual que web.
+  const isGuest = user?.rol === 'HUESPED_TEMPORAL';
 
-  const [activeTab, setActiveTab] = useState<Tab>('CITOFONIA');
+  // Honra deep links tipo '/citofonia?tab=VISITAS' (p.ej. el CTA "Pedir
+  // Parqueo para Visita" de /parqueadero). Solo valores válidos, y nunca para
+  // huéspedes (que solo ven la pestaña de citófono).
+  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
+  const requestedTab: Tab | null =
+    !isGuest && (tabParam === 'VISITAS' || tabParam === 'RECEPCION') ? tabParam : null;
+  const [activeTab, setActiveTab] = useState<Tab>(requestedTab ?? 'CITOFONIA');
+  useEffect(() => {
+    // Tab screens stay mounted: sync when the param changes after first mount.
+    if (requestedTab) setActiveTab(requestedTab);
+  }, [requestedTab]);
   const [isLoading, setIsLoading] = useState(true);
   const prevCallStateRef = useRef<string>('IDLE');
 
@@ -211,11 +226,15 @@ export default function Citofonia() {
     try {
       const isVehicular = visitaVehiculo !== 'NINGUNO';
       const placa = visitaPlaca.trim().toUpperCase();
-      const body: CreateVisitaResidenteRequest = {
+      // Like web: tieneParqueadero mirrors the vehicular flag (backend defaults
+      // it to false when omitted) and observacion is sent explicitly as null.
+      const body: Omit<CreateVisitaResidenteRequest, 'observacion'> & { observacion: null } = {
         nombre,
         tipo: isVehicular ? 'VEHICULAR' : 'PEATONAL',
         ...(isVehicular ? { vehiculoTipo: visitaVehiculo } : {}),
         ...(isVehicular && placa ? { placa } : {}),
+        tieneParqueadero: isVehicular,
+        observacion: null,
       };
       await api.post('/visitas', body);
       toast.success('Visita agendada correctamente');
@@ -255,11 +274,13 @@ export default function Citofonia() {
           {/* TAB SELECTOR */}
           <View className="mt-4 flex-row rounded-2xl border border-border bg-surface p-1">
             {(
-              [
-                { id: 'CITOFONIA', icon: Phone, label: 'Portería' },
-                { id: 'VISITAS', icon: Users, label: 'Visitas' },
-                { id: 'RECEPCION', icon: Package, label: 'Recibir' },
-              ] as const
+              isGuest
+                ? ([{ id: 'CITOFONIA', icon: Phone, label: 'Portería' }] as const)
+                : ([
+                    { id: 'CITOFONIA', icon: Phone, label: 'Portería' },
+                    { id: 'VISITAS', icon: Users, label: 'Visitas' },
+                    { id: 'RECEPCION', icon: Package, label: 'Recibir' },
+                  ] as const)
             ).map((tab) => {
               const active = activeTab === tab.id;
               const Icon = tab.icon;
@@ -284,7 +305,8 @@ export default function Citofonia() {
         {/* CONTENT AREA */}
         {activeTab === 'CITOFONIA' && (
           <View className="gap-6">
-            {/* SEARCH RESIDENTS */}
+            {/* SEARCH RESIDENTS — oculto para huéspedes */}
+            {!isGuest && (
             <LiquidGlass variant="card" radius={28} className="p-4">
               <View className="flex-row items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3">
                 <Search size={18} color={t.textMuted} />
@@ -336,6 +358,7 @@ export default function Citofonia() {
                 <Text className="mt-3 text-center text-xs text-textMuted">Sin resultados</Text>
               )}
             </LiquidGlass>
+            )}
 
             {/* QUICK CONTACTS */}
             <View className="flex-row gap-4">
@@ -349,19 +372,33 @@ export default function Citofonia() {
                 <ShieldCheck size={28} color={t.accent} />
                 <Text className="text-xs font-bold text-text">Portería Principal</Text>
               </Pressable>
-              <Pressable
-                onPress={() => {
-                  setDialNum('A');
-                  handleCall('A');
-                }}
-                className="flex-1 items-center gap-3 rounded-[28px] border border-border bg-primary-light p-6"
-              >
-                <Users size={28} color={t.text} />
-                <Text className="text-xs font-bold text-text">Administración</Text>
-              </Pressable>
+              {isGuest ? (
+                <Pressable
+                  onPress={() => {
+                    setDialNum('E');
+                    handleCall('E');
+                  }}
+                  className="flex-1 items-center gap-3 rounded-[28px] border border-border bg-primary-light p-6"
+                >
+                  <Car size={28} color={t.text} />
+                  <Text className="text-xs font-bold text-text">Estacionamientos</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={() => {
+                    setDialNum('A');
+                    handleCall('A');
+                  }}
+                  className="flex-1 items-center gap-3 rounded-[28px] border border-border bg-primary-light p-6"
+                >
+                  <Users size={28} color={t.text} />
+                  <Text className="text-xs font-bold text-text">Administración</Text>
+                </Pressable>
+              )}
             </View>
 
-            {/* NUMERIC DIALER */}
+            {/* NUMERIC DIALER — oculto para huéspedes */}
+            {!isGuest && (
             <LiquidGlass variant="card" radius={40} className="items-center gap-8 p-8">
               <View className="w-full items-center gap-2">
                 <View className="h-12 items-center justify-center">
@@ -410,6 +447,7 @@ export default function Citofonia() {
                 </Pressable>
               </View>
             </LiquidGlass>
+            )}
           </View>
         )}
 

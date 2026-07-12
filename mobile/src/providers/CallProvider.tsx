@@ -16,7 +16,12 @@ import {
 } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { Phone, PhoneOff, Check } from "lucide-react-native";
-import { Audio } from "expo-av";
+import {
+  createAudioPlayer,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  type AudioPlayer,
+} from "expo-audio";
 import * as Speech from "expo-speech";
 import {
   registerGlobals,
@@ -111,9 +116,9 @@ async function ensureMicPermission(): Promise<boolean> {
       return false;
     }
   }
-  // iOS: ask through expo-av (same underlying AVAudioSession permission).
+  // iOS: ask through expo-audio (same underlying AVAudioSession permission).
   try {
-    const res = await Audio.requestPermissionsAsync();
+    const res = await requestRecordingPermissionsAsync();
     return res.granted;
   } catch {
     return true;
@@ -146,8 +151,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // call from kicking the user back to /inicio: we leave them on the dialer.
   const hadConnectedRef = useRef(false);
 
-  // Audio tone refs (expo-av). activeToneRef holds the looping ring/ringback.
-  const activeToneRef = useRef<Audio.Sound | null>(null);
+  // Audio tone refs (expo-audio). activeToneRef holds the looping ring/ringback.
+  const activeToneRef = useRef<AudioPlayer | null>(null);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const noAnswerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathRef = useRef<string>(pathname || "/inicio");
@@ -215,15 +220,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // ── Tone helpers (expo-av) ──
+  // ── Tone helpers (expo-audio) ──
   // Every tone helper swallows errors so a placeholder/missing asset can never
   // crash the call engine.
   const stopTone = () => {
-    const snd = activeToneRef.current;
+    const player = activeToneRef.current;
     activeToneRef.current = null;
-    if (snd) {
-      snd.stopAsync().catch(() => {});
-      snd.unloadAsync().catch(() => {});
+    if (player) {
+      player.pause();
+      player.release();
     }
   };
 
@@ -231,19 +236,18 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const playLoopTone = async (asset: number) => {
     stopTone();
     try {
-      const { sound } = await Audio.Sound.createAsync(
-        asset,
-        { shouldPlay: true, isLooping: true, volume: 1.0 },
-        null,
-        true
-      );
+      const player = createAudioPlayer(asset, {
+        updateInterval: 500,
+      });
+      player.loop = true;
+      player.play();
       // A newer tone may have been requested while we awaited; honor the latest.
       if (activeToneRef.current) {
-        sound.stopAsync().catch(() => {});
-        sound.unloadAsync().catch(() => {});
+        player.pause();
+        player.release();
         return;
       }
-      activeToneRef.current = sound;
+      activeToneRef.current = player;
     } catch (e) {
       console.warn("playLoopTone failed (placeholder asset?):", e);
     }
@@ -252,16 +256,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Play a one-shot tone (beep / disconnect); self-unloads when finished.
   const playOneShot = async (asset: number) => {
     try {
-      const { sound } = await Audio.Sound.createAsync(
-        asset,
-        { shouldPlay: true, isLooping: false, volume: 1.0 },
-        (status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            sound.unloadAsync().catch(() => {});
-          }
-        },
-        true
-      );
+      const player = createAudioPlayer(asset, {
+        updateInterval: 500,
+      });
+      player.loop = false;
+      player.play();
+      // Auto-release after playback finishes
+      const checkFinished = () => {
+        if (!player.playing && player.isLoaded) {
+          player.release();
+          return;
+        }
+        setTimeout(checkFinished, 200);
+      };
+      setTimeout(checkFinished, 200);
     } catch (e) {
       console.warn("playOneShot failed (placeholder asset?):", e);
     }

@@ -4,10 +4,12 @@
  *
  * Ported from web src/app/(app)/visitantes/page.tsx. Behavior preserved:
  *  - list = GET /comunicaciones -> data.visitas ?? []  (+ silent refetch on WS 'visita')
- *  - create = POST /visitas { nombre, tipo, vehiculoTipo?(omit NINGUNO), placa?, observacion? }
+ *  - create = POST /visitas/preregistro -> { visita, token, qrPngBase64, expira }
+ *  - approval = PUT /visitas/{id}/aprobar { aprobada } + refetch (PENDIENTE cards)
  *  - getVisitStatus client-side day bucketing (ACTIVO / PROGRAMADO / HISTORIAL)
- *  - QR modal subject = lastVisit; Copiar (expo-clipboard) + WhatsApp (Linking)
- *  - QrCode lucide icon is a decorative placeholder (no real QR), matching web.
+ *  - QR modal subject = lastVisit; real QR PNG (expo-image data URI) when qrData
+ *    is present, lucide QrCode placeholder otherwise (matching web).
+ *  - Copiar (expo-clipboard) + WhatsApp (Linking) invite includes the access token.
  */
 
 import { useEffect, useState } from 'react';
@@ -21,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { Image } from 'expo-image';
 import {
   ArrowRight,
   Calendar,
@@ -46,10 +49,19 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
 import type {
   ComunicacionesVigilanciaDto,
+  PreregistroResponse,
   TipoVisita,
   TipoVehiculoVisita,
   VisitaDto,
 } from '@/lib/api/types';
+
+// Accent tints for estado badges / approval actions (accent palette only).
+const INFO = '#009df2';
+const SUCCESS = '#57bf00';
+const INFO_BG = 'rgba(0, 157, 242, 0.15)';
+const INFO_BORDER = 'rgba(0, 157, 242, 0.3)';
+const SUCCESS_BG = 'rgba(87, 191, 0, 0.15)';
+const SUCCESS_BORDER = 'rgba(87, 191, 0, 0.3)';
 
 type VisitStatus = 'ACTIVO' | 'PROGRAMADO' | 'HISTORIAL';
 
@@ -114,6 +126,11 @@ export default function VisitantesScreen() {
 
   const [visitors, setVisitors] = useState<VisitaDto[]>([]);
   const [lastVisit, setLastVisit] = useState<VisitaDto | null>(null);
+  const [qrData, setQrData] = useState<{
+    qrPngBase64: string;
+    token: string;
+    expira: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +178,7 @@ export default function VisitantesScreen() {
     }
     setSubmitting(true);
     try {
-      const newVisit = await api.post<VisitaDto>('/visitas', {
+      const res = await api.post<PreregistroResponse>('/visitas/preregistro', {
         nombre: newVisitForm.name.trim(),
         tipo: newVisitForm.tipo,
         vehiculoTipo:
@@ -171,10 +188,11 @@ export default function VisitantesScreen() {
         placa: newVisitForm.placa.trim() || undefined,
         observacion: newVisitForm.observacion.trim() || undefined,
       });
-      setVisitors((prev) => [newVisit, ...prev]);
-      setLastVisit(newVisit);
+      setVisitors((prev) => [res.visita, ...prev]);
+      setLastVisit(res.visita);
+      setQrData({ qrPngBase64: res.qrPngBase64, token: res.token, expira: res.expira });
       setIsQRModalOpen(true);
-      toast.success('Visita programada con exito');
+      toast.success('Pase QR generado con éxito');
       setNewVisitForm(EMPTY_FORM);
     } catch (e) {
       toast.error(e instanceof ApiError ? e.detail : 'Error al crear la invitacion');
@@ -206,7 +224,8 @@ export default function VisitantesScreen() {
       `• Fecha: ${fecha}`,
     ];
     if (visita.placa) lines.push(`• Placa: ${visita.placa}`);
-    lines.push(``, `Presenta este mensaje en portería para agilizar tu ingreso. 🛡️`);
+    if (qrData) lines.push(`• Código de acceso: ${qrData.token}`);
+    lines.push(``, `Muestra el código QR (o este código) en portería para tu ingreso. 🛡️`);
     return lines.join('\n');
   };
 
@@ -235,8 +254,23 @@ export default function VisitantesScreen() {
   };
 
   const openQRFor = (visitor: VisitaDto) => {
+    // qrData (single-use gate token + QR PNG) is only valid for the visit that
+    // was just created via POST /visitas/preregistro. Clear it when opening the
+    // modal for any other/historical visit, otherwise the modal and the
+    // WhatsApp invite would attach the WRONG visit's live access token.
+    setQrData(null);
     setLastVisit(visitor);
     setIsQRModalOpen(true);
+  };
+
+  const handleAprobarVisita = async (visitaId: string, aprobada: boolean) => {
+    try {
+      await api.put(`/visitas/${visitaId}/aprobar`, { aprobada });
+      toast.success(aprobada ? 'Visita aprobada' : 'Visita rechazada');
+      void refetchVisitors();
+    } catch {
+      toast.error('Error al procesar la visita');
+    }
   };
 
   const activeVisitors = visitors.filter((v) => getVisitStatus(v) === 'ACTIVO');
@@ -417,7 +451,37 @@ export default function VisitantesScreen() {
                         <Text className="mb-1.5 text-base font-bold text-text">
                           {visitor.nombre}
                         </Text>
-                        <View className="flex-row items-center gap-3">
+                        <View className="flex-row flex-wrap items-center gap-3">
+                          {visitor.documento ? (
+                            <Text className="text-[10px] text-textMuted">
+                              {visitor.documento}
+                            </Text>
+                          ) : null}
+                          {visitor.estado === 'PENDIENTE' ? (
+                            <View
+                              className="rounded-full border px-2 py-0.5"
+                              style={{ backgroundColor: INFO_BG, borderColor: INFO_BORDER }}
+                            >
+                              <Text className="text-[9px] font-bold" style={{ color: INFO }}>
+                                PENDIENTE
+                              </Text>
+                            </View>
+                          ) : null}
+                          {visitor.estado === 'APROBADA' ? (
+                            <View
+                              className="rounded-full border px-2 py-0.5"
+                              style={{ backgroundColor: SUCCESS_BG, borderColor: SUCCESS_BORDER }}
+                            >
+                              <Text className="text-[9px] font-bold" style={{ color: SUCCESS }}>
+                                APROBADA
+                              </Text>
+                            </View>
+                          ) : null}
+                          {visitor.estado === 'RECHAZADA' ? (
+                            <View className="rounded-full border border-border bg-surface2 px-2 py-0.5">
+                              <Text className="text-[9px] font-bold text-text">RECHAZADA</Text>
+                            </View>
+                          ) : null}
                           <View className="rounded border border-border bg-surface2 px-2 py-0.5">
                             <Text className="text-[9px] font-bold uppercase tracking-wider text-text">
                               {visitor.tipo}
@@ -432,12 +496,37 @@ export default function VisitantesScreen() {
                         </View>
                       </View>
                     </View>
-                    <Pressable
-                      onPress={() => openQRFor(visitor)}
-                      className="h-10 w-10 items-center justify-center rounded-full border border-border bg-surface2"
-                    >
-                      <MoreHorizontal size={20} color="#FFFFFF" />
-                    </Pressable>
+                    {visitor.estado === 'PENDIENTE' ? (
+                      <View className="shrink-0 flex-row gap-2">
+                        <Pressable
+                          onPress={() => void handleAprobarVisita(visitor.id, true)}
+                          className="rounded-xl border px-3 py-2"
+                          style={({ pressed }) => ({
+                            backgroundColor: SUCCESS_BG,
+                            borderColor: SUCCESS_BORDER,
+                            opacity: pressed ? 0.8 : 1,
+                          })}
+                        >
+                          <Text className="text-[10px] font-bold" style={{ color: SUCCESS }}>
+                            ✓ Aprobar
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => void handleAprobarVisita(visitor.id, false)}
+                          className="rounded-xl border border-border bg-surface2 px-3 py-2"
+                          style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                        >
+                          <Text className="text-[10px] font-bold text-text">✗ Rechazar</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <Pressable
+                        onPress={() => openQRFor(visitor)}
+                        className="h-10 w-10 items-center justify-center rounded-full border border-border bg-surface2"
+                      >
+                        <MoreHorizontal size={20} color="#FFFFFF" />
+                      </Pressable>
+                    )}
                   </View>
                 </GlassCard>
               ))
@@ -555,10 +644,19 @@ export default function VisitantesScreen() {
                   </Text>
                 </View>
 
-                {/* Decorative QR placeholder (matches web's static lucide icon). */}
+                {/* Real QR PNG from preregistro; lucide placeholder otherwise (matches web). */}
                 <View className="rounded-3xl bg-white p-6">
                   <View className="h-48 w-48 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white">
-                    <QrCode size={160} color="#171717" />
+                    {qrData ? (
+                      <Image
+                        source={{ uri: `data:image/png;base64,${qrData.qrPngBase64}` }}
+                        style={{ width: '100%', height: '100%' }}
+                        contentFit="contain"
+                        accessibilityLabel="Código QR de acceso del visitante"
+                      />
+                    ) : (
+                      <QrCode size={160} color="#171717" />
+                    )}
                   </View>
                 </View>
 

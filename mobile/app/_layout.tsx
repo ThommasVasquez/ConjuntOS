@@ -34,6 +34,7 @@ import {
 } from '@expo-google-fonts/jetbrains-mono';
 
 import { useAuth } from '@/hooks/useAuth';
+import { toastConfig } from '@/components/ui/toast';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { WebSocketProvider } from '@/providers/WebSocketProvider';
 import { CallProvider } from '@/providers/CallProvider';
@@ -188,7 +189,14 @@ export default function RootLayout() {
                   <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
                     {/* Until fonts + auth resolve, render nothing over the splash. */}
                     {appReady ? (
-                      <Stack screenOptions={{ headerShown: false }}>
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                          // Match web `body { background: var(--color-primary) }`
+                          // (dark default) so login/index never flash white.
+                          contentStyle: { backgroundColor: '#000000' },
+                        }}
+                      >
                         <Stack.Screen name="index" />
                         <Stack.Screen name="login" />
                         <Stack.Screen name="(app)" />
@@ -198,7 +206,8 @@ export default function RootLayout() {
                 </CallProvider>
               </WebSocketProvider>
             </AuthGate>
-            <Toast />
+            {/* Liquid-Glass toast cards (success/error/info/warning). */}
+            <Toast config={toastConfig} />
           </BottomSheetModalProvider>
         </ThemeProvider>
       </SafeAreaProvider>

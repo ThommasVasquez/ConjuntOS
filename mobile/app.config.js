@@ -20,6 +20,7 @@ const config = {
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
   ios: {
+    bundleIdentifier: 'com.wowbabies.conjuntos',
     icon: './assets/expo.icon',
     supportsTablet: true,
     infoPlist: {
@@ -34,6 +35,7 @@ const config = {
     },
   },
   android: {
+    package: 'com.wowbabies.conjuntos',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -56,7 +58,7 @@ const config = {
     // wire the iOS/Android native build (permissions, podspec, gradle).
     '@config-plugins/react-native-webrtc',
     'expo-image-picker',
-    'expo-av',
+    'expo-audio',
     [
       'expo-splash-screen',
       {

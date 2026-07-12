@@ -4,6 +4,12 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import type { TextInputProps } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 
+import { useTheme } from '@/providers/ThemeProvider';
+import { tokensFor } from '@/theme/tokens';
+
+/** Accent for interactive glyphs (matches the app-wide CTA blue). */
+const ACCENT = '#009df2';
+
 export interface InputProps extends TextInputProps {
   /** Optional field label rendered above the input. */
   label?: string;
@@ -29,6 +35,8 @@ export function Input({
 }: InputProps) {
   const [hidden, setHidden] = useState(true);
   const isSecure = !!secureTextEntry;
+  const { theme } = useTheme();
+  const tokens = tokensFor(theme);
 
   return (
     <View className={className}>
@@ -46,7 +54,7 @@ export function Input({
         <TextInput
           {...rest}
           secureTextEntry={isSecure && hidden}
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={tokens.textMuted}
           className="flex-1 text-base text-text"
         />
 
@@ -59,9 +67,9 @@ export function Input({
             className="ml-3"
           >
             {hidden ? (
-              <EyeOff size={20} color="#9ca3af" />
+              <EyeOff size={20} color={ACCENT} />
             ) : (
-              <Eye size={20} color="#9ca3af" />
+              <Eye size={20} color={ACCENT} />
             )}
           </Pressable>
         ) : null}

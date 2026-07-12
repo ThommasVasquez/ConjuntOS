@@ -14,15 +14,20 @@ type EventHandler = (event: WsEvent) => void;
 
 interface WsState {
   connected: boolean;
+  currentUserId: string | null;
   setConnected: (v: boolean) => void;
+  setCurrentUserId: (id: string | null) => void;
   handlers: Map<string, Set<EventHandler>>;
   subscribe: (domain: string, handler: EventHandler) => () => void;
   dispatch: (event: WsEvent) => void;
+  reset: () => void;
 }
 
 export const useWsStore = create<WsState>((set, get) => ({
   connected: false,
+  currentUserId: null,
   setConnected: (v) => set({ connected: v }),
+  setCurrentUserId: (id) => set({ currentUserId: id }),
   handlers: new Map(),
 
   subscribe: (domain: string, handler: EventHandler) => {
@@ -38,12 +43,23 @@ export const useWsStore = create<WsState>((set, get) => ({
   },
 
   dispatch: (event: WsEvent) => {
-    const { handlers } = get();
-    // Call handlers for specific domain
-    handlers.get(event.domain)?.forEach((h) => h(event));
-    // Call wildcard handlers
-    handlers.get('*')?.forEach((h) => h(event));
+    const { handlers, currentUserId } = get();
+    // WS-1: skip events targeted at a different user
+    if (event.targetUserId && event.targetUserId !== currentUserId) {
+      return;
+    }
+    // WS-6: snapshot the sets before iterating (safe against mid-dispatch mutation)
+    const domainHandlers = Array.from(handlers.get(event.domain) ?? []);
+    const wildcardHandlers = Array.from(handlers.get('*') ?? []);
+    for (const h of domainHandlers) {
+      try { h(event); } catch { /* swallow handler error */ }
+    }
+    for (const h of wildcardHandlers) {
+      try { h(event); } catch { /* swallow handler error */ }
+    }
   },
+
+  reset: () => set({ connected: false, currentUserId: null }),
 }));
 
 /**

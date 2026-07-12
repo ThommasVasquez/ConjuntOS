@@ -1,0 +1,934 @@
+{
+  "communities": {
+    "0": [
+      "acta_route",
+      "acta_route_get",
+      "acta_route_injectdbenv",
+      "acta_route_post",
+      "asistencia_route",
+      "asistencia_route_get",
+      "asistencia_route_injectdbenv",
+      "asistencia_route_post",
+      "lib_asamblea",
+      "lib_asamblea_agendaitem",
+      "lib_asamblea_asambleaasistencia",
+      "lib_asamblea_asambleapoder",
+      "lib_asamblea_asambleastate",
+      "lib_asamblea_asambleavotacion",
+      "lib_asamblea_asambleavoto",
+      "lib_asamblea_defaultagenda",
+      "lib_asamblea_getorcreateactiveasamblea",
+      "lib_asamblea_livesubtitle",
+      "lib_asamblea_parseasambleastate",
+      "lib_asamblea_residentopinion",
+      "lib_asamblea_saveasambleastate",
+      "lib_asamblea_speakingturn",
+      "opiniones_route",
+      "opiniones_route_get",
+      "opiniones_route_injectdbenv",
+      "opiniones_route_post",
+      "poderes_route",
+      "poderes_route_get",
+      "poderes_route_injectdbenv",
+      "poderes_route_post",
+      "poderes_route_put",
+      "session_route",
+      "session_route_get",
+      "session_route_injectdbenv",
+      "session_route_post",
+      "subtitulos_route",
+      "subtitulos_route_get",
+      "subtitulos_route_injectdbenv",
+      "subtitulos_route_post",
+      "turnos_route",
+      "turnos_route_get",
+      "turnos_route_injectdbenv",
+      "turnos_route_post",
+      "turnos_route_put",
+      "votaciones_route",
+      "votaciones_route_get",
+      "votaciones_route_injectdbenv",
+      "votaciones_route_post",
+      "votaciones_route_put",
+      "votaciones_route_sanitizevotaciones",
+      "votos_route",
+      "votos_route_get",
+      "votos_route_injectdbenv",
+      "votos_route_post",
+      "votos_route_sha256"
+    ],
+    "1": [
+      "app_layout_inter",
+      "app_layout_jetbrainsmono",
+      "app_layout_metadata",
+      "app_layout_montserrat",
+      "app_layout_plusjakartasans",
+      "app_layout_rootlayout",
+      "app_layout_viewport",
+      "app_page",
+      "app_page_landingpage",
+      "app_page_metadata",
+      "components_providers",
+      "components_providers_providers",
+      "landing_craftsmanshipsection",
+      "landing_craftsmanshipsection_craftsmanshipsection",
+      "landing_faqsection",
+      "landing_faqsection_faqsection",
+      "landing_featurescollage",
+      "landing_featurescollage_features",
+      "landing_featurescollage_featurescollage",
+      "landing_footer",
+      "landing_footer_footer",
+      "landing_hero",
+      "landing_hero_hero",
+      "landing_hero_slides",
+      "landing_navbar",
+      "landing_navbar_navbar",
+      "landing_productssection",
+      "landing_productssection_productssection",
+      "landing_showcasesection",
+      "landing_showcasesection_showcasesection",
+      "landing_storysection",
+      "landing_storysection_storysection",
+      "landing_teamsection",
+      "landing_teamsection_teamsection",
+      "providers_viewtransitioncontext",
+      "providers_viewtransitioncontext_useviewtransition",
+      "providers_viewtransitioncontext_viewtransitioncontext",
+      "providers_viewtransitioncontext_viewtransitionprovider",
+      "shell_splashscreen",
+      "shell_splashscreen_splashscreen",
+      "src_app_layout_tsx_app_layout"
+    ],
+    "2": [
+      "copilot_route",
+      "copilot_route_injectdbenv",
+      "copilot_route_post",
+      "directory_route",
+      "directory_route_get",
+      "login_route",
+      "login_route_post",
+      "nextauth_route",
+      "parqueadero_route",
+      "parqueadero_route_get",
+      "parqueadero_route_post",
+      "profile_save_route",
+      "profile_save_route_post",
+      "registros_route",
+      "registros_route_get",
+      "reservas_route",
+      "reservas_route_get",
+      "reservas_route_post",
+      "seed_pagos_route",
+      "seed_pagos_route_get",
+      "seed_route",
+      "seed_route_get",
+      "slots_route",
+      "slots_route_get",
+      "src_app_api_admin_stats_route_ts_stats_route",
+      "src_app_api_admin_stats_route_ts_stats_route_get",
+      "src_app_api_parqueadero_stats_route_ts_stats_route",
+      "src_app_api_parqueadero_stats_route_ts_stats_route_get",
+      "src_app_api_user_paquetes_route_ts_paquetes_route",
+      "src_app_api_user_paquetes_route_ts_paquetes_route_get",
+      "src_app_api_user_tramites_route_ts_tramites_route",
+      "src_app_api_user_tramites_route_ts_tramites_route_post",
+      "src_app_api_vigilancia_stats_route_ts_stats_route",
+      "src_app_api_vigilancia_stats_route_ts_stats_route_get",
+      "src_auth",
+      "src_auth_auth_signin_signout_handlers",
+      "src_auth_authlog"
+    ],
+    "3": [
+      "package",
+      "package_dependencies",
+      "package_dependencies_auth_prisma_adapter",
+      "package_dependencies_google_generative_ai",
+      "package_dependencies_gsap",
+      "package_dependencies_gsap_react",
+      "package_dependencies_hookform_resolvers",
+      "package_dependencies_lucide_react",
+      "package_dependencies_mmmike_web_push",
+      "package_dependencies_neondatabase_serverless",
+      "package_dependencies_next",
+      "package_dependencies_next_auth",
+      "package_dependencies_next_pwa",
+      "package_dependencies_peerjs",
+      "package_dependencies_pg",
+      "package_dependencies_prisma_adapter_neon",
+      "package_dependencies_prisma_client",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_react_hook_form",
+      "package_dependencies_sonner",
+      "package_dependencies_supabase_supabase_js",
+      "package_dependencies_web_push",
+      "package_dependencies_zod",
+      "package_dependencies_zustand",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_dev",
+      "package_scripts_lint",
+      "package_scripts_start",
+      "package_version"
+    ],
+    "4": [
+      "call_push_route",
+      "call_push_route_post",
+      "call_push_route_vapidkeys",
+      "lib_db",
+      "lib_db_db",
+      "lib_db_getmodel",
+      "lib_db_proxycache",
+      "lib_seed_utils",
+      "lib_seed_utils_autoseeduserpagos",
+      "pagos_route",
+      "pagos_route_get",
+      "pagos_route_put",
+      "paquetes_route_post",
+      "paquetes_route_put",
+      "profile_route",
+      "profile_route_get",
+      "profile_route_put",
+      "push_subscribe_route",
+      "push_subscribe_route_delete",
+      "push_subscribe_route_post",
+      "rondas_route",
+      "rondas_route_get",
+      "rondas_route_post",
+      "src_app_api_vigilancia_paquetes_route_ts_paquetes_route",
+      "src_app_api_vigilancia_paquetes_route_ts_paquetes_route_get",
+      "users_route",
+      "users_route_get",
+      "visitas_route",
+      "visitas_route_get",
+      "visitas_route_post"
+    ],
+    "5": [
+      "agents_nextjs_agent_rules",
+      "build_log_conjunto_app",
+      "build_log_next_build",
+      "build_log_nextjs_15",
+      "build_log_prisma_client",
+      "build_log_reservas_feature",
+      "claude_project_instructions",
+      "energysoftmedia_energy_soft_logo",
+      "event_lounge_event_photo",
+      "favicon_conjuntos_favicon",
+      "file_file_icon",
+      "globe_globe_icon",
+      "gym_luxury_gym_photo",
+      "hall_clubhouse_aerial_photo",
+      "logo_conjuntos_brand",
+      "logo_conjuntos_logo_black",
+      "logo_conjuntos_wordmark_svg",
+      "logo_white_conjuntos_logo_white",
+      "nop_log_cloudflare_build",
+      "nop_log_next_on_pages_adapter",
+      "pool_residential_pool_photo",
+      "readme_nextjs_readme",
+      "solo_conjuntos_adaptive_mark",
+      "window_window_icon"
+    ],
+    "6": [
+      "inicio_page",
+      "inicio_page_feeditem",
+      "inicio_page_homeadmin",
+      "inicio_page_homeconsejo",
+      "inicio_page_homeestacionamiento",
+      "inicio_page_homeresidente",
+      "inicio_page_homevigilante",
+      "inicio_page_iniciodashboard",
+      "inicio_page_postcard",
+      "modals_celebrationmodal",
+      "modals_celebrationmodal_celebrationmodal",
+      "modals_celebrationmodal_celebrationmodalprops",
+      "modals_contentactionmodal",
+      "modals_contentactionmodal_contentactionmodal",
+      "search_searchmodal",
+      "search_searchmodal_filtermodules",
+      "search_searchmodal_isquestion",
+      "search_searchmodal_modules",
+      "search_searchmodal_searchcontext",
+      "search_searchmodal_searchmodal",
+      "search_searchmodal_searchmodalprops",
+      "search_searchmodal_suggestions",
+      "search_searchmodal_typingtext"
+    ],
+    "7": [
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowjs",
+      "tsconfig_compileroptions_esmoduleinterop",
+      "tsconfig_compileroptions_incremental",
+      "tsconfig_compileroptions_isolatedmodules",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_plugins",
+      "tsconfig_compileroptions_resolvejsonmodule",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_compileroptions_target",
+      "tsconfig_exclude",
+      "tsconfig_include",
+      "tsconfig_paths"
+    ],
+    "8": [
+      "eslint_config",
+      "eslint_config_compat",
+      "eslint_config_dirname",
+      "eslint_config_filename",
+      "package_devdependencies",
+      "package_devdependencies_cloudflare_next_on_pages",
+      "package_devdependencies_eslint",
+      "package_devdependencies_prisma",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_tailwindcss_postcss",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_types_web_push",
+      "package_devdependencies_typescript",
+      "package_devdependencies_vercel",
+      "package_devdependencies_wrangler"
+    ],
+    "9": [
+      "actions_voice_setup",
+      "actions_voice_setup_runvoicesetup",
+      "admin_mensajes_page",
+      "admin_mensajes_page_adminmensajespage",
+      "admin_mensajes_page_audiomessage",
+      "admin_mensajes_page_conversation",
+      "admin_mensajes_page_dashedempty",
+      "admin_mensajes_page_message",
+      "admin_mensajes_page_residentinfo",
+      "admin_novedades_page",
+      "admin_novedades_page_adminnovedadespage",
+      "lib_db_supabase",
+      "setup_voice_route",
+      "setup_voice_route_get",
+      "superadmin_page",
+      "superadmin_page_superadminpage"
+    ],
+    "10": [
+      "lib_db_logerror",
+      "lib_db_modelproxy",
+      "lib_db_modelproxy_aggregate",
+      "lib_db_modelproxy_applyfilters",
+      "lib_db_modelproxy_constructor",
+      "lib_db_modelproxy_count",
+      "lib_db_modelproxy_create",
+      "lib_db_modelproxy_createmany",
+      "lib_db_modelproxy_deletemany",
+      "lib_db_modelproxy_findfirst",
+      "lib_db_modelproxy_findmany",
+      "lib_db_modelproxy_findunique",
+      "lib_db_modelproxy_hydrate",
+      "lib_db_modelproxy_update",
+      "lib_db_modelproxy_upsert"
+    ],
+    "11": [
+      "admin_finanzas_page",
+      "admin_finanzas_page_adminfinanzaspage",
+      "cartelera_page",
+      "cartelera_page_cartelerapage",
+      "cartelera_page_notice",
+      "control_visitas_page",
+      "control_visitas_page_controlvisitas",
+      "mapa_parqueadero_page",
+      "mapa_parqueadero_page_mapaparqueaderopage",
+      "paqueteria_page",
+      "paqueteria_page_paqueteriapage",
+      "shell_profileheader",
+      "shell_profileheader_profileheader",
+      "shell_profileheader_profileheaderprops"
+    ],
+    "12": [
+      "login_page",
+      "login_page_loginpage",
+      "perfil_page",
+      "perfil_page_perfilpage",
+      "perfil_page_profilecontent",
+      "providers_themecontext",
+      "providers_themecontext_theme",
+      "providers_themecontext_themecontext",
+      "providers_themecontext_themecontexttype",
+      "providers_themecontext_themeprovider",
+      "providers_themecontext_usetheme",
+      "shell_brandedfooter",
+      "shell_brandedfooter_brandedfooter",
+      "shell_brandedfooter_brandedfooterprops"
+    ],
+    "13": [
+      "anuncios_route",
+      "anuncios_route_delete",
+      "anuncios_route_get",
+      "anuncios_route_post",
+      "chat_route_post",
+      "debug_db_route",
+      "debug_db_route_diagnosticresult",
+      "debug_db_route_get",
+      "lib_db_discoverurl",
+      "src_app_api_admin_chat_route_ts_chat_route",
+      "src_app_api_admin_chat_route_ts_chat_route_get",
+      "src_app_api_user_chat_route_ts_chat_route",
+      "src_app_api_user_chat_route_ts_chat_route_get"
+    ],
+    "14": [
+      "citofonia_page",
+      "citofonia_page_citofoniapage",
+      "citofonia_page_ipaquete",
+      "citofonia_page_ivisita",
+      "citofonia_page_tab",
+      "providers_callcontext",
+      "providers_callcontext_callcontext",
+      "providers_callcontext_callcontexttype",
+      "providers_callcontext_callprovider",
+      "providers_callcontext_callstate",
+      "providers_callcontext_sanitizepeerid",
+      "providers_callcontext_usecall"
+    ],
+    "15": [
+      "clasificados_page",
+      "clasificados_page_categories",
+      "clasificados_page_clasificado",
+      "clasificados_page_clasificadocard",
+      "clasificados_page_clasificadodetail",
+      "clasificados_page_clasificadopostingform",
+      "clasificados_page_clasificadospage",
+      "shell_bottomsheet",
+      "shell_bottomsheet_bottomsheet",
+      "shell_bottomsheet_bottomsheetprops"
+    ],
+    "16": [
+      "asamblea_page",
+      "asamblea_page_agendaitem",
+      "asamblea_page_asambleapage",
+      "asamblea_page_getgradientclass",
+      "asamblea_page_getinitials",
+      "asamblea_page_getoptioncolor",
+      "asamblea_page_remotevideo",
+      "asamblea_page_residentopinion",
+      "asamblea_page_speakingturn"
+    ],
+    "17": [
+      "app_layout_applayout",
+      "shell_appshell",
+      "shell_appshell_appshell",
+      "shell_bottomnav",
+      "shell_bottomnav_bottomnav",
+      "shell_topbar",
+      "shell_topbar_topbar",
+      "src_app_app_layout_tsx_app_layout"
+    ],
+    "18": [
+      "inmobiliaria_page",
+      "inmobiliaria_page_dummy_data",
+      "inmobiliaria_page_inmobiliariapage",
+      "inmobiliaria_page_inmueble",
+      "inmobiliaria_page_postingform",
+      "inmobiliaria_page_propertycard",
+      "inmobiliaria_page_propertydetailsimulation"
+    ],
+    "19": [
+      "search_route",
+      "search_route_builduserprompt",
+      "search_route_callgemini",
+      "search_route_getmockresponse",
+      "search_route_post",
+      "search_route_searchbody",
+      "search_route_searchcontext"
+    ],
+    "20": [
+      "aprobar_route",
+      "aprobar_route_put",
+      "lib_safe_json",
+      "lib_safe_json_replacer",
+      "lib_safe_json_safejsonstringify"
+    ],
+    "21": [
+      "src_auth_config",
+      "src_auth_config_authorized",
+      "src_middleware",
+      "src_middleware_auth",
+      "src_middleware_config"
+    ],
+    "22": [
+      "clasificados_route",
+      "clasificados_route_get",
+      "clasificados_route_mock_clasificados",
+      "clasificados_route_post"
+    ],
+    "23": [
+      "conjuntos_route",
+      "conjuntos_route_get",
+      "conjuntos_route_post",
+      "conjuntos_route_put"
+    ],
+    "24": [
+      "consensuar_route",
+      "consensuar_route_getlocalfallback",
+      "consensuar_route_injectdbenv",
+      "consensuar_route_post"
+    ],
+    "25": [
+      "inmuebles_route",
+      "inmuebles_route_get",
+      "inmuebles_route_mock_inmuebles",
+      "inmuebles_route_post"
+    ],
+    "26": [
+      "pairing_route",
+      "pairing_route_get",
+      "pairing_route_injectdbenv",
+      "pairing_route_post"
+    ],
+    "27": [
+      "parqueadero_page",
+      "parqueadero_page_celda",
+      "parqueadero_page_parqueaderopage",
+      "parqueadero_page_vehiculo"
+    ],
+    "28": [
+      "pqrs_page",
+      "pqrs_page_pqrspage",
+      "pqrs_page_solicitud",
+      "pqrs_page_tipo_config"
+    ],
+    "29": [
+      "routes",
+      "routes_exclude",
+      "routes_include",
+      "routes_version"
+    ],
+    "30": [
+      "scratch_check_region",
+      "scratch_check_region_check",
+      "scratch_check_region_resolveany",
+      "scratch_check_region_resolvecw"
+    ],
+    "31": [
+      "scratch_check_regions",
+      "scratch_check_regions_regions",
+      "scratch_check_regions_run",
+      "scratch_check_regions_testregion"
+    ],
+    "32": [
+      "scratch_db_direct_check",
+      "scratch_db_direct_check_run",
+      "scratch_db_direct_check_urlparts",
+      "scratch_db_direct_check_variants"
+    ],
+    "33": [
+      "scratch_setup_bucket",
+      "scratch_setup_bucket_createclient",
+      "scratch_setup_bucket_dotenv",
+      "scratch_setup_bucket_supabase"
+    ],
+    "34": [
+      "scratch_test_db_conn",
+      "scratch_test_db_conn_connections",
+      "scratch_test_db_conn_main",
+      "scratch_test_db_conn_tryconnect"
+    ],
+    "35": [
+      "scratch_test_pg",
+      "scratch_test_pg_passwords",
+      "scratch_test_pg_run",
+      "scratch_test_pg_test"
+    ],
+    "36": [
+      "translate_route",
+      "translate_route_getlocaltranslation",
+      "translate_route_injectdbenv",
+      "translate_route_post"
+    ],
+    "37": [
+      "actions_anuncioactions",
+      "actions_anuncioactions_getanuncios",
+      "actions_anuncioactions_seedinitialanuncios"
+    ],
+    "38": [
+      "actions_useractions",
+      "actions_useractions_getuserprofile",
+      "actions_useractions_updateuserprofile"
+    ],
+    "39": [
+      "admin_parqueadero_page",
+      "admin_parqueadero_page_adminparqueaderopage",
+      "admin_parqueadero_page_alertcircle"
+    ],
+    "40": [
+      "comunicaciones_route",
+      "comunicaciones_route_get",
+      "comunicaciones_route_post"
+    ],
+    "41": [
+      "landing_bentofeatures",
+      "landing_bentofeatures_bentofeatures",
+      "landing_bentofeatures_features"
+    ],
+    "42": [
+      "mapa_route",
+      "mapa_route_get",
+      "mapa_route_put"
+    ],
+    "43": [
+      "mcp",
+      "mcp_command_pnpm",
+      "mcp_mcp_server_ruflo"
+    ],
+    "44": [
+      "middleware",
+      "middleware_config",
+      "middleware_middleware"
+    ],
+    "45": [
+      "notificaciones_route",
+      "notificaciones_route_get",
+      "notificaciones_route_put"
+    ],
+    "46": [
+      "pagos_page",
+      "pagos_page_pagospage",
+      "pagos_page_transaction"
+    ],
+    "47": [
+      "reservas_page",
+      "reservas_page_areacomun",
+      "reservas_page_reservaspage"
+    ],
+    "48": [
+      "scratch_create_superadmin",
+      "scratch_create_superadmin_main",
+      "scratch_create_superadmin_supabase"
+    ],
+    "49": [
+      "scratch_db_check",
+      "scratch_db_check_check",
+      "scratch_db_check_supabase"
+    ],
+    "50": [
+      "scratch_test_gemini",
+      "scratch_test_gemini_modelstotest",
+      "scratch_test_gemini_run"
+    ],
+    "51": [
+      "scratch_verify_weighted_voting",
+      "scratch_verify_weighted_voting_sha256",
+      "scratch_verify_weighted_voting_supabase"
+    ],
+    "52": [
+      "scripts_check_users",
+      "scripts_check_users_main",
+      "scripts_check_users_prisma"
+    ],
+    "53": [
+      "scripts_create_user",
+      "scripts_create_user_main",
+      "scripts_create_user_supabase"
+    ],
+    "54": [
+      "scripts_create_user_fofi",
+      "scripts_create_user_fofi_main",
+      "scripts_create_user_fofi_prisma"
+    ],
+    "55": [
+      "scripts_seed_pagos",
+      "scripts_seed_pagos_main",
+      "scripts_seed_pagos_prisma"
+    ],
+    "56": [
+      "scripts_seed_roles",
+      "scripts_seed_roles_pool",
+      "scripts_seed_roles_seed"
+    ],
+    "57": [
+      "solicitudes_route",
+      "solicitudes_route_get",
+      "solicitudes_route_post"
+    ],
+    "58": [
+      "src_app_api_tramites_route_ts_tramites_route",
+      "src_app_api_tramites_route_ts_tramites_route_post",
+      "tramites_route_get"
+    ],
+    "59": [
+      "tmp_check_db",
+      "tmp_check_db_run",
+      "tmp_check_db_supabase"
+    ],
+    "60": [
+      "userid_route",
+      "userid_route_get",
+      "userid_route_post"
+    ],
+    "61": [
+      "visitantes_page",
+      "visitantes_page_visitantespage",
+      "visitantes_page_visitor"
+    ],
+    "62": [
+      "areas_route",
+      "areas_route_get"
+    ],
+    "63": [
+      "db_status_route",
+      "db_status_route_get"
+    ],
+    "64": [
+      "postcss_config",
+      "postcss_config_config"
+    ],
+    "65": [
+      "scratch_alter_db",
+      "scratch_alter_db_main"
+    ],
+    "66": [
+      "scratch_check_openapi",
+      "scratch_check_openapi_check"
+    ],
+    "67": [
+      "scripts_create_user_rest",
+      "scripts_create_user_rest_run"
+    ],
+    "68": [
+      "scripts_fix_and_seed",
+      "scripts_fix_and_seed_run"
+    ],
+    "69": [
+      "scripts_quick_seed",
+      "scripts_quick_seed_seed"
+    ],
+    "70": [
+      "tmp_final_db_fix",
+      "tmp_final_db_fix_client"
+    ],
+    "71": [
+      "tmp_master_db_fix",
+      "tmp_master_db_fix_client"
+    ],
+    "72": [
+      "tmp_stabilize",
+      "tmp_stabilize_stabilize"
+    ],
+    "73": [
+      "next_config"
+    ],
+    "74": [
+      "nextauth_route_get_post"
+    ],
+    "75": [
+      "prisma_config"
+    ],
+    "76": [
+      "public_sw"
+    ],
+    "77": [
+      "tmp_fix_inmobiliaria"
+    ],
+    "78": [
+      "tmp_repair_inmobiliaria"
+    ]
+  },
+  "cohesion": {
+    "0": 0.1111111111111111,
+    "1": 0.06097560975609756,
+    "2": 0.05555555555555555,
+    "3": 0.06060606060606061,
+    "4": 0.0896551724137931,
+    "5": 0.13043478260869565,
+    "6": 0.09090909090909091,
+    "7": 0.1,
+    "8": 0.11764705882352941,
+    "9": 0.125,
+    "10": 0.29523809523809524,
+    "11": 0.14285714285714285,
+    "12": 0.18681318681318682,
+    "13": 0.19230769230769232,
+    "14": 0.21212121212121213,
+    "15": 0.2,
+    "16": 0.2222222222222222,
+    "17": 0.25,
+    "18": 0.2857142857142857,
+    "19": 0.42857142857142855,
+    "20": 0.6,
+    "21": 0.4,
+    "22": 0.5,
+    "23": 0.5,
+    "24": 0.8333333333333334,
+    "25": 0.5,
+    "26": 0.8333333333333334,
+    "27": 0.5,
+    "28": 0.5,
+    "29": 0.5,
+    "30": 0.8333333333333334,
+    "31": 0.6666666666666666,
+    "32": 0.5,
+    "33": 0.5,
+    "34": 0.6666666666666666,
+    "35": 0.6666666666666666,
+    "36": 0.8333333333333334,
+    "37": 0.6666666666666666,
+    "38": 0.6666666666666666,
+    "39": 0.6666666666666666,
+    "40": 0.6666666666666666,
+    "41": 0.6666666666666666,
+    "42": 0.6666666666666666,
+    "43": 0.6666666666666666,
+    "44": 0.6666666666666666,
+    "45": 0.6666666666666666,
+    "46": 0.6666666666666666,
+    "47": 0.6666666666666666,
+    "48": 0.6666666666666666,
+    "49": 0.6666666666666666,
+    "50": 0.6666666666666666,
+    "51": 0.6666666666666666,
+    "52": 0.6666666666666666,
+    "53": 0.6666666666666666,
+    "54": 0.6666666666666666,
+    "55": 0.6666666666666666,
+    "56": 0.6666666666666666,
+    "57": 0.6666666666666666,
+    "58": 0.6666666666666666,
+    "59": 0.6666666666666666,
+    "60": 0.6666666666666666,
+    "61": 0.6666666666666666,
+    "62": 1.0,
+    "63": 1.0,
+    "64": 1.0,
+    "65": 1.0,
+    "66": 1.0,
+    "67": 1.0,
+    "68": 1.0,
+    "69": 1.0,
+    "70": 1.0,
+    "71": 1.0,
+    "72": 1.0,
+    "73": 1.0,
+    "74": 1.0,
+    "75": 1.0,
+    "76": 1.0,
+    "77": 1.0,
+    "78": 1.0
+  },
+  "gods": [
+    {
+      "id": "lib_asamblea_getorcreateactiveasamblea",
+      "label": "getOrCreateActiveAsamblea()",
+      "degree": 31
+    },
+    {
+      "id": "lib_asamblea_parseasambleastate",
+      "label": "parseAsambleaState()",
+      "degree": 30
+    },
+    {
+      "id": "lib_asamblea_saveasambleastate",
+      "label": "saveAsambleaState()",
+      "degree": 21
+    },
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 16
+    },
+    {
+      "id": "lib_db_modelproxy",
+      "label": "ModelProxy",
+      "degree": 14
+    },
+    {
+      "id": "lib_db_logerror",
+      "label": "logError()",
+      "degree": 10
+    },
+    {
+      "id": "build_log_conjunto_app",
+      "label": "conjunto-app v0.1.0 Application",
+      "degree": 9
+    },
+    {
+      "id": "lib_db_discoverurl",
+      "label": "discoverUrl()",
+      "degree": 8
+    },
+    {
+      "id": "providers_viewtransitioncontext_useviewtransition",
+      "label": "useViewTransition()",
+      "degree": 7
+    },
+    {
+      "id": "votaciones_route_post",
+      "label": "POST()",
+      "degree": 6
+    }
+  ],
+  "surprises": [
+    {
+      "source": "Logo: Energy Soft Media vendor wordmark (SVG)",
+      "target": "conjunto-app v0.1.0 Application",
+      "source_files": [
+        "public/energysoftmedia.svg",
+        "build_log.txt"
+      ],
+      "confidence": "AMBIGUOUS",
+      "relation": "conceptually_related_to",
+      "why": "ambiguous connection - not explicitly stated in source; crosses file types (doc \u2194 image); connects across different repos/directories; peripheral node `Logo: Energy Soft Media vendor wordmark (SVG)` unexpectedly reaches hub `conjunto-app v0.1.0 Application`"
+    },
+    {
+      "source": "Photo: aerial night view of futuristic clubhouse/event hall in residential complex",
+      "target": "Reservas (Amenity Booking) Routes",
+      "source_files": [
+        "public/images/hall.png",
+        "build_log.txt"
+      ],
+      "confidence": "AMBIGUOUS",
+      "relation": "conceptually_related_to",
+      "why": "ambiguous connection - not explicitly stated in source; crosses file types (doc \u2194 image); connects across different repos/directories; peripheral node `Photo: aerial night view of futuristic clubhouse/event hall in residential complex` unexpectedly reaches hub `Reservas (Amenity Booking) Routes`"
+    },
+    {
+      "source": "Icon: file/document glyph (Next.js template asset)",
+      "target": "Next.js Project README (create-next-app)",
+      "source_files": [
+        "public/file.svg",
+        "README.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; crosses file types (doc \u2194 image); connects across different repos/directories; peripheral node `Icon: file/document glyph (Next.js template asset)` unexpectedly reaches hub `Next.js Project README (create-next-app)`"
+    },
+    {
+      "source": "Icon: globe glyph (Next.js template asset)",
+      "target": "Next.js Project README (create-next-app)",
+      "source_files": [
+        "public/globe.svg",
+        "README.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; crosses file types (doc \u2194 image); connects across different repos/directories; peripheral node `Icon: globe glyph (Next.js template asset)` unexpectedly reaches hub `Next.js Project README (create-next-app)`"
+    },
+    {
+      "source": "Icon: browser window glyph (Next.js template asset)",
+      "target": "Next.js Project README (create-next-app)",
+      "source_files": [
+        "public/window.svg",
+        "README.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; crosses file types (doc \u2194 image); connects across different repos/directories; peripheral node `Icon: browser window glyph (Next.js template asset)` unexpectedly reaches hub `Next.js Project README (create-next-app)`"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}

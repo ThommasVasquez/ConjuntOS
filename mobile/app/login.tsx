@@ -58,9 +58,15 @@ export default function Login() {
   );
 
   // Already logged in → redirect to the dashboard (or a validated callbackUrl).
+  // Effect-based (on `user`) like web, so it sees the fresh post-login role:
+  // HUESPED_TEMPORAL always goes to /mi-estancia.
   useEffect(() => {
     if (user) {
-      router.replace(safeCallback(callbackUrl) as never);
+      const dest =
+        user.rol === 'HUESPED_TEMPORAL'
+          ? '/(app)/mi-estancia'
+          : safeCallback(callbackUrl);
+      router.replace(dest as never);
     }
   }, [user, router, callbackUrl]);
 

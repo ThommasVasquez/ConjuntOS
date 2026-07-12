@@ -38,6 +38,7 @@ import {
   X,
 } from 'lucide-react-native';
 
+import { GuestGate } from '@/components/GuestGate';
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
 import { api } from '@/lib/api/client';
@@ -82,16 +83,20 @@ const INITIAL_FORM: FormState = {
   urgente: false,
 };
 
-function getStatusLabel(status: string): string {
+// Mirrors web getStatusLabel: label + chip colors per estado. Background
+// classes go on the wrapping View and text color on the Text (RN split).
+function getStatusLabel(status: string): { text: string; chipClass: string; textClass: string } {
   switch (status) {
-    case 'COMPLETADA':
-      return 'Resuelto';
+    case 'RESUELTA':
+      return { text: 'Resuelto', chipClass: 'bg-green-500/10', textClass: 'text-green-400' };
+    case 'CERRADA':
+      return { text: 'Cerrado', chipClass: 'bg-text/5', textClass: 'text-text/40' };
     case 'EN_PROGRESO':
-      return 'En Proceso';
+      return { text: 'En Proceso', chipClass: 'bg-text/10', textClass: 'text-text' };
     case 'ASIGNADA':
-      return 'Asignado';
+      return { text: 'Asignado', chipClass: 'bg-text/10', textClass: 'text-text' };
     default:
-      return 'Pendiente';
+      return { text: 'Pendiente', chipClass: 'bg-text/10', textClass: 'text-text' };
   }
 }
 
@@ -108,6 +113,16 @@ function formatDate(iso: string): string {
 }
 
 export default function Pqrs() {
+  // HUESPED_TEMPORAL must not file PQRS (route stays reachable via deep links
+  // and pqrs-keyword notification routing even without a tab).
+  return (
+    <GuestGate>
+      <PqrsInner />
+    </GuestGate>
+  );
+}
+
+function PqrsInner() {
   const { user } = useAuth();
   const userId = user?.id;
 
@@ -180,8 +195,12 @@ export default function Pqrs() {
   }, [formData]);
 
   const total = solicitudes.length;
-  const abiertas = solicitudes.filter((s) => s.estado !== 'COMPLETADA').length;
-  const resueltas = solicitudes.filter((s) => s.estado === 'COMPLETADA').length;
+  const abiertas = solicitudes.filter(
+    (s) => s.estado !== 'RESUELTA' && s.estado !== 'CERRADA'
+  ).length;
+  const resueltas = solicitudes.filter(
+    (s) => s.estado === 'RESUELTA' || s.estado === 'CERRADA'
+  ).length;
 
   const stats: { label: string; value: number; icon: ReactElement }[] = [
     { label: 'Total', value: total, icon: <MessageSquare size={16} color={ICON_COLOR} /> },
@@ -285,9 +304,13 @@ export default function Pqrs() {
                           </Text>
                         </View>
                       </View>
-                      <View className="rounded-full border border-border bg-surface px-2.5 py-1">
-                        <Text className="text-[8px] font-black uppercase tracking-widest text-text">
-                          {getStatusLabel(s.estado)}
+                      <View
+                        className={`rounded-full border border-border px-2.5 py-1 ${getStatusLabel(s.estado).chipClass}`}
+                      >
+                        <Text
+                          className={`text-[8px] font-black uppercase tracking-widest ${getStatusLabel(s.estado).textClass}`}
+                        >
+                          {getStatusLabel(s.estado).text}
                         </Text>
                       </View>
                     </View>

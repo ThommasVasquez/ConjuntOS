@@ -18,7 +18,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import QRCode from 'react-native-qrcode-svg';
 import {
   ArrowRight,
   Calendar,
@@ -27,6 +29,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ClipboardList,
+  Clock,
   CreditCard,
   FileText,
   HelpCircle,
@@ -40,20 +43,25 @@ import {
   PawPrint,
   Phone,
   Plus,
+  QrCode,
   Search,
   ShieldCheck,
   Sun,
+  Trash2,
   User as UserIcon,
   X,
 } from 'lucide-react-native';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useWsSubscription } from '@/hooks/useWebSocket';
 import { api } from '@/lib/api/client';
 import type {
+  CorrespondenciaDto,
   PagosResponse,
   ProfileResponse,
   ReservaDto,
   TipoTramite,
+  VisitaDto,
 } from '@/lib/api/types';
 import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from '@/lib/flags';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -78,16 +86,29 @@ interface UserData {
   numeroInterno?: string;
 }
 interface Vehiculo {
+  id?: string;
   placa: string;
   marca?: string;
   modelo?: string;
   color?: string;
+  soatVence?: string | null;
+  tecnomecanicaVence?: string | null;
 }
 interface Mascota {
+  id?: string;
   nombre: string;
   tipo: string;
   raza?: string;
   fotoUrl?: string;
+}
+// TODO(types-consolidate): mirror of the web DocsVacunas `Vacuna` shape — not
+// yet present in the synced '@/lib/api/types'.
+interface Vacuna {
+  id: string;
+  mascotaId: string;
+  vacuna: string;
+  fechaAplicacion: string | null;
+  proxima: string | null;
 }
 interface Tramite {
   id: string;
@@ -114,6 +135,7 @@ interface Recibo {
   createdAt?: string;
 }
 interface ReservaActiva {
+  id: string;
   estado?: string;
   fechaInicio: string;
   fechaFin: string;
@@ -134,6 +156,12 @@ type ProfileFetch = ProfileResponse & {
   tramitesSolicitados?: Tramite[];
 };
 
+/** Resident-facing GET /comunicaciones payload (visitas + correspondencia). */
+type ComunicacionesResidenteFetch = {
+  visitas?: VisitaDto[];
+  correspondencia?: CorrespondenciaDto[];
+};
+
 type ViewMode =
   | 'profile'
   | 'vehicles'
@@ -141,10 +169,28 @@ type ViewMode =
   | 'deuda'
   | 'requests'
   | 'reservas'
-  | 'paquetes';
+  | 'paquetes'
+  | 'visitas'
+  | 'correspondencia';
 
 type RegType = 'VEHICULO' | 'MASCOTA' | 'OTRO';
 type RegDoc = { nombre: string; base64: string; mimeType: string };
+
+// Accent tints for estado badges (same palette as visitantes.tsx).
+const INFO = '#009df2';
+const SUCCESS = '#57bf00';
+const INFO_BG = 'rgba(0, 157, 242, 0.15)';
+const INFO_BORDER = 'rgba(0, 157, 242, 0.3)';
+const SUCCESS_BG = 'rgba(87, 191, 0, 0.15)';
+const SUCCESS_BORDER = 'rgba(87, 191, 0, 0.3)';
+const DANGER = '#FF453A';
+const DANGER_BG = 'rgba(255, 69, 58, 0.12)';
+const DANGER_BORDER = 'rgba(255, 69, 58, 0.35)';
+const WARN = '#FACC15';
+const WARN_BG = 'rgba(250, 204, 21, 0.12)';
+const WARN_BORDER = 'rgba(250, 204, 21, 0.35)';
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000';
@@ -196,6 +242,20 @@ function money(v: string | number): string {
   return Math.round(n).toLocaleString('es-CO');
 }
 
+/** Color a future date by how close it is to lapsing (web DocsVacunas parity). */
+function docBadge(fecha?: string | null): {
+  label: string;
+  color?: string;
+  bg?: string;
+  border?: string;
+} {
+  if (!fecha) return { label: 'Sin registrar' };
+  const dias = Math.ceil((new Date(fecha).getTime() - Date.now()) / 86400000);
+  if (dias < 0) return { label: 'Vencido', color: DANGER, bg: DANGER_BG, border: DANGER_BORDER };
+  if (dias <= 30) return { label: `Vence en ${dias}d`, color: WARN, bg: WARN_BG, border: WARN_BORDER };
+  return { label: 'Vigente', color: SUCCESS, bg: SUCCESS_BG, border: SUCCESS_BORDER };
+}
+
 // ---------------------------------------------------------------------------
 
 export default function Perfil() {
@@ -240,9 +300,16 @@ export default function Perfil() {
   const [tramites, setTramites] = useState<Tramite[]>([]);
   const [activeReservas, setActiveReservas] = useState<ReservaActiva[]>([]);
   const [activePaquetes, setActivePaquetes] = useState<PaqueteActivo[]>([]);
+  const [visitasHistorial, setVisitasHistorial] = useState<VisitaDto[]>([]);
+  const [correspondenciaPendiente, setCorrespondenciaPendiente] = useState<
+    CorrespondenciaDto[]
+  >([]);
 
   const [viewMode, setViewMode] = useState<ViewMode>('profile');
   const [financialTab, setFinancialTab] = useState<'pendientes' | 'historial'>(
+    'pendientes',
+  );
+  const [visitasTab, setVisitasTab] = useState<'pendientes' | 'historial'>(
     'pendientes',
   );
   const [financialData, setFinancialData] = useState<{
@@ -256,6 +323,17 @@ export default function Perfil() {
   const [showMenu, setShowMenu] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editForm, setEditForm] = useState<UserData>(userData);
+
+  // Reserva access QR modal (rendered locally; payload = reserva id)
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrReservaId, setQrReservaId] = useState('');
+  const [qrReservaNombre, setQrReservaNombre] = useState('');
+
+  // DocsVacunas (web src/components/docs/DocsVacunas.tsx parity)
+  const [vacunas, setVacunas] = useState<Record<string, Vacuna[]>>({});
+  const [nuevaVacuna, setNuevaVacuna] = useState<
+    Record<string, { vacuna: string; proxima: string }>
+  >({});
 
   // Registration / Tramite modal
   const [showRegModal, setShowRegModal] = useState(false);
@@ -317,6 +395,54 @@ export default function Perfil() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalParam]);
 
+  // -- shared profile mapper (initial load + WS-driven refetches) -----------
+  const applyProfileData = useCallback(
+    (u: ProfileFetch) => {
+      const mapped: UserData = {
+        name: u.nombre || user?.nombre || userData.name,
+        apto: u.unidad?.numero || u.apto || 'S/N',
+        torre: u.unidad?.torre || u.torre || 'S/T',
+        phone: u.telefono || '',
+        gender: u.genero || 'neutro',
+        email: u.email || user?.email || '',
+        bio: u.bio || userData.bio,
+        numeroInterno: u.numeroInterno || '',
+      };
+      setUserData(mapped);
+      setEditForm(mapped);
+      setVehiculos(u.vehiculos || []);
+      setMascotas(u.mascotas || []);
+      setTramites(u.tramitesSolicitados || []);
+      if (u.avatar) setProfilePic(u.avatar);
+      // DocsVacunas: hydrate the vaccine list per pet (same GET as the web comp).
+      for (const m of u.mascotas || []) {
+        const mascotaId = m.id;
+        if (!mascotaId) continue;
+        api
+          .get<Vacuna[]>(`/mascotas/${mascotaId}/vacunas`)
+          .then((vs) => setVacunas((prev) => ({ ...prev, [mascotaId]: vs })))
+          .catch(() => {});
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user?.nombre, user?.email],
+  );
+
+  const refetchProfile = useCallback(async () => {
+    const u = await api
+      .get<ProfileFetch>('/usuarios/me/profile')
+      .catch(() => null);
+    if (u) applyProfileData(u);
+  }, [applyProfileData]);
+
+  // WS: tramite approvals / vehicle changes invalidate the profile's asset lists.
+  useWsSubscription('tramite', () => {
+    void refetchProfile();
+  });
+  useWsSubscription('vehiculo', () => {
+    void refetchProfile();
+  });
+
   // -- main data fetch (single consolidated effect; collapses the duplicate
   //    GET /paquetes/mios that the web page issued twice) --------------------
   useEffect(() => {
@@ -324,7 +450,7 @@ export default function Perfil() {
     let cancelled = false;
 
     (async () => {
-      const [profileData, financeData, reservasData, paquetesData] =
+      const [profileData, financeData, reservasData, paquetesData, comunicacionesData] =
         await Promise.all([
           api.get<ProfileFetch>('/usuarios/me/profile').catch(() => null),
           api.get<PagosResponse>('/pagos').catch(() => null),
@@ -332,28 +458,22 @@ export default function Perfil() {
             .get<ReservaDto[]>('/reservas?filter=future')
             .catch(() => null),
           api.get<PaqueteActivo[]>('/paquetes/mios').catch(() => null),
+          api
+            .get<ComunicacionesResidenteFetch>('/comunicaciones')
+            .catch(() => null),
         ]);
 
       if (cancelled) return;
 
-      if (profileData) {
-        const u = profileData;
-        const mapped: UserData = {
-          name: u.nombre || user.nombre || userData.name,
-          apto: u.unidad?.numero || u.apto || 'S/N',
-          torre: u.unidad?.torre || u.torre || 'S/T',
-          phone: u.telefono || '',
-          gender: u.genero || 'neutro',
-          email: u.email || user.email || '',
-          bio: u.bio || userData.bio,
-          numeroInterno: u.numeroInterno || '',
-        };
-        setUserData(mapped);
-        setEditForm(mapped);
-        setVehiculos(u.vehiculos || []);
-        setMascotas(u.mascotas || []);
-        setTramites(u.tramitesSolicitados || []);
-        if (u.avatar) setProfilePic(u.avatar);
+      if (profileData) applyProfileData(profileData);
+
+      if (comunicacionesData) {
+        setVisitasHistorial(comunicacionesData.visitas || []);
+        setCorrespondenciaPendiente(
+          (comunicacionesData.correspondencia || []).filter(
+            (c) => c.estado === 'EN_PORTERIA',
+          ),
+        );
       }
 
       if (financeData) {
@@ -366,6 +486,7 @@ export default function Perfil() {
       if (reservasData) {
         setActiveReservas(
           reservasData.map((r) => ({
+            id: r.id,
             estado: r.estado,
             fechaInicio: r.fechaInicio,
             fechaFin: r.fechaFin,
@@ -510,9 +631,18 @@ export default function Perfil() {
     for (const asset of res.assets) {
       // backend `deny_unknown_fields` requires the real mimeType.
       const mimeType = asset.mimeType || 'application/pdf';
-      const b64 = asset.base64
-        ? `data:${mimeType};base64,${asset.base64}`
-        : asset.uri;
+      // expo-document-picker's `base64` field is web-only; on iOS/Android read
+      // the file content via expo-file-system (same pattern as chat.tsx).
+      // Never fall back to asset.uri: a local file:// path stored as the
+      // trámite document would be unreadable for the approving admin.
+      let raw: string;
+      try {
+        raw = asset.base64 ?? (await new File(asset.uri).base64());
+      } catch {
+        toast.error('No se pudo procesar el documento');
+        continue;
+      }
+      const b64 = `data:${mimeType};base64,${raw}`;
       setRegDocs((prev) => [
         ...prev,
         { nombre: asset.name, base64: b64, mimeType },
@@ -629,9 +759,89 @@ export default function Perfil() {
     [],
   );
 
-  const userRole = user?.rol || 'RESIDENTE';
+  // -- DocsVacunas handlers (web DocsVacunas.tsx parity; same payload shapes) -
+  const setVehiculoCampo = useCallback(
+    (id: string, campo: 'soatVence' | 'tecnomecanicaVence', valor: string) => {
+      setVehiculos((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, [campo]: valor || null } : v)),
+      );
+    },
+    [],
+  );
 
-  const statusIcons: {
+  const guardarDocs = useCallback(
+    async (id: string) => {
+      const veh = vehiculos.find((v) => v.id === id);
+      if (!veh) return;
+      const soat = (veh.soatVence || '').trim();
+      const tecno = (veh.tecnomecanicaVence || '').trim();
+      if ((soat && !DATE_RE.test(soat)) || (tecno && !DATE_RE.test(tecno))) {
+        toast.error('Formato de fecha: AAAA-MM-DD');
+        return;
+      }
+      try {
+        // Same body the web component PUTs (dates only, no files).
+        await api.put(`/vehiculos/${id}/documentos`, {
+          soatVence: soat || undefined,
+          tecnomecanicaVence: tecno || undefined,
+        });
+        toast.success('Documentos actualizados');
+      } catch {
+        toast.error('No se pudo guardar');
+      }
+    },
+    [vehiculos],
+  );
+
+  const agregarVacuna = useCallback(
+    async (mascotaId: string) => {
+      const form = nuevaVacuna[mascotaId];
+      if (!form?.vacuna?.trim()) {
+        toast.error('Nombre de la vacuna');
+        return;
+      }
+      const proxima = (form.proxima || '').trim();
+      if (proxima && !DATE_RE.test(proxima)) {
+        toast.error('Formato de fecha: AAAA-MM-DD');
+        return;
+      }
+      try {
+        const v = await api.post<Vacuna>(`/mascotas/${mascotaId}/vacunas`, {
+          vacuna: form.vacuna.trim(),
+          proxima: proxima || undefined,
+        });
+        setVacunas((prev) => ({
+          ...prev,
+          [mascotaId]: [...(prev[mascotaId] ?? []), v],
+        }));
+        setNuevaVacuna((prev) => ({
+          ...prev,
+          [mascotaId]: { vacuna: '', proxima: '' },
+        }));
+        toast.success('Vacuna registrada');
+      } catch {
+        toast.error('No se pudo registrar');
+      }
+    },
+    [nuevaVacuna],
+  );
+
+  const eliminarVacuna = useCallback(async (mascotaId: string, id: string) => {
+    try {
+      await api.delete(`/vacunas/${id}`);
+      setVacunas((prev) => ({
+        ...prev,
+        [mascotaId]: (prev[mascotaId] ?? []).filter((v) => v.id !== id),
+      }));
+    } catch {
+      toast.error('No se pudo eliminar');
+    }
+  }, []);
+
+  const userRole = user?.rol || 'RESIDENTE';
+  const isGuest = user?.rol === 'HUESPED_TEMPORAL';
+
+  const allStatusIcons: {
     label: string;
     val: string;
     view: ViewMode;
@@ -670,12 +880,33 @@ export default function Perfil() {
       icon: <Calendar size={12} color={C.text} />,
     },
     {
+      label: 'Visitas',
+      val: String(
+        visitasHistorial.filter((v) => v.estado === 'PENDIENTE').length,
+      ),
+      view: 'visitas',
+      icon: <UserIcon size={12} color={C.text} />,
+    },
+    {
       label: 'Paquetes',
       val: String(activePaquetes.length),
       view: 'paquetes',
       icon: <Package size={12} color={C.text} />,
     },
+    {
+      label: 'Corresp.',
+      val: String(correspondenciaPendiente.length),
+      view: 'correspondencia',
+      icon: <Mail size={12} color={C.text} />,
+    },
   ];
+
+  // HUESPED_TEMPORAL only sees Reservas + Paquetes (web parity).
+  const statusIcons = isGuest
+    ? allStatusIcons.filter(
+        (s) => s.view === 'reservas' || s.view === 'paquetes',
+      )
+    : allStatusIcons;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -818,16 +1049,15 @@ export default function Perfil() {
           ) : null}
         </View>
 
-        {/* 6-button status grid */}
+        {/* status grid (8 buttons; HUESPED_TEMPORAL sees only Reservas+Paquetes) */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 40 }}>
           {statusIcons.map((stat) => {
-            const wide = stat.label === 'Reservas' || stat.label === 'Paquetes';
             return (
               <Pressable
                 key={stat.label}
                 onPress={() => setViewMode(stat.view)}
                 style={({ pressed }) => ({
-                  width: wide ? '32%' : '23%',
+                  width: isGuest ? '48%' : '23%',
                   marginBottom: 10,
                   alignItems: 'center',
                   gap: 8,
@@ -923,9 +1153,29 @@ export default function Perfil() {
                         </View>
                         <Text style={{ fontSize: 14, fontWeight: '700', color: C.text, textTransform: 'capitalize' }}>{fmtDateShort(res.fechaInicio)}</Text>
                       </View>
-                      <Text style={{ fontSize: 10, color: C.text, fontVariant: ['tabular-nums'] }}>
-                        {fmtTime(res.fechaInicio)} • {fmtTime(res.fechaFin)}
-                      </Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 10, color: C.text, fontVariant: ['tabular-nums'] }}>
+                          {fmtTime(res.fechaInicio)} • {fmtTime(res.fechaFin)}
+                        </Text>
+                        <Pressable
+                          onPress={() => {
+                            setQrReservaId(res.id);
+                            setQrReservaNombre(res.area?.nombre || 'Área');
+                            setShowQrModal(true);
+                          }}
+                          style={({ pressed }) => ({
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            backgroundColor: INFO_BG,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: pressed ? 0.7 : 1,
+                          })}
+                        >
+                          <QrCode size={14} color={INFO} />
+                        </Pressable>
+                      </View>
                     </View>
                   </View>
                 ))
@@ -998,6 +1248,123 @@ export default function Perfil() {
                   </View>
                 ))
               )}
+            </View>
+          ) : null}
+
+          {/* DocsVacunas (web parity: shown under both pets and vehicles views) */}
+          {viewMode === 'pets' || viewMode === 'vehicles' ? (
+            <View style={{ gap: 16, marginTop: 8 }}>
+              {vehiculos.some((v) => v.id) ? (
+                <View style={{ gap: 12, marginTop: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}>
+                    <Car size={14} color={C.muted} />
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                      Documentos de vehículos
+                    </Text>
+                  </View>
+                  {vehiculos.filter((v) => v.id).map((v) => (
+                    <View key={v.id} style={{ borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.border, backgroundColor: C.faint, gap: 12 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: C.text, letterSpacing: 2, textTransform: 'uppercase', fontVariant: ['tabular-nums'] }}>
+                        {v.placa}
+                      </Text>
+                      {(
+                        [
+                          ['soatVence', 'SOAT'],
+                          ['tecnomecanicaVence', 'Tecnomecánica'],
+                        ] as const
+                      ).map(([campo, label]) => {
+                        const b = docBadge(v[campo]);
+                        return (
+                          <View key={campo} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={{ width: 88, fontSize: 11, color: C.muted }}>{label}</Text>
+                            <TextInput
+                              value={v[campo] ?? ''}
+                              onChangeText={(t) => setVehiculoCampo(v.id!, campo, t)}
+                              onEndEditing={() => void guardarDocs(v.id!)}
+                              placeholder="AAAA-MM-DD"
+                              placeholderTextColor={C.muted}
+                              autoCapitalize="none"
+                              style={{ flex: 1, backgroundColor: C.faint, borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, fontSize: 12, color: C.text }}
+                            />
+                            <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: b.border ?? C.border, backgroundColor: b.bg ?? C.faint }}>
+                              <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', color: b.color ?? C.muted }}>{b.label}</Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+
+              {mascotas.some((m) => m.id) ? (
+                <View style={{ gap: 12, marginTop: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}>
+                    <PawPrint size={14} color={C.muted} />
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                      Vacunas de mascotas
+                    </Text>
+                  </View>
+                  {mascotas.filter((m) => m.id).map((m) => (
+                    <View key={m.id} style={{ borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.border, backgroundColor: C.faint, gap: 8 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: C.text }}>{m.nombre}</Text>
+                      {(vacunas[m.id!] ?? []).map((vac) => {
+                        const b = docBadge(vac.proxima);
+                        return (
+                          <View key={vac.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={{ flex: 1, fontSize: 12, color: C.text }}>
+                              {vac.vacuna}
+                              {vac.proxima ? ` · refuerzo ${vac.proxima}` : ''}
+                            </Text>
+                            <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: b.border ?? C.border, backgroundColor: b.bg ?? C.faint }}>
+                              <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', color: b.color ?? C.muted }}>{b.label}</Text>
+                            </View>
+                            <Pressable
+                              onPress={() => void eliminarVacuna(m.id!, vac.id)}
+                              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 4 })}
+                            >
+                              <Trash2 size={13} color={C.muted} />
+                            </Pressable>
+                          </View>
+                        );
+                      })}
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                        <TextInput
+                          value={nuevaVacuna[m.id!]?.vacuna ?? ''}
+                          onChangeText={(t) =>
+                            setNuevaVacuna((p) => ({
+                              ...p,
+                              [m.id!]: { ...(p[m.id!] ?? { vacuna: '', proxima: '' }), vacuna: t },
+                            }))
+                          }
+                          placeholder="Vacuna"
+                          placeholderTextColor={C.muted}
+                          style={{ flex: 1, backgroundColor: C.faint, borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, fontSize: 12, color: C.text }}
+                        />
+                        <TextInput
+                          value={nuevaVacuna[m.id!]?.proxima ?? ''}
+                          onChangeText={(t) =>
+                            setNuevaVacuna((p) => ({
+                              ...p,
+                              [m.id!]: { ...(p[m.id!] ?? { vacuna: '', proxima: '' }), proxima: t },
+                            }))
+                          }
+                          placeholder="AAAA-MM-DD"
+                          placeholderTextColor={C.muted}
+                          autoCapitalize="none"
+                          style={{ width: 110, backgroundColor: C.faint, borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 8, fontSize: 12, color: C.text }}
+                        />
+                        <Pressable
+                          onPress={() => void agregarVacuna(m.id!)}
+                          style={({ pressed }) => ({ paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}
+                        >
+                          <Plus size={14} color={C.onAccent} />
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
             </View>
           ) : null}
 
@@ -1195,6 +1562,145 @@ export default function Perfil() {
                 <Info size={16} color={C.text} />
                 <Text style={{ flex: 1, fontSize: 10, color: C.text, textTransform: 'uppercase', fontStyle: 'italic' }}>
                   Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {viewMode === 'visitas' ? (
+            <View style={{ gap: 16 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>Visitas</Text>
+                  <UserIcon size={18} color={INFO} />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8, padding: 4, borderRadius: 999, borderWidth: 1, borderColor: C.border, backgroundColor: C.faint }}>
+                  {(['pendientes', 'historial'] as const).map((tab) => (
+                    <Pressable key={tab} onPress={() => setVisitasTab(tab)} style={{ paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999, backgroundColor: visitasTab === tab ? C.accent : 'transparent' }}>
+                      <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, color: visitasTab === tab ? C.onAccent : C.text }}>{tab}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {(() => {
+                const filtered =
+                  visitasTab === 'pendientes'
+                    ? visitasHistorial.filter((v) => v.estado === 'PENDIENTE')
+                    : visitasHistorial.filter((v) => v.estado !== 'PENDIENTE');
+
+                if (filtered.length === 0) {
+                  return (
+                    <EmptyState
+                      icon={<UserIcon size={40} color={C.text} />}
+                      text={
+                        visitasTab === 'pendientes'
+                          ? 'No hay visitas pendientes de aprobación.'
+                          : 'No hay visitas en el historial.'
+                      }
+                      C={C}
+                    />
+                  );
+                }
+
+                return filtered.map((v) => {
+                  const estadoTint =
+                    v.estado === 'PENDIENTE'
+                      ? { color: INFO, bg: INFO_BG, border: INFO_BORDER }
+                      : v.estado === 'APROBADA'
+                        ? { color: SUCCESS, bg: SUCCESS_BG, border: SUCCESS_BORDER }
+                        : v.estado === 'RECHAZADA'
+                          ? { color: DANGER, bg: DANGER_BG, border: DANGER_BORDER }
+                          : { color: C.text, bg: C.faint, border: C.border };
+                  return (
+                    <View key={v.id} style={{ borderRadius: 28, borderWidth: 1, borderColor: C.border, backgroundColor: C.faint, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                      <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: estadoTint.bg, borderWidth: 1, borderColor: estadoTint.border }}>
+                        <UserIcon size={22} color={estadoTint.color} />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
+                          <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: C.text }} numberOfLines={1}>{v.nombre}</Text>
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: estadoTint.bg, borderWidth: 1, borderColor: estadoTint.border }}>
+                            <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', color: estadoTint.color }}>{v.estado}</Text>
+                          </View>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                          {v.documento ? (
+                            <Text style={{ fontSize: 10, color: C.muted, fontVariant: ['tabular-nums'] }}>{v.documento}</Text>
+                          ) : null}
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: C.faint, borderWidth: 1, borderColor: C.border }}>
+                            <Text style={{ fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, color: C.text }}>{v.tipo}</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Clock size={10} color={C.muted} />
+                            <Text style={{ fontSize: 10, color: C.muted }}>{fmtArrived(v.fecha)}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                });
+              })()}
+            </View>
+          ) : null}
+
+          {viewMode === 'correspondencia' ? (
+            <View style={{ gap: 16 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>Correspondencia</Text>
+                  <Mail size={18} color={INFO} />
+                </View>
+                <View style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)' }}>
+                  <Text style={{ fontSize: 10, fontWeight: '900', color: C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                    {correspondenciaPendiente.length} en portería
+                  </Text>
+                </View>
+              </View>
+
+              {correspondenciaPendiente.length === 0 ? (
+                <EmptyState icon={<Mail size={40} color={C.text} />} text="No tienes correspondencia pendiente en portería." C={C} />
+              ) : (
+                correspondenciaPendiente.map((corr) => {
+                  const tipoLabel: Record<string, string> = {
+                    CARTA: 'Carta',
+                    DOCUMENTO: 'Documento',
+                    REVISTA: 'Revista',
+                    ENERGIA: 'Recibo Energía',
+                    AGUA: 'Recibo Agua',
+                    GAS: 'Recibo Gas',
+                    OTRO: 'Otro',
+                  };
+                  const esRecibo = ['ENERGIA', 'AGUA', 'GAS'].includes(corr.tipo);
+                  return (
+                    <View key={corr.id} style={{ borderRadius: 28, borderWidth: 1, borderColor: esRecibo ? INFO_BORDER : C.border, backgroundColor: esRecibo ? 'rgba(0, 157, 242, 0.05)' : C.faint, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                      <View style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: esRecibo ? INFO_BG : (isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)') }}>
+                        <Mail size={24} color={esRecibo ? INFO : C.text} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '900', color: esRecibo ? INFO : C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                            {tipoLabel[corr.tipo] || corr.tipo}
+                          </Text>
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)' }}>
+                            <Text style={{ fontSize: 8, fontWeight: '900', color: C.text, textTransform: 'uppercase' }} numberOfLines={1}>{corr.remitente}</Text>
+                          </View>
+                        </View>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 4 }}>{corr.descripcion || 'Sin descripción'}</Text>
+                        <Text style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase' }}>Recibido: {fmtArrived(corr.fechaLlegada)}</Text>
+                      </View>
+                      <View style={{ alignItems: 'center', gap: 4 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: esRecibo ? INFO : (isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)') }} />
+                        <Text style={{ fontSize: 8, fontWeight: '900', color: C.text, textTransform: 'uppercase' }}>Portería</Text>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+              <View style={{ marginTop: 16, padding: 16, borderRadius: 24, backgroundColor: C.faint, borderWidth: 1, borderColor: C.border, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                <Info size={16} color={C.text} />
+                <Text style={{ flex: 1, fontSize: 10, color: C.text, textTransform: 'uppercase', fontStyle: 'italic' }}>
+                  Presenta tu identificación en la portería para reclamar tu correspondencia.
                 </Text>
               </View>
             </View>
@@ -1420,6 +1926,30 @@ export default function Perfil() {
             </ScrollView>
           </View>
         </View>
+      </Modal>
+
+      {/* ---- QR MODAL — Código de acceso a la reserva (rendered locally) ---- */}
+      <Modal visible={showQrModal} transparent animationType="fade" onRequestClose={() => setShowQrModal(false)}>
+        <Pressable
+          onPress={() => setShowQrModal(false)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 384, backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, borderRadius: 32, padding: 24, alignItems: 'center', gap: 16 }}>
+            <Pressable onPress={() => setShowQrModal(false)} style={{ alignSelf: 'flex-end' }}>
+              <X size={20} color={C.muted} />
+            </Pressable>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>QR de Reserva</Text>
+            <Text style={{ fontSize: 12, color: C.muted, marginTop: -12 }}>{qrReservaNombre}</Text>
+            <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16 }}>
+              {qrReservaId ? (
+                <QRCode value={qrReservaId} size={250} backgroundColor="#FFFFFF" color="#000000" />
+              ) : null}
+            </View>
+            <Text style={{ fontSize: 10, color: C.muted, textAlign: 'center' }}>
+              Muestra este código al administrador del área para verificar tu reserva.
+            </Text>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* ---- PSE PROCESSING OVERLAY (stub; dead while payments are OFF) ---- */}

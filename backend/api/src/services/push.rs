@@ -131,6 +131,19 @@ pub struct NativePushTokenInfo {
     pub token: String,
 }
 
+/// Expo ticket error code meaning the device token is permanently dead
+/// (app uninstalled, token rotated). Callers that hold a DB connection should
+/// delete the token row when [`is_device_not_registered`] matches.
+pub const DEVICE_NOT_REGISTERED: &str = "DeviceNotRegistered";
+
+/// True when a native-push send error indicates the device token is dead and
+/// must be purged. The Expo sender embeds the ticket error code in its error
+/// message (see the ticket-status match in `ExpoPushSender::send`), so a
+/// substring check is reliable here.
+pub fn is_device_not_registered(err: &anyhow::Error) -> bool {
+    format!("{err:#}").contains(DEVICE_NOT_REGISTERED)
+}
+
 /// Structured push content, transport-agnostic. The web-push path serializes
 /// this to the historical `{title, body, data}` JSON; the native path maps it
 /// onto the Expo Push message shape. Keeps the data contract identical.
@@ -244,7 +257,10 @@ impl NativePushSender for ExpoPushSender {
 
             // Expo returns {"data": {"status": "ok"|"error", ...}}. An HTTP 200
             // with a per-ticket error (e.g. DeviceNotRegistered) is still a
-            // non-delivery — treat it as an error so it isn't counted.
+            // non-delivery — treat it as an error so it isn't counted. The
+            // ticket error code (details.error) is surfaced in the message so
+            // callers can detect DEVICE_NOT_REGISTERED and delete the dead
+            // token row (they own the DB connection; this transport does not).
             let ticket_status = payload
                 .get("data")
                 .and_then(|d| d.get("status"))
@@ -252,7 +268,17 @@ impl NativePushSender for ExpoPushSender {
             match ticket_status {
                 Some("ok") => Ok(()),
                 Some(other) => {
-                    bail!("expo push ticket status '{other}': {payload}")
+                    let code = payload
+                        .get("data")
+                        .and_then(|d| d.get("details"))
+                        .and_then(|d| d.get("error"))
+                        .and_then(|e| e.as_str())
+                        .unwrap_or("");
+                    // Deliberately do NOT include the raw payload: Expo ticket
+                    // error messages echo the ExponentPushToken[...] value,
+                    // which would otherwise end up in server logs via the
+                    // callers' `error = ?e` warn logging.
+                    bail!("expo push ticket status '{other}' [{code}]")
                 }
                 None => {
                     // Unexpected shape; be conservative and treat as failure.

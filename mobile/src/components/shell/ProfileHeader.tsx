@@ -213,7 +213,6 @@ export function ProfileHeader() {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        zIndex: 50,
       }}
     >
       {/* Avatar + gendered greeting */}

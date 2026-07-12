@@ -6,6 +6,7 @@ use diesel_async::AsyncConnection;
 use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
+use crate::db::enums::Rol;
 use crate::domains::pagos::dto::{PagarRequest, PagoDto, PagosResponse, ReciboDto};
 use crate::domains::pagos::repo;
 use crate::error::{ApiError, ApiResult};
@@ -17,6 +18,18 @@ pub fn router() -> Router<AppState> {
         .route("/pagos", get(listar_pagos))
         .route("/pagos/{id}/pagar", put(pagar))
         .route("/pagos/{id}/estado", get(estado_pago))
+}
+
+/// Deny-list gate (not an allowlist: every resident-shaped role may pay).
+/// A HUESPED_TEMPORAL account is created WITH the host's `unidad_id`
+/// (pases_temporales), and every handler here scopes by that unidad — without
+/// this check a temporary guest could read the host unit's full debt/recibos
+/// and drive the pagar flow.
+fn deny_huesped(user: &AuthUser) -> ApiResult<()> {
+    if user.rol == Rol::HuespedTemporal {
+        return Err(ApiError::Forbidden);
+    }
+    Ok(())
 }
 
 #[utoipa::path(
@@ -32,6 +45,7 @@ pub async fn listar_pagos(
     State(state): State<AppState>,
     user: AuthUser,
 ) -> ApiResult<Json<PagosResponse>> {
+    deny_huesped(&user)?;
     let mut conn = state.pool.get().await?;
     let Some(unidad_id) = repo::unidad_de_usuario(&mut conn, user.conjunto_id, user.id).await?
     else {
@@ -65,6 +79,7 @@ pub async fn pagar(
     Path(id): Path<Uuid>,
     Json(req): Json<PagarRequest>,
 ) -> ApiResult<Json<PagoDto>> {
+    deny_huesped(&user)?;
     let mut conn = state.pool.get().await?;
     let gateway = state.payment_gateway.clone();
     // Charge atomically: take a FOR UPDATE lock on the pago, re-check it is still
@@ -139,6 +154,7 @@ pub async fn estado_pago(
     user: AuthUser,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<PagoDto>> {
+    deny_huesped(&user)?;
     let mut conn = state.pool.get().await?;
     let pago = repo::pago_por_id(&mut conn, user.conjunto_id, user.id, id)
         .await?

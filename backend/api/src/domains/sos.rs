@@ -19,9 +19,9 @@ use uuid::Uuid;
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
 use crate::db::enums::{EstadoSos, Rol, TipoSos};
-use crate::db::schema::{push_subscriptions, sos_alertas, usuarios};
+use crate::db::schema::{sos_alertas, usuarios};
 use crate::error::{ApiError, ApiResult};
-use crate::services::push::PushSubscriptionInfo;
+use crate::services::push::PushMessage;
 use crate::services::ws_hub::{ws_events, WsEvent};
 use crate::state::AppState;
 
@@ -456,7 +456,8 @@ async fn cancelar(
     Ok(Json(dto))
 }
 
-/// Best-effort web push to every registered device of an on-shift security user.
+/// Best-effort push (web VAPID + native Expo, same dual fan-out as citofonia)
+/// to every registered device of an on-shift security user.
 async fn notificar_seguridad(
     conn: &mut crate::db::DbConn,
     state: &AppState,
@@ -464,21 +465,16 @@ async fn notificar_seguridad(
     dto: &SosDto,
 ) {
     let roles = [Rol::Vigilante.as_str(), Rol::SupervisorVigilancia.as_str()];
-    let subs: Vec<(String, String, String)> = match push_subscriptions::table
-        .inner_join(usuarios::table.on(usuarios::id.eq(push_subscriptions::usuario_id)))
-        .filter(push_subscriptions::conjunto_id.eq(conjunto_id))
+    let user_ids: Vec<Uuid> = match usuarios::table
+        .filter(usuarios::conjunto_id.eq(conjunto_id))
         .filter(usuarios::rol.eq_any(roles))
-        .select((
-            push_subscriptions::endpoint,
-            push_subscriptions::p256dh,
-            push_subscriptions::auth,
-        ))
+        .select(usuarios::id)
         .load(conn)
         .await
     {
-        Ok(s) => s,
+        Ok(ids) => ids,
         Err(e) => {
-            tracing::warn!("sos: cargando suscripciones de seguridad: {e}");
+            tracing::warn!("sos: cargando usuarios de seguridad: {e}");
             return;
         }
     };
@@ -499,21 +495,21 @@ async fn notificar_seguridad(
             .trim()
             .to_string()
     };
-    let payload = serde_json::json!({
-        "title": format!("🚨 SOS — {}", dto.tipo.as_str()),
-        "body": body,
-        "data": { "url": "/vigilancia", "sosId": dto.id },
-    });
-    let bytes = serde_json::to_vec(&payload).unwrap_or_default();
-    for (endpoint, p256dh, auth) in subs {
-        let info = PushSubscriptionInfo {
-            endpoint: endpoint.clone(),
-            p256dh,
-            auth,
-        };
-        if let Err(e) = state.push_sender.send(&info, &bytes).await {
-            tracing::warn!(endpoint = %endpoint, error = ?e, "sos push failed");
-        }
+    let message = PushMessage {
+        title: format!("🚨 SOS — {}", dto.tipo.as_str()),
+        body,
+        data: serde_json::json!({ "url": "/vigilancia", "sosId": dto.id }),
+    };
+    if let Err(e) = crate::domains::notificaciones::repo::send_push_to_users(
+        conn,
+        state,
+        conjunto_id,
+        &user_ids,
+        &message,
+    )
+    .await
+    {
+        tracing::warn!(error = ?e, "sos push fan-out failed");
     }
 }
 

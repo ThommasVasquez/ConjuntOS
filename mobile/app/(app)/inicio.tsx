@@ -15,10 +15,11 @@
  *   isQuestion heuristic + local MODULES/SUGGESTIONS filtering.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -27,12 +28,14 @@ import {
 } from 'react-native';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useColorScheme } from 'nativewind';
 import {
   AlertCircle,
   ArrowRight,
+  BarChart3,
   Bell,
   Building2,
   Calendar,
@@ -40,6 +43,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Clock,
   CreditCard,
   DollarSign,
   FlaskConical,
@@ -47,6 +51,7 @@ import {
   Megaphone,
   MessageSquare,
   Package,
+  Scale,
   Search,
   ShieldAlert,
   ShoppingBag,
@@ -62,9 +67,11 @@ import { Sheet } from '@/components/ui/Sheet';
 import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
-import { api } from '@/lib/api/client';
+import { api, ApiError } from '@/lib/api/client';
 import { getNotifTarget } from '@/lib/notif-routing';
+import { safeHttpUrl } from '@/lib/safe-url';
 import type {
+  AdSpaceFeedDto,
   AnuncioDto,
   NotificacionDto,
   PagoDto,
@@ -72,6 +79,7 @@ import type {
   ProfileResponse,
   ReciboDto,
   Rol,
+  VisitaDto,
 } from '@/lib/api/types';
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -120,15 +128,48 @@ function numFrom(v: number | string | null | undefined): number {
   return Number.isNaN(n) ? 0 : n;
 }
 
-const COLORS = {
+// Mutable colors object — updated by useThemeColors() inside each top-level
+// component. Sub-components read from this module-level ref so they don't all
+// need the useColorScheme hook threaded through props.
+const COLORS: {
+  text: string;
+  muted: string;
+  blue: string;
+  green: string;
+  red: string;
+  yellow: string;
+  amber: string;
+  amberLight: string;
+  border: string;
+  bg: string;
+  surface: string;
+  surface2: string;
+} = {
   text: '#FFFFFF',
   muted: 'rgba(255,255,255,0.6)',
   blue: '#009df2',
   green: '#57bf00',
   red: '#EF4444',
   yellow: '#FACC15',
+  amber: '#F59E0B',
+  amberLight: '#FBBF24',
   border: 'rgba(255,255,255,0.14)',
+  bg: '#000000',
+  surface: 'rgba(255,255,255,0.045)',
+  surface2: 'rgba(255,255,255,0.07)',
 };
+
+/** Call at the top of each role component to sync COLORS with the current scheme. */
+function useThemeColors() {
+  const { colorScheme } = useColorScheme();
+  const isLight = colorScheme === 'light';
+  COLORS.text = isLight ? '#000000' : '#FFFFFF';
+  COLORS.muted = isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)';
+  COLORS.border = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.14)';
+  COLORS.bg = isLight ? '#FFFFFF' : '#000000';
+  COLORS.surface = isLight ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.045)';
+  COLORS.surface2 = isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.07)';
+}
 
 // ───────────────────────────────────────────────────────────────────────────
 // Role router
@@ -141,6 +182,10 @@ export default function InicioDashboard() {
   if (role === 'ENCARGADO_PARQUEADERO') return <HomeEstacionamiento />;
   if (role === 'CONCEJO') return <HomeConsejo />;
   if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN') return <HomeAdmin />;
+  // Guest containment (mirrors web inicio's hard replace to /mi-estancia): a
+  // HUESPED_TEMPORAL who reaches inicio via deep link / notif routing must
+  // never see the resident dashboard (deuda hero, anuncios, approvals).
+  if (role === 'HUESPED_TEMPORAL') return <Redirect href="/(app)/mi-estancia" />;
 
   return <HomeResidente />;
 }
@@ -155,15 +200,31 @@ const CATEGORIES: { title: string; icon: ReactNode; path: string }[] = [
   { title: 'Parqueo', icon: <Car size={20} color={COLORS.green} />, path: '/parqueadero' },
   { title: 'Reservas', icon: <Calendar size={20} color={COLORS.green} />, path: '/reservas' },
   { title: 'Cartelera', icon: <Megaphone size={20} color={COLORS.green} />, path: '/cartelera' },
+  { title: 'Encuestas', icon: <BarChart3 size={20} color={COLORS.green} />, path: '/encuestas' },
+  { title: 'Asistente', icon: <Scale size={20} color={COLORS.green} />, path: '/asistente' },
   { title: 'PQRS', icon: <MessageSquare size={20} color={COLORS.green} />, path: '/pqrs' },
   { title: 'Inmuebles', icon: <Building2 size={20} color={COLORS.green} />, path: '/inmobiliaria' },
   { title: 'Clasificados', icon: <ShoppingBag size={20} color={COLORS.green} />, path: '/clasificados' },
 ];
 
+// Web renders the full static tile grid for every role that reaches the
+// resident dashboard (only the nav bar is role-gated): an ARRENDATARIO keeps
+// the Inmuebles tile and lands on that screen's lock view. HUESPED_TEMPORAL
+// never reaches this dashboard (redirected to /mi-estancia above), so no
+// per-role tile filtering is needed.
+
+/** FEED_TOP → FEED_MID → FEED_BOTTOM ordering for interleaved feed ads. */
+const AD_POSITION_ORDER: Record<string, number> = {
+  FEED_TOP: 0,
+  FEED_MID: 1,
+  FEED_BOTTOM: 2,
+};
+
 function HomeResidente() {
   const router = useRouter();
   const user = useAuth((s) => s.user);
   const insets = useSafeAreaInsets();
+  useThemeColors();
 
   const [notificaciones, setNotificaciones] = useState<NotificacionDto[]>([]);
   const [selectedFeedItem, setSelectedFeedItem] = useState<AnuncioDto | null>(null);
@@ -175,12 +236,16 @@ function HomeResidente() {
   }>({ totalDebt: 0, pagos: [], recibos: [] });
 
   const [anuncios, setAnuncios] = useState<AnuncioDto[]>([]);
+  const [ads, setAds] = useState<AdSpaceFeedDto[]>([]);
   const [isLoadingAnuncios, setIsLoadingAnuncios] = useState(true);
   const [userData, setUserData] = useState<ProfileResponse | null>(null);
   const [activeAsamblea, setActiveAsamblea] = useState<ActiveAsamblea | null>(null);
   const [solicitudesParqueadero, setSolicitudesParqueadero] = useState<SolicitudParqueaderoMia[]>([]);
   const [cargosRetenidos, setCargosRetenidos] = useState<CargoParqueaderoRetenido[]>([]);
+  const [visitasPendientes, setVisitasPendientes] = useState<VisitaDto[]>([]);
   const [busyAprob, setBusyAprob] = useState<string | null>(null);
+
+  const categories = CATEGORIES;
 
   const fetchAnuncios = useCallback(async () => {
     try {
@@ -191,6 +256,19 @@ function HomeResidente() {
       /* ignore */
     } finally {
       setIsLoadingAnuncios(false);
+    }
+  }, []);
+
+  const fetchAds = useCallback(async () => {
+    try {
+      const data = await api.get<AdSpaceFeedDto[]>('/ad-spaces/active');
+      setAds(
+        [...data].sort(
+          (a, b) => (AD_POSITION_ORDER[a.posicion] ?? 3) - (AD_POSITION_ORDER[b.posicion] ?? 3),
+        ),
+      );
+    } catch {
+      /* silently ignore */
     }
   }, []);
 
@@ -227,6 +305,17 @@ function HomeResidente() {
       setCargosRetenidos(data ?? []);
     } catch {
       /* no aplica / sin permiso */
+    }
+  }, []);
+
+  // Visitas PENDIENTES de aprobación: visitas no programadas registradas por
+  // vigilancia que el residente debe aprobar/rechazar para permitir el ingreso.
+  const fetchVisitasPendientes = useCallback(async () => {
+    try {
+      const data = await api.get<{ visitas: VisitaDto[]; paquetes: unknown[] }>('/comunicaciones');
+      setVisitasPendientes((data.visitas || []).filter((v) => v.estado === 'PENDIENTE'));
+    } catch {
+      /* no aplica / sin datos */
     }
   }, []);
 
@@ -294,6 +383,21 @@ function HomeResidente() {
     }
   };
 
+  const resolverVisitaPendiente = async (id: string, aprobada: boolean) => {
+    setBusyAprob(id);
+    try {
+      await api.put(`/visitas/${id}/aprobar`, { aprobada });
+      toast.success(
+        aprobada ? 'Visita aprobada. El visitante puede ingresar.' : 'Visita rechazada.',
+      );
+      void fetchVisitasPendientes();
+    } catch (e: unknown) {
+      toast.error((e instanceof Error ? e.message : String(e)) || 'No se pudo procesar');
+    } finally {
+      setBusyAprob(null);
+    }
+  };
+
   const markAsRead = async (id: string) => {
     try {
       await api.put('/notificaciones/leidas', { ids: [id] });
@@ -311,6 +415,7 @@ function HomeResidente() {
     void fetchSolicitudesParqueadero();
     void fetchCargosRetenidos();
   });
+  useWsSubscription('visita', () => void fetchVisitasPendientes());
   useWsSubscription('asamblea', () => void fetchActiveAsamblea());
 
   useEffect(() => {
@@ -319,18 +424,22 @@ function HomeResidente() {
     void fetchFinance();
     void fetchUserData();
     void fetchAnuncios();
+    void fetchAds();
     void fetchActiveAsamblea();
     void fetchSolicitudesParqueadero();
     void fetchCargosRetenidos();
+    void fetchVisitasPendientes();
   }, [
     user,
     fetchNotificaciones,
     fetchFinance,
     fetchUserData,
     fetchAnuncios,
+    fetchAds,
     fetchActiveAsamblea,
     fetchSolicitudesParqueadero,
     fetchCargosRetenidos,
+    fetchVisitasPendientes,
   ]);
 
   const debtPending = financialData.totalDebt > 0;
@@ -364,7 +473,7 @@ function HomeResidente() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 12,
-                  backgroundColor: 'rgba(255,255,255,0.045)',
+                  backgroundColor: COLORS.surface,
                   borderWidth: 1,
                   borderColor: COLORS.border,
                   borderRadius: 24,
@@ -382,7 +491,7 @@ function HomeResidente() {
                 width: 56,
                 height: 56,
                 borderRadius: 22,
-                backgroundColor: 'rgba(255,255,255,0.07)',
+                backgroundColor: COLORS.surface2,
                 borderWidth: 1,
                 borderColor: COLORS.border,
                 alignItems: 'center',
@@ -406,7 +515,7 @@ function HomeResidente() {
                 variant="card"
                 radius={28}
                 className="rounded-[28px]"
-                style={{ minHeight: 90, padding: 16, borderColor: 'rgba(255,255,255,0.3)' }}
+                style={{ minHeight: 90, padding: 16, borderColor: COLORS.border }}
               >
                 <View
                   style={{
@@ -421,9 +530,9 @@ function HomeResidente() {
                         width: 40,
                         height: 40,
                         borderRadius: 20,
-                        backgroundColor: 'rgba(255,255,255,0.2)',
+                        backgroundColor: COLORS.surface2,
                         borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.4)',
+                        borderColor: COLORS.border,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
@@ -565,6 +674,115 @@ function HomeResidente() {
           </View>
         ) : null}
 
+        {/* VISITAS PENDIENTES DE APROBACIÓN — ingreso bloqueado hasta decidir */}
+        {visitasPendientes.length > 0 ? (
+          <View style={{ gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}>
+              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.amber }} />
+              <UserIcon size={14} color={COLORS.amberLight} />
+              <Text style={styles.sectionAlertTitle}>Visitas por aprobar — ingreso bloqueado</Text>
+            </View>
+            <Text style={styles.alertHint}>
+              Estas visitas fueron registradas por el vigilante. El visitante NO puede ingresar
+              hasta que las apruebes.
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 16, paddingHorizontal: 4 }}
+            >
+              {visitasPendientes.map((v) => (
+                <LiquidGlass
+                  key={v.id}
+                  variant="card"
+                  radius={28}
+                  className="rounded-[28px]"
+                  style={{
+                    width: 290,
+                    padding: 20,
+                    borderColor: 'rgba(245,158,11,0.4)',
+                    gap: 12,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 16,
+                        backgroundColor: 'rgba(245,158,11,0.15)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(245,158,11,0.3)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginTop: 2,
+                      }}
+                    >
+                      <UserIcon size={20} color={COLORS.amberLight} />
+                    </View>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text
+                        numberOfLines={1}
+                        style={{ color: COLORS.text, fontSize: 16, fontWeight: '700' }}
+                      >
+                        {v.nombre}
+                      </Text>
+                      {v.documento ? (
+                        <Text numberOfLines={1} style={{ color: COLORS.muted, fontSize: 10 }}>
+                          {v.documento}
+                        </Text>
+                      ) : null}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Clock size={10} color={COLORS.muted} />
+                        <Text style={{ color: COLORS.muted, fontSize: 10 }}>
+                          {formatCargoDate(v.fecha)}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          alignSelf: 'flex-start',
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 999,
+                          borderWidth: 1,
+                          backgroundColor:
+                            v.tipo === 'VEHICULAR' ? 'rgba(0,157,242,0.15)' : COLORS.surface2,
+                          borderColor:
+                            v.tipo === 'VEHICULAR' ? 'rgba(0,157,242,0.3)' : COLORS.border,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: v.tipo === 'VEHICULAR' ? COLORS.blue : COLORS.text,
+                            fontSize: 9,
+                            fontWeight: '700',
+                          }}
+                        >
+                          {v.tipo}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 'auto' }}>
+                    <ApprovalButton
+                      label="Rechazar"
+                      variant="reject"
+                      disabled={busyAprob === v.id}
+                      onPress={() => resolverVisitaPendiente(v.id, false)}
+                    />
+                    <ApprovalButton
+                      label={busyAprob === v.id ? 'Procesando...' : 'Aprobar ingreso'}
+                      variant="approve"
+                      disabled={busyAprob === v.id}
+                      onPress={() => resolverVisitaPendiente(v.id, true)}
+                    />
+                  </View>
+                </LiquidGlass>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         {/* CATEGORÍAS */}
         <View style={{ gap: 16 }}>
           <View style={styles.sectionHeaderRow}>
@@ -576,7 +794,7 @@ function HomeResidente() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: 16, paddingHorizontal: 4 }}
           >
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <Pressable
                 key={cat.title}
                 onPress={() => router.push(cat.path as never)}
@@ -584,9 +802,9 @@ function HomeResidente() {
                   width: 84,
                   height: 106,
                   borderRadius: 32,
-                  backgroundColor: '#000000',
+                  backgroundColor: COLORS.bg,
                   borderWidth: 1,
-                  borderColor: '#333333',
+                  borderColor: COLORS.border,
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 12,
@@ -641,7 +859,7 @@ function HomeResidente() {
                     borderRadius: 22,
                     padding: 16,
                     gap: 8,
-                    backgroundColor: 'rgba(255,255,255,0.07)',
+                    backgroundColor: COLORS.surface2,
                     borderWidth: 1,
                     borderColor: COLORS.border,
                     opacity: pressed ? 0.85 : 1,
@@ -678,7 +896,7 @@ function HomeResidente() {
             overflow: 'hidden',
             minHeight: 120,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.1)',
+            borderColor: COLORS.border,
             backgroundColor: debtPending ? '#171717' : '#3b3b3b',
             padding: 20,
             justifyContent: 'space-between',
@@ -691,9 +909,9 @@ function HomeResidente() {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: COLORS.surface2,
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.2)',
+                  borderColor: COLORS.border,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -718,14 +936,14 @@ function HomeResidente() {
             <Pressable
               onPress={() => router.push('/pagos' as never)}
               style={({ pressed }) => ({
-                backgroundColor: '#FFFFFF',
+                backgroundColor: COLORS.text,
                 paddingHorizontal: 16,
                 paddingVertical: 8,
                 borderRadius: 999,
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               })}
             >
-              <Text style={{ color: '#000000', fontSize: 11, fontWeight: '700' }}>
+              <Text style={{ color: COLORS.bg, fontSize: 11, fontWeight: '700' }}>
                 {debtPending ? 'Pagar Ahora' : 'Ver Estado'}
               </Text>
             </Pressable>
@@ -779,11 +997,19 @@ function HomeResidente() {
               <Text style={styles.mutedCaption}>Sin novedades por ahora</Text>
             </View>
           ) : (
-            anuncios.map((anuncio) => (
-              <Pressable key={anuncio.id} onPress={() => setSelectedFeedItem(anuncio)}>
-                <AnuncioCard anuncio={anuncio} />
-              </Pressable>
-            ))
+            anuncios.map((anuncio, idx) => {
+              const items = [
+                <Pressable key={anuncio.id} onPress={() => setSelectedFeedItem(anuncio)}>
+                  <AnuncioCard anuncio={anuncio} />
+                </Pressable>,
+              ];
+              // Insertar ad cada 3 anuncios (mirror web).
+              if ((idx + 1) % 3 === 0 && ads.length > 0) {
+                const ad = ads[Math.floor(idx / 3) % ads.length];
+                items.push(<BannerAdCard key={`ad-${ad.id}-${idx}`} ad={ad} />);
+              }
+              return items;
+            })
           )}
         </View>
       </ScrollView>
@@ -846,7 +1072,7 @@ function ApprovalButton({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: approve ? COLORS.green : 'rgba(255,255,255,0.05)',
+        backgroundColor: approve ? COLORS.green : COLORS.surface2,
         borderWidth: approve ? 0 : 1,
         borderColor: COLORS.border,
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
@@ -960,6 +1186,89 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
         </View>
       </View>
     </LiquidGlass>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// BannerAdCard — feed ad with impression/click tracking (mirror web)
+// ───────────────────────────────────────────────────────────────────────────
+
+function BannerAdCard({ ad }: { ad: AdSpaceFeedDto }) {
+  // Registrar impresión al montar.
+  useEffect(() => {
+    api.post(`/ad-spaces/${ad.id}/impress`, {}).catch(() => {});
+  }, [ad.id]);
+
+  const handlePress = () => {
+    api.post(`/ad-spaces/${ad.id}/click`, {}).catch(() => {});
+    // http(s)-only allowlist: linkUrl is admin-entered server data and must
+    // never launch tel:/sms:/app-scheme URLs on the resident's device.
+    const safe = safeHttpUrl(ad.linkUrl);
+    if (safe) {
+      Linking.openURL(safe).catch(() => {});
+    }
+  };
+
+  return (
+    <Pressable onPress={handlePress} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+      <View
+        style={{
+          borderRadius: 28,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.2)',
+          backgroundColor: 'rgba(255,255,255,0.05)',
+        }}
+      >
+        {ad.imagenUrl ? (
+          <Image
+            source={{ uri: ad.imagenUrl }}
+            style={{ width: '100%', height: 192 }}
+            contentFit="cover"
+            transition={300}
+          />
+        ) : (
+          <View
+            style={{
+              width: '100%',
+              height: 128,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(255,255,255,0.06)',
+            }}
+          >
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>{ad.nombre}</Text>
+          </View>
+        )}
+        <View
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            borderRadius: 999,
+          }}
+        >
+          <Text
+            style={{
+              color: '#FFFFFF',
+              fontSize: 9,
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+            }}
+          >
+            Publicidad
+          </Text>
+        </View>
+        {ad.empresa ? (
+          <View style={{ padding: 12, alignItems: 'center' }}>
+            <Text style={{ color: COLORS.muted, fontSize: 10 }}>{ad.empresa}</Text>
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 
@@ -1088,9 +1397,9 @@ function RoleSwitcher() {
           paddingHorizontal: 16,
           paddingVertical: 12,
           borderRadius: 16,
-          backgroundColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: COLORS.surface2,
           borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.3)',
+          borderColor: COLORS.border,
           opacity: busy ? 0.6 : pressed ? 0.9 : 1,
         })}
       >
@@ -1100,9 +1409,9 @@ function RoleSwitcher() {
               width: 36,
               height: 36,
               borderRadius: 12,
-              backgroundColor: 'rgba(255,255,255,0.2)',
+              backgroundColor: COLORS.surface2,
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.4)',
+              borderColor: COLORS.border,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -1130,7 +1439,7 @@ function RoleSwitcher() {
             borderRadius: 16,
             borderWidth: 1,
             borderColor: COLORS.border,
-            backgroundColor: '#141414',
+            backgroundColor: COLORS.surface2,
             overflow: 'hidden',
           }}
         >
@@ -1297,13 +1606,19 @@ function SearchModal({
     setIsLoadingAI(true);
     setAiAnswer(null);
     try {
-      const data = await api.post<{ answer: string }>('/search', {
-        query: q,
-        context: contextRef.current,
+      // contexto must be a string (backend AsistenteRequest.contexto: Option<String>);
+      // SearchContext is an object → stringify when non-empty, else omit (avoids 422).
+      const ctx = contextRef.current;
+      const contexto = Object.keys(ctx).length ? JSON.stringify(ctx) : undefined;
+      const data = await api.post<{ respuesta: string }>('/ai/asistente', {
+        pregunta: q,
+        contexto,
       });
-      setAiAnswer({ text: data.answer });
-    } catch {
-      setAiAnswer({ text: 'No pude procesar tu pregunta. Intenta de nuevo.' });
+      setAiAnswer({ text: data.respuesta });
+    } catch (e: unknown) {
+      setAiAnswer({
+        text: e instanceof ApiError ? e.detail : 'No pude procesar tu pregunta. Intenta de nuevo.',
+      });
     } finally {
       setIsLoadingAI(false);
     }
@@ -1532,7 +1847,7 @@ function SearchModal({
                 Sin resultados para &quot;{query}&quot;
               </Text>
               <Pressable
-                onPress={() => void askAI(query)}
+                onPress={() => navigateTo('/asistente')}
                 style={({ pressed }) => ({
                   marginTop: 8,
                   flexDirection: 'row',
@@ -1610,6 +1925,7 @@ function SearchInput({
 function HomeVigilante() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useThemeColors();
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -1671,6 +1987,7 @@ function PrimaryRow({ label, onPress, filled }: { label: string; onPress: () => 
 function HomeEstacionamiento() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useThemeColors();
   const [stats, setStats] = useState({ ocupacion: 0, libres: 0, ocupados: 0 });
 
   useEffect(() => {
@@ -1752,6 +2069,7 @@ function StatBox({ value, label }: { value: string; label: string }) {
 function HomeConsejo() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useThemeColors();
   const [stats, setStats] = useState({ recaudoMes: '0', reservasPendientes: 0 });
 
   useEffect(() => {
@@ -1885,6 +2203,7 @@ function HomeAdmin() {
   const router = useRouter();
   const role = useAuth((s) => s.user?.rol);
   const insets = useSafeAreaInsets();
+  useThemeColors();
   const [activeAsamblea, setActiveAsamblea] = useState<ActiveAsamblea | null>(null);
 
   useEffect(() => {
@@ -2068,7 +2387,7 @@ const styles = {
     textTransform: 'uppercase' as const,
   },
   alertHint: {
-    color: 'rgba(255,255,255,0.7)',
+    color: COLORS.muted,
     fontSize: 11,
     paddingHorizontal: 4,
     lineHeight: 16,
@@ -2087,7 +2406,7 @@ const styles = {
     textTransform: 'uppercase' as const,
   },
   pillCta: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.text,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
@@ -2096,7 +2415,7 @@ const styles = {
     gap: 4,
   },
   pillCtaText: {
-    color: '#000000',
+    color: COLORS.bg,
     fontSize: 9,
     fontWeight: '900' as const,
     textTransform: 'uppercase' as const,
@@ -2136,7 +2455,7 @@ const styles = {
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: COLORS.surface2,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -2144,7 +2463,7 @@ const styles = {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: COLORS.surface2,
     borderWidth: 1,
     borderColor: COLORS.border,
     alignItems: 'center' as const,

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,19 +19,23 @@ import {
   ChevronRight,
   CreditCard,
   DollarSign,
+  FileText,
+  Gavel,
   Info,
   SearchX,
   X,
 } from 'lucide-react-native';
 
 import ProfileHeader from '@/components/shell/ProfileHeader';
+import { GuestGate } from '@/components/GuestGate';
 import { LiquidGlass } from '@/components/ui/LiquidGlass';
 import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/useAuth';
+import { safeHttpUrl } from '@/lib/safe-url';
 import { useWsSubscription } from '@/hooks/useWebSocket';
 import { api, ApiError } from '@/lib/api/client';
 import { PAYMENTS_DISABLED_MSG, PAYMENTS_ENABLED } from '@/lib/flags';
-import type { EstadoPago, PagoDto, ReciboDto } from '@/lib/api/types';
+import type { EstadoPago, MultaDto, PagoDto, ReciboDto } from '@/lib/api/types';
 
 interface Transaction {
   id: string;
@@ -83,7 +89,201 @@ function parsePagosResponse(json: { pagos?: PagoDto[]; recibos?: ReciboDto[] }):
   return { pagos, totalDebt };
 }
 
+// ── Multas del residente ─────────────────────────────────────────────────────
+// Mirrors web src/components/multas/MultasResidente.tsx: resident's own fines,
+// with appeal + notice download. Renders nothing when empty.
+
+const MULTA_ESTADO_STYLE: Record<
+  string,
+  { color: string; borderColor: string; backgroundColor: string }
+> = {
+  IMPUESTA: {
+    color: '#fcd34d',
+    borderColor: 'rgba(245,158,11,0.3)',
+    backgroundColor: 'rgba(245,158,11,0.1)',
+  },
+  APELADA: {
+    color: '#009df2',
+    borderColor: 'rgba(0,157,242,0.3)',
+    backgroundColor: 'rgba(0,157,242,0.1)',
+  },
+  PAGADA: {
+    color: '#57bf00',
+    borderColor: 'rgba(87,191,0,0.3)',
+    backgroundColor: 'rgba(87,191,0,0.1)',
+  },
+  ANULADA: {
+    color: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+};
+
+function MultasResidente() {
+  const [multas, setMultas] = useState<MultaDto[]>([]);
+
+  useEffect(() => {
+    api
+      .get<MultaDto[]>('/multas')
+      .then(setMultas)
+      .catch(() => {});
+  }, []);
+
+  useWsSubscription('multa', (event) => {
+    const dto = event.payload as MultaDto | undefined;
+    if (!dto) return;
+    setMultas((prev) =>
+      prev.some((m) => m.id === dto.id)
+        ? prev.map((m) => (m.id === dto.id ? dto : m))
+        : [dto, ...prev],
+    );
+  });
+
+  async function apelar(id: string) {
+    try {
+      const dto = await api.post<MultaDto>(`/multas/${id}/apelar`);
+      setMultas((prev) => prev.map((m) => (m.id === id ? dto : m)));
+      toast.success('Apelación registrada');
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.detail : 'No se pudo apelar');
+    }
+  }
+
+  if (multas.length === 0) return null;
+
+  return (
+    <Animated.View entering={FadeInDown.duration(500).delay(40)} style={{ gap: 12 }}>
+      <View
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}
+      >
+        <Gavel size={14} color="rgba(255,255,255,0.6)" />
+        <Text
+          style={{
+            color: 'rgba(255,255,255,0.6)',
+            fontSize: 12,
+            fontWeight: '700',
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+          }}
+        >
+          Multas
+        </Text>
+      </View>
+      {multas.map((m) => {
+        const estadoStyle = MULTA_ESTADO_STYLE[m.estado] ?? MULTA_ESTADO_STYLE.ANULADA;
+        return (
+          <LiquidGlass key={m.id} radius={16} className="rounded-2xl" style={{ padding: 16 }}>
+            <View style={{ gap: 8 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+                    ${formatCOP(Number(m.monto))}
+                  </Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>{m.motivo}</Text>
+                </View>
+                <View
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: estadoStyle.borderColor,
+                    backgroundColor: estadoStyle.backgroundColor,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: estadoStyle.color,
+                      fontSize: 9,
+                      fontWeight: '900',
+                      letterSpacing: 1.5,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {m.estado}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {m.pdfUrl ? (
+                  <Pressable
+                    onPress={() => {
+                      // http(s)-only allowlist: pdfUrl is server-provided data
+                      // and must never launch tel:/sms:/app-scheme URLs.
+                      const safe = safeHttpUrl(m.pdfUrl);
+                      if (safe) void Linking.openURL(safe);
+                    }}
+                    style={({ pressed }) => ({
+                      flex: 1,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.14)',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                      opacity: pressed ? 0.8 : 1,
+                    })}
+                  >
+                    <FileText size={13} color="#FFFFFF" />
+                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+                      Notificación
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {m.estado === 'IMPUESTA' ? (
+                  <Pressable
+                    onPress={() => {
+                      void apelar(m.id);
+                    }}
+                    style={({ pressed }) => ({
+                      flex: 1,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(0,157,242,0.2)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(0,157,242,0.3)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: pressed ? 0.8 : 1,
+                    })}
+                  >
+                    <Text style={{ color: '#009df2', fontSize: 12, fontWeight: '700' }}>
+                      Apelar
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+          </LiquidGlass>
+        );
+      })}
+    </Animated.View>
+  );
+}
+
 export default function PagosPage() {
+  // CRITICAL gate: a HUESPED_TEMPORAL account is created WITH the host's
+  // unidad_id, and the backend pagos handlers scope by unidad — without this
+  // gate a guest reaching /pagos (deep link, pago-keyword notification) sees
+  // the host unit's full debt/recibos and can drive the pagar flow.
+  return (
+    <GuestGate>
+      <PagosInner />
+    </GuestGate>
+  );
+}
+
+function PagosInner() {
   const user = useAuth((s) => s.user);
   const userId = user?.id;
   const insets = useSafeAreaInsets();
@@ -97,6 +297,7 @@ export default function PagosPage() {
 
   const [selectedPayment, setSelectedPayment] = useState<Transaction | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [nequiPhone, setNequiPhone] = useState('');
   const fetchLock = useRef(false);
   const initialFetchDone = useRef(false);
 
@@ -149,26 +350,38 @@ export default function PagosPage() {
     setIsProcessing(true);
 
     try {
-      await api.put(`/pagos/${selectedPayment.id}/pagar`, { metodo: 'PSE' });
-
-      // Artificial fake-gateway delay (NOT a network wait).
-      await new Promise((resolve) => setTimeout(resolve, 3500));
-
-      setIsProcessing(false);
-      const paid = selectedPayment;
-      setSelectedPayment(null);
-
-      toast.success(
-        '¡Pago procesado con éxito!',
-        'Tu recibo ha sido generado y persistido en el sistema.',
+      // The server reflects the gateway's real outcome: PAGADO (approved) or
+      // PENDIENTE (Nequi push awaiting the payer's approval in their app).
+      const updated = await api.put<{ estado: string; fechaPago?: string }>(
+        `/pagos/${selectedPayment.id}/pagar`,
+        { metodo: 'NEQUI', telefono: nequiPhone || undefined },
       );
 
-      // Optimistic local update — NO server refetch after pay.
+      setIsProcessing(false);
+      const paid = updated.estado === 'PAGADO';
+      const pagoId = selectedPayment.id;
+      const monto = selectedPayment.monto;
+      setSelectedPayment(null);
+
+      if (paid) {
+        toast.success(
+          '¡Pago procesado con éxito!',
+          'Tu recibo ha sido generado y persistido en el sistema.',
+        );
+      } else {
+        toast.info(
+          'Revisa tu app Nequi',
+          'Aprueba el pago desde la notificación de Nequi para completarlo.',
+        );
+      }
+
       setData((prev) => ({
         ...prev,
-        totalDebt: Math.max(0, prev.totalDebt - paid.monto),
+        totalDebt: paid ? Math.max(0, prev.totalDebt - monto) : prev.totalDebt,
         pagos: prev.pagos.map((p) =>
-          p.id === paid.id ? { ...p, estado: 'PAGADO', fechaPago: new Date().toISOString() } : p,
+          p.id === pagoId
+            ? { ...p, estado: paid ? 'PAGADO' : 'PENDIENTE', fechaPago: updated.fechaPago }
+            : p,
         ),
       }));
     } catch (error: unknown) {
@@ -201,6 +414,8 @@ export default function PagosPage() {
         <Animated.View entering={FadeInDown.duration(500)}>
           <ProfileHeader />
         </Animated.View>
+
+        <MultasResidente />
 
         {/* WALLET HERO CARD */}
         <Animated.View entering={FadeInDown.duration(500).delay(80)}>
@@ -615,14 +830,33 @@ export default function PagosPage() {
                           <CreditCard size={18} color="#FFFFFF" />
                           <View style={{ flex: 1 }}>
                             <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
-                              Tarjeta de Crédito / PSE
+                              Pago con Nequi
                             </Text>
                             <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10 }}>
-                              Pago seguro procesado por Wompi
+                              Recibirás una notificación en tu app Nequi para aprobar
                             </Text>
                           </View>
                           <CheckCircle2 size={16} color="#FFFFFF" />
                         </View>
+
+                        <TextInput
+                          value={nequiPhone}
+                          onChangeText={(t) => setNequiPhone(t.replace(/\D/g, ''))}
+                          placeholder="Número Nequi (ej. 3001234567)"
+                          placeholderTextColor="rgba(255,255,255,0.55)"
+                          keyboardType="number-pad"
+                          style={{
+                            width: '100%',
+                            backgroundColor: 'rgba(255,255,255,0.07)',
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.14)',
+                            borderRadius: 16,
+                            paddingVertical: 12,
+                            paddingHorizontal: 16,
+                            fontSize: 14,
+                            color: '#FFFFFF',
+                          }}
+                        />
 
                         <View
                           style={{

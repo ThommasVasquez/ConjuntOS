@@ -6,7 +6,9 @@ use crate::db::schema::{native_push_tokens, notificaciones, push_subscriptions};
 use crate::db::DbConn;
 use crate::domains::notificaciones::models::{NativePushToken, Notificacion, PushSubscription};
 use crate::error::ApiResult;
+use crate::services::push::{NativePushTokenInfo, PushMessage, PushSubscriptionInfo};
 use crate::services::ws_hub::{WsEvent, WsHub};
+use crate::state::AppState;
 
 pub async fn list_for_user(
     conn: &mut DbConn,
@@ -178,6 +180,143 @@ pub async fn upsert_native_push_token(
         .returning(NativePushToken::as_returning())
         .get_result(conn)
         .await?;
+    Ok(row)
+}
+
+/// Removes a native token by its value regardless of owner — used when the push
+/// provider reports the device as no longer registered (dead token), where no
+/// authenticated user is in scope.
+pub async fn delete_native_push_token_by_value(
+    conn: &mut DbConn,
+    token: &str,
+) -> ApiResult<usize> {
+    let deleted =
+        diesel::delete(native_push_tokens::table.filter(native_push_tokens::token.eq(token)))
+            .execute(conn)
+            .await?;
+    Ok(deleted)
+}
+
+/// Dual-transport push fan-out to the target users, mirroring the citofonia
+/// pattern: web-push (VAPID) subscriptions AND native (Expo / FCM / APNs)
+/// device tokens. The data contract is identical across both transports.
+/// Best-effort per device; returns the number of successful deliveries across
+/// the union. Native tokens rejected as `DeviceNotRegistered` are purged so we
+/// stop pushing to dead devices.
+pub async fn send_push_to_users(
+    conn: &mut DbConn,
+    state: &AppState,
+    conjunto_id: Uuid,
+    usuario_ids: &[Uuid],
+    message: &PushMessage,
+) -> ApiResult<i32> {
+    if usuario_ids.is_empty() {
+        return Ok(0);
+    }
+    let mut count: i32 = 0;
+
+    // ── Web-push (VAPID) ──
+    let subs: Vec<(String, String, String)> = push_subscriptions::table
+        .filter(push_subscriptions::conjunto_id.eq(conjunto_id))
+        .filter(push_subscriptions::usuario_id.eq_any(usuario_ids))
+        .select((
+            push_subscriptions::endpoint,
+            push_subscriptions::p256dh,
+            push_subscriptions::auth,
+        ))
+        .load(conn)
+        .await?;
+
+    let web_payload_bytes = message.to_web_json_bytes();
+    for (endpoint, p256dh, auth) in subs {
+        let sub_info = PushSubscriptionInfo {
+            endpoint: endpoint.clone(),
+            p256dh,
+            auth,
+        };
+        match state.push_sender.send(&sub_info, &web_payload_bytes).await {
+            Ok(()) => count += 1,
+            Err(e) => {
+                tracing::warn!(endpoint = %endpoint, error = ?e, "web-push send failed");
+            }
+        }
+    }
+
+    // ── Native (Expo / FCM / APNs) ──
+    let native_tokens: Vec<(String, String)> = native_push_tokens::table
+        .filter(native_push_tokens::conjunto_id.eq(conjunto_id))
+        .filter(native_push_tokens::usuario_id.eq_any(usuario_ids))
+        .select((native_push_tokens::platform, native_push_tokens::token))
+        .load(conn)
+        .await?;
+
+    for (platform, token) in native_tokens {
+        let info = NativePushTokenInfo {
+            platform: platform.clone(),
+            token: token.clone(),
+        };
+        match state.native_push_sender.send(&info, message).await {
+            Ok(()) => count += 1,
+            Err(e) => {
+                if crate::services::push::is_device_not_registered(&e) {
+                    // Dead device token (app uninstalled / token rotated):
+                    // delete the row so we stop pushing to it.
+                    match delete_native_push_token_by_value(conn, &token).await {
+                        Ok(n) => tracing::info!(
+                            platform = %platform,
+                            deleted = n,
+                            "native push token no longer registered; row removed"
+                        ),
+                        Err(del_err) => tracing::warn!(
+                            platform = %platform,
+                            error = ?del_err,
+                            "failed to delete dead native push token"
+                        ),
+                    }
+                } else {
+                    tracing::warn!(platform = %platform, error = ?e, "native push send failed");
+                }
+            }
+        }
+    }
+
+    Ok(count)
+}
+
+/// Like [`create_notificacion`], but additionally wakes the user's devices over
+/// BOTH push transports (web VAPID + native Expo), following citofonia's dual
+/// fan-out. Push is best-effort: a delivery failure never fails the creation.
+#[allow(clippy::too_many_arguments)]
+pub async fn create_notificacion_with_push(
+    conn: &mut DbConn,
+    state: &AppState,
+    conjunto_id: Uuid,
+    usuario_id: Uuid,
+    tipo: &str,
+    titulo: &str,
+    mensaje: &str,
+    data: serde_json::Value,
+) -> ApiResult<Notificacion> {
+    let row = create_notificacion(
+        conn,
+        conjunto_id,
+        usuario_id,
+        tipo,
+        titulo,
+        mensaje,
+        Some(&state.ws_hub),
+    )
+    .await?;
+
+    let message = PushMessage {
+        title: titulo.to_string(),
+        body: mensaje.to_string(),
+        data,
+    };
+    if let Err(e) = send_push_to_users(conn, state, conjunto_id, &[usuario_id], &message).await {
+        tracing::warn!(error = ?e, "notificacion push fan-out failed");
+    }
+
     Ok(row)
 }
 

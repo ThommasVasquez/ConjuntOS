@@ -1,3 +1,7 @@
+packages:
+  - "."
+  - mobile
+
 allowBuilds:
   esbuild: true
   sharp: true

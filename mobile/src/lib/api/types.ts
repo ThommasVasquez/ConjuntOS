@@ -1,9 +1,14 @@
 /**
  * TypeScript DTOs matching the Rust backend (serde rename_all = "camelCase").
  *
- * Organized by domain. Every type mirrors the corresponding `*Dto` / request
- * struct in `backend/api/src/domains/`.  Enum values are UPPER_SNAKE strings
- * matching the CHECK constraints in the database (enums.rs text_enum! macro).
+ * Synced from the web `src/lib/api/types.ts`. Organized by domain. Every type
+ * mirrors the corresponding `*Dto` / request struct in
+ * `backend/api/src/domains/`.  Enum values are UPPER_SNAKE strings matching
+ * the CHECK constraints in the database (enums.rs text_enum! macro).
+ *
+ * Types the web app defines inline in a page (not in its shared types.ts) are
+ * appended below in the "Web page-derived DTOs" section, each marked
+ * `derived from <source>`. Mobile-native-only types live at the very bottom.
  */
 
 // ===========================================================================
@@ -18,7 +23,12 @@ export type Rol =
   | 'VIGILANTE'
   | 'SUPERVISOR_VIGILANCIA'
   | 'ENCARGADO_PARQUEADERO'
-  | 'SUPER_ADMIN';
+  | 'SUPER_ADMIN'
+  | 'HUESPED_TEMPORAL'
+  | 'ADMINISTRADOR_PISCINA'
+  | 'ADMINISTRADOR_GYM'
+  | 'MANTENIMIENTO_LOCATIVO'
+  | 'OPERARIO_LIMPIEZA';
 
 export type Plan = 'BASICO' | 'PRO' | 'PREMIUM';
 
@@ -46,7 +56,9 @@ export type CatServicio =
   | 'CERRAJERIA'
   | 'OTRO';
 
-export type EstadoSolicitud = 'ABIERTA' | 'ASIGNADA' | 'EN_PROGRESO' | 'COMPLETADA';
+export type EstadoSolicitud = 'ABIERTA' | 'ASIGNADA' | 'EN_PROGRESO' | 'RESUELTA' | 'CERRADA';
+
+export type PrioridadTicket = 'BAJA' | 'MEDIA' | 'ALTA' | 'URGENTE';
 
 export type TipoPqr = 'PETICION' | 'QUEJA' | 'RECLAMO' | 'SUGERENCIA' | 'MANTENIMIENTO';
 
@@ -439,7 +451,11 @@ export interface VisitaDto {
   tieneParqueadero: boolean;
   observacion: string | null;
   createdAt: string;
+  documento: string | null;
+  estado: EstadoVisita;
 }
+
+export type EstadoVisita = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
 
 export interface VisitaVigilanciaDto extends VisitaDto {
   residente: ResidenteRefDto;
@@ -448,6 +464,7 @@ export interface VisitaVigilanciaDto extends VisitaDto {
 export interface CreateVisitaVigilanciaRequest {
   usuarioId: string;
   nombre: string;
+  documento?: string;
   tipo: TipoVisita;
   vehiculoTipo?: TipoVehiculoVisita;
   placa?: string;
@@ -464,6 +481,18 @@ export interface CreateVisitaResidenteRequest {
   tieneParqueadero?: boolean;
   observacion?: string;
   fecha?: string;
+}
+
+/**
+ * Response of `POST /visitas/preregistro`.
+ * derived from src/app/(app)/visitantes/page.tsx (inline api.post generic)
+ */
+export interface PreregistroResponse {
+  visita: VisitaDto;
+  token: string;
+  /** PNG QR code, base64-encoded (render as data:image/png;base64,...). */
+  qrPngBase64: string;
+  expira: string;
 }
 
 export interface PaqueteDto {
@@ -495,6 +524,18 @@ export interface VigilanciaStatsDto {
 export interface ComunicacionesVigilanciaDto {
   visitas: VisitaDto[];
   paquetes: PaqueteDto[];
+  correspondencia: CorrespondenciaDto[];
+}
+
+export interface CorrespondenciaDto {
+  id: string;
+  usuarioId: string;
+  tipo: string;
+  remitente: string;
+  descripcion: string | null;
+  estado: string;
+  fechaLlegada: string;
+  entregadoEn: string | null;
 }
 
 // ===========================================================================
@@ -546,6 +587,16 @@ export interface UpdateCeldaRequest {
 export interface ParqueaderoMioDto {
   vehiculos: VehiculoDto[];
   celdas: CeldaDto[];
+  // derived from src/app/(app)/parqueadero/page.tsx (inline /parqueadero/mio generic)
+  misCeldas?: CeldaDto[];
+  disponibilidadVisitantes?: DisponibilidadVisitantesDto;
+}
+
+/** derived from src/app/(app)/parqueadero/page.tsx (/parqueadero/mio inline shape) */
+export interface DisponibilidadVisitantesDto {
+  total: number;
+  libres: number;
+  ocupadas: number;
 }
 
 export interface RegistroDto {
@@ -584,6 +635,103 @@ export interface ParqueaderoStatsDto {
   ocupados: number;
   libres: number;
   porcentajeOcupacion: number;
+}
+
+/**
+ * Sesión de cobro de parqueadero de visitante (activa o al liberar celda).
+ * derived from src/app/(app)/parqueadero/page.tsx (`SesionCobro`) merged with
+ * src/app/(app)/mapa-parqueadero/page.tsx (`SesionCobro`).
+ */
+export interface SesionCobroDto {
+  id: string;
+  celdaNumero?: string;
+  placa?: string | null;
+  inicio?: string;
+  finGratis: string;
+  segundosRestantesGratis?: number;
+  tarifaHora?: number | string;
+  estado?: string;
+  montoFinal?: number | string;
+  montoActual?: number | string;
+}
+
+/**
+ * Cargo de parqueadero retenido/pendiente de aprobación del residente.
+ * derived from src/app/(app)/parqueadero/page.tsx (`CargoPendiente`) merged
+ * with src/app/(app)/inicio/page.tsx (`CargoParqueaderoRetenido`).
+ */
+export interface CargoParqueaderoDto {
+  id: string;
+  celdaNumero?: string;
+  placa?: string | null;
+  minutosCobrados?: number;
+  cerradoEn?: string | null;
+  montoFinal?: number | string | null;
+  montoActual?: number | string | null;
+}
+
+/**
+ * Reserva de cupo de parqueadero de visitante.
+ * derived from src/app/(app)/parqueadero/page.tsx (`ReservaCupo`) merged with
+ * src/app/(app)/mapa-parqueadero/page.tsx (`ReservaProxima`).
+ */
+export interface ReservaParqueaderoDto {
+  id: string;
+  estado: string;
+  categoria?: string | null;
+  visitanteNombre?: string | null;
+  residenteNombre?: string;
+  placa?: string | null;
+  llegadaEstimada: string;
+  tiempoLibre?: boolean;
+  duracionMinutos?: number | null;
+}
+
+/** derived from src/app/(app)/parqueadero/page.tsx (`DisponibilidadCupo`) */
+export interface DisponibilidadCupoDto {
+  hayCupo: boolean;
+  libres: number;
+  categoria: string;
+}
+
+/**
+ * Solicitud de la bitácora de parqueadero (aprobaciones admin).
+ * derived from src/app/(app)/bitacora-parqueadero/page.tsx (`SolicitudParqueadero`)
+ */
+export interface SolicitudParqueaderoDto {
+  id: string;
+  estado: string;
+  accion: string;
+  detalle: string;
+  celdaNumero: string;
+  solicitanteNombre: string;
+  solicitanteRol: string;
+  creadoEn: string;
+  aprobadorNombre?: string | null;
+  resueltoEn?: string | null;
+}
+
+/**
+ * Solicitud de parqueadero de visitante que ESTE residente debe aprobar.
+ * derived from src/app/(app)/inicio/page.tsx (`SolicitudParqueaderoMia`)
+ */
+export interface SolicitudParqueaderoMiaDto {
+  id: string;
+  celdaNumero?: string;
+  detalle?: string;
+  solicitanteNombre?: string;
+}
+
+/**
+ * Respuesta común de las mutaciones de celda (pueden quedar pendientes de
+ * aprobación, o devolver el monto liquidado al cerrar una sesión).
+ * derived from src/app/(app)/mapa-parqueadero/page.tsx (`MutacionCeldaResponse`)
+ */
+export interface MutacionCeldaResponse {
+  pendiente?: boolean;
+  estado?: string;
+  montoFinal?: number;
+  montoActual?: number;
 }
 
 // ===========================================================================
@@ -661,7 +809,7 @@ export interface CreateClasificadoRequest {
 }
 
 // ===========================================================================
-// Solicitudes (PQR / Servicios)
+// Solicitudes (PQR / Servicios / Tickets)
 // ===========================================================================
 
 export interface SolicitudDto {
@@ -674,6 +822,13 @@ export interface SolicitudDto {
   imagenes: string[];
   estado: EstadoSolicitud;
   proveedorId: string | null;
+  prioridad: PrioridadTicket;
+  slaHoras: number;
+  slaVencimiento: string | null;
+  asignadoAId: string | null;
+  fechaAsignacion: string | null;
+  fechaResolucion: string | null;
+  fechaCierre: string | null;
   createdAt: string;
 }
 
@@ -683,6 +838,42 @@ export interface CreateSolicitudRequest {
   descripcion: string;
   urgente?: boolean;
   imagenes?: string[];
+  prioridad?: PrioridadTicket;
+}
+
+export interface UpdateTicketRequest {
+  estado?: EstadoSolicitud;
+  proveedorId?: string;
+  asignadoAId?: string;
+  prioridad?: PrioridadTicket;
+}
+
+export interface TicketStatsDto {
+  total: number;
+  abiertos: number;
+  asignados: number;
+  enProgreso: number;
+  resueltos: number;
+  cerrados: number;
+  slaVencidos: number;
+  tiempoPromedioResolucionHoras: number;
+}
+
+export interface TicketComentarioDto {
+  id: string;
+  ticketId: string;
+  usuarioId: string;
+  contenido: string;
+  createdAt: string;
+}
+
+export interface TicketTransicionDto {
+  id: string;
+  ticketId: string;
+  estadoAnterior: string;
+  estadoNuevo: string;
+  usuarioId: string;
+  createdAt: string;
 }
 
 // ===========================================================================
@@ -781,9 +972,461 @@ export interface LiveKitTokenDto {
 }
 
 // ===========================================================================
+// Pases Temporales (AirBnB / Alquiler Corto)
+// NOTE: this domain serializes snake_case over the wire — do not camelCase.
+// ===========================================================================
+
+export interface PaseTemporalDto {
+  id: string;
+  nombre_anfitrion: string;
+  nombre_huesped: string;
+  email_huesped?: string;
+  telefono_huesped?: string;
+  codigo_acceso: string;
+  fecha_inicio: string; // YYYY-MM-DD
+  fecha_fin: string;    // YYYY-MM-DD
+  permiso_gimnasio: boolean;
+  permiso_piscina: boolean;
+  permiso_entrada_salida: boolean;
+  permiso_vehiculo: boolean;
+  permiso_asamblea: boolean;
+  estado: "ACTIVO" | "EXPIRADO" | "REVOCADO";
+  created_at: string;
+  usuario_id?: string;
+  vehiculos: VehiculoTemporalDto[];
+}
+
+export interface VehiculoTemporalDto {
+  id: string;
+  placa: string;
+  marca?: string;
+  modelo?: string;
+  color?: string;
+}
+
+export interface CrearPaseTemporalRequest {
+  unidad_id: string;
+  nombre_anfitrion: string;
+  nombre_huesped: string;
+  email_huesped?: string;
+  telefono_huesped?: string;
+  fecha_inicio: string; // YYYY-MM-DD
+  fecha_fin: string;    // YYYY-MM-DD
+  permiso_gimnasio: boolean;
+  permiso_piscina: boolean;
+  permiso_entrada_salida: boolean;
+  permiso_vehiculo: boolean;
+  permiso_asamblea: boolean;
+  vehiculos?: VehiculoTemporalInput[];
+}
+
+export interface VehiculoTemporalInput {
+  placa: string;
+  marca?: string;
+  modelo?: string;
+  color?: string;
+}
+
+export interface ValidacionPaseDto {
+  valido: boolean;
+  nombre_huesped: string;
+  unidad: string;
+  dias_restantes: number;
+  permisos: PermisosDto;
+  vehiculos: VehiculoTemporalDto[];
+  motivo?: string;
+}
+
+export interface PermisosDto {
+  gimnasio: boolean;
+  piscina: boolean;
+  entrada_salida: boolean;
+  vehiculo: boolean;
+  asamblea: boolean;
+}
+
+/**
+ * Own active guest pass (`GET /pases-temporales/mi-pase`).
+ * derived from src/app/(app)/mi-estancia/page.tsx (`MiPaseDto`)
+ */
+export interface MiPaseDto {
+  id: string;
+  nombre_anfitrion: string;
+  nombre_huesped: string;
+  codigo_acceso: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  estado: string;
+  permiso_gimnasio: boolean;
+  permiso_piscina: boolean;
+  permiso_entrada_salida: boolean;
+  permiso_vehiculo: boolean;
+  permiso_asamblea: boolean;
+  vehiculos: VehiculoTemporalInput[];
+}
+
+// ===========================================================================
+// Comité de Convivencia
+// ===========================================================================
+
+export type TipoCasoConvivencia =
+  | 'RUIDO'
+  | 'MASCOTAS'
+  | 'OLORES'
+  | 'PARQUEADERO'
+  | 'BASURAS'
+  | 'OBRAS'
+  | 'AMENAZAS'
+  | 'OTRO';
+
+export type EstadoCasoConvivencia =
+  | 'REPORTADO'
+  | 'EN_MEDIACION'
+  | 'RESUELTO'
+  | 'ESCALADO'
+  | 'ARCHIVADO';
+
+export interface UnidadEmbedDto {
+  id: string;
+  torre?: string | null;
+  numero: string;
+  nombre_residente?: string | null;
+}
+
+export interface CreadorEmbedDto {
+  id: string;
+  nombre: string;
+}
+
+export interface CasoConvivenciaDto {
+  id: string;
+  tipo: TipoCasoConvivencia;
+  descripcion: string;
+  unidad_reporta: UnidadEmbedDto;
+  unidad_reportada: UnidadEmbedDto | null;
+  creado_por: CreadorEmbedDto;
+  estado: EstadoCasoConvivencia;
+  resolucion: string | null;
+  fecha_mediacion: string | null;
+  acta_reunion: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StatsConvivenciaDto {
+  total: number;
+  reportados: number;
+  en_mediacion: number;
+  resueltos: number;
+  escalados: number;
+}
+
+export interface CrearCasoConvivenciaRequest {
+  tipo: TipoCasoConvivencia;
+  descripcion: string;
+  unidad_reporta_id: string;
+  unidad_reportada_id?: string;
+}
+
+export interface ActualizarCasoConvivenciaRequest {
+  estado?: EstadoCasoConvivencia;
+  resolucion?: string;
+  fecha_mediacion?: string;
+  acta_reunion?: string;
+}
+
+// ===========================================================================
+// Analytics (demografía)
+// ===========================================================================
+
+export interface ConteoRolDto {
+  rol: string;
+  cantidad: number;
+}
+
+export interface ConteoTorreDto {
+  torre: string;
+  cantidad: number;
+}
+
+export interface DemografiaDto {
+  totalUnidades: number;
+  totalUsuarios: number;
+  porRol: ConteoRolDto[];
+  porTorre: ConteoTorreDto[];
+  nuevosEsteMes: number;
+  activos30d: number;
+}
+
+// ===========================================================================
+// Ad Spaces (publicidad)
+// ===========================================================================
+
+export interface AdSpaceDto {
+  id: string;
+  nombre: string;
+  posicion: "FEED_TOP" | "FEED_MID" | "FEED_BOTTOM";
+  imagenUrl: string | null;
+  linkUrl: string | null;
+  activo: boolean;
+  empresa: string | null;
+  inicioEn: string;
+  finEn: string;
+  impresiones: number;
+  clics: number;
+}
+
+export interface AdSpaceFeedDto {
+  id: string;
+  nombre: string;
+  posicion: string;
+  imagenUrl: string | null;
+  linkUrl: string | null;
+  empresa: string | null;
+}
+
+export interface CreateAdSpaceRequest {
+  nombre: string;
+  posicion: string;
+  imagenUrl?: string;
+  linkUrl?: string;
+  empresa?: string;
+  inicioEn: string;
+  finEn: string;
+}
+
+export interface UpdateAdSpaceRequest {
+  nombre?: string;
+  posicion?: string;
+  imagenUrl?: string;
+  linkUrl?: string;
+  activo?: boolean;
+  empresa?: string;
+  inicioEn?: string;
+  finEn?: string;
+}
+
+// ===========================================================================
+// Multas
+// derived from src/components/multas/MultasResidente.tsx (`Multa`) and
+// src/components/multas/ImponerMulta.tsx (create payload).
+// Apelar: `POST /multas/{id}/apelar` (no body) -> MultaDto.
+// ===========================================================================
+
+export type EstadoMulta = 'IMPUESTA' | 'PAGADA' | 'APELADA' | 'ANULADA';
+
+export interface MultaDto {
+  id: string;
+  /** Money serialized as string. */
+  monto: string;
+  motivo: string;
+  estado: EstadoMulta;
+  fechaLimite: string | null;
+  pdfUrl: string | null;
+  createdAt: string;
+}
+
+export interface CrearMultaRequest {
+  usuarioId: string;
+  casoId?: string;
+  /** Money as string-decimal. */
+  monto: string;
+  motivo: string;
+  fechaLimite?: string;
+}
+
+// ===========================================================================
+// Encuestas
+// derived from src/app/(app)/encuestas/page.tsx (`Encuesta`, `Opcion`,
+// `Conteo` + create/votar payloads).
+// ===========================================================================
+
+export interface EncuestaOpcionDto {
+  id: string;
+  texto: string;
+}
+
+export interface EncuestaConteoDto {
+  opcionId: string;
+  texto: string;
+  votos: number;
+}
+
+export interface EncuestaDto {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  opciones: EncuestaOpcionDto[];
+  multiple: boolean;
+  anonima: boolean;
+  cierraAt: string | null;
+  cerrada: boolean;
+  createdAt: string;
+  yaVote: boolean;
+  total: number;
+  resultados: EncuestaConteoDto[];
+}
+
+/** Body of `POST /encuestas`. */
+export interface CrearEncuestaRequest {
+  titulo: string;
+  descripcion?: string;
+  opciones: string[];
+  multiple: boolean;
+  anonima: boolean;
+}
+
+/** Body of `POST /encuestas/{id}/votar` (opcion ids). */
+export interface VotarEncuestaRequest {
+  opciones: string[];
+}
+
+// ===========================================================================
+// Asamblea (sesión, votaciones, quórum, opiniones, turnos, poderes)
+// derived from src/app/asamblea/page.tsx, mirroring
+// backend/api/src/domains/asamblea/dto.rs.
+// ===========================================================================
+
+export interface OrdenDiaItem {
+  id?: string;
+  titulo: string;
+  descripcion?: string;
+}
+
+export interface AsambleaDto {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  fecha: string;
+  activa: boolean;
+  ordenDia: OrdenDiaItem[];
+  itemActivoIndex: number;
+  sessionState: unknown;
+  version: number;
+}
+
+export interface OpinionDto {
+  id: string;
+  asambleaId: string;
+  usuarioId: string;
+  nombre: string;
+  apto: string | null;
+  contenido: string;
+  createdAt: string;
+}
+
+export interface VotacionDto {
+  id: string;
+  asambleaId: string;
+  titulo: string;
+  descripcion: string | null;
+  opciones: string[];
+  activa: boolean;
+  createdAt: string;
+}
+
+export interface VotoDto {
+  id: string;
+  votacionId: string;
+  usuarioId: string;
+  unidadId: string | null;
+  respuesta: string;
+  coeficiente: number;
+  esVirtual: boolean;
+  hashFirma: string;
+  createdAt: string;
+}
+
+export interface AsistenciaDto {
+  id: string;
+  asambleaId: string;
+  usuarioId: string;
+  tipo: string;
+  verificado: boolean;
+  ip: string | null;
+  dispositivo: string | null;
+  createdAt: string;
+}
+
+export interface QuorumResponse {
+  asistencias: AsistenciaDto[];
+  totalCoeficiente: number;
+  presenteCoeficiente: number;
+  quorumPorcentaje: number;
+}
+
+export interface TurnoDto {
+  id: string;
+  asambleaId: string;
+  usuarioId: string;
+  nombre: string;
+  apto: string | null;
+  estado: string;
+  createdAt: string;
+}
+
+export interface PoderDto {
+  id: string;
+  asambleaId: string;
+  otorganteId: string;
+  apoderadoId: string;
+  documentoUrl: string;
+  verificado: boolean;
+  createdAt: string;
+}
+
+// ===========================================================================
+// SOS (botón de pánico)
+// derived from src/components/sos/types.ts, mirroring backend domains/sos.rs
+// (camelCase over the wire). Create: `POST /sos { tipo }` -> SosDto.
+// ===========================================================================
+
+export type TipoSos = 'SEGURIDAD' | 'MEDICA' | 'INCENDIO' | 'OTRO';
+
+export type EstadoSos = 'ABIERTA' | 'ATENDIDA' | 'RESUELTA';
+
+export interface SosDto {
+  id: string;
+  usuarioId: string;
+  usuarioNombre: string | null;
+  torre: string | null;
+  apto: string | null;
+  tipo: TipoSos;
+  estado: EstadoSos;
+  nota: string | null;
+  ubicacion: string | null;
+  atendidaPorId: string | null;
+  fechaAtendida: string | null;
+  resueltaPorId: string | null;
+  fechaResuelta: string | null;
+  createdAt: string;
+}
+
+/** Body of `POST /sos`. derived from src/components/sos/SosPanicButton.tsx */
+export interface CrearSosRequest {
+  tipo: TipoSos;
+  nota?: string;
+  ubicacion?: string;
+}
+
+// ===========================================================================
+// Asistente IA (Ley 675 / reglamento)
+// derived from src/app/(app)/asistente/page.tsx: POST /ai/asistente
+// ===========================================================================
+
+export interface AsistenteRequest {
+  pregunta: string;
+  contexto?: string;
+}
+
+export interface AsistenteResponse {
+  respuesta: string;
+}
+
+// ===========================================================================
 // Native-only extra DTOs (appended per the mobile Foundation contract).
 // Not present in the web `src/lib/api/types.ts`; consumed by mobile screens
-// (citofonia/directorio, asambleas, global search, push registration).
+// (citofonia/directorio, push registration).
 // ===========================================================================
 
 /**
@@ -797,42 +1440,6 @@ export interface DirectorioUsuarioDto {
   rol: Rol;
   torre?: string;
   apto?: string;
-}
-
-/** A scheduled / live assembly session (LiveKit-backed video asamblea). */
-export interface AsambleaDto {
-  id: string;
-  titulo: string;
-  descripcion: string | null;
-  fechaInicio: string;
-  fechaFin: string | null;
-  estado: EstadoReserva;
-  /** LiveKit room name to join. */
-  room: string;
-  createdAt: string;
-}
-
-/** Global search request payload. */
-export interface SearchRequest {
-  query: string;
-  /** Optional domain filter (e.g. 'directorio', 'anuncios'). */
-  scope?: string;
-}
-
-/** A single hit in {@link SearchResponse}. */
-export interface SearchResultDto {
-  id: string;
-  tipo: string;
-  titulo: string;
-  subtitulo: string | null;
-  /** Client-side route target for the result. */
-  ruta: string;
-}
-
-/** Global search response payload. */
-export interface SearchResponse {
-  resultados: SearchResultDto[];
-  total: number;
 }
 
 /**

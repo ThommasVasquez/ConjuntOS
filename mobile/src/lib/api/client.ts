@@ -93,6 +93,10 @@ interface RequestOptions {
   headers?: Record<string, string>;
   /** Skip automatic JSON parsing (e.g. for blob responses) */
   raw?: boolean;
+  /** Override default no-store cache policy */
+  cache?: RequestCache;
+  /** AbortSignal for cancellation */
+  signal?: AbortSignal;
 }
 
 /**
@@ -107,7 +111,14 @@ export async function apiFetch<T = unknown>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = 'GET', body, headers = {}, raw = false } = options;
+  const {
+    method = 'GET',
+    body,
+    headers = {},
+    raw = false,
+    cache: cachePolicy = 'no-store',
+    signal,
+  } = options;
 
   const url = `${API_BASE}/api/v1${path}`;
 
@@ -127,6 +138,8 @@ export async function apiFetch<T = unknown>(
     method,
     headers: fetchHeaders,
     body: body ? JSON.stringify(body) : undefined,
+    cache: cachePolicy,
+    signal,
   });
 
   if (!response.ok) {
