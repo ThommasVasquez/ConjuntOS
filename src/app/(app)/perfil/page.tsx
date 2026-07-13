@@ -515,8 +515,15 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
           {/* DROPDOWN MENU - MAX PRIORITY */}
           {showMenu && hasMounted && (
             <div
-              className="absolute top-14 right-0 w-52 bg-[#1a1a2e] border border-white/10 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.7)] animate-in fade-in slide-in-from-top-4 duration-300 z-[9999]"
-              style={{ pointerEvents: 'auto' }}
+              className="absolute top-14 right-0 w-52 rounded-3xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 z-[9999]"
+              style={{
+                pointerEvents: 'auto',
+                background: 'rgba(0, 157, 242, 0.12)',
+                backdropFilter: 'blur(32px) saturate(200%)',
+                WebkitBackdropFilter: 'blur(32px) saturate(200%)',
+                border: '1px solid rgba(0, 157, 242, 0.25)',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)',
+              }}
             >
               <button 
                 type="button"
@@ -525,12 +532,12 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                   setShowEditModal(true);
                   setShowMenu(false);
                 }}
-                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-text hover:bg-text/10 transition-colors text-left border-b border-border cursor-pointer"
+                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-text hover:bg-[#009df2]/10 transition-colors text-left border-b border-[#009df2]/15 cursor-pointer"
               >
-                <Edit size={18} className="text-accent"/> Editar Perfil
+                <Edit size={18} className="text-[#009df2]"/> Editar Perfil
               </button>
-              <button className="w-full p-5 flex items-center gap-3 text-[15px] font-medium text-text hover:bg-text/10 transition-colors text-left border-b border-border">
-                <ShieldCheck size={18} className="text-text"/> Privacidad
+              <button className="w-full p-5 flex items-center gap-3 text-[15px] font-medium text-text hover:bg-[#57bf00]/10 transition-colors text-left border-b border-[#009df2]/15">
+                <ShieldCheck size={18} className="text-[#57bf00]"/> Privacidad
               </button>
               <button 
                 type="button"
@@ -538,9 +545,9 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                   handleLogout();
                   setShowMenu(false);
                 }}
-                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-text hover:bg-text/10 transition-colors text-left cursor-pointer"
+                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-text hover:bg-red-500/10 transition-colors text-left cursor-pointer"
               >
-                <LogOut size={18} /> Cerrar Sesión
+                <LogOut size={18} className="text-red-400"/> Cerrar Sesión
               </button>
             </div>
           )}
