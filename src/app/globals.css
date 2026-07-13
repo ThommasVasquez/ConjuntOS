@@ -120,15 +120,15 @@ html, body {
 
 /* BottomNav active pill */
 .nav-active-glass {
-  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  background: linear-gradient(135deg, #009df2, #007ec2);
+  border: 1px solid rgba(0, 157, 242, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 157, 242, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
 .light .nav-active-glass {
-  background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-  border: 1px solid rgba(0,0,0,0.15);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  background: linear-gradient(135deg, #009df2, #007ec2);
+  border: 1px solid rgba(0, 157, 242, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 157, 242, 0.25);
 }
 
 /* Glowing text */
