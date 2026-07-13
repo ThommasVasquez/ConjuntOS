@@ -99,8 +99,8 @@ export default function Navbar() {
           </button>
           <ThemeToggle className="text-white" />
           <div className="h-4 w-[1px] bg-text/10 mx-1" />
-          <button 
-            onClick={() => navigate(user ? "/inicio" : "/login")} 
+          <a 
+            href={user ? "https://app.conjuntos.app/inicio" : "https://app.conjuntos.app/login"} 
             className={`transition-all duration-300 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase whitespace-nowrap hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,0,0,0.3)] ${
               scrolled 
                 ? "text-text bg-text/5 border border-text/10 hover:bg-accent hover:text-on-accent"
@@ -108,7 +108,7 @@ export default function Navbar() {
             }`}
           >
             {user ? "Mi Panel" : "Ingresar"}
-          </button>
+          </a>
         </div>
 
       </div>

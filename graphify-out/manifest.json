@@ -280,8 +280,8 @@
     "semantic_hash": ""
   },
   "src/middleware.ts": {
-    "mtime": 1783965177.2073464,
-    "ast_hash": "10de420bf087ea30b6431bb361d4fca6",
+    "mtime": 1783968682.1302469,
+    "ast_hash": "a24374f329ce8306ac53de2eaa957dcb",
     "semantic_hash": ""
   },
   "tsconfig.json": {
@@ -2702,11 +2702,6 @@
   "pnpm-workspace.yaml": {
     "mtime": 1783799640.6180305,
     "ast_hash": "39fe9282c17f2c0283edb67a31bffae8",
-    "semantic_hash": ""
-  },
-  "public/presentacion.html": {
-    "mtime": 1783876160.8991756,
-    "ast_hash": "d7d57ab3f0b156daf432a8e19a4ae58d",
     "semantic_hash": ""
   },
   "specs/TEST_FLOWS.md": {
@@ -97990,8 +97985,8 @@
     "semantic_hash": ""
   },
   "landing/next.config.ts": {
-    "mtime": 1783968054.6282146,
-    "ast_hash": "6fc99521ba4b4d77e4cf5e0f2c06b983",
+    "mtime": 1783968541.4673452,
+    "ast_hash": "5018c66280503bc4b1156a707857d305",
     "semantic_hash": ""
   },
   "landing/package.json": {
@@ -98055,8 +98050,8 @@
     "semantic_hash": ""
   },
   "landing/src/components/landing/Footer.tsx": {
-    "mtime": 1783965044.5683124,
-    "ast_hash": "aee5ab9a481015ab65c12e3a3c9107be",
+    "mtime": 1783968573.4497924,
+    "ast_hash": "8972e064bc799a5416e7342ee7881288",
     "semantic_hash": ""
   },
   "landing/src/components/landing/Hero.tsx": {
@@ -98065,8 +98060,8 @@
     "semantic_hash": ""
   },
   "landing/src/components/landing/Navbar.tsx": {
-    "mtime": 1783965044.569417,
-    "ast_hash": "00a9f8e251871f9188bb4acec3830746",
+    "mtime": 1783968555.4442964,
+    "ast_hash": "3764124268f91bcb94e983e628c35285",
     "semantic_hash": ""
   },
   "landing/src/components/landing/ProductsSection.tsx": {
@@ -98232,6 +98227,11 @@
   "landing/public/solo-light.svg": {
     "mtime": 1783965098.566785,
     "ast_hash": "3321ebc7e2ca8cb43e603a349db429fe",
+    "semantic_hash": ""
+  },
+  "landing/public/presentacion.html": {
+    "mtime": 1783876160.8991756,
+    "ast_hash": "d7d57ab3f0b156daf432a8e19a4ae58d",
     "semantic_hash": ""
   }
 }

@@ -38,9 +38,9 @@ export default function Footer() {
         <div>
           <h4 className="font-bold mb-6 font-[family-name:var(--font-serif)] text-white">Plataforma</h4>
           <ul className="space-y-4 text-sm text-white/60 font-light">
-            <li><button onClick={() => navigate("/")} className="hover:text-white transition-colors cursor-pointer">Inicio</button></li>
-            <li><button onClick={() => navigate("/login")} className="hover:text-white transition-colors cursor-pointer">Acceso Residentes</button></li>
-            <li><button onClick={() => navigate("/login")} className="hover:text-white transition-colors cursor-pointer">Panel Admin</button></li>
+            <li><a href="/" className="hover:text-white transition-colors">Inicio</a></li>
+            <li><a href="https://app.conjuntos.app/login" className="hover:text-white transition-colors">Acceso Residentes</a></li>
+            <li><a href="https://app.conjuntos.app/login" className="hover:text-white transition-colors">Panel Admin</a></li>
           </ul>
         </div>
 
