@@ -68,14 +68,14 @@ export default function RoleSwitcher() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={busy}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-linear-to-r from-text/15 to-text/15 border border-text/30 text-text shadow-lg hover:border-text/50 transition-all active:scale-[0.99] disabled:opacity-60"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-primary-light border border-border text-text shadow-md hover:border-blue-500/30 transition-all active:scale-[0.99] disabled:opacity-60"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-text/20 border border-text/40 flex items-center justify-center text-text">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-500">
             <FlaskConical size={18} />
           </div>
           <div className="flex flex-col items-start leading-tight">
-            <span className="text-[9px] text-text font-black uppercase tracking-widest">
+            <span className="text-[9px] text-text-muted font-black uppercase tracking-widest">
               Modo Tester · Rol activo
             </span>
             <span className="text-sm font-bold text-text">{currentLabel}</span>
@@ -83,7 +83,7 @@ export default function RoleSwitcher() {
         </div>
         <ChevronDown
           size={18}
-          className={`text-text transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-blue-500 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 

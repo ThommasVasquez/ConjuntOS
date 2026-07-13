@@ -219,11 +219,13 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
             </div>
           )}
           <h1 className="text-text text-xl font-display font-bold tracking-tight text-glow leading-none">{userData.name || 'Residente'}</h1>
+          {showWelcome && user?.rol && (
+            <p className="text-text-muted text-[11px] mt-1 capitalize">{user.rol.replace(/_/g, " ").toLowerCase()}</p>
+          )}
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <SosPanicButton compact />
         <div className="relative" ref={notificationsRef}>
           <button 
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -274,6 +276,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
             </div>
           )}
         </div>
+        <SosPanicButton compact />
       </div>
     </header>
   );

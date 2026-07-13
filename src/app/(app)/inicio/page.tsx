@@ -5,12 +5,20 @@
  * Sincronización de datos reales del usuario y Panel de Notificaciones.
  */
 
-import { 
+import {
   ArrowRight, Bell, Building2, Calendar, Car, CreditCard, DollarSign,
   Megaphone, MessageSquare, MoreHorizontal, ChevronLeft, ShieldAlert,
-  Search, SlidersHorizontal, ShoppingBag, User as UserIcon,
+  Search, SlidersHorizontal, ShoppingBag, User as UserIcon, Info,
   Users, Wrench, MapPin, BarChart3, Scale, CheckCircle, AlertTriangle, Clock
 } from "lucide-react";
+
+// Paleta pastel para las tarjetas de navegación (cicla por índice)
+const CAT_STYLES = [
+  { chip: "bg-emerald-500/15 text-emerald-500", bar: "bg-emerald-500" },
+  { chip: "bg-blue-500/15 text-blue-500", bar: "bg-blue-500" },
+  { chip: "bg-violet-500/15 text-violet-500", bar: "bg-violet-500" },
+  { chip: "bg-orange-500/15 text-orange-500", bar: "bg-orange-500" },
+];
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
 import CelebrationModal from "@/components/modals/CelebrationModal";
@@ -71,16 +79,16 @@ function HomeResidente() {
   });
 
   const categories = [
-    { title: "Citofonía", icon: <UserIcon size={20}/>, color: "from-text to-text", path: "/citofonia" },
-    { title: "Pagos", icon: <CreditCard size={20}/>, color: "from-[#FFFFFF] to-[#404040]", path: "/pagos" },
-    { title: "Parqueo", icon: <Car size={20}/>, color: "from-text to-text", path: "/parqueadero" },
-    { title: "Reservas", icon: <Calendar size={20}/>, color: "from-text to-text", path: "/reservas" },
-    { title: "Cartelera", icon: <Megaphone size={20}/>, color: "from-text to-text", path: "/cartelera" },
-    { title: "Encuestas", icon: <BarChart3 size={20}/>, color: "from-text to-text", path: "/encuestas" },
-    { title: "Asistente", icon: <Scale size={20}/>, color: "from-text to-text", path: "/asistente" },
-    { title: "PQRS", icon: <MessageSquare size={20}/>, color: "from-text to-text", path: "/pqrs" },
-    { title: "Inmuebles", icon: <Building2 size={20}/>, color: "from-text to-text", path: "/inmobiliaria" },
-    { title: "Clasificados", icon: <ShoppingBag size={20}/>, color: "from-text to-text", path: "/clasificados" },
+    { title: "Citofonía", icon: <UserIcon size={20}/>, desc: "Comunicación", path: "/citofonia" },
+    { title: "Pagos", icon: <CreditCard size={20}/>, desc: "Mis pagos", path: "/pagos" },
+    { title: "Parqueo", icon: <Car size={20}/>, desc: "Mis vehículos", path: "/parqueadero" },
+    { title: "Reservas", icon: <Calendar size={20}/>, desc: "Áreas comunes", path: "/reservas" },
+    { title: "Cartelera", icon: <Megaphone size={20}/>, desc: "Anuncios", path: "/cartelera" },
+    { title: "Encuestas", icon: <BarChart3 size={20}/>, desc: "Participa", path: "/encuestas" },
+    { title: "Asistente", icon: <Scale size={20}/>, desc: "Normativa", path: "/asistente" },
+    { title: "PQRS", icon: <MessageSquare size={20}/>, desc: "Solicitudes", path: "/pqrs" },
+    { title: "Inmuebles", icon: <Building2 size={20}/>, desc: "Propiedades", path: "/inmobiliaria" },
+    { title: "Clasificados", icon: <ShoppingBag size={20}/>, desc: "Compra y venta", path: "/clasificados" },
   ];
 
   const [anuncios, setAnuncios] = useState<AnuncioDto[]>([]);
@@ -294,14 +302,14 @@ function HomeResidente() {
             onClick={() => setIsSearchOpen(true)}
             className="relative flex-1 group text-left"
           >
-            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text group-hover:text-accent transition-colors" />
-            <div className="w-full bg-primary-light/50 border border-border rounded-[24px] py-4 pl-14 pr-6 text-sm text-text hover:border-accent/30 hover:bg-primary-light/80 transition-all shadow-inner cursor-pointer select-none">
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500 transition-colors" />
+            <div className="w-full bg-primary-light border border-border rounded-[24px] py-4 pl-14 pr-6 text-sm text-text-muted hover:border-blue-500/30 transition-all shadow-sm cursor-pointer select-none">
               Buscar o preguntar algo...
             </div>
           </button>
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="w-14 h-14 rounded-[22px] bg-primary-light/80 border border-border flex items-center justify-center text-text hover:text-accent hover:border-accent/30 transition-all active:scale-95 shadow-lg"
+            className="w-14 h-14 rounded-[22px] bg-primary-light border border-border flex items-center justify-center text-blue-500 hover:border-blue-500/30 transition-all active:scale-95 shadow-sm"
           >
             <SlidersHorizontal size={20} />
           </button>
@@ -500,22 +508,27 @@ function HomeResidente() {
       {/* 🧭 CATEGORÍAS PREMIUM */}
       <section className="fade-up-home flex flex-col gap-4">
         <div className="flex justify-between items-center px-1">
-           <h2 className="text-xs font-bold uppercase tracking-widest text-text">Navegación</h2>
-           <ArrowRight size={14} className="text-text" />
+           <h2 className="text-xs font-bold uppercase tracking-widest text-text">Navegación rápida</h2>
+           <span className="text-[11px] font-bold text-blue-500 flex items-center gap-1">Ver todo <ArrowRight size={12} /></span>
         </div>
-        <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 px-1 -mx-1">
-          {categories.map((cat, idx) => (
-            <div 
-              key={idx} 
-              onClick={() => router.push(cat.path)}
-              className="flex flex-col items-center gap-2"
-            >
-              <div className={`relative hover:z-10 w-[84px] h-[106px] rounded-[32px] bg-primary border border-[#333333] flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-2xl cursor-pointer p-4`}>
-                  <div className="[&_svg]:!text-[#57bf00] scale-125 mb-1">{cat.icon}</div>
-                  <span className="text-[10px] font-bold text-[#009df2] uppercase text-center block w-full truncate tracking-tighter">{cat.title}</span>
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 px-1 -mx-1">
+          {categories.map((cat, idx) => {
+            const s = CAT_STYLES[idx % CAT_STYLES.length];
+            return (
+              <div
+                key={idx}
+                onClick={() => router.push(cat.path)}
+                className="min-w-[116px] p-4 rounded-[24px] bg-primary-light border border-border shadow-sm flex flex-col items-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${s.chip}`}>{cat.icon}</div>
+                <div className="text-center w-full">
+                  <span className="text-[11px] font-bold text-text uppercase block truncate tracking-tight">{cat.title}</span>
+                  <span className="text-[9px] text-text-muted block truncate">{cat.desc}</span>
+                </div>
+                <span className={`h-1 w-8 rounded-full ${s.bar}`} />
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
  
@@ -524,23 +537,28 @@ function HomeResidente() {
           <section className="fade-up-home flex flex-col gap-3">
               <div className="flex justify-between items-center px-1">
                   <h2 className="text-text font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                      <Bell size={14} className="text-accent animate-pulse" /> Avisos Recientes
+                      <Bell size={14} className="text-blue-500 animate-pulse" /> Avisos Recientes
                   </h2>
-                  <span className="text-accent text-[10px] font-bold">{notificaciones.length} nuevos</span>
+                  <span className="text-blue-500 text-[10px] font-bold">{notificaciones.length} nuevos</span>
               </div>
               <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
                   {notificaciones.map((n) => (
-                      <div 
-                        key={n.id} 
+                      <div
+                        key={n.id}
                         onClick={() => { markAsRead(n.id); router.push(getNotifTarget(n, user?.rol)); }}
-                        className="min-w-[280px] bg-linear-to-r from-accent/20 to-accent/5 border border-accent/30 rounded-[22px] p-4 flex flex-col gap-2 cursor-pointer hover:bg-text/5 transition-all shadow-lg shadow-accent/5 group"
+                        className="min-w-[280px] bg-primary-light border border-border rounded-[22px] p-4 flex gap-3 cursor-pointer hover:border-blue-500/30 transition-all shadow-sm group"
                       >
-                          <div className="flex justify-between items-start">
-                              <span className="text-[10px] font-black text-accent uppercase tracking-tighter">{n.tipo}</span>
-                              <div className="w-2 h-2 rounded-full bg-accent group-hover:scale-150 transition-transform" />
+                          <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0">
+                              <Info size={18} />
                           </div>
-                          <h3 className="text-text text-sm font-bold truncate">{n.titulo}</h3>
-                          <p className="text-[11px] text-text line-clamp-2 leading-relaxed">{n.mensaje}</p>
+                          <div className="flex flex-col gap-1 min-w-0 flex-1">
+                              <div className="flex justify-between items-start">
+                                  <span className="text-[10px] font-black text-blue-500 uppercase tracking-wide bg-blue-500/10 px-2 py-0.5 rounded-md">{n.tipo}</span>
+                                  <div className="w-2 h-2 rounded-full bg-blue-500 group-hover:scale-150 transition-transform shrink-0" />
+                              </div>
+                              <h3 className="text-text text-sm font-bold truncate">{n.titulo}</h3>
+                              <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed">{n.mensaje}</p>
+                          </div>
                       </div>
                   ))}
               </div>
@@ -548,22 +566,24 @@ function HomeResidente() {
       )}
 
       {/* WALLET HERO */}
-      <section 
-        className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[120px] shadow-[0_15px_40px_rgba(0,0,0,0.6)] border border-white/10 group overflow-hidden transition-all"
+      <section
+        className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[120px] shadow-xl shadow-[#0F2137]/25 group overflow-hidden transition-all"
       >
-        <div className={`absolute inset-0 bg-linear-to-br ${financialData.totalDebt > 0 ? 'from-[#262626] via-[#171717] to-[#0A0A0A]' : 'from-[#424242] via-[#363636] to-[#525252]'} opacity-90`} />
+        <div className="absolute inset-0 bg-linear-to-br from-[#16304F] via-[#0F2137] to-[#0A1626]" />
         <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-               <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
-                 <CreditCard size={14} className="text-white" />
+               <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/15">
+                 <CreditCard size={14} className="text-blue-300" />
                </div>
-               <span className="text-[10px] text-white font-bold uppercase tracking-widest">Mi Cuota</span>
+               <span className="text-[10px] text-white/80 font-bold uppercase tracking-widest">Mi Cuota</span>
             </div>
             {financialData.totalDebt > 0 ? (
-              <div className="px-2.5 py-1 rounded-full bg-accent/20 border border-accent/40 text-[10px] text-accent font-bold uppercase animate-pulse">Pendiente</div>
+              <div className="px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-[10px] text-amber-300 font-bold uppercase animate-pulse">Pendiente</div>
             ) : (
-              <div className="px-2.5 py-1 rounded-full bg-text/20 border border-text/40 text-[10px] text-text font-bold uppercase">Paz y Salvo</div>
+              <div className="px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-[10px] text-white font-bold uppercase flex items-center gap-1.5">
+                Paz y Salvo <CheckCircle size={12} className="text-emerald-400" />
+              </div>
             )}
           </div>
           <div className="flex justify-between items-end">
@@ -571,15 +591,15 @@ function HomeResidente() {
               <h2 className="text-2xl font-display font-bold text-white tracking-tight">
                 $ {financialData.totalDebt.toLocaleString()}
               </h2>
-              <p className="text-white text-[10px] mt-0.5">
-                {financialData.totalDebt > 0 ? "Saldo pendiente" : "Al dia con tus pagos"}
+              <p className={`text-[10px] mt-0.5 flex items-center gap-1 ${financialData.totalDebt > 0 ? 'text-amber-300' : 'text-emerald-400'}`}>
+                {financialData.totalDebt > 0 ? "Saldo pendiente" : (<><CheckCircle size={11} /> Al día con tus pagos</>)}
               </p>
             </div>
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); router.push('/pagos'); }}
-              className="bg-white text-[#000000] text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all relative z-20"
+              className="bg-white text-[#0F2137] text-[11px] font-bold px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition-all relative z-20 flex items-center gap-1"
             >
-              {financialData.totalDebt > 0 ? "Pagar Ahora" : "Ver Estado"}
+              {financialData.totalDebt > 0 ? "Pagar Ahora" : "Ver Estado"} <ArrowRight size={12} />
             </button>
           </div>
         </div>
@@ -591,16 +611,6 @@ function HomeResidente() {
            <h3 className="text-text font-display text-lg font-bold tracking-tight">Novedades</h3>
            <span className="text-text text-[10px] font-bold uppercase tracking-widest">Hoy</span>
          </div>
-         <section className="fade-up-home flex justify-between items-center py-4 border-t border-border mt-4">
-          <div className="flex flex-col">
-              <span className="text-[10px] font-black text-text uppercase tracking-widest">ConjuntOS v3.2</span>
-              <span className="text-[9px] text-text uppercase">Resident Edition</span>
-          </div>
-          <button onClick={() => router.push('/perfil')} className="flex items-center gap-2 text-text hover:text-text transition-colors">
-              <span className="text-[10px] font-bold uppercase tracking-tighter">Mi Cuenta</span>
-              <ArrowRight size={14} />
-          </button>
-      </section>
          {isLoadingAnuncios ? (
            <div className="py-10 flex flex-col items-center justify-center gap-3">
              <div className="w-8 h-8 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
@@ -626,6 +636,12 @@ function HomeResidente() {
             return items;
           })
         )}
+       </section>
+
+       {/* FOOTER */}
+       <section className="fade-up-home flex flex-col items-center gap-1 py-4">
+          <span className="text-[10px] font-black text-text uppercase tracking-[0.35em]">Conjuntos v3.2 ⚡</span>
+          <span className="text-[9px] text-text-muted">Powered by <span className="text-blue-500 font-bold">EnergySoftmedia®</span></span>
        </section>
 
        {selectedFeedItem && (
