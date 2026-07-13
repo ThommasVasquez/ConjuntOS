@@ -133,3 +133,8 @@ docker: Error response from daemon: failed to set up container networking: drive
 
 Run 'docker run --help' for more information
 no renewal needed (cert not within 30-day window)
+=== Mon Jul 13 03:30:01 AM UTC 2026 renewal run ===
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint brave_lehmann (60d8f733e2475f9a54baa5e3bb8fc559ade83038162fbae6e2cf9b4242a6cf0d): failed to bind host port 0.0.0.0:80/tcp: address already in use
+
+Run 'docker run --help' for more information
+no renewal needed (cert not within 30-day window)
