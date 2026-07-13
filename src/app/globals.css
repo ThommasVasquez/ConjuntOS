@@ -185,13 +185,37 @@ html, body {
   padding: 3px;
 }
 
-/* Anillo sutil de estado alrededor del avatar */
+/* Halo animado rotatorio alrededor del avatar de perfil */
 .liquid-status-halo::before {
   content: "";
   position: absolute;
-  inset: -3px;
+  inset: -4px;
   border-radius: 9999px;
-  border: 2px solid rgba(16, 185, 129, 0.45);
+  background: conic-gradient(from 0deg, transparent, #009df2, #57bf00, transparent);
+  animation: rotate-halo 3s linear infinite;
+  opacity: 0.6;
+  filter: blur(8px);
+}
+
+.liquid-status-halo::after {
+  content: "";
+  position: absolute;
+  inset: 0px;
+  border-radius: 9999px;
+  background: #009df2;
+  opacity: 0.4;
+  animation: breathe-halo 2s ease-in-out infinite;
+  filter: blur(4px);
+}
+
+@keyframes rotate-halo {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes breathe-halo {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.08); }
 }
 
 @keyframes story-bg {
