@@ -118,6 +118,19 @@ html, body {
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04);
 }
 
+/* BottomNav active pill */
+.nav-active-glass {
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.light .nav-active-glass {
+  background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+  border: 1px solid rgba(0,0,0,0.15);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
 /* Glowing text */
 .text-glow {
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
@@ -155,12 +168,22 @@ html, body {
 
 [data-type='success'].liquid-glass-toast {
   border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important; /* Glow máximo */
+  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important;
 }
 
 [data-type='error'].liquid-glass-toast {
   border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important; /* Glow máximo */
+  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important;
+}
+
+.light [data-type='success'].liquid-glass-toast {
+  border-color: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.light [data-type='error'].liquid-glass-toast {
+  border-color: rgba(200, 0, 0, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(200, 0, 0, 0.08) !important;
 }
 
 [data-sonner-toast] [data-icon] {
@@ -226,5 +249,20 @@ html, body {
 
 .text-glow {
   text-shadow: 0 0 12px rgba(255,255,255,0.35);
+}
+
+.light .text-glow {
+  text-shadow: 0 0 8px rgba(0,0,0,0.15);
+}
+
+/* Halo en modo claro: más opaco para que sea visible */
+.light .liquid-status-halo::before {
+  opacity: 0.9;
+  filter: blur(6px);
+}
+
+.light .liquid-status-halo::after {
+  opacity: 0.5;
+  filter: blur(3px);
 }
 
