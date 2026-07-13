@@ -7,7 +7,7 @@ import type { NextRequest } from "next/server";
  * Public paths are allowed without auth; everything else redirects to /login.
  */
 
-const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos", "/presentacion.html"];
+const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos"];
 
 // Landing page moved to separate project (landing/).
 // Root "/" now redirects to /login.
