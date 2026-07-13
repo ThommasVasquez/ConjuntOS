@@ -46,7 +46,7 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      process.env.NEXT_PUBLIC_API_URL || 'https://api.conjuntos.app';
     return [
       {
         source: '/api/v1/ws',

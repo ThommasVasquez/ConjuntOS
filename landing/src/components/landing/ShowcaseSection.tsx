@@ -1,0 +1,81 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import Image from "next/image";
+import { CheckCircle2 } from "lucide-react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import RevealText from "./RevealText";
+
+gsap.registerPlugin(ScrollTrigger);
+
+export default function ShowcaseSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.fromTo(".showcase-left",
+        { x: -50, opacity: 0 },
+        { x: 0, opacity: 1, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".showcase-left", start: "top 80%" } }
+      );
+      
+      gsap.fromTo(".showcase-right",
+        { x: 50, opacity: 0 },
+        { x: 0, opacity: 1, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".showcase-right", start: "top 80%" } }
+      );
+
+      gsap.fromTo(".showcase-float",
+        { y: 30, opacity: 0, scale: 0.9 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.8, delay: 0.4, ease: "back.out(1.5)", scrollTrigger: { trigger: ".showcase-right", start: "top 70%" } }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    <section ref={sectionRef} className="py-24 px-6 md:px-16 bg-primary">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16">
+        
+        <div className="showcase-left flex-1 flex flex-col justify-between">
+          <div className="mb-12 max-w-md">
+            <p className="text-sm font-semibold text-text/70 uppercase tracking-widest mb-4">Integraciones</p>
+            <RevealText as="h2" className="text-2xl md:text-4xl font-bold text-text font-[family-name:var(--font-serif)] leading-tight">
+              Nuestra plataforma está definida por ecosistemas perfectamente conectados que irradian eficiencia, seguridad y confianza.
+            </RevealText>
+          </div>
+
+          <div className="relative rounded-[32px] overflow-hidden bg-text/10 shadow-xl h-[400px]">
+            <Image fill sizes="(max-width: 768px) 100vw, 50vw" src="/img/craft-tablet.webp" alt="Pagos digitales con Nequi" className="object-cover" />
+            <div className="absolute bottom-0 inset-x-0 bg-[#000000]/90 backdrop-blur-md p-6 flex items-center justify-between border-t border-white/5">
+              <div>
+                <p className="text-sm text-white/70 mb-1">Integración Directa</p>
+                <h4 className="font-bold text-white text-lg">Pagos Automatizados con Nequi</h4>
+              </div>
+              <div className="w-12 h-12 bg-[#FFFFFF]/10 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="text-[#FFFFFF] w-6 h-6" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="showcase-right flex-1 relative">
+          <div className="relative rounded-[32px] overflow-hidden h-full min-h-[600px] bg-text/10 shadow-xl">
+            <Image fill sizes="(max-width: 768px) 100vw, 50vw" src="/img/lobby-entrance.webp" alt="Acceso inteligente al conjunto" className="object-cover" />
+          </div>
+          
+          <div className="showcase-float absolute bottom-8 right-8 bg-[#000000]/80 border border-white/10 backdrop-blur-xl p-4 rounded-2xl shadow-2xl flex items-center gap-4 w-72">
+            <div className="relative w-12 h-12 rounded-full bg-black flex items-center justify-center overflow-hidden border border-white/5">
+              <Image fill sizes="48px" src="/img/support.webp" alt="Soporte al residente" className="object-cover opacity-80" />
+            </div>
+            <div>
+              <p className="font-bold text-white text-sm">Control de Accesos</p>
+              <p className="text-xs text-white/70">20+ Opciones configurables</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}

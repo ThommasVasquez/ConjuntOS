@@ -1,0 +1,282 @@
+"use client";
+
+import { useViewTransition } from "@/components/providers/ViewTransitionContext";
+import { useTheme } from "@/components/providers/ThemeContext";
+import { useEffect, useRef, useState } from "react";
+import { gsap } from "gsap";
+import Image from "next/image";
+
+const slides = [
+  {
+    id: "residente",
+    label: "Residentes",
+    title: "Gestión residencial\ncon alma, creada\npara la comunidad",
+    description: "Simplifica tu vida en copropiedad. Accede a servicios, pagos y comunicación con tu administración desde una sola plataforma intuitiva y elegante.",
+    image: "/img/hero-residente.webp",
+    imageLight: "/img/hero-light-residente.webp",
+    features: [
+      {
+        title: "Reserva de Áreas",
+        desc: "Gestiona el uso de piscina, gimnasio y salón comunal. Consulta disponibilidad y reserva en segundos.",
+        img: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&w=500&q=80"
+      },
+      {
+        title: "Cartelera Digital",
+        desc: "Mantente al tanto de circulares, eventos y noticias importantes de tu conjunto sin salir de casa.",
+        img: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=500&q=80"
+      },
+      {
+        title: "Citofonía Virtual",
+        desc: "Recibe llamadas de portería directamente en tu celular. Autoriza ingresos estés donde estés.",
+        img: "https://images.unsplash.com/photo-1563906267088-b029e7101114?auto=format&fit=crop&w=500&q=80"
+      }
+    ]
+  },
+  {
+    id: "administrador",
+    label: "Administración",
+    title: "Administración\neficiente, clara\ny 100% digital",
+    description: "Toma el control total de tu copropiedad. Herramientas financieras y operativas diseñadas para administradores modernos que buscan transparencia.",
+    image: "/img/hero-admin.webp",
+    imageLight: "/img/hero-light-admin.webp",
+    features: [
+      {
+        title: "Asambleas Virtuales",
+        desc: "Dirige y ordena asambleas con votaciones en tiempo real y registro de quórum automático.",
+        img: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=500&q=80"
+      },
+      {
+        title: "Aprobaciones",
+        desc: "Gestiona solicitudes de estacionamientos, registro de mascotas y trámites administrativos.",
+        img: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=500&q=80"
+      },
+      {
+        title: "Publicar Contenido",
+        desc: "Crea y publica anuncios, circulares y noticias importantes en la cartelera digital del conjunto.",
+        img: "https://images.unsplash.com/photo-1432888622747-4eb9a8f2c205?auto=format&fit=crop&w=500&q=80"
+      }
+    ]
+  },
+  {
+    id: "seguridad",
+    label: "Seguridad",
+    title: "Seguridad total\npara lo que\nmás importa",
+    description: "Empodera a tu equipo de seguridad. Tecnología de vigilancia y control preventivo para garantizar la tranquilidad de todas las familias.",
+    image: "/img/hero-seguridad.webp",
+    imageLight: "/img/hero-light-seguridad.webp",
+    features: [
+      {
+        title: "Control de Acceso",
+        desc: "Registro de visitantes y domicilios con pases QR de un solo uso y aprobación del residente en tiempo real.",
+        img: "https://images.unsplash.com/photo-1551808198-b30a64776194?auto=format&fit=crop&w=500&q=80"
+      },
+      {
+        title: "Bitácora Digital",
+        desc: "Reporte de incidentes y novedades con evidencia multimedia compartido en tiempo real con admin.",
+        img: "https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=500&q=80"
+      },
+      {
+        title: "Rondas Activas",
+        desc: "Supervisión de puntos de control mediante tecnología NFC/QR para asegurar cobertura total.",
+        img: "https://images.unsplash.com/photo-1587614203976-365c74445aeb?auto=format&fit=crop&w=500&q=80"
+      }
+    ]
+  },
+  {
+    id: "estacionamientos",
+    label: "Estacionamientos",
+    title: "Optimización\ny orden en cada\nmétro cuadrado",
+    description: "Gestiona el parqueo de visitantes y residentes con inteligencia. Elimina conflictos y maximiza el uso de espacios compartidos.",
+    image: "/img/hero-parqueadero.webp",
+    imageLight: "/img/hero-light-parqueadero.webp",
+    features: [
+      {
+        title: "Reserva de Cupos",
+        desc: "Permite a tus visitas reservar su lugar antes de llegar. Control de tiempos y disponibilidad.",
+        img: "https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?auto=format&fit=crop&w=500&q=80"
+      },
+      {
+        title: "Acceso con QR",
+        desc: "Entrada automatizada para vehículos autorizados mediante lectura de códigos QR seguros.",
+        img: "https://images.unsplash.com/photo-1595079676339-1534801ad6cf?auto=format&fit=crop&w=500&q=80"
+      },
+      {
+        title: "Auditoría de Uso",
+        desc: "Reportes detallados de rotación, tiempos de estancia y alertas de parqueo no autorizado.",
+        img: "https://images.unsplash.com/photo-1470224114660-3f6686c562eb?auto=format&fit=crop&w=500&q=80"
+      }
+    ]
+  }
+];
+
+export default function Hero() {
+  const { navigate } = useViewTransition();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  const heroRef = useRef<HTMLElement>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [activeFeature, setActiveFeature] = useState(0);
+
+  // Main 10s Timer for Slides
+  useEffect(() => {
+    const mainTimer = setInterval(() => {
+      handleSlideChange((activeSlide + 1) % slides.length);
+    }, 10000);
+
+    return () => clearInterval(mainTimer);
+  }, [activeSlide]);
+
+  // Nested 3s Timer for Features (within the current slide)
+  useEffect(() => {
+    const featureTimer = setInterval(() => {
+      // First, animate current content out
+      gsap.to(".feature-content", {
+        opacity: 0,
+        y: -10,
+        duration: 0.3,
+        onComplete: () => {
+          setActiveFeature((prev) => (prev + 1) % 3);
+          // Then, animate new content in
+          gsap.fromTo(".feature-content", 
+            { opacity: 0, y: 10 }, 
+            { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+          );
+        }
+      });
+    }, 3000);
+
+    return () => clearInterval(featureTimer);
+  }, [activeSlide]);
+
+  const handleSlideChange = (index: number) => {
+    if (index === activeSlide) return;
+    // Single self-contained timeline: fade out → swap slide → fade back in.
+    // Always ends at opacity 1, so it can't get stuck hidden even if a
+    // re-render or a duplicated timer interrupts mid-transition.
+    gsap.timeline({ overwrite: "auto" })
+      .to([".hero-text", ".hero-card"], { opacity: 0, y: 10, duration: 0.3, ease: "power2.in" })
+      .add(() => {
+        setActiveSlide(index);
+        setActiveFeature(0);
+      })
+      .to([".hero-text", ".hero-card"], { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" });
+  };
+
+  const current = slides[activeSlide];
+  const currentFeature = current.features[activeFeature];
+
+  return (
+    <section ref={heroRef} className={`relative w-full h-screen ${isLight ? "bg-white" : "bg-[#000000]"}`}>
+      <div className={`relative w-full h-full overflow-hidden isolate ${isLight ? "bg-white" : "bg-[#000000]"}`}>
+        {/* Background Layers for Crossfade — bright images in light theme, dark in dark */}
+        {slides.map((slide, idx) => (
+          <div
+            key={`bg-${slide.id}`}
+            className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
+            style={{
+              backgroundImage: `url('${isLight ? slide.imageLight : slide.image}')`,
+              opacity: activeSlide === idx ? (isLight ? 1 : 0.4) : 0,
+              zIndex: activeSlide === idx ? 1 : 0,
+              transform: activeSlide === idx ? "scale(1)" : "scale(1.05)",
+              visibility: activeSlide === idx || Math.abs(activeSlide - idx) <= 1 ? 'visible' : 'hidden'
+            }}
+          />
+        ))}
+
+        {/* Ambient Orbs */}
+        <div className={`absolute top-[-10%] right-[-10%] w-[80%] h-[70%] blur-[130px] rounded-full pointer-events-none z-10 ${isLight ? "bg-white/40" : "bg-[#FFFFFF]/15"}`} />
+        <div className={`absolute bottom-[-15%] left-[-15%] w-[80%] h-[70%] blur-[130px] rounded-full pointer-events-none z-10 ${isLight ? "bg-black/5" : "bg-[#262626]/10"}`} />
+
+        {/* Readability scrim — lightens (light) / darkens (dark) the left where the text sits */}
+        <div className={`absolute inset-0 z-10 ${isLight ? "bg-gradient-to-tr from-white/95 via-white/60 to-white/10" : "bg-gradient-to-tr from-[#000000]/95 via-[#000000]/80 to-transparent"}`} />
+
+        <div className="relative z-20 w-full h-full flex items-center justify-between px-8 md:px-20">
+          <div className={`hero-text max-w-2xl ${isLight ? "text-neutral-900" : "text-white"}`}>
+
+            <div className={`inline-flex items-center gap-1 mb-8 p-1.5 rounded-full backdrop-blur-md border ${isLight ? "bg-black/[0.04] border-black/10" : "bg-white/5 border-white/10"}`}>
+              {slides.map((slide, idx) => (
+                <button
+                  key={slide.id}
+                  onClick={() => handleSlideChange(idx)}
+                  className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all duration-300 ${
+                    activeSlide === idx
+                      ? "bg-accent text-on-accent shadow-[0_0_15px_rgba(0,0,0,0.15)]"
+                      : isLight ? "text-neutral-500 hover:text-neutral-900" : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  {slide.label}
+                </button>
+              ))}
+              <div className={`w-8 h-8 rounded-full border flex items-center justify-center ml-2 ${isLight ? "border-black/15" : "border-white/20"}`}>
+                 <div
+                    className="w-2 h-2 rounded-full bg-accent animate-pulse"
+                    style={{ animationDuration: '3s' }}
+                  />
+              </div>
+            </div>
+
+            <h1 className={`text-4xl md:text-6xl lg:text-[4.5rem] font-medium leading-[1.1] mb-6 font-[family-name:var(--font-serif)] tracking-tight whitespace-pre-line ${isLight ? "" : "text-glow"}`}>
+              {current.title}
+            </h1>
+
+            <p className={`text-base md:text-lg mb-10 max-w-lg font-[family-name:var(--font-inter)] leading-relaxed ${isLight ? "text-neutral-700" : "text-white"}`}>
+              {current.description}
+            </p>
+
+            <div className="flex items-center gap-8">
+              <button
+                onClick={() => navigate("/login")}
+                className="bg-accent text-on-accent px-8 py-4 rounded-full text-xs font-bold tracking-widest uppercase hover:scale-[1.03] active:scale-95 transition-all shadow-lg cursor-pointer"
+              >
+                Comenzar Ahora
+              </button>
+              <button className={`flex items-center gap-2 text-xs font-bold tracking-widest uppercase transition-colors ${isLight ? "text-neutral-900" : "text-white"}`}>
+                <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${isLight ? "border-black/15 hover:bg-black/5" : "border-white/10 hover:bg-white/5"}`}>
+                  <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 6L0.25 11.1962L0.25 0.803848L10 6Z" fill="currentColor"/>
+                  </svg>
+                </div>
+                Ver Historia
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Feature Card */}
+          <div className={`hero-card backdrop-blur-xl p-10 rounded-[40px] w-[480px] shadow-2xl relative overflow-hidden border ${isLight ? "bg-white/75 border-black/10" : "bg-white/5 border-white/10"}`}>
+            <div className="relative z-10">
+              <div className="feature-content">
+                <div className={`w-20 h-20 rounded-2xl overflow-hidden mb-8 flex items-center justify-center border ${isLight ? "bg-black/5 border-black/10" : "bg-white/5 border-white/10"}`}>
+                   <Image
+                      width={64}
+                      height={64}
+                      src={currentFeature.img}
+                      alt={currentFeature.title}
+                      className="w-16 h-16 object-cover rounded-xl opacity-90 grayscale group-hover:grayscale-0 transition-all duration-300"
+                    />
+                </div>
+                <div>
+                  <h3 className={`text-3xl font-medium font-[family-name:var(--font-serif)] mb-4 ${isLight ? "text-neutral-900" : "text-white"}`}>{currentFeature.title}</h3>
+                  <p className={`text-base leading-relaxed mb-8 h-20 ${isLight ? "text-neutral-700" : "text-white/80"}`}>{currentFeature.desc}</p>
+
+                  <button className={`w-full py-4 rounded-full border text-xs font-bold tracking-widest uppercase hover:text-on-accent hover:bg-accent hover:border-accent transition-all duration-300 ${isLight ? "border-black/15 text-neutral-900" : "border-white/15 text-white"}`}>
+                    Ver cómo funciona
+                  </button>
+                </div>
+              </div>
+
+              {/* Step Indicators */}
+              <div className="flex gap-2 mt-8">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${activeFeature === i ? "bg-accent" : isLight ? "bg-black/15" : "bg-white/20"}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

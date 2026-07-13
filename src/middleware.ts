@@ -9,6 +9,9 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos", "/presentacion.html"];
 
+// Landing page moved to separate project (landing/).
+// Root "/" now redirects to /login.
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const session = req.cookies.get("ec_session")?.value;
