@@ -7,8 +7,18 @@
  * so API_BASE can stay empty.  In production it should point to the API host.
  */
 
+/**
+ * In development all calls go through the Next.js rewrite proxy
+ * (`/api/v1/*` → API host, see next.config.ts) so requests stay same-origin.
+ * The real API sets its session cookie with `Domain=conjuntos.app`, which a
+ * localhost browser rejects — same-origin + the /api/session cookie bridge
+ * keep auth working against the production API. In production the client
+ * talks to the API host directly.
+ */
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || 'https://api.conjuntos.app';
+  process.env.NODE_ENV === 'production'
+    ? process.env.NEXT_PUBLIC_API_URL || 'https://api.conjuntos.app'
+    : '';
 
 /**
  * In-memory Bearer token (same-session fallback for when the httpOnly `ec_session`

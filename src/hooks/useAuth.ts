@@ -4,6 +4,28 @@ import { create } from 'zustand';
 import { api, ApiError, setAuthToken } from '@/lib/api/client';
 import type { UserDto, LoginResponse } from '@/lib/api/types';
 
+/**
+ * Mirror the session token into an httpOnly `ec_session` cookie on the
+ * frontend origin (see src/app/api/session/route.ts). The backend's own
+ * cookie carries `Domain=conjuntos.app` and never lands on localhost or
+ * pages.dev, so without this the middleware bounces every page to /login.
+ */
+async function syncSessionCookie(token: string | null): Promise<void> {
+  try {
+    if (token) {
+      await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+    } else {
+      await fetch('/api/session', { method: 'DELETE' });
+    }
+  } catch {
+    // Non-fatal: the in-memory Bearer token still authenticates this tab.
+  }
+}
+
 interface AuthState {
   user: UserDto | null;
   loading: boolean;
@@ -31,10 +53,13 @@ export const useAuth = create<AuthState>((set) => ({
         email: finalEmail,
         password,
       });
-      // The Rust backend also sets an httpOnly ec_session cookie (the primary,
-      // reload-surviving credential). Keep the Bearer token in memory only.
+      // The Rust backend also sets an httpOnly ec_session cookie, but its
+      // Domain=conjuntos.app only works on that origin — mirror the token
+      // into a frontend-origin cookie before the caller redirects, so the
+      // middleware sees the session. Keep the Bearer token in memory only.
       if (res.token) {
         setAuthToken(res.token);
+        await syncSessionCookie(res.token);
       }
       set({ user: res.user, loading: false });
     } catch (err) {
@@ -52,6 +77,7 @@ export const useAuth = create<AuthState>((set) => ({
       // Ignore errors on logout — clear local state regardless
     }
     setAuthToken(null);
+    await syncSessionCookie(null);
     if (typeof window !== 'undefined') {
       // Clear any token persisted by a previous app version.
       localStorage.removeItem('ec_token');
@@ -80,6 +106,7 @@ export const useAuth = create<AuthState>((set) => ({
     const res = await api.post<LoginResponse>('/auth/switch-role', { rol });
     if (res.token) {
       setAuthToken(res.token);
+      await syncSessionCookie(res.token);
     }
     set({ user: res.user });
   },
