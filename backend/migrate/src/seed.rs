@@ -105,6 +105,46 @@ fn demo_users() -> Vec<DemoUser> {
             telefono: "+57 300 000 0010",
             unidad: None,
         },
+        DemoUser {
+            nombre: "Huesped Demo",
+            email: "huesped@demo.conjuntos.app",
+            rol: "HUESPED_TEMPORAL",
+            genero: "femenino",
+            telefono: "+57 300 000 0011",
+            unidad: None,
+        },
+        DemoUser {
+            nombre: "Admin Piscina Demo",
+            email: "piscina@demo.conjuntos.app",
+            rol: "ADMINISTRADOR_PISCINA",
+            genero: "masculino",
+            telefono: "+57 300 000 0012",
+            unidad: None,
+        },
+        DemoUser {
+            nombre: "Admin Gym Demo",
+            email: "gym@demo.conjuntos.app",
+            rol: "ADMINISTRADOR_GYM",
+            genero: "femenino",
+            telefono: "+57 300 000 0013",
+            unidad: None,
+        },
+        DemoUser {
+            nombre: "Mantenimiento Demo",
+            email: "mantenimiento@demo.conjuntos.app",
+            rol: "MANTENIMIENTO_LOCATIVO",
+            genero: "masculino",
+            telefono: "+57 300 000 0014",
+            unidad: None,
+        },
+        DemoUser {
+            nombre: "Limpieza Demo",
+            email: "limpieza@demo.conjuntos.app",
+            rol: "OPERARIO_LIMPIEZA",
+            genero: "neutro",
+            telefono: "+57 300 000 0015",
+            unidad: None,
+        },
     ]
 }
 
@@ -145,10 +185,20 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
         .await?;
     let conjunto_id: Uuid = row.get(0);
 
+    // Find the highest existing numero_interno so new demo users get unique codes.
+    let max_num: i32 = target
+        .query_one(
+            "SELECT COALESCE(MAX(CASE WHEN numero_interno ~ '^[0-9]+$'
+                                       THEN numero_interno::int ELSE 0 END), 0)
+             FROM usuarios WHERE conjunto_id = $1",
+            &[&conjunto_id],
+        )
+        .await?
+        .get(0);
+
     for (idx, user) in demo_users().into_iter().enumerate() {
         let hash = hash_password(DEMO_PASSWORD)?;
-        // Immutable internal dial code, 0001, 0002, ... (kept on re-seed).
-        let numero_interno = format!("{:04}", idx + 1);
+        let numero_interno = format!("{:04}", max_num + idx as i32 + 1);
 
         // Resolve (or create) the unidad and capture its id + free-text fields.
         let (unidad_id, torre, apto): (Option<Uuid>, Option<&str>, Option<&str>) =
