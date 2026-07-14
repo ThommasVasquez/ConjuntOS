@@ -124,6 +124,13 @@ impl WsHub {
             .subscribe()
     }
 
+    /// Check if a user has an active WebSocket connection with 1 or more receivers.
+    pub async fn is_user_online(&self, conjunto_id: Uuid, user_id: Uuid) -> bool {
+        let key = (conjunto_id, user_id);
+        let channels = self.user_channels.read().await;
+        channels.get(&key).map_or(false, |tx| tx.receiver_count() > 0)
+    }
+
     /// WS-7: publish routes to per-user channel if targeted, else conjunto broadcast.
     /// Silently ignores if no one is listening.
     pub async fn publish(&self, conjunto_id: Uuid, event: WsEvent) {

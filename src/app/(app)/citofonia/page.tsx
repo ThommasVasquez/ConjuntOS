@@ -81,6 +81,7 @@ export default function CitofoniaPage() {
   const [visitaHoraLlegada, setVisitaHoraLlegada] = useState("");
   const [visitaHoraSalida, setVisitaHoraSalida] = useState("");
   const [isSubmittingVisita, setIsSubmittingVisita] = useState(false);
+  const [vigilanteOnline, setVigilanteOnline] = useState(false);
 
   const handleSaveVisita = async () => {
     if (!visitaNombre) {
@@ -139,6 +140,22 @@ export default function CitofoniaPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Poll vigilante online status every 30s while on the CITOFONIA tab
+  useEffect(() => {
+    if (activeTab !== "CITOFONIA") return;
+    const checkStatus = async () => {
+      try {
+        const res = await api.get<{ vigilanteOnline: boolean }>('/citofonia/status');
+        setVigilanteOnline(res.vigilanteOnline ?? false);
+      } catch {
+        setVigilanteOnline(false);
+      }
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 30_000);
+    return () => clearInterval(interval);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -347,11 +364,23 @@ export default function CitofoniaPage() {
          <div className="flex justify-between items-center px-2">
             <h2 className="text-xl font-display font-bold text-text tracking-tight">Centro de Control</h2>
             <div className="flex gap-2">
-               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-text/10 rounded-full border border-text/20">
-                  <div className="w-1.5 h-1.5 rounded-full bg-text/10 animate-pulse" />
-                  <span className="text-[10px] text-text font-black uppercase tracking-widest">En Línea</span>
-               </div>
-            </div>
+             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-colors duration-500 ${
+               activeTab === "CITOFONIA" && vigilanteOnline
+                 ? 'bg-[#57bf00]/10 border-[#57bf00]/30'
+                 : 'bg-text/10 border-text/20'
+             }`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  activeTab === "CITOFONIA" && vigilanteOnline
+                    ? 'bg-[#57bf00] animate-pulse shadow-[0_0_6px_#57bf00]'
+                    : 'bg-text/30'
+                }`} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${
+                  activeTab === "CITOFONIA" && vigilanteOnline ? 'text-[#57bf00]' : 'text-text'
+                }`}>
+                  {activeTab === "CITOFONIA" && vigilanteOnline ? 'En Línea' : 'En Línea'}
+                </span>
+             </div>
+          </div>
          </div>
 
          {/* TAB SELECTOR */}
