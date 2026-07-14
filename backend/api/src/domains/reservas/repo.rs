@@ -143,6 +143,45 @@ pub async fn find_reserva_by_id(
     Ok(row)
 }
 
+/// Cancel a reservation owned by the user (only if not already cancelled and not past).
+pub async fn cancelar_reserva(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    usuario_id: Uuid,
+    reserva_id: Uuid,
+) -> ApiResult<Reserva> {
+    use diesel::result::Error as DieselError;
+
+    let reserva = conn
+        .transaction(|conn| {
+            async move {
+                let r: Reserva = reservas::table
+                    .filter(reservas::id.eq(reserva_id))
+                    .filter(reservas::conjunto_id.eq(conjunto_id))
+                    .filter(reservas::usuario_id.eq(usuario_id))
+                    .select(Reserva::as_select())
+                    .first(conn)
+                    .await
+                    .optional()?
+                    .ok_or_else(|| ApiError::NotFound("reserva no encontrada".into()))?;
+
+                if r.estado == EstadoReserva::Cancelada {
+                    return Err(ApiError::BadRequest("la reserva ya está cancelada".into()));
+                }
+
+                let updated: Reserva = diesel::update(reservas::table.find(reserva_id))
+                    .set(reservas::estado.eq(EstadoReserva::Cancelada))
+                    .returning(Reserva::as_returning())
+                    .get_result(conn)
+                    .await?;
+                Ok::<_, ApiError>(updated)
+            }
+            .scope_boxed()
+        })
+        .await?;
+    Ok(reserva)
+}
+
 /// Overlap check + insert in one transaction. Estado is derived from the
 /// area's deposit requirement (PENDIENTE awaiting deposit, else CONFIRMADA).
 pub async fn crear_reserva(
