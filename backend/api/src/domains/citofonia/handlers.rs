@@ -20,6 +20,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/citofonia/call", post(call))
         .route("/citofonia/token", get(citofonia_token))
+        .route("/citofonia/status", get(vigilante_status))
 }
 
 // ── DTOs ──
@@ -57,6 +58,38 @@ pub struct TokenQuery {
 pub struct CitofoniaTokenDto {
     pub token: String,
     pub url: String,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct VigilanteStatusDto {
+    /// True when at least one VIGILANTE in the conjunto has an active WebSocket connection.
+    pub vigilante_online: bool,
+}
+
+pub async fn vigilante_status(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<VigilanteStatusDto>> {
+    let mut conn = state.pool.get().await?;
+    // Fetch all active vigilantes in the conjunto.
+    let vigilante_ids: Vec<Uuid> = usuarios::table
+        .filter(usuarios::conjunto_id.eq(user.conjunto_id))
+        .filter(usuarios::rol.eq(crate::db::enums::Rol::Vigilante))
+        .filter(usuarios::activo.eq(true))
+        .select(usuarios::id)
+        .load(&mut conn)
+        .await?;
+
+    let hub = &state.ws_hub;
+    let mut any_online = false;
+    for vid in vigilante_ids {
+        if hub.is_user_online(user.conjunto_id, vid).await {
+            any_online = true;
+            break;
+        }
+    }
+    Ok(Json(VigilanteStatusDto { vigilante_online: any_online }))
 }
 
 // ── Peer-ID parsing ──
