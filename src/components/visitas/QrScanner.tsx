@@ -18,6 +18,7 @@ export default function QrScanner() {
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [manual, setManual] = useState("");
   const [busy, setBusy] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const processingRef = useRef(false);
 
   async function submitToken(token: string) {
@@ -50,8 +51,17 @@ export default function QrScanner() {
     [busy]
   );
 
-  const handleScanError = useCallback(() => {
-    // Camera unavailable — user can still use manual entry
+  const handleScanError = useCallback((error: any) => {
+    const kind = error?.kind || error?.name || '';
+    if (kind === 'permission-denied') {
+      setCameraError("Permiso de cámara denegado. Habilita el acceso en tu navegador.");
+    } else if (kind === 'no-camera') {
+      setCameraError("No se detectó cámara en este dispositivo.");
+    } else if (!window.isSecureContext) {
+      setCameraError("Se requiere HTTPS para acceder a la cámara.");
+    } else {
+      setCameraError("Cámara no disponible. Usa el ingreso manual.");
+    }
   }, []);
 
   return (
@@ -96,15 +106,22 @@ export default function QrScanner() {
 
       {showCamera ? (
         <div className="relative rounded-2xl overflow-hidden border border-border">
-          <Scanner
-            onScan={handleScan}
-            onError={handleScanError}
-            constraints={{ facingMode: "environment" }}
-            styles={{
-              container: { width: "100%", aspectRatio: "1", borderRadius: "1rem" },
-              video: { width: "100%", height: "100%", objectFit: "cover" },
-            }}
-          />
+          {cameraError ? (
+            <div className="flex flex-col items-center justify-center p-6 gap-3 bg-red-500/10 border border-red-500/30 rounded-2xl">
+              <p className="text-xs text-red-400 text-center">{cameraError}</p>
+              <button onClick={() => { setShowCamera(false); setCameraError(null); }} className="text-xs font-bold text-accent px-3 py-1.5 rounded-xl bg-accent/10">Cerrar</button>
+            </div>
+          ) : (
+            <Scanner
+              onScan={handleScan}
+              onError={handleScanError}
+              constraints={{ facingMode: "environment" }}
+              styles={{
+                container: { width: "100%", aspectRatio: "1", borderRadius: "1rem" },
+                video: { width: "100%", height: "100%", objectFit: "cover" },
+              }}
+            />
+          )}
           <button
             onClick={() => setShowCamera(false)}
             className="absolute top-2 right-2 px-3 py-1.5 rounded-xl bg-black/60 text-white text-xs font-bold z-10"
@@ -116,6 +133,11 @@ export default function QrScanner() {
         <button
           onClick={() => {
             setVerdict(null);
+            setCameraError(null);
+            if (!window.isSecureContext) {
+              setCameraError("Se requiere HTTPS para acceder a la cámara.");
+              return;
+            }
             setShowCamera(true);
           }}
           className="w-full py-3 rounded-2xl bg-accent text-primary font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"

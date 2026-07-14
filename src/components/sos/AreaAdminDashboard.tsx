@@ -30,6 +30,7 @@ export default function AreaAdminDashboard() {
   const [scanning, setScanning] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verificada, setVerificada] = useState<ReservaAdmin | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const processingRef = useRef(false);
 
   const areaNombre = role === "ADMINISTRADOR_PISCINA" ? "Piscina" : "Gimnasio";
@@ -86,8 +87,17 @@ export default function AreaAdminDashboard() {
     []
   );
 
-  const handleScanError = useCallback(() => {
-    // Camera unavailable
+  const handleScanError = useCallback((error: any) => {
+    const kind = error?.kind || error?.name || '';
+    if (kind === 'permission-denied') {
+      setCameraError("Permiso de cámara denegado.");
+    } else if (kind === 'no-camera') {
+      setCameraError("No se detectó cámara.");
+    } else if (!window.isSecureContext) {
+      setCameraError("Se requiere HTTPS para la cámara.");
+    } else {
+      setCameraError("Cámara no disponible.");
+    }
   }, []);
 
   if (loading) {
@@ -124,8 +134,19 @@ export default function AreaAdminDashboard() {
       {/* Scanner toggle */}
       <button
         onClick={() => {
-          setScanning((prev) => !prev);
-          setVerificada(null);
+          if (scanning) {
+            setScanning(false);
+            setVerificada(null);
+            setCameraError(null);
+          } else {
+            if (!window.isSecureContext) {
+              setCameraError("Se requiere HTTPS para la cámara.");
+              return;
+            }
+            setCameraError(null);
+            setScanning(true);
+            setVerificada(null);
+          }
         }}
         className={`w-full rounded-2xl p-4 border-2 flex items-center justify-center gap-3 font-bold text-sm transition-all active:scale-95 ${
           scanning
@@ -147,19 +168,28 @@ export default function AreaAdminDashboard() {
       {/* Camera view */}
       {scanning && (
         <div className="relative w-full aspect-square rounded-3xl overflow-hidden border-2 border-accent/40 bg-black">
-          <Scanner
-            onScan={handleScan}
-            onError={handleScanError}
-            constraints={{ facingMode: "environment" }}
-            styles={{
-              container: { width: "100%", height: "100%", borderRadius: "1.5rem" },
-              video: { width: "100%", height: "100%", objectFit: "cover" },
-            }}
-          />
-          <div className="absolute inset-0 border-[3px] border-accent/60 rounded-3xl m-8 pointer-events-none" />
-          <p className="absolute bottom-4 left-0 right-0 text-center text-white text-xs bg-black/50 py-2">
-            Apunta al codigo QR de la reserva
-          </p>
+          {cameraError ? (
+            <div className="flex flex-col items-center justify-center h-full p-6 gap-3 bg-red-500/10 border border-red-500/30 rounded-3xl">
+              <p className="text-xs text-red-400 text-center">{cameraError}</p>
+              <button onClick={() => { setScanning(false); setCameraError(null); }} className="text-xs font-bold text-accent px-3 py-1.5 rounded-xl bg-accent/10">Cerrar</button>
+            </div>
+          ) : (
+            <>
+              <Scanner
+                onScan={handleScan}
+                onError={handleScanError}
+                constraints={{ facingMode: "environment" }}
+                styles={{
+                  container: { width: "100%", height: "100%", borderRadius: "1.5rem" },
+                  video: { width: "100%", height: "100%", objectFit: "cover" },
+                }}
+              />
+              <div className="absolute inset-0 border-[3px] border-accent/60 rounded-3xl m-8 pointer-events-none" />
+              <p className="absolute bottom-4 left-0 right-0 text-center text-white text-xs bg-black/50 py-2">
+                Apunta al codigo QR de la reserva
+              </p>
+            </>
+          )}
         </div>
       )}
 

@@ -190,12 +190,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
   // 🌍 FETCH DATA (With timeout and fallback logic)
   useEffect(() => {
     async function loadData() {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-
       try {
-        clearTimeout(timeoutId);
-        
         const [profileData, financeData, reservasData, paquetesData] = await Promise.all([
           api.get<ProfileFetch>('/usuarios/me/profile').catch(() => null),
           api.get<FinanceFetch>('/pagos').catch(() => null),
@@ -346,6 +341,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
   };
 
   const handleCancelarReserva = async (id: string) => {
+    if (!window.confirm("¿Seguro que quieres cancelar esta reserva?")) return;
     try {
       await api.put(`/reservas/${id}/cancelar`, {});
       setActiveReservas(prev => prev.filter(r => r.id !== id));
@@ -801,7 +797,10 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                                 <div className="flex justify-between items-start mb-1">
                                   <span className="text-[10px] font-black text-accent uppercase tracking-widest">{res.areaNombre || "Cargando..."}</span>
                                   <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                                    res.estado === "CONFIRMADA" ? "bg-text/20 text-text" : "bg-text/20 text-text"
+                                    res.estado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
+                                    res.estado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+                                    res.estado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
+                                    "bg-text/20 text-text"
                                   }`}>
                                     {res.estado === "PENDIENTE" ? "En Proceso" : res.estado}
                                   </div>
