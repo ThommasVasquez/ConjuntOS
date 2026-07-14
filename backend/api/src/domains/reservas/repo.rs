@@ -154,45 +154,61 @@ pub async fn editar_reserva(
     fecha_fin: DateTime<Utc>,
     notas: Option<String>,
 ) -> ApiResult<Reserva> {
-    let r: Reserva = reservas::table
-        .filter(reservas::id.eq(reserva_id))
-        .filter(reservas::conjunto_id.eq(conjunto_id))
-        .filter(reservas::usuario_id.eq(usuario_id))
-        .select(Reserva::as_select())
-        .first(conn)
-        .await
-        .optional()?
-        .ok_or_else(|| ApiError::NotFound("reserva no encontrada".into()))?;
+    let reserva = conn
+        .transaction(|conn| {
+            async move {
+                let r: Reserva = reservas::table
+                    .filter(reservas::id.eq(reserva_id))
+                    .filter(reservas::conjunto_id.eq(conjunto_id))
+                    .filter(reservas::usuario_id.eq(usuario_id))
+                    .select(Reserva::as_select())
+                    .first(conn)
+                    .await
+                    .optional()?
+                    .ok_or_else(|| ApiError::NotFound("reserva no encontrada".into()))?;
 
-    if r.estado == EstadoReserva::Cancelada {
-        return Err(ApiError::BadRequest("no se puede editar una reserva cancelada".into()));
-    }
+                if r.estado == EstadoReserva::Cancelada {
+                    return Err(ApiError::BadRequest("no se puede editar una reserva cancelada".into()));
+                }
 
-    // Re-check overlap (exclude self)
-    let overlapping: i64 = reservas::table
-        .filter(reservas::conjunto_id.eq(conjunto_id))
-        .filter(reservas::area_id.eq(r.area_id))
-        .filter(reservas::id.ne(reserva_id))
-        .filter(reservas::estado.ne(EstadoReserva::Cancelada))
-        .filter(reservas::fecha_inicio.lt(fecha_fin))
-        .filter(reservas::fecha_fin.gt(fecha_inicio))
-        .count()
-        .get_result(conn)
+                if r.estado == EstadoReserva::Completada {
+                    return Err(ApiError::BadRequest("no se puede editar una reserva completada".into()));
+                }
+
+                if Utc::now() >= r.fecha_inicio {
+                    return Err(ApiError::BadRequest("no se puede editar una reserva que ya comenzó".into()));
+                }
+
+                // Re-check overlap inside transaction (exclude self)
+                let overlapping: i64 = reservas::table
+                    .filter(reservas::conjunto_id.eq(conjunto_id))
+                    .filter(reservas::area_id.eq(r.area_id))
+                    .filter(reservas::id.ne(reserva_id))
+                    .filter(reservas::estado.ne(EstadoReserva::Cancelada))
+                    .filter(reservas::fecha_inicio.lt(fecha_fin))
+                    .filter(reservas::fecha_fin.gt(fecha_inicio))
+                    .count()
+                    .get_result(conn)
+                    .await?;
+                if overlapping > 0 {
+                    return Err(ApiError::Conflict("este horario ya se encuentra reservado".into()));
+                }
+
+                let updated: Reserva = diesel::update(reservas::table.find(reserva_id))
+                    .set((
+                        reservas::fecha_inicio.eq(fecha_inicio),
+                        reservas::fecha_fin.eq(fecha_fin),
+                        reservas::notas.eq(notas),
+                    ))
+                    .returning(Reserva::as_returning())
+                    .get_result(conn)
+                    .await?;
+                Ok::<_, ApiError>(updated)
+            }
+            .scope_boxed()
+        })
         .await?;
-    if overlapping > 0 {
-        return Err(ApiError::Conflict("este horario ya se encuentra reservado".into()));
-    }
-
-    let updated: Reserva = diesel::update(reservas::table.find(reserva_id))
-        .set((
-            reservas::fecha_inicio.eq(fecha_inicio),
-            reservas::fecha_fin.eq(fecha_fin),
-            reservas::notas.eq(notas),
-        ))
-        .returning(Reserva::as_returning())
-        .get_result(conn)
-        .await?;
-    Ok(updated)
+    Ok(reserva)
 }
 
 /// Cancel a reservation owned by the user (only if not already cancelled and not past).
@@ -219,6 +235,10 @@ pub async fn cancelar_reserva(
 
                 if r.estado == EstadoReserva::Cancelada {
                     return Err(ApiError::BadRequest("la reserva ya está cancelada".into()));
+                }
+
+                if r.estado == EstadoReserva::Completada {
+                    return Err(ApiError::BadRequest("no se puede cancelar una reserva completada".into()));
                 }
 
                 let updated: Reserva = diesel::update(reservas::table.find(reserva_id))

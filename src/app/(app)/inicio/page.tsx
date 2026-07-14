@@ -322,39 +322,34 @@ function HomeResidente() {
         </div>
       </header>
 
-      {/* ASSEMBLY BANNER — always visible */}
-      <div 
-        onClick={() => router.push('/asamblea')}
-        className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[90px] shadow-2xl border border-accent/30 group cursor-pointer hover:border-accent/50 transition-all liquid-glass-card"
-      >
-        <div className="absolute inset-0 p-4 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
-            {activeAsamblea ? (
+      {activeAsamblea && (
+        <div 
+          onClick={() => router.push('/asamblea')}
+          className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[90px] shadow-2xl border border-accent/30 group cursor-pointer hover:border-accent/50 transition-all liquid-glass-card"
+        >
+          <div className="absolute inset-0 p-4 flex items-center justify-between z-10">
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center border border-accent/40 animate-pulse">
                 <span className="w-2.5 h-2.5 rounded-full bg-accent" />
               </div>
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
-                <Video size={18} className="text-accent" />
+              <div>
+                <span className="text-[9px] text-accent font-bold uppercase tracking-widest block">
+                  Sesión en Vivo
+                </span>
+                <h3 className="text-sm font-display font-bold text-text tracking-tight">
+                  {activeAsamblea.titulo}
+                </h3>
+                {activeAsamblea.descripcion && (
+                  <p className="text-text text-[9px] mt-0.5 line-clamp-1">{activeAsamblea.descripcion}</p>
+                )}
               </div>
-            )}
-            <div>
-              <span className="text-[9px] text-accent font-bold uppercase tracking-widest block">
-                {activeAsamblea ? 'Sesión en Vivo' : 'Asambleas'}
-              </span>
-              <h3 className="text-sm font-display font-bold text-text tracking-tight">
-                {activeAsamblea ? activeAsamblea.titulo : 'Ver asambleas y sesiones'}
-              </h3>
-              {activeAsamblea?.descripcion && (
-                <p className="text-text text-[9px] mt-0.5 line-clamp-1">{activeAsamblea.descripcion}</p>
-              )}
+            </div>
+            <div className="bg-accent text-on-accent text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-1">
+              Entrar <ArrowRight size={10} />
             </div>
           </div>
-          <div className="bg-accent text-on-accent text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-1">
-            {activeAsamblea ? 'Entrar' : 'Ver'} <ArrowRight size={10} />
-          </div>
         </div>
-      </div>
+      )}
 
       {/* SEARCH MODAL */}
       <SearchModal
@@ -976,38 +971,29 @@ function HomeAdmin() {
         </div>
       )}
 
-      {/* ASAMBLEA ADMIN CONTROL — always visible */}
-      <div 
-        onClick={() => router.push('/admin-asamblea')}
-        className="w-full liquid-glass-card rounded-[28px] p-6 border border-border shadow-2xl text-text cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
-            <Video size={22} />
-          </div>
-          <div>
-            <span className="text-[9px] text-accent font-black uppercase tracking-widest block mb-0.5">Asambleas</span>
-            <h3 className="text-lg font-display font-bold leading-tight text-text">{activeAsamblea ? activeAsamblea.titulo : 'Gestionar Asambleas'}</h3>
-            {activeAsamblea ? (
+      {activeAsamblea && (
+        <div 
+          onClick={() => router.push('/admin-asamblea')}
+          className="w-full liquid-glass-card rounded-[28px] p-6 border border-border shadow-2xl text-text cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
+              <Video size={22} />
+            </div>
+            <div>
+              <span className="text-[9px] text-accent font-black uppercase tracking-widest block mb-0.5">Asambleas</span>
+              <h3 className="text-lg font-display font-bold leading-tight text-text">{activeAsamblea.titulo}</h3>
               <p className="text-text text-xs mt-0.5 line-clamp-1">Sesión en vivo — entrar para moderar</p>
-            ) : (
-              <p className="text-text text-xs mt-0.5">Crear y administrar sesiones</p>
-            )}
+            </div>
           </div>
-        </div>
-        {activeAsamblea ? (
           <button 
             onClick={(e) => { e.stopPropagation(); router.push('/asamblea'); }}
             className="bg-accent text-on-accent text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
           >
             Moderar <ArrowRight size={10} />
           </button>
-        ) : (
-          <button className="bg-accent text-on-accent text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-            Gestionar <ArrowRight size={10} />
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* QUICK ACCESSIBLE ACTIONS */}
       <div className="grid grid-cols-3 gap-3">

@@ -364,21 +364,21 @@ export default function CitofoniaPage() {
          <div className="flex justify-between items-center px-2">
             <h2 className="text-xl font-display font-bold text-text tracking-tight">Centro de Control</h2>
             <div className="flex gap-2">
-             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-colors duration-500 ${
-               activeTab === "CITOFONIA" && vigilanteOnline
-                 ? 'bg-[#57bf00]/10 border-[#57bf00]/30'
-                 : 'bg-text/10 border-text/20'
-             }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  activeTab === "CITOFONIA" && vigilanteOnline
-                    ? 'bg-[#57bf00] animate-pulse shadow-[0_0_6px_#57bf00]'
-                    : 'bg-text/30'
-                }`} />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${
-                  activeTab === "CITOFONIA" && vigilanteOnline ? 'text-[#57bf00]' : 'text-text'
-                }`}>
-                  {activeTab === "CITOFONIA" && vigilanteOnline ? 'En Línea' : 'En Línea'}
-                </span>
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-colors duration-500 ${
+                activeTab === "CITOFONIA"
+                  ? 'bg-[#57bf00]/10 border-[#57bf00]/30'
+                  : 'bg-text/10 border-text/20'
+              }`}>
+                 <div className={`w-1.5 h-1.5 rounded-full ${
+                   activeTab === "CITOFONIA"
+                     ? 'bg-[#57bf00] animate-pulse shadow-[0_0_6px_#57bf00]'
+                     : 'bg-text/30'
+                 }`} />
+                 <span className={`text-[10px] font-black uppercase tracking-widest ${
+                   activeTab === "CITOFONIA" ? 'text-[#57bf00]' : 'text-text'
+                 }`}>
+                   En Línea
+                 </span>
              </div>
           </div>
          </div>

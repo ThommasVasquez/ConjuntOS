@@ -855,7 +855,7 @@ async fn seed_content(target: &Client, conjunto_id: Uuid) -> Result<()> {
         target
             .execute(
                 "INSERT INTO solicitudes_servicio (id, conjunto_id, usuario_id, categoria, tipo, descripcion, estado, prioridad, asignado_a_id, fecha_asignacion, sla_horas, sla_vencimiento, created_at)
-                 SELECT gen_random_uuid(), $1, u.id, $4, $5, $6, 'ASIGNADA', $7, m.id, NOW() - ($8 || ' days')::interval, 48, NOW() - ($8 || ' days')::interval + '48 hours'::interval, NOW() - ($8 || ' days')::interval
+                 SELECT gen_random_uuid(), $1, u.id, $4, $5, $6, 'ASIGNADA', $7, m.id, NOW() + ($8 || ' days')::interval, 48, NOW() + ($8 || ' days')::interval + '48 hours'::interval, NOW() + ($8 || ' days')::interval
                  FROM usuarios u, usuarios m
                  WHERE u.email = $2 AND u.conjunto_id = $1 AND m.email = $3 AND m.conjunto_id = $1",
                 &[

@@ -75,9 +75,11 @@ export default function ReservasPage() {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingReserva, setEditingReserva] = useState<ReservaDto | null>(null);
-  const [editFechaInicio, setEditFechaInicio] = useState("");
-  const [editFechaFin, setEditFechaFin] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  const [editAvailableDays, setEditAvailableDays] = useState<Date[]>([]);
+  const [editSelectedDay, setEditSelectedDay] = useState<Date | null>(null);
+  const [editTimeSlots, setEditTimeSlots] = useState<{start: Date, end: Date, available: boolean}[]>([]);
+  const [editSelectedSlotIndex, setEditSelectedSlotIndex] = useState<number | null>(null);
 
   // Real-time WebSocket subscription
   useWsSubscription('reserva', () => {
@@ -114,16 +116,35 @@ export default function ReservasPage() {
     }
   }, [loading, step]);
 
+  const DAY_MAP: Record<string, number> = {
+    DOM: 0, LUN: 1, MAR: 2, MIE: 3, JUE: 4, VIE: 5, SAB: 6,
+    DOMINGO: 0, LUNES: 1, MARTES: 2, MIERCOLES: 3, JUEVES: 4, VIERNES: 5, SABADO: 6,
+    SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
+  };
+
+  function parseDiasDisponibles(raw: string): number[] {
+    if (!raw) return [0,1,2,3,4,5,6];
+    const parts = raw.split(/[\s,;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+    const days = new Set<number>();
+    for (const p of parts) {
+      // Try direct code match (DOM, LUN, etc.)
+      if (DAY_MAP[p] !== undefined) { days.add(DAY_MAP[p]); continue; }
+      // Try numeric (0-6)
+      const n = parseInt(p, 10);
+      if (!isNaN(n) && n >= 0 && n <= 6) { days.add(n); continue; }
+      // Try substring match (e.g. "Lunes" inside "Lunes a Domingo")
+      for (const [key, val] of Object.entries(DAY_MAP)) {
+        if (p.includes(key)) { days.add(val); break; }
+      }
+    }
+    return days.size > 0 ? Array.from(days) : [0,1,2,3,4,5,6];
+  }
+
   const handleSelectArea = (area: AreaComun) => {
     setSelectedArea(area);
     
     // Generar próximos 7 días a partir de hoy (limitado a sus días disponibles)
-    // Backend returns day names (LUN,MAR,...), frontend maps to JS day numbers
-    const DAY_MAP: Record<string, number> = {
-      DOM: 0, LUN: 1, MAR: 2, MIE: 3, JUE: 4, VIE: 5, SAB: 6,
-    };
-    const allowedDaysStr = area.diasDisponibles || "LUN,MAR,MIE,JUE,VIE,SAB,DOM";
-    const allowedDays = allowedDaysStr.split(',').map((d: string) => DAY_MAP[d.trim()] ?? -1).filter((d: number) => d >= 0);
+    const allowedDays = parseDiasDisponibles(area.diasDisponibles || "");
     
     const days: Date[] = [];
     const d = new Date();
@@ -150,14 +171,15 @@ export default function ReservasPage() {
   }, [selectedDay, selectedArea]);
 
   const loadSlotsForDay = async (area: AreaComun, day: Date) => {
-     try {
-        // Fetch server for blocked slots
-        const yyyy = day.getFullYear();
-        const mm = String(day.getMonth() + 1).padStart(2, '0');
-        const dd = String(day.getDate()).padStart(2, '0');
-        const ds = `${yyyy}-${mm}-${dd}`;
-        
-        const blocked = await api.get<{fechaInicio: string; fechaFin: string}[]>(`/areas-comunes/${area.id}/slots?fecha=${ds}`);
+        setTimeSlots([]);
+      try {
+         // Fetch server for blocked slots
+         const yyyy = day.getFullYear();
+         const mm = String(day.getMonth() + 1).padStart(2, '0');
+         const dd = String(day.getDate()).padStart(2, '0');
+         const ds = `${yyyy}-${mm}-${dd}`;
+         
+         const blocked = await api.get<{fechaInicio: string; fechaFin: string}[]>(`/areas-comunes/${area.id}/slots?fecha=${ds}`);
         
         // Generar intervalos
         const startH = parseInt(area.horaApertura.split(':')[0]);
@@ -237,6 +259,7 @@ export default function ReservasPage() {
   };
 
   const handleCancelarReserva = async (id: string) => {
+    if (!window.confirm("¿Seguro que quieres cancelar esta reserva?")) return;
     try {
       await api.put(`/reservas/${id}/cancelar`, {});
       setReservas(prev => prev.filter(r => r.id !== id));
@@ -248,24 +271,132 @@ export default function ReservasPage() {
 
   const openEditModal = (r: ReservaDto) => {
     setEditingReserva(r);
-    setEditFechaInicio(r.fechaInicio.slice(0, 16));
-    setEditFechaFin(r.fechaFin.slice(0, 16));
+
+    // Find the area from our list to get its config
+    const area = areas.find(a => a.id === r.areaId);
+    if (!area) {
+      toast.error("Área no encontrada");
+      return;
+    }
+
+    // Generate available days (same logic as booking flow)
+    const allowedDays = parseDiasDisponibles(area.diasDisponibles || "");
+
+    const days: Date[] = [];
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 15 && days.length < 5; i++) {
+      const cd = new Date(d);
+      cd.setDate(d.getDate() + i);
+      if (allowedDays.includes(cd.getDay())) {
+        days.push(cd);
+      }
+    }
+    setEditAvailableDays(days);
+
+    // Pre-select the day of the current reservation
+    const reservaDate = new Date(r.fechaInicio);
+    reservaDate.setHours(0, 0, 0, 0);
+    const matchingDay = days.find(day =>
+      day.getDate() === reservaDate.getDate() &&
+      day.getMonth() === reservaDate.getMonth() &&
+      day.getFullYear() === reservaDate.getFullYear()
+    );
+    setEditSelectedDay(matchingDay || days[0] || null);
     setShowEditModal(true);
   };
 
+  // Load slots when edit day changes
+  useEffect(() => {
+    if (!showEditModal || !editingReserva || !editSelectedDay) return;
+
+    const area = areas.find(a => a.id === editingReserva.areaId);
+    if (!area) return;
+
+    (async () => {
+      try {
+        const yyyy = editSelectedDay.getFullYear();
+        const mm = String(editSelectedDay.getMonth() + 1).padStart(2, '0');
+        const dd = String(editSelectedDay.getDate()).padStart(2, '0');
+        const ds = `${yyyy}-${mm}-${dd}`;
+
+        const blocked = await api.get<{fechaInicio: string; fechaFin: string}[]>(
+          `/areas-comunes/${area.id}/slots?fecha=${ds}`
+        );
+
+        const startH = parseInt(area.horaApertura.split(':')[0]);
+        const startM = parseInt(area.horaApertura.split(':')[1]);
+        const endH = parseInt(area.horaCierre.split(':')[0]);
+        const endM = parseInt(area.horaCierre.split(':')[1]);
+        const dur = parseInt(String(area.duracionSlot)) || 60;
+
+        const dayStart = new Date(editSelectedDay);
+        dayStart.setHours(startH, startM, 0, 0);
+        const dayEnd = new Date(editSelectedDay);
+        dayEnd.setHours(endH, endM, 0, 0);
+
+        const slots: {start: Date, end: Date, available: boolean}[] = [];
+        let curr = new Date(dayStart);
+        while (curr < dayEnd) {
+          const slotEnd = new Date(curr.getTime() + dur * 60000);
+          if (slotEnd > dayEnd) break;
+
+          let isBlocked = false;
+          for (const b of blocked) {
+            const bStart = new Date(b.fechaInicio);
+            const bEnd = new Date(b.fechaFin);
+            // Exclude the current reservation being edited from blocked list
+            const reservaInicioMs = new Date(editingReserva.fechaInicio).getTime();
+            const reservaFinMs = new Date(editingReserva.fechaFin).getTime();
+            if (reservaInicioMs === bStart.getTime() && reservaFinMs === bEnd.getTime()) continue;
+            if (curr < bEnd && slotEnd > bStart) {
+              isBlocked = true;
+              break;
+            }
+          }
+
+          if (curr < new Date()) {
+            isBlocked = true;
+          }
+
+          slots.push({ start: new Date(curr), end: new Date(slotEnd), available: !isBlocked });
+          curr = slotEnd;
+        }
+
+        setEditTimeSlots(slots);
+
+        // Pre-select the slot matching the current reservation
+        const rInicio = new Date(editingReserva.fechaInicio);
+        const rFin = new Date(editingReserva.fechaFin);
+        const matchIdx = slots.findIndex(s =>
+          s.start.getTime() === rInicio.getTime() && s.end.getTime() === rFin.getTime()
+        );
+        setEditSelectedSlotIndex(matchIdx >= 0 ? matchIdx : null);
+      } catch {
+        console.error("Error loading edit slots");
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showEditModal, editingReserva?.id, editSelectedDay?.toISOString().slice(0, 10)]);
+
   const handleEditarReserva = async () => {
-    if (!editingReserva) return;
+    if (!editingReserva || editSelectedSlotIndex === null) return;
+    const slot = editTimeSlots[editSelectedSlotIndex];
     setEditSaving(true);
     try {
       const updated = await api.put<ReservaDto>(`/reservas/${editingReserva.id}/editar`, {
-        fechaInicio: new Date(editFechaInicio).toISOString(),
-        fechaFin: new Date(editFechaFin).toISOString(),
+        fechaInicio: slot.start.toISOString(),
+        fechaFin: slot.end.toISOString(),
       });
       setReservas(prev => prev.map(r => r.id === editingReserva.id ? { ...r, fechaInicio: updated.fechaInicio, fechaFin: updated.fechaFin } : r));
       setShowEditModal(false);
       toast.success("Reserva actualizada");
-    } catch {
-      toast.error("No se pudo actualizar la reserva");
+    } catch (e: any) {
+      if (e?.status === 409) {
+        toast.error("Ese horario ya está reservado. Elige otro.");
+      } else {
+        toast.error("No se pudo actualizar la reserva");
+      }
     } finally {
       setEditSaving(false);
     }
@@ -301,7 +432,7 @@ export default function ReservasPage() {
             const inicio = new Date(r.fechaInicio);
             const fin = new Date(r.fechaFin);
             const isActive = r.estado !== "CANCELADA" && fin > ahora;
-            const canEdit = r.estado === "CONFIRMADA" || r.estado === "PENDIENTE";
+            const canEdit = (r.estado === "CONFIRMADA" || r.estado === "PENDIENTE") && fin > ahora;
             return (
               <div key={r.id} className={`liquid-glass rounded-2xl p-4 border ${isActive ? 'border-border' : 'border-border/50 opacity-60'}`}>
                 <div className="flex items-center gap-3">
@@ -495,7 +626,7 @@ export default function ReservasPage() {
            <div className="w-16 h-16 rounded-full border-4 border-border border-t-accent animate-spin mb-4" />
            <h3 className="text-2xl font-display font-medium text-text tracking-tight">Procesando Pago Seguro...</h3>
             <p className="text-text text-xs mt-4">Confirmando con pasarela de pago...</p>
-            <button onClick={executeBooking} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-on-accent transition-colors cursor-pointer">Confirmar Pago</button>
+             <button onClick={executeBooking} disabled={isProcessing} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-on-accent transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Confirmar Pago</button>
         </section>
       )}
 
@@ -565,39 +696,78 @@ export default function ReservasPage() {
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* Edit Modal — Slot Picker */}
       {showEditModal && editingReserva && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowEditModal(false)}>
-          <div className="liquid-glass rounded-[32px] p-6 border border-border w-80 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-text">Editar Reserva</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-text/50 hover:text-text"><X size={18} /></button>
+        <div className="fixed inset-0 z-[1000] flex flex-col justify-end" onClick={() => setShowEditModal(false)}>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+          <div className="liquid-glass rounded-t-[40px] p-6 pb-32 w-full max-w-[480px] mx-auto relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500 overflow-y-auto max-h-[90vh] hide-scrollbar border-t border-border" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-display font-medium text-text tracking-tight">Editar Reserva</h3>
+              <button onClick={() => setShowEditModal(false)} className="w-10 h-10 rounded-full bg-text/5 hover:bg-text/10 flex items-center justify-center text-text transition-colors cursor-pointer"><X size={20} /></button>
             </div>
-            <p className="text-xs text-text/60">{editingReserva.areaNombre}</p>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[10px] text-text uppercase tracking-widest font-bold">Inicio</label>
-                <input
-                  type="datetime-local"
-                  value={editFechaInicio}
-                  onChange={(e) => setEditFechaInicio(e.target.value)}
-                  className="w-full bg-text/5 border border-border rounded-xl p-3 text-sm text-text focus:outline-none focus:border-accent/40 transition-colors"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-text uppercase tracking-widest font-bold">Fin</label>
-                <input
-                  type="datetime-local"
-                  value={editFechaFin}
-                  onChange={(e) => setEditFechaFin(e.target.value)}
-                  className="w-full bg-text/5 border border-border rounded-xl p-3 text-sm text-text focus:outline-none focus:border-accent/40 transition-colors"
-                />
+            <p className="text-xs text-text/60 mb-6">{editingReserva.areaNombre}</p>
+
+            {/* Day Selector */}
+            <div className="flex flex-col gap-3 mb-6">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest ml-1">Selecciona el Día</label>
+              <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 px-1 -mx-1 snap-x">
+                {editAvailableDays.map((date, idx) => {
+                  const isSelected = editSelectedDay?.getDate() === date.getDate() && editSelectedDay?.getMonth() === date.getMonth();
+                  const mos = date.toLocaleString('es-ES', { month: 'short' });
+                  const dow = date.toLocaleString('es-ES', { weekday: 'short' });
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setEditSelectedDay(date)}
+                      className={`min-w-[70px] snap-center py-3 rounded-2xl border transition-all flex flex-col items-center gap-1 shrink-0 cursor-pointer
+                      ${isSelected ? 'bg-accent border-accent text-on-accent shadow-lg shadow-accent/20' : 'bg-text/5 border-border text-text hover:bg-text/10'}`}
+                    >
+                      <span className="text-[10px] font-medium uppercase tracking-widest">{dow}</span>
+                      <span className="text-xl font-display font-bold">{date.getDate()}</span>
+                      <span className="text-[9px] font-bold uppercase text-text">{mos}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
+
+            {/* Time Slot Selector */}
+            <div className="flex flex-col gap-3 mb-6">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest ml-1">Horario ({editingReserva.areaNombre})</label>
+              <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto hide-scrollbar pr-1">
+                {editTimeSlots.length === 0 && <p className="text-text text-xs py-4 col-span-2 text-center">No hay horarios disponibles.</p>}
+                {editTimeSlots.map((slot, index) => {
+                  const st = slot.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const ed = slot.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const isCurrentSlot = editingReserva &&
+                    new Date(editingReserva.fechaInicio).getTime() === slot.start.getTime() &&
+                    new Date(editingReserva.fechaFin).getTime() === slot.end.getTime();
+                  return (
+                    <button
+                      key={index}
+                      disabled={!slot.available}
+                      onClick={() => setEditSelectedSlotIndex(index)}
+                      className={`
+                        py-3 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border cursor-pointer
+                        ${!slot.available ? 'opacity-30 bg-text/5 border-transparent cursor-not-allowed text-text' :
+                          editSelectedSlotIndex === index ? 'bg-accent text-on-accent border-accent shadow-xl' : 'bg-text/5 border-border text-text hover:bg-text/10'}
+                      `}
+                    >
+                      <span className={editSelectedSlotIndex === index ? 'opacity-50 text-[10px]' : 'text-accent/70 text-[10px]'}>
+                        {editSelectedDay ? ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'][editSelectedDay.getDay()] : ''} {editSelectedDay?.getDate()}
+                        {isCurrentSlot ? ' (actual)' : ''}
+                      </span>
+                      <span>{st} - {ed}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <button
               onClick={handleEditarReserva}
-              disabled={editSaving || !editFechaInicio || !editFechaFin}
-              className="w-full py-3 rounded-xl bg-accent text-primary font-bold text-sm disabled:opacity-50 transition-opacity"
+              disabled={editSaving || editSelectedSlotIndex === null}
+              className="w-full py-5 bg-accent rounded-[24px] font-bold text-on-accent shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100 cursor-pointer"
             >
               {editSaving ? "Guardando..." : "Guardar Cambios"}
             </button>
