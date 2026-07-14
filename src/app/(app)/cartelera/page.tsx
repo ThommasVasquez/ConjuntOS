@@ -31,6 +31,7 @@ interface Notice {
   author: string;
   image?: string;
   fijado?: boolean;
+  archivosUrl?: string[];
 }
 
 export default function CarteleraPage() {
@@ -62,7 +63,8 @@ export default function CarteleraPage() {
           date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
           author: "Administración",
           image: a.imagenUrl || undefined,
-          fijado: a.fijado
+          fijado: a.fijado,
+          archivosUrl: a.archivosUrl || []
         }));
         setNotices(apiMapped);
       }
@@ -130,7 +132,8 @@ export default function CarteleraPage() {
             date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
             author: "Administración",
             image: a.imagenUrl || undefined,
-            fijado: a.fijado
+            fijado: a.fijado,
+            archivosUrl: a.archivosUrl || []
           }));
         }
         setNotices(apiMapped);
@@ -159,8 +162,6 @@ export default function CarteleraPage() {
       case 'URGENTE': return <ShieldAlert size={18} />;
       case 'MANTENIMIENTO': return <Wrench size={18} />;
       case 'EVENTO': return <Calendar size={18} />;
-      case 'LICITACION': return <FileText size={18} />;
-      case 'ADMINISTRACION': return <Building2 size={18} />;
       default: return <Megaphone size={18} />;
     }
   };
@@ -179,10 +180,10 @@ export default function CarteleraPage() {
       <ProfileHeader className="fade-up" />
 
       {/* FILTER TABS */}
-      <section className="fade-up flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
-         {['TODOS', 'ADMINISTRACION', 'LICITACION', 'SEGURIDAD', 'EVENTO', 'MANTENIMIENTO'].map((cat) => (
+       <section className="fade-up flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
+         {['TODOS', 'GENERAL', 'URGENTE', 'MANTENIMIENTO', 'EVENTO'].map((cat) => (
            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`shrink-0 px-5 py-2.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-accent border-accent text-primary shadow-lg' : 'bg-surface-2 border-border text-text hover:bg-surface-2/80'}`}>
-              {cat}
+              {cat === 'TODOS' ? 'Todos' : cat}
            </button>
          ))}
       </section>
@@ -259,26 +260,34 @@ export default function CarteleraPage() {
                           <div className="flex items-center gap-1.5"><Megaphone size={12} /> {selectedNotice.author}</div>
                        </div>
                     </div>
-                    <p className="text-text text-base leading-relaxed">{selectedNotice.content}</p>
-                    <div className="flex flex-col gap-4 pt-6 border-t border-border">
-                       <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-text text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
-                       <button 
-                         onClick={() => {
-                            toast.loading("Generando descarga...");
-                            setTimeout(() => toast.success("Documento descargado con éxito"), 2000);
-                         }}
-                         className="w-full bg-surface-2 border border-border rounded-2xl p-4 flex items-center justify-between hover:bg-surface-2/85 transition-all text-left group"
-                       >
-                          <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-xl bg-text/10 flex items-center justify-center text-text"><ShieldAlert size={18} /></div>
-                             <div>
-                                 <p className="text-text text-sm font-bold">Circular_Informativa.pdf</p>
-                                 <p className="text-text text-[10px] uppercase font-bold tracking-tighter">PDF • 1.2 MB</p>
-                             </div>
-                          </div>
-                          <Download size={18} className="text-text group-hover:text-accent transition-all" />
-                       </button>
-                    </div>
+                     <p className="text-text text-base leading-relaxed">{selectedNotice.content}</p>
+                     {selectedNotice.archivosUrl && selectedNotice.archivosUrl.length > 0 && (
+                       <div className="flex flex-col gap-4 pt-6 border-t border-border">
+                          <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-text text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>
+                          {selectedNotice.archivosUrl.map((url, idx) => {
+                            const fileName = url.split('/').pop() || `Documento ${idx + 1}`;
+                            const ext = fileName.split('.').pop()?.toUpperCase() || 'DOC';
+                            return (
+                              <a
+                                key={idx}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full bg-surface-2 border border-border rounded-2xl p-4 flex items-center justify-between hover:bg-surface-2/85 transition-all text-left group"
+                              >
+                                <div className="flex items-center gap-3">
+                                   <div className="w-10 h-10 rounded-xl bg-text/10 flex items-center justify-center text-text"><FileText size={18} /></div>
+                                   <div>
+                                       <p className="text-text text-sm font-bold">{fileName}</p>
+                                       <p className="text-text text-[10px] uppercase font-bold tracking-tighter">{ext}</p>
+                                   </div>
+                                </div>
+                                <Download size={18} className="text-text group-hover:text-accent transition-all" />
+                              </a>
+                            );
+                          })}
+                       </div>
+                     )}
                     <button 
                       onClick={() => {
                          if (navigator.share) {

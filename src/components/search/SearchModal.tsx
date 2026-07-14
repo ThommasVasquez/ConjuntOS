@@ -30,24 +30,24 @@ interface SearchModalProps {
 }
 
 // ─── Platform Modules (searchable) ───────────────────────────────────────────
-
+// iconBg: fondo del ícono   iconColor: color del ícono
 const MODULES = [
-  { title: "Pagos", desc: "Cuotas, recibos y sanciones", icon: <CreditCard size={18} />, color: "from-[#FFFFFF] to-[#404040]", path: "/pagos", keywords: ["pago", "cuota", "administración", "deuda", "recibo", "energía", "gas", "agua"] },
-  { title: "Reservas", desc: "Salón, cancha, gimnasio y más", icon: <Calendar size={18} />, color: "from-text to-text", path: "/reservas", keywords: ["reserva", "salón", "salon", "cancha", "gimnasio", "piscina", "bbq", "área", "area"] },
-  { title: "Parqueadero", desc: "Estado y asignación de cupos", icon: <Car size={18} />, color: "from-text to-text", path: "/parqueadero", keywords: ["parqueo", "parqueadero", "carro", "moto", "vehículo", "vehiculo", "cupo"] },
-  { title: "Paquetería", desc: "Paquetes en portería", icon: <Package size={18} />, color: "from-text to-text", path: "/paqueteria", keywords: ["paquete", "encomienda", "portería", "porteria", "llegó", "llego", "domicilio", "envío"] },
-  { title: "PQRS", desc: "Peticiones, quejas y reclamos", icon: <MessageSquare size={18} />, color: "from-text to-text", path: "/pqrs", keywords: ["pqr", "queja", "petición", "peticion", "problema", "reclamo", "solicitud"] },
-  { title: "Visitantes", desc: "Autorización de ingresos", icon: <Users size={18} />, color: "from-text to-text", path: "/visitantes", keywords: ["visita", "visitante", "invitado", "ingreso", "acceso", "autoriza"] },
-  { title: "Cartelera", desc: "Anuncios y novedades", icon: <Megaphone size={18} />, color: "from-text to-text", path: "/cartelera", keywords: ["anuncio", "novedad", "asamblea", "reunión", "reunion", "circular", "cartelera"] },
-  { title: "Inmobiliaria", desc: "Venta y arriendo en el conjunto", icon: <Building2 size={18} />, color: "from-text to-text", path: "/inmobiliaria", keywords: ["venta", "arriendo", "alquiler", "inmueble", "apartamento", "apto"] },
+  { title: "Pagos",        desc: "Cuotas, recibos y sanciones",      icon: <CreditCard   size={18} />, iconBg: "bg-[#009df2]/15", iconColor: "text-[#009df2]", path: "/pagos",        keywords: ["pago","cuota","administración","deuda","recibo","energía","gas","agua"] },
+  { title: "Reservas",     desc: "Salón, cancha, gimnasio y más",     icon: <Calendar     size={18} />, iconBg: "bg-[#57bf00]/15", iconColor: "text-[#57bf00]", path: "/reservas",     keywords: ["reserva","salón","salon","cancha","gimnasio","piscina","bbq","área","area"] },
+  { title: "Parqueadero",  desc: "Estado y asignación de cupos",      icon: <Car          size={18} />, iconBg: "bg-[#009df2]/15", iconColor: "text-[#009df2]", path: "/parqueadero",  keywords: ["parqueo","parqueadero","carro","moto","vehículo","vehiculo","cupo"] },
+  { title: "Paquetería",   desc: "Paquetes en portería",              icon: <Package      size={18} />, iconBg: "bg-[#57bf00]/15", iconColor: "text-[#57bf00]", path: "/paqueteria",   keywords: ["paquete","encomienda","portería","porteria","llegó","llego","domicilio","envío"] },
+  { title: "PQRS",         desc: "Peticiones, quejas y reclamos",     icon: <MessageSquare size={18}/>, iconBg: "bg-[#009df2]/15", iconColor: "text-[#009df2]", path: "/pqrs",         keywords: ["pqr","queja","petición","peticion","problema","reclamo","solicitud"] },
+  { title: "Visitantes",   desc: "Autorización de ingresos",          icon: <Users        size={18} />, iconBg: "bg-[#57bf00]/15", iconColor: "text-[#57bf00]", path: "/visitantes",   keywords: ["visita","visitante","invitado","ingreso","acceso","autoriza"] },
+  { title: "Cartelera",    desc: "Anuncios y novedades",              icon: <Megaphone    size={18} />, iconBg: "bg-[#009df2]/15", iconColor: "text-[#009df2]", path: "/cartelera",    keywords: ["anuncio","novedad","asamblea","reunión","reunion","circular","cartelera"] },
+  { title: "Inmobiliaria", desc: "Venta y arriendo en el conjunto",   icon: <Building2    size={18} />, iconBg: "bg-[#57bf00]/15", iconColor: "text-[#57bf00]", path: "/inmobiliaria", keywords: ["venta","arriendo","alquiler","inmueble","apartamento","apto"] },
 ];
 
 const SUGGESTIONS = [
-  { label: "¿Cuánto debo?", icon: <AlertCircle size={14} /> },
-  { label: "Ver paquetes", icon: <Package size={14} /> },
-  { label: "Reservar el salón", icon: <Calendar size={14} /> },
-  { label: "Reportar un problema", icon: <MessageSquare size={14} /> },
-  { label: "Autorizar visita", icon: <Users size={14} /> },
+  { label: "¿Cuánto debo?",        icon: <AlertCircle   size={14} />, color: "text-[#009df2]" },
+  { label: "Ver paquetes",         icon: <Package       size={14} />, color: "text-[#57bf00]" },
+  { label: "Reservar el salón",    icon: <Calendar      size={14} />, color: "text-[#009df2]" },
+  { label: "Reportar un problema", icon: <MessageSquare size={14} />, color: "text-[#57bf00]" },
+  { label: "Autorizar visita",     icon: <Users         size={14} />, color: "text-[#009df2]" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -77,8 +77,6 @@ function TypingText({ text }: { text: string }) {
   useEffect(() => {
     setDisplayed("");
     let i = 0;
-    // Render markdown-like bold (**text**) as JSX isn't possible in simple state
-    // So just type out the plain text
     const interval = setInterval(() => {
       if (i < text.length) {
         setDisplayed(text.slice(0, i + 1));
@@ -90,17 +88,16 @@ function TypingText({ text }: { text: string }) {
     return () => clearInterval(interval);
   }, [text]);
 
-  // Convert **bold** markers to <strong> tags for rendering
   const parts = displayed.split(/(\*\*[^*]+\*\*)/g);
   return (
     <span>
       {parts.map((part, i) =>
         part.startsWith("**") && part.endsWith("**")
-          ? <strong key={i} className="text-white font-bold">{part.slice(2, -2)}</strong>
+          ? <strong key={i} className="text-[#57bf00] font-bold">{part.slice(2, -2)}</strong>
           : <span key={i}>{part}</span>
       )}
       {displayed.length < text.length && (
-        <span className="inline-block w-0.5 h-3.5 bg-accent ml-0.5 animate-pulse align-middle" />
+        <span className="inline-block w-0.5 h-3.5 bg-[#009df2] ml-0.5 animate-pulse align-middle" />
       )}
     </span>
   );
@@ -142,7 +139,6 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
     gsap.to(overlayRef.current, { opacity: 0, duration: 0.25, delay: 0.1, onComplete: onClose });
   }, [onClose]);
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
     if (isOpen) window.addEventListener("keydown", handler);
@@ -168,8 +164,6 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
     setIsLoadingAI(true);
     setAiAnswer(null);
     try {
-      // contexto must be a string (backend AsistenteRequest.contexto: Option<String>);
-      // SearchContext is an object → stringify when non-empty, else omit (avoids 422).
       const contexto = Object.keys(context).length ? JSON.stringify(context) : undefined;
       const data = await api.post<{ respuesta: string }>("/ai/asistente", { pregunta: q, contexto });
       setAiAnswer({ text: data.respuesta });
@@ -202,27 +196,34 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
     <div
       ref={overlayRef}
       className="fixed inset-0 z-[200] flex flex-col justify-end sm:justify-center sm:items-center p-0 sm:p-6"
-      style={{ background: "rgba(8,8,8,0.92)", backdropFilter: "blur(20px)" }}
+      style={{ background: "rgba(8,8,8,0.85)", backdropFilter: "blur(24px)" }}
     >
       {/* Overlay tap-to-close */}
       <div className="absolute inset-0" onClick={handleClose} />
 
-      {/* Search Card */}
+      {/* Search Card — Liquid Glass */}
       <div
         ref={cardRef}
         className="relative w-full sm:max-w-lg flex flex-col rounded-t-[40px] sm:rounded-[40px] overflow-hidden"
-        style={{ background: "linear-gradient(180deg, #151515 0%, #0E0E0E 100%)", border: "1px solid rgba(255,255,255,0.08)", maxHeight: "90vh" }}
+        style={{
+          background: "rgba(0, 157, 242, 0.07)",
+          backdropFilter: "blur(40px) saturate(200%)",
+          WebkitBackdropFilter: "blur(40px) saturate(200%)",
+          border: "1px solid rgba(0, 157, 242, 0.18)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
+          maxHeight: "90vh",
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle bar (mobile) */}
         <div className="flex justify-center pt-4 pb-2 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
+          <div className="w-10 h-1 rounded-full bg-[#009df2]/30" />
         </div>
 
         {/* Header */}
-        <div className="px-6 pt-4 pb-4 flex items-center gap-4 border-b border-white/5">
-          <div className="w-10 h-10 rounded-[16px] bg-accent/10 border border-accent/20 flex items-center justify-center flex-shrink-0">
-            <Sparkles size={18} className="text-accent" />
+        <div className="px-6 pt-4 pb-4 flex items-center gap-4 border-b border-[#009df2]/12">
+          <div className="w-10 h-10 rounded-[16px] bg-[#009df2]/15 border border-[#009df2]/25 flex items-center justify-center flex-shrink-0">
+            <Sparkles size={18} className="text-[#009df2]" />
           </div>
           <form onSubmit={handleSubmit} className="flex-1">
             <input
@@ -231,12 +232,12 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
               value={query}
               onChange={e => handleQueryChange(e.target.value)}
               placeholder="Buscar o preguntar algo..."
-              className="w-full bg-transparent text-white text-base font-medium placeholder:text-white focus:outline-none"
+              className="w-full bg-transparent text-text text-base font-medium placeholder:text-text-muted focus:outline-none"
             />
           </form>
           <button
             onClick={handleClose}
-            className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-white hover:text-white hover:bg-white/10 transition-all flex-shrink-0"
+            className="w-9 h-9 rounded-full bg-text/5 border border-border flex items-center justify-center text-text hover:bg-text/10 transition-all flex-shrink-0"
           >
             <X size={18} />
           </button>
@@ -247,22 +248,24 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
 
           {/* ─── AI Answer ─── */}
           {(isLoadingAI || aiAnswer) && (
-            <div className="rounded-[24px] overflow-hidden border border-accent/20"
-              style={{ background: "linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(124,124,124,0.05) 100%)" }}>
-              <div className="px-5 py-3 flex items-center gap-2 border-b border-white/5">
-                <Sparkles size={14} className="text-accent" />
-                <span className="text-[10px] font-black text-accent uppercase tracking-widest">
-Asistente IA
+            <div
+              className="rounded-[24px] overflow-hidden border border-[#57bf00]/20"
+              style={{ background: "rgba(87, 191, 0, 0.06)" }}
+            >
+              <div className="px-5 py-3 flex items-center gap-2 border-b border-[#57bf00]/10">
+                <Sparkles size={14} className="text-[#57bf00]" />
+                <span className="text-[10px] font-black text-[#57bf00] uppercase tracking-widest">
+                  Asistente IA
                 </span>
               </div>
               <div className="p-5">
                 {isLoadingAI ? (
-                  <div className="flex items-center gap-3 text-white">
-                    <Loader2 size={16} className="animate-spin text-accent" />
+                  <div className="flex items-center gap-3 text-text">
+                    <Loader2 size={16} className="animate-spin text-[#009df2]" />
                     <span className="text-sm">Analizando tu pregunta...</span>
                   </div>
                 ) : aiAnswer ? (
-                  <p className="text-sm text-white leading-relaxed">
+                  <p className="text-sm text-text leading-relaxed">
                     <TypingText text={aiAnswer.text} />
                   </p>
                 ) : null}
@@ -273,23 +276,23 @@ Asistente IA
           {/* ─── Module Results ─── */}
           {filteredModules.length > 0 && (
             <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white px-1">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted px-1">
                 Módulos
               </span>
               {filteredModules.map((mod) => (
                 <button
                   key={mod.path}
                   onClick={() => navigateTo(mod.path)}
-                  className="flex items-center gap-4 p-4 rounded-[20px] bg-white/3 border border-white/5 hover:bg-white/8 hover:border-white/15 transition-all text-left group active:scale-95"
+                  className="flex items-center gap-4 p-4 rounded-[20px] bg-text/3 border border-border hover:bg-[#009df2]/8 hover:border-[#009df2]/20 transition-all text-left group active:scale-95"
                 >
-                  <div className={`w-10 h-10 rounded-[14px] bg-linear-to-br ${mod.color} flex items-center justify-center text-white flex-shrink-0 shadow-lg`}>
+                  <div className={`w-10 h-10 rounded-[14px] ${mod.iconBg} border border-current/10 flex items-center justify-center ${mod.iconColor} flex-shrink-0`}>
                     {mod.icon}
                   </div>
                   <div className="flex-1">
-                    <p className="text-white font-bold text-sm">{mod.title}</p>
-                    <p className="text-white text-[11px]">{mod.desc}</p>
+                    <p className="text-text font-bold text-sm">{mod.title}</p>
+                    <p className="text-text-muted text-[11px]">{mod.desc}</p>
                   </div>
-                  <ChevronRight size={16} className="text-white group-hover:text-accent transition-colors" />
+                  <ChevronRight size={16} className="text-text-muted group-hover:text-[#57bf00] transition-colors" />
                 </button>
               ))}
             </div>
@@ -299,7 +302,7 @@ Asistente IA
           {!query && !aiAnswer && (
             <>
               <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white px-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted px-1">
                   Preguntas frecuentes
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -307,9 +310,9 @@ Asistente IA
                     <button
                       key={s.label}
                       onClick={() => handleSuggestion(s.label)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/5 border border-white/8 text-white text-xs font-semibold hover:bg-white/10 hover:text-white hover:border-accent/30 transition-all active:scale-95"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-text/5 border border-border text-text text-xs font-semibold hover:bg-[#009df2]/10 hover:border-[#009df2]/25 transition-all active:scale-95"
                     >
-                      <span className="text-accent">{s.icon}</span>
+                      <span className={s.color}>{s.icon}</span>
                       {s.label}
                     </button>
                   ))}
@@ -317,7 +320,7 @@ Asistente IA
               </div>
 
               <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white px-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted px-1">
                   Accesos Directos
                 </span>
                 <div className="grid grid-cols-2 gap-3">
@@ -325,15 +328,14 @@ Asistente IA
                     <button
                       key={mod.path}
                       onClick={() => navigateTo(mod.path)}
-                      className={`flex items-center gap-3 p-4 rounded-[20px] bg-linear-to-br ${mod.color} bg-opacity-10 border border-white/5 text-left active:scale-95 transition-all group`}
-                      style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))` }}
+                      className="flex items-center gap-3 p-4 rounded-[20px] bg-text/3 border border-border text-left active:scale-95 transition-all group hover:bg-[#009df2]/8 hover:border-[#009df2]/20"
                     >
-                      <div className={`w-9 h-9 rounded-[12px] bg-linear-to-br ${mod.color} flex items-center justify-center text-white flex-shrink-0 shadow-lg`}>
+                      <div className={`w-9 h-9 rounded-[12px] ${mod.iconBg} flex items-center justify-center ${mod.iconColor} flex-shrink-0`}>
                         {mod.icon}
                       </div>
                       <div>
-                        <p className="text-white font-bold text-xs">{mod.title}</p>
-                        <ArrowRight size={10} className="text-white group-hover:text-accent mt-0.5 transition-colors" />
+                        <p className="text-text font-bold text-xs">{mod.title}</p>
+                        <ArrowRight size={10} className="text-text-muted group-hover:text-[#57bf00] mt-0.5 transition-colors" />
                       </div>
                     </button>
                   ))}
@@ -345,11 +347,11 @@ Asistente IA
           {/* No results */}
           {query.trim().length >= 2 && filteredModules.length === 0 && !aiAnswer && !isLoadingAI && (
             <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <Search size={32} className="text-white" />
-              <p className="text-white text-sm">Sin resultados para <strong className="text-white">&quot;{query}&quot;</strong></p>
+              <Search size={32} className="text-text-muted" />
+              <p className="text-text text-sm">Sin resultados para <strong className="text-[#009df2]">&quot;{query}&quot;</strong></p>
               <button
                 onClick={() => askAI(query)}
-                className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold hover:bg-accent/20 transition-all active:scale-95"
+                className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#57bf00]/10 border border-[#57bf00]/20 text-[#57bf00] text-xs font-bold hover:bg-[#57bf00]/20 transition-all active:scale-95"
               >
                 <Sparkles size={14} /> Preguntar al asistente IA
               </button>
@@ -358,11 +360,11 @@ Asistente IA
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
-          <span className="text-[10px] text-white font-medium">ConjuntOS Search</span>
+        <div className="px-6 py-4 border-t border-[#009df2]/10 flex items-center justify-between">
+          <span className="text-[10px] text-text-muted font-medium">ConjuntOS Search</span>
           <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent/60 animate-pulse" />
-            <span className="text-[10px] text-white">IA disponible</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#57bf00] animate-pulse" />
+            <span className="text-[10px] text-text-muted">IA disponible</span>
           </div>
         </div>
       </div>

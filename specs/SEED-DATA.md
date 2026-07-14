@@ -9,7 +9,7 @@
 
 | Conjunto | Plan | Ciudad | Direccion | Unidades | Subdominio |
 |----------|------|--------|-----------|----------|------------|
-| Conjunto Demo | BASICO | Bogota | Calle 100 # 10-20 | 10 | demo |
+| Salamanca Reservado Club House P.H. | BASICO | Bogota | Calle 100 # 10-20 | 10 | demo |
 | Torres del Parque | PRO | Bogota | Carrera 5 # 26-41 | 120 | torresdelparque |
 | Reserva de los Alamos | PREMIUM | Bogota | Calle 134 # 55-20 | 200 | reservaalamos |
 
@@ -17,12 +17,12 @@
 
 ## Usuarios — 21 cuentas (Contrasena de todos: `123456789`)
 
-### Conjunto Demo (13 usuarios)
+### Salamanca Reservado Club House P.H. (13 usuarios)
 
 | Nombre | Email | Rol | Torre | Apto |
 |--------|-------|-----|-------|------|
 | Admin Demo | admin@demo.conjuntos.app | ADMINISTRADOR | — | — |
-| Residente Demo | residente@demo.conjuntos.app | PROPIETARIO | A | 101 |
+| Residente Demo | residente@demo.conjuntos.app | PROPIETARIO | 4 | 1410 |
 | Laura Gonzalez | laura@demo.conjuntos.app | CONCEJO | A | 102 |
 | Carlos Martinez | carlos@demo.conjuntos.app | PROPIETARIO | A | 201 |
 | Sofia Herrera | sofia@demo.conjuntos.app | PROPIETARIO | A | 202 |
@@ -55,7 +55,7 @@
 
 ---
 
-## Unidades (Conjunto Demo) — 10
+## Unidades (Salamanca Reservado Club House P.H.) — 10
 
 | Numero | Torre | Piso | Tipo | Coeficiente |
 |--------|-------|------|------|-------------|
@@ -74,7 +74,7 @@
 
 ## Anuncios — 13
 
-### Conjunto Demo (10)
+### Salamanca Reservado Club House P.H. (10)
 
 | Titulo | Tipo | Fijado |
 |--------|------|--------|

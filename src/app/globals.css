@@ -118,6 +118,28 @@ html, body {
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04);
 }
 
+/* BottomNav active pill — liquid glass con tinte azul */
+.nav-active-glass {
+  background: rgba(0, 157, 242, 0.18);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0, 157, 242, 0.35);
+  box-shadow:
+    0 4px 24px rgba(0, 157, 242, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.light .nav-active-glass {
+  background: rgba(0, 157, 242, 0.14);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(0, 157, 242, 0.3);
+  box-shadow:
+    0 4px 20px rgba(0, 157, 242, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
 /* Glowing text */
 .text-glow {
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
@@ -155,12 +177,22 @@ html, body {
 
 [data-type='success'].liquid-glass-toast {
   border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important; /* Glow máximo */
+  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important;
 }
 
 [data-type='error'].liquid-glass-toast {
   border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important; /* Glow máximo */
+  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important;
+}
+
+.light [data-type='success'].liquid-glass-toast {
+  border-color: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.light [data-type='error'].liquid-glass-toast {
+  border-color: rgba(200, 0, 0, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(200, 0, 0, 0.08) !important;
 }
 
 [data-sonner-toast] [data-icon] {
@@ -185,13 +217,37 @@ html, body {
   padding: 3px;
 }
 
-/* Anillo sutil de estado alrededor del avatar */
+/* Halo animado rotatorio alrededor del avatar de perfil */
 .liquid-status-halo::before {
   content: "";
   position: absolute;
-  inset: -3px;
+  inset: -4px;
   border-radius: 9999px;
-  border: 2px solid rgba(16, 185, 129, 0.45);
+  background: conic-gradient(from 0deg, transparent, #009df2, #57bf00, transparent);
+  animation: rotate-halo 3s linear infinite;
+  opacity: 0.6;
+  filter: blur(8px);
+}
+
+.liquid-status-halo::after {
+  content: "";
+  position: absolute;
+  inset: 0px;
+  border-radius: 9999px;
+  background: #009df2;
+  opacity: 0.4;
+  animation: breathe-halo 2s ease-in-out infinite;
+  filter: blur(4px);
+}
+
+@keyframes rotate-halo {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes breathe-halo {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.08); }
 }
 
 @keyframes story-bg {
@@ -202,5 +258,20 @@ html, body {
 
 .text-glow {
   text-shadow: 0 0 12px rgba(255,255,255,0.35);
+}
+
+.light .text-glow {
+  text-shadow: 0 0 8px rgba(0,0,0,0.15);
+}
+
+/* Halo en modo claro: más opaco para que sea visible */
+.light .liquid-status-halo::before {
+  opacity: 0.9;
+  filter: blur(6px);
+}
+
+.light .liquid-status-halo::after {
+  opacity: 0.5;
+  filter: blur(3px);
 }
 

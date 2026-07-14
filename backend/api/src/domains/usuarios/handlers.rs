@@ -99,9 +99,16 @@ pub async fn get_profile(
         .into_iter()
         .map(crate::domains::tramites::dto::TramiteDto::from)
         .collect();
+    // Fetch the conjunto name for display in the app header.
+    let conjunto_nombre = crate::domains::conjuntos::repo::find_by_id(&mut conn, usuario.conjunto_id)
+        .await
+        .ok()
+        .flatten()
+        .map(|c| c.nombre);
     Ok(Json(ProfileResponse {
         user: UserDto::from(usuario),
         unidad,
+        conjunto_nombre,
         vehiculos,
         mascotas,
         tramites_solicitados,

@@ -183,7 +183,7 @@ export default function ParqueaderoPage() {
   // Modal y Forms
   const [showVehiculoModal, setShowVehiculoModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [vehiculoForm, setVehiculoForm] = useState({ placa: '', marca: '', modelo: '', color: '', tipo: 'AUTOMOVIL' });
+  const [vehiculoForm, setVehiculoForm] = useState({ placa: '', marca: '', modelo: '', color: '', tipo: 'CARRO' });
   const [showHistorialModal, setShowHistorialModal] = useState(false);
   const [showReglamentoModal, setShowReglamentoModal] = useState(false);
 
@@ -193,10 +193,10 @@ export default function ParqueaderoPage() {
      }
      setIsSubmitting(true);
       try {
-        await api.post('/vehiculos', { tipo: 'VEHICULO', descripcion: vehiculoForm });
+        await api.post('/vehiculos', { placa: vehiculoForm.placa, marca: vehiculoForm.marca || undefined, modelo: vehiculoForm.modelo || undefined, color: vehiculoForm.color || undefined, tipo: vehiculoForm.tipo });
         toast.success("Solicitud enviada. Pendiente de aprobación.");
         setShowVehiculoModal(false);
-        setVehiculoForm({ placa: '', marca: '', modelo: '', color: '', tipo: 'AUTOMOVIL' });
+        setVehiculoForm({ placa: '', marca: '', modelo: '', color: '', tipo: 'CARRO' });
      } catch {
        toast.error("Error de conexión");
      } finally {
@@ -711,9 +711,9 @@ export default function ParqueaderoPage() {
                   <input type="text" placeholder="Gris Claro" value={vehiculoForm.color} onChange={(e) => setVehiculoForm({...vehiculoForm, color: e.target.value})} className="w-full bg-text/5 border border-border rounded-2xl px-4 py-3.5 text-text outline-none focus:border-accent placeholder:text-text" />
                 </div>
                 <select value={vehiculoForm.tipo} onChange={(e) => setVehiculoForm({...vehiculoForm, tipo: e.target.value})} className="w-full bg-text/5 border border-border rounded-2xl px-4 py-3.5 text-text outline-none focus:border-accent">
-                    <option className="bg-primary text-text" value="AUTOMOVIL">Automóvil</option>
+                    <option className="bg-primary text-text" value="CARRO">Automóvil</option>
                     <option className="bg-primary text-text" value="MOTO">Motocicleta</option>
-                    <option className="bg-primary text-text" value="BICICLETA">Bicicleta / Patineta</option>
+                    <option className="bg-primary text-text" value="BICI">Bicicleta / Patineta</option>
                 </select>
                 
                 <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-[#57bf00] rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white shadow-xl shadow-[#57bf00]/30 active:scale-95 transition-transform disabled:opacity-50 cursor-pointer">

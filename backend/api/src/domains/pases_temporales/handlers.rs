@@ -74,6 +74,24 @@ async fn crear_pase(
     let nombre_clone = body.nombre_huesped.clone();
 
     let mut conn = state.pool.get().await?;
+
+    // Verify the unidad belongs to this user's conjunto (tenant isolation).
+    {
+        use crate::db::schema::unidades;
+        use diesel::dsl::count_star;
+        use diesel::prelude::*;
+        use diesel_async::RunQueryDsl;
+        let owned: i64 = unidades::table
+            .filter(unidades::id.eq(body.unidad_id))
+            .filter(unidades::conjunto_id.eq(user.conjunto_id))
+            .select(count_star())
+            .first(&mut conn)
+            .await?;
+        if owned == 0 {
+            return Err(ApiError::NotFound("Unidad no encontrada en tu conjunto".into()));
+        }
+    }
+
     let pase = repo::crear_pase(
         &mut conn,
         NuevoPaseTemporal {

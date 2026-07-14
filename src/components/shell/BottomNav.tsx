@@ -82,34 +82,35 @@ export default function BottomNav() {
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[80] w-[92%] max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div
-        className="liquid-glass rounded-[35px] w-full flex justify-between items-center p-2.5 relative backdrop-blur-2xl"
+      <div 
+        className="liquid-glass rounded-[35px] w-full flex justify-between items-center p-2.5 relative shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-2xl"
       >
         {tabs.map((tab) => {
           const isActive = pathname.includes(tab.path);
           const Icon = tab.icon;
-
+          
           return (
-            <Link
-              key={tab.path}
+            <Link 
+              key={tab.path} 
               href={tab.path}
               className={`relative flex items-center justify-center transition-all duration-300 rounded-full h-[52px] group
-                ${isActive ? 'bg-blue-500/10 px-4' : 'flex-1 hover:bg-text/5'}
+                ${isActive ? 'w-[120px] nav-active-glass px-4' : 'w-[52px] bg-text/5 border border-border/30 hover:bg-text/10 mx-1'}
               `}
             >
-              {isActive ? (
-                <div className="flex items-center gap-2 relative z-10">
-                  <Icon size={20} className="text-blue-500" strokeWidth={2.5} />
-                  <span className="text-[13px] font-bold text-blue-500 whitespace-nowrap">
+              <div className="flex items-center gap-2 relative z-10 w-full justify-center">
+                <Icon 
+                  size={20} 
+                  className={`transition-colors duration-300 ${isActive ? '!text-[#57bf00]' : 'text-[#009df2] group-hover:text-[#57bf00]'}`} 
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+                
+                {/* Text only for active state */}
+                {isActive && (
+                  <span className="text-[13px] font-bold text-[#57bf00] whitespace-nowrap overflow-hidden">
                     {tab.name}
                   </span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-0.5 text-text-muted group-hover:text-blue-500 transition-colors">
-                  <Icon size={20} strokeWidth={2} />
-                  <span className="text-[9px] font-medium truncate max-w-[64px]">{tab.name}</span>
-                </div>
-              )}
+                )}
+              </div>
             </Link>
           )
         })}

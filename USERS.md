@@ -256,7 +256,7 @@
 | 226 | Usuario Prueba 92 | testuser92@prueba.conjuntos.app | PROPIETARIO | ✅ | A | 192 |
 | 227 | Usuario Prueba 95 | testuser95@prueba.conjuntos.app | PROPIETARIO | ✅ | A | 195 |
 | 228 | Usuario Prueba 97 | testuser97@prueba.conjuntos.app | PROPIETARIO | ✅ | A | 197 |
-| 229 | citofonia | residente@demo.conjuntos.app | PROPIETARIO | ✅ | A | 101 |
+| 229 | citofonia | residente@demo.conjuntos.app | PROPIETARIO | ✅ | 4 | 1410 |
 | 230 | E2E SUPERVISOR_VIGILANCIA | e2e.supervisor_vigilancia@demo.conjuntos.app | SUPERVISOR_VIGILANCIA | ✅ | | |
 | 231 | Supervisor Vigilancia Demo | supervisor@demo.conjuntos.app | SUPERVISOR_VIGILANCIA | ✅ | | |
 | 232 | Camilo | camilo@conjuntos.app | SUPER_ADMIN | ✅ | | |
