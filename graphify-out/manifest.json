@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "src/app/(app)/inicio/page.tsx": {
-    "mtime": 1782342728.9568512,
-    "ast_hash": "6eb3fd6626d4d9efacac56ee41c619fd",
+    "mtime": 1783970105.9855852,
+    "ast_hash": "43b1e6a44c09fe8a2590c3c24ccb282e",
     "semantic_hash": ""
   },
   "src/app/(app)/inmobiliaria/page.tsx": {
@@ -140,8 +140,8 @@
     "semantic_hash": ""
   },
   "src/app/login/page.tsx": {
-    "mtime": 1782003138.1285176,
-    "ast_hash": "002f7294dc49a895986b3090d93c9cba",
+    "mtime": 1783969540.9775937,
+    "ast_hash": "8465130d98c889ea3961f7d59c19d0c7",
     "semantic_hash": ""
   },
   "src/app/page.tsx": {
@@ -245,8 +245,8 @@
     "semantic_hash": ""
   },
   "src/components/shell/BottomNav.tsx": {
-    "mtime": 1782401714.7815216,
-    "ast_hash": "1690f0abcec378d1babbf50c46d9264e",
+    "mtime": 1783969814.5606618,
+    "ast_hash": "e5a951a7f328057188265482bb9ad271",
     "semantic_hash": ""
   },
   "src/components/shell/BottomSheet.tsx": {
@@ -260,8 +260,8 @@
     "semantic_hash": ""
   },
   "src/components/shell/ProfileHeader.tsx": {
-    "mtime": 1783783102.374857,
-    "ast_hash": "42da84d4fc0438be78bf9bdee56e049c",
+    "mtime": 1783970099.634224,
+    "ast_hash": "bec70eda7657e3d2a44bf617c79bd838",
     "semantic_hash": ""
   },
   "src/components/shell/SplashScreen.tsx": {
@@ -1410,8 +1410,8 @@
     "semantic_hash": ""
   },
   "src/components/shell/RoleSwitcher.tsx": {
-    "mtime": 1782156849.1638558,
-    "ast_hash": "a9d9a3ddefc484b2f423358dba11a4c0",
+    "mtime": 1783969803.2765849,
+    "ast_hash": "91931c60da3a7cf309c3ecadb264c3e1",
     "semantic_hash": ""
   },
   "src/hooks/useAuth.ts": {

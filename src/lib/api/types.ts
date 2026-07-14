@@ -33,6 +33,8 @@ export type EstadoReserva = 'PENDIENTE' | 'CONFIRMADA' | 'CANCELADA' | 'COMPLETA
 
 export type TipoAnuncio = 'GENERAL' | 'URGENTE' | 'MANTENIMIENTO' | 'EVENTO';
 
+export type CatDoc = 'REGLAMENTO' | 'CONVIVENCIA' | 'MASCOTAS' | 'PARQUEADERO' | 'INFORME_EMPRESA' | 'ACTA' | 'CONTRATO' | 'CUENTA_COBRO' | 'CIRCULAR' | 'OTRO';
+
 export type TipoTramite = 'MASCOTA' | 'VEHICULO' | 'ARRENDAMIENTO' | 'MUDANZA' | 'OTRO';
 
 export type EstadoTramite = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
@@ -551,8 +553,11 @@ export interface CeldaDto {
   torre: string | null;
   tipo: TipoCeldaParqueadero;
   estado: EstadoParqueadero;
+  categoria?: string | null;
   usuarioId: string | null;
   createdAt: string;
+  asignadoEn?: string | null;
+  asignadoHasta?: string | null;
 }
 
 export interface OcupanteDto {
@@ -629,10 +634,13 @@ export interface InmuebleDto {
   banos: number;
   /** m2 serialized as string. */
   area: string | null;
+  moneda?: string;
   imagenes: string[];
   caracteristicas: string[];
   estado: EstadoInmueble;
   destacado: boolean;
+  telefonoContacto?: string | null;
+  whatsappContacto?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1061,5 +1069,41 @@ export interface UpdateAdSpaceRequest {
   empresa?: string;
   inicioEn?: string;
   finEn?: string;
+}
+
+// ===========================================================================
+// Gestión Documental
+// ===========================================================================
+
+export interface DocumentoDto {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  categoria: CatDoc;
+  url: string;
+  version?: string | null;
+  subidoPor?: string | null;
+  subidoPorNombre?: string | null;
+  visibleResidentes: boolean;
+  fechaPublicacion: string;
+  createdAt: string;
+}
+
+export interface CreateDocumentoRequest {
+  nombre: string;
+  descripcion?: string;
+  categoria: CatDoc;
+  url: string;
+  version?: string;
+  visibleResidentes?: boolean;
+}
+
+export interface UpdateDocumentoRequest {
+  nombre?: string;
+  descripcion?: string;
+  categoria?: CatDoc;
+  url?: string;
+  version?: string | null;
+  visibleResidentes?: boolean;
 }
 

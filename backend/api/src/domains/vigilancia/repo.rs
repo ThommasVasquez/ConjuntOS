@@ -104,6 +104,25 @@ pub async fn paquetes_conjunto(
     Ok(rows)
 }
 
+pub async fn paquetes_entregados(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+) -> ApiResult<Vec<(Paquete, ResidenteRef)>> {
+    let rows = paquetes::table
+        .inner_join(usuarios::table)
+        .filter(paquetes::conjunto_id.eq(conjunto_id))
+        .filter(paquetes::estado.eq(EstadoPaquete::Entregado))
+        .order(paquetes::entregado_en.desc())
+        .limit(50)
+        .select((
+            Paquete::as_select(),
+            (usuarios::nombre, usuarios::torre, usuarios::apto),
+        ))
+        .load(conn)
+        .await?;
+    Ok(rows)
+}
+
 /// Package arrival + recipient notification in one transaction: the resident
 /// is always told about a package that exists, and vice versa.
 pub async fn crear_paquete_con_notificacion(

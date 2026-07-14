@@ -27,7 +27,7 @@ type EstadoCaso = 'REPORTADO' | 'EN_MEDIACION' | 'RESUELTO' | 'ESCALADO' | 'ARCH
 interface UnidadEmbed {
   id: string;
   torre?: string | null;
-  apto?: string | null;
+  numero?: string | null;
   nombre_residente?: string | null;
 }
 
@@ -54,8 +54,10 @@ interface CasoConvivenciaDto {
 interface StatsConvivencia {
   total: number;
   reportados: number;
+  asignados: number;
   en_mediacion: number;
-  resueltos: number;
+  acuerdos: number;
+  sin_acuerdo: number;
   escalados: number;
 }
 
@@ -314,7 +316,7 @@ export default function ComiteConvivenciaPage() {
     if (!u) return "—";
     const parts = [];
     if (u.torre) parts.push(`T${u.torre}`);
-    if (u.apto) parts.push(`A${u.apto}`);
+    if (u.numero) parts.push(`A${u.numero}`);
     if (u.nombre_residente) parts.push(u.nombre_residente);
     return parts.join(" · ") || "Unidad";
   };
@@ -360,7 +362,7 @@ export default function ComiteConvivenciaPage() {
             { label: "Total", value: stats.total, color: "text-text", bg: "bg-surface-2", icon: <Scale size={16} /> },
             { label: "Reportados", value: stats.reportados, color: "text-[#EAB308]", bg: "bg-[#EAB308]/10", icon: <AlertTriangle size={16} /> },
             { label: "En Mediación", value: stats.en_mediacion, color: "text-[#009df2]", bg: "bg-[#009df2]/10", icon: <Users size={16} /> },
-            { label: "Resueltos", value: stats.resueltos, color: "text-[#57bf00]", bg: "bg-[#57bf00]/10", icon: <CheckCircle2 size={16} /> },
+            { label: "Acuerdos", value: stats.acuerdos, color: "text-[#57bf00]", bg: "bg-[#57bf00]/10", icon: <CheckCircle2 size={16} /> },
             { label: "Escalados", value: stats.escalados, color: "text-[#EF4444]", bg: "bg-[#EF4444]/10", icon: <Siren size={16} /> },
           ].map((s) => (
             <div key={s.label} className={`${s.bg} rounded-2xl p-4 border border-border flex flex-col gap-1`}>

@@ -16,6 +16,7 @@ pub mod comunicaciones;
 pub mod conjuntos;
 pub mod documentos;
 pub mod encuestas;
+pub mod gestion_documental;
 pub mod inmuebles;
 pub mod multas;
 pub mod notificaciones;

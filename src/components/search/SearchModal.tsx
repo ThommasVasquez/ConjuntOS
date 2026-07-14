@@ -1,6 +1,8 @@
 "use client";
 
 import { api } from "@/lib/api/client";
+import { useAuth } from "@/hooks/useAuth";
+import { canAccess } from "@/lib/permissions";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { 
@@ -55,13 +57,15 @@ function isQuestion(query: string): boolean {
   return trimmed.endsWith("?") || trimmed.split(" ").length >= 4;
 }
 
-function filterModules(query: string) {
+function filterModules(query: string, role?: string | null) {
   if (!query.trim()) return [];
   const q = query.toLowerCase();
   return MODULES.filter(m =>
-    m.title.toLowerCase().includes(q) ||
-    m.desc.toLowerCase().includes(q) ||
-    m.keywords.some(k => k.includes(q) || q.includes(k))
+    canAccess(role, m.path) && (
+      m.title.toLowerCase().includes(q) ||
+      m.desc.toLowerCase().includes(q) ||
+      m.keywords.some(k => k.includes(q) || q.includes(k))
+    )
   );
 }
 
@@ -103,6 +107,8 @@ function TypingText({ text }: { text: string }) {
 
 export default function SearchModal({ isOpen, onClose, context = {} }: SearchModalProps) {
   const router = useRouter();
+  const { user } = useAuth();
+  const role = user?.rol;
   const overlayRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -145,7 +151,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
   const handleQueryChange = (value: string) => {
     setQuery(value);
     setAiAnswer(null);
-    setFilteredModules(filterModules(value));
+    setFilteredModules(filterModules(value, role));
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -170,7 +176,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
 
   const handleSuggestion = (label: string) => {
     setQuery(label);
-    setFilteredModules(filterModules(label));
+    setFilteredModules(filterModules(label, role));
     askAI(label);
   };
 
@@ -318,7 +324,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
                   Accesos Directos
                 </span>
                 <div className="grid grid-cols-2 gap-3">
-                  {MODULES.slice(0, 4).map((mod) => (
+                  {MODULES.filter((mod) => canAccess(role, mod.path)).slice(0, 4).map((mod) => (
                     <button
                       key={mod.path}
                       onClick={() => navigateTo(mod.path)}

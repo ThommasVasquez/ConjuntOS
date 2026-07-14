@@ -357,9 +357,13 @@ async fn transicionar(
 
     // Anular una multa debe anular también su pago autogenerado; de lo contrario el
     // residente sigue debiendo una multa que ya no existe (deuda huérfana en cartera).
-    // EstadoPago no tiene un estado "anulado", así que eliminamos el cobro pendiente.
     if matches!(accion, MultaAccion::Anular) {
         if let Some(pid) = pago_id {
+            // Nullify the FK first so the DELETE below is not blocked by the constraint.
+            diesel::update(multas::table.find(multa.id))
+                .set(multas::pago_id.eq::<Option<Uuid>>(None))
+                .execute(conn)
+                .await?;
             diesel::delete(
                 pagos::table
                     .find(pid)

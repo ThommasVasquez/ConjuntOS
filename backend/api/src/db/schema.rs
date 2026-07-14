@@ -219,6 +219,10 @@ diesel::table! {
         url -> Text,
         version -> Nullable<Text>,
         created_at -> Timestamptz,
+        descripcion -> Text,
+        subido_por -> Nullable<Uuid>,
+        fecha_publicacion -> Timestamptz,
+        visible_residentes -> Bool,
     }
 }
 

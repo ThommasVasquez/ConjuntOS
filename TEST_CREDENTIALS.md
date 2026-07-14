@@ -1,7 +1,7 @@
 # Test Credentials (demo seed)
 
 Demo accounts created by `enconjunto-migrate --seed-demo`. They belong to
-**Conjunto Demo** (subdominio `demo`), a fully-populated tenant with Ley 675
+**Salamanca Reservado Club House P.H.** (subdominio `demo`), a fully-populated tenant with Ley 675
 metadata, real `unidades` rows, and at least one account per role.
 
 > ⚠️ These are hardcoded, publicly documented credentials. They are for local
@@ -19,7 +19,7 @@ Password: 123456789
 | Email | Rol | Unidad |
 | --- | --- | --- |
 | admin@demo.conjuntos.app | ADMINISTRADOR | — |
-| residente@demo.conjuntos.app | PROPIETARIO | Torre A, Apto 101 (Apartamento) |
+| residente@demo.conjuntos.app | PROPIETARIO | Torre 4, Apto 1410 (Apartamento) |
 | arrendatario@demo.conjuntos.app | ARRENDATARIO | Torre B, Apto 202 (Apartamento) |
 | concejo@demo.conjuntos.app | CONCEJO | Torre A, Apto 301 (Apartamento) |
 | casa@demo.conjuntos.app | PROPIETARIO | Torre C, C-01 (Casa) |

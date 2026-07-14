@@ -10,7 +10,7 @@ import {
   Plus, MessageSquare, AlertTriangle, CheckCircle2, 
   Clock, ArrowRight, Info, Loader2,
   FileText, Megaphone, Wrench, X, 
-  SendHorizonal, Calendar, Camera
+  SendHorizonal, Calendar, Camera, ChevronRight, Image as ImageIcon
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
@@ -27,7 +27,9 @@ interface Solicitud {
   descripcion: string;
   urgente: boolean;
   estado: 'ABIERTA' | 'ASIGNADA' | 'EN_PROGRESO' | 'RESUELTA' | 'CERRADA';
-  creadoEn: string;
+  createdAt: string;
+  imagenes?: string[];
+  comentarios?: { id: string; contenido: string; createdAt: string }[];
 }
 
 const TIPO_CONFIG = {
@@ -60,6 +62,16 @@ export default function PQRSPage() {
     descripcion: '',
     urgente: false
   });
+
+  // Detail modal state
+  const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null);
+  const [detailData, setDetailData] = useState<Solicitud | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+
+  // Photo upload state
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refetchSolicitudes = async () => {
     try {
@@ -103,10 +115,13 @@ export default function PQRSPage() {
     
     setIsSubmitting(true);
     try {
-      const newSolicitud = await api.post<Solicitud>('/solicitudes', formData);
+      const payload = { ...formData, ...(photoUrl ? { imagenes: [photoUrl] } : {}) };
+      const newSolicitud = await api.post<Solicitud>('/solicitudes', payload);
       setSolicitudes([newSolicitud, ...solicitudes]);
       setIsFormOpen(false);
       setFormData({ tipo: 'PETICION', categoria: 'OTRO', descripcion: '', urgente: false });
+      setPhotoPreview(null);
+      setPhotoUrl("");
       toast.success("Solicitud radicada con éxito", {
         description: `Radicado #: ${newSolicitud.id.slice(-6).toUpperCase()}`
       });
@@ -114,6 +129,34 @@ export default function PQRSPage() {
       toast.error("Hubo un error al radicar la solicitud");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoPreview(URL.createObjectURL(file));
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formDataUpload });
+      const data = await res.json();
+      if (data.url) setPhotoUrl(data.url);
+    } catch {
+      toast.error("No se pudo subir la imagen");
+    }
+  };
+
+  const openDetail = async (s: Solicitud) => {
+    setSelectedSolicitud(s);
+    setIsLoadingDetail(true);
+    try {
+      const data = await api.get<Solicitud>(`/solicitudes/${s.id}`);
+      setDetailData(data);
+    } catch {
+      setDetailData(s);
+    } finally {
+      setIsLoadingDetail(false);
     }
   };
 
@@ -189,7 +232,7 @@ export default function PQRSPage() {
            </div>
          ) : (
            solicitudes.map((s) => (
-             <div key={s.id} className="fade-up-pqrs liquid-glass-card rounded-[32px] p-6 border border-border flex flex-col gap-4 shadow-xl hover:border-accent/20 transition-all cursor-pointer group">
+              <div key={s.id} onClick={() => openDetail(s)} className="fade-up-pqrs liquid-glass-card rounded-[32px] p-6 border border-border flex flex-col gap-4 shadow-xl hover:border-accent/20 transition-all cursor-pointer group">
                 <div className="flex justify-between items-start">
                    <div className="flex items-center gap-3">
                       <div className={`p-2.5 rounded-2xl ${tipoCfg(s.tipo).bg} ${tipoCfg(s.tipo).color}`}>
@@ -212,7 +255,7 @@ export default function PQRSPage() {
                 <div className="pt-4 mt-2 border-t border-border flex justify-between items-center">
                    <div className="flex items-center gap-1.5">
                       <Calendar size={12} className="text-text" />
-                      <span className="text-[10px] text-text font-medium">{new Date(s.creadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                       <span className="text-[10px] text-text font-medium">{new Date(s.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                    </div>
                    <div className="flex items-center gap-2">
                       <span className="text-[8px] font-black uppercase tracking-widest text-text">ID: {s.id.slice(-6).toUpperCase()}</span>
@@ -270,14 +313,30 @@ export default function PQRSPage() {
                     </div>
                  </div>
 
-                 {/* OPTIONS */}
-                 <div className="flex items-center justify-between p-4 rounded-2xl bg-text/5 border border-border">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                       <div className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text">
-                          <Camera size={16} />
-                       </div>
-                       <span className="text-[10px] text-text font-bold uppercase tracking-widest">Vincular Foto</span>
-                    </div>
+                  {/* OPTIONS */}
+                  <div className="flex items-center justify-between p-4 rounded-2xl bg-text/5 border border-border">
+                     <div 
+                       className="flex items-center gap-2 overflow-hidden cursor-pointer" 
+                       onClick={() => fileInputRef.current?.click()}
+                     >
+                        {photoPreview ? (
+                          <img src={photoPreview} alt="Preview" className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text">
+                            <Camera size={16} />
+                          </div>
+                        )}
+                        <span className="text-[10px] text-text font-bold uppercase tracking-widest">
+                          {photoPreview ? 'Foto vinculada' : 'Vincular Foto'}
+                        </span>
+                        <input 
+                          ref={fileInputRef} 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handlePhotoSelect} 
+                          className="hidden" 
+                        />
+                     </div>
                     <label className="flex items-center gap-2 cursor-pointer group">
                        <span className={`text-[10px] font-bold uppercase transition-colors ${formData.urgente ? 'text-text' : 'text-text group-hover:text-text'}`}>¡Urgente!</span>
                        <input 
@@ -298,6 +357,67 @@ export default function PQRSPage() {
                    )}
                  </button>
               </form>
+           </div>
+        </div>
+      )}
+
+      {/* DETAIL MODAL */}
+      {selectedSolicitud && (
+        <div className="fixed inset-0 z-200 flex items-end sm:items-center justify-center p-6 animate-in slide-in-from-bottom duration-500">
+           <div className="absolute inset-0 bg-black/80 backdrop-blur-3xl" onClick={() => { setSelectedSolicitud(null); setDetailData(null); }} />
+           <div className="relative w-full max-w-sm bg-primary border border-border rounded-t-[48px] sm:rounded-[48px] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+              <div className="p-6 flex flex-col gap-5 overflow-y-auto flex-1">
+                 <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                       <div className={`p-2.5 rounded-2xl ${tipoCfg(selectedSolicitud.tipo).bg} ${tipoCfg(selectedSolicitud.tipo).color}`}>
+                          {tipoCfg(selectedSolicitud.tipo).icon}
+                       </div>
+                       <div>
+                          <h3 className="text-text font-bold text-sm tracking-tight">{selectedSolicitud.tipo}</h3>
+                          <span className="text-[8px] font-black uppercase tracking-widest text-text">{selectedSolicitud.categoria}</span>
+                       </div>
+                    </div>
+                    <div className={`px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border border-border ${getStatusLabel(detailData?.estado || selectedSolicitud.estado).color}`}>
+                       {getStatusLabel(detailData?.estado || selectedSolicitud.estado).text}
+                    </div>
+                 </div>
+
+                 <p className="text-text text-sm leading-relaxed">
+                    {detailData?.descripcion || selectedSolicitud.descripcion}
+                 </p>
+
+                 {(detailData?.imagenes || selectedSolicitud.imagenes || []).length > 0 && (
+                   <div className="flex gap-3 overflow-x-auto pb-2">
+                      {(detailData?.imagenes || selectedSolicitud.imagenes || []).map((url, i) => (
+                        <img key={i} src={url} alt={`Evidencia ${i + 1}`} className="h-24 rounded-2xl object-cover shrink-0" />
+                      ))}
+                   </div>
+                 )}
+
+                 <div className="pt-4 border-t border-border flex justify-between items-center">
+                    <div className="flex items-center gap-1.5">
+                       <Calendar size={12} className="text-text" />
+                       <span className="text-[10px] text-text font-medium">{new Date(selectedSolicitud.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-text">ID: {selectedSolicitud.id.slice(-6).toUpperCase()}</span>
+                 </div>
+
+                 {isLoadingDetail && (
+                   <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 text-accent animate-spin" /></div>
+                 )}
+
+                 {detailData?.comentarios && detailData.comentarios.length > 0 && (
+                   <div className="flex flex-col gap-3 pt-4 border-t border-border">
+                      <span className="text-text text-[10px] font-bold uppercase tracking-widest px-2">Seguimiento</span>
+                      {detailData.comentarios.map(c => (
+                        <div key={c.id} className="bg-text/5 rounded-2xl p-4">
+                           <p className="text-text text-xs leading-relaxed">{c.contenido}</p>
+                            <span className="text-[9px] text-text/60 mt-2 block">{new Date(c.createdAt).toLocaleDateString('es-ES')}</span>
+                        </div>
+                      ))}
+                   </div>
+                 )}
+              </div>
            </div>
         </div>
       )}

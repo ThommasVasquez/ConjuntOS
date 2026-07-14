@@ -121,23 +121,11 @@ export default function CitofoniaPage() {
 
   const handleReconfirmVisita = async (visitaId: string) => {
     try {
-      const res = await fetch("/api/vigilancia/visitas", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          visitaId,
-          action: "RECONFIRM"
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("¡Llegada reconfirmada! Se reservará tu celda.");
-        fetchData();
-      } else {
-        toast.error(data.error || "Error al reconfirmar llegada");
-      }
+      await api.put(`/vigilancia/visitas/${visitaId}/aprobar`, {});
+      toast.success("¡Llegada reconfirmada! Se reservará tu celda.");
+      fetchData();
     } catch {
-      toast.error("Error de conexión");
+      toast.error("Error al reconfirmar llegada");
     }
   };
 
@@ -186,13 +174,9 @@ export default function CitofoniaPage() {
   async function fetchData() {
     setIsLoading(true);
     try {
-      const json = await api.get<{ visitas: IVisita[]; paquetes: IPaquete[]; parqueadero?: { carrosDisponibles: number; motosDisponibles: number } }>('/comunicaciones');
+      const json = await api.get<{ visitas: IVisita[]; paquetes: IPaquete[] }>('/comunicaciones');
       setVisitas(json.visitas ?? []);
       setPaquetes(json.paquetes ?? []);
-      setParking({ 
-        carros: json.parqueadero?.carrosDisponibles ?? 0, 
-        motos: json.parqueadero?.motosDisponibles ?? 0 
-      });
     } catch (err) {
       console.error("Error fetching communications:", err);
     } finally {
