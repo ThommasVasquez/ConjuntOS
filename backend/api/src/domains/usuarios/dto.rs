@@ -80,6 +80,8 @@ pub struct ProfileResponse {
     #[serde(flatten)]
     pub user: UserDto,
     pub unidad: Option<UnidadDto>,
+    /// Nombre legible del conjunto al que pertenece el usuario.
+    pub conjunto_nombre: Option<String>,
     #[serde(default)]
     pub vehiculos: Vec<VehiculoPerfilDto>,
     #[serde(default)]

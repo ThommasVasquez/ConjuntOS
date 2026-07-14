@@ -3,7 +3,7 @@
 import { AlertTriangle, Bell, CheckCircle2, Package } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
-import type { ConjuntoDto, NotificacionDto, ProfileResponse } from "@/lib/api/types";
+import type { NotificacionDto, ProfileResponse } from "@/lib/api/types";
 import { toast } from "sonner";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -66,13 +66,9 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   // COV-2: recordatorio emitted for vehicle docs / pet vaccines / dues expiry
   useWsSubscription('recordatorio', () => refetchNotifications());
 
-  /* ── Fetch conjunto name ───────────────────────────────────────────────── */
-  useEffect(() => {
-    if (!user?.conjuntoId) return;
-    api.get<ConjuntoDto>(`/conjuntos/${user.conjuntoId}`)
-      .then(c => setConjuntoNombre(c.nombre))
-      .catch(() => {});
-  }, [user?.conjuntoId]);
+  /* ── Fetch conjunto name ─────────────────────────────────────────────── */
+  // conjuntoNombre comes from /usuarios/me/profile (profileData.conjuntoNombre)
+  // populated when the backend returns it. Fallback: nothing shown.
 
   /* ── Alternating greeting ↔ conjunto (only on /inicio) ──────────────── */
   useEffect(() => {
@@ -127,6 +123,8 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
           const mapped = { name: u.nombre || (user?.rol === 'HUESPED_TEMPORAL' ? 'Huésped' : 'Residente'), gender: u.genero || "neutro" };
           setUserData(mapped);
           if (u.avatar) setProfilePic(u.avatar);
+          // Read conjunto name from profile response (added in backend)
+          if (u.conjuntoNombre) setConjuntoNombre(u.conjuntoNombre);
           localStorage.setItem(`conjuntos_profile_data_${userId}`, JSON.stringify(mapped));
           if (u.avatar) localStorage.setItem(`conjuntos_profile_pic_${userId}`, u.avatar);
         }
