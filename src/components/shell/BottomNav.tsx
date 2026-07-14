@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DollarSign, Building2, Home, Map, Package, Phone, Ticket, User, Users, MessageCircle, Scale } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { canAccess } from "@/lib/permissions";
 
 // BUILD_REVISION: 1.2.0 - MANDATORY ICON: Building2 (Buildings)
 export default function BottomNav() {
@@ -74,6 +75,10 @@ export default function BottomNav() {
       { name: "Perfil", path: "/perfil", icon: User },
     ];
   }
+
+  // Drop any tab this role can't actually open, so no button leads to a
+  // "No tienes permisos" redirect (e.g. CONCEJO's admin-only Mensajes/Novedades).
+  tabs = tabs.filter((tab) => canAccess(role, tab.path));
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[80] w-[92%] max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
