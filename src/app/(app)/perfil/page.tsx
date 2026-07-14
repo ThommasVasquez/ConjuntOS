@@ -135,6 +135,9 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrReservaId, setQrReservaId] = useState<string>("");
   const [qrReservaNombre, setQrReservaNombre] = useState<string>("");
+  const [qrReservaInicio, setQrReservaInicio] = useState<string>("");
+  const [qrReservaFin, setQrReservaFin] = useState<string>("");
+  const [qrReservaEstado, setQrReservaEstado] = useState<string>("");
   const [regType, setRegType] = useState<"VEHICULO" | "MASCOTA" | "OTRO">("VEHICULO");
   const [isRegSubmitting, setIsRegSubmitting] = useState(false);
   const [regForm, setRegForm] = useState({
@@ -704,7 +707,14 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
               return (
                 <div className="liquid-glass-card rounded-[32px] overflow-hidden border border-accent/30 bg-primary-light/30">
                   <button
-                    onClick={() => setViewMode('reservas')}
+                    onClick={() => {
+                      setQrReservaId(proxima.id);
+                      setQrReservaNombre(proxima.areaNombre || "Área común");
+                      setQrReservaInicio(proxima.fechaInicio);
+                      setQrReservaFin(proxima.fechaFin);
+                      setQrReservaEstado(proxima.estado || "");
+                      setShowQrModal(true);
+                    }}
                     className="w-full flex items-stretch text-left cursor-pointer"
                   >
                     <div className="relative w-28 h-28 shrink-0">
@@ -758,8 +768,15 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                        <p className="text-text text-xs italic">No tienes reservas activas en este momento.</p>
                     </div>
                   ) : (
-                    activeReservas.map((res, i) => (
-                       <div key={i} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/30">
+                     activeReservas.map((res, i) => (
+                       <div key={i} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/30 cursor-pointer active:scale-[0.98] transition-all" onClick={() => {
+                         setQrReservaId(res.id);
+                         setQrReservaNombre(res.areaNombre || "Área");
+                         setQrReservaInicio(res.fechaInicio);
+                         setQrReservaFin(res.fechaFin);
+                         setQrReservaEstado(res.estado || "");
+                         setShowQrModal(true);
+                       }}>
                         <div className="flex">
                            <div className="relative w-24 h-24 shrink-0">
                              {res.areaImagenUrl ? (
@@ -1574,7 +1591,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
       {/* 📱 QR MODAL — Código de acceso a la reserva */}
       {showQrModal && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
           onClick={() => setShowQrModal(false)}
         >
           <div
@@ -1587,13 +1604,36 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
             >
               <X size={20} />
             </button>
-            <h3 className="text-lg font-bold text-text">QR de Reserva</h3>
-            <p className="text-xs text-text/60 -mt-2">{qrReservaNombre}</p>
-            <div className="bg-white rounded-2xl p-4">
-              <QRCode value={qrReservaId} size={250} />
+            <h3 className="text-lg font-bold text-text">{qrReservaNombre}</h3>
+            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+              qrReservaEstado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
+              qrReservaEstado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+              qrReservaEstado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
+              "bg-text/10 text-text"
+            }`}>
+              {qrReservaEstado === "CONFIRMADA" ? "Activa" : qrReservaEstado === "PENDIENTE" ? "Pendiente" : qrReservaEstado}
             </div>
-            <p className="text-[10px] text-text/40 text-center">
-              Muestra este código al administrador del área para verificar tu reserva.
+            <div className="w-full space-y-2 px-2">
+              <div className="flex items-center gap-2 text-xs text-text">
+                <Calendar size={14} className="text-accent" />
+                <span className="font-bold">
+                  {qrReservaInicio ? new Date(qrReservaInicio).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }) : ""}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-text">
+                <Clock size={14} className="text-accent" />
+                <span className="font-mono">
+                  {qrReservaInicio ? new Date(qrReservaInicio).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : ""}
+                  {" → "}
+                  {qrReservaFin ? new Date(qrReservaFin).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : ""}
+                </span>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-4">
+              <QRCode value={qrReservaId} size={220} />
+            </div>
+            <p className="text-[10px] text-text/40 text-center leading-relaxed">
+              Muestra este código al ingreso del área para acceder.
             </p>
           </div>
         </div>

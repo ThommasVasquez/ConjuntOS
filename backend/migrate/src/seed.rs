@@ -298,6 +298,7 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
 const RESIDENTE: &str = "residente@demo.conjuntos.app";
 const ARRENDATARIO: &str = "arrendatario@demo.conjuntos.app";
 const CASA: &str = "casa@demo.conjuntos.app";
+const MANTENIMIENTO: &str = "mantenimiento@demo.conjuntos.app";
 const VIGILANTE: &str = "vigilante@demo.conjuntos.app";
 
 // Tuple aliases for the demo content rows (keeps clippy::type_complexity happy).
@@ -347,6 +348,7 @@ async fn seed_content(target: &Client, conjunto_id: Uuid) -> Result<()> {
         "sesiones_parqueadero",
         "reservas",
         "areas_comunes",
+        "solicitudes_servicio",
         "pagos",
         "recibos_publicos",
         "gastos",
@@ -838,7 +840,39 @@ async fn seed_content(target: &Client, conjunto_id: Uuid) -> Result<()> {
     }
 
     let _ = VIGILANTE; // reserved for future vigilancia content
-    tracing::info!("Demo content seeded (anuncios, mascotas, pagos, reservas, etc.)");
+
+    // 14) Solicitudes de servicio (tickets PQRS) — for the mantenimiento user to process.
+    let tickets: &[(&str, &str, &str, &str, &str, &str, i32)] = &[
+        // (asignado_email, residente_email, categoria, tipo, descripcion, prioridad, days_ago)
+        (MANTENIMIENTO, RESIDENTE, "PLOMERIA", "MANTENIMIENTO", "Fuga de agua en el baño del apartamento 1410. El grifo gotea constantemente y se ha formado una mancha en el techo del piso inferior.", "ALTA", -3),
+        (MANTENIMIENTO, RESIDENTE, "ELECTRICIDAD", "MANTENIMIENTO", "El interruptor principal del apartamento 1410 se sobrecalienta. Se requiere revisión urgente del tablero eléctrico.", "URGENTE", -2),
+        (MANTENIMIENTO, ARRENDATARIO, "CERRAJERIA", "PETICION", "Solicitud de cambio de cerradura del apartamento 202 por pérdida de llaves. Incluir copias nuevas.", "MEDIA", -5),
+        (MANTENIMIENTO, CASA, "CARPINTERIA", "MANTENIMIENTO", "Puerta del garaje de la casa C-01 está astillada y no cierra correctamente. Necesita reparación o reemplazo.", "BAJA", -7),
+        (MANTENIMIENTO, RESIDENTE, "PINTURA", "QUEJA", "El pasillo del piso 14 presenta pintura descascarada y manchas de humedad. Se necesita repintar todo el corredor.", "MEDIA", -4),
+        (MANTENIMIENTO, ARRENDATARIO, "OTRO", "SUGERENCIA", "Solicitud para instalar un estante adicional en el gimnasio para toallas y botellas de agua.", "BAJA", -1),
+    ];
+    for (asignado_email, residente_email, categoria, tipo, descripcion, prioridad, days_ago) in tickets {
+        target
+            .execute(
+                "INSERT INTO solicitudes_servicio (id, conjunto_id, usuario_id, categoria, tipo, descripcion, estado, prioridad, asignado_a_id, fecha_asignacion, sla_horas, sla_vencimiento, created_at)
+                 SELECT gen_random_uuid(), $1, u.id, $4, $5, $6, 'ASIGNADA', $7, m.id, NOW() - ($8 || ' days')::interval, 48, NOW() - ($8 || ' days')::interval + '48 hours'::interval, NOW() - ($8 || ' days')::interval
+                 FROM usuarios u, usuarios m
+                 WHERE u.email = $2 AND u.conjunto_id = $1 AND m.email = $3 AND m.conjunto_id = $1",
+                &[
+                    &conjunto_id,
+                    residente_email,
+                    asignado_email,
+                    categoria,
+                    tipo,
+                    descripcion,
+                    prioridad,
+                    &days_ago.to_string(),
+                ],
+            )
+            .await?;
+    }
+
+    tracing::info!("Demo content seeded (anuncios, mascotas, pagos, reservas, tickets, etc.)");
     Ok(())
 }
 

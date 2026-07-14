@@ -8,7 +8,7 @@
 import { 
   ArrowRight, X, CheckCircle2, 
   Clock, Users,
-  Search, SlidersHorizontal, MapPin
+  Search, SlidersHorizontal, MapPin, QrCode, Calendar
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import ProfileHeader from "@/components/shell/ProfileHeader";
@@ -35,6 +35,18 @@ interface AreaComun {
   capacidadMax: number;
 }
 
+interface ReservaDto {
+  id: string;
+  areaId: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: string;
+  notas?: string;
+  createdAt: string;
+  areaNombre: string;
+  areaImagenUrl?: string;
+}
+
 export default function ReservasPage() {
   const { user } = useAuth();
   const userId = user?.id;
@@ -53,19 +65,28 @@ export default function ReservasPage() {
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [reservaId, setReservaId] = useState<string>("");
+  const [reservas, setReservas] = useState<ReservaDto[]>([]);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrReservaId, setQrReservaId] = useState("");
+  const [qrReservaNombre, setQrReservaNombre] = useState("");
 
   // Real-time WebSocket subscription
   useWsSubscription('reserva', () => {
-    api.get<AreaComun[]>('/areas-comunes')
-      .then((data) => setAreas(data))
-      .catch(() => {});
+    Promise.all([
+      api.get<AreaComun[]>('/areas-comunes').then(setAreas).catch(() => {}),
+      api.get<ReservaDto[]>('/reservas').then(setReservas).catch(() => {}),
+    ]);
   });
 
   useEffect(() => {
     async function loadAreas() {
       try {
-        const data = await api.get<AreaComun[]>('/areas-comunes');
-        setAreas(data);
+        const [areasData, reservasData] = await Promise.all([
+          api.get<AreaComun[]>('/areas-comunes'),
+          api.get<ReservaDto[]>('/reservas').catch(() => []),
+        ]);
+        setAreas(areasData);
+        setReservas(reservasData);
       } catch (e) {
         console.error("Error loading areas", e);
       } finally {
@@ -226,6 +247,61 @@ export default function ReservasPage() {
           <h1 className="text-3xl font-display font-bold text-text tracking-tight">Reservas</h1>
           <p className="text-text text-[10px] uppercase font-bold tracking-widest ">Zonas Comunes del Conjunto</p>
       </div>
+
+      {/* Mis Reservas */}
+      {step === 'GRID' && reservas.length > 0 && (
+        <section className="fade-up space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-accent px-1">Mis Reservas</h3>
+          {reservas.map((r) => {
+            const ahora = new Date();
+            const inicio = new Date(r.fechaInicio);
+            const fin = new Date(r.fechaFin);
+            const isActive = r.estado !== "CANCELADA" && fin > ahora;
+            return (
+              <div key={r.id} className={`liquid-glass rounded-2xl p-4 border flex items-center gap-3 ${isActive ? 'border-border' : 'border-border/50 opacity-60'}`}>
+                <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent shrink-0">
+                  {r.areaImagenUrl ? (
+                    <img src={r.areaImagenUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                  ) : (
+                    <Calendar size={18} />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-text truncate">{r.areaNombre}</p>
+                  <p className="text-[10px] text-text/60">
+                    {inicio.toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" })}
+                    {" \u00b7 "}
+                    {inicio.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                    {" \u2192 "}
+                    {fin.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                    r.estado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
+                    r.estado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+                    r.estado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
+                    "bg-text/10 text-text/60"
+                  }`}>
+                    {r.estado === "CONFIRMADA" ? "Activa" : r.estado === "PENDIENTE" ? "Pendiente" : r.estado}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setQrReservaId(r.id);
+                      setQrReservaNombre(r.areaNombre);
+                      setShowQrModal(true);
+                    }}
+                    className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-accent hover:bg-accent/30 transition-colors"
+                    title="Mostrar QR"
+                  >
+                    <QrCode size={14} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {step === 'GRID' && (
         <section className="flex flex-col gap-6">
@@ -390,6 +466,20 @@ export default function ReservasPage() {
            
            <button onClick={() => window.location.reload()} className="mt-12 text-text text-[10px] font-bold uppercase tracking-widest hover:text-text transition-colors cursor-pointer">Volver a Reservas</button>
         </section>
+      )}
+
+      {/* QR Modal */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm fade-up" onClick={() => setShowQrModal(false)}>
+          <div className="liquid-glass rounded-[32px] p-8 border border-border w-80 flex flex-col items-center gap-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-text">{qrReservaNombre}</h3>
+            <div className="bg-white rounded-2xl p-4">
+              <QRCode value={qrReservaId} size={200} />
+            </div>
+            <p className="text-[10px] text-text/60 text-center">Presenta este código al ingreso del área</p>
+            <button onClick={() => setShowQrModal(false)} className="w-full py-3 rounded-xl bg-accent text-primary font-bold text-sm">Cerrar</button>
+          </div>
+        </div>
       )}
 
       <style dangerouslySetInnerHTML={{__html: `
