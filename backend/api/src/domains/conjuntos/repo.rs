@@ -17,6 +17,16 @@ pub async fn list_all(conn: &mut DbConn) -> ApiResult<Vec<Conjunto>> {
     Ok(rows)
 }
 
+pub async fn find_by_id(conn: &mut DbConn, id: Uuid) -> ApiResult<Option<Conjunto>> {
+    let row = conjuntos::table
+        .find(id)
+        .select(Conjunto::as_select())
+        .first(conn)
+        .await
+        .optional()?;
+    Ok(row)
+}
+
 #[derive(Insertable)]
 #[diesel(table_name = conjuntos)]
 pub struct NuevoConjunto {
