@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { Calendar, Clock, Car, User, DoorOpen, Dumbbell, Waves, QrCode, X, Maximize2 } from "lucide-react";
+import QRCode from "react-qr-code";
 import ReservaSection from "@/components/reservas/ReservaSection";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -191,14 +192,7 @@ export default function MiEstanciaPage() {
                 </button>
               </div>
               <div className="bg-white rounded-2xl p-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pase.codigo_acceso)}`}
-                  alt="QR de acceso"
-                  width={250}
-                  height={250}
-                  className="rounded-lg"
-                />
+                <QRCode value={pase.codigo_acceso} size={250} />
               </div>
               <p className="text-3xl font-mono font-bold text-accent tracking-[0.3em] select-all">{pase.codigo_acceso}</p>
               <p className="text-text-secondary text-xs text-center">Muestra este QR en portería para validar tu ingreso</p>

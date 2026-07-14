@@ -273,11 +273,15 @@ function HomeResidente() {
       fetchCargosRetenidos();
       fetchVisitasPendientes();
     }
+    // Animate only once when user loads. Do NOT use ctx.revert() on cleanup —
+    // conditional React renders may have moved DOM nodes since the animation
+    // started, causing "removeChild" errors. Just kill the tweens instead.
+    if (!user) return;
     const ctx = gsap.context(() => {
       gsap.fromTo(".fade-up-home", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 });
     }, containerRef);
-    return () => ctx.revert();
-  }, [user, fetchNotificaciones, fetchFinance, fetchUserData, fetchAnuncios, fetchAds, fetchActiveAsamblea, fetchSolicitudesParqueadero, fetchCargosRetenidos]);
+    return () => { gsap.killTweensOf(".fade-up-home"); };
+  }, [user]);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-16 pb-32">

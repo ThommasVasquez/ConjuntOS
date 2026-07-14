@@ -195,9 +195,13 @@ pub async fn update_profile(
         .into_iter()
         .map(crate::domains::tramites::dto::TramiteDto::from)
         .collect();
+    let conjunto_nombre = crate::domains::conjuntos::repo::find_by_id(&mut conn, user.conjunto_id)
+        .await?
+        .map(|c| c.nombre);
     Ok(Json(ProfileResponse {
         user: UserDto::from(updated),
         unidad,
+        conjunto_nombre,
         vehiculos,
         mascotas,
         tramites_solicitados,

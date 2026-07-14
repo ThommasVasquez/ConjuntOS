@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/lib/api/client";
-import { QrCode, Camera, X, Check, Clock, User, MapPin, Home, AlertTriangle } from "lucide-react";
+import { api, ApiError } from "@/lib/api/client";
+import { Camera, X, Check, Clock, User, MapPin, Home } from "lucide-react";
+import { Scanner } from "@yudiel/react-qr-scanner";
 import { toast } from "sonner";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
@@ -29,9 +30,7 @@ export default function AreaAdminDashboard() {
   const [scanning, setScanning] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verificada, setVerificada] = useState<ReservaAdmin | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const processingRef = useRef(false);
 
   const areaNombre = role === "ADMINISTRADOR_PISCINA" ? "Piscina" : "Gimnasio";
   const areaColor = role === "ADMINISTRADOR_PISCINA" ? "cyan" : "emerald";
@@ -39,7 +38,6 @@ export default function AreaAdminDashboard() {
   const fetchReservas = async () => {
     if (!user) return;
     try {
-      // Primero obtenemos el ID del área
       const areas = await api.get<{ id: string; nombre: string }[]>("/areas-comunes");
       const area = areas.find(
         (a) => a.nombre.toLowerCase() === areaNombre.toLowerCase()
@@ -50,7 +48,7 @@ export default function AreaAdminDashboard() {
       );
       setReservas(data);
     } catch {
-      // Silencioso — API puede no tener autorización aún
+      // Silent — API may not have authorization yet
     } finally {
       setLoading(false);
     }
@@ -60,76 +58,37 @@ export default function AreaAdminDashboard() {
     if (user) fetchReservas();
   }, [user]);
 
-  // Release the camera + scan interval if the component unmounts mid-scan
-  // (e.g. the operator navigates away) so the camera light/track doesn't leak.
-  useEffect(() => {
-    return () => {
-      if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      }
-    };
-  }, []);
-
-  const startScanner = async () => {
-    setScanning(true);
-    setVerificada(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      // Check for QR codes every 500ms
-      scanIntervalRef.current = setInterval(scanFrame, 500);
-    } catch {
-      toast.error("No se pudo acceder a la cámara");
-      setScanning(false);
-    }
-  };
-
-  const stopScanner = () => {
-    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-    setScanning(false);
-  };
-
-  const scanFrame = async () => {
-    if (!videoRef.current) return;
-    try {
-      // @ts-expect-error BarcodeDetector API
-      const detector = new BarcodeDetector({ formats: ["qr_code"] });
-      const barcodes = await detector.detect(videoRef.current);
-      if (barcodes.length > 0) {
-        const code = barcodes[0].rawValue;
-        stopScanner();
-        await verificarQR(code);
-      }
-    } catch {
-      // BarcodeDetector no disponible en este navegador
-    }
-  };
-
   const verificarQR = async (code: string) => {
+    if (processingRef.current) return;
+    processingRef.current = true;
     setVerifying(true);
+    setScanning(false);
     try {
       const data = await api.get<ReservaAdmin>(`/reservas/${code}/verificar`);
       setVerificada(data);
-      toast.success(`✅ Reserva verificada: ${data.usuarioNombre}`);
-    } catch {
-      toast.error("❌ Reserva no encontrada o inválida");
+      toast.success(`Reserva verificada: ${data.usuarioNombre}`);
+    } catch (e) {
+      const detail = e instanceof ApiError ? e.detail : "Error de conexion";
+      toast.error(detail);
       setVerificada(null);
     } finally {
       setVerifying(false);
+      processingRef.current = false;
     }
   };
+
+  const handleScan = useCallback(
+    (detectedCodes: { rawValue: string }[]) => {
+      if (detectedCodes.length > 0 && !processingRef.current) {
+        void verificarQR(detectedCodes[0].rawValue);
+      }
+    },
+    []
+  );
+
+  const handleScanError = useCallback(() => {
+    // Camera unavailable
+  }, []);
 
   if (loading) {
     return (
@@ -158,13 +117,16 @@ export default function AreaAdminDashboard() {
           {role === "ADMINISTRADOR_PISCINA" ? "🏊 Admin. Piscina" : "🏋️ Admin. Gym"}
         </h1>
         <p className="text-xs text-text/60">
-          Reservas del día — {areaNombre}
+          Reservas del dia — {areaNombre}
         </p>
       </div>
 
-      {/* Escáner QR */}
+      {/* Scanner toggle */}
       <button
-        onClick={() => (scanning ? stopScanner() : startScanner())}
+        onClick={() => {
+          setScanning((prev) => !prev);
+          setVerificada(null);
+        }}
         className={`w-full rounded-2xl p-4 border-2 flex items-center justify-center gap-3 font-bold text-sm transition-all active:scale-95 ${
           scanning
             ? "border-red-500 bg-red-500/20 text-red-400"
@@ -173,7 +135,7 @@ export default function AreaAdminDashboard() {
       >
         {scanning ? (
           <>
-            <X size={20} /> Detener escáner
+            <X size={20} /> Detener escaner
           </>
         ) : (
           <>
@@ -182,23 +144,26 @@ export default function AreaAdminDashboard() {
         )}
       </button>
 
-      {/* Vista de cámara */}
+      {/* Camera view */}
       {scanning && (
         <div className="relative w-full aspect-square rounded-3xl overflow-hidden border-2 border-accent/40 bg-black">
-          <video
-            ref={videoRef}
-            className="w-full h-full object-cover"
-            playsInline
-            muted
+          <Scanner
+            onScan={handleScan}
+            onError={handleScanError}
+            constraints={{ facingMode: "environment" }}
+            styles={{
+              container: { width: "100%", height: "100%", borderRadius: "1.5rem" },
+              video: { width: "100%", height: "100%", objectFit: "cover" },
+            }}
           />
           <div className="absolute inset-0 border-[3px] border-accent/60 rounded-3xl m-8 pointer-events-none" />
           <p className="absolute bottom-4 left-0 right-0 text-center text-white text-xs bg-black/50 py-2">
-            Apunta al código QR de la reserva
+            Apunta al codigo QR de la reserva
           </p>
         </div>
       )}
 
-      {/* Verificando */}
+      {/* Verifying */}
       {verifying && (
         <div className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-accent/10 border border-accent/20">
           <div className="animate-spin h-5 w-5 border-2 border-accent border-t-transparent rounded-full" />
@@ -206,11 +171,11 @@ export default function AreaAdminDashboard() {
         </div>
       )}
 
-      {/* Resultado verificación */}
+      {/* Verification result */}
       {verificada && (
         <div className="rounded-2xl p-4 border-2 border-[#57bf00] bg-[#57bf00]/10 space-y-2">
           <div className="flex items-center gap-2 text-[#57bf00] font-bold">
-            <Check size={20} /> ¡Reserva válida!
+            <Check size={20} /> Reserva valida!
           </div>
           <div className="space-y-1 text-sm text-text">
             <p className="flex items-center gap-2"><User size={14} /> {verificada.usuarioNombre}</p>
@@ -219,7 +184,7 @@ export default function AreaAdminDashboard() {
             )}
             <p className="flex items-center gap-2"><Clock size={14} />
               {new Date(verificada.fechaInicio).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-              {" → "}
+              {" \u2192 "}
               {new Date(verificada.fechaFin).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
             </p>
             <p className="flex items-center gap-2"><MapPin size={14} /> {verificada.areaNombre}</p>
@@ -227,7 +192,7 @@ export default function AreaAdminDashboard() {
         </div>
       )}
 
-      {/* Lista de reservas activas */}
+      {/* Active reservations */}
       <section className="space-y-3">
         <h3 className="text-xs font-bold uppercase tracking-widest text-accent px-1">
           Reservas activas hoy ({reservasActivas.length})
@@ -252,9 +217,9 @@ export default function AreaAdminDashboard() {
                 {r.usuarioTorre && r.usuarioApto
                   ? `Torre ${r.usuarioTorre}, Apto ${r.usuarioApto}`
                   : "Sin unidad"}
-                {" · "}
+                {" \u00b7 "}
                 {new Date(r.fechaInicio).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-                {" → "}
+                {" \u2192 "}
                 {new Date(r.fechaFin).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
@@ -271,7 +236,7 @@ export default function AreaAdminDashboard() {
         ))}
       </section>
 
-      {/* Reservas pasadas */}
+      {/* Past reservations */}
       {reservasPasadas.length > 0 && (
         <section className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-widest text-text/40 px-1">
@@ -289,7 +254,7 @@ export default function AreaAdminDashboard() {
                 <p className="text-sm text-text truncate">{r.usuarioNombre}</p>
                 <p className="text-[10px] text-text/40">
                   {new Date(r.fechaInicio).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-                  {" → "}
+                  {" \u2192 "}
                   {new Date(r.fechaFin).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                 </p>
               </div>
