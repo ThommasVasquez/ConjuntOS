@@ -476,14 +476,18 @@ export default function Citofonia() {
                 <Pressable
                   onPress={() => handleCall()}
                   style={{ flex: 2 }}
-                  className="flex-row items-center justify-center gap-3 rounded-2xl bg-surface2 py-4"
+                  className={`flex-row items-center justify-center gap-3 rounded-2xl py-4 ${
+                    inCall ? 'bg-[#EF4444]' : 'bg-[#57bf00]'
+                  }`}
                 >
                   {inCall ? (
-                    <PhoneOff size={18} color={t.text} />
+                    <PhoneOff size={18} color="white" />
                   ) : (
-                    <Phone size={18} color={t.text} />
+                    <Phone size={18} color="white" />
                   )}
-                  <Text className="font-black text-text">{inCall ? 'COLGAR' : 'LLAMAR'}</Text>
+                  <Text className="font-black text-white">
+                    {inCall ? 'COLGAR' : 'LLAMAR'}
+                  </Text>
                 </Pressable>
               </View>
             </LiquidGlass>

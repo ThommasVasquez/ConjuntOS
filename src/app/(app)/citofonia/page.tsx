@@ -515,13 +515,13 @@ export default function CitofoniaPage() {
                    >
                      Limpiar
                    </button>
-                   <button 
-                     onClick={() => handleCall()}
-                     className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black cursor-pointer ${callState !== "IDLE" ? 'bg-text/10' : 'bg-text/10'}`}
-                   >
-                     {callState !== "IDLE" ? <PhoneOff size={18} /> : <Phone size={18} />}
-                     {callState !== "IDLE" ? 'COLGAR' : 'LLAMAR'}
-                   </button>
+                     <button 
+                       onClick={() => handleCall()}
+                       className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 font-black cursor-pointer ${callState !== "IDLE" ? 'bg-[#EF4444] text-white' : 'bg-[#57bf00] text-white'}`}
+                     >
+                       {callState !== "IDLE" ? <PhoneOff size={18} /> : <Phone size={18} />}
+                       {callState !== "IDLE" ? 'COLGAR' : 'LLAMAR'}
+                     </button>
                 </div>
              </div>
              )}
