@@ -7,9 +7,10 @@
 
 import { 
   ArrowRight, X, CheckCircle2, 
-  Clock, Users, QrCode,
+  Clock, Users,
   Search, SlidersHorizontal, MapPin
 } from "lucide-react";
+import QRCode from "react-qr-code";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,6 +52,7 @@ export default function ReservasPage() {
   const [timeSlots, setTimeSlots] = useState<{start: Date, end: Date, available: boolean}[]>([]);
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [reservaId, setReservaId] = useState<string>("");
 
   // Real-time WebSocket subscription
   useWsSubscription('reserva', () => {
@@ -190,14 +192,15 @@ export default function ReservasPage() {
     const slot = timeSlots[selectedSlotIndex];
     setIsProcessing(true);
     try {
-      await api.post('/reservas', {
+      const res = await api.post<{ id: string }>('/reservas', {
           areaId: selectedArea?.id,
           fechaInicio: slot.start.toISOString(),
           fechaFin: slot.end.toISOString()
         });
+      setReservaId(res.id);
       setStep('SUCCESS');
     } catch {
-      toast.error("Error de conexión");
+      toast.error("Error de conexion");
     } finally {
       setIsProcessing(false);
     }
@@ -379,9 +382,8 @@ export default function ReservasPage() {
                  </div>
               </div>
               <div className="w-full aspect-square bg-text/5 p-4 rounded-[32px] flex items-center justify-center border border-border relative z-10">
-                 {/* QR Decorativo premium */}
                  <div className="w-full h-full bg-white rounded-[20px] flex items-center justify-center p-4">
-                      <QrCode size={180} className="text-black" />
+                      {reservaId && <QRCode value={reservaId} size={180} />}
                  </div>
               </div>
            </div>
