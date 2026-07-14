@@ -3,7 +3,7 @@
 import { AlertTriangle, Bell, CheckCircle2, Package } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
-import type { NotificacionDto, ProfileResponse } from "@/lib/api/types";
+import type { ConjuntoDto, NotificacionDto, ProfileResponse } from "@/lib/api/types";
 import { toast } from "sonner";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -11,6 +11,19 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { getNotifTarget } from "@/lib/notif-routing";
 import SosPanicButton from "@/components/sos/SosPanicButton";
+
+/* ── Wave keyframe injected once ───────────────────────────────────────────── */
+const WAVE_STYLE = `
+@keyframes wave-hand {
+  0%,100% { transform: rotate(0deg); }
+  15%      { transform: rotate(18deg); }
+  30%      { transform: rotate(-10deg); }
+  45%      { transform: rotate(16deg); }
+  60%      { transform: rotate(-8deg); }
+  75%      { transform: rotate(12deg); }
+}
+.wave-emoji { display: inline-block; transform-origin: 70% 80%; animation: wave-hand 1.4s ease-in-out infinite; }
+`;
 
 interface ProfileHeaderProps {
   className?: string;
@@ -30,6 +43,11 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [hasStory, setHasStory] = useState(false);
   const [notifications, setNotifications] = useState<NotificacionDto[]>([]);
+  const [conjuntoNombre, setConjuntoNombre] = useState<string | null>(null);
+  // showGreeting: true = saludo, false = nombre del conjunto
+  const isInicioPage = pathname === "/inicio";
+  const [showGreeting, setShowGreeting] = useState(true);
+  const [labelVisible, setLabelVisible] = useState(true);
 
   const refetchNotifications = useCallback(async () => {
     if (!userId) return;
@@ -47,6 +65,32 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   useWsSubscription('notification', () => refetchNotifications());
   // COV-2: recordatorio emitted for vehicle docs / pet vaccines / dues expiry
   useWsSubscription('recordatorio', () => refetchNotifications());
+
+  /* ── Fetch conjunto name ───────────────────────────────────────────────── */
+  useEffect(() => {
+    if (!user?.conjuntoId) return;
+    api.get<ConjuntoDto>(`/conjuntos/${user.conjuntoId}`)
+      .then(c => setConjuntoNombre(c.nombre))
+      .catch(() => {});
+  }, [user?.conjuntoId]);
+
+  /* ── Alternating greeting ↔ conjunto (only on /inicio) ──────────────── */
+  useEffect(() => {
+    if (!isInicioPage || !conjuntoNombre) {
+      setShowGreeting(!isInicioPage ? false : true);
+      setLabelVisible(true);
+      return;
+    }
+    const interval = setInterval(() => {
+      // fade out
+      setLabelVisible(false);
+      setTimeout(() => {
+        setShowGreeting(prev => !prev);
+        setLabelVisible(true);
+      }, 350);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isInicioPage, conjuntoNombre]);
 
   useEffect(() => {
     const MAX_RETRIES = 2;
@@ -211,11 +255,24 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
           )}
         </div>
         <div className="flex flex-col">
+          {/* Inject wave keyframe once */}
+          <style>{WAVE_STYLE}</style>
+
           {showWelcome && (
-            <div className="flex items-center gap-1.5 leading-none mb-1">
-              <span className="text-text text-[10px] font-bold uppercase tracking-widest">
-                {userData.gender === 'masculino' ? 'Bienvenido' : userData.gender === 'neutro' ? 'Bienvenide' : 'Bienvenida'} 👋
-              </span>
+            <div
+              className="flex items-center gap-1.5 leading-none mb-1 transition-opacity duration-300"
+              style={{ opacity: labelVisible ? 1 : 0 }}
+            >
+              {(isInicioPage ? showGreeting : false) || !conjuntoNombre ? (
+                <span className="text-text text-[10px] font-bold uppercase tracking-widest">
+                  {userData.gender === 'masculino' ? 'Bienvenido' : userData.gender === 'neutro' ? 'Bienvenide' : 'Bienvenida'}
+                  {' '}<span className="wave-emoji">👋</span>
+                </span>
+              ) : (
+                <span className="text-[#009df2] text-[10px] font-bold uppercase tracking-widest truncate max-w-[140px]">
+                  🏘️ {conjuntoNombre}
+                </span>
+              )}
             </div>
           )}
           <h1 className="text-text text-xl font-display font-bold tracking-tight text-glow leading-none">{userData.name || 'Residente'}</h1>
