@@ -25,6 +25,7 @@ pub fn router() -> Router<AppState> {
             get(listar_reservas_area_hoy),
         )
         .route("/reservas/{id}/verificar", get(verificar_reserva))
+        .route("/reservas/{id}/cancelar", axum::routing::put(cancelar_reserva))
 }
 
 #[utoipa::path(
@@ -163,6 +164,42 @@ pub async fn crear_reserva(
             WsEvent {
                 domain: "reserva".into(),
                 action: "created".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+pub async fn cancelar_reserva(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<ReservaDto>> {
+    let mut conn = state.pool.get().await?;
+    let reserva = repo::cancelar_reserva(&mut conn, user.conjunto_id, user.id, id).await?;
+    let area = repo::find_area(&mut conn, user.conjunto_id, reserva.area_id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("área común no encontrada".into()))?;
+    let dto = ReservaDto {
+        id: reserva.id,
+        area_id: reserva.area_id,
+        fecha_inicio: reserva.fecha_inicio,
+        fecha_fin: reserva.fecha_fin,
+        estado: reserva.estado,
+        notas: reserva.notas,
+        created_at: reserva.created_at,
+        area_nombre: area.nombre,
+        area_imagen_url: area.imagen_url,
+    };
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "reserva".into(),
+                action: "cancelled".into(),
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
                 target_user_id: None,
             },

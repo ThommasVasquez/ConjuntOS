@@ -10,7 +10,7 @@ import {
   Edit, Camera, Car, PawPrint, ShieldCheck, Mail, Phone,
   CheckCircle2, X, Plus, FileText, Info, ClipboardList, Lock, 
   HelpCircle, CreditCard, Calendar, Package, User as UserIcon, QrCode,
-  Sun, Moon, Clock
+  Sun, Moon, Clock, Trash2
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
 import QRCode from "react-qr-code";
@@ -343,6 +343,17 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
     await logout();
     router.push("/login");
     toast.success("Sesión cerrada");
+  };
+
+  const handleCancelarReserva = async (id: string) => {
+    try {
+      await api.put(`/reservas/${id}/cancelar`, {});
+      setActiveReservas(prev => prev.filter(r => r.id !== id));
+      setShowQrModal(false);
+      toast.success("Reserva cancelada");
+    } catch {
+      toast.error("No se pudo cancelar la reserva");
+    }
   };
 
   // 📝 REGISTRATION LOGIC (Stage 36)
@@ -799,22 +810,22 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                                   {new Date(res.fechaInicio).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
                                 </h4>
                               </div>
-                              <div className="flex items-center justify-between">
+                               <div className="flex items-center justify-between">
                                 <span className="text-[10px] text-text font-mono tracking-tighter">
                                   {new Date(res.fechaInicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} • {new Date(res.fechaFin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setQrReservaId(res.id);
-                                    setQrReservaNombre(res.areaNombre || "Área");
-                                    setShowQrModal(true);
-                                  }}
-                                  className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center text-accent hover:bg-accent/30 transition-colors"
-                                  title="Mostrar QR de acceso"
-                                >
-                                  <QrCode size={14} />
-                                </button>
+                                {res.estado !== "CANCELADA" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCancelarReserva(res.id);
+                                    }}
+                                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
+                                    title="Cancelar reserva"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
                               </div>
                            </div>
                         </div>
