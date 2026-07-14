@@ -13,6 +13,7 @@ import {
   Sun, Moon, Clock
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
+import QRCode from "react-qr-code";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { gsap } from "gsap";
@@ -1589,13 +1590,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
             <h3 className="text-lg font-bold text-text">QR de Reserva</h3>
             <p className="text-xs text-text/60 -mt-2">{qrReservaNombre}</p>
             <div className="bg-white rounded-2xl p-4">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrReservaId)}`}
-                alt="QR Reserva"
-                width={250}
-                height={250}
-                className="rounded-lg"
-              />
+              <QRCode value={qrReservaId} size={250} />
             </div>
             <p className="text-[10px] text-text/40 text-center">
               Muestra este código al administrador del área para verificar tu reserva.

@@ -1,6 +1,7 @@
 use axum::extract::{Path, Query, State};
 use axum::routing::get;
 use axum::{Json, Router};
+use chrono::Utc;
 use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
@@ -264,6 +265,36 @@ pub async fn verificar_reserva(
         repo::find_reserva_by_id(&mut conn, user.conjunto_id, id)
             .await?
             .ok_or_else(|| ApiError::NotFound("reserva no encontrada".into()))?;
+
+    // Area admins can only verify reservations for their own area.
+    if user.rol == Rol::AdministradorPiscina || user.rol == Rol::AdministradorGym {
+        let expected = if user.rol == Rol::AdministradorPiscina {
+            "Piscina"
+        } else {
+            "Gimnasio"
+        };
+        if area_nombre.to_lowercase() != expected.to_lowercase() {
+            return Err(ApiError::Forbidden);
+        }
+    }
+
+    // Reject cancelled reservations.
+    if r.estado == crate::db::enums::EstadoReserva::Cancelada {
+        return Err(ApiError::BadRequest("reserva cancelada".into()));
+    }
+
+    let now = Utc::now();
+    // Reject reservations whose window hasn't started yet or has already ended.
+    if now < r.fecha_inicio {
+        return Err(ApiError::BadRequest(
+            "reserva aun no inicia".into(),
+        ));
+    }
+    if now > r.fecha_fin {
+        return Err(ApiError::BadRequest(
+            "reserva ya finalizo".into(),
+        ));
+    }
 
     let dto = ReservaAdminDto {
         id: r.id,

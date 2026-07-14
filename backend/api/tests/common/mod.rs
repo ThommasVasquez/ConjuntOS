@@ -28,7 +28,7 @@ static MIGRATED: OnceCell<()> = OnceCell::const_new();
 
 fn test_db_url() -> String {
     std::env::var("TEST_DATABASE_URL")
-        .unwrap_or_else(|_| "postgresql://localhost/enconjunto_test".to_string())
+        .unwrap_or_else(|_| "postgresql://enconjunto:enconjunto123@localhost:5432/enconjunto_test".to_string())
 }
 
 /// Build an AppState against the test DB (migrations run once), with the mock
