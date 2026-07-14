@@ -280,7 +280,7 @@ export default function AdminPQRSPage() {
       await api.put(`/admin/solicitudes/${selected.id}`, {
         estado,
         prioridad: nuevaPrioridad,
-        proveedor_id: proveedorId.trim() || undefined,
+        proveedorId: proveedorId.trim() || undefined,
       });
       toast.success(`Solicitud actualizada a "${estado}"`);
       setSelected(null);

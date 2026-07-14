@@ -39,7 +39,7 @@ fn demo_users() -> Vec<DemoUser> {
             rol: "PROPIETARIO",
             genero: "masculino",
             telefono: "+57 300 000 0002",
-            unidad: Some(("A", "101", 1, "APARTAMENTO", "0.012500")),
+            unidad: Some(("4", "1410", 14, "APARTAMENTO", "0.012500")),
         },
         DemoUser {
             nombre: "Arrendatario Demo",
@@ -164,7 +164,7 @@ pub async fn seed_demo(target: &Client) -> Result<()> {
                  numero_escritura, matricula_inmobiliaria, total_unidades, created_at
              )
              VALUES (
-                 $1, 'Conjunto Demo', '900.123.456-7', 'demo',
+                 $1, 'Salamanca Reservado Club House P.H.', '900.123.456-7', 'demo',
                  'Calle 100 # 10-20', 'Bogota', '#1E3A8A',
                  'PREMIUM', true, 'Maria Fernanda Gomez', 'Notaria 15 de Bogota',
                  'ESC-2026-00123', 'MAT-50C-1234567', 6, NOW()

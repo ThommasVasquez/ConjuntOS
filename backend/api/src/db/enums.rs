@@ -122,6 +122,11 @@ text_enum!(CatDoc {
     Mascotas => "MASCOTAS",
     Parqueadero => "PARQUEADERO",
     Reglamento => "REGLAMENTO",
+    InformeEmpresa => "INFORME_EMPRESA",
+    Acta => "ACTA",
+    Contrato => "CONTRATO",
+    CuentaCobro => "CUENTA_COBRO",
+    Circular => "CIRCULAR",
     Otro => "OTRO",
 });
 

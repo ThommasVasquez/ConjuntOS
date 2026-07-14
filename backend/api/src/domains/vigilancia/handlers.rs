@@ -37,6 +37,10 @@ pub fn router() -> Router<AppState> {
             "/vigilancia/paquetes",
             get(listar_paquetes).post(crear_paquete),
         )
+        .route(
+            "/vigilancia/paquetes/entregados",
+            get(listar_entregados),
+        )
         .route("/vigilancia/paquetes/{id}/entregar", put(entregar_paquete))
         .route("/vigilancia/stats", get(vigilancia_stats))
         .route("/paquetes/mios", get(paquetes_mios))
@@ -217,6 +221,32 @@ pub async fn listar_paquetes(
     guard::require(&user, ROLES_VIGILANCIA)?;
     let mut conn = state.pool.get().await?;
     let rows = repo::paquetes_conjunto(&mut conn, user.conjunto_id).await?;
+    Ok(Json(
+        rows.into_iter()
+            .map(|(paquete, residente)| PaqueteVigilanciaDto {
+                paquete: paquete.into(),
+                residente: residente.into(),
+            })
+            .collect(),
+    ))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/vigilancia/paquetes/entregados",
+    tag = "vigilancia",
+    responses(
+        (status = 200, description = "Latest 50 delivered packages with recipient info", body = [PaqueteVigilanciaDto]),
+        (status = 403, description = "Requires gate staff or admin role")
+    )
+)]
+pub async fn listar_entregados(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<PaqueteVigilanciaDto>>> {
+    guard::require(&user, ROLES_VIGILANCIA)?;
+    let mut conn = state.pool.get().await?;
+    let rows = repo::paquetes_entregados(&mut conn, user.conjunto_id).await?;
     Ok(Json(
         rows.into_iter()
             .map(|(paquete, residente)| PaqueteVigilanciaDto {

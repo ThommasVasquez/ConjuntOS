@@ -396,7 +396,7 @@ Servicios de plataforma que sostienen todos los módulos.
 
 ## Datos demo (`--seed-demo`)
 
-Conjunto Demo totalmente poblado e idempotente (subdominio `demo`), con metadatos Ley 675,
+Salamanca Reservado Club House P.H. totalmente poblado e idempotente (subdominio `demo`), con metadatos Ley 675,
 `unidades` reales y al menos una cuenta por rol. Credenciales y contenido en
 [`TEST_CREDENTIALS.md`](TEST_CREDENTIALS.md). Guard de seguridad: el seeder exige
 `ENCONJUNTO_ALLOW_SEED=1` y **nunca** debe correrse contra producción.
