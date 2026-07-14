@@ -83,6 +83,14 @@ pub struct CreateReservaRequest {
     pub notas: Option<String>,
 }
 
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct EditReservaRequest {
+    pub fecha_inicio: DateTime<Utc>,
+    pub fecha_fin: DateTime<Utc>,
+    pub notas: Option<String>,
+}
+
 /// Admin view: reservation + resident name + unit for area operators.
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

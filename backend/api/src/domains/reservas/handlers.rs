@@ -8,7 +8,7 @@ use crate::auth::extract::AuthUser;
 use crate::auth::guard;
 use crate::db::enums::Rol;
 use crate::domains::reservas::dto::{
-    AreaComunDto, CreateReservaRequest, ReservaAdminDto, ReservaDto, SlotDto, SlotsQuery,
+    AreaComunDto, CreateReservaRequest, EditReservaRequest, ReservaAdminDto, ReservaDto, SlotDto, SlotsQuery,
 };
 use crate::domains::reservas::repo;
 use crate::error::{ApiError, ApiResult};
@@ -26,6 +26,7 @@ pub fn router() -> Router<AppState> {
         )
         .route("/reservas/{id}/verificar", get(verificar_reserva))
         .route("/reservas/{id}/cancelar", axum::routing::put(cancelar_reserva))
+        .route("/reservas/{id}/editar", axum::routing::put(editar_reserva))
 }
 
 #[utoipa::path(
@@ -200,6 +201,55 @@ pub async fn cancelar_reserva(
             WsEvent {
                 domain: "reserva".into(),
                 action: "cancelled".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+pub async fn editar_reserva(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<EditReservaRequest>,
+) -> ApiResult<Json<ReservaDto>> {
+    if req.fecha_inicio >= req.fecha_fin {
+        return Err(ApiError::BadRequest("rango de tiempo inválido".into()));
+    }
+    let mut conn = state.pool.get().await?;
+    let reserva = repo::editar_reserva(
+        &mut conn,
+        user.conjunto_id,
+        user.id,
+        id,
+        req.fecha_inicio,
+        req.fecha_fin,
+        req.notas,
+    )
+    .await?;
+    let area = repo::find_area(&mut conn, user.conjunto_id, reserva.area_id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("área común no encontrada".into()))?;
+    let dto = ReservaDto {
+        id: reserva.id,
+        area_id: reserva.area_id,
+        fecha_inicio: reserva.fecha_inicio,
+        fecha_fin: reserva.fecha_fin,
+        estado: reserva.estado,
+        notas: reserva.notas,
+        created_at: reserva.created_at,
+        area_nombre: area.nombre,
+        area_imagen_url: area.imagen_url,
+    };
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "reserva".into(),
+                action: "updated".into(),
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
                 target_user_id: None,
             },

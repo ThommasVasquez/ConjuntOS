@@ -8,7 +8,7 @@
 import { 
   ArrowRight, X, CheckCircle2, 
   Clock, Users,
-  Search, SlidersHorizontal, MapPin, QrCode, Calendar
+  Search, SlidersHorizontal, MapPin, QrCode, Calendar, Trash2, Edit2
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import ProfileHeader from "@/components/shell/ProfileHeader";
@@ -69,6 +69,15 @@ export default function ReservasPage() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrReservaId, setQrReservaId] = useState("");
   const [qrReservaNombre, setQrReservaNombre] = useState("");
+  const [qrReservaInicio, setQrReservaInicio] = useState("");
+  const [qrReservaFin, setQrReservaFin] = useState("");
+  const [qrReservaEstado, setQrReservaEstado] = useState("");
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingReserva, setEditingReserva] = useState<ReservaDto | null>(null);
+  const [editFechaInicio, setEditFechaInicio] = useState("");
+  const [editFechaFin, setEditFechaFin] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   // Real-time WebSocket subscription
   useWsSubscription('reserva', () => {
@@ -227,6 +236,41 @@ export default function ReservasPage() {
     }
   };
 
+  const handleCancelarReserva = async (id: string) => {
+    try {
+      await api.put(`/reservas/${id}/cancelar`, {});
+      setReservas(prev => prev.filter(r => r.id !== id));
+      toast.success("Reserva cancelada");
+    } catch {
+      toast.error("No se pudo cancelar la reserva");
+    }
+  };
+
+  const openEditModal = (r: ReservaDto) => {
+    setEditingReserva(r);
+    setEditFechaInicio(r.fechaInicio.slice(0, 16));
+    setEditFechaFin(r.fechaFin.slice(0, 16));
+    setShowEditModal(true);
+  };
+
+  const handleEditarReserva = async () => {
+    if (!editingReserva) return;
+    setEditSaving(true);
+    try {
+      const updated = await api.put<ReservaDto>(`/reservas/${editingReserva.id}/editar`, {
+        fechaInicio: new Date(editFechaInicio).toISOString(),
+        fechaFin: new Date(editFechaFin).toISOString(),
+      });
+      setReservas(prev => prev.map(r => r.id === editingReserva.id ? { ...r, fechaInicio: updated.fechaInicio, fechaFin: updated.fechaFin } : r));
+      setShowEditModal(false);
+      toast.success("Reserva actualizada");
+    } catch {
+      toast.error("No se pudo actualizar la reserva");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   if(loading) return <div className="min-h-screen flex items-center justify-center text-text"><div className="animate-spin w-8 h-8 border-2 border-text/20 border-t-accent rounded-full"></div></div>;
 
   return (
@@ -257,27 +301,28 @@ export default function ReservasPage() {
             const inicio = new Date(r.fechaInicio);
             const fin = new Date(r.fechaFin);
             const isActive = r.estado !== "CANCELADA" && fin > ahora;
+            const canEdit = r.estado === "CONFIRMADA" || r.estado === "PENDIENTE";
             return (
-              <div key={r.id} className={`liquid-glass rounded-2xl p-4 border flex items-center gap-3 ${isActive ? 'border-border' : 'border-border/50 opacity-60'}`}>
-                <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent shrink-0">
-                  {r.areaImagenUrl ? (
-                    <img src={r.areaImagenUrl} alt="" className="w-full h-full object-cover rounded-xl" />
-                  ) : (
-                    <Calendar size={18} />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-text truncate">{r.areaNombre}</p>
-                  <p className="text-[10px] text-text/60">
-                    {inicio.toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" })}
-                    {" \u00b7 "}
-                    {inicio.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-                    {" \u2192 "}
-                    {fin.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+              <div key={r.id} className={`liquid-glass rounded-2xl p-4 border ${isActive ? 'border-border' : 'border-border/50 opacity-60'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent shrink-0">
+                    {r.areaImagenUrl ? (
+                      <img src={r.areaImagenUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                    ) : (
+                      <Calendar size={18} />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-text truncate">{r.areaNombre}</p>
+                    <p className="text-[10px] text-text/60">
+                      {inicio.toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" })}
+                      {" \u00b7 "}
+                      {inicio.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                      {" \u2192 "}
+                      {fin.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
                     r.estado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
                     r.estado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
                     r.estado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
@@ -285,17 +330,37 @@ export default function ReservasPage() {
                   }`}>
                     {r.estado === "CONFIRMADA" ? "Activa" : r.estado === "PENDIENTE" ? "Pendiente" : r.estado}
                   </span>
+                </div>
+                <div className="flex items-center gap-2 mt-3 justify-end">
                   <button
                     onClick={() => {
                       setQrReservaId(r.id);
                       setQrReservaNombre(r.areaNombre);
+                      setQrReservaInicio(r.fechaInicio);
+                      setQrReservaFin(r.fechaFin);
+                      setQrReservaEstado(r.estado);
                       setShowQrModal(true);
                     }}
-                    className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-accent hover:bg-accent/30 transition-colors"
-                    title="Mostrar QR"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider hover:bg-accent/20 transition-colors"
                   >
-                    <QrCode size={14} />
+                    <QrCode size={12} /> QR
                   </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => openEditModal(r)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-text/5 text-text/70 text-[10px] font-bold uppercase tracking-wider hover:bg-text/10 transition-colors"
+                    >
+                      <Edit2 size={12} /> Editar
+                    </button>
+                  )}
+                  {canEdit && (
+                    <button
+                      onClick={() => handleCancelarReserva(r.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 text-red-400 text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 size={12} /> Anular
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -470,14 +535,72 @@ export default function ReservasPage() {
 
       {/* QR Modal */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm fade-up" onClick={() => setShowQrModal(false)}>
-          <div className="liquid-glass rounded-[32px] p-8 border border-border w-80 flex flex-col items-center gap-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowQrModal(false)}>
+          <div className="liquid-glass rounded-[32px] p-6 border border-border w-80 flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowQrModal(false)} className="self-end text-text/50 hover:text-text"><X size={18} /></button>
             <h3 className="text-lg font-bold text-text">{qrReservaNombre}</h3>
-            <div className="bg-white rounded-2xl p-4">
+            <span className={`text-[10px] px-3 py-0.5 rounded-full font-bold uppercase ${
+              qrReservaEstado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
+              qrReservaEstado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+              "bg-red-500/20 text-red-400"
+            }`}>
+              {qrReservaEstado === "CONFIRMADA" ? "Activa" : qrReservaEstado === "PENDIENTE" ? "Pendiente" : qrReservaEstado}
+            </span>
+            <div className="w-full space-y-1.5 px-1">
+              <div className="flex items-center gap-2 text-xs text-text">
+                <Calendar size={13} className="text-accent shrink-0" />
+                <span className="font-bold">{qrReservaInicio ? new Date(qrReservaInicio).toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" }) : ""}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-text">
+                <Clock size={13} className="text-accent shrink-0" />
+                <span className="font-mono">{qrReservaInicio ? new Date(qrReservaInicio).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }) : ""} {"\u2192"} {qrReservaFin ? new Date(qrReservaFin).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-3">
               <QRCode value={qrReservaId} size={200} />
             </div>
-            <p className="text-[10px] text-text/60 text-center">Presenta este código al ingreso del área</p>
-            <button onClick={() => setShowQrModal(false)} className="w-full py-3 rounded-xl bg-accent text-primary font-bold text-sm">Cerrar</button>
+            <p className="text-[10px] text-text/50 text-center">Presenta este código al ingreso del área</p>
+            <button onClick={() => setShowQrModal(false)} className="w-full py-3 rounded-xl bg-accent text-primary font-bold text-sm mt-1">Cerrar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingReserva && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowEditModal(false)}>
+          <div className="liquid-glass rounded-[32px] p-6 border border-border w-80 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold text-text">Editar Reserva</h3>
+              <button onClick={() => setShowEditModal(false)} className="text-text/50 hover:text-text"><X size={18} /></button>
+            </div>
+            <p className="text-xs text-text/60">{editingReserva.areaNombre}</p>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-[10px] text-text uppercase tracking-widest font-bold">Inicio</label>
+                <input
+                  type="datetime-local"
+                  value={editFechaInicio}
+                  onChange={(e) => setEditFechaInicio(e.target.value)}
+                  className="w-full bg-text/5 border border-border rounded-xl p-3 text-sm text-text focus:outline-none focus:border-accent/40 transition-colors"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-text uppercase tracking-widest font-bold">Fin</label>
+                <input
+                  type="datetime-local"
+                  value={editFechaFin}
+                  onChange={(e) => setEditFechaFin(e.target.value)}
+                  className="w-full bg-text/5 border border-border rounded-xl p-3 text-sm text-text focus:outline-none focus:border-accent/40 transition-colors"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleEditarReserva}
+              disabled={editSaving || !editFechaInicio || !editFechaFin}
+              className="w-full py-3 rounded-xl bg-accent text-primary font-bold text-sm disabled:opacity-50 transition-opacity"
+            >
+              {editSaving ? "Guardando..." : "Guardar Cambios"}
+            </button>
           </div>
         </div>
       )}
