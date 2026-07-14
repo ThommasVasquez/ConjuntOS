@@ -71,6 +71,7 @@ pub async fn reservas_propias(
         .inner_join(areas_comunes::table)
         .filter(reservas::conjunto_id.eq(conjunto_id))
         .filter(reservas::usuario_id.eq(usuario_id))
+        .filter(reservas::estado.ne(EstadoReserva::Cancelada))
         .filter(reservas::fecha_fin.ge(Utc::now()))
         .order(reservas::fecha_inicio.asc())
         .select((
