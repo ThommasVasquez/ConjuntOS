@@ -8,6 +8,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { useColorScheme } from 'nativewind';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -75,6 +82,29 @@ const formatTime = (seconds: number) => {
   const secs = seconds % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
+
+function PulsingDot({ color = '#57bf00' }: { color?: string }) {
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withTiming(0.35, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+  }, [opacity]);
+
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return (
+    <Animated.View
+      style={[
+        { width: 6, height: 6, borderRadius: 3, backgroundColor: color },
+        style,
+      ]}
+    />
+  );
+}
 
 export default function Citofonia() {
   const router = useRouter();
@@ -263,9 +293,19 @@ export default function Citofonia() {
             <Text className="font-display text-xl font-bold tracking-tight text-text">
               Centro de Control
             </Text>
-            <View className="flex-row items-center gap-1.5 rounded-full border border-border bg-surface2 px-2.5 py-1">
-              <View className="h-1.5 w-1.5 rounded-full bg-text" />
-              <Text className="text-[10px] font-black uppercase tracking-widest text-text">
+            <View className={`flex-row items-center gap-1.5 rounded-full border px-2.5 py-1 ${
+              activeTab === 'CITOFONIA'
+                ? 'bg-[#57bf00]/10 border-[#57bf00]/30'
+                : 'bg-text/10 border-text/20'
+            }`}>
+              {activeTab === 'CITOFONIA' ? (
+                <PulsingDot />
+              ) : (
+                <View className="h-1.5 w-1.5 rounded-full bg-text/30" />
+              )}
+              <Text className={`text-[10px] font-black uppercase tracking-widest ${
+                activeTab === 'CITOFONIA' ? 'text-[#57bf00]' : 'text-text'
+              }`}>
                 En Línea
               </Text>
             </View>
