@@ -1,0 +1,32 @@
+# livekit.host-ia.yaml — LiveKit para este host (82.25.115.208, zona host-ia.online).
+#
+# Copia de livekit.yaml adaptada a este despliegue:
+#   - dominio TURN: turn-conjuntos.host-ia.online (no turn.conjuntos.app)
+#   - rtc.tcp_port 7881 -> 7883, porque 7881 ya lo ocupa otro stack en el host.
+#     LiveKit anuncia este puerto a los clientes, así que debe publicarse 1:1
+#     en Docker (no vale remapear 7883:7881).
+#
+# Las API keys NO van aquí: entran por LIVEKIT_KEYS (docker-compose.prod.yml).
+
+port: 7880
+
+rtc:
+  tcp_port: 7883
+  # UDP mux: un solo puerto para todo el media (evita mapear rangos en Docker).
+  udp_port: 7882
+  # Detecta y anuncia la IP pública del host (consulta STUN).
+  use_external_ip: true
+
+turn:
+  enabled: true
+  domain: turn-conjuntos.host-ia.online
+  tls_port: 5349
+  # Cert emitido por Caddy y copiado aquí por scripts/sync-turn-cert.sh.
+  cert_file: /etc/livekit/certs/turn.crt
+  key_file: /etc/livekit/certs/turn.key
+  relay_range_start: 30000
+  relay_range_end: 30049
+
+logging:
+  level: info
+  json: false

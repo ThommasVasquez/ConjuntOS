@@ -13,13 +13,13 @@ compatibility_flags = [ "nodejs_compat" ]
 # where the frontend genuinely needs one, must be set via Cloudflare's encrypted
 # store (`wrangler secret put` / Pages dashboard), never in this file.
 # The frontend also needs NEXT_PUBLIC_API_URL pointed at the production backend.
+#
+# AUTH_URL / NEXTAUTH_URL se eliminaron: next-auth ya no es dependencia del
+# proyecto (no está en package.json y nada lo importa) — la sesión la maneja
+# AuthProvider contra el backend Rust. Mantenerlas solo servía para chocar con
+# las variables del dashboard de Pages ("Binding name 'AUTH_URL' already in use").
 [env.production.vars]
 NEXT_PUBLIC_API_URL = "https://api-conjuntos.host-ia.online"
-NEXT_PUBLIC_VAPID_PUBLIC_KEY="BGR9jWtFAOh6MVaal_V0G5WWV4LSWkSxUHzyDiK8hm8GA8M8qW6v__K-YCW4fissUNsenZr4foTXYscFIRavBnk"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BGR9jWtFAOh6MVaal_V0G5WWV4LSWkSxUHzyDiK8hm8GA8M8qW6v__K-YCW4fissUNsenZr4foTXYscFIRavBnk"
 SKIP_INSTALL_COMMAND = "true"
 VAPID_SUBJECT = "mailto:soporte@conjuntos.app"
-# next-auth v5 uses AUTH_URL to build absolute API endpoints at runtime.
-# Set this to the canonical Cloudflare Pages domain so auth works on every
-# preview deployment (*.pages.dev) without per-deployment config changes.
-AUTH_URL = "https://en-conjunto.pages.dev"
-NEXTAUTH_URL = "https://en-conjunto.pages.dev"
