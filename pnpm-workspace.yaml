@@ -2,6 +2,12 @@ packages:
   - "."
   - mobile
 
+# pnpm v11 reads these from here, not .npmrc — hoisted layout is required for
+# Expo/Metro/babel plugin resolution to work under a monorepo.
+nodeLinker: hoisted
+publicHoistPattern:
+  - "*"
+
 allowBuilds:
   esbuild: true
   sharp: true
