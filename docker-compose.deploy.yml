@@ -37,7 +37,13 @@ services:
       # navegador rechace la cookie (no coincide con api-conjuntos.host-ia.online).
       COOKIE_DOMAIN: ""
       COOKIE_CROSS_SITE: "true"
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      # CORS: debe listar el origen EXACTO del frontend o el navegador bloquea el
+      # login. Van fijos aquí (no son secreto) para que el despliegue sea
+      # reproducible y no dependa de un .env que solo existe en este host.
+      #   app.conjuntos.app  -> dominio de producción
+      #   en-conjunto.pages.dev -> deploys de Cloudflare Pages
+      #   localhost:3000     -> desarrollo local contra este backend
+      ALLOWED_ORIGINS: https://app.conjuntos.app,https://en-conjunto.pages.dev,http://localhost:3000
       S3_PUBLIC_URL: https://s3-conjuntos.host-ia.online/enconjunto
       LIVEKIT_URL: wss://livekit-conjuntos.host-ia.online
     ports: !override
