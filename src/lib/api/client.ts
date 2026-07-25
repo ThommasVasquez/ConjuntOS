@@ -36,6 +36,16 @@ export function getAuthToken(): string | null {
   return authToken;
 }
 
+// ---------------------------------------------------------------------------
+// Global 401 handler — invoked by the API client when any request (except
+// login) returns 401. Registered by useAuth to clear state and redirect.
+// ---------------------------------------------------------------------------
+let onUnauthorized: (() => void) | null = null;
+
+export function setOnUnauthorized(fn: (() => void) | null): void {
+  onUnauthorized = fn;
+}
+
 export class ApiError extends Error {
   status: number;
   detail: string;
@@ -108,6 +118,9 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!response.ok) {
+    if (response.status === 401 && path !== '/auth/login' && path !== '/auth/logout') {
+      onUnauthorized?.();
+    }
     const contentType = response.headers.get('content-type') || '';
     if (
       contentType.includes('application/problem+json') ||
