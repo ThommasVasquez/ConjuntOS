@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { api, ApiError, setAuthToken } from '@/lib/api/client';
+import { api, ApiError, setAuthToken, setOnUnauthorized } from '@/lib/api/client';
 import type { UserDto, LoginResponse } from '@/lib/api/types';
 
 /**
@@ -111,3 +111,27 @@ export const useAuth = create<AuthState>((set) => ({
     set({ user: res.user });
   },
 }));
+
+/**
+ * Register the global 401 handler so that any expired/invalid session is
+ * cleared automatically and the user is redirected to /login.
+ * Call once from AuthProvider (or any top-level component).
+ */
+export function bootstrapAuth(): void {
+  setOnUnauthorized(() => {
+    setAuthToken(null);
+    syncSessionCookie(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ec_token');
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('conjuntos_profile_')) localStorage.removeItem(key);
+      }
+    }
+    useAuth.setState({ user: null, loading: false });
+    // Avoid redirect loop if already on /login
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+  });
+}
