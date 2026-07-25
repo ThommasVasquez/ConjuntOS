@@ -42,6 +42,10 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
   const res = NextResponse.json({ ok: true });
+  // Clear on frontend origin
   res.cookies.set('ec_session', '', { ...COOKIE_OPTIONS, maxAge: 0 });
+  // Also clear on parent domain — the backend may have set ec_session with
+  // Domain=.conjuntos.app, which lives in the same cookie jar for app.conjuntos.app
+  res.cookies.set('ec_session', '', { ...COOKIE_OPTIONS, maxAge: 0, domain: '.conjuntos.app' });
   return res;
 }

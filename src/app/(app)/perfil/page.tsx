@@ -336,8 +336,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
 
   const handleLogout = async () => {
     await logout();
-    router.push("/login");
-    toast.success("Sesión cerrada");
+    window.location.href = "/login";
   };
 
   const handleCancelarReserva = async (id: string) => {
