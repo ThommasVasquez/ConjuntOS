@@ -118,7 +118,12 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!response.ok) {
-    if (response.status === 401 && path !== '/auth/login' && path !== '/auth/logout') {
+    if (
+      response.status === 401 &&
+      path !== '/auth/login' &&
+      path !== '/auth/logout' &&
+      path !== '/auth/me'
+    ) {
       onUnauthorized?.();
     }
     const contentType = response.headers.get('content-type') || '';
