@@ -1,0 +1,110 @@
+# docker-compose.deploy.yml — overrides for THIS host (82.25.115.208, zone host-ia.online).
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.deploy.yml up -d
+#
+# Por qué existe: el host ya corre otros stacks (fyuz, twenty, booking-system) que
+# ocupan 8080, 9000/9001, 7880/7881 y 5432. Aquí se remapean los puertos, se acota
+# el tuning de Postgres al tamaño real de la caja, y se añaden los dos componentes
+# de borde: cloudflared (api + s3) y caddy (TLS para livekit wss + cert TURN).
+#
+# Exposición pública:
+#   api-conjuntos.host-ia.online     -> Cloudflare Tunnel -> backend:8080
+#   s3-conjuntos.host-ia.online      -> Cloudflare Tunnel -> minio:9000
+#   livekit-conjuntos.host-ia.online -> A directo :443 -> caddy -> livekit:7880 (wss)
+#   turn-conjuntos.host-ia.online    -> A directo :5349 TURN/TLS + :7882/udp media
+
+services:
+  db:
+    # El prod override pide max_connections=3500 (caja dedicada de 1000 usuarios).
+    # Esta caja es compartida: ~3500 backends de PG (5-10MB c/u) la tumbarían.
+    # Se vuelve a valores acordes al DB_POOL_SIZE=30 del .env.
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+    ports: !override
+      # Solo loopback: la DB nunca se publica a Internet.
+      - "127.0.0.1:5437:5432"
+
+  backend:
+    environment:
+      DATABASE_URL: postgresql://enconjunto:${POSTGRES_PASSWORD}@db:5432/enconjunto
+      # El frontend vive en Vercel (otro sitio): la cookie debe ser host-only
+      # + SameSite=None; Secure. Un COOKIE_DOMAIN=.conjuntos.app aquí haría que el
+      # navegador rechace la cookie (no coincide con api-conjuntos.host-ia.online).
+      COOKIE_DOMAIN: ""
+      COOKIE_CROSS_SITE: "true"
+      # CORS: debe listar el origen EXACTO del frontend o el navegador bloquea el
+      # login. Van fijos aquí (no son secreto) para que el despliegue sea
+      # reproducible y no dependa de un .env que solo existe en este host.
+      #   app.conjuntos.app  -> dominio de producción
+      #   en-conjunto.pages.dev -> deploys de Cloudflare Pages
+      #   localhost:3000     -> desarrollo local contra este backend
+      ALLOWED_ORIGINS: https://app.conjuntos.app,https://en-conjunto.pages.dev,http://localhost:3000
+      S3_PUBLIC_URL: https://s3-conjuntos.host-ia.online/enconjunto
+      LIVEKIT_URL: wss://livekit-conjuntos.host-ia.online
+    ports: !override
+      # Solo loopback: el acceso público entra por el túnel, no por el puerto.
+      - "127.0.0.1:8081:8080"
+
+  minio:
+    ports: !override
+      # Consola de MinIO solo por loopback (túnel SSH para administrarla).
+      - "127.0.0.1:9011:9001"
+
+  livekit:
+    # 7880 (señalización) y 7881 (RTC/TCP) están ocupados por otro stack:
+    # la señalización sale por Caddy en :443 y RTC/TCP se mueve a 7883.
+    ports: !override
+      - "127.0.0.1:7890:7880"          # señalización HTTP/WS (detrás de Caddy)
+      - "7883:7883"                    # RTC/TCP fallback
+      - "7882:7882/udp"                # RTC media (UDP mux)
+      - "5349:5349"                    # TURN/TLS (TCP)
+      - "5349:5349/udp"                # TURN/TLS (UDP)
+      - "30000-30049:30000-30049/udp"  # rango de relay TURN
+    volumes: !override
+      - ./deploy/livekit.host-ia.yaml:/etc/livekit/livekit.yaml:ro
+      - ./certs/livekit:/etc/livekit/certs:ro
+
+  # Borde HTTPS para LiveKit: termina TLS de la señalización wss y, de paso,
+  # obtiene/renueva el certificado Let's Encrypt de turn-conjuntos que LiveKit
+  # usa para el TURN embebido (ver scripts/sync-turn-cert.sh).
+  caddy:
+    image: caddy:2-alpine
+    container_name: enconjunto-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - livekit
+
+  # Cloudflare Tunnel: publica api + s3 sin abrir puertos. Alcanza backend y minio
+  # por la red interna de compose, así que ninguno necesita puerto público.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: enconjunto-cloudflared
+    restart: unless-stopped
+    # La imagen corre como uid 65532 y no podría leer el credentials.json (0400,
+    # dueño uid 1000). Se corre como el dueño en vez de aflojar permisos del secreto.
+    user: "1000:1000"
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./deploy/cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      # Las credenciales del túnel se quedan fuera del repo, donde las dejó
+      # `cloudflared tunnel create`. Nunca se copian al árbol de trabajo.
+      - ${HOME}/.cloudflared/d8e45356-9fd9-4544-a780-e9972de89f63.json:/etc/cloudflared/credentials.json:ro
+    depends_on:
+      - backend
+      - minio
+
+volumes:
+  caddy_data:
+  caddy_config:

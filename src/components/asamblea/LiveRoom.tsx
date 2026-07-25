@@ -10,6 +10,9 @@ import '@livekit/components-styles';
 import { api } from '@/lib/api/client';
 import type { LiveKitTokenDto } from '@/lib/api/types';
 
+
+
+
 interface LiveRoomProps {
   asambleaId: string;
   onDisconnect?: () => void;

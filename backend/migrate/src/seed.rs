@@ -145,6 +145,14 @@ fn demo_users() -> Vec<DemoUser> {
             telefono: "+57 300 000 0015",
             unidad: None,
         },
+        DemoUser {
+            nombre: "Erika",
+            email: "erika@conjuntos.app",
+            rol: "ADMINISTRADOR",
+            genero: "femenino",
+            telefono: "+57 300 000 0016",
+            unidad: None,
+        },
     ]
 }
 
