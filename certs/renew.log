@@ -138,3 +138,4 @@ docker: Error response from daemon: failed to set up container networking: drive
 
 Run 'docker run --help' for more information
 no renewal needed (cert not within 30-day window)
+sin cambios: el cert de turn-conjuntos.host-ia.online ya está sincronizado
