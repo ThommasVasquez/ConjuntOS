@@ -41,9 +41,14 @@ export function getAuthToken(): string | null {
 // login) returns 401. Registered by useAuth to clear state and redirect.
 // ---------------------------------------------------------------------------
 let onUnauthorized: (() => void) | null = null;
+let _loggingOut = false;
 
 export function setOnUnauthorized(fn: (() => void) | null): void {
   onUnauthorized = fn;
+}
+
+export function setLoggingOut(v: boolean): void {
+  _loggingOut = v;
 }
 
 export class ApiError extends Error {
@@ -120,6 +125,7 @@ export async function apiFetch<T = unknown>(
   if (!response.ok) {
     if (
       response.status === 401 &&
+      !_loggingOut &&
       path !== '/auth/login' &&
       path !== '/auth/logout' &&
       path !== '/auth/me'

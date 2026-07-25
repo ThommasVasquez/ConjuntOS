@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { api, ApiError, setAuthToken, setOnUnauthorized } from '@/lib/api/client';
+import { api, ApiError, setAuthToken, setOnUnauthorized, setLoggingOut } from '@/lib/api/client';
 import type { UserDto, LoginResponse } from '@/lib/api/types';
 
 /**
@@ -71,6 +71,7 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    setLoggingOut(true);
     try {
       await api.post('/auth/logout');
     } catch {
@@ -89,6 +90,7 @@ export const useAuth = create<AuthState>((set) => ({
       }
     }
     set({ user: null, loading: false });
+    setLoggingOut(false);
   },
 
   checkAuth: async () => {
