@@ -928,6 +928,25 @@ function HomeConsejo() {
   );
 }
 
+// Tailwind scans for literal class strings, so `tint`/`fg` must be written out
+// in full here — building them as `bg-${color}-500/10` would compile to nothing.
+const ADMIN_TILES = [
+  { href: '/admin-residentes', icon: Users, title: 'Residentes', desc: 'Gestionar unidades', tint: 'bg-emerald-500/10', fg: 'text-emerald-500' },
+  { href: '/citofonia', icon: UserIcon, title: 'Citofonía', desc: 'Llamar a unidades', tint: 'bg-indigo-500/10', fg: 'text-indigo-500' },
+  { href: '/admin-novedades', icon: Building2, title: 'Novedades', desc: 'Anuncios y trámites', tint: 'bg-blue-500/10', fg: 'text-blue-500' },
+  { href: '/admin-pqrs', icon: Wrench, title: 'Solicitudes', desc: 'PQRS y servicios', tint: 'bg-orange-500/10', fg: 'text-orange-500' },
+  { href: '/admin-areas', icon: MapPin, title: 'Áreas', desc: 'Espacios comunes', tint: 'bg-rose-500/10', fg: 'text-rose-500' },
+  { href: '/encuestas', icon: BarChart3, title: 'Encuestas', desc: 'Crear y ver resultados', tint: 'bg-teal-500/10', fg: 'text-teal-500' },
+  { href: '/comite-convivencia', icon: Scale, title: 'Comité', desc: 'Convivencia y actas', tint: 'bg-violet-500/10', fg: 'text-violet-500' },
+  { href: '/admin-documentos', icon: FileText, title: 'Documentos', desc: 'Gestión documental', tint: 'bg-amber-500/10', fg: 'text-amber-500' },
+  { href: '/reservas', icon: Calendar, title: 'Reservas', desc: 'Áreas comunes', tint: 'bg-green-500/10', fg: 'text-green-500' },
+] as const;
+
+const ADMIN_SHORTCUTS = [
+  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas y Cartera', desc: 'Facturación, pagos y cartera', tint: 'bg-emerald-500/10', fg: 'text-emerald-500' },
+  { href: '/admin-parqueadero', icon: Car, title: 'Control de Parqueaderos', desc: 'Asignación y control de espacios', tint: 'bg-blue-500/10', fg: 'text-blue-500' },
+] as const;
+
 function HomeAdmin() {
   const router = useRouter();
   const { user } = useAuth();
@@ -997,154 +1016,58 @@ function HomeAdmin() {
 
       {/* QUICK ACCESSIBLE ACTIONS */}
       <div className="grid grid-cols-3 gap-3">
-        {/* RESIDENTES CARD */}
-        <div 
-          onClick={() => router.push('/admin-residentes')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Users size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Residentes</h4>
-            <p className="text-[8px] text-text">Gestionar unidades</p>
-          </div>
-        </div>
-
-        {/* CITOFONÍA CARD */}
-        <div 
-          onClick={() => router.push('/citofonia')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <UserIcon size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Citofonía</h4>
-            <p className="text-[8px] text-text">Llamar a unidades</p>
-          </div>
-        </div>
-
-        {/* NOVEDADES CARD */}
-        <div 
-          onClick={() => router.push('/admin-novedades')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Building2 size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Novedades</h4>
-            <p className="text-[8px] text-text">Anuncios y trámites</p>
-          </div>
-        </div>
-
-        {/* PQRS CARD */}
-        <div 
-          onClick={() => router.push('/admin-pqrs')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Wrench size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Solicitudes</h4>
-            <p className="text-[8px] text-text">PQRS y servicios</p>
-          </div>
-        </div>
-
-        {/* ÁREAS CARD */}
-        <div 
-          onClick={() => router.push('/admin-areas')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <MapPin size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Áreas</h4>
-            <p className="text-[8px] text-text">Espacios comunes</p>
-          </div>
-        </div>
-
-        {/* ENCUESTAS CARD */}
-        <div
-          onClick={() => router.push('/encuestas')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <BarChart3 size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Encuestas</h4>
-            <p className="text-[8px] text-text">Crear y ver resultados</p>
-          </div>
-        </div>
-
-        {/* COMITÉ CONVIVENCIA CARD */}
-        <div
-          onClick={() => router.push('/comite-convivencia')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Scale size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Comité</h4>
-            <p className="text-[8px] text-text">Convivencia y actas</p>
-          </div>
-        </div>
-
-        {/* DOCUMENTOS CARD */}
-        <div
-          onClick={() => router.push('/admin-documentos')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <FileText size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Documentos</h4>
-            <p className="text-[8px] text-text">Gestión documental</p>
-          </div>
-        </div>
-
-        {/* RESERVAS CARD */}
-        <div
-          onClick={() => router.push('/reservas')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Calendar size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Reservas</h4>
-            <p className="text-[8px] text-text">Áreas comunes</p>
-          </div>
-        </div>
+        {ADMIN_TILES.map(({ href, icon: Icon, title, desc, tint, fg }) => (
+          <button
+            key={href}
+            onClick={() => router.push(href)}
+            className="group h-[132px] p-3.5 rounded-[20px] bg-primary-light border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer text-left flex flex-col"
+          >
+            <span className={`w-11 h-11 rounded-2xl flex items-center justify-center ${tint} ${fg}`}>
+              <Icon size={20} />
+            </span>
+            <span className="mt-auto block">
+              <span className="block text-[13px] font-bold text-text leading-tight mb-0.5">{title}</span>
+              <span className="flex items-end justify-between gap-1">
+                <span className="text-[10px] text-text/55 leading-snug">{desc}</span>
+                <ArrowRight
+                  size={13}
+                  className={`${fg} shrink-0 group-hover:translate-x-0.5 transition-transform`}
+                />
+              </span>
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* GESTIÓN GENERAL CARD */}
-      <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl text-text">
-        <h2 className="text-base font-bold mb-2">Gestión del Conjunto</h2>
-        <p className="text-[11px] text-text leading-relaxed mb-6">Control de finanzas, parqueaderos y configuración.</p>
-        
+      <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm text-text">
+        <h2 className="text-base font-bold mb-1.5">Gestión del Conjunto</h2>
+        <p className="text-[11px] text-text/55 leading-relaxed mb-5">
+          Control de <span className="text-emerald-500 font-semibold">finanzas</span>,{' '}
+          <span className="text-blue-500 font-semibold">parqueaderos</span> y{' '}
+          <span className="text-violet-500 font-semibold">configuración</span>.
+        </p>
+
         <div className="flex flex-col gap-3">
-          <button 
-            onClick={() => router.push('/admin-finanzas')}
-            className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
-          >
-            <span className="flex items-center gap-2"><DollarSign size={14} className="text-[#57bf00]"/> Finanzas y Cartera</span>
-            <ArrowRight size={14} className="text-text group-hover:text-accent group-hover:translate-x-1 transition-all" />
-          </button>
-          
-          <button 
-            onClick={() => router.push('/admin-parqueadero')}
-            className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
-          >
-            <span className="flex items-center gap-2"><Car size={14} className="text-[#009df2]"/> Control de Parqueaderos</span>
-            <ArrowRight size={14} className="text-text group-hover:text-accent group-hover:translate-x-1 transition-all" />
-          </button>
+          {ADMIN_SHORTCUTS.map(({ href, icon: Icon, title, desc, tint, fg }) => (
+            <button
+              key={href}
+              onClick={() => router.push(href)}
+              className="w-full py-3 px-3.5 rounded-2xl bg-surface-2 hover:bg-text/10 border border-border/40 text-left flex items-center gap-3 group active:scale-98 transition-all cursor-pointer"
+            >
+              <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${tint} ${fg}`}>
+                <Icon size={16} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-bold text-text truncate">{title}</span>
+                <span className="block text-[10px] text-text/55 truncate">{desc}</span>
+              </span>
+              <ArrowRight
+                size={14}
+                className={`${fg} shrink-0 group-hover:translate-x-1 transition-transform`}
+              />
+            </button>
+          ))}
         </div>
       </div>
     </div>

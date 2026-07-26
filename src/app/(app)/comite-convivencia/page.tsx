@@ -357,7 +357,7 @@ export default function ComiteConvivenciaPage() {
 
       {/* Stats Cards */}
       {stats && (
-        <div className="fade-up grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="fade-up grid grid-cols-2 gap-3">
           {[
             { label: "Total", value: stats.total, color: "text-text", bg: "bg-surface-2", icon: <Scale size={16} /> },
             { label: "Reportados", value: stats.reportados, color: "text-[#EAB308]", bg: "bg-[#EAB308]/10", icon: <AlertTriangle size={16} /> },
@@ -365,9 +365,10 @@ export default function ComiteConvivenciaPage() {
             { label: "Acuerdos", value: stats.acuerdos, color: "text-[#57bf00]", bg: "bg-[#57bf00]/10", icon: <CheckCircle2 size={16} /> },
             { label: "Escalados", value: stats.escalados, color: "text-[#EF4444]", bg: "bg-[#EF4444]/10", icon: <Siren size={16} /> },
           ].map((s) => (
-            <div key={s.label} className={`${s.bg} rounded-2xl p-4 border border-border flex flex-col gap-1`}>
-              <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${s.color}`}>
-                {s.icon} {s.label}
+            <div key={s.label} className={`${s.bg} rounded-2xl p-4 border border-border flex flex-col gap-1 min-w-0`}>
+              <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 min-w-0 ${s.color}`}>
+                <span className="shrink-0">{s.icon}</span>
+                <span className="min-w-0 leading-tight">{s.label}</span>
               </span>
               <span className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</span>
             </div>

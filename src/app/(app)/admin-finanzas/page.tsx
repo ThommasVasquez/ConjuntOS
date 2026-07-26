@@ -530,14 +530,14 @@ export default function AdminFinanzasPage() {
           <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
         </div>
       ) : resumen ? (
-        <div className="fade-up grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="fade-up grid grid-cols-2 gap-3 [&>*]:min-w-0">
           {/* Recaudación */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#57bf00]/10 border border-[#57bf00]/20 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-[#57bf00]/10 border border-[#57bf00]/20 flex items-center justify-center">
                 <DollarSign size={16} className="text-[#57bf00]" />
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Recaudación
               </span>
             </div>
@@ -549,10 +549,10 @@ export default function AdminFinanzasPage() {
           {/* Morosidad */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
                 <TrendingDown size={16} className="text-[#EF4444]" />
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Morosidad
               </span>
             </div>
@@ -570,10 +570,10 @@ export default function AdminFinanzasPage() {
           {/* Gastos */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-text/10 border border-text/20 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-text/10 border border-text/20 flex items-center justify-center">
                 <Wallet size={16} className="text-text" />
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Gastos
               </span>
             </div>
@@ -598,7 +598,7 @@ export default function AdminFinanzasPage() {
                   <TrendingDown size={16} className="text-[#EF4444]" />
                 )}
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Balance
               </span>
             </div>
@@ -616,10 +616,10 @@ export default function AdminFinanzasPage() {
           {/* Unidades al día */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-text/10 border border-text/20 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-text/10 border border-text/20 flex items-center justify-center">
                 <CheckCircle2 size={16} className="text-text" />
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Al día
               </span>
             </div>
