@@ -88,15 +88,14 @@ export default function QrScanner() {
           }`}
         >
           {verdict.ok ? (
-            <Check className="text-emerald-400" size={22} />
+            <Check size={22} style={{ color: '#047857' }} />
           ) : (
-            <X className="text-red-400" size={22} />
+            <X size={22} style={{ color: '#b91c1c' }} />
           )}
           <div>
             <p
-              className={`text-sm font-bold ${
-                verdict.ok ? "text-emerald-300" : "text-red-300"
-              }`}
+              className="text-sm font-bold"
+              style={{ color: verdict.ok ? '#047857' : '#b91c1c' }}
             >
               {verdict.ok ? "Ingreso autorizado" : "Codigo rechazado"}
             </p>
@@ -165,7 +164,7 @@ export default function QrScanner() {
             if (e.key === "Enter") void submitToken(manual);
           }}
           placeholder="o escribe el codigo (VIS-\u2026)"
-          className="flex-1 bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
+          className="flex-1 bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
         />
         <button
           onClick={() => void submitToken(manual)}

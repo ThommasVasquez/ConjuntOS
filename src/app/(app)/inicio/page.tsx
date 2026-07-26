@@ -793,11 +793,17 @@ function HomeVigilante() {
 
 function HomeEstacionamiento() {
   const router = useRouter();
-  const [stats, setStats] = useState({ ocupacion: 0, libres: 0, ocupados: 0 });
+  // Mirrors ParqueaderoStatsDto in backend/api/src/domains/parqueadero/dto.rs:199 —
+  // the percentage field is `porcentajeOcupacion`, not `ocupacion`.
+  const [stats, setStats] = useState({ porcentajeOcupacion: 0, libres: 0, ocupados: 0 });
 
   useEffect(() => {
-    api.get<{ ocupacion: number; libres: number; ocupados: number }>('/parqueadero/stats')
-      .then((data) => setStats(data))
+    api.get<{ porcentajeOcupacion: number; libres: number; ocupados: number }>('/parqueadero/stats')
+      .then((data) => setStats({
+        porcentajeOcupacion: data.porcentajeOcupacion ?? 0,
+        libres: data.libres ?? 0,
+        ocupados: data.ocupados ?? 0,
+      }))
       .catch(() => {});
   }, []);
 
@@ -805,41 +811,44 @@ function HomeEstacionamiento() {
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
-      <div 
+      <button
         onClick={() => router.push("/mapa-parqueadero")}
-        className="liquid-glass-card rounded-[28px] p-6 border border-border shadow-2xl text-text cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group active:scale-98"
+        className="rounded-[28px] p-5 bg-primary-light border border-border shadow-sm hover:shadow-md active:scale-98 transition-all text-left flex items-center gap-4 group"
       >
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center">
-            <Car size={22} />
-          </div>
-          <div>
-            <span className="text-[9px] text-accent font-black uppercase tracking-widest block mb-0.5">Control Operativo</span>
-            <h3 className="text-lg font-display font-bold leading-tight text-text">Mapa de Parqueaderos</h3>
-            <p className="text-text text-xs mt-0.5">Ver celdas libres, registrar ingresos/salidas y realizar rondas.</p>
-          </div>
-        </div>
-        <button className="bg-accent text-on-accent text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all cursor-pointer active:scale-95">
-          Ingresar
-        </button>
-      </div>
+        <span
+          className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
+          style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+        >
+          <Car size={22} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="text-[9px] font-black uppercase tracking-wider block mb-0.5" style={{ color: '#3b82f6' }}>
+            Control Operativo
+          </span>
+          <span className="block text-base font-display font-bold leading-tight text-text">Mapa de Parqueaderos</span>
+          <span className="block text-text/55 text-[11px] mt-0.5 leading-snug">
+            Celdas libres, ingresos/salidas y rondas.
+          </span>
+        </span>
+        <ArrowRight size={18} style={{ color: '#3b82f6' }} className="shrink-0 group-hover:translate-x-0.5 transition-transform" />
+      </button>
 
       {/* Estadísticas de Ocupación */}
-      <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
+      <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm">
         <h3 className="text-base font-bold text-text mb-4">Estado del Parqueadero</h3>
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
-            <span className="text-2xl font-black text-text">{stats.ocupacion}%</span>
-            <p className="text-[9px] text-text uppercase font-bold mt-1">Ocupación</p>
-          </div>
-          <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
-            <span className="text-2xl font-black text-text">{stats.libres}</span>
-            <p className="text-[9px] text-text uppercase font-bold mt-1">Libres</p>
-          </div>
-          <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
-            <span className="text-2xl font-black text-text">{stats.ocupados}</span>
-            <p className="text-[9px] text-text uppercase font-bold mt-1">Ocupados</p>
-          </div>
+          {[
+            { value: `${stats.porcentajeOcupacion}%`, label: 'Ocupación', hex: '#3b82f6' },
+            { value: String(stats.libres), label: 'Libres', hex: '#10b981' },
+            { value: String(stats.ocupados), label: 'Ocupados', hex: '#f97316' },
+          ].map((s) => (
+            <div key={s.label} className="bg-surface-2 border border-border/40 rounded-2xl p-4 text-center min-w-0">
+              {/* truncate on the value too — an unexpected string used to spill
+                  across the neighbouring tiles instead of being clipped. */}
+              <span className="block text-2xl font-black truncate" style={{ color: s.hex }}>{s.value}</span>
+              <p className="text-[9px] text-text/55 uppercase font-bold mt-1 truncate">{s.label}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
