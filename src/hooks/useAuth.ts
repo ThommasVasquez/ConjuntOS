@@ -88,6 +88,8 @@ export const useAuth = create<AuthState>((set) => ({
         const key = localStorage.key(i);
         if (key && key.startsWith('conjuntos_profile_')) localStorage.removeItem(key);
       }
+      // Redirect to login page immediately to avoid 401 loops on protected pages
+      window.location.href = '/login';
     }
     set({ user: null, loading: false });
     setLoggingOut(false);
