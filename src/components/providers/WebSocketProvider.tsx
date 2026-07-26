@@ -7,8 +7,8 @@ import { api, ApiError } from '@/lib/api/client';
 
 const WS_RECONNECT_BASE = 3000;
 const WS_RECONNECT_MAX = 30000;
-const WS_URL_BASE =
-  process.env.NEXT_PUBLIC_API_URL || 'https://api.conjuntos.app';
+// No fallback: a missing var must fail loudly, not silently hit production.
+const WS_URL_BASE = process.env.NEXT_PUBLIC_API_URL!;
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const user = useAuth((s) => s.user);
