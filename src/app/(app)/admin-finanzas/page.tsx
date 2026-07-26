@@ -14,8 +14,7 @@ import {
   X,
   Pencil,
   Trash2,
-  Loader2,
-  RefreshCw,
+    RefreshCw,
   Plus,
   ChevronLeft,
   ChevronRight,
@@ -28,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { api, ApiError } from "@/lib/api/client";
 import type { EstadoPago, MetodoPago } from "@/lib/api/types";
+import { Skeleton, SkeletonKpis, SkeletonRows } from "@/components/ui/Skeleton";
 
 // ---------------------------------------------------------------------------
 // Local DTOs for finanzas endpoints
@@ -54,8 +54,10 @@ interface PagoAdminDto {
   unidad?: { torre: string | null; numero: string };
 }
 
+/** Mirrors AdminPagosPage in backend/api/src/domains/admin_finanzas.rs:82 —
+ *  the page array is `data`, not `pagos`. */
 interface PagosAdminResponse {
-  pagos: PagoAdminDto[];
+  data: PagoAdminDto[];
   page: number;
   pages: number;
   total: number;
@@ -270,13 +272,14 @@ export default function AdminFinanzasPage() {
         if (pagosSearch.trim())
           params.set("q", pagosSearch.trim());
 
-        const data = await api.get<PagosAdminResponse>(
+        const res = await api.get<PagosAdminResponse>(
           `/admin/pagos?${params.toString()}`,
         );
-        setPagos(data.pagos);
-        setPagosPage(data.page);
-        setPagosPages(data.pages);
-        setPagosTotal(data.total);
+        // ?? [] so a shape change can't white-screen the page again.
+        setPagos(res.data ?? []);
+        setPagosPage(res.page);
+        setPagosPages(res.pages);
+        setPagosTotal(res.total);
       } catch {
         toast.error("Error al cargar pagos");
       } finally {
@@ -343,13 +346,20 @@ export default function AdminFinanzasPage() {
       return;
     }
 
-    fetchResumen().finally(() => setInitialLoading(false));
+    // Don't await the KPI fetch here: blocking initialLoading on it meant
+    // loadingKpi was already false by the first real render, so the KPI
+    // skeleton was unreachable. The tab effect below owns that fetch.
+    setInitialLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, role, router]);
 
   // Lazy-load tab data
   useEffect(() => {
     if (initialLoading) return;
+    // The KPI block sits above the tabs on every view, so refresh it on any
+    // tab switch — that's what makes its skeleton show outside the KPI tab,
+    // and it keeps the totals current after registering a gasto or pago.
+    fetchResumen();
     if (tab === "PAGOS") fetchPagos();
     else if (tab === "GASTOS") fetchGastos();
     else if (tab === "MOROSIDAD") fetchMorosidad();
@@ -364,22 +374,13 @@ export default function AdminFinanzasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagosEstadoFilter, pagosSearch]);
 
+  const pagosFiltersActive =
+    pagosSearch.trim() !== "" || pagosEstadoFilter !== "TODOS";
+
   // =====================================================================
   // GSAP animations
   // =====================================================================
 
-  useEffect(() => {
-    if (!initialLoading) {
-      const ctx = gsap.context(() => {
-        gsap.fromTo(
-          ".fade-up",
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, stagger: 0.08, duration: 0.45, ease: "power2.out" },
-        );
-      }, containerRef);
-      return () => ctx.revert();
-    }
-  }, [initialLoading, tab]);
 
   // =====================================================================
   // Gasto CRUD handlers
@@ -487,8 +488,13 @@ export default function AdminFinanzasPage() {
 
   if (authLoading || initialLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+      <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-3 w-56" />
+        </div>
+        <Skeleton className="h-12 w-full rounded-full" />
+        <SkeletonKpis />
       </div>
     );
   }
@@ -505,7 +511,7 @@ export default function AdminFinanzasPage() {
       <ProfileHeader />
 
       {/* Header */}
-      <div className="fade-up flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-medium text-text tracking-wide">
             Finanzas
@@ -526,18 +532,16 @@ export default function AdminFinanzasPage() {
       {/* KPI Cards (always visible) */}
       {/* ============================================================ */}
       {loadingKpi ? (
-        <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
-        </div>
+        <SkeletonKpis />
       ) : resumen ? (
-        <div className="fade-up grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
           {/* Recaudación */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#57bf00]/10 border border-[#57bf00]/20 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-[#57bf00]/10 border border-[#57bf00]/20 flex items-center justify-center">
                 <DollarSign size={16} className="text-[#57bf00]" />
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Recaudación
               </span>
             </div>
@@ -549,10 +553,10 @@ export default function AdminFinanzasPage() {
           {/* Morosidad */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
                 <TrendingDown size={16} className="text-[#EF4444]" />
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Morosidad
               </span>
             </div>
@@ -570,10 +574,10 @@ export default function AdminFinanzasPage() {
           {/* Gastos */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-text/10 border border-text/20 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-text/10 border border-text/20 flex items-center justify-center">
                 <Wallet size={16} className="text-text" />
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Gastos
               </span>
             </div>
@@ -598,7 +602,7 @@ export default function AdminFinanzasPage() {
                   <TrendingDown size={16} className="text-[#EF4444]" />
                 )}
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Balance
               </span>
             </div>
@@ -616,10 +620,10 @@ export default function AdminFinanzasPage() {
           {/* Unidades al día */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-text/10 border border-text/20 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-text/10 border border-text/20 flex items-center justify-center">
                 <CheckCircle2 size={16} className="text-text" />
               </div>
-              <span className="text-[10px] text-text uppercase tracking-wider font-bold">
+              <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Al día
               </span>
             </div>
@@ -633,7 +637,7 @@ export default function AdminFinanzasPage() {
           </div>
         </div>
       ) : (
-        <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col items-center gap-3 py-8 text-center">
+        <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col items-center gap-3 py-8 text-center">
           <AlertCircle size={28} className="text-text" />
           <p className="text-text text-sm">
             No se pudieron cargar los datos financieros.
@@ -650,7 +654,7 @@ export default function AdminFinanzasPage() {
       {/* ============================================================ */}
       {/* Tabs */}
       {/* ============================================================ */}
-      <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
+      <div className="flex bg-surface-2 rounded-full p-1 border border-border">
         <button
           onClick={() => setTab("KPI")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
@@ -696,51 +700,74 @@ export default function AdminFinanzasPage() {
       {/* ============================================================ */}
       {/* PAGOS SECTION */}
       {/* ============================================================ */}
+      {/* KPI SECTION — the KPI cards themselves render above the tabs, so
+          without this the tab body was blank. */}
+      {/* ============================================================ */}
+      {tab === "KPI" &&
+        (loadingKpi ? (
+          <div className="liquid-glass rounded-3xl p-8 border border-border flex flex-col items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+        ) : resumen ? (
+          <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
+            <TrendingUp size={40} className="mx-auto text-text mb-3" style={{ opacity: 0.4 }} />
+            <p className="text-text font-medium">Sin movimientos recientes</p>
+            <p className="text-xs text-text mt-1" style={{ opacity: 0.5 }}>
+              Los indicadores del mes se muestran arriba.
+            </p>
+          </div>
+        ) : null)}
+
+      {/* ============================================================ */}
       {tab === "PAGOS" && (
         <div className="flex flex-col gap-4">
-          {/* Filters */}
-          <div className="fade-up flex flex-col sm:flex-row gap-3">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search
-                size={16}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-text"
-                style={{ opacity: 0.5 }}
-              />
-              <input
-                type="text"
-                placeholder="Buscar por unidad (torre-apto)..."
-                value={pagosSearch}
-                onChange={(e) => setPagosSearch(e.target.value)}
-                className="w-full bg-surface-2 border border-border rounded-xl py-3 pl-12 pr-4 text-sm text-text focus:outline-none focus:border-accent transition-all placeholder:text-text"
-              />
-            </div>
+          {/* Filters — hidden when there is genuinely nothing to filter, but
+              kept visible while a filter is active so a search that returns
+              nothing can still be cleared. */}
+          {(pagos.length > 0 || pagosFiltersActive) && (
+            <div className="flex flex-col gap-3">
+              {/* Search */}
+              <div className="relative">
+                <Search
+                  size={16}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-text"
+                  style={{ opacity: 0.5 }}
+                />
+                <input
+                  type="text"
+                  placeholder="Buscar por unidad"
+                  value={pagosSearch}
+                  onChange={(e) => setPagosSearch(e.target.value)}
+                  className="w-full bg-surface-2 border border-border rounded-xl py-3 pl-12 pr-4 text-sm text-text focus:outline-none focus:border-accent transition-all placeholder:text-text"
+                />
+              </div>
 
-            {/* Estado filter */}
-            <select
-              value={pagosEstadoFilter}
-              onChange={(e) =>
-                setPagosEstadoFilter(
-                  e.target.value as "TODOS" | EstadoPago,
-                )
-              }
-              className="bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text focus:outline-none focus:border-accent"
-            >
-              <option value="TODOS">Todos los estados</option>
-              <option value="PAGADO">Pagado</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="VENCIDO">Vencido</option>
-              <option value="EN_DISPUTA">En Disputa</option>
-            </select>
-          </div>
+              {/* Estado filter */}
+              <select
+                value={pagosEstadoFilter}
+                onChange={(e) =>
+                  setPagosEstadoFilter(
+                    e.target.value as "TODOS" | EstadoPago,
+                  )
+                }
+                className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text focus:outline-none focus:border-accent"
+              >
+                <option value="TODOS">Todos los estados</option>
+                <option value="PAGADO">Pagado</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="VENCIDO">Vencido</option>
+                <option value="EN_DISPUTA">En Disputa</option>
+              </select>
+            </div>
+          )}
 
           {/* Table / List */}
           {loadingPagos ? (
-            <div className="w-full py-12 flex justify-center">
-              <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
-            </div>
+            <SkeletonRows />
           ) : pagos.length === 0 ? (
-            <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+            <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
               <DollarSign
                 size={40}
                 className="mx-auto text-text mb-3"
@@ -748,11 +775,13 @@ export default function AdminFinanzasPage() {
               />
               <p className="text-text font-medium">Sin pagos</p>
               <p className="text-xs text-text mt-1" style={{ opacity: 0.5 }}>
-                No se encontraron pagos con los filtros actuales.
+                {pagosFiltersActive
+                  ? "No se encontraron pagos con los filtros actuales."
+                  : "Aún no hay pagos registrados."}
               </p>
             </div>
           ) : (
-            <div className="fade-up liquid-glass rounded-3xl border border-border shadow-2xl overflow-hidden">
+            <div className="liquid-glass rounded-3xl border border-border shadow-2xl overflow-hidden">
               {/* Table header */}
               <div className="hidden md:grid grid-cols-6 gap-3 px-6 py-3 bg-surface-2 border-b border-border text-[10px] font-black uppercase tracking-wider text-text">
                 <span>Unidad</span>
@@ -816,7 +845,7 @@ export default function AdminFinanzasPage() {
 
           {/* Pagination */}
           {pagosPages > 1 && (
-            <div className="fade-up flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => fetchPagos(pagosPage - 1)}
                 disabled={pagosPage <= 1}
@@ -844,50 +873,53 @@ export default function AdminFinanzasPage() {
       {/* ============================================================ */}
       {tab === "GASTOS" && (
         <div className="flex flex-col gap-4">
-          {/* Category filter chips + Add button */}
-          <div className="fade-up flex items-center justify-between gap-3">
-            <div className="flex gap-2 overflow-x-auto pb-1 flex-1">
-              <button
-                onClick={() => setGastosCatFilter("TODOS")}
-                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
-                  gastosCatFilter === "TODOS"
-                    ? "bg-[#009df2] text-white shadow-lg shadow-[#009df2]/30"
-                    : "bg-text/5 border border-border text-text hover:bg-text/10"
-                }`}
-              >
-                Todos
-              </button>
-              {CAT_GASTO_OPTIONS.map((cat) => (
+          {/* Button on its own row above the chips — sharing a row inside the
+              430px shell left no width for them and sliced them mid-word. */}
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={openNewGasto}
+              className="flex items-center justify-center gap-2 w-full bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-3 text-sm font-bold active:scale-98 transition-transform"
+            >
+              <Plus size={18} />
+              <span className="whitespace-nowrap">Registrar Gasto</span>
+            </button>
+
+            {/* Hidden when there is nothing to filter, but kept visible while a
+                category is selected so an empty result can still be cleared. */}
+            {(gastos.length > 0 || gastosCatFilter !== "TODOS") && (
+              <div className="flex gap-2 overflow-x-auto pb-1 min-w-0">
                 <button
-                  key={cat}
-                  onClick={() => setGastosCatFilter(cat)}
+                  onClick={() => setGastosCatFilter("TODOS")}
                   className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
-                    gastosCatFilter === cat
+                    gastosCatFilter === "TODOS"
                       ? "bg-[#009df2] text-white shadow-lg shadow-[#009df2]/30"
                       : "bg-text/5 border border-border text-text hover:bg-text/10"
                   }`}
                 >
-                  {CAT_GASTO_LABELS[cat]}
+                  Todos
                 </button>
-              ))}
-            </div>
-
-            <button
-              onClick={openNewGasto}
-              className="flex items-center gap-2 shrink-0 bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
-            >
-              <Plus size={18} />
-              <span className="hidden sm:inline">Registrar Gasto</span>
-            </button>
+                {CAT_GASTO_OPTIONS.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setGastosCatFilter(cat)}
+                    className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
+                      gastosCatFilter === cat
+                        ? "bg-[#009df2] text-white shadow-lg shadow-[#009df2]/30"
+                        : "bg-text/5 border border-border text-text hover:bg-text/10"
+                    }`}
+                  >
+                    {CAT_GASTO_LABELS[cat]}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* List */}
           {loadingGastos ? (
-            <div className="w-full py-12 flex justify-center">
-              <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
-            </div>
+            <SkeletonRows />
           ) : filteredGastos.length === 0 ? (
-            <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+            <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
               <Wallet
                 size={40}
                 className="mx-auto text-text mb-3"
@@ -903,7 +935,7 @@ export default function AdminFinanzasPage() {
               </p>
             </div>
           ) : (
-            <div className="fade-up flex flex-col gap-3">
+            <div className="flex flex-col gap-3">
               {filteredGastos.map((g) => (
                 <div
                   key={g.id}
@@ -963,26 +995,26 @@ export default function AdminFinanzasPage() {
       {/* ============================================================ */}
       {tab === "MOROSIDAD" && (
         <div className="flex flex-col gap-4">
-          <div className="fade-up flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
-              <AlertCircle size={20} className="text-[#EF4444]" />
+          {morosidad.length > 0 && (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
+                <AlertCircle size={20} className="text-[#EF4444]" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-text">
+                  Unidades con saldo vencido
+                </h3>
+                <p className="text-xs text-text" style={{ opacity: 0.5 }}>
+                  Ordenado de mayor a menor deuda
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-text">
-                Unidades con saldo vencido
-              </h3>
-              <p className="text-xs text-text" style={{ opacity: 0.5 }}>
-                Ordenado de mayor a menor deuda
-              </p>
-            </div>
-          </div>
+          )}
 
           {loadingMorosidad ? (
-            <div className="w-full py-12 flex justify-center">
-              <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
-            </div>
+            <SkeletonRows />
           ) : morosidad.length === 0 ? (
-            <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+            <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
               <CheckCircle2
                 size={40}
                 className="mx-auto text-[#57bf00] mb-3"
@@ -995,7 +1027,7 @@ export default function AdminFinanzasPage() {
               </p>
             </div>
           ) : (
-            <div className="fade-up flex flex-col gap-3">
+            <div className="flex flex-col gap-3">
               {morosidad.map((m, i) => (
                 <div
                   key={m.unidadId}
@@ -1185,7 +1217,7 @@ export default function AdminFinanzasPage() {
               >
                 {savingGasto ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Skeleton className="w-5 h-5 rounded-full" />
                     Guardando...
                   </>
                 ) : editingGastoId ? (

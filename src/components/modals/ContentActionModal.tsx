@@ -265,7 +265,7 @@ export default function ContentActionModal({ item, userData, onClose, onActionCo
         {step === "tracking" && (
            <div className="p-10 flex flex-col items-center text-center space-y-10">
               <div className="relative w-32 h-32">
-                 <div className="absolute inset-0 rounded-full border-4 border-accent/20 border-t-accent animate-spin" />
+ <div className="absolute inset-0 rounded-full animate-pulse bg-text/10" />
                  <div className="absolute inset-0 flex items-center justify-center">
                     <ShoppingBag className="text-accent animate-bounce" size={40} />
                  </div>

@@ -11,8 +11,7 @@ import {
   Hand,
   CheckCircle2,
   XCircle,
-  Loader2,
-  RefreshCw,
+    RefreshCw,
   Plus,
   X,
   Play,
@@ -33,6 +32,7 @@ import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { LiveKitTokenDto } from "@/lib/api/types";
+import { Skeleton, SkeletonRows } from "@/components/ui/Skeleton";
 
 // ---------------------------------------------------------------------------
 // Local DTOs (mirror backend/api/src/domains/asamblea/dto.rs)
@@ -312,12 +312,8 @@ export default function AdminAsambleaPage() {
   useEffect(() => {
     if (!initialLoading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(
-          ".fade-up",
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, stagger: 0.08, duration: 0.45, ease: "power2.out" },
-        );
-      }, containerRef);
+        
+}, containerRef);
       return () => ctx.revert();
     }
   }, [initialLoading, tab, asamblea]);
@@ -425,7 +421,7 @@ export default function AdminAsambleaPage() {
   if (authLoading || initialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+        <SkeletonRows />
       </div>
     );
   }
@@ -442,7 +438,7 @@ export default function AdminAsambleaPage() {
       <ProfileHeader />
 
       {/* Header */}
-      <div className="fade-up flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-medium text-text tracking-wide">
             Administrar Asamblea
@@ -463,10 +459,10 @@ export default function AdminAsambleaPage() {
       </div>
 
       {/* ── Session Card ──────────────────────────────────────────────────── */}
-      <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col gap-4">
+      <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col gap-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+            <SkeletonRows />
           </div>
         ) : !asamblea ? (
           <div className="flex flex-col items-center gap-4 py-6 text-center">
@@ -558,7 +554,7 @@ export default function AdminAsambleaPage() {
                   className="flex-1 py-3 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {savingSession ? (
-                    <><Loader2 size={16} className="animate-spin" /> Iniciando...</>
+                    <><Skeleton className="w-4 h-4 rounded-full" /> Iniciando...</>
                   ) : (
                     <><Play size={16} /> Iniciar Asamblea</>
                   )}
@@ -570,7 +566,7 @@ export default function AdminAsambleaPage() {
                   className="flex-1 py-3 rounded-full bg-[#EF4444] text-white font-bold text-sm shadow-lg shadow-[#EF4444]/30 active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {savingSession ? (
-                    <><Loader2 size={16} className="animate-spin" /> Finalizando...</>
+                    <><Skeleton className="w-4 h-4 rounded-full" /> Finalizando...</>
                   ) : (
                     <><Square size={16} /> Finalizar Asamblea</>
                   )}
@@ -602,7 +598,7 @@ export default function AdminAsambleaPage() {
       {/* ── Tabs (only visible when asamblea is active) ──────────────────── */}
       {asamblea && (
         <>
-          <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
+          <div className="flex bg-surface-2 rounded-full p-1 border border-border">
             {([
               ["sesion", "Sesión", <Play key="s" size={14} />],
               ["votaciones", "Votaciones", <Vote key="v" size={14} />],
@@ -631,7 +627,7 @@ export default function AdminAsambleaPage() {
           {tab === "votaciones" && (
             <div className="flex flex-col gap-4">
               {/* Header + Create button */}
-              <div className="fade-up flex items-center justify-between">
+              <div className="flex items-center justify-between">
                 <span className="text-[10px] text-text uppercase tracking-[0.2em] font-black">
                   {votaciones.length} votacion{votaciones.length !== 1 ? "es" : ""}
                 </span>
@@ -649,10 +645,10 @@ export default function AdminAsambleaPage() {
 
               {loadingVotaciones ? (
                 <div className="w-full py-12 flex justify-center">
-                  <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+                  <SkeletonRows />
                 </div>
               ) : votaciones.length === 0 ? (
-                <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+                <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
                   <Vote size={40} className="mx-auto text-text mb-3" style={{ opacity: 0.4 }} />
                   <p className="text-text font-medium">Sin votaciones</p>
                   <p className="text-xs text-text mt-1" style={{ opacity: 0.5 }}>
@@ -663,7 +659,7 @@ export default function AdminAsambleaPage() {
                 votaciones.map((v) => (
                   <div
                     key={v.id}
-                    className="fade-up liquid-glass rounded-3xl p-5 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all"
+                    className="liquid-glass rounded-3xl p-5 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all"
                   >
                     {/* Top row */}
                     <div className="flex justify-between items-start gap-3">
@@ -725,17 +721,17 @@ export default function AdminAsambleaPage() {
             <div className="flex flex-col gap-4">
               {loadingQuorum ? (
                 <div className="w-full py-12 flex justify-center">
-                  <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+                  <SkeletonRows />
                 </div>
               ) : !quorum ? (
-                <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+                <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
                   <AlertCircle size={40} className="mx-auto text-text mb-3" style={{ opacity: 0.4 }} />
                   <p className="text-text font-medium">Error al cargar quórum</p>
                 </div>
               ) : (
                 <>
                   {/* Quorum circle */}
-                  <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col items-center gap-4">
+                  <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col items-center gap-4">
                     <div className="relative w-28 h-28">
                       <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                         <circle
@@ -763,7 +759,7 @@ export default function AdminAsambleaPage() {
                   </div>
 
                   {/* Stats grid */}
-                  <div className="fade-up grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {[
                       { label: "Presentes", value: quorum.asistencias.length, icon: <Users size={16} />, color: "text-[#57bf00]" },
                       { label: "Coef. Presente", value: Number(quorum.presenteCoeficiente).toFixed(2), icon: <Shield size={16} />, color: "text-[#009df2]" },
@@ -778,7 +774,7 @@ export default function AdminAsambleaPage() {
                   </div>
 
                   {/* Attendance list */}
-                  <div className="fade-up liquid-glass rounded-3xl border border-border shadow-2xl overflow-hidden">
+                  <div className="liquid-glass rounded-3xl border border-border shadow-2xl overflow-hidden">
                     <div className="px-5 py-3 bg-surface-2 border-b border-border">
                       <span className="text-[10px] text-text uppercase tracking-[0.2em] font-black">
                         Asistencias ({quorum.asistencias.length})
@@ -823,10 +819,10 @@ export default function AdminAsambleaPage() {
             <div className="flex flex-col gap-4">
               {loadingTurnos ? (
                 <div className="w-full py-12 flex justify-center">
-                  <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+                  <SkeletonRows />
                 </div>
               ) : turnos.length === 0 ? (
-                <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+                <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
                   <Hand size={40} className="mx-auto text-text mb-3" style={{ opacity: 0.4 }} />
                   <p className="text-text font-medium">Sin turnos de habla</p>
                   <p className="text-xs text-text mt-1" style={{ opacity: 0.5 }}>
@@ -839,7 +835,7 @@ export default function AdminAsambleaPage() {
                   return (
                     <div
                       key={t.id}
-                      className="fade-up liquid-glass rounded-3xl p-5 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all"
+                      className="liquid-glass rounded-3xl p-5 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all"
                     >
                       {/* Top row */}
                       <div className="flex items-center justify-between gap-3">
@@ -908,10 +904,10 @@ export default function AdminAsambleaPage() {
             <div className="flex flex-col gap-4">
               {loadingPoderes ? (
                 <div className="w-full py-12 flex justify-center">
-                  <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+                  <SkeletonRows />
                 </div>
               ) : poderes.length === 0 ? (
-                <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+                <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
                   <FileCheck size={40} className="mx-auto text-text mb-3" style={{ opacity: 0.4 }} />
                   <p className="text-text font-medium">Sin poderes registrados</p>
                   <p className="text-xs text-text mt-1" style={{ opacity: 0.5 }}>
@@ -922,7 +918,7 @@ export default function AdminAsambleaPage() {
                 poderes.map((p) => (
                   <div
                     key={p.id}
-                    className="fade-up liquid-glass rounded-3xl p-5 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all"
+                    className="liquid-glass rounded-3xl p-5 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all"
                   >
                     {/* Top row */}
                     <div className="flex items-center justify-between gap-3">
@@ -1064,7 +1060,7 @@ export default function AdminAsambleaPage() {
                 className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
               >
                 {savingVotacion ? (
-                  <><Loader2 size={18} className="animate-spin" /> Creando...</>
+                  <><Skeleton className="w-5 h-5 rounded-full" /> Creando...</>
                 ) : "Crear Votación"}
               </button>
             </form>

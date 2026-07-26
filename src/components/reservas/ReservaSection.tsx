@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
-import { Calendar, Clock, Plus, Loader2, MapPin } from "lucide-react";
+import { Calendar, Clock, Plus, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface AreaComunDto {
   id: string;
@@ -98,7 +99,7 @@ export default function ReservaSection({ excludedAreas }: { excludedAreas?: stri
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 size={20} className="animate-spin text-accent" />
+        <Skeleton className="w-5 h-5 rounded-full" />
       </div>
     );
   }

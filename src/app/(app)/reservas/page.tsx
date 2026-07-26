@@ -110,8 +110,8 @@ export default function ReservasPage() {
   useEffect(() => {
     if(!loading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(".fade-up", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.1 });
-      }, containerRef);
+        
+}, containerRef);
       return () => ctx.revert();
     }
   }, [loading, step]);
@@ -402,13 +402,13 @@ export default function ReservasPage() {
     }
   };
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center text-text"><div className="animate-spin w-8 h-8 border-2 border-text/20 border-t-accent rounded-full"></div></div>;
+ if(loading) return <div className="min-h-screen flex items-center justify-center text-text"><div className="animate-pulse bg-text/10 w-8 h-8 rounded-full"></div></div>;
 
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-10">
-      <ProfileHeader className="fade-up" />
+      <ProfileHeader className="" />
 
-      <section className="fade-up flex gap-3">
+      <section className="flex gap-3">
         <div className="relative flex-1 group">
            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text group-focus-within:text-accent transition-colors" />
            <input type="text" placeholder="Buscar servicios..." className="w-full bg-text/5 border border-border rounded-[24px] py-4 pl-14 pr-6 text-sm text-text focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all shadow-inner" />
@@ -425,7 +425,7 @@ export default function ReservasPage() {
 
       {/* Mis Reservas */}
       {step === 'GRID' && reservas.length > 0 && (
-        <section className="fade-up space-y-3">
+        <section className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-widest text-accent px-1">Mis Reservas</h3>
           {reservas.map((r) => {
             const ahora = new Date();
@@ -503,7 +503,7 @@ export default function ReservasPage() {
         <section className="flex flex-col gap-6">
            {areas.length === 0 && <p className="text-text text-center py-10">No hay áreas activas registradas.</p>}
            {areas.map((area) => (
-              <div key={area.id} onClick={() => handleSelectArea(area)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden group cursor-pointer active:scale-[0.98] transition-all border border-border shadow-2xl relative">
+              <div key={area.id} onClick={() => handleSelectArea(area)} className="liquid-glass-card rounded-[32px] overflow-hidden group cursor-pointer active:scale-[0.98] transition-all border border-border shadow-2xl relative">
                  <div className="relative h-60 w-full overflow-hidden">
                      <Image src={area.imagenUrl || "/placeholder.svg"} alt={area.nombre} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
                     <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/25 to-transparent opacity-80" />
@@ -535,7 +535,7 @@ export default function ReservasPage() {
       )}
 
       {step === 'BOOKING' && selectedArea && (
-        <section className="fade-up fixed inset-0 z-1000 flex flex-col justify-end">
+        <section className="fixed inset-0 z-1000 flex flex-col justify-end">
            <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setStep('GRID')} />
            <div className="liquid-glass rounded-t-[40px] p-6 sm:p-8 pb-32 sm:pb-8 w-full max-w-[480px] mx-auto relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500 overflow-y-auto max-h-[95vh] hide-scrollbar border-t border-border">
               <div className="flex justify-between items-center mb-6">
@@ -622,8 +622,8 @@ export default function ReservasPage() {
       )}
 
       {step === 'PAYMENT' && (
-        <section className="fade-up fixed inset-0 z-100 flex flex-col items-center justify-center p-8 bg-primary/95 backdrop-blur-3xl">
-           <div className="w-16 h-16 rounded-full border-4 border-border border-t-accent animate-spin mb-4" />
+        <section className="fixed inset-0 z-100 flex flex-col items-center justify-center p-8 bg-primary/95 backdrop-blur-3xl">
+ <div className="w-16 h-16 rounded-full animate-pulse bg-text/10 mb-4" />
            <h3 className="text-2xl font-display font-medium text-text tracking-tight">Procesando Pago Seguro...</h3>
             <p className="text-text text-xs mt-4">Confirmando con pasarela de pago...</p>
              <button onClick={executeBooking} disabled={isProcessing} className="mt-8 text-xs font-bold text-accent px-4 py-2 border border-accent/20 rounded-full hover:bg-accent hover:text-on-accent transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Confirmar Pago</button>
@@ -631,7 +631,7 @@ export default function ReservasPage() {
       )}
 
       {step === 'SUCCESS' && selectedArea && selectedSlotIndex !== null && (
-        <section className="fade-up fixed inset-0 z-100 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-primary to-primary-light animate-in slide-in-from-bottom-20 duration-700">
+        <section className="fixed inset-0 z-100 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-primary to-primary-light animate-in slide-in-from-bottom-20 duration-700">
            <div className="w-20 h-20 rounded-full bg-text/10 flex items-center justify-center shadow-[0_0_50px_rgba(128,128,128,0.3)] mb-8 animate-bounce delay-100"><CheckCircle2 size={40} className="text-white" /></div>
            <h2 className="text-3xl font-display font-bold text-text tracking-tight mb-2 text-glow">¡Reserva Confirmada!</h2>
            <p className="text-text text-sm mb-10 text-center font-light">Tu espacio ha sido separado exitosamente.</p>

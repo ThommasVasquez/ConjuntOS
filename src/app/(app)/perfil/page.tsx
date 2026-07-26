@@ -243,8 +243,8 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
     }
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-up", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.1 });
-    }, containerRef);
+      
+}, containerRef);
     return () => {
         ctx.revert();
     };
@@ -487,15 +487,18 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
 
   const isGuest = user?.rol === 'HUESPED_TEMPORAL';
 
+  // Colors are inline styles, not Tailwind classes, so every chip renders its
+  // tint regardless of which utilities the CSS build happens to have generated.
+  // `${hex}1a` is the same 10% alpha as a `/10` class.
   const allStatusIcons = [
-    { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, color: 'bg-text/5 text-text', icon: <CreditCard size={16}/>, view: 'deuda' },
-    { label: 'Trámites', val: tramites.length.toString(), color: 'bg-text/5 text-text', icon: <ClipboardList size={16}/>, view: 'requests' },
-    { label: 'Mascotas', val: mascotas.length.toString(), color: 'bg-text/5 text-text', icon: <PawPrint size={16}/>, view: 'pets' },
-    { label: 'Vehículos', val: vehiculos.length.toString(), color: 'bg-text/5 text-text', icon: <Car size={16}/>, view: 'vehicles' },
-    { label: 'Reservas', val: activeReservas.length.toString(), color: 'bg-text/5 text-text', icon: <Calendar size={16}/>, view: 'reservas' },
-    { label: 'Visitas', val: visitasHistorial.filter(v => v.estado === 'PENDIENTE').length.toString(), color: 'bg-text/5 text-text', icon: <UserIcon size={16}/>, view: 'visitas' },
-    { label: 'Paquetes', val: activePaquetes.length.toString(), color: 'bg-text/5 text-text', icon: <Package size={16}/>, view: 'paquetes' },
-    { label: 'Corresp.', val: correspondenciaPendiente.length.toString(), color: 'bg-text/5 text-text', icon: <Mail size={16}/>, view: 'correspondencia' }
+    { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, hex: '#10b981', icon: <CreditCard size={18}/>, view: 'deuda' },
+    { label: 'Trámites', val: tramites.length.toString(), hex: '#3b82f6', icon: <ClipboardList size={18}/>, view: 'requests' },
+    { label: 'Mascotas', val: mascotas.length.toString(), hex: '#f59e0b', icon: <PawPrint size={18}/>, view: 'pets' },
+    { label: 'Vehículos', val: vehiculos.length.toString(), hex: '#6366f1', icon: <Car size={18}/>, view: 'vehicles' },
+    { label: 'Reservas', val: activeReservas.length.toString(), hex: '#8b5cf6', icon: <Calendar size={18}/>, view: 'reservas' },
+    { label: 'Visitas', val: visitasHistorial.filter(v => v.estado === 'PENDIENTE').length.toString(), hex: '#14b8a6', icon: <UserIcon size={18}/>, view: 'visitas' },
+    { label: 'Paquetes', val: activePaquetes.length.toString(), hex: '#f97316', icon: <Package size={18}/>, view: 'paquetes' },
+    { label: 'Corresp.', val: correspondenciaPendiente.length.toString(), hex: '#f43f5e', icon: <Mail size={18}/>, view: 'correspondencia' }
   ];
 
   const statusIcons = isGuest
@@ -603,7 +606,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
       </div>
 
       <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
-        <section className="fade-up text-center mb-8 relative flex flex-col items-center">
+        <section className="text-center mb-8 relative flex flex-col items-center">
           <h1 className="text-4xl font-display font-bold tracking-tight text-text mb-1 drop-shadow-2xl">{userData.name}</h1>
           <p className="text-lg text-text font-light capitalize tracking-wide mb-4">{userRole.toLowerCase()}</p>
           
@@ -611,85 +614,75 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
         </section>
  
         {/* PILLS */}
-        <div className="fade-up flex flex-wrap items-center justify-center gap-3 mb-10">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full liquid-glass border border-border">
-            <div className="w-2 h-2 rounded-full bg-text/10 animate-pulse" />
-            <span className="text-xs font-bold text-text uppercase tracking-widest">Torre {userData.torre}</span>
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-light border border-border shadow-sm">
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#6366f1' }} />
+            <span className="text-[11px] font-bold text-text uppercase tracking-wider">Torre {userData.torre}</span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full liquid-glass border border-border">
-            <div className="w-2 h-2 rounded-full bg-text/10 animate-pulse" />
-            <span className="text-xs font-bold text-text uppercase tracking-widest">Apto {userData.apto}</span>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-light border border-border shadow-sm">
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#8b5cf6' }} />
+            <span className="text-[11px] font-bold text-text uppercase tracking-wider">Apto {userData.apto}</span>
           </div>
           {userData.numeroInterno && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/15 border border-accent/40">
-              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <span className="text-xs font-bold text-accent uppercase tracking-widest">Citofonía N° {userData.numeroInterno}</span>
+            <div
+              className="flex items-center gap-2 px-4 py-2 rounded-full border"
+              style={{ backgroundColor: '#3b82f61a', borderColor: '#3b82f633' }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#3b82f6' }} />
+              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#3b82f6' }}>
+                Citofonía N° {userData.numeroInterno}
+              </span>
             </div>
           )}
         </div>
  
-        {/* 🧭 UNIFIED 6-GRID STATUS BAR (Stage 68 - High Fidelity Refinement) */}
-        <div className={`fade-up grid ${isGuest ? 'grid-cols-2' : 'grid-cols-4'} gap-2.5 w-full mb-10 text-center`}>
-          {statusIcons.slice(0, isGuest ? 2 : 4).map((stat, i) => (
-            <button 
-              key={i} 
+        {/* STATUS TILES — one grid, label inside the card. */}
+        <div className={`grid ${isGuest ? 'grid-cols-2' : 'grid-cols-4'} gap-2.5 w-full mb-10`}>
+          {statusIcons.map((stat) => (
+            <button
+              key={stat.view}
               onClick={() => setViewMode(stat.view as ViewMode)}
-              className="flex flex-col items-center gap-2 group"
+              className="group min-w-0 p-2.5 rounded-[20px] bg-primary-light border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all flex flex-col items-center gap-1.5"
             >
-              <span className="text-[10px] text-text uppercase tracking-[0.15em] font-black leading-none">{stat.label}</span>
-              <div className={`w-full h-[62px] flex flex-col items-center justify-center gap-1.5 rounded-[22px] border border-border transition-all group-active:scale-95 ${stat.color} shadow-xl shadow-black/10 dark:shadow-black/40`}>
-                
-                {/* ICONS (Improved Visibility) */}
-                {stat.icon && stat.label !== 'Deuda' && (
-                  <div className="opacity-80 group-hover:opacity-100 transition-opacity">{stat.icon}</div>
-                )}
-                <span className="text-[11px] font-black leading-none mt-auto mb-auto text-text">{stat.val}</span>
-              </div>
+              <span
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `${stat.hex}1a`, color: stat.hex }}
+              >
+                {stat.icon}
+              </span>
+              <span className="text-sm font-bold text-text leading-none truncate max-w-full">{stat.val}</span>
+              <span className="text-[9px] text-text/55 uppercase tracking-wider font-bold leading-none truncate max-w-full">
+                {stat.label}
+              </span>
             </button>
           ))}
         </div>
-        {!isGuest && statusIcons.length > 4 && (
-          <div className="fade-up flex justify-center gap-2.5 w-full mb-10 -mt-8">
-            {statusIcons.slice(4).map((stat, i) => (
-              <button 
-                key={i} 
-                onClick={() => setViewMode(stat.view as ViewMode)}
-                className="flex flex-col items-center gap-2 group w-[calc((100%-0.625rem)/4)] max-w-[100px]"
-              >
-                <span className="text-[10px] text-text uppercase tracking-[0.15em] font-black leading-none">{stat.label}</span>
-                <div className={`w-full h-[62px] flex flex-col items-center justify-center gap-1.5 rounded-[22px] border border-border transition-all group-active:scale-95 ${stat.color} shadow-xl shadow-black/10 dark:shadow-black/40`}>
-                  {stat.icon && stat.label !== 'Deuda' && (
-                    <div className="opacity-80 group-hover:opacity-100 transition-opacity">{stat.icon}</div>
-                  )}
-                  <span className="text-[11px] font-black leading-none mt-auto mb-auto text-text">{stat.val}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* DYNAMIC VIEW CONTENT */}
-        <main className="fade-up space-y-4 mb-10">
+        <main className="space-y-4 mb-10">
           {viewMode === "profile" && (
             <div className="space-y-3">
-              <div className="liquid-glass-card rounded-[32px] p-6 border border-border">
-                 <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent">
-                      <UserIcon size={24} />
+              <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm">
+                 <div className="flex items-center gap-3 mb-6">
+                    <div
+                      className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
+                      style={{ backgroundColor: '#6366f11a', color: '#6366f1' }}
+                    >
+                      <UserIcon size={22} />
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-xl font-bold text-text tracking-tight">Información</span>
-                      <span className="text-[10px] text-text uppercase tracking-widest font-black">Datos Personales</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-lg font-bold text-text tracking-tight leading-tight">Información</span>
+                      <span className="text-[10px] text-text/55 uppercase tracking-wider font-bold">Datos Personales</span>
                     </div>
                  </div>
-                 
+
                  <div className="space-y-4">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] text-text uppercase tracking-widest font-black">Correo Electrónico</span>
-                      <span className="text-sm font-medium text-text">{userData.email}</span>
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <span className="text-[10px] text-text/55 uppercase tracking-wider font-bold">Correo Electrónico</span>
+                      <span className="text-sm font-medium text-text break-all">{userData.email}</span>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className="text-[10px] text-text uppercase tracking-widest font-black">Teléfono</span>
+                      <span className="text-[10px] text-text/55 uppercase tracking-wider font-bold">Teléfono</span>
                       <span className="text-sm font-medium text-text">{userData.phone || "No especificado"}</span>
                     </div>
                  </div>
@@ -1260,7 +1253,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
           )}
         </main>
 
-        <section className="fade-up flex flex-col gap-3 mb-8">
+        <section className="flex flex-col gap-3 mb-8">
           {/* Alternar Tema (Modo Claro / Modo Oscuro) */}
           <button 
             type="button"
@@ -1582,7 +1575,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-3xl animate-in fade-in duration-500">
            <div className="w-full max-w-[380px] bg-white rounded-[40px] p-10 flex flex-col items-center text-center shadow-[0_0_100px_rgba(255,255,255,0.1)]">
               <div className="w-20 h-20 rounded-full bg-text/10 flex items-center justify-center mb-8 relative">
-                 <div className="absolute inset-0 rounded-full border-4 border-border border-t-white animate-spin" />
+ <div className="absolute inset-0 rounded-full animate-pulse bg-text/10" />
                  <ShieldCheck size={40} className="text-white" />
               </div>
               <h3 className="text-[#000000] text-2xl font-black mb-3">Procesando Pago</h3>

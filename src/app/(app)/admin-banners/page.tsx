@@ -11,10 +11,10 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
-  Loader2,
-  BarChart3,
+    BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function AdminBannersPage() {
   const { user } = useAuth();
@@ -265,7 +265,7 @@ export default function AdminBannersPage() {
         {/* Ads List */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 size={32} className="animate-spin text-accent" />
+            <Skeleton className="w-8 h-8 rounded-full" />
           </div>
         ) : ads.length === 0 ? (
           <div className="text-center py-20">

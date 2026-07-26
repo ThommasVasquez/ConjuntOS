@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MessageCircle, Search, ArrowRight, User, ChevronLeft, Building2, CheckCheck, Loader2, X, Phone, Car, Dog, ShieldCheck, Info, Mic, Play, Pause, Music } from "lucide-react";
+import { MessageCircle, Search, ArrowRight, User, ChevronLeft, Building2, CheckCheck, X, Phone, Car, Dog, ShieldCheck, Info, Mic, Play, Pause, Music } from "lucide-react";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { useCall } from "@/components/providers/CallContext";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface Conversation {
   usuarioId: string;
@@ -469,7 +470,7 @@ export default function AdminMensajesPage() {
         <div className="space-y-3">
           {loading ? (
              <div className="py-20 flex flex-col items-center gap-4 opacity-40">
-                <Loader2 className="animate-spin text-text" size={32} />
+                <Skeleton className="w-8 h-8 rounded-full" />
                 <p className="text-[10px] text-text font-black uppercase tracking-widest">Cargando Inbox...</p>
              </div>
           ) : filteredConversations.length === 0 ? (
@@ -710,7 +711,7 @@ export default function AdminMensajesPage() {
                         disabled={(!newMessage.trim() && !audioBlob) || sending}
                         className="w-16 h-16 rounded-full bg-text/10 flex items-center justify-center text-white shadow-[0_20px_50px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100 group flex-shrink-0 border-[6px] border-surface-2"
                       >
-                         {sending ? <Loader2 size={28} className="animate-spin" /> : <ArrowRight size={32} className="group-hover:translate-x-1 transition-transform" />}
+                         {sending ? <Skeleton className="w-7 h-7 rounded-full" /> : <ArrowRight size={32} className="group-hover:translate-x-1 transition-transform" />}
                       </button>
                     )}
                  </div>

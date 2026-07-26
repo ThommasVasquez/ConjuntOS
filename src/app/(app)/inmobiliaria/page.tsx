@@ -24,6 +24,7 @@ import BottomSheet from "@/components/shell/BottomSheet";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { useAuth } from "@/hooks/useAuth";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface Inmueble {
   id: string;
@@ -157,9 +158,9 @@ export default function InmobiliariaPage() {
                   key={type}
                   onClick={() => setFilterType(type)}
                   className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                    filterType === type 
-                      ? "bg-accent text-primary shadow-lg shadow-accent/20 scale-105" 
-                      : "text-text hover:text-text hover:bg-surface-2"
+                    filterType === type
+                      ? "bg-[#009df2] text-white shadow-md"
+                      : "text-text/60 hover:text-text hover:bg-surface-2"
                   }`}
                 >
                   {type === "TODOS" ? "Todos" : type === "VENTA" ? "En Venta" : "En Arriendo"}
@@ -177,10 +178,10 @@ export default function InmobiliariaPage() {
                 <button
                   key={key}
                   onClick={() => setFilterUnidad(key)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 border ${
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 border ${
                     filterUnidad === key
-                      ? "bg-text text-primary border-border shadow-lg"
-                      : "border-border text-text hover:text-text hover:border-accent"
+                      ? "bg-[#009df2]/15 text-[#009df2] border-[#009df2]/30"
+                      : "bg-primary-light border-border text-text hover:border-[#009df2]/40"
                   }`}
                 >
                   {label}
@@ -194,9 +195,16 @@ export default function InmobiliariaPage() {
 
       <div className="max-w-[430px] mx-auto w-full px-4">
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-96 rounded-3xl bg-surface-2 animate-pulse border border-border" />
+          <div className="grid grid-cols-1 gap-5">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="rounded-3xl bg-primary-light border border-border overflow-hidden">
+                <Skeleton className="h-48 w-full rounded-none" />
+                <div className="p-4 flex flex-col gap-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/3" />
+                  <Skeleton className="h-5 w-1/2 mt-1" />
+                </div>
+              </div>
             ))}
           </div>
         ) : filteredInmuebles.length > 0 ? (
@@ -206,12 +214,15 @@ export default function InmobiliariaPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-surface-2 rounded-3xl border border-dashed border-border">
-             <div className="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center mx-auto mb-4">
-               <Search size={32} className="text-text" />
+          <div className="text-center py-16 bg-primary-light rounded-3xl border border-border shadow-sm">
+             <div
+               className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+               style={{ backgroundColor: '#009df21a', color: '#009df2' }}
+             >
+               <Search size={28} />
              </div>
-             <h3 className="text-lg font-bold text-text mb-2">No se encontraron resultados</h3>
-             <p className="text-text max-w-xs mx-auto">Intenta con otros filtros o palabras clave.</p>
+             <h3 className="text-base font-bold text-text mb-1">No se encontraron resultados</h3>
+             <p className="text-xs text-text/55 max-w-xs mx-auto">Intenta con otros filtros o palabras clave.</p>
           </div>
         )}
       </div>
@@ -258,14 +269,14 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
   const roomLavado = (item.caracteristicas || []).includes("Lavado ropa cama");
   const roomAguaCaliente = (item.caracteristicas || []).includes("Agua caliente");
 
-  const negocioColor = item.tipoNegocio === "VENTA"
-    ? "bg-text/90 text-white"
-    : "bg-accent/90 text-primary";
+  // `bg-text` and `bg-accent` are both #000 in light mode, so the two badges
+  // were indistinguishable. Explicit hues keep Venta/Arriendo readable apart.
+  const negocioHex = item.tipoNegocio === "VENTA" ? "#10b981" : "#3b82f6";
 
   return (
-    <div 
+    <div
       onClick={onClick}
-      className="property-card group cursor-pointer bg-surface-2/40 border border-border rounded-[28px] overflow-hidden hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300 active:scale-[0.98] flex flex-col"
+      className="property-card group cursor-pointer bg-primary-light border border-border rounded-[28px] overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 active:scale-[0.98] flex flex-col"
     >
       <div className="relative h-44 overflow-hidden">
         <Image
@@ -277,7 +288,10 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
         />
         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-black/20" />
         <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
-          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${negocioColor}`}>
+          <span
+            className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-white"
+            style={{ backgroundColor: negocioHex }}
+          >
             {item.tipoNegocio === "VENTA" ? "En Venta" : "Arriendo"}
           </span>
           <button
@@ -300,55 +314,55 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
         <div className="flex flex-wrap gap-1.5">
           {isParking ? (
             <>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
                 {vehiculoLabel || "Parqueadero"}
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
                 Parqueadero Cubierto
               </span>
             </>
           ) : isRoom ? (
             <>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
-                <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
+                <Maximize2 size={11} className="text-text/40" />{item.area || "—"}m²
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
-                <Bath size={11} className="text-accent/70" /> {roomBano || "Baño"}
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
+                <Bath size={11} className="text-text/40" /> {roomBano || "Baño"}
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
                 {roomAmoblada ? "🛋️ Amoblada" : "📦 No amoblada"}
               </span>
               {roomAmoblada && roomTv && (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
                   📺 {roomTv}
                 </span>
               )}
               {roomAmoblada && roomCama && (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
                   {roomCama}
                 </span>
               )}
               {roomAmoblada && roomLavado && (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
                   🧺 Lavado incluido
                 </span>
               )}
               {roomAguaCaliente && (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
                   🔥 Agua caliente
                 </span>
               )}
             </>
           ) : (
             <>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
-                <Bed size={11} className="text-accent/70" />{item.habitaciones} hab.
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
+                <Bed size={11} className="text-text/40" />{item.habitaciones} hab.
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
-                <Bath size={11} className="text-accent/70" />{item.banos} banos
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
+                <Bath size={11} className="text-text/40" />{item.banos} banos
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text text-[10px] font-semibold">
-                <Maximize2 size={11} className="text-accent/70" />{item.area || "—"}m²
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-2 text-text/70 text-[10px] font-semibold">
+                <Maximize2 size={11} className="text-text/40" />{item.area || "—"}m²
               </span>
             </>
           )}
@@ -1042,7 +1056,7 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
         className="w-full h-16 rounded-2xl bg-accent text-primary font-bold shadow-xl shadow-accent/20 flex items-center justify-center gap-3 active:scale-95 transition-transform"
        >
          {isSubmitting ? (
-           <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+           <div className="w-6 h-6 rounded-full bg-text/10 animate-pulse" />
          ) : (
            <>
              <CheckCircle2 size={20} />

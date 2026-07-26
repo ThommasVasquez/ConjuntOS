@@ -161,8 +161,8 @@ export default function MapaParqueaderoPage() {
 
   useEffect(() => {
     if (!loading) {
-      gsap.fromTo(".fade-up", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, stagger: 0.05, duration: 0.4 });
-    }
+      
+}
   }, [loading]);
 
   async function loadExtra() {
@@ -368,44 +368,51 @@ export default function MapaParqueaderoPage() {
     }
   };
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-text/25 border-t-accent rounded-full animate-spin" /></div>;
+  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-text/10 animate-pulse" /></div>;
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
        <ProfileHeader />
        
-       <section className="fade-up liquid-glass rounded-3xl p-5 border border-border/40 shadow-xl flex items-center justify-between mb-2">
-          <div className="flex items-center gap-4">
-             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors ${lastRound ? 'bg-text/10 border-text/30 text-text dark:text-text' : 'bg-text/10 border-text/30 text-text dark:text-text animate-pulse'}`}>
-                {lastRound ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
+       <section className="bg-primary-light shadow-sm rounded-3xl p-5 border border-border flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3 min-w-0">
+             {/* Done vs pending used the same gray chip — colour tells them apart now. */}
+             <div
+                className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center ${lastRound ? '' : 'animate-pulse'}`}
+                style={lastRound
+                  ? { backgroundColor: '#10b9811a', color: '#10b981' }
+                  : { backgroundColor: '#f59e0b1a', color: '#f59e0b' }}
+             >
+                {lastRound ? <CheckCircle size={22} /> : <AlertCircle size={22} />}
              </div>
-             <div>
-                <h3 className="text-text font-bold text-sm">Rondas de Verificación</h3>
-                <p className="text-[10px] text-text uppercase tracking-widest mt-0.5">
+             <div className="min-w-0">
+                <h3 className="text-text font-bold text-sm leading-tight">Rondas de Verificación</h3>
+                <p className="text-[10px] text-text/55 uppercase tracking-wider mt-0.5 truncate">
                    {lastRound ? `Última: ${new Date(lastRound.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} por ${lastRound.usuario.nombre}` : 'Pendiente hoy'}
                 </p>
              </div>
           </div>
-          <button 
+          <button
             onClick={handlePerformRound}
-            className="bg-text/5 hover:bg-text/10 border border-border/40 px-4 py-2 rounded-xl text-[10px] text-text font-bold uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2"
+            style={{ backgroundColor: '#009df2' }}
+            className="shrink-0 text-white px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md hover:opacity-90 transition-all active:scale-95 flex items-center gap-2"
           >
-             <ClipboardCheck size={14} /> Iniciar Ronda
+             <ClipboardCheck size={14} /> Ronda
           </button>
        </section>
 
        {/* RESERVAS DE CUPO DE VISITANTE PRÓXIMAS */}
        {reservasProximas.length > 0 && (
-          <section className="fade-up liquid-glass rounded-3xl p-5 border border-accent/30 shadow-xl flex flex-col gap-3">
+          <section className="bg-primary-light shadow-sm rounded-3xl p-5 border border-[#009df2]/25 shadow-sm flex flex-col gap-3">
              <div className="flex items-center gap-2">
-                <CalendarClock size={18} className="text-accent" />
+                <CalendarClock size={18} className="text-[#009df2]" />
                 <h3 className="text-text font-bold text-sm">Reservas de visitante próximas</h3>
-                <span className="ml-auto text-[10px] font-black text-accent bg-accent/10 px-2 py-1 rounded-full border border-accent/30">{reservasProximas.length}</span>
+                <span className="ml-auto text-[10px] font-black text-[#009df2] bg-[#009df2]/10 px-2 py-1 rounded-full border border-[#009df2]/30">{reservasProximas.length}</span>
              </div>
              <div className="flex flex-col gap-2">
                 {reservasProximas.map((r) => (
                    <div key={r.id} className="bg-text/5 border border-border rounded-2xl p-3.5 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+                      <div className="w-9 h-9 rounded-xl bg-[#009df2]/10 border border-[#009df2]/20 flex items-center justify-center text-[#009df2] shrink-0">
                          {r.categoria === 'MOTO' ? <Bike size={16} /> : <Car size={16} />}
                       </div>
                       <div className="flex flex-col min-w-0 flex-1">
@@ -425,7 +432,7 @@ export default function MapaParqueaderoPage() {
                          <button
                             disabled={busyReservaLlegada === r.id}
                             onClick={() => marcarLlegadaReserva(r.id)}
-                            className="shrink-0 bg-accent text-on-accent text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl active:scale-95 transition-all disabled:opacity-50"
+                            className="shrink-0 bg-[#009df2] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl active:scale-95 transition-all disabled:opacity-50"
                          >
                             {busyReservaLlegada === r.id ? '...' : 'Llegó'}
                          </button>
@@ -439,15 +446,18 @@ export default function MapaParqueaderoPage() {
           </section>
        )}
 
-       <div className="liquid-glass rounded-3xl p-6 border border-border/40 shadow-2xl relative overflow-hidden">
+       <div className="bg-primary-light shadow-sm rounded-3xl p-6 border border-border relative overflow-hidden">
           <div className="flex justify-between items-start mb-6">
-            <div className="flex items-center gap-3">
-               <div className="w-12 h-12 rounded-2xl bg-text/10 border border-text/30 flex items-center justify-center text-text dark:text-text">
-                  <Map size={24} />
+            <div className="flex items-center gap-3 min-w-0">
+               <div
+                  className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
+                  style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+               >
+                  <Map size={22} />
                </div>
-               <div>
-                 <h2 className="text-xl font-bold text-text">Mapa Interactivo</h2>
-                 <p className="text-xs text-text">Celdas de estacionamiento</p>
+               <div className="min-w-0">
+                 <h2 className="text-lg font-bold text-text leading-tight">Mapa Interactivo</h2>
+                 <p className="text-[11px] text-text/55 mt-0.5">Celdas de estacionamiento</p>
                </div>
             </div>
           </div>
@@ -463,12 +473,12 @@ export default function MapaParqueaderoPage() {
                       onClick={() => setNivel(n)}
                       className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all active:scale-95 ${
                          activo
-                            ? 'bg-accent text-on-accent border-accent shadow-lg shadow-accent/20'
-                            : 'bg-text/5 text-text border-border/40 hover:bg-text/10'
+                            ? 'text-white border-transparent shadow-md bg-[#009df2]'
+                            : 'bg-surface-2 text-text/70 border-border hover:text-text'
                       }`}
                    >
                       Sótano {n}
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${activo ? 'bg-black/20' : 'bg-text/10'}`}>{count}</span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${activo ? 'bg-white/25' : 'bg-text/10'}`}>{count}</span>
                    </button>
                 );
              })}
@@ -532,7 +542,7 @@ export default function MapaParqueaderoPage() {
                          key={p.id}
                          onClick={() => handleCellClick(p)}
                          title={`Celda ${p.numero} · ${cat} · ${p.estado}`}
-                         className={`group relative ${widthCls} h-11 flex flex-col items-center justify-center gap-0.5 border border-white/15 transition-all active:scale-[0.95] hover:brightness-150`}
+                         className={`group relative ${widthCls} h-11 flex flex-col items-center justify-center gap-0.5 border border-black/10 transition-all active:scale-[0.95] hover:brightness-150`}
                          style={{ backgroundColor: stateColor + '26' }}
                       >
                          <span className="text-[11px] leading-none" style={{ opacity: isLibre ? 0.35 : 1 }}>{catIcon}</span>
@@ -573,7 +583,7 @@ export default function MapaParqueaderoPage() {
              const leftCells = celdasDelNivel.slice(0, mid);
              const rightCells = celdasDelNivel.slice(mid);
              return (
-                <div className="fade-up relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+                <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
                      style={{ background: 'repeating-linear-gradient(45deg, #0d0d0d 0 6px, #121212 6px 12px)' }}>
                    {/* Marca de agua "P" */}
                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
@@ -614,7 +624,7 @@ export default function MapaParqueaderoPage() {
           })()}
        </div>
 
-       <section className="fade-up flex flex-col gap-4 mt-2">
+       <section className="flex flex-col gap-4 mt-2">
           <div className="flex justify-between items-center px-2">
              <h3 className="text-text font-display font-medium text-lg tracking-wide flex items-center gap-2"><History size={18} className="text-text"/> Mi Actividad</h3>
              <span className="text-[10px] text-text font-bold uppercase tracking-widest">Últimos 50</span>
@@ -622,12 +632,12 @@ export default function MapaParqueaderoPage() {
 
           <div className="flex flex-col gap-3">
              {registros.length === 0 && (
-               <div className="liquid-glass rounded-3xl p-8 border border-dashed border-border/30 text-center">
+               <div className="bg-primary-light shadow-sm rounded-3xl p-8 border border-dashed border-border/30 text-center">
                   <p className="text-text text-xs italic">No has registrado movimientos recientemente.</p>
                </div>
              )}
              {registros.map((reg, idx) => (
-                <div key={idx} className="liquid-glass p-4 rounded-3xl border border-border/20 flex items-center justify-between group hover:border-border/55 transition-all">
+                <div key={idx} className="bg-primary-light shadow-sm p-4 rounded-3xl border border-border flex items-center justify-between group hover:border-border/55 transition-all">
                    <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${reg.tipo === 'INGRESO' ? 'bg-text/10 border-text/20 text-text dark:text-text' : 'bg-text/10 border-text/20 text-text dark:text-text'}`}>
                          {reg.tipo === 'INGRESO' ? <ArrowRight size={18} className="rotate-45" /> : <ArrowRight size={18} className="-rotate-135" />}
@@ -657,10 +667,10 @@ export default function MapaParqueaderoPage() {
        {cellVisitante && (
           <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
              <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setCellVisitante(null)} />
-             <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
+             <div className="bg-primary-light shadow-sm rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
                 <div className="flex justify-between items-center mb-6">
                    <div className="flex flex-col">
-                      <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em] mb-1">Parqueadero de Visitante</span>
+                      <span className="text-[10px] text-[#009df2] font-bold uppercase tracking-[0.2em] mb-1">Parqueadero de Visitante</span>
                       <h3 className="text-2xl font-display font-bold text-text">Celda {cellVisitante.numero}</h3>
                    </div>
                    <button type="button" onClick={() => setCellVisitante(null)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text">
@@ -696,7 +706,7 @@ export default function MapaParqueaderoPage() {
                           key={r.id}
                           type="button"
                           onClick={() => setResidenteId(r.id)}
-                          className={`flex items-center justify-between p-3 rounded-2xl border text-left transition-all ${residenteId === r.id ? 'bg-accent/15 border-accent' : 'bg-text/5 border-border/40 hover:bg-text/10'}`}
+                          className={`flex items-center justify-between p-3 rounded-2xl border text-left transition-all ${residenteId === r.id ? 'bg-[#009df2]/15 border-[#009df2]' : 'bg-text/5 border-border/40 hover:bg-text/10'}`}
                         >
                            <span className="text-sm font-bold text-text">{r.nombre}</span>
                            <span className="text-[11px] text-text/70">{r.torre ? `Torre ${r.torre}` : ''}{r.apto ? ` · ${r.apto}` : ''}</span>
@@ -724,7 +734,7 @@ export default function MapaParqueaderoPage() {
                           key={opt.v}
                           type="button"
                           onClick={() => setTiempoEstimado(opt.v)}
-                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${tiempoEstimado === opt.v ? 'bg-accent text-on-accent border-accent shadow-lg shadow-accent/20' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
+                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${tiempoEstimado === opt.v ? 'text-white border-transparent shadow-md bg-[#009df2]' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
                         >
                           {opt.l}
                         </button>
@@ -749,7 +759,7 @@ export default function MapaParqueaderoPage() {
                   type="button"
                   disabled={isSubmitting || !residenteId}
                   onClick={asignarVisitante}
-                  className="w-full py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="w-full py-4 rounded-2xl bg-[#009df2] text-white font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-50"
                 >
                    {isSubmitting ? "Enviando..." : "Enviar para aprobación del residente"}
                 </button>
@@ -761,13 +771,13 @@ export default function MapaParqueaderoPage() {
        {cellToRelease && (
           <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
              <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setCellToRelease(null)} />
-             <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
+             <div className="bg-primary-light shadow-sm rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
                 <div className="flex flex-col items-center text-center gap-4">
                    <div className="w-16 h-16 rounded-full bg-[#FACC15]/15 border border-[#FACC15]/40 flex items-center justify-center">
                       <AlertCircle size={30} className="text-[#FACC15]" />
                    </div>
                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em]">Liberar Celda</span>
+                      <span className="text-[10px] text-[#009df2] font-bold uppercase tracking-[0.2em]">Liberar Celda</span>
                       <h3 className="text-2xl font-display font-bold text-text">Celda {cellToRelease.numero}</h3>
                    </div>
                    <p className="text-sm text-text/80 leading-relaxed">
@@ -865,7 +875,7 @@ export default function MapaParqueaderoPage() {
                             type="button"
                             disabled={liquidando}
                             onClick={() => cerrarSesionLiquidando('CARGADO_APTO')}
-                            className="w-full py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-60"
+                            className="w-full py-4 rounded-2xl bg-[#009df2] text-white font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-60"
                          >
                             {liquidando ? "Procesando..." : "Cargar al apartamento (retiene el vehículo)"}
                          </button>
@@ -890,7 +900,7 @@ export default function MapaParqueaderoPage() {
                          type="button"
                          disabled={isSubmitting || liquidando}
                          onClick={() => sesionCobro ? cerrarSesionLiquidando('VISITANTE_PAGO') : liberarCelda(cellToRelease.id)}
-                         className="flex-1 py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-60"
+                         className="flex-1 py-4 rounded-2xl bg-[#009df2] text-white font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-60"
                       >
                          {(isSubmitting || liquidando) ? "Liberando..." : "Liberar Celda"}
                       </button>
@@ -905,10 +915,10 @@ export default function MapaParqueaderoPage() {
        {cellResidente && (
           <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
              <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setCellResidente(null)} />
-             <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
+             <div className="bg-primary-light shadow-sm rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
                 <div className="flex justify-between items-center mb-6">
                    <div className="flex flex-col">
-                      <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em] mb-1">Asignar a Apartamento</span>
+                      <span className="text-[10px] text-[#009df2] font-bold uppercase tracking-[0.2em] mb-1">Asignar a Apartamento</span>
                       <h3 className="text-2xl font-display font-bold text-text">Celda {cellResidente.numero}</h3>
                    </div>
                    <button type="button" onClick={() => setCellResidente(null)} className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text">
@@ -943,7 +953,7 @@ export default function MapaParqueaderoPage() {
                           key={r.id}
                           type="button"
                           onClick={() => setResidenteId(r.id)}
-                          className={`flex items-center justify-between p-3 rounded-2xl border text-left transition-all ${residenteId === r.id ? 'bg-accent/15 border-accent' : 'bg-text/5 border-border/40 hover:bg-text/10'}`}
+                          className={`flex items-center justify-between p-3 rounded-2xl border text-left transition-all ${residenteId === r.id ? 'bg-[#009df2]/15 border-[#009df2]' : 'bg-text/5 border-border/40 hover:bg-text/10'}`}
                         >
                            <span className="text-sm font-bold text-text">{r.nombre}</span>
                            <span className="text-[11px] text-text/70">{r.torre ? `Torre ${r.torre}` : ''}{r.apto ? ` · ${r.apto}` : ''}</span>
@@ -983,7 +993,7 @@ export default function MapaParqueaderoPage() {
                           key={opt.v}
                           type="button"
                           onClick={() => setMesesResidente(opt.v)}
-                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${mesesResidente === opt.v ? 'bg-accent text-on-accent border-accent shadow-lg shadow-accent/20' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
+                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${mesesResidente === opt.v ? 'text-white border-transparent shadow-md bg-[#009df2]' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
                         >
                           {opt.l}
                         </button>
@@ -995,7 +1005,7 @@ export default function MapaParqueaderoPage() {
                   type="button"
                   disabled={isSubmitting || !residenteId || !placaResidente.trim()}
                   onClick={asignarResidente}
-                  className="w-full py-4 rounded-2xl bg-accent text-on-accent font-bold text-sm shadow-xl shadow-accent/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-2xl bg-[#009df2] text-white font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                    <Car size={18} /> {isSubmitting ? "Asignando..." : "Asignar al apartamento"}
                 </button>

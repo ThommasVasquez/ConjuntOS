@@ -103,7 +103,7 @@ export default function AreaAdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+ <div className="animate-pulse bg-text/10 h-6 w-6 rounded-full" />
       </div>
     );
   }
@@ -196,7 +196,7 @@ export default function AreaAdminDashboard() {
       {/* Verifying */}
       {verifying && (
         <div className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-accent/10 border border-accent/20">
-          <div className="animate-spin h-5 w-5 border-2 border-accent border-t-transparent rounded-full" />
+ <div className="animate-pulse bg-text/10 h-5 w-5 rounded-full" />
           <span className="text-sm text-accent font-bold">Verificando reserva...</span>
         </div>
       )}

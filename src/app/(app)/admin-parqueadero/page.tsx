@@ -13,6 +13,7 @@ import { api } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import type { RegistroDto, CeldaDto, CeldaMapaDto } from "@/lib/api/types";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 // La ronda devuelta por el backend incluye el usuario que la realizó.
 interface RondaConUsuario {
@@ -105,8 +106,8 @@ export default function AdminParqueaderoPage() {
   useEffect(() => {
     if (!loading) {
       const ctx = gsap.context(() => {
-         gsap.fromTo(".fade-up", { opacity: 0, y: 30 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
-      });
+         
+});
       return () => ctx.revert();
     }
   }, [loading]);
@@ -133,13 +134,13 @@ export default function AdminParqueaderoPage() {
     reg.usuarioNombre?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
+  if(loading) return <div className="min-h-screen flex items-center justify-center"><SkeletonRows /></div>;
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
        <ProfileHeader />
 
-       <div className="fade-up flex flex-col gap-2 mb-2">
+       <div className="flex flex-col gap-2 mb-2">
           <div className="flex items-center gap-3">
              <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent">
                 <ShieldAlert size={24} />
@@ -152,7 +153,7 @@ export default function AdminParqueaderoPage() {
        </div>
 
        {/* STATUS CARD RONDAS */}
-       <section className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-xl flex flex-col sm:flex-row gap-6 items-center justify-between">
+       <section className="liquid-glass rounded-3xl p-6 border border-border shadow-xl flex flex-col sm:flex-row gap-6 items-center justify-between">
           <div className="flex items-center gap-5">
              <div className={`w-14 h-14 rounded-full flex items-center justify-center border-4 transition-all ${lastRound ? 'bg-text/10 border-text/20 text-text' : 'bg-text/10 border-text/20 text-text animate-pulse'}`}>
                 {lastRound ? <ClipboardCheck size={28} /> : <AlertCircle size={28} className="text-text" />}
@@ -176,7 +177,7 @@ export default function AdminParqueaderoPage() {
 
        {/* GESTIÓN DE CELDAS */}
        {esAdmin && (
-         <section className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-xl flex flex-col gap-4">
+         <section className="liquid-glass rounded-3xl p-6 border border-border shadow-xl flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-text/10 border border-border flex items-center justify-center">
@@ -208,7 +209,7 @@ export default function AdminParqueaderoPage() {
        )}
 
        {/* FILTERS */}
-       <section className="fade-up flex flex-col sm:flex-row gap-4 items-center">
+       <section className="flex flex-col sm:flex-row gap-4 items-center">
           <div className="relative flex-1 group w-full">
              <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text group-focus-within:text-accent transition-colors" />
              <input 
@@ -225,7 +226,7 @@ export default function AdminParqueaderoPage() {
        </section>
 
        {/* MASTER LOG */}
-       <section className="fade-up flex flex-col gap-4">
+       <section className="flex flex-col gap-4">
           <div className="flex justify-between items-center px-2">
              <h3 className="text-text font-display font-medium text-lg tracking-wide">Bitácora Global</h3>
              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-text/5 border border-border">

@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { toast } from "sonner";
 import { gsap } from "gsap";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 interface Novedad {
   id: string;
@@ -67,8 +68,8 @@ export default function NovedadesPage() {
 
   useEffect(() => {
     if (!loading) {
-      gsap.fromTo(".fade-up", { opacity: 0, y: 15 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
-    }
+      
+}
   }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,13 +115,13 @@ export default function NovedadesPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><SkeletonRows /></div>;
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden">
       <ProfileHeader />
 
-      <div className="fade-up flex items-center justify-between z-10">
+      <div className="flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => router.push('/inicio')} 
@@ -137,7 +138,7 @@ export default function NovedadesPage() {
         </div>
       </div>
 
-      <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl z-10">
+      <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl z-10">
         <h3 className="text-sm font-bold text-text uppercase tracking-widest mb-4">Registrar Novedad</h3>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -188,7 +189,7 @@ export default function NovedadesPage() {
         </form>
       </div>
 
-      <div className="fade-up flex flex-col gap-4 z-10">
+      <div className="flex flex-col gap-4 z-10">
         <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2">
           <Clock size={16} className="text-[#009df2]"/> Historial de Novedades
         </h3>

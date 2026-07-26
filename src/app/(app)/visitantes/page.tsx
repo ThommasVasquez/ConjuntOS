@@ -6,8 +6,7 @@
  */
 
 import { 
-  ArrowRight, Calendar, CheckCircle2, Clock, Download, Loader2,
-  MoreHorizontal, Plus, QrCode, Share2, ShieldCheck, 
+  ArrowRight, Calendar, CheckCircle2, Clock, Download,   MoreHorizontal, Plus, QrCode, Share2, ShieldCheck, 
   User, UserPlus
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
@@ -18,6 +17,7 @@ import { api, ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { VisitaDto, PaqueteDto, TipoVisita, TipoVehiculoVisita } from "@/lib/api/types";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type VisitStatus = 'ACTIVO' | 'PROGRAMADO' | 'HISTORIAL';
 
@@ -106,17 +106,8 @@ export default function VisitantesPage() {
   useEffect(() => {
     if (loading) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-up", 
-        { opacity: 0, y: 30 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          duration: 0.6, 
-          stagger: 0.1,
-          ease: "power3.out" 
-        }
-      );
-    }, containerRef);
+      
+}, containerRef);
 
     return () => ctx.revert();
   }, [loading]);
@@ -209,7 +200,7 @@ export default function VisitantesPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-accent" size={32} />
+        <Skeleton className="w-8 h-8 rounded-full" />
       </div>
     );
   }
@@ -217,16 +208,16 @@ export default function VisitantesPage() {
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-8">
       
-      <ProfileHeader className="fade-up" />
+      <ProfileHeader className="" />
 
       {error && (
-        <div className="fade-up bg-text/10 border border-text/20 text-text text-xs font-bold p-4 rounded-2xl text-center">
+        <div className="bg-text/10 border border-text/20 text-text text-xs font-bold p-4 rounded-2xl text-center">
           {error}
         </div>
       )}
 
       {/* 2. SUMMARY CARDS */}
-      <section className="grid grid-cols-2 gap-4 fade-up">
+      <section className="grid grid-cols-2 gap-4 ">
         <div className="liquid-glass-card p-5 rounded-[28px] border-t border-border flex flex-col gap-3">
           <div className="w-10 h-10 rounded-2xl bg-text/10 flex items-center justify-center text-text">
             <User size={20} />
@@ -248,7 +239,7 @@ export default function VisitantesPage() {
       </section>
 
       {/* 3. NEW VISIT ACTION */}
-      <section className="fade-up liquid-glass-card p-6 rounded-[32px] border border-border relative overflow-hidden group">
+      <section className="liquid-glass-card p-6 rounded-[32px] border border-border relative overflow-hidden group">
          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 blur-[60px] rounded-full -z-10 group-hover:bg-accent/20 transition-all" />
          
          <div className="flex flex-col gap-5">
@@ -298,14 +289,14 @@ export default function VisitantesPage() {
                  disabled={submitting}
                  className="w-full bg-accent py-4 rounded-[22px] font-bold text-on-accent shadow-xl shadow-accent/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60"
                >
-                 {submitting ? <Loader2 size={20} className="animate-spin" /> : <><QrCode size={20} /> Programar Visita</>}
+                 {submitting ? <Skeleton className="w-5 h-5 rounded-full" /> : <><QrCode size={20} /> Programar Visita</>}
                </button>
             </div>
          </div>
       </section>
 
       {/* 4. VISITOR LISTS - ACTIVE TODAY */}
-      <section className="fade-up flex flex-col gap-6">
+      <section className="flex flex-col gap-6">
          <div className="flex justify-between items-center px-1">
             <h2 className="text-text font-display text-lg font-bold tracking-tight">Visitas de Hoy</h2>
             <div className="flex items-center gap-1.5 text-text text-[10px] font-bold uppercase tracking-widest border border-text/20 bg-text/5 px-3 py-1.5 rounded-full">
@@ -362,7 +353,7 @@ export default function VisitantesPage() {
       </section>
 
       {/* 5. SCHEDULED & HISTORY */}
-      <section className="fade-up flex flex-col gap-6">
+      <section className="flex flex-col gap-6">
          <div className="flex justify-between items-center px-1">
             <h2 className="text-text font-display text-lg font-bold tracking-tight">Programadas & Historial</h2>
             <button className="text-text text-[10px] font-bold uppercase tracking-widest hover:text-text transition-colors cursor-pointer">Ver Todo</button>

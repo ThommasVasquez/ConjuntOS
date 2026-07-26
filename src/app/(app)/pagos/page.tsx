@@ -7,8 +7,7 @@
 
 import { 
   CreditCard, CheckCircle2, 
-  ArrowRight, Info, Loader2,
-  DollarSign, AlertCircle, ChevronRight,
+  ArrowRight, Info,   DollarSign, AlertCircle, ChevronRight,
   SearchX
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
@@ -21,6 +20,7 @@ import type { PagoDto, ReciboDto } from "@/lib/api/types";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface Transaction {
   id: string;
@@ -112,8 +112,8 @@ export default function PagosPage() {
   useEffect(() => {
     if (!isLoading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(".fade-up", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.1 });
-      }, containerRef);
+        
+}, containerRef);
       return () => ctx.revert();
     }
   }, [isLoading]);
@@ -178,12 +178,12 @@ export default function PagosPage() {
 
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-8">
-      <ProfileHeader className="fade-up" />
+      <ProfileHeader className="" />
 
       <MultasResidente />
 
       {/* WALLET HERO CARD */}
-      <section className="fade-up w-full relative group">
+      <section className="w-full relative group">
          <div className="absolute inset-0 bg-linear-to-br from-[#FFFFFF] via-[#0A0A0A] to-[#171717] rounded-[40px] shadow-2xl opacity-90" />
          <div className="absolute -top-4 -right-4 w-32 h-32 bg-white/5 blur-2xl rounded-full group-hover:bg-white/10 transition-all duration-700" />
          
@@ -226,7 +226,7 @@ export default function PagosPage() {
       </section>
 
       {/* TABS CONTROLS */}
-      <section className="fade-up flex bg-surface-2 p-1.5 rounded-[24px] border border-border">
+      <section className="flex bg-surface-2 p-1.5 rounded-[24px] border border-border">
          {['PENDIENTES', 'HISTORIAL'].map((tab) => (
            <button 
              key={tab} 
@@ -242,7 +242,7 @@ export default function PagosPage() {
       <section className="flex flex-col gap-5">
          {isLoading ? (
            <div className="py-20 flex flex-col items-center gap-4">
-              <Loader2 className="w-10 h-10 text-accent animate-spin" />
+              <Skeleton className="w-10 h-10 rounded-full" />
               <p className="text-text-muted text-[10px] font-bold uppercase tracking-widest">Calculando saldos...</p>
            </div>
          ) : filteredPagos.length === 0 ? (
@@ -258,7 +258,7 @@ export default function PagosPage() {
              <div 
                key={p.id} 
                onClick={() => activeTab === 'PENDIENTES' && setSelectedPayment(p)}
-               className="fade-up liquid-glass-card rounded-[32px] p-5 flex items-center justify-between border border-border hover:border-accent/30 transition-all cursor-pointer group shadow-xl"
+               className="liquid-glass-card rounded-[32px] p-5 flex items-center justify-between border border-border hover:border-accent/30 transition-all cursor-pointer group shadow-xl"
              >
                 <div className="flex items-center gap-4 min-w-0">
                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shrink-0 ${getStatusStyle(p.estado)}`}>
@@ -296,7 +296,7 @@ export default function PagosPage() {
 
                  {isProcessing ? (
                    <div className="py-12 flex flex-col items-center gap-6">
-                      <div className="w-20 h-20 rounded-full border-4 border-border border-t-accent animate-spin" />
+ <div className="w-20 h-20 rounded-full animate-pulse bg-text/10" />
                       <div className="text-center">
                          <p className="text-text text-lg font-bold mb-1">Verificando transacción</p>
                          <p className="text-text-muted text-[10px] font-bold uppercase tracking-widest">Seguridad Wompi Activa</p>
@@ -357,7 +357,7 @@ export default function PagosPage() {
       )}
 
       {/* FOOTER: HELP */}
-      <section className="fade-up mt-auto">
+      <section className="mt-auto">
          <div 
             onClick={() => toast.success("Conectando con Administración vía WhatsApp...")}
             className="liquid-glass-card border border-border rounded-[32px] p-6 flex items-center justify-between group cursor-pointer hover:border-accent/30 transition-all active:scale-95"

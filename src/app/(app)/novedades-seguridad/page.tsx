@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 interface NovedadItem {
   id: string;
@@ -116,8 +117,8 @@ export default function NovedadesSeguridadPage() {
 
   useEffect(() => {
     if (!loading) {
-      gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
-    }
+      
+}
   }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,7 +172,7 @@ export default function NovedadesSeguridadPage() {
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+        <SkeletonRows />
       </div>
     );
 
@@ -183,7 +184,7 @@ export default function NovedadesSeguridadPage() {
       <ProfileHeader />
 
       {/* Reportar Novedad Form */}
-      <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
+      <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
             <ShieldAlert size={24} />
@@ -292,7 +293,7 @@ export default function NovedadesSeguridadPage() {
       </div>
 
       {/* Novedades Activas */}
-      <div className="fade-up flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center ml-2">
           <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2">
             <Clock size={16} className="text-text" /> Novedades Activas
@@ -398,7 +399,7 @@ export default function NovedadesSeguridadPage() {
 
       {/* Novedades Resueltas */}
       {resueltas.length > 0 && (
-        <div className="fade-up flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center ml-2">
             <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2">
               <FileText size={16} className="text-text" /> Novedades Resueltas

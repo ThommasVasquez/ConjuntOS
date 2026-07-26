@@ -72,11 +72,8 @@ export default function ClasificadosPage() {
     fetchData();
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-up", 
-        { opacity: 0, y: 30 }, 
-        { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: "power3.out" }
-      );
-    }, containerRef);
+      
+}, containerRef);
     return () => ctx.revert();
   }, []);
 
@@ -91,7 +88,7 @@ export default function ClasificadosPage() {
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-40 gap-8 overflow-x-hidden relative">
       
       {/* HEADER */}
-      <div className="fade-up flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
            <button 
             onClick={() => router.back()}
@@ -104,10 +101,10 @@ export default function ClasificadosPage() {
         <p className="text-text text-sm font-medium leading-relaxed">Apoya el talento local de tu conjunto. Servicios, emprendimientos y ventas internas.</p>
       </div>
 
-      <ProfileHeader className="fade-up" />
+      <ProfileHeader className="" />
 
       {/* SEARCH & FILTERS */}
-      <section className="fade-up space-y-4">
+      <section className="space-y-4">
         <div className="relative group">
           <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-text group-focus-within:text-accent transition-colors" />
           <input 
@@ -139,14 +136,14 @@ export default function ClasificadosPage() {
 
       {/* LISTINGS GRID */}
       <section className="flex flex-col gap-6">
-        <div className="fade-up flex justify-between items-center">
+        <div className="flex justify-between items-center">
            <h3 className="text-xs font-bold uppercase tracking-widest text-text">Resultados ({filteredItems.length})</h3>
            <Filter size={14} className="text-text" />
         </div>
 
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
-             <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
+             <div className="w-10 h-10 rounded-full bg-text/10 animate-pulse" />
              <p className="text-[10px] font-black text-text uppercase tracking-[.2em]">Cargando emprendimientos...</p>
           </div>
         ) : filteredItems.length > 0 ? (
@@ -227,7 +224,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
   return (
     <div 
       onClick={onClick}
-      className="fade-up group liquid-glass-card rounded-[32px] overflow-hidden border border-border hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 flex flex-col cursor-pointer active:scale-[0.98]"
+      className="group liquid-glass-card rounded-[32px] overflow-hidden border border-border hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 flex flex-col cursor-pointer active:scale-[0.98]"
     >
        
        <div className="relative h-48 w-full group overflow-hidden">
@@ -388,7 +385,7 @@ function ClasificadoPostingForm({ onSuccess }: { onSuccess: () => void }) {
         onClick={handleSubmit}
         className="w-full h-14 bg-accent rounded-2xl flex items-center justify-center gap-3 text-sm font-black text-on-accent uppercase tracking-widest shadow-xl shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50"
       >
-        {loading ? <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <><Send size={18} /> Publicar Ahora</>}
+        {loading ? <div className="w-5 h-5 rounded-full bg-text/10 animate-pulse" /> : <><Send size={18} /> Publicar Ahora</>}
       </button>
     </div>
   );

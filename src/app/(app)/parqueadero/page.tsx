@@ -224,21 +224,18 @@ export default function ParqueaderoPage() {
     refetchReservas();
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-up", 
-        { opacity: 0, y: 30 }, 
-        { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: "power3.out" }
-      );
-    }, containerRef);
+      
+}, containerRef);
     return () => ctx.revert();
   }, []);
 
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-40 overflow-x-hidden relative gap-8">
-      <ProfileHeader className="fade-up" />
+      <ProfileHeader className="" />
 
       {/* BANDEJA: aprobaciones de parqueadero de visitante (inquilino) */}
       {solicitudesInquilino.length > 0 && (
-        <section className="fade-up flex flex-col gap-3">
+        <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
             <span className="relative flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FACC15] opacity-75" />
@@ -281,7 +278,7 @@ export default function ParqueaderoPage() {
 
       {/* SESIONES DE COBRO ACTIVAS: conteo regresivo en vivo */}
       {sesionesCobro.length > 0 && (
-        <section className="fade-up flex flex-col gap-3">
+        <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
             <Clock size={16} className="text-[#57bf00]" />
             <h2 className="text-base font-display font-bold text-text tracking-tight">
@@ -296,7 +293,7 @@ export default function ParqueaderoPage() {
 
       {/* BANDEJA: cargos al apto PENDIENTES de aprobación (informa el monto) */}
       {cargosPendientes.length > 0 && (
-        <section className="fade-up flex flex-col gap-3">
+        <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
             <span className="relative flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EF4444] opacity-75" />
@@ -348,7 +345,7 @@ export default function ParqueaderoPage() {
       )}
 
       {/* STATUS OVERVIEW */}
-      <section className="fade-up w-full grid grid-cols-2 gap-4">
+      <section className="w-full grid grid-cols-2 gap-4">
         <div className="liquid-glass-card rounded-[32px] p-5 border border-border flex flex-col gap-3 group hover:bg-text/10 transition-all duration-300">
           <div className="flex justify-between items-center">
             <div className="p-2.5 rounded-full bg-text/20 border border-text/30 text-text group-hover:scale-110 transition-transform">
@@ -385,7 +382,7 @@ export default function ParqueaderoPage() {
 
       {/* MIS RESERVAS DE CUPO DE VISITANTE */}
       {misReservas.filter(r => r.estado === 'PENDIENTE' || r.estado === 'LLEGO').length > 0 && (
-        <section className="fade-up flex flex-col gap-3">
+        <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-base font-display font-bold text-text tracking-tight">Mis reservas de visitante</h2>
             <button
@@ -435,7 +432,7 @@ export default function ParqueaderoPage() {
         </section>
       )}
       {/* MY VEHICLES */}
-      <section className="fade-up flex flex-col gap-5">
+      <section className="flex flex-col gap-5">
         <div className="flex justify-between items-end px-1">
           <h2 className="text-xl font-display font-bold text-text tracking-tight">Mis Vehículos</h2>
           <button 
@@ -483,7 +480,7 @@ export default function ParqueaderoPage() {
       </section>
 
       {/* QUICK ACTIONS */}
-      <section className="fade-up flex flex-col gap-4">
+      <section className="flex flex-col gap-4">
         <h2 className="text-lg font-display font-bold text-text px-1 tracking-tight">Acciones Rápidas</h2>
         
         <div className="flex flex-col gap-3">
@@ -524,7 +521,7 @@ export default function ParqueaderoPage() {
       </section>
 
       {/* RULES & INFO */}
-      <section className="fade-up liquid-glass-card rounded-[40px] p-8 border border-border relative overflow-hidden mt-2">
+      <section className="liquid-glass-card rounded-[40px] p-8 border border-border relative overflow-hidden mt-2">
         <div className="absolute right-0 top-0 w-full h-full bg-linear-to-br from-accent/5 to-transparent pointer-events-none" />
         
         <div className="flex items-center gap-3 mb-6">

@@ -109,7 +109,7 @@ export default function SosConsole() {
   if (alertas.length === 0) return null;
 
   return (
-    <div className="fade-up flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <h3 className="text-xs font-bold uppercase tracking-widest text-red-400 px-1 flex items-center gap-2">
         <AlertTriangle size={14} /> Alertas SOS activas ({alertas.length})
       </h3>

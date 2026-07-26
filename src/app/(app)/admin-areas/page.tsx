@@ -12,8 +12,7 @@ import {
   Pencil,
   Trash2,
   X,
-  Loader2,
-  RefreshCw,
+    RefreshCw,
   Filter,
   MapPin,
   User,
@@ -32,6 +31,7 @@ import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { AreaComunDto } from "@/lib/api/types";
+import { Skeleton, SkeletonRows } from "@/components/ui/Skeleton";
 
 // ---------------------------------------------------------------------------
 // Local DTOs matching the Rust backend admin_areas.rs
@@ -226,12 +226,8 @@ export default function AdminAreasPage() {
   useEffect(() => {
     if (!loading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(
-          ".fade-up",
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: "power2.out" }
-        );
-      }, containerRef);
+        
+}, containerRef);
       return () => ctx.revert();
     }
   }, [loading, tab]);
@@ -348,7 +344,7 @@ export default function AdminAreasPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+        <SkeletonRows />
       </div>
     );
   }
@@ -363,7 +359,7 @@ export default function AdminAreasPage() {
       <ProfileHeader />
 
       {/* Header */}
-      <div className="fade-up flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-medium text-text tracking-wide">
             Áreas Comunes
@@ -392,7 +388,7 @@ export default function AdminAreasPage() {
       </div>
 
       {/* Tabs */}
-      <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
+      <div className="flex bg-surface-2 rounded-full p-1 border border-border">
         <button
           onClick={() => setTab("areas")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
@@ -420,10 +416,10 @@ export default function AdminAreasPage() {
         <div className="flex flex-col gap-4">
           {loading ? (
             <div className="w-full py-12 flex justify-center">
-              <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+              <SkeletonRows />
             </div>
           ) : areas.length === 0 ? (
-            <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+            <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
               <Building2
                 size={40}
                 className="mx-auto text-text mb-3"
@@ -438,7 +434,7 @@ export default function AdminAreasPage() {
             areas.map((area) => (
               <div
                 key={area.id}
-                className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col gap-4 group hover:border-accent/30 transition-all"
+                className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col gap-4 group hover:border-accent/30 transition-all"
               >
                 {/* Top row: Name + Status + Actions */}
                 <div className="flex justify-between items-start">
@@ -540,7 +536,7 @@ export default function AdminAreasPage() {
       {tab === "reservas" && (
         <div className="flex flex-col gap-4">
           {/* Filters */}
-          <div className="fade-up flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             {/* Estado filter */}
             <div className="flex gap-2 overflow-x-auto pb-1">
               {[
@@ -589,10 +585,10 @@ export default function AdminAreasPage() {
           {/* Reservations list */}
           {loadingReservas ? (
             <div className="w-full py-12 flex justify-center">
-              <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+              <SkeletonRows />
             </div>
           ) : reservas.length === 0 ? (
-            <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+            <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
               <Calendar
                 size={40}
                 className="mx-auto text-text mb-3"
@@ -607,7 +603,7 @@ export default function AdminAreasPage() {
             reservas.map((r) => (
               <div
                 key={r.id}
-                className="fade-up liquid-glass rounded-3xl p-5 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all"
+                className="liquid-glass rounded-3xl p-5 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all"
               >
                 {/* Top: Resident + Area */}
                 <div className="flex justify-between items-start gap-3">
@@ -1035,7 +1031,7 @@ function AreaFormFields({
       >
         {saving ? (
           <>
-            <Loader2 size={18} className="animate-spin" />
+            <Skeleton className="w-5 h-5 rounded-full" />
             Guardando...
           </>
         ) : (

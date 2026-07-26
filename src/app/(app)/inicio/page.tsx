@@ -622,7 +622,7 @@ function HomeResidente() {
          </div>
          {isLoadingAnuncios ? (
            <div className="py-10 flex flex-col items-center justify-center gap-3">
-             <div className="w-8 h-8 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
+             <div className="w-8 h-8 rounded-full bg-text/10 animate-pulse" />
              <span className="text-[10px] font-bold text-text uppercase tracking-widest animate-pulse">Cargando novedades...</span>
            </div>
          ) : anuncios.length === 0 ? (
@@ -793,11 +793,17 @@ function HomeVigilante() {
 
 function HomeEstacionamiento() {
   const router = useRouter();
-  const [stats, setStats] = useState({ ocupacion: 0, libres: 0, ocupados: 0 });
+  // Mirrors ParqueaderoStatsDto in backend/api/src/domains/parqueadero/dto.rs:199 —
+  // the percentage field is `porcentajeOcupacion`, not `ocupacion`.
+  const [stats, setStats] = useState({ porcentajeOcupacion: 0, libres: 0, ocupados: 0 });
 
   useEffect(() => {
-    api.get<{ ocupacion: number; libres: number; ocupados: number }>('/parqueadero/stats')
-      .then((data) => setStats(data))
+    api.get<{ porcentajeOcupacion: number; libres: number; ocupados: number }>('/parqueadero/stats')
+      .then((data) => setStats({
+        porcentajeOcupacion: data.porcentajeOcupacion ?? 0,
+        libres: data.libres ?? 0,
+        ocupados: data.ocupados ?? 0,
+      }))
       .catch(() => {});
   }, []);
 
@@ -805,46 +811,56 @@ function HomeEstacionamiento() {
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
-      <div 
+      <button
         onClick={() => router.push("/mapa-parqueadero")}
-        className="fade-up liquid-glass-card rounded-[28px] p-6 border border-border shadow-2xl text-text cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group active:scale-98"
+        className="rounded-[28px] p-5 bg-primary-light border border-border shadow-sm hover:shadow-md active:scale-98 transition-all text-left flex items-center gap-4 group"
       >
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center">
-            <Car size={22} />
-          </div>
-          <div>
-            <span className="text-[9px] text-accent font-black uppercase tracking-widest block mb-0.5">Control Operativo</span>
-            <h3 className="text-lg font-display font-bold leading-tight text-text">Mapa de Parqueaderos</h3>
-            <p className="text-text text-xs mt-0.5">Ver celdas libres, registrar ingresos/salidas y realizar rondas.</p>
-          </div>
-        </div>
-        <button className="bg-accent text-on-accent text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all cursor-pointer active:scale-95">
-          Ingresar
-        </button>
-      </div>
+        <span
+          className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
+          style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+        >
+          <Car size={22} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="text-[9px] font-black uppercase tracking-wider block mb-0.5" style={{ color: '#3b82f6' }}>
+            Control Operativo
+          </span>
+          <span className="block text-base font-display font-bold leading-tight text-text">Mapa de Parqueaderos</span>
+          <span className="block text-text/55 text-[11px] mt-0.5 leading-snug">
+            Celdas libres, ingresos/salidas y rondas.
+          </span>
+        </span>
+        <ArrowRight size={18} style={{ color: '#3b82f6' }} className="shrink-0 group-hover:translate-x-0.5 transition-transform" />
+      </button>
 
       {/* Estadísticas de Ocupación */}
-      <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
+      <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm">
         <h3 className="text-base font-bold text-text mb-4">Estado del Parqueadero</h3>
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
-            <span className="text-2xl font-black text-text">{stats.ocupacion}%</span>
-            <p className="text-[9px] text-text uppercase font-bold mt-1">Ocupación</p>
-          </div>
-          <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
-            <span className="text-2xl font-black text-text">{stats.libres}</span>
-            <p className="text-[9px] text-text uppercase font-bold mt-1">Libres</p>
-          </div>
-          <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
-            <span className="text-2xl font-black text-text">{stats.ocupados}</span>
-            <p className="text-[9px] text-text uppercase font-bold mt-1">Ocupados</p>
-          </div>
+          {[
+            { value: `${stats.porcentajeOcupacion}%`, label: 'Ocupación', hex: '#3b82f6' },
+            { value: String(stats.libres), label: 'Libres', hex: '#10b981' },
+            { value: String(stats.ocupados), label: 'Ocupados', hex: '#f97316' },
+          ].map((s) => (
+            <div key={s.label} className="bg-surface-2 border border-border/40 rounded-2xl p-4 text-center min-w-0">
+              {/* truncate on the value too — an unexpected string used to spill
+                  across the neighbouring tiles instead of being clipped. */}
+              <span className="block text-2xl font-black truncate" style={{ color: s.hex }}>{s.value}</span>
+              <p className="text-[9px] text-text/55 uppercase font-bold mt-1 truncate">{s.label}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
+
+// Same inline-style approach as ADMIN_TILES below — see the note there.
+const CONSEJO_TILES = [
+  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas', desc: 'Cobros y reportes consolidados', hex: '#10b981' },
+  { href: '/cartelera', icon: Building2, title: 'Cartelera', desc: 'Circulares y anuncios generales', hex: '#3b82f6' },
+  { href: '/encuestas', icon: BarChart3, title: 'Encuestas', desc: 'Crear y ver resultados en vivo', hex: '#14b8a6' },
+] as const;
 
 function HomeConsejo() {
   const router = useRouter();
@@ -861,72 +877,90 @@ function HomeConsejo() {
       <RoleSwitcher />
       <ProfileHeader />
       
-      <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
-        <h2 className="text-xl font-bold text-text mb-1">Mesa de Monitoreo</h2>
-        <p className="text-text text-xs">Consejo de Administración (Órgano Consultor Ley 675/2001)</p>
+      <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm flex items-start gap-3">
+        <span
+          className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
+          style={{ backgroundColor: '#6366f11a', color: '#6366f1' }}
+        >
+          <Scale size={22} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold text-text leading-tight">Mesa de Monitoreo</h2>
+          <p className="text-text/55 text-[11px] leading-snug mt-1">
+            Consejo de Administración (Órgano Consultor Ley 675/2001)
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* FINANZAS READ ONLY CARD */}
-        <div 
-          onClick={() => router.push('/admin-finanzas')}
-          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <DollarSign size={20} />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-text mb-0.5">Finanzas</h4>
-            <p className="text-[9px] text-text">Cobros y reportes consolidados</p>
-          </div>
-        </div>
-
-        {/* ANUNCIOS/CIRCULARES */}
-        <div 
-          onClick={() => router.push('/cartelera')}
-          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Building2 size={20} />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-text mb-0.5">Cartelera</h4>
-            <p className="text-[9px] text-text">Ver circulares y anuncios generales</p>
-          </div>
-        </div>
-
-        {/* ENCUESTAS */}
-        <div
-          onClick={() => router.push('/encuestas')}
-          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <BarChart3 size={20} />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-text mb-0.5">Encuestas</h4>
-            <p className="text-[9px] text-text">Crear y ver resultados en vivo</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-3">
+        {CONSEJO_TILES.map(({ href, icon: Icon, title, desc, hex }) => (
+          <button
+            key={href}
+            onClick={() => router.push(href)}
+            className="group h-[132px] p-3.5 rounded-[20px] bg-primary-light border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer text-left flex flex-col"
+          >
+            <span
+              className="w-11 h-11 rounded-2xl flex items-center justify-center"
+              style={{ backgroundColor: `${hex}1a`, color: hex }}
+            >
+              <Icon size={20} />
+            </span>
+            <span className="mt-auto block">
+              <span className="block text-[13px] font-bold text-text leading-tight mb-0.5">{title}</span>
+              <span className="flex items-end justify-between gap-1">
+                <span className="text-[10px] text-text/55 leading-snug">{desc}</span>
+                <ArrowRight
+                  size={13}
+                  style={{ color: hex }}
+                  className="shrink-0 group-hover:translate-x-0.5 transition-transform"
+                />
+              </span>
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Resumen Agregado */}
-      <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
+      <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm">
         <h3 className="text-base font-bold text-text mb-4">Informes de Gestión</h3>
         <div className="flex flex-col gap-3">
-          <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
-            <span className="text-xs text-text uppercase font-bold">Recaudación General</span>
-            <span className="text-sm font-black text-text">${Number(stats.recaudoMes || 0).toLocaleString()} COP</span>
+          <div className="flex justify-between items-center gap-3 bg-surface-2 p-4 rounded-2xl border border-border/40">
+            <span className="text-[11px] text-text/55 uppercase font-bold min-w-0">Recaudación General</span>
+            <span className="text-sm font-black shrink-0" style={{ color: '#10b981' }}>
+              ${Number(stats.recaudoMes || 0).toLocaleString()} COP
+            </span>
           </div>
-          <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
-            <span className="text-xs text-text uppercase font-bold">Novedades / Solicitudes</span>
-            <span className="text-sm font-black text-text">{stats.reservasPendientes} Pendientes</span>
+          <div className="flex justify-between items-center gap-3 bg-surface-2 p-4 rounded-2xl border border-border/40">
+            <span className="text-[11px] text-text/55 uppercase font-bold min-w-0">Novedades / Solicitudes</span>
+            <span className="text-sm font-black shrink-0" style={{ color: '#f97316' }}>
+              {stats.reservasPendientes} Pendientes
+            </span>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+// Colors are inline styles, not Tailwind classes, so every chip renders its
+// tint regardless of which utilities the CSS build happens to have generated.
+// `${hex}1a` is the same 10% alpha as a `/10` class.
+const ADMIN_TILES = [
+  { href: '/admin-residentes', icon: Users, title: 'Residentes', desc: 'Gestionar unidades', hex: '#10b981' },
+  { href: '/citofonia', icon: UserIcon, title: 'Citofonía', desc: 'Llamar a unidades', hex: '#6366f1' },
+  { href: '/admin-novedades', icon: Building2, title: 'Novedades', desc: 'Anuncios y trámites', hex: '#3b82f6' },
+  { href: '/admin-pqrs', icon: Wrench, title: 'Solicitudes', desc: 'PQRS y servicios', hex: '#f97316' },
+  { href: '/admin-areas', icon: MapPin, title: 'Áreas', desc: 'Espacios comunes', hex: '#f43f5e' },
+  { href: '/encuestas', icon: BarChart3, title: 'Encuestas', desc: 'Crear y ver resultados', hex: '#14b8a6' },
+  { href: '/comite-convivencia', icon: Scale, title: 'Comité', desc: 'Convivencia y actas', hex: '#8b5cf6' },
+  { href: '/admin-documentos', icon: FileText, title: 'Documentos', desc: 'Gestión documental', hex: '#f59e0b' },
+  { href: '/reservas', icon: Calendar, title: 'Reservas', desc: 'Áreas comunes', hex: '#22c55e' },
+] as const;
+
+const ADMIN_SHORTCUTS = [
+  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas y Cartera', desc: 'Facturación, pagos y cartera', hex: '#10b981' },
+  { href: '/admin-parqueadero', icon: Car, title: 'Control de Parqueaderos', desc: 'Asignación y control de espacios', hex: '#3b82f6' },
+] as const;
 
 function HomeAdmin() {
   const router = useRouter();
@@ -997,154 +1031,66 @@ function HomeAdmin() {
 
       {/* QUICK ACCESSIBLE ACTIONS */}
       <div className="grid grid-cols-3 gap-3">
-        {/* RESIDENTES CARD */}
-        <div 
-          onClick={() => router.push('/admin-residentes')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Users size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Residentes</h4>
-            <p className="text-[8px] text-text">Gestionar unidades</p>
-          </div>
-        </div>
-
-        {/* CITOFONÍA CARD */}
-        <div 
-          onClick={() => router.push('/citofonia')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <UserIcon size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Citofonía</h4>
-            <p className="text-[8px] text-text">Llamar a unidades</p>
-          </div>
-        </div>
-
-        {/* NOVEDADES CARD */}
-        <div 
-          onClick={() => router.push('/admin-novedades')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Building2 size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Novedades</h4>
-            <p className="text-[8px] text-text">Anuncios y trámites</p>
-          </div>
-        </div>
-
-        {/* PQRS CARD */}
-        <div 
-          onClick={() => router.push('/admin-pqrs')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Wrench size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Solicitudes</h4>
-            <p className="text-[8px] text-text">PQRS y servicios</p>
-          </div>
-        </div>
-
-        {/* ÁREAS CARD */}
-        <div 
-          onClick={() => router.push('/admin-areas')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <MapPin size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Áreas</h4>
-            <p className="text-[8px] text-text">Espacios comunes</p>
-          </div>
-        </div>
-
-        {/* ENCUESTAS CARD */}
-        <div
-          onClick={() => router.push('/encuestas')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <BarChart3 size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Encuestas</h4>
-            <p className="text-[8px] text-text">Crear y ver resultados</p>
-          </div>
-        </div>
-
-        {/* COMITÉ CONVIVENCIA CARD */}
-        <div
-          onClick={() => router.push('/comite-convivencia')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Scale size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Comité</h4>
-            <p className="text-[8px] text-text">Convivencia y actas</p>
-          </div>
-        </div>
-
-        {/* DOCUMENTOS CARD */}
-        <div
-          onClick={() => router.push('/admin-documentos')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <FileText size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Documentos</h4>
-            <p className="text-[8px] text-text">Gestión documental</p>
-          </div>
-        </div>
-
-        {/* RESERVAS CARD */}
-        <div
-          onClick={() => router.push('/reservas')}
-          className="p-4 rounded-[24px] bg-linear-to-br from-text/15 to-text/15 border border-text/20 flex flex-col justify-between h-[120px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-9 h-9 rounded-xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Calendar size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text mb-0.5">Reservas</h4>
-            <p className="text-[8px] text-text">Áreas comunes</p>
-          </div>
-        </div>
+        {ADMIN_TILES.map(({ href, icon: Icon, title, desc, hex }) => (
+          <button
+            key={href}
+            onClick={() => router.push(href)}
+            className="group h-[132px] p-3.5 rounded-[20px] bg-primary-light border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer text-left flex flex-col"
+          >
+            <span
+              className="w-11 h-11 rounded-2xl flex items-center justify-center"
+              style={{ backgroundColor: `${hex}1a`, color: hex }}
+            >
+              <Icon size={20} />
+            </span>
+            <span className="mt-auto block">
+              <span className="block text-[13px] font-bold text-text leading-tight mb-0.5">{title}</span>
+              <span className="flex items-end justify-between gap-1">
+                <span className="text-[10px] text-text/55 leading-snug">{desc}</span>
+                <ArrowRight
+                  size={13}
+                  style={{ color: hex }}
+                  className="shrink-0 group-hover:translate-x-0.5 transition-transform"
+                />
+              </span>
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* GESTIÓN GENERAL CARD */}
-      <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl text-text">
-        <h2 className="text-base font-bold mb-2">Gestión del Conjunto</h2>
-        <p className="text-[11px] text-text leading-relaxed mb-6">Control de finanzas, parqueaderos y configuración.</p>
-        
+      <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm text-text">
+        <h2 className="text-base font-bold mb-1.5">Gestión del Conjunto</h2>
+        <p className="text-[11px] text-text/55 leading-relaxed mb-5">
+          Control de <span className="text-emerald-500 font-semibold">finanzas</span>,{' '}
+          <span className="text-blue-500 font-semibold">parqueaderos</span> y{' '}
+          <span className="text-violet-500 font-semibold">configuración</span>.
+        </p>
+
         <div className="flex flex-col gap-3">
-          <button 
-            onClick={() => router.push('/admin-finanzas')}
-            className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
-          >
-            <span className="flex items-center gap-2"><DollarSign size={14} className="text-[#57bf00]"/> Finanzas y Cartera</span>
-            <ArrowRight size={14} className="text-text group-hover:text-accent group-hover:translate-x-1 transition-all" />
-          </button>
-          
-          <button 
-            onClick={() => router.push('/admin-parqueadero')}
-            className="w-full py-4 px-5 rounded-2xl bg-text/5 hover:bg-text/10 border border-border/40 text-left text-xs font-bold text-text flex items-center justify-between group active:scale-98 transition-all cursor-pointer"
-          >
-            <span className="flex items-center gap-2"><Car size={14} className="text-[#009df2]"/> Control de Parqueaderos</span>
-            <ArrowRight size={14} className="text-text group-hover:text-accent group-hover:translate-x-1 transition-all" />
-          </button>
+          {ADMIN_SHORTCUTS.map(({ href, icon: Icon, title, desc, hex }) => (
+            <button
+              key={href}
+              onClick={() => router.push(href)}
+              className="w-full py-3 px-3.5 rounded-2xl bg-surface-2 hover:bg-text/10 border border-border/40 text-left flex items-center gap-3 group active:scale-98 transition-all cursor-pointer"
+            >
+              <span
+                className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `${hex}1a`, color: hex }}
+              >
+                <Icon size={16} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-bold text-text truncate">{title}</span>
+                <span className="block text-[10px] text-text/55 truncate">{desc}</span>
+              </span>
+              <ArrowRight
+                size={14}
+                style={{ color: hex }}
+                className="shrink-0 group-hover:translate-x-1 transition-transform"
+              />
+            </button>
+          ))}
         </div>
       </div>
     </div>
@@ -1393,7 +1339,7 @@ export default function InicioDashboard() {
   if (role === 'HUESPED_TEMPORAL') {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+ <div className="animate-pulse bg-text/10 h-6 w-6 rounded-full" />
       </div>
     );
   }
@@ -1401,7 +1347,7 @@ export default function InicioDashboard() {
   if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+ <div className="animate-pulse bg-text/10 h-6 w-6 rounded-full" />
       </div>
     );
   }

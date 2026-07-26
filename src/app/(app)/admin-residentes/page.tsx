@@ -18,8 +18,7 @@ import {
   Clock,
   ShieldCheck,
   RefreshCw,
-  Loader2,
-} from "lucide-react";
+  } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +26,7 @@ import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { Rol } from "@/lib/api/types";
+import { Skeleton, SkeletonRows } from "@/components/ui/Skeleton";
 
 // ---------------------------------------------------------------------------
 // Local type shapes for admin resident endpoints
@@ -235,12 +235,8 @@ export default function AdminResidentesPage() {
   useEffect(() => {
     if (!loading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(
-          ".fade-up",
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, stagger: 0.1, duration: 0.5, ease: "power2.out" }
-        );
-      }, containerRef);
+        
+}, containerRef);
       return () => ctx.revert();
     }
   }, [loading]);
@@ -341,7 +337,7 @@ export default function AdminResidentesPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+        <SkeletonRows />
       </div>
     );
   }
@@ -356,7 +352,7 @@ export default function AdminResidentesPage() {
       <ProfileHeader />
 
       {/* Header + invite button */}
-      <div className="fade-up flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-medium text-text tracking-wide">
             Residentes
@@ -375,7 +371,7 @@ export default function AdminResidentesPage() {
       </div>
 
       {/* Search bar */}
-      <div className="fade-up relative">
+      <div className="relative">
         <Search
           size={16}
           className="absolute left-5 top-1/2 -translate-y-1/2 text-text"
@@ -392,7 +388,7 @@ export default function AdminResidentesPage() {
       </div>
 
       {/* Role filter chips */}
-      <div className="fade-up flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {ROL_FILTER_OPTIONS.map((opt) => (
           <button
             key={opt.value}
@@ -412,10 +408,10 @@ export default function AdminResidentesPage() {
       <div className="flex flex-col gap-4">
         {loading ? (
           <div className="w-full py-12 flex justify-center">
-            <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+            <SkeletonRows />
           </div>
         ) : filteredResidentes.length === 0 ? (
-          <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+          <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
             <User size={40} className="mx-auto text-text mb-3" style={{ opacity: 0.4 }} />
             <p className="text-text font-medium">
               {search || rolFilter !== "TODOS"
@@ -433,7 +429,7 @@ export default function AdminResidentesPage() {
             <div
               key={r.id}
               onClick={() => openDetalle(r.id)}
-              className="fade-up liquid-glass rounded-3xl p-6 border border-border flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer active:scale-[0.98]"
+              className="liquid-glass rounded-3xl p-6 border border-border flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer active:scale-[0.98]"
             >
               {/* Top row: name + status */}
               <div className="flex justify-between items-start">
@@ -515,7 +511,7 @@ export default function AdminResidentesPage() {
 
             {loadingDetalle ? (
               <div className="py-12 flex justify-center">
-                <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+                <SkeletonRows />
               </div>
             ) : detalle ? (
               <div className="flex flex-col gap-5 pt-4">
@@ -879,7 +875,7 @@ export default function AdminResidentesPage() {
               >
                 {savingEdit ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Skeleton className="w-5 h-5 rounded-full" />
                     Guardando...
                   </>
                 ) : (
@@ -1022,7 +1018,7 @@ export default function AdminResidentesPage() {
               >
                 {sendingInvite ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Skeleton className="w-5 h-5 rounded-full" />
                     Enviando...
                   </>
                 ) : (

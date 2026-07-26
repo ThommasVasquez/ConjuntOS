@@ -152,12 +152,8 @@ export default function VigilanciaDashboard() {
     }
     fetchStats();
 
-    gsap.fromTo(
-      ".fade-up",
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 }
-    );
-  }, [user, authLoading, role, router]);
+    
+}, [user, authLoading, role, router]);
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden">
@@ -167,7 +163,7 @@ export default function VigilanciaDashboard() {
       <RoleSwitcher />
 
       {/* HEADER TITLE */}
-      <div className="fade-up flex items-center gap-3">
+      <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent">
           <Shield size={24} />
         </div>
@@ -180,7 +176,7 @@ export default function VigilanciaDashboard() {
       </div>
 
       {/* STATS ROW */}
-      <div className="fade-up grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {statCards.map((card) => (
           <div
             key={card.key}
@@ -207,7 +203,7 @@ export default function VigilanciaDashboard() {
       <SosConsole />
 
       {/* QUICK-ACCESS NAVIGATION GRID */}
-      <div className="fade-up flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
         <h3 className="text-xs font-bold uppercase tracking-widest text-text/60 px-1">
           Acciones Rápidas
         </h3>
@@ -237,7 +233,7 @@ export default function VigilanciaDashboard() {
       </div>
 
       {/* FOOTER STATUS BAR */}
-      <div className="fade-up mt-4 flex items-center justify-center gap-2 p-3 rounded-2xl bg-surface-2/30 border border-border/30">
+      <div className="mt-4 flex items-center justify-center gap-2 p-3 rounded-2xl bg-surface-2/30 border border-border/30">
         <Activity size={14} className="text-emerald-400" />
         <span className="text-[10px] text-text/50 font-bold uppercase tracking-widest">
           Módulo de vigilancia activo

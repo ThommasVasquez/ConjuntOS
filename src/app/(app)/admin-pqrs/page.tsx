@@ -6,7 +6,7 @@ import {
   CheckCircle2, Clock, AlertTriangle, Wrench, Zap,
   Paintbrush, KeyRound, MoreHorizontal, User, Image as ImageIcon,
   ChevronLeft, ChevronRight, RefreshCw, MessageSquare, AlertCircle,
-  X, Loader2, ArrowUpDown, Send, TrendingUp, History,
+  X, ArrowUpDown, Send, TrendingUp, History,
 } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { Skeleton, SkeletonRows } from "@/components/ui/Skeleton";
 import type {
   CatServicio,
   EstadoSolicitud,
@@ -255,12 +256,8 @@ export default function AdminPQRSPage() {
   useEffect(() => {
     if (!loading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(
-          ".fade-up",
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, stagger: 0.08, duration: 0.4, ease: "power2.out" }
-        );
-      }, containerRef);
+        
+}, containerRef);
       return () => ctx.revert();
     }
   }, [loading, tab]);
@@ -330,7 +327,7 @@ export default function AdminPQRSPage() {
       <ProfileHeader />
 
       {/* Header */}
-      <div className="fade-up flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-medium text-text tracking-wide">
             Solicitudes de Servicio
@@ -357,7 +354,7 @@ export default function AdminPQRSPage() {
 
       {/* Stats Dashboard */}
       {stats && (
-        <div className="fade-up grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {[
             { label: "Abiertos", value: stats.abiertos, color: "bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/20" },
             { label: "En Progreso", value: stats.enProgreso, color: "bg-[#F97316]/10 text-[#F97316] border-[#F97316]/20" },
@@ -376,7 +373,7 @@ export default function AdminPQRSPage() {
       )}
 
       {/* Tabs */}
-      <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
+      <div className="flex bg-surface-2 rounded-full p-1 border border-border">
         {(
           [
             ["PENDIENTES", "Pendientes"],
@@ -400,7 +397,7 @@ export default function AdminPQRSPage() {
       </div>
 
       {/* Filters */}
-      <div className="fade-up flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-[10px] font-black uppercase tracking-widest text-text mr-1">
           <ArrowUpDown size={12} className="inline mr-1" />
           Categoría:
@@ -454,10 +451,10 @@ export default function AdminPQRSPage() {
       <div className="flex flex-col gap-4">
         {loading ? (
           <div className="w-full py-12 flex justify-center">
-            <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+            <SkeletonRows />
           </div>
         ) : solicitudes.length === 0 ? (
-          <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+          <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
             <CheckCircle2 size={40} className="mx-auto text-text/50 mb-3" />
             <p className="text-text font-medium">Bandeja al día</p>
             <p className="text-xs text-text mt-1">
@@ -482,7 +479,7 @@ export default function AdminPQRSPage() {
                   setComentarios([]);
                   fetchComentarios(s.id);
                 }}
-                className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer"
+                className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer"
               >
                 {/* Top row: category + type + status badge */}
                 <div className="flex justify-between items-start">
@@ -796,7 +793,7 @@ export default function AdminPQRSPage() {
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" />
+                    <Skeleton className="w-4 h-4 rounded-full" />
                     Actualizando...
                   </>
                 ) : (
@@ -840,7 +837,7 @@ export default function AdminPQRSPage() {
               </span>
 
               {cargandoComentarios ? (
-                <div className="w-5 h-5 border-2 border-border border-t-accent rounded-full animate-spin mx-auto" />
+                <div className="w-5 h-5 rounded-full bg-text/10 animate-pulse mx-auto" />
               ) : comentarios.length === 0 ? (
                 <p className="text-[10px] text-text italic text-center py-2">
                   Sin comentarios aún
@@ -873,7 +870,7 @@ export default function AdminPQRSPage() {
                   disabled={enviandoComentario || !nuevoComentario.trim()}
                   className="px-3 py-2.5 rounded-xl bg-accent text-primary font-bold text-xs flex items-center gap-1 disabled:opacity-40 active:scale-95 transition-transform"
                 >
-                  {enviandoComentario ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  {enviandoComentario ? <Skeleton className="w-4 h-4 rounded-full" /> : <Send size={14} />}
                 </button>
               </div>
             </div>

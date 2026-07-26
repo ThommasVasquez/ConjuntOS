@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Gavel } from "lucide-react";
+import { ArrowRight, Gavel } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,8 +62,9 @@ export default function ImponerMulta({ casoId }: { casoId?: string }) {
   if (!open) {
     return (
       <button onClick={() => setOpen(true)}
-        className="w-full py-3 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-bold flex items-center justify-center gap-2">
-        <Gavel size={16} /> Imponer multa
+        className="group w-full py-4 px-5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm font-bold flex items-center justify-between gap-2 hover:bg-red-500/15 active:scale-98 transition-all">
+        <span className="flex items-center gap-2.5"><Gavel size={18} /> Imponer multa</span>
+        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
       </button>
     );
   }
