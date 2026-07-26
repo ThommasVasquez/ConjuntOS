@@ -846,6 +846,13 @@ function HomeEstacionamiento() {
   );
 }
 
+// Same inline-style approach as ADMIN_TILES below — see the note there.
+const CONSEJO_TILES = [
+  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas', desc: 'Cobros y reportes consolidados', hex: '#10b981' },
+  { href: '/cartelera', icon: Building2, title: 'Cartelera', desc: 'Circulares y anuncios generales', hex: '#3b82f6' },
+  { href: '/encuestas', icon: BarChart3, title: 'Encuestas', desc: 'Crear y ver resultados en vivo', hex: '#14b8a6' },
+] as const;
+
 function HomeConsejo() {
   const router = useRouter();
   const [stats, setStats] = useState({ recaudoMes: '0', reservasPendientes: 0 });
@@ -861,66 +868,64 @@ function HomeConsejo() {
       <RoleSwitcher />
       <ProfileHeader />
       
-      <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
-        <h2 className="text-xl font-bold text-text mb-1">Mesa de Monitoreo</h2>
-        <p className="text-text text-xs">Consejo de Administración (Órgano Consultor Ley 675/2001)</p>
+      <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm flex items-start gap-3">
+        <span
+          className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
+          style={{ backgroundColor: '#6366f11a', color: '#6366f1' }}
+        >
+          <Scale size={22} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold text-text leading-tight">Mesa de Monitoreo</h2>
+          <p className="text-text/55 text-[11px] leading-snug mt-1">
+            Consejo de Administración (Órgano Consultor Ley 675/2001)
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* FINANZAS READ ONLY CARD */}
-        <div 
-          onClick={() => router.push('/admin-finanzas')}
-          className="p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <DollarSign size={20} />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-text mb-0.5">Finanzas</h4>
-            <p className="text-[9px] text-text">Cobros y reportes consolidados</p>
-          </div>
-        </div>
-
-        {/* ANUNCIOS/CIRCULARES */}
-        <div 
-          onClick={() => router.push('/cartelera')}
-          className="p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <Building2 size={20} />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-text mb-0.5">Cartelera</h4>
-            <p className="text-[9px] text-text">Ver circulares y anuncios generales</p>
-          </div>
-        </div>
-
-        {/* ENCUESTAS */}
-        <div
-          onClick={() => router.push('/encuestas')}
-          className="p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
-            <BarChart3 size={20} />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-text mb-0.5">Encuestas</h4>
-            <p className="text-[9px] text-text">Crear y ver resultados en vivo</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-3">
+        {CONSEJO_TILES.map(({ href, icon: Icon, title, desc, hex }) => (
+          <button
+            key={href}
+            onClick={() => router.push(href)}
+            className="group h-[132px] p-3.5 rounded-[20px] bg-primary-light border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer text-left flex flex-col"
+          >
+            <span
+              className="w-11 h-11 rounded-2xl flex items-center justify-center"
+              style={{ backgroundColor: `${hex}1a`, color: hex }}
+            >
+              <Icon size={20} />
+            </span>
+            <span className="mt-auto block">
+              <span className="block text-[13px] font-bold text-text leading-tight mb-0.5">{title}</span>
+              <span className="flex items-end justify-between gap-1">
+                <span className="text-[10px] text-text/55 leading-snug">{desc}</span>
+                <ArrowRight
+                  size={13}
+                  style={{ color: hex }}
+                  className="shrink-0 group-hover:translate-x-0.5 transition-transform"
+                />
+              </span>
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Resumen Agregado */}
-      <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
+      <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm">
         <h3 className="text-base font-bold text-text mb-4">Informes de Gestión</h3>
         <div className="flex flex-col gap-3">
-          <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
-            <span className="text-xs text-text uppercase font-bold">Recaudación General</span>
-            <span className="text-sm font-black text-text">${Number(stats.recaudoMes || 0).toLocaleString()} COP</span>
+          <div className="flex justify-between items-center gap-3 bg-surface-2 p-4 rounded-2xl border border-border/40">
+            <span className="text-[11px] text-text/55 uppercase font-bold min-w-0">Recaudación General</span>
+            <span className="text-sm font-black shrink-0" style={{ color: '#10b981' }}>
+              ${Number(stats.recaudoMes || 0).toLocaleString()} COP
+            </span>
           </div>
-          <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
-            <span className="text-xs text-text uppercase font-bold">Novedades / Solicitudes</span>
-            <span className="text-sm font-black text-text">{stats.reservasPendientes} Pendientes</span>
+          <div className="flex justify-between items-center gap-3 bg-surface-2 p-4 rounded-2xl border border-border/40">
+            <span className="text-[11px] text-text/55 uppercase font-bold min-w-0">Novedades / Solicitudes</span>
+            <span className="text-sm font-black shrink-0" style={{ color: '#f97316' }}>
+              {stats.reservasPendientes} Pendientes
+            </span>
           </div>
         </div>
       </div>
