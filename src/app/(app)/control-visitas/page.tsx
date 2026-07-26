@@ -142,24 +142,27 @@ export default function ControlVisitas() {
        {/* QR pass scanner — validates a pre-registered visitor in one tap */}
        <QrScanner />
 
-       <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
+       <div className="bg-primary-light rounded-3xl p-6 border border-border shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-             <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent">
-                <Users size={24} />
+             <div
+                className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
+                style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+             >
+                <Users size={22} />
              </div>
-             <div>
-               <h2 className="text-xl font-bold text-text">Ingreso Visitas</h2>
-               <p className="text-xs text-text">Control peatonal y vehicular</p>
+             <div className="min-w-0">
+               <h2 className="text-lg font-bold text-text leading-tight">Ingreso Visitas</h2>
+               <p className="text-[11px] text-text/55 mt-0.5">Control peatonal y vehicular</p>
              </div>
           </div>
           
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Residente Destino</label>
+                <label className="text-[10px] text-text/55 font-bold uppercase tracking-wider pl-1">Residente Destino</label>
                 <select 
                    value={formData.usuarioId} 
                    onChange={e => setFormData({...formData, usuarioId: e.target.value})}
-                   className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all"
+                   className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all"
                 >
                    <option value="">Seleccione residente...</option>
                    {residentes.map(r => (
@@ -171,35 +174,35 @@ export default function ControlVisitas() {
              </div>
              
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Ocupante Principal</label>
+                <label className="text-[10px] text-text/55 font-bold uppercase tracking-wider pl-1">Ocupante Principal</label>
                 <input 
                    required
                    type="text" 
                    placeholder="Nombre del visitante" 
                    value={formData.nombre}
                    onChange={e => setFormData({...formData, nombre: e.target.value})}
-                   className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
+                   className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
                 />
              </div>
 
              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Documento de Identidad</label>
+                <label className="text-[10px] text-text/55 font-bold uppercase tracking-wider pl-1">Documento de Identidad</label>
                 <input 
                    type="text" 
                    placeholder="CC / Pasaporte del visitante" 
                    value={formData.documento}
                    onChange={e => setFormData({...formData, documento: e.target.value})}
-                   className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
+                   className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all" 
                 />
              </div>
 
              <div className="flex gap-4">
                 <div className="flex-1 flex flex-col gap-1.5">
-                   <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Tipo de Ingreso</label>
+                   <label className="text-[10px] text-text/55 font-bold uppercase tracking-wider pl-1">Tipo de Ingreso</label>
                    <select 
                       value={formData.tipo}
                       onChange={e => setFormData({...formData, tipo: e.target.value, vehiculoTipo: e.target.value === 'PEATONAL' ? 'NINGUNO' : formData.vehiculoTipo})}
-                      className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all"
+                      className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent transition-all"
                    >
                       <option value="PEATONAL" className="bg-primary text-text">Peatonal</option>
                       <option value="VEHICULAR" className="bg-primary text-text">Vehicular</option>
@@ -207,20 +210,25 @@ export default function ControlVisitas() {
                 </div>
                 {formData.tipo === 'VEHICULAR' && (
                   <div className="flex-1 flex flex-col gap-1.5">
-                     <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Placa</label>
+                     <label className="text-[10px] text-text/55 font-bold uppercase tracking-wider pl-1">Placa</label>
                      <input 
                         required
                         type="text" 
                         placeholder="ABC-123" 
                         value={formData.placa}
                         onChange={e => setFormData({...formData, placa: e.target.value.toUpperCase()})}
-                        className="w-full bg-primary-light/50 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent uppercase transition-all" 
+                        className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent uppercase transition-all" 
                      />
                   </div>
                 )}
              </div>
 
-             <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-accent hover:bg-accent/80 transition-colors rounded-2xl font-bold text-primary shadow-[0_0_20px_rgba(0,0,0,0.3)] flex justify-center items-center gap-2">
+             <button
+                type="submit"
+                disabled={isSubmitting}
+                style={{ backgroundColor: '#009df2' }}
+                className="mt-2 w-full py-4 rounded-2xl font-bold text-white shadow-md hover:opacity-90 active:scale-98 disabled:opacity-60 transition-all flex justify-center items-center gap-2"
+             >
                 {isSubmitting ? "Registrando..." : <><PlusCircle size={18}/> Registrar Ingreso</>}
              </button>
           </form>
@@ -228,26 +236,38 @@ export default function ControlVisitas() {
 
        {/* Bitácora de Hoy */}
        <div className="flex flex-col gap-4">
-          <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2"><Eye size={16} className="text-accent"/> Bitácora Reciente</h3>
-          {visitas.length === 0 && <p className="text-text text-sm text-center py-6">No hay visitas registradas hoy.</p>}
+          <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2">
+            <Eye size={16} style={{ color: '#3b82f6' }} /> Bitácora Reciente
+          </h3>
+          {visitas.length === 0 && (
+            <div className="bg-primary-light rounded-3xl p-8 border border-border shadow-sm text-center">
+              <p className="text-text font-medium text-sm">Sin visitas hoy</p>
+              <p className="text-xs text-text/55 mt-1">Los ingresos registrados aparecerán aquí.</p>
+            </div>
+          )}
           {visitas.map((v, i) => (
-             <div key={i} className="liquid-glass p-4 rounded-3xl border border-border/50 flex flex-col gap-3">
+             <div key={i} className="bg-primary-light p-4 rounded-3xl border border-border shadow-sm flex flex-col gap-3">
                 <div className="flex justify-between items-start">
                    <div>
                      <p className="text-text font-bold">{v.nombre}{v.documento ? <span className="text-text/50 text-xs ml-2 font-mono">{v.documento}</span> : null}</p>
                      <p className="text-text text-xs">Visita a: {v.residente?.torre} - {v.residente?.apto}</p>
                    </div>
                    <div className="flex items-center gap-2">
-                     {v.estado === 'PENDIENTE' && <span className="bg-amber-500/15 text-amber-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30">PENDIENTE</span>}
-                     {v.estado === 'APROBADA' && <span className="bg-emerald-500/15 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">APROBADA</span>}
-                     {v.estado === 'RECHAZADA' && <span className="bg-red-500/15 text-red-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-red-500/30">RECHAZADA</span>}
+                     {v.estado === 'PENDIENTE' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f59e0b26', color: '#b45309' }}>PENDIENTE</span>}
+                     {v.estado === 'APROBADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#10b98126', color: '#047857' }}>APROBADA</span>}
+                     {v.estado === 'RECHAZADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ef444426', color: '#b91c1c' }}>RECHAZADA</span>}
                      <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
                       {(() => { const d = new Date(v.createdAt || v.fecha); return isNaN(d.getTime()) ? '--:--' : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); })()}
                      </div>
                    </div>
                 </div>
-                <div className="flex bg-surface/50 p-2 rounded-xl gap-4 items-center border border-border/30">
-                   <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${v.tipo === 'VEHICULAR' ? 'text-text' : 'text-accent'}`}>
+                <div className="flex bg-surface-2 p-2 rounded-xl gap-4 items-center border border-border/40">
+                   {/* text-text and text-accent are both #000 in light mode, so the two
+                       entry types used to look identical — give each its own hue. */}
+                   <div
+                     className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
+                     style={{ color: v.tipo === 'VEHICULAR' ? '#8b5cf6' : '#3b82f6' }}
+                   >
                       {v.tipo === 'VEHICULAR' ? <Car size={14}/> : <Users size={14}/>} {v.tipo}
                    </div>
                    {v.placa && <div className="text-xs text-text bg-text/5 px-2 py-0.5 rounded border border-border font-mono tracking-widest">{v.placa}</div>}

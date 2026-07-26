@@ -361,7 +361,7 @@ export default function CitofoniaPage() {
       )}
 
       {/* COMPACT DASHBOARD HEADER */}
-      <section className="w-full liquid-glass-card rounded-[32px] p-5 border border-border flex flex-col gap-4">
+      <section className="w-full bg-primary-light shadow-sm rounded-[32px] p-5 border border-border flex flex-col gap-4">
          <div className="flex justify-between items-center px-2">
             <h2 className="text-xl font-display font-bold text-text tracking-tight">Centro de Control</h2>
             <div className="flex gap-2">
@@ -396,7 +396,7 @@ export default function CitofoniaPage() {
               <button 
                 key={t.id}
                 onClick={() => setActiveTab(t.id as Tab)}
-                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-text/10 text-text border border-border shadow-lg' : 'text-text hover:text-text'}`}
+                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-[#009df2] text-white shadow-md' : 'text-text/60 hover:text-text'}`}
               >
                 <t.icon size={16} strokeWidth={activeTab === t.id ? 2.5 : 1.5} />
                 <span className="text-[9px] font-bold uppercase tracking-wider">{t.label}</span>
@@ -411,7 +411,7 @@ export default function CitofoniaPage() {
           <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-500">
              {/* SEARCH RESIDENTS — oculto para huéspedes */}
              {!isGuest && (
-             <div className="liquid-glass-card rounded-[28px] p-4 border border-border text-text">
+             <div className="bg-primary-light shadow-sm rounded-[28px] p-4 border border-border text-text">
                 <div className="flex items-center gap-2 bg-text/5 rounded-2xl px-4 py-3 border border-border">
                    <Search size={18} className="text-text/50" />
                    <input
@@ -442,7 +442,10 @@ export default function CitofoniaPage() {
                                {u.apto ? `${u.torre ? `${u.torre}-` : ""}${u.apto} · ` : ""}N° {u.numeroInterno}
                              </span>
                           </div>
-                          <span className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center text-accent shrink-0">
+                          <span
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: '#57bf001a', color: '#57bf00' }}
+                          >
                              <Phone size={16} />
                           </span>
                         </button>
@@ -457,35 +460,50 @@ export default function CitofoniaPage() {
 
              {/* QUICK CONTACTS */}
              <div className="grid grid-cols-2 gap-4 text-text">
-                <button 
+                <button
                   onClick={() => { setDialNum("P"); handleCall("P"); }}
-                  className="p-6 rounded-[28px] bg-primary-light border border-border flex flex-col items-center gap-3 active:scale-95 transition-transform cursor-pointer"
+                  className="p-5 rounded-[28px] bg-primary-light border border-border shadow-sm hover:shadow-md flex flex-col items-center gap-3 active:scale-95 transition-all cursor-pointer"
                 >
-                   <ShieldCheck size={28} className="text-accent" />
-                   <span className="text-xs font-bold">Portería Principal</span>
+                   <span
+                     className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                     style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+                   >
+                     <ShieldCheck size={24} />
+                   </span>
+                   <span className="text-xs font-bold text-center leading-tight">Portería Principal</span>
                 </button>
                 {isGuest ? (
-                <button 
+                <button
                   onClick={() => { setDialNum("E"); handleCall("E"); }}
-                  className="p-6 rounded-[28px] bg-primary-light border border-border flex flex-col items-center gap-3 active:scale-95 transition-transform cursor-pointer"
+                  className="p-5 rounded-[28px] bg-primary-light border border-border shadow-sm hover:shadow-md flex flex-col items-center gap-3 active:scale-95 transition-all cursor-pointer"
                 >
-                   <Car size={28} className="text-secondary" />
-                   <span className="text-xs font-bold">Estacionamientos</span>
+                   <span
+                     className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                     style={{ backgroundColor: '#8b5cf61a', color: '#8b5cf6' }}
+                   >
+                     <Car size={24} />
+                   </span>
+                   <span className="text-xs font-bold text-center leading-tight">Estacionamientos</span>
                 </button>
                 ) : (
-                <button 
+                <button
                   onClick={() => { setDialNum("A"); handleCall("A"); }}
-                  className="p-6 rounded-[28px] bg-primary-light border border-border flex flex-col items-center gap-3 active:scale-95 transition-transform cursor-pointer"
+                  className="p-5 rounded-[28px] bg-primary-light border border-border shadow-sm hover:shadow-md flex flex-col items-center gap-3 active:scale-95 transition-all cursor-pointer"
                 >
-                   <Users size={28} className="text-secondary" />
-                   <span className="text-xs font-bold">Administración</span>
+                   <span
+                     className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                     style={{ backgroundColor: '#8b5cf61a', color: '#8b5cf6' }}
+                   >
+                     <Users size={24} />
+                   </span>
+                   <span className="text-xs font-bold text-center leading-tight">Administración</span>
                 </button>
                 )}
              </div>
 
              {/* NUMERIC DIALER — oculto para huéspedes */}
              {!isGuest && (
-             <div className="liquid-glass-card rounded-[40px] p-8 border border-border flex flex-col items-center gap-8 relative overflow-hidden">
+             <div className="bg-primary-light shadow-sm rounded-[40px] p-8 border border-border flex flex-col items-center gap-8 relative overflow-hidden">
                 <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-transparent via-accent to-transparent opacity-30" />
                 
                 <div className="w-full flex flex-col items-center gap-2">
@@ -538,18 +556,28 @@ export default function CitofoniaPage() {
            <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-500">
               {/* PARKING STATUS */}
               <div className="grid grid-cols-2 gap-3">
-                 <div className="liquid-glass-card rounded-[24px] p-4 border border-border flex flex-col">
-                    <span className="text-text text-[9px] font-black uppercase tracking-widest mb-1">Cupos Carros</span>
-                    <div className="flex items-center gap-2">
-                       <Car size={16} className="text-accent" />
-                       <span className="text-lg font-display font-bold text-text">{parking.carros} Disponibles</span>
+                 <div className="bg-primary-light rounded-[24px] p-4 border border-border shadow-sm flex flex-col min-w-0">
+                    <span className="text-text/55 text-[9px] font-bold uppercase tracking-wider mb-2">Cupos Carros</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                       <span
+                         className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center"
+                         style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+                       >
+                         <Car size={16} />
+                       </span>
+                       <span className="text-base font-display font-bold text-text truncate">{parking.carros} Disponibles</span>
                     </div>
                  </div>
-                 <div className="liquid-glass-card rounded-[24px] p-4 border border-border flex flex-col">
-                    <span className="text-text text-[9px] font-black uppercase tracking-widest mb-1">Cupos Motos</span>
-                    <div className="flex items-center gap-2">
-                       <Bike size={16} className="text-secondary" />
-                       <span className="text-lg font-display font-bold text-text">{parking.motos} Disponibles</span>
+                 <div className="bg-primary-light rounded-[24px] p-4 border border-border shadow-sm flex flex-col min-w-0">
+                    <span className="text-text/55 text-[9px] font-bold uppercase tracking-wider mb-2">Cupos Motos</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                       <span
+                         className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center"
+                         style={{ backgroundColor: '#8b5cf61a', color: '#8b5cf6' }}
+                       >
+                         <Bike size={16} />
+                       </span>
+                       <span className="text-base font-display font-bold text-text truncate">{parking.motos} Disponibles</span>
                     </div>
                  </div>
               </div>
@@ -573,7 +601,7 @@ export default function CitofoniaPage() {
                       <p className="text-[10px] font-bold mt-2">No has programado visitas aún</p>
                    </div>
                  ) : visitas.map((v) => (
-                   <div key={v.id} className="liquid-glass-card rounded-3xl p-4 border border-border flex items-center justify-between">
+                   <div key={v.id} className="bg-primary-light shadow-sm rounded-3xl p-4 border border-border flex items-center justify-between">
                       <div className="flex items-center gap-4">
                          <div className="w-12 h-12 rounded-2xl bg-text/5 flex items-center justify-center border border-border">
                             {v.tipo === "VEHICULAR" ? <Car size={20} className="text-text" /> : <Users size={20} className="text-text" />}
@@ -614,7 +642,7 @@ export default function CitofoniaPage() {
                      <p className="text-[10px] uppercase tracking-widest mt-1">Todo está entregado</p>
                   </div>
                 ) : paquetes.map((p) => (
-                  <div key={p.id} className="liquid-glass-card rounded-[32px] p-5 border border-border flex flex-col gap-4">
+                  <div key={p.id} className="bg-primary-light shadow-sm rounded-[32px] p-5 border border-border flex flex-col gap-4">
                      <div className="flex justify-between items-start">
                         <div className="flex flex-col">
                            <span className="text-text font-bold text-base">{p.descripcion}</span>

@@ -140,20 +140,23 @@ export default function PaqueteriaPage() {
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <ProfileHeader />
 
-      <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
+      <div className="bg-primary-light rounded-3xl p-6 border border-border shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-text/20 border border-text/30 flex items-center justify-center text-text">
-            <ScanLine size={24} />
+          <div
+            className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
+            style={{ backgroundColor: '#f973161a', color: '#f97316' }}
+          >
+            <ScanLine size={22} />
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-text">Recepción de Envíos</h2>
-            <p className="text-xs text-text">Mensajería y domicilios</p>
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-text leading-tight">Recepción de Envíos</h2>
+            <p className="text-[11px] text-text/55 mt-0.5">Mensajería y domicilios</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Destinatario</label>
+            <label className="text-[10px] text-text/55 font-bold uppercase tracking-wider pl-1">Destinatario</label>
             <select
               value={formData.usuarioId}
               onChange={e => setFormData({ ...formData, usuarioId: e.target.value })}
@@ -167,7 +170,7 @@ export default function PaqueteriaPage() {
           </div>
           <div className="flex gap-4">
             <div className="flex-1 flex flex-col gap-1.5">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Empresa / Remitente</label>
+              <label className="text-[10px] text-text/55 font-bold uppercase tracking-wider pl-1">Empresa / Remitente</label>
               <input
                 required
                 type="text"
@@ -179,7 +182,7 @@ export default function PaqueteriaPage() {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Descripción Rápida</label>
+            <label className="text-[10px] text-text/55 font-bold uppercase tracking-wider pl-1">Descripción Rápida</label>
             <input
               required
               type="text"
@@ -215,25 +218,25 @@ export default function PaqueteriaPage() {
       {activeTab === "pendientes" ? (
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center ml-2">
-            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><Clock size={16} className="text-text" /> Inventario Portería</h3>
+            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><Clock size={16} style={{ color: "#f97316" }} /> Inventario Portería</h3>
             <span className="bg-surface-2 text-text text-[10px] px-2 py-0.5 rounded-full font-bold">{paquetes.length} ÍTEMS</span>
           </div>
 
-          {paquetes.length === 0 && <p className="text-text text-sm text-center py-6">Portería libre de paquetes.</p>}
+          {paquetes.length === 0 && <div className="bg-primary-light rounded-3xl p-8 border border-border shadow-sm text-center"><p className="text-text font-medium text-sm">Portería libre de paquetes</p><p className="text-xs text-text/55 mt-1">Los envíos recibidos aparecerán aquí.</p></div>}
 
           {paquetes.map((p) => (
-            <div key={p.id} className="liquid-glass-card p-5 rounded-3xl border border-border flex flex-col gap-4 relative overflow-hidden">
+            <div key={p.id} className="bg-primary-light shadow-sm p-5 rounded-3xl border border-border flex flex-col gap-4 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-text/10 rounded-full blur-2xl pointer-events-none translate-x-1/2 -translate-y-1/2" />
               <div className="flex justify-between items-start relative z-10">
                 <div>
                   <p className="text-text font-bold text-lg leading-tight">{p.descripcion}</p>
-                  <p className="text-text font-bold text-[10px] tracking-widest uppercase">{p.remitente}</p>
+                  <p className="text-text/55 font-bold text-[10px] tracking-wider uppercase mt-0.5">{p.remitente}</p>
                 </div>
                 <div className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
                   Hace {Math.floor((new Date().getTime() - new Date(p.fechaLlegada).getTime()) / 60000)} min
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-text text-xs font-semibold relative z-10">
+              <div className="flex items-center gap-2 text-text/70 text-xs font-semibold relative z-10">
                 <MapPin size={14} /> {p.residente?.torre} - Apto {p.residente?.apto} ({p.residente?.nombre})
               </div>
               <button onClick={() => markAsDelivered(p.id)} className="w-full mt-2 py-3 bg-surface-2 border border-border hover:bg-text/10 hover:border-text/40 hover:text-text transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest relative z-10 text-text">
@@ -245,24 +248,24 @@ export default function PaqueteriaPage() {
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center ml-2">
-            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><History size={16} className="text-text" /> Entregados</h3>
+            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><History size={16} style={{ color: "#10b981" }} /> Entregados</h3>
             <span className="bg-surface-2 text-text text-[10px] px-2 py-0.5 rounded-full font-bold">{entregados.length} ÍTEMS</span>
           </div>
 
-          {entregados.length === 0 && <p className="text-text text-sm text-center py-6">Sin historial de entregas.</p>}
+          {entregados.length === 0 && <div className="bg-primary-light rounded-3xl p-8 border border-border shadow-sm text-center"><p className="text-text font-medium text-sm">Sin historial de entregas</p><p className="text-xs text-text/55 mt-1">Los paquetes entregados quedarán registrados aquí.</p></div>}
 
           {entregados.map((p) => (
-            <div key={p.id} className="liquid-glass-card p-5 rounded-3xl border border-border flex flex-col gap-3 relative overflow-hidden opacity-70">
+            <div key={p.id} className="bg-primary-light shadow-sm p-5 rounded-3xl border border-border flex flex-col gap-3 relative overflow-hidden opacity-70">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-text font-bold text-lg leading-tight">{p.descripcion}</p>
-                  <p className="text-text font-bold text-[10px] tracking-widest uppercase">{p.remitente}</p>
+                  <p className="text-text/55 font-bold text-[10px] tracking-wider uppercase mt-0.5">{p.remitente}</p>
                 </div>
                 <div className="bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20 text-[10px] font-bold text-green-500 flex items-center gap-1">
                   <CheckCircle2 size={12} /> Entregado
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-text text-xs font-semibold">
+              <div className="flex items-center gap-2 text-text/70 text-xs font-semibold">
                 <MapPin size={14} /> {p.residente?.torre} - Apto {p.residente?.apto} ({p.residente?.nombre})
               </div>
               {p.entregadoEn && (
