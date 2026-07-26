@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, bootstrapAuth } from '@/hooks/useAuth';
 
 /**
  * Checks the session on mount by calling GET /auth/me.
@@ -12,6 +12,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = useAuth((s) => s.checkAuth);
 
   useEffect(() => {
+    bootstrapAuth();
     checkAuth();
   }, [checkAuth]);
 

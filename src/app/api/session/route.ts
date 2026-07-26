@@ -42,6 +42,27 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
   const res = NextResponse.json({ ok: true });
-  res.cookies.set('ec_session', '', { ...COOKIE_OPTIONS, maxAge: 0 });
+
+  // IMPORTANT: res.cookies.set() is backed by a Map keyed by cookie name —
+  // calling it twice with 'ec_session' silently overwrites the first entry,
+  // so the browser only receives ONE Set-Cookie header.  We need TWO to
+  // clear both the frontend-origin host-only cookie AND the backend's
+  // domain-scoped cookie (Domain=.conjuntos.app).  Use raw headers to
+  // avoid the Map deduplication.
+  const attrs = [
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    COOKIE_OPTIONS.secure ? 'Secure' : '',
+    'Max-Age=0',
+  ]
+    .filter(Boolean)
+    .join('; ');
+
+  // 1. Clear host-only cookie on frontend origin (no Domain attribute)
+  res.headers.append('Set-Cookie', `ec_session=; ${attrs}`);
+  // 2. Clear domain cookie on .conjuntos.app (set by the Rust backend)
+  res.headers.append('Set-Cookie', `ec_session=; ${attrs}; Domain=.conjuntos.app`);
+
   return res;
 }

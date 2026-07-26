@@ -3,22 +3,24 @@
  * All fetch calls go through here for consistent error handling,
  * auth headers, and base URL management.
  *
- * In development the Next.js rewrite proxies /api/v1/* to the Rust server,
- * so API_BASE can stay empty.  In production it should point to the API host.
+ * Requests go straight to NEXT_PUBLIC_API_URL in every environment.
  */
 
 /**
- * In development all calls go through the Next.js rewrite proxy
- * (`/api/v1/*` → API host, see next.config.ts) so requests stay same-origin.
- * The real API sets its session cookie with `Domain=conjuntos.app`, which a
- * localhost browser rejects — same-origin + the /api/session cookie bridge
- * keep auth working against the production API. In production the client
- * talks to the API host directly.
+ * Every environment talks to the API host directly — no rewrite proxy.
+ * The host comes from NEXT_PUBLIC_API_URL (.env) with no fallback on purpose:
+ * a missing var should fail loudly here, not silently proxy to production.
+ *
+ * Consequence of going cross-origin in dev: the backend's own Set-Cookie is
+ * `Domain=conjuntos.app` and is not stored for localhost, so requests carry
+ * only the in-memory Bearer token. It does not survive a reload — see the
+ * `/api/session` bridge, which keeps the middleware's cookie working.
  */
-const API_BASE =
-  process.env.NODE_ENV === 'production'
-    ? process.env.NEXT_PUBLIC_API_URL || 'https://api.conjuntos.app'
-    : '';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE) {
+  throw new Error('NEXT_PUBLIC_API_URL is not set — add it to .env');
+}
 
 /**
  * In-memory Bearer token (same-session fallback for when the httpOnly `ec_session`
@@ -34,6 +36,21 @@ export function setAuthToken(token: string | null): void {
 
 export function getAuthToken(): string | null {
   return authToken;
+}
+
+// ---------------------------------------------------------------------------
+// Global 401 handler — invoked by the API client when any request (except
+// login) returns 401. Registered by useAuth to clear state and redirect.
+// ---------------------------------------------------------------------------
+let onUnauthorized: (() => void) | null = null;
+let _loggingOut = false;
+
+export function setOnUnauthorized(fn: (() => void) | null): void {
+  onUnauthorized = fn;
+}
+
+export function setLoggingOut(v: boolean): void {
+  _loggingOut = v;
 }
 
 export class ApiError extends Error {
@@ -108,6 +125,15 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!response.ok) {
+    if (
+      response.status === 401 &&
+      !_loggingOut &&
+      path !== '/auth/login' &&
+      path !== '/auth/logout' &&
+      path !== '/auth/me'
+    ) {
+      onUnauthorized?.();
+    }
     const contentType = response.headers.get('content-type') || '';
     if (
       contentType.includes('application/problem+json') ||

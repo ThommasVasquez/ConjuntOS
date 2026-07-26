@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { api, ApiError, setAuthToken } from '@/lib/api/client';
+import { api, ApiError, setAuthToken, setOnUnauthorized, setLoggingOut } from '@/lib/api/client';
 import type { UserDto, LoginResponse } from '@/lib/api/types';
 
 /**
@@ -26,10 +26,32 @@ async function syncSessionCookie(token: string | null): Promise<void> {
   }
 }
 
+/**
+ * Wipe every client-side trace of the session: in-memory Bearer token,
+ * the frontend-origin cookie, and all Web Storage. Storage is cleared
+ * wholesale (not key-by-key) so nothing personal survives a logout.
+ * ponytail: this also resets theme/cookie-consent — device prefs, not PII.
+ */
+async function clearClientSession(): Promise<void> {
+  if (typeof window !== 'undefined') {
+    localStorage.clear();
+    sessionStorage.clear();
+  }
+  setAuthToken(null);
+  await syncSessionCookie(null);
+}
+
 interface AuthState {
   user: UserDto | null;
   loading: boolean;
   error: string | null;
+  /**
+   * Set when /auth/me failed for a non-auth reason (offline, DNS, 5xx/530).
+   * The session may well still be valid, so we must NOT log the user out —
+   * but every page gates its fetches on `user`, so callers need to render an
+   * offline state instead of spinning forever.
+   */
+  authOffline: boolean;
 
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -41,6 +63,7 @@ export const useAuth = create<AuthState>((set) => ({
   user: null,
   loading: true,
   error: null,
+  authOffline: false,
 
   login: async (email: string, password: string) => {
     set({ loading: true, error: null });
@@ -71,32 +94,40 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch {
-      // Ignore errors on logout — clear local state regardless
-    }
-    setAuthToken(null);
-    await syncSessionCookie(null);
-    if (typeof window !== 'undefined') {
-      // Clear any token persisted by a previous app version.
-      localStorage.removeItem('ec_token');
-      // Clear cached profile PII (pic/data, keyed by user id) for every user on
-      // this device so logout doesn't leave personal data behind.
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('conjuntos_profile_')) localStorage.removeItem(key);
-      }
-    }
+    setLoggingOut(true);
+    // No /auth/logout call: the backend session is a stateless JWT and its
+    // handler only emits a cookie removal, which /api/session DELETE already
+    // does for both the host-only and .conjuntos.app cookies.
+    await clearClientSession();
     set({ user: null, loading: false });
+    if (typeof window !== 'undefined') {
+      // Hard nav (not router.push) so no stale component refetches with a
+      // dead token and trips the 401 handler.
+      window.location.href = '/login';
+    }
   },
 
   checkAuth: async () => {
     try {
       const user = await api.get<UserDto>('/auth/me');
-      set({ user, loading: false });
-    } catch {
-      set({ user: null, loading: false });
+      set({ user, loading: false, authOffline: false });
+    } catch (err) {
+      // 401/403 = no token or expired one. The ec_session cookie is still on
+      // the browser, so middleware would keep waving us into protected pages
+      // that then hang on `if (user)`. Clear it and bounce to /login.
+      // /auth/me is excluded from the global 401 handler (it would loop), so
+      // this is the one place that decision gets made.
+      const isAuthFailure =
+        err instanceof ApiError && (err.status === 401 || err.status === 403);
+
+      set({ user: null, loading: false, authOffline: !isAuthFailure });
+
+      if (isAuthFailure && typeof window !== 'undefined') {
+        await clearClientSession();
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
     }
   },
 
@@ -111,3 +142,19 @@ export const useAuth = create<AuthState>((set) => ({
     set({ user: res.user });
   },
 }));
+
+/**
+ * Register the global 401 handler so that any expired/invalid session is
+ * cleared automatically and the user is redirected to /login.
+ * Call once from AuthProvider (or any top-level component).
+ */
+export function bootstrapAuth(): void {
+  setOnUnauthorized(() => {
+    void clearClientSession();
+    useAuth.setState({ user: null, loading: false });
+    // Avoid redirect loop if already on /login
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+  });
+}

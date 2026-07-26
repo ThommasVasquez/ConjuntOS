@@ -106,8 +106,7 @@ export default function TopBar() {
                   <button onClick={async () => {
                     setDropdownOpen(false);
                     await logout();
-                    router.push("/login");
-                    toast.success("¡Hasta pronto!");
+                    window.location.href = "/login";
                   }} className="w-full text-left px-4 py-3 text-sm text-text hover:bg-text/10 transition-colors flex items-center gap-2">
                     <LogOut size={14} /> Cerrar Sesión
                   </button>

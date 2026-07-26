@@ -44,20 +44,9 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'https://api.conjuntos.app';
-    return [
-      {
-        source: '/api/v1/ws',
-        destination: `${apiUrl}/api/v1/ws`,
-      },
-      {
-        source: '/api/v1/:path*',
-        destination: `${apiUrl}/api/v1/:path*`,
-      },
-    ];
-  },
+  // No /api/v1 rewrite proxy: the client talks to NEXT_PUBLIC_API_URL directly
+  // in every environment. The backend CORS allowlist must include the frontend
+  // origin (http://localhost:3000 for dev) — see cors_layer in backend/api/src/lib.rs.
 };
 
 export default nextConfig;
