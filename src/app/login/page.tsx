@@ -11,7 +11,8 @@ import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import { useTheme } from "@/components/providers/ThemeContext";
-import { Mail, Lock, ArrowRight, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, ArrowRight, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 // Validate a post-login redirect target: only same-origin relative paths.
 // Rejects protocol-relative ("//evil.com"), absolute URLs ("http://…") and backslash tricks.
@@ -179,7 +180,7 @@ export default function LoginPage() {
                className="w-full bg-linear-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-600/30 group cursor-pointer"
              >
                 {isLoading ? (
-                  <Loader2 className="animate-spin" size={22} />
+                  <Skeleton className="w-6 h-6 rounded-full" />
                 ) : (
                   <>
                     <span>Entrar al Sistema</span>

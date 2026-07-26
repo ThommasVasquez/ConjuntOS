@@ -1042,7 +1042,7 @@ function PostingForm({ onSuccess, editItem }: { onSuccess: () => void; editItem?
         className="w-full h-16 rounded-2xl bg-accent text-primary font-bold shadow-xl shadow-accent/20 flex items-center justify-center gap-3 active:scale-95 transition-transform"
        >
          {isSubmitting ? (
-           <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+           <div className="w-6 h-6 rounded-full bg-text/10 animate-pulse" />
          ) : (
            <>
              <CheckCircle2 size={20} />

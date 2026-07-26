@@ -161,8 +161,8 @@ export default function MapaParqueaderoPage() {
 
   useEffect(() => {
     if (!loading) {
-      gsap.fromTo(".fade-up", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, stagger: 0.05, duration: 0.4 });
-    }
+      
+}
   }, [loading]);
 
   async function loadExtra() {
@@ -368,13 +368,13 @@ export default function MapaParqueaderoPage() {
     }
   };
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-text/25 border-t-accent rounded-full animate-spin" /></div>;
+  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-text/10 animate-pulse" /></div>;
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
        <ProfileHeader />
        
-       <section className="fade-up liquid-glass rounded-3xl p-5 border border-border/40 shadow-xl flex items-center justify-between mb-2">
+       <section className="liquid-glass rounded-3xl p-5 border border-border/40 shadow-xl flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors ${lastRound ? 'bg-text/10 border-text/30 text-text dark:text-text' : 'bg-text/10 border-text/30 text-text dark:text-text animate-pulse'}`}>
                 {lastRound ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
@@ -396,7 +396,7 @@ export default function MapaParqueaderoPage() {
 
        {/* RESERVAS DE CUPO DE VISITANTE PRÓXIMAS */}
        {reservasProximas.length > 0 && (
-          <section className="fade-up liquid-glass rounded-3xl p-5 border border-accent/30 shadow-xl flex flex-col gap-3">
+          <section className="liquid-glass rounded-3xl p-5 border border-accent/30 shadow-xl flex flex-col gap-3">
              <div className="flex items-center gap-2">
                 <CalendarClock size={18} className="text-accent" />
                 <h3 className="text-text font-bold text-sm">Reservas de visitante próximas</h3>
@@ -573,7 +573,7 @@ export default function MapaParqueaderoPage() {
              const leftCells = celdasDelNivel.slice(0, mid);
              const rightCells = celdasDelNivel.slice(mid);
              return (
-                <div className="fade-up relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+                <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
                      style={{ background: 'repeating-linear-gradient(45deg, #0d0d0d 0 6px, #121212 6px 12px)' }}>
                    {/* Marca de agua "P" */}
                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
@@ -614,7 +614,7 @@ export default function MapaParqueaderoPage() {
           })()}
        </div>
 
-       <section className="fade-up flex flex-col gap-4 mt-2">
+       <section className="flex flex-col gap-4 mt-2">
           <div className="flex justify-between items-center px-2">
              <h3 className="text-text font-display font-medium text-lg tracking-wide flex items-center gap-2"><History size={18} className="text-text"/> Mi Actividad</h3>
              <span className="text-[10px] text-text font-bold uppercase tracking-widest">Últimos 50</span>

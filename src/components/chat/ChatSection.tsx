@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
-import { Send, Loader2, Image, Camera, Paperclip, Mic, X, Play, Pause } from "lucide-react";
+import { Send, Image, Camera, Paperclip, Mic, X, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 /**
  * Only allow http(s) URLs from message content. A crafted attachment could set
@@ -369,7 +370,7 @@ export default function ChatSection({ compact = false, huespedId }: ChatSectionP
       >
         {loading || !user ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 size={20} className="animate-spin text-accent" />
+            <Skeleton className="w-5 h-5 rounded-full" />
           </div>
         ) : messages.length === 0 ? (
           <p className="text-text-secondary text-center text-sm mt-8">
@@ -430,7 +431,7 @@ export default function ChatSection({ compact = false, huespedId }: ChatSectionP
             className="text-text/50 hover:text-accent transition-colors p-2 disabled:opacity-30"
             aria-label="Galería de fotos"
           >
-            {uploading ? <Loader2 size={22} className="animate-spin" /> : <Image size={22} />}
+            {uploading ? <Skeleton className="w-6 h-6 rounded-full" /> : <Image size={22} />}
           </button>
           <button
             type="button"
@@ -486,7 +487,7 @@ export default function ChatSection({ compact = false, huespedId }: ChatSectionP
               disabled={sending || !input.trim() || uploading}
               className="bg-accent text-on-accent rounded-full p-2.5 disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
-              {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+              {sending ? <Skeleton className="w-5 h-5 rounded-full" /> : <Send size={18} />}
             </button>
           </div>
         </form>

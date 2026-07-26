@@ -10,6 +10,7 @@ import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { CorrespondenciaDto } from "@/lib/api/types";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 interface ResidenteDirectorio {
   id: string;
@@ -91,8 +92,8 @@ export default function CorrespondenciaPage() {
 
   useEffect(() => {
     if (!loading) {
-      gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
-    }
+      
+}
   }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -140,13 +141,13 @@ export default function CorrespondenciaPage() {
   };
   const esRecibo = (tipo: string) => ['ENERGIA', 'AGUA', 'GAS'].includes(tipo);
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
+  if(loading) return <div className="min-h-screen flex items-center justify-center"><SkeletonRows /></div>;
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
        <ProfileHeader />
        
-       <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
+       <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
              <div className="w-12 h-12 rounded-2xl bg-text/20 border border-text/30 flex items-center justify-center text-text">
                 <Mail size={24} />
@@ -219,7 +220,7 @@ export default function CorrespondenciaPage() {
        </div>
 
        {/* Inventario Portería */}
-       <div className="fade-up flex flex-col gap-4">
+       <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center ml-2">
              <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><Clock size={16} className="text-text"/> Inventario Portería</h3>
              <span className="bg-surface-2 text-text text-[10px] px-2 py-0.5 rounded-full font-bold">{items.length} ÍTEMS</span>

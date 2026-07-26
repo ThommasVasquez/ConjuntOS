@@ -71,8 +71,8 @@ export default function BitacoraParqueaderoPage() {
 
   useEffect(() => {
     if (!loading) {
-      gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.05, duration: 0.4 });
-    }
+      
+}
   }, [loading]);
 
   async function loadLog() {
@@ -105,7 +105,7 @@ export default function BitacoraParqueaderoPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-text/25 border-t-accent rounded-full animate-spin" />
+        <div className="w-8 h-8 rounded-full bg-text/10 animate-pulse" />
       </div>
     );
   }
@@ -114,7 +114,7 @@ export default function BitacoraParqueaderoPage() {
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <ProfileHeader />
 
-      <div className="fade-up flex items-center gap-3 mb-1">
+      <div className="flex items-center gap-3 mb-1">
         <div className="w-12 h-12 rounded-2xl bg-accent/15 border border-accent/40 flex items-center justify-center text-accent">
           <ScrollText size={24} />
         </div>
@@ -127,7 +127,7 @@ export default function BitacoraParqueaderoPage() {
       </div>
 
       {/* Aviso de inmutabilidad */}
-      <div className="fade-up liquid-glass rounded-2xl p-4 border border-border/40 flex items-start gap-3">
+      <div className="liquid-glass rounded-2xl p-4 border border-border/40 flex items-start gap-3">
         <ShieldAlert size={18} className="text-[#FACC15] shrink-0 mt-0.5" />
         <p className="text-xs text-text/80 leading-relaxed">
           Toda solicitud sobre celdas <strong>asignadas a residentes</strong> requiere tu aprobación.
@@ -137,7 +137,7 @@ export default function BitacoraParqueaderoPage() {
       </div>
 
       {/* Filtros */}
-      <div className="fade-up flex items-center gap-2">
+      <div className="flex items-center gap-2">
         {([
           { v: "PENDIENTE", label: `Pendientes${pendientes ? ` (${pendientes})` : ""}` },
           { v: "TODOS", label: "Historial completo" },
@@ -171,7 +171,7 @@ export default function BitacoraParqueaderoPage() {
           const est = ESTADO_STYLE[s.estado] || ESTADO_STYLE.EJECUTADA;
           const fecha = new Date(s.creadoEn);
           return (
-            <div key={s.id} className="fade-up liquid-glass p-5 rounded-3xl border border-border/30 flex flex-col gap-4">
+            <div key={s.id} className="liquid-glass p-5 rounded-3xl border border-border/30 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2 flex-wrap">

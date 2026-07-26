@@ -5,7 +5,7 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import ImponerMulta from "@/components/multas/ImponerMulta";
 import {
   Heart, Users, Scale, AlertTriangle, Clock, CheckCircle2,
-  ChevronLeft, ChevronRight, RefreshCw, X, Loader2, ArrowUpDown,
+  ChevronLeft, ChevronRight, RefreshCw, X, ArrowUpDown,
   FileText, Calendar, MessageSquare, Plus, Search, Eye, Phone,
   Volume2, Dog, Wind, Car, Trash2, HardHat, Siren, MoreHorizontal,
   User, Building,
@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { Skeleton, SkeletonRows } from "@/components/ui/Skeleton";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -231,12 +232,8 @@ export default function ComiteConvivenciaPage() {
   useEffect(() => {
     if (!loading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(
-          ".fade-up",
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, stagger: 0.08, duration: 0.4, ease: "power2.out" }
-        );
-      }, containerRef);
+        
+}, containerRef);
       return () => ctx.revert();
     }
   }, [loading, tab]);
@@ -331,7 +328,7 @@ export default function ComiteConvivenciaPage() {
 
       <ImponerMulta />
 
-      <div className="fade-up rounded-[28px] bg-primary-light border border-border p-5 flex flex-col gap-5">
+      <div className="rounded-[28px] bg-primary-light border border-border p-5 flex flex-col gap-5">
         {/* Header */}
         <div className="flex items-start gap-3">
           <span className="w-12 h-12 shrink-0 rounded-2xl bg-[#009df2]/10 flex items-center justify-center">
@@ -404,7 +401,7 @@ export default function ComiteConvivenciaPage() {
               key={key}
               onClick={() => setTab(key)}
               className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap px-2 ${
-                tab === key ? "bg-accent text-primary shadow-md" : "text-text hover:text-text"
+                tab === key ? "bg-[#009df2] text-white shadow-md" : "text-text hover:text-text"
               }`}
             >
               {label}
@@ -446,10 +443,10 @@ export default function ComiteConvivenciaPage() {
       <div className="flex flex-col gap-4">
         {loading ? (
           <div className="w-full py-12 flex justify-center">
-            <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+            <SkeletonRows />
           </div>
         ) : filteredCasos.length === 0 ? (
-          <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+          <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
             <Heart size={40} className="mx-auto text-text/50 mb-3" />
             <p className="text-text font-medium">Sin casos registrados</p>
             <p className="text-xs text-text mt-1">No hay casos de convivencia en esta sección.</p>
@@ -465,7 +462,7 @@ export default function ComiteConvivenciaPage() {
                   setNuevoEstado(c.estado);
                   setNuevaResolucion(c.resolucion || "");
                 }}
-                className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer"
+                className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer"
               >
                 {/* Top row: type + status */}
                 <div className="flex justify-between items-start">
@@ -607,7 +604,7 @@ export default function ComiteConvivenciaPage() {
               disabled={isCreating}
               className="w-full py-3.5 rounded-full bg-accent text-primary font-bold text-sm hover:bg-accent/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isCreating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+              {isCreating ? <Skeleton className="w-4 h-4 rounded-full" /> : <Plus size={16} />}
               {isCreating ? "Creando..." : "Crear Caso"}
             </button>
           </div>
@@ -716,7 +713,7 @@ export default function ComiteConvivenciaPage() {
                 disabled={isProcessing}
                 className="w-full py-3 rounded-full bg-accent text-primary font-bold text-sm hover:bg-accent/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                {isProcessing ? <Skeleton className="w-4 h-4 rounded-full" /> : <CheckCircle2 size={16} />}
                 {isProcessing ? "Actualizando..." : "Guardar Cambios"}
               </button>
             </div>

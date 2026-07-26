@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { Scale, Send, Loader2 } from "lucide-react";
+import { Scale, Send } from "lucide-react";
 import { api, ApiError } from "@/lib/api/client";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface Turno { pregunta: string; respuesta: string }
 
@@ -70,7 +71,7 @@ export default function AsistentePage() {
         ))}
         {loading && (
           <div className="self-start liquid-glass border border-border rounded-2xl px-4 py-3 flex items-center gap-2 text-text/60 text-sm">
-            <Loader2 size={16} className="animate-spin" /> Consultando…
+            <Skeleton className="w-4 h-4 rounded-full" /> Consultando…
           </div>
         )}
       </div>

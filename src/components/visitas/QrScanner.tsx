@@ -65,7 +65,7 @@ export default function QrScanner() {
   }, []);
 
   return (
-    <div className="fade-up liquid-glass rounded-3xl p-6 border border-border flex flex-col gap-4">
+    <div className="liquid-glass rounded-3xl p-6 border border-border flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent">
           <ScanLine size={24} />

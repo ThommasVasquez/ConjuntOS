@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Phone, Users, X, Loader2, Building2 } from "lucide-react";
+import { Search, Phone, Users, X, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
 import { gsap } from "gsap";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useCall } from "@/components/providers/CallContext";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface DirectorioUser {
   id: string;
@@ -45,15 +46,11 @@ export default function DirectorioPage() {
     }
   }, [user, authLoading, role, router]);
 
-  // ── GSAP fade-up on mount ─────────────────────────────────
+  // ── GSAP on mount ─────────────────────────────────
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".fade-up",
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }
-      );
-    }, containerRef);
+      
+}, containerRef);
     return () => ctx.revert();
   }, []);
 
@@ -92,10 +89,10 @@ export default function DirectorioPage() {
       ref={containerRef}
       className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden gap-6"
     >
-      <ProfileHeader className="fade-up" />
+      <ProfileHeader className="" />
 
       {/* ── PAGE HEADER ──────────────────────────────────── */}
-      <section className="fade-up w-full liquid-glass-card rounded-[32px] p-5 border border-border flex flex-col gap-1">
+      <section className="w-full liquid-glass-card rounded-[32px] p-5 border border-border flex flex-col gap-1">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center text-accent shrink-0">
             <Building2 size={20} />
@@ -110,7 +107,7 @@ export default function DirectorioPage() {
       </section>
 
       {/* ── SEARCH BAR ───────────────────────────────────── */}
-      <section className="fade-up liquid-glass-card rounded-[28px] p-4 border border-border">
+      <section className="liquid-glass-card rounded-[28px] p-4 border border-border">
         <div className="flex items-center gap-2 bg-text/5 rounded-2xl px-4 py-3 border border-border">
           <Search size={18} className="text-text/50 shrink-0" />
           <input
@@ -120,7 +117,7 @@ export default function DirectorioPage() {
             className="flex-1 bg-transparent outline-none text-sm text-text placeholder:text-text/40"
           />
           {searchLoading && (
-            <Loader2 size={16} className="animate-spin text-text/50 shrink-0" />
+            <Skeleton className="w-4 h-4 rounded-full" />
           )}
           {searchQuery && !searchLoading && (
             <button
@@ -195,7 +192,7 @@ export default function DirectorioPage() {
       </section>
 
       {/* ── QUICK ACTIONS ──────────────────────────────── */}
-      <section className="fade-up grid grid-cols-1 gap-4">
+      <section className="grid grid-cols-1 gap-4">
         <button
           onClick={() => router.push("/citofonia")}
           className="liquid-glass-card rounded-[28px] p-5 border border-border flex items-center gap-4 active:scale-[0.98] transition-transform cursor-pointer"

@@ -11,6 +11,7 @@ import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { AnuncioDto, CeldaMapaDto } from "@/lib/api/types";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 /**
  * Shape of a trámite as consumed by this admin view. The backend may return
@@ -292,11 +293,8 @@ export default function AdminNovedadesPage() {
   useEffect(() => {
     if (!loading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(".fade-up", 
-          { opacity: 0, y: 20 }, 
-          { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: "power2.out" }
-        );
-      }, containerRef);
+        
+}, containerRef);
       return () => ctx.revert();
     }
   }, [loading, tab]);
@@ -381,7 +379,7 @@ export default function AdminNovedadesPage() {
     <div ref={containerRef} className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden">
        <ProfileHeader />
        
-       <div className="fade-up flex items-center justify-between">
+       <div className="flex items-center justify-between">
             <div>
                 <h1 className="text-2xl font-display font-medium text-text tracking-wide">Trámites</h1>
                 <p className="text-sm text-text">Solicitudes de residentes</p>
@@ -394,22 +392,22 @@ export default function AdminNovedadesPage() {
        </div>
 
        {/* Tabs */}
-       <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
+       <div className="flex bg-surface-2 rounded-full p-1 border border-border">
             <button 
               onClick={() => setTab('PENDIENTE')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-accent text-primary shadow-md' : 'text-text hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-[#009df2] text-white shadow-md' : 'text-text hover:text-text'}`}
             >
                Pendientes
             </button>
             <button 
               onClick={() => setTab('HISTORIAL')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-accent text-primary shadow-md' : 'text-text hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-[#009df2] text-white shadow-md' : 'text-text hover:text-text'}`}
             >
                Historial
             </button>
             <button 
               onClick={() => setTab('PUBLICAR_ANUNCIO')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PUBLICAR_ANUNCIO' ? 'bg-accent text-primary shadow-md' : 'text-text hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PUBLICAR_ANUNCIO' ? 'bg-[#009df2] text-white shadow-md' : 'text-text hover:text-text'}`}
             >
                Publicar Anuncio
             </button>
@@ -419,9 +417,9 @@ export default function AdminNovedadesPage() {
        {tab !== 'PUBLICAR_ANUNCIO' ? (
           <div className="flex flex-col gap-4">
                {loading ? (
-                 <div className="w-full py-12 flex justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>
+                 <div className="w-full py-12 flex justify-center"><SkeletonRows /></div>
                ) : tramites.length === 0 ? (
-                   <div className="fade-up liquid-glass rounded-3xl p-8 border border-border text-center">
+                   <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
                        <CheckCircle2 size={40} className="mx-auto text-text/50 mb-3" />
                        <p className="text-text font-medium">Bandeja al día</p>
                        <p className="text-xs text-text mt-1">No hay trámites en esta sección.</p>
@@ -431,7 +429,7 @@ export default function AdminNovedadesPage() {
                        const u = t.solicitante || t.usuario;
                        const desc = getMeta(t);
                        return (
-                         <div key={t.id} onClick={() => tab === 'PENDIENTE' ? setSelectedTramite(t) : null} className="fade-up liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer">
+                         <div key={t.id} onClick={() => tab === 'PENDIENTE' ? setSelectedTramite(t) : null} className="liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 group hover:border-accent/30 transition-all cursor-pointer">
                              <div className="flex justify-between items-start">
                                  <div className="flex items-center gap-2">
                                     <span className="p-2 rounded-full bg-surface-2 border border-border text-xl">{getTipoIcon(t.tipo)}</span>
@@ -475,7 +473,7 @@ export default function AdminNovedadesPage() {
                )}
           </div>
        ) : (
-          <div className="fade-up flex flex-col gap-8">
+          <div className="flex flex-col gap-8">
                {/* Formulario */}
                <form onSubmit={handleSubmitAnuncio} className="liquid-glass-card rounded-[28px] p-6 border border-border flex flex-col gap-4">
                     <div className="flex items-center justify-between mb-2 pb-2 border-b border-border">
@@ -568,7 +566,7 @@ export default function AdminNovedadesPage() {
                                 </div>
                                 {isUploadingImage && (
                                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <div className="w-8 h-8 rounded-full bg-text/10 animate-pulse" />
                                     </div>
                                 )}
                             </div>
@@ -600,7 +598,7 @@ export default function AdminNovedadesPage() {
                <div className="flex flex-col gap-4">
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-text px-1">Anuncios Activos</h3>
                     {loadingAnuncios ? (
-                        <div className="w-full py-8 flex justify-center"><div className="w-6 h-6 border-2 border-border border-t-accent rounded-full animate-spin" /></div>
+                        <div className="w-full py-8 flex justify-center"><div className="w-6 h-6 rounded-full bg-text/10 animate-pulse" /></div>
                     ) : anuncios.length === 0 ? (
                         <div className="liquid-glass rounded-3xl p-8 border border-border text-center text-text text-xs italic">
                             No hay anuncios publicados por ti en esta copropiedad.

@@ -622,7 +622,7 @@ function HomeResidente() {
          </div>
          {isLoadingAnuncios ? (
            <div className="py-10 flex flex-col items-center justify-center gap-3">
-             <div className="w-8 h-8 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
+             <div className="w-8 h-8 rounded-full bg-text/10 animate-pulse" />
              <span className="text-[10px] font-bold text-text uppercase tracking-widest animate-pulse">Cargando novedades...</span>
            </div>
          ) : anuncios.length === 0 ? (
@@ -807,7 +807,7 @@ function HomeEstacionamiento() {
       <ProfileHeader />
       <div 
         onClick={() => router.push("/mapa-parqueadero")}
-        className="fade-up liquid-glass-card rounded-[28px] p-6 border border-border shadow-2xl text-text cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group active:scale-98"
+        className="liquid-glass-card rounded-[28px] p-6 border border-border shadow-2xl text-text cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group active:scale-98"
       >
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center">
@@ -825,7 +825,7 @@ function HomeEstacionamiento() {
       </div>
 
       {/* Estadísticas de Ocupación */}
-      <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
+      <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
         <h3 className="text-base font-bold text-text mb-4">Estado del Parqueadero</h3>
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-surface-2 border border-border rounded-2xl p-4 text-center">
@@ -861,7 +861,7 @@ function HomeConsejo() {
       <RoleSwitcher />
       <ProfileHeader />
       
-      <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
+      <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
         <h2 className="text-xl font-bold text-text mb-1">Mesa de Monitoreo</h2>
         <p className="text-text text-xs">Consejo de Administración (Órgano Consultor Ley 675/2001)</p>
       </div>
@@ -870,7 +870,7 @@ function HomeConsejo() {
         {/* FINANZAS READ ONLY CARD */}
         <div 
           onClick={() => router.push('/admin-finanzas')}
-          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+          className="p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
         >
           <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
             <DollarSign size={20} />
@@ -884,7 +884,7 @@ function HomeConsejo() {
         {/* ANUNCIOS/CIRCULARES */}
         <div 
           onClick={() => router.push('/cartelera')}
-          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+          className="p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
         >
           <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
             <Building2 size={20} />
@@ -898,7 +898,7 @@ function HomeConsejo() {
         {/* ENCUESTAS */}
         <div
           onClick={() => router.push('/encuestas')}
-          className="fade-up p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
+          className="p-5 rounded-[28px] bg-linear-to-br from-text/10 to-text/10 border border-text/20 flex flex-col justify-between h-[140px] cursor-pointer hover:border-text/40 transition-all shadow-xl group active:scale-95"
         >
           <div className="w-10 h-10 rounded-2xl bg-text/20 flex items-center justify-center text-text border border-text/30">
             <BarChart3 size={20} />
@@ -911,7 +911,7 @@ function HomeConsejo() {
       </div>
 
       {/* Resumen Agregado */}
-      <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
+      <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl">
         <h3 className="text-base font-bold text-text mb-4">Informes de Gestión</h3>
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center bg-surface-2 p-4 rounded-2xl border border-border">
@@ -928,23 +928,24 @@ function HomeConsejo() {
   );
 }
 
-// Tailwind scans for literal class strings, so `tint`/`fg` must be written out
-// in full here — building them as `bg-${color}-500/10` would compile to nothing.
+// Colors are inline styles, not Tailwind classes, so every chip renders its
+// tint regardless of which utilities the CSS build happens to have generated.
+// `${hex}1a` is the same 10% alpha as a `/10` class.
 const ADMIN_TILES = [
-  { href: '/admin-residentes', icon: Users, title: 'Residentes', desc: 'Gestionar unidades', tint: 'bg-emerald-500/10', fg: 'text-emerald-500' },
-  { href: '/citofonia', icon: UserIcon, title: 'Citofonía', desc: 'Llamar a unidades', tint: 'bg-indigo-500/10', fg: 'text-indigo-500' },
-  { href: '/admin-novedades', icon: Building2, title: 'Novedades', desc: 'Anuncios y trámites', tint: 'bg-blue-500/10', fg: 'text-blue-500' },
-  { href: '/admin-pqrs', icon: Wrench, title: 'Solicitudes', desc: 'PQRS y servicios', tint: 'bg-orange-500/10', fg: 'text-orange-500' },
-  { href: '/admin-areas', icon: MapPin, title: 'Áreas', desc: 'Espacios comunes', tint: 'bg-rose-500/10', fg: 'text-rose-500' },
-  { href: '/encuestas', icon: BarChart3, title: 'Encuestas', desc: 'Crear y ver resultados', tint: 'bg-teal-500/10', fg: 'text-teal-500' },
-  { href: '/comite-convivencia', icon: Scale, title: 'Comité', desc: 'Convivencia y actas', tint: 'bg-violet-500/10', fg: 'text-violet-500' },
-  { href: '/admin-documentos', icon: FileText, title: 'Documentos', desc: 'Gestión documental', tint: 'bg-amber-500/10', fg: 'text-amber-500' },
-  { href: '/reservas', icon: Calendar, title: 'Reservas', desc: 'Áreas comunes', tint: 'bg-green-500/10', fg: 'text-green-500' },
+  { href: '/admin-residentes', icon: Users, title: 'Residentes', desc: 'Gestionar unidades', hex: '#10b981' },
+  { href: '/citofonia', icon: UserIcon, title: 'Citofonía', desc: 'Llamar a unidades', hex: '#6366f1' },
+  { href: '/admin-novedades', icon: Building2, title: 'Novedades', desc: 'Anuncios y trámites', hex: '#3b82f6' },
+  { href: '/admin-pqrs', icon: Wrench, title: 'Solicitudes', desc: 'PQRS y servicios', hex: '#f97316' },
+  { href: '/admin-areas', icon: MapPin, title: 'Áreas', desc: 'Espacios comunes', hex: '#f43f5e' },
+  { href: '/encuestas', icon: BarChart3, title: 'Encuestas', desc: 'Crear y ver resultados', hex: '#14b8a6' },
+  { href: '/comite-convivencia', icon: Scale, title: 'Comité', desc: 'Convivencia y actas', hex: '#8b5cf6' },
+  { href: '/admin-documentos', icon: FileText, title: 'Documentos', desc: 'Gestión documental', hex: '#f59e0b' },
+  { href: '/reservas', icon: Calendar, title: 'Reservas', desc: 'Áreas comunes', hex: '#22c55e' },
 ] as const;
 
 const ADMIN_SHORTCUTS = [
-  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas y Cartera', desc: 'Facturación, pagos y cartera', tint: 'bg-emerald-500/10', fg: 'text-emerald-500' },
-  { href: '/admin-parqueadero', icon: Car, title: 'Control de Parqueaderos', desc: 'Asignación y control de espacios', tint: 'bg-blue-500/10', fg: 'text-blue-500' },
+  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas y Cartera', desc: 'Facturación, pagos y cartera', hex: '#10b981' },
+  { href: '/admin-parqueadero', icon: Car, title: 'Control de Parqueaderos', desc: 'Asignación y control de espacios', hex: '#3b82f6' },
 ] as const;
 
 function HomeAdmin() {
@@ -1016,13 +1017,16 @@ function HomeAdmin() {
 
       {/* QUICK ACCESSIBLE ACTIONS */}
       <div className="grid grid-cols-3 gap-3">
-        {ADMIN_TILES.map(({ href, icon: Icon, title, desc, tint, fg }) => (
+        {ADMIN_TILES.map(({ href, icon: Icon, title, desc, hex }) => (
           <button
             key={href}
             onClick={() => router.push(href)}
             className="group h-[132px] p-3.5 rounded-[20px] bg-primary-light border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer text-left flex flex-col"
           >
-            <span className={`w-11 h-11 rounded-2xl flex items-center justify-center ${tint} ${fg}`}>
+            <span
+              className="w-11 h-11 rounded-2xl flex items-center justify-center"
+              style={{ backgroundColor: `${hex}1a`, color: hex }}
+            >
               <Icon size={20} />
             </span>
             <span className="mt-auto block">
@@ -1031,7 +1035,8 @@ function HomeAdmin() {
                 <span className="text-[10px] text-text/55 leading-snug">{desc}</span>
                 <ArrowRight
                   size={13}
-                  className={`${fg} shrink-0 group-hover:translate-x-0.5 transition-transform`}
+                  style={{ color: hex }}
+                  className="shrink-0 group-hover:translate-x-0.5 transition-transform"
                 />
               </span>
             </span>
@@ -1049,13 +1054,16 @@ function HomeAdmin() {
         </p>
 
         <div className="flex flex-col gap-3">
-          {ADMIN_SHORTCUTS.map(({ href, icon: Icon, title, desc, tint, fg }) => (
+          {ADMIN_SHORTCUTS.map(({ href, icon: Icon, title, desc, hex }) => (
             <button
               key={href}
               onClick={() => router.push(href)}
               className="w-full py-3 px-3.5 rounded-2xl bg-surface-2 hover:bg-text/10 border border-border/40 text-left flex items-center gap-3 group active:scale-98 transition-all cursor-pointer"
             >
-              <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${tint} ${fg}`}>
+              <span
+                className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `${hex}1a`, color: hex }}
+              >
                 <Icon size={16} />
               </span>
               <span className="min-w-0 flex-1">
@@ -1064,7 +1072,8 @@ function HomeAdmin() {
               </span>
               <ArrowRight
                 size={14}
-                className={`${fg} shrink-0 group-hover:translate-x-1 transition-transform`}
+                style={{ color: hex }}
+                className="shrink-0 group-hover:translate-x-1 transition-transform"
               />
             </button>
           ))}
@@ -1316,7 +1325,7 @@ export default function InicioDashboard() {
   if (role === 'HUESPED_TEMPORAL') {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+ <div className="animate-pulse bg-text/10 h-6 w-6 rounded-full" />
       </div>
     );
   }
@@ -1324,7 +1333,7 @@ export default function InicioDashboard() {
   if (role === 'VIGILANTE' || role === 'SUPERVISOR_VIGILANCIA') {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+ <div className="animate-pulse bg-text/10 h-6 w-6 rounded-full" />
       </div>
     );
   }

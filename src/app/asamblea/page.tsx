@@ -7,16 +7,16 @@ import { useWsSubscription } from "@/hooks/useWebSocket";
 import {
   Video, ListOrdered, BarChart3, MessageSquare, Info,
   CheckCircle, Circle, Play, Send, Hand, Users, Shield,
-  FileCheck, Loader2,
-} from "lucide-react";
+  FileCheck, } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const LiveRoom = dynamic(() => import("@/components/asamblea/LiveRoom"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full">
-      <Loader2 className="w-8 h-8 animate-spin text-white" />
+      <Skeleton className="w-5 h-5 rounded-full" />
     </div>
   ),
 });
@@ -251,7 +251,7 @@ export default function AsambleaPage() {
 
   if (authLoading || loading) return (
     <div className="min-h-screen bg-[#000000] flex items-center justify-center">
-      <Loader2 className="w-10 h-10 animate-spin text-accent" />
+      <Skeleton className="w-10 h-10 rounded-full" />
     </div>
   );
 

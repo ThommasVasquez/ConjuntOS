@@ -8,8 +8,7 @@
 
 import { 
   Plus, MessageSquare, AlertTriangle, CheckCircle2, 
-  Clock, ArrowRight, Info, Loader2,
-  FileText, Megaphone, Wrench, X, 
+  Clock, ArrowRight, Info,   FileText, Megaphone, Wrench, X, 
   SendHorizonal, Calendar, Camera, ChevronRight, Image as ImageIcon
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
@@ -19,6 +18,7 @@ import { api } from "@/lib/api/client";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface Solicitud {
   id: string;
@@ -219,7 +219,7 @@ export default function PQRSPage() {
       <section className="flex flex-col gap-4">
          {isLoading ? (
            <div className="py-20 flex flex-col items-center gap-4">
-              <Loader2 className="w-10 h-10 text-accent animate-spin" />
+              <Skeleton className="w-10 h-10 rounded-full" />
               <p className="text-text text-[10px] font-bold uppercase tracking-widest">Sincronizando radicados...</p>
            </div>
          ) : solicitudes.length === 0 ? (
@@ -352,7 +352,7 @@ export default function PQRSPage() {
                    disabled={isSubmitting}
                    className="w-full bg-accent hover:brightness-110 py-5 rounded-[24px] font-bold text-primary shadow-xl shadow-accent/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer"
                  >
-                   {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (
+                   {isSubmitting ? <Skeleton className="w-5 h-5 rounded-full" /> : (
                      <>Radicar Solicitud <SendHorizonal size={18} /></>
                    )}
                  </button>
@@ -403,7 +403,7 @@ export default function PQRSPage() {
                  </div>
 
                  {isLoadingDetail && (
-                   <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 text-accent animate-spin" /></div>
+                   <div className="flex justify-center py-4"><Skeleton className="w-5 h-5 rounded-full" /></div>
                  )}
 
                  {detailData?.comentarios && detailData.comentarios.length > 0 && (

@@ -7,7 +7,7 @@ import {
   MapPin, Clock, 
   Plus, Info, 
   ShieldCheck,
-  X, Loader2, Car, Bike, Search
+  X, Car, Bike, Search
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
@@ -47,6 +47,7 @@ interface DirectorioUser {
 
 import { useAuth } from "@/hooks/useAuth";
 import { useCall } from "@/components/providers/CallContext";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function CitofoniaPage() {
   const { user } = useAuth();
@@ -160,8 +161,8 @@ export default function CitofoniaPage() {
   useEffect(() => {
     if (!isLoading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" });
-      }, containerRef);
+        
+}, containerRef);
       return () => {
         ctx.revert();
       };
@@ -250,7 +251,7 @@ export default function CitofoniaPage() {
 
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-6">
-      <ProfileHeader className="fade-up" />
+      <ProfileHeader className="" />
 
       {/* CALL SCREEN OVERLAY */}
       {callState !== "IDLE" && (
@@ -360,7 +361,7 @@ export default function CitofoniaPage() {
       )}
 
       {/* COMPACT DASHBOARD HEADER */}
-      <section className="fade-up w-full liquid-glass-card rounded-[32px] p-5 border border-border flex flex-col gap-4">
+      <section className="w-full liquid-glass-card rounded-[32px] p-5 border border-border flex flex-col gap-4">
          <div className="flex justify-between items-center px-2">
             <h2 className="text-xl font-display font-bold text-text tracking-tight">Centro de Control</h2>
             <div className="flex gap-2">
@@ -407,7 +408,7 @@ export default function CitofoniaPage() {
       {/* CONTENT AREA */}
       <main className="flex-1">
         {activeTab === "CITOFONIA" && (
-          <div className="fade-up space-y-6 animate-in slide-in-from-bottom-5 duration-500">
+          <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-500">
              {/* SEARCH RESIDENTS — oculto para huéspedes */}
              {!isGuest && (
              <div className="liquid-glass-card rounded-[28px] p-4 border border-border text-text">
@@ -419,7 +420,7 @@ export default function CitofoniaPage() {
                      placeholder="Buscar residente por nombre…"
                      className="flex-1 bg-transparent outline-none text-sm text-text placeholder:text-text/40"
                    />
-                   {searchLoading && <Loader2 size={16} className="animate-spin text-text/50" />}
+                   {searchLoading && <Skeleton className="w-4 h-4 rounded-full" />}
                    {searchQuery && !searchLoading && (
                      <button onClick={() => setSearchQuery("")} className="text-text/50 cursor-pointer">
                        <X size={16} />
@@ -534,7 +535,7 @@ export default function CitofoniaPage() {
 
 
         {activeTab === "VISITAS" && (
-           <div className="fade-up space-y-6 animate-in slide-in-from-bottom-5 duration-500">
+           <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-500">
               {/* PARKING STATUS */}
               <div className="grid grid-cols-2 gap-3">
                  <div className="liquid-glass-card rounded-[24px] p-4 border border-border flex flex-col">
@@ -565,7 +566,7 @@ export default function CitofoniaPage() {
               <div className="space-y-4">
                  <h4 className="text-[10px] font-black text-text uppercase tracking-widest px-2">Visitas Recientes</h4>
                  {isLoading ? (
-                   <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-accent" /></div>
+                   <div className="py-12 flex justify-center"><Skeleton className="w-5 h-5 rounded-full" /></div>
                  ) : visitas.length === 0 ? (
                    <div className="py-12 flex flex-col items-center bg-text/5 rounded-3xl border border-dashed border-border text-text">
                       <Users size={40} strokeWidth={1} />
@@ -589,7 +590,7 @@ export default function CitofoniaPage() {
         )}
 
         {activeTab === "RECEPCION" && (
-          <div className="fade-up space-y-6 animate-in slide-in-from-bottom-5 duration-500">
+          <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-500">
              {/* ALERT IF PACKAGES */}
              {paquetes.length > 0 && (
                <div className="bg-linear-to-r from-accent/20 to-secondary/20 border border-border rounded-3xl p-6 flex flex-col gap-2 relative overflow-hidden group">
@@ -605,7 +606,7 @@ export default function CitofoniaPage() {
              <div className="space-y-4">
                 <h4 className="text-[10px] font-black text-text uppercase tracking-widest px-2">Historial de Entregas</h4>
                 {isLoading ? (
-                  <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-accent" /></div>
+                  <div className="py-12 flex justify-center"><Skeleton className="w-5 h-5 rounded-full" /></div>
                 ) : paquetes.length === 0 ? (
                   <div className="py-20 flex flex-col items-center text-text">
                      <Package size={60} strokeWidth={1} />

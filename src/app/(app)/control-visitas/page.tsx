@@ -10,6 +10,7 @@ import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import QrScanner from "@/components/visitas/QrScanner";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 interface ResidenteDirectorio {
   id: string;
@@ -99,8 +100,8 @@ export default function ControlVisitas() {
 
   useEffect(() => {
     if (!loading) {
-      gsap.fromTo(".fade-up", { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
-    }
+      
+}
   }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,7 +133,7 @@ export default function ControlVisitas() {
      }
   };
 
-  if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" /></div>;
+  if(loading) return <div className="min-h-screen flex items-center justify-center"><SkeletonRows /></div>;
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
@@ -141,7 +142,7 @@ export default function ControlVisitas() {
        {/* QR pass scanner — validates a pre-registered visitor in one tap */}
        <QrScanner />
 
-       <div className="fade-up liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
+       <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
              <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent">
                 <Users size={24} />
@@ -226,7 +227,7 @@ export default function ControlVisitas() {
        </div>
 
        {/* Bitácora de Hoy */}
-       <div className="fade-up flex flex-col gap-4">
+       <div className="flex flex-col gap-4">
           <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2"><Eye size={16} className="text-accent"/> Bitácora Reciente</h3>
           {visitas.length === 0 && <p className="text-text text-sm text-center py-6">No hay visitas registradas hoy.</p>}
           {visitas.map((v, i) => (

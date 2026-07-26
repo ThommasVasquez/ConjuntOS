@@ -58,8 +58,8 @@ export default function SeguridadPage() {
       return;
     }
 
-    gsap.fromTo(".fade-up", { opacity: 0, y: 15 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 });
-  }, [user, authLoading, role, router]);
+    
+}, [user, authLoading, role, router]);
 
   // Handle drawing mock security feed inside canvases
   useEffect(() => {
@@ -387,7 +387,7 @@ interface RondaConCheckpointsDto extends RondaDto {
       <ProfileHeader />
 
       {/* HEADER SECTION */}
-      <div className="fade-up flex items-center justify-between z-10">
+      <div className="flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => router.push('/inicio')} 
@@ -405,7 +405,7 @@ interface RondaConCheckpointsDto extends RondaDto {
       </div>
 
       {/* NAVIGATION TABS */}
-      <div className="fade-up flex border-b border-border/50 pb-2 gap-6 z-10">
+      <div className="flex border-b border-border/50 pb-2 gap-6 z-10">
         <button 
           onClick={() => setActiveTab("cctv")}
           className={`text-xs font-black uppercase tracking-widest pb-1 transition-all border-b-2 cursor-pointer ${
@@ -426,7 +426,7 @@ interface RondaConCheckpointsDto extends RondaDto {
 
       {/* TAB CONTENT: CCTV */}
       {activeTab === "cctv" && (
-        <div className="fade-up flex flex-col gap-6 z-10">
+        <div className="flex flex-col gap-6 z-10">
           
           {/* CONTROLS */}
           <div className="flex flex-wrap items-center justify-between gap-4 bg-surface-2/30 p-3 rounded-2xl border border-border/50 backdrop-blur-md">
@@ -499,7 +499,7 @@ interface RondaConCheckpointsDto extends RondaDto {
 
       {/* TAB CONTENT: RONDAS */}
       {activeTab === "rondas" && (
-        <div className="fade-up flex flex-col gap-6 z-10">
+        <div className="flex flex-col gap-6 z-10">
           
           <div className="liquid-glass rounded-3xl p-6 border border-border shadow-xl flex flex-col gap-5">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-4">
@@ -598,7 +598,7 @@ interface RondaConCheckpointsDto extends RondaDto {
                 >
                   {nfcScanning ? (
                     <>
-                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="w-3.5 h-3.5 rounded-full bg-text/10 animate-pulse" />
                       Escaneando…
                     </>
                   ) : nfcSupported ? (

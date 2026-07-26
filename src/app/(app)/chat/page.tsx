@@ -21,7 +21,7 @@ export default function ChatPage() {
   return (
     <Suspense fallback={
       <div className="absolute inset-0 bg-primary flex items-center justify-center">
-        <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+ <div className="animate-pulse bg-text/10 h-6 w-6 rounded-full" />
       </div>
     }>
       <ChatContent />

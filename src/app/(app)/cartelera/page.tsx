@@ -20,6 +20,7 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface Notice {
   id: string;
@@ -148,8 +149,8 @@ export default function CarteleraPage() {
     if (user) initData();
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-up", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: "back.out(1.2)" });
-    }, containerRef);
+      
+}, containerRef);
     return () => {
       ctx.revert();
     };
@@ -177,10 +178,10 @@ export default function CarteleraPage() {
 
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-8">
-      <ProfileHeader className="fade-up" />
+      <ProfileHeader className="" />
 
       {/* FILTER TABS */}
-       <section className="fade-up flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
+       <section className="flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
          {['TODOS', 'GENERAL', 'URGENTE', 'MANTENIMIENTO', 'EVENTO'].map((cat) => (
            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`shrink-0 px-5 py-2.5 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-accent border-accent text-primary shadow-lg' : 'bg-surface-2 border-border text-text hover:bg-surface-2/80'}`}>
               {cat === 'TODOS' ? 'Todos' : cat}
@@ -192,7 +193,7 @@ export default function CarteleraPage() {
       <section className="flex flex-col gap-6">
          {isLoadingNotices ? (
            <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <Loader2 className="w-10 h-10 text-accent animate-spin" />
+              <Skeleton className="w-10 h-10 rounded-full" />
               <p className="text-text text-xs font-bold uppercase tracking-widest">Sincronizando Cartelera...</p>
            </div>
          ) : filteredNotices.length === 0 ? (
@@ -201,7 +202,7 @@ export default function CarteleraPage() {
               <p className="text-text text-sm font-bold">No hay avisos publicados</p>
            </div>
          ) : filteredNotices.map((notice: Notice) => (
-           <div key={notice.id} onClick={() => setSelectedNotice(notice)} className="fade-up liquid-glass-card rounded-[32px] overflow-hidden border border-border hover:border-accent/30 transition-all active:scale-[0.98] cursor-pointer group shadow-2xl">
+           <div key={notice.id} onClick={() => setSelectedNotice(notice)} className="liquid-glass-card rounded-[32px] overflow-hidden border border-border hover:border-accent/30 transition-all active:scale-[0.98] cursor-pointer group shadow-2xl">
               {notice.image && (
                 <div className="h-40 w-full overflow-hidden relative">
                    <Image src={notice.image} alt={notice.title} fill className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" unoptimized />
@@ -409,7 +410,7 @@ export default function CarteleraPage() {
                       disabled={!newMessage.trim() || isSending}
                       className="w-14 h-14 rounded-full bg-text/10 flex items-center justify-center text-white shadow-[0_10px_25px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-50 disabled:scale-100 group"
                     >
-                       {isSending ? <Loader2 size={24} className="animate-spin" /> : <ArrowRight size={24} className="group-hover:translate-x-0.5 transition-transform" />}
+                       {isSending ? <Skeleton className="w-6 h-6 rounded-full" /> : <ArrowRight size={24} className="group-hover:translate-x-0.5 transition-transform" />}
                     </button>
                  </div>
                  <div className="mt-4 flex items-center justify-center gap-2 text-text">

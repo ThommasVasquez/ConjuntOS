@@ -6,11 +6,12 @@ import { canAccess } from "@/lib/permissions";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { 
-  Search, X, Sparkles, Loader2, ArrowRight,
+  Search, X, Sparkles, ArrowRight,
   CreditCard, Calendar, Car, Package, MessageSquare,
   Building2, Users, Megaphone, AlertCircle, ChevronRight
 } from "lucide-react";
 import { gsap } from "gsap";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -261,7 +262,7 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
               <div className="p-5">
                 {isLoadingAI ? (
                   <div className="flex items-center gap-3 text-text">
-                    <Loader2 size={16} className="animate-spin text-[#009df2]" />
+                    <Skeleton className="w-4 h-4 rounded-full" />
                     <span className="text-sm">Analizando tu pregunta...</span>
                   </div>
                 ) : aiAnswer ? (

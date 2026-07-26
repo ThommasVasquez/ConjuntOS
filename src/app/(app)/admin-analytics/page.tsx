@@ -5,14 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import type { DemografiaDto } from "@/lib/api/types";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   Building2,
   Users,
   UserPlus,
   Activity,
   TrendingUp,
-  Loader2,
-} from "lucide-react";
+  } from "lucide-react";
 
 export default function AdminAnalyticsPage() {
   const { user } = useAuth();
@@ -53,7 +53,7 @@ export default function AdminAnalyticsPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 size={32} className="animate-spin text-accent" />
+            <Skeleton className="w-8 h-8 rounded-full" />
           </div>
         ) : !data ? (
           <div className="text-center py-20">

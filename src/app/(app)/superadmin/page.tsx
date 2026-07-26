@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   Building2, Plus, FileText, ShieldCheck, MapPin,
-  User, Calendar, Layers, Loader2,
-  Upload, Edit3
+  User, Calendar, Layers,   Upload, Edit3
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { Skeleton, SkeletonRows } from "@/components/ui/Skeleton";
 
 export default function SuperAdminPage() {
   const { user, loading: authLoading } = useAuth();
@@ -146,11 +146,8 @@ export default function SuperAdminPage() {
   useEffect(() => {
     if (!loading) {
       const ctx = gsap.context(() => {
-        gsap.fromTo(".fade-up", 
-          { opacity: 0, y: 20 }, 
-          { opacity: 1, y: 0, stagger: 0.08, duration: 0.5, ease: "power2.out" }
-        );
-      }, containerRef);
+        
+}, containerRef);
       return () => ctx.revert();
     }
   }, [loading, tab]);
@@ -216,7 +213,7 @@ export default function SuperAdminPage() {
   if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+        <SkeletonRows />
       </div>
     );
   }
@@ -225,7 +222,7 @@ export default function SuperAdminPage() {
     <div ref={containerRef} className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden">
       <ProfileHeader />
 
-      <div className="fade-up flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent italic">SuperAdmin Dashboard</span>
           <h1 className="text-3xl font-display font-bold text-text leading-none mt-1">Registrar Copropiedad</h1>
@@ -236,7 +233,7 @@ export default function SuperAdminPage() {
       </div>
 
       {/* Tabs */}
-      <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border">
+      <div className="flex bg-surface-2 rounded-full p-1 border border-border">
         <button 
           onClick={() => setTab("CREAR")} 
           className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === "CREAR" ? "bg-accent/10 text-accent shadow-inner" : "text-text hover:text-text"}`}
@@ -254,7 +251,7 @@ export default function SuperAdminPage() {
       {tab === "CREAR" ? (
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {editingConjuntoId && (
-            <div className="fade-up flex items-center justify-between bg-accent/15 border border-accent/20 rounded-2xl p-4 text-xs text-text shadow-lg">
+            <div className="flex items-center justify-between bg-accent/15 border border-accent/20 rounded-2xl p-4 text-xs text-text shadow-lg">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-accent animate-ping" />
                 <span>Modo edición activo: Editando <strong>{formData.nombre || "copropiedad"}</strong></span>
@@ -269,7 +266,7 @@ export default function SuperAdminPage() {
             </div>
           )}
           {/* SECCIÓN 1: IDENTIFICACIÓN GENERAL */}
-          <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
+          <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
             <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2">
               <Building2 size={16} className="text-accent" /> 1. Datos Generales de la Copropiedad
             </h3>
@@ -344,7 +341,7 @@ export default function SuperAdminPage() {
           </div>
 
           {/* SECCIÓN 2: DATOS DE REGULACIÓN LEGAL (LEY 675 DE 2001) */}
-          <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
+          <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
             <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2">
               <FileText size={16} className="text-accent" /> 2. Registro de Personería Jurídica y Representación
             </h3>
@@ -430,7 +427,7 @@ export default function SuperAdminPage() {
           </div>
 
           {/* SECCIÓN 3: PERSONALIZACIÓN */}
-          <div className="fade-up liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
+          <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
             <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2">
               <Plus size={16} className="text-accent" /> 3. Personalización del Portal ConjuntOS
             </h3>
@@ -479,7 +476,7 @@ export default function SuperAdminPage() {
                     >
                       {isUploading ? (
                         <>
-                          <Loader2 size={12} className="animate-spin" /> Subiendo...
+                          <Skeleton className="w-3 h-3 rounded-full" /> Subiendo...
                         </>
                       ) : (
                         <>
@@ -510,11 +507,11 @@ export default function SuperAdminPage() {
           <button 
             type="submit" 
             disabled={isSubmitting || isUploading} 
-            className="fade-up w-full py-4 bg-accent hover:bg-accent/90 transition-all rounded-2xl font-black uppercase text-xs tracking-widest text-on-accent shadow-xl shadow-accent/20 active:scale-[0.98] flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="w-full py-4 bg-accent hover:bg-accent/90 transition-all rounded-2xl font-black uppercase text-xs tracking-widest text-on-accent shadow-xl shadow-accent/20 active:scale-[0.98] flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
               <>
-                <Loader2 size={16} className="animate-spin" /> {editingConjuntoId ? "Guardando Cambios..." : "Registrando Copropiedad..."}
+                <Skeleton className="w-4 h-4 rounded-full" /> {editingConjuntoId ? "Guardando Cambios..." : "Registrando Copropiedad..."}
               </>
             ) : (
               <>
@@ -530,7 +527,7 @@ export default function SuperAdminPage() {
             <p className="text-center text-text text-sm py-12">No hay conjuntos registrados en el sistema.</p>
           ) : (
             conjuntos.map((c, idx) => (
-              <div key={c.id || idx} className="fade-up liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 relative overflow-hidden group hover:border-accent/40 transition-all">
+              <div key={c.id || idx} className="liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 relative overflow-hidden group hover:border-accent/40 transition-all">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl pointer-events-none translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/15 transition-all"></div>
                 
                 <div className="flex justify-between items-start">

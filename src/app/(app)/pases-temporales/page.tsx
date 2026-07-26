@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { ArrowRight, Calendar, Car, ClipboardList, DoorOpen, Dumbbell, Megaphone, MessageCircle, Pencil, PlusCircle, ShieldAlert, Trash2, Users, Waves, XCircle } from "lucide-react";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 type FormData = Omit<CrearPaseTemporalRequest, "fecha_inicio" | "fecha_fin"> & {
   fecha_inicio: string;
@@ -198,7 +199,7 @@ export default function PasesTemporalesPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+        <SkeletonRows />
       </div>
     );
   }
@@ -442,7 +443,7 @@ export default function PasesTemporalesPage() {
 
         {loading ? (
           <div className="w-full py-10 flex justify-center">
-            <div className="w-6 h-6 border-2 border-border border-t-accent rounded-full animate-spin" />
+            <div className="w-6 h-6 rounded-full bg-text/10 animate-pulse" />
           </div>
         ) : pases.length === 0 ? (
           <div className="liquid-glass rounded-3xl p-8 border border-border text-center text-text text-xs italic">
