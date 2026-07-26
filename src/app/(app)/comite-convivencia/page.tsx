@@ -331,97 +331,115 @@ export default function ComiteConvivenciaPage() {
 
       <ImponerMulta />
 
-      {/* Header */}
-      <div className="fade-up flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-display font-medium text-text tracking-wide flex items-center gap-2">
-            <Scale size={24} className="text-[#009df2]" /> Comité de Convivencia
-          </h1>
-          <p className="text-sm text-text">Mediación y resolución de conflictos entre vecinos</p>
+      <div className="fade-up rounded-[28px] bg-primary-light border border-border p-5 flex flex-col gap-5">
+        {/* Header */}
+        <div className="flex items-start gap-3">
+          <span className="w-12 h-12 shrink-0 rounded-2xl bg-[#009df2]/10 flex items-center justify-center">
+            <Scale size={22} className="text-[#009df2]" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-display font-bold text-text leading-tight">
+              Comité de Convivencia
+            </h1>
+            <p className="text-xs text-text/55 leading-snug mt-1">
+              Mediación y resolución de conflictos entre vecinos
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={fetchCasos}
+              aria-label="Recargar casos"
+              className="w-10 h-10 rounded-2xl bg-primary-light border border-border flex items-center justify-center hover:bg-text/5 transition-colors"
+            >
+              <RefreshCw size={16} className="text-text" />
+            </button>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-accent text-primary text-xs font-bold hover:bg-accent/90 transition-all shadow-md whitespace-nowrap"
+            >
+              <Plus size={14} /> Nuevo caso
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={fetchCasos}
-            className="p-2 rounded-full hover:bg-surface-2 transition-colors"
-          >
-            <RefreshCw size={18} className="text-text" />
-          </button>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-primary text-xs font-bold hover:bg-accent/90 transition-all shadow-md"
-          >
-            <Plus size={14} /> Nuevo Caso
-          </button>
-        </div>
-      </div>
 
-      {/* Stats Cards */}
-      {stats && (
-        <div className="fade-up grid grid-cols-2 gap-3">
-          {[
-            { label: "Total", value: stats.total, color: "text-text", bg: "bg-surface-2", icon: <Scale size={16} /> },
-            { label: "Reportados", value: stats.reportados, color: "text-[#EAB308]", bg: "bg-[#EAB308]/10", icon: <AlertTriangle size={16} /> },
-            { label: "En Mediación", value: stats.en_mediacion, color: "text-[#009df2]", bg: "bg-[#009df2]/10", icon: <Users size={16} /> },
-            { label: "Acuerdos", value: stats.acuerdos, color: "text-[#57bf00]", bg: "bg-[#57bf00]/10", icon: <CheckCircle2 size={16} /> },
-            { label: "Escalados", value: stats.escalados, color: "text-[#EF4444]", bg: "bg-[#EF4444]/10", icon: <Siren size={16} /> },
-          ].map((s) => (
-            <div key={s.label} className={`${s.bg} rounded-2xl p-4 border border-border flex flex-col gap-1 min-w-0`}>
-              <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 min-w-0 ${s.color}`}>
-                <span className="shrink-0">{s.icon}</span>
-                <span className="min-w-0 leading-tight">{s.label}</span>
-              </span>
-              <span className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</span>
-            </div>
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Total", value: stats.total, desc: "Casos registrados", color: "text-text", bg: "bg-surface-2", icon: <Scale size={20} className="text-indigo-500" /> },
+              { label: "Reportados", value: stats.reportados, desc: "Casos reportados", color: "text-[#EAB308]", bg: "bg-[#EAB308]/10", icon: <AlertTriangle size={20} className="text-[#EAB308]" /> },
+              { label: "En Mediación", value: stats.en_mediacion, desc: "En proceso de mediación", color: "text-[#009df2]", bg: "bg-[#009df2]/10", icon: <Users size={20} className="text-[#009df2]" /> },
+              { label: "Acuerdos", value: stats.acuerdos, desc: "Acuerdos alcanzados", color: "text-[#57bf00]", bg: "bg-[#57bf00]/10", icon: <CheckCircle2 size={20} className="text-[#57bf00]" /> },
+              { label: "Escalados", value: stats.escalados, desc: "Casos escalados", color: "text-[#EF4444]", bg: "bg-[#EF4444]/10", icon: <Siren size={20} className="text-[#EF4444]" /> },
+            ].map((s) => (
+              <div key={s.label} className={`${s.bg} rounded-2xl p-3.5 border border-border/40 flex flex-col gap-2.5 min-w-0`}>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="w-11 h-11 shrink-0 rounded-2xl bg-primary-light/70 flex items-center justify-center">
+                    {s.icon}
+                  </span>
+                  <div className="min-w-0">
+                    <span className={`block text-[10px] font-bold uppercase tracking-wider leading-tight ${s.color}`}>
+                      {s.label}
+                    </span>
+                    <span className={`block text-2xl font-display font-bold leading-tight ${s.color}`}>
+                      {s.value}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] text-text/55 leading-snug">{s.desc}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex bg-surface-2 rounded-full p-1 border border-border overflow-x-auto">
+          {([
+            ["TODOS", "Todos"],
+            ["REPORTADO", "Reportados"],
+            ["EN_MEDIACION", "En Mediación"],
+            ["RESUELTO", "Resueltos"],
+          ] as [TabKey, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap px-2 ${
+                tab === key ? "bg-accent text-primary shadow-md" : "text-text hover:text-text"
+              }`}
+            >
+              {label}
+            </button>
           ))}
         </div>
-      )}
 
-      {/* Tabs */}
-      <div className="fade-up flex bg-surface-2 rounded-full p-1 border border-border overflow-x-auto">
-        {([
-          ["TODOS", "Todos"],
-          ["REPORTADO", "Reportados"],
-          ["EN_MEDIACION", "En Mediación"],
-          ["RESUELTO", "Resueltos"],
-        ] as [TabKey, string][]).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap px-2 ${
-              tab === key ? "bg-accent text-primary shadow-md" : "text-text hover:text-text"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="fade-up flex flex-wrap items-center gap-2">
-        <span className="text-[10px] font-black uppercase tracking-widest text-text mr-1">
-          <ArrowUpDown size={12} className="inline mr-1" /> Tipo:
-        </span>
-        {TIPO_CASO.map((cat) => (
-          <button
-            key={cat.key}
-            onClick={() => setFiltroTipo((prev) => (prev === cat.key ? null : cat.key))}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
-              filtroTipo === cat.key
-                ? "bg-[#009df2]/15 text-[#009df2] border-[#009df2]/30"
-                : "bg-surface-2 border-border text-text hover:border-text/30"
-            }`}
-          >
-            {cat.icon} {cat.label}
-          </button>
-        ))}
-        {filtroTipo && (
-          <button
-            onClick={() => setFiltroTipo(null)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-text bg-text/5 border border-border hover:bg-text/10 transition-all"
-          >
-            <X size={12} /> Limpiar
-          </button>
-        )}
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-text mr-1">
+            <ArrowUpDown size={12} className="inline mr-1 text-[#009df2]" /> Tipo:
+          </span>
+          {TIPO_CASO.map((cat) => (
+            <button
+              key={cat.key}
+              onClick={() => setFiltroTipo((prev) => (prev === cat.key ? null : cat.key))}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                filtroTipo === cat.key
+                  ? "bg-[#009df2]/15 text-[#009df2] border-[#009df2]/30"
+                  : "bg-primary-light border-border text-text hover:border-[#009df2]/40"
+              }`}
+            >
+              <span className={`shrink-0 ${filtroTipo === cat.key ? "" : "text-[#009df2]"}`}>{cat.icon}</span>
+              {cat.label}
+            </button>
+          ))}
+          {filtroTipo && (
+            <button
+              onClick={() => setFiltroTipo(null)}
+              className="flex items-center gap-1 px-2.5 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider text-text bg-text/5 border border-border hover:bg-text/10 transition-all"
+            >
+              <X size={12} /> Limpiar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* List */}

@@ -54,8 +54,10 @@ interface PagoAdminDto {
   unidad?: { torre: string | null; numero: string };
 }
 
+/** Mirrors AdminPagosPage in backend/api/src/domains/admin_finanzas.rs:82 —
+ *  the page array is `data`, not `pagos`. */
 interface PagosAdminResponse {
-  pagos: PagoAdminDto[];
+  data: PagoAdminDto[];
   page: number;
   pages: number;
   total: number;
@@ -270,13 +272,14 @@ export default function AdminFinanzasPage() {
         if (pagosSearch.trim())
           params.set("q", pagosSearch.trim());
 
-        const data = await api.get<PagosAdminResponse>(
+        const res = await api.get<PagosAdminResponse>(
           `/admin/pagos?${params.toString()}`,
         );
-        setPagos(data.pagos);
-        setPagosPage(data.page);
-        setPagosPages(data.pages);
-        setPagosTotal(data.total);
+        // ?? [] so a shape change can't white-screen the page again.
+        setPagos(res.data ?? []);
+        setPagosPage(res.page);
+        setPagosPages(res.pages);
+        setPagosTotal(res.total);
       } catch {
         toast.error("Error al cargar pagos");
       } finally {
@@ -844,9 +847,18 @@ export default function AdminFinanzasPage() {
       {/* ============================================================ */}
       {tab === "GASTOS" && (
         <div className="flex flex-col gap-4">
-          {/* Category filter chips + Add button */}
-          <div className="fade-up flex items-center justify-between gap-3">
-            <div className="flex gap-2 overflow-x-auto pb-1 flex-1">
+          {/* Button on its own row above the chips — sharing a row inside the
+              430px shell left no width for them and sliced them mid-word. */}
+          <div className="fade-up flex flex-col gap-3">
+            <button
+              onClick={openNewGasto}
+              className="flex items-center justify-center gap-2 w-full bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-3 text-sm font-bold active:scale-98 transition-transform"
+            >
+              <Plus size={18} />
+              <span className="whitespace-nowrap">Registrar Gasto</span>
+            </button>
+
+            <div className="flex gap-2 overflow-x-auto pb-1 min-w-0">
               <button
                 onClick={() => setGastosCatFilter("TODOS")}
                 className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
@@ -871,14 +883,6 @@ export default function AdminFinanzasPage() {
                 </button>
               ))}
             </div>
-
-            <button
-              onClick={openNewGasto}
-              className="flex items-center gap-2 shrink-0 bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
-            >
-              <Plus size={18} />
-              <span className="hidden sm:inline">Registrar Gasto</span>
-            </button>
           </div>
 
           {/* List */}
@@ -963,19 +967,21 @@ export default function AdminFinanzasPage() {
       {/* ============================================================ */}
       {tab === "MOROSIDAD" && (
         <div className="flex flex-col gap-4">
-          <div className="fade-up flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
-              <AlertCircle size={20} className="text-[#EF4444]" />
+          {morosidad.length > 0 && (
+            <div className="fade-up flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
+                <AlertCircle size={20} className="text-[#EF4444]" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-text">
+                  Unidades con saldo vencido
+                </h3>
+                <p className="text-xs text-text" style={{ opacity: 0.5 }}>
+                  Ordenado de mayor a menor deuda
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-text">
-                Unidades con saldo vencido
-              </h3>
-              <p className="text-xs text-text" style={{ opacity: 0.5 }}>
-                Ordenado de mayor a menor deuda
-              </p>
-            </div>
-          </div>
+          )}
 
           {loadingMorosidad ? (
             <div className="w-full py-12 flex justify-center">
