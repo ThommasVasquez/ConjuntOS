@@ -970,6 +970,8 @@ function HomeAdmin() {
   const { user } = useAuth();
   const role = user?.rol;
   const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string; enSesion: boolean } | null>(null);
+  // Gates the card so it does not flash "Crear asamblea" before the fetch lands.
+  const [asambleaLoaded, setAsambleaLoaded] = useState(false);
 
   useEffect(() => {
     api.get<{ id: string; activa: boolean; sessionState?: unknown; titulo: string; descripcion?: string }>('/asambleas/activa/session')
@@ -985,7 +987,8 @@ function HomeAdmin() {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setAsambleaLoaded(true));
   }, []);
 
   return (
@@ -1015,8 +1018,10 @@ function HomeAdmin() {
         </div>
       )}
 
-      {activeAsamblea && (
-        <div 
+      {/* The panel is the only way to create an assembly, so this card has to
+          show even when there is none — otherwise the admin has no route to it. */}
+      {asambleaLoaded && (
+        <div
           onClick={() => router.push('/admin-asamblea')}
           className="w-full liquid-glass-card rounded-[28px] p-6 border border-border shadow-2xl text-text cursor-pointer hover:border-accent/40 transition-all flex justify-between items-center group"
         >
@@ -1026,19 +1031,26 @@ function HomeAdmin() {
             </div>
             <div>
               <span className="text-[9px] text-accent font-black uppercase tracking-widest block mb-0.5">Asambleas</span>
-              <h3 className="text-lg font-display font-bold leading-tight text-text">{activeAsamblea.titulo}</h3>
+              <h3 className="text-lg font-display font-bold leading-tight text-text">
+                {activeAsamblea ? activeAsamblea.titulo : "Crear asamblea"}
+              </h3>
               <p className="text-text text-xs mt-0.5 line-clamp-1">
-                {activeAsamblea.enSesion
-                  ? "Sesión en vivo — entrar para moderar"
-                  : "Programada — entrar para iniciar la sesión"}
+                {!activeAsamblea
+                  ? "No hay asamblea activa — convoca una nueva"
+                  : activeAsamblea.enSesion
+                    ? "Sesión en vivo — entrar para moderar"
+                    : "Programada — entrar para iniciar la sesión"}
               </p>
             </div>
           </div>
-          <button 
-            onClick={(e) => { e.stopPropagation(); router.push('/asamblea'); }}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(activeAsamblea ? '/asamblea' : '/admin-asamblea');
+            }}
             className="bg-accent text-on-accent text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
           >
-            Moderar <ArrowRight size={10} />
+            {activeAsamblea ? "Moderar" : "Crear"} <ArrowRight size={10} />
           </button>
         </div>
       )}
