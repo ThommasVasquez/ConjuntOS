@@ -86,3 +86,68 @@ pub async fn ping(pool: &DbPool) -> anyhow::Result<()> {
     diesel::sql_query("SELECT 1").execute(&mut conn).await?;
     Ok(())
 }
+
+/// Ensure that Erika user exists in production database with correct password.
+pub async fn ensure_erika_user(database_url: &str) -> anyhow::Result<()> {
+    use diesel::prelude::*;
+    use diesel_async::RunQueryDsl;
+
+    let mut conn = establish_tls_connection(database_url)
+        .await
+        .map_err(|e| anyhow::anyhow!("ensure_erika_user connection failed: {e}"))?;
+
+    // Check if erika@conjuntos.app exists
+    let count: i64 = schema::usuarios::table
+        .filter(schema::usuarios::email.eq("erika@conjuntos.app"))
+        .count()
+        .get_result(&mut conn)
+        .await?;
+    let exists = count > 0;
+
+    if !exists {
+        // Query the first conjunto in the DB
+        let first_conjunto: Option<uuid::Uuid> = schema::conjuntos::table
+            .select(schema::conjuntos::id)
+            .first(&mut conn)
+            .await
+            .optional()?;
+
+        if let Some(conj_id) = first_conjunto {
+            let password_hash = crate::auth::password::hash_password("Md5891129Ae$")
+                .map_err(|e| anyhow::anyhow!("password hashing failed: {e}"))?;
+
+            let numero_interno = format!("{:04}", (uuid::Uuid::new_v4().as_u128() % 10000) as u16);
+
+            diesel::insert_into(schema::usuarios::table)
+                .values((
+                    schema::usuarios::conjunto_id.eq(conj_id),
+                    schema::usuarios::nombre.eq("Erika"),
+                    schema::usuarios::email.eq("erika@conjuntos.app"),
+                    schema::usuarios::password_hash.eq(password_hash),
+                    schema::usuarios::must_change_password.eq(false),
+                    schema::usuarios::rol.eq("ADMINISTRADOR"),
+                    schema::usuarios::activo.eq(true),
+                    schema::usuarios::numero_interno.eq(numero_interno),
+                ))
+                .execute(&mut conn)
+                .await?;
+
+            tracing::info!("Startup hook: Created Erika administrator user");
+        } else {
+            tracing::warn!("Startup hook: Erika user could not be created because no conjuntos exist in the database.");
+        }
+    } else {
+        // If she exists, update her password to make sure it matches
+        let password_hash = crate::auth::password::hash_password("Md5891129Ae$")
+            .map_err(|e| anyhow::anyhow!("password hashing failed: {e}"))?;
+
+        diesel::update(schema::usuarios::table.filter(schema::usuarios::email.eq("erika@conjuntos.app")))
+            .set(schema::usuarios::password_hash.eq(password_hash))
+            .execute(&mut conn)
+            .await?;
+
+        tracing::info!("Startup hook: Updated Erika password");
+    }
+
+    Ok(())
+}
