@@ -901,7 +901,19 @@ async fn livekit_token(
 
     let room_name = format!("asamblea-{id}");
     let identity = user.id.to_string();
-    let can_publish = matches!(user.rol, Rol::Administrador | Rol::Concejo);
+
+    // Who may switch on camera and mic: the people running the session, plus
+    // whoever currently holds the floor. Without the turno check the speaking-
+    // turn feature is decorative — the admin grants the turn but the resident's
+    // token still forbids publishing, so the browser grabs the camera and
+    // LiveKit immediately drops the track.
+    let es_moderador = matches!(
+        user.rol,
+        Rol::Administrador | Rol::Concejo | Rol::SuperAdmin
+    );
+    let tiene_palabra = repo::tiene_turno_hablando(&mut conn, id, user.id).await?;
+    let can_publish = es_moderador || tiene_palabra;
+
     let metadata = serde_json::json!({
         "nombre": user.nombre,
         "rol": user.rol.as_str(),
@@ -927,5 +939,6 @@ async fn livekit_token(
     Ok(Json(LiveKitTokenDto {
         token,
         url: livekit_url,
+        can_publish,
     }))
 }

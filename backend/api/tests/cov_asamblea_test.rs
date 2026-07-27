@@ -649,3 +649,170 @@ async fn finalizing_session_returns_the_closed_asamblea() {
     assert_eq!(s, StatusCode::OK);
     assert!(session.is_null(), "expected no active session, got {session}");
 }
+
+// ── LiveKit publish grants ───────────────────────────────────────────────
+
+/// Verify the LiveKit JWT and pull `video.canPublish` out of it.
+fn token_can_publish(token: &str) -> bool {
+    use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+    let mut validation = Validation::new(Algorithm::HS256);
+    validation.validate_aud = false;
+    // The room grant, not an audience claim, is what these tokens carry.
+    validation.set_required_spec_claims(&["exp"]);
+    let data = decode::<serde_json::Value>(
+        token,
+        &DecodingKey::from_secret(LIVEKIT_TEST_SECRET.as_bytes()),
+        &validation,
+    )
+    .expect("livekit token must verify with the configured secret");
+    data.claims["video"]["canPublish"]
+        .as_bool()
+        .expect("video.canPublish must be present")
+}
+
+async fn livekit_grant(app: &axum::Router, token: &str, aid: &str) -> (bool, bool) {
+    let url = format!("/api/v1/asambleas/{aid}/livekit-token");
+    let (s, body) = request(app, Method::GET, &url, Some(token), None).await;
+    assert_eq!(s, StatusCode::OK, "livekit-token failed: {body}");
+    let dto_says = body["canPublish"].as_bool().expect("canPublish in DTO");
+    let jwt_says = token_can_publish(body["token"].as_str().expect("token string"));
+    // The DTO must not disagree with the grant actually signed into the JWT.
+    assert_eq!(dto_says, jwt_says, "DTO canPublish disagrees with the JWT");
+    (dto_says, jwt_says)
+}
+
+#[tokio::test]
+async fn moderator_roles_may_publish() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (aid, _) = seed_asamblea(&state, conj).await;
+
+    for rol in [Rol::Administrador, Rol::Concejo, Rol::SuperAdmin] {
+        let (_uid, email) = seed_user_in(&state, conj, rol).await;
+        let token = login(&app, &email).await;
+        let (can_publish, _) = livekit_grant(&app, &token, &aid).await;
+        assert!(can_publish, "{rol:?} should be allowed to publish");
+    }
+}
+
+#[tokio::test]
+async fn resident_may_not_publish_without_the_floor() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_uid, email) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let token = login(&app, &email).await;
+
+    let (aid, _) = seed_asamblea(&state, conj).await;
+
+    let (can_publish, _) = livekit_grant(&app, &token, &aid).await;
+    assert!(!can_publish, "a resident without the floor must be watch-only");
+}
+
+#[tokio::test]
+async fn resident_may_publish_while_holding_the_floor() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_admin_id, admin_email) = seed_user_in(&state, conj, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+    let (_uid, email) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let resident_token = login(&app, &email).await;
+
+    let (aid, _) = seed_asamblea(&state, conj).await;
+
+    // Resident asks for the floor.
+    let turnos_url = format!("/api/v1/asambleas/{aid}/turnos");
+    let (s, turno) = request(
+        &app,
+        Method::POST,
+        &turnos_url,
+        Some(&resident_token),
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "create turno failed: {turno}");
+    let tid = turno["id"].as_str().expect("turno id");
+
+    // Still watch-only while merely pending.
+    let (can_publish, _) = livekit_grant(&app, &resident_token, &aid).await;
+    assert!(!can_publish, "a PENDIENTE turn must not grant publish");
+
+    // Admin gives them the floor.
+    let turno_url = format!("/api/v1/asambleas/{aid}/turnos/{tid}");
+    let (s, body) = request(
+        &app,
+        Method::PUT,
+        &turno_url,
+        Some(&admin_token),
+        Some(json!({ "estado": "HABLANDO" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "grant floor failed: {body}");
+
+    let (can_publish, _) = livekit_grant(&app, &resident_token, &aid).await;
+    assert!(can_publish, "holding the floor must grant publish");
+
+    // And it is revoked when the turn completes.
+    let (s, body) = request(
+        &app,
+        Method::PUT,
+        &turno_url,
+        Some(&admin_token),
+        Some(json!({ "estado": "COMPLETADO" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "complete turno failed: {body}");
+
+    let (can_publish, _) = livekit_grant(&app, &resident_token, &aid).await;
+    assert!(!can_publish, "publish must be revoked once the turn completes");
+}
+
+#[tokio::test]
+async fn floor_in_another_asamblea_does_not_grant_publish() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj_a = seed_conjunto(&state).await;
+    let conj_b = seed_conjunto(&state).await;
+    let (aid_a, _) = seed_asamblea(&state, conj_a).await;
+    let (aid_b, _) = seed_asamblea(&state, conj_b).await;
+
+    let (_admin_id, admin_email) = seed_user_in(&state, conj_a, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+    let (_uid, email) = seed_user_in(&state, conj_a, Rol::Propietario).await;
+    let resident_token = login(&app, &email).await;
+
+    // Give the resident the floor in their own conjunto's asamblea.
+    let (s, turno) = request(
+        &app,
+        Method::POST,
+        &format!("/api/v1/asambleas/{aid_a}/turnos"),
+        Some(&resident_token),
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "create turno failed: {turno}");
+    let tid = turno["id"].as_str().expect("turno id");
+    let (s, _) = request(
+        &app,
+        Method::PUT,
+        &format!("/api/v1/asambleas/{aid_a}/turnos/{tid}"),
+        Some(&admin_token),
+        Some(json!({ "estado": "HABLANDO" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+
+    // The other conjunto's assembly is not theirs to speak in — and is not even
+    // visible to them.
+    let (s, _) = request(
+        &app,
+        Method::GET,
+        &format!("/api/v1/asambleas/{aid_b}/livekit-token"),
+        Some(&resident_token),
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::NOT_FOUND, "cross-tenant token must be refused");
+}

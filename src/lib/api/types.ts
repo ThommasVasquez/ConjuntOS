@@ -855,6 +855,8 @@ export interface AdminStatsDto {
 export interface LiveKitTokenDto {
   token: string;
   url: string;
+  /** Whether this token may publish camera/mic (moderators, or whoever holds the floor). */
+  canPublish: boolean;
 }
 
 // ===========================================================================

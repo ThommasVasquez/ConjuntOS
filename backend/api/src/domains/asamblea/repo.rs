@@ -540,6 +540,23 @@ pub async fn list_turnos(conn: &mut DbConn, asamblea_id: Uuid) -> ApiResult<Vec<
         .map_err(Into::into)
 }
 
+/// True while `usuario_id` holds the floor in this asamblea. Drives the LiveKit
+/// publish grant, so a resident given the turn can switch on camera and mic.
+pub async fn tiene_turno_hablando(
+    conn: &mut DbConn,
+    asamblea_id: Uuid,
+    usuario_id: Uuid,
+) -> ApiResult<bool> {
+    let n: i64 = asamblea_turnos::table
+        .filter(asamblea_turnos::asamblea_id.eq(asamblea_id))
+        .filter(asamblea_turnos::usuario_id.eq(usuario_id))
+        .filter(asamblea_turnos::estado.eq(EstadoTurno::Hablando))
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
 pub async fn create_turno(conn: &mut DbConn, nuevo: NuevoTurno) -> ApiResult<AsambleaTurno> {
     diesel::insert_into(asamblea_turnos::table)
         .values(&nuevo)
