@@ -7,15 +7,15 @@
 # Ambos hostnames deben ser registros A DNS-only (nube gris) apuntando a este host:
 # el reto HTTP-01 de Let's Encrypt entra por :80 y el media UDP va directo.
 
-livekit-conjuntos.host-ia.online {
+livekit.conjuntos.app {
 	# Señalización WebSocket de LiveKit. El media (UDP 7882 / TURN 5349) no pasa
 	# por aquí: va directo al host.
 	reverse_proxy livekit:7880
 }
 
-turn-conjuntos.host-ia.online {
+turn.conjuntos.app {
 	# Este sitio existe solo para que Caddy emita y renueve el certificado de
-	# turn-conjuntos. Quien lo usa es LiveKit (turn.cert_file), no Caddy.
+	# turn.conjuntos.app. Quien lo usa es LiveKit (turn.cert_file), no Caddy.
 	# scripts/sync-turn-cert.sh copia el par al volumen de LiveKit.
 	respond "conjuntos turn endpoint" 200
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sync-turn-cert.sh — copia el certificado de turn-conjuntos.host-ia.online que
+# sync-turn-cert.sh — copia el certificado de turn.conjuntos.app que
 # emite/renueva Caddy al directorio que monta LiveKit, y recarga LiveKit solo si
 # el certificado cambió.
 #
@@ -13,7 +13,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-DOMAIN=turn-conjuntos.host-ia.online
+DOMAIN=turn.conjuntos.app
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.deploy.yml)
 # Ruta de Caddy dentro de su volumen de datos.
 SRC="/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/$DOMAIN"
