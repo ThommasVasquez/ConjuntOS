@@ -46,6 +46,7 @@ interface TramiteDocumento {
   nombre: string;
   base64: string;
   type?: string;
+  mimeType?: string;
 }
 
 interface TramiteMeta {
@@ -89,6 +90,7 @@ export default function AdminNovedadesPage() {
   const [nuevaCeldaNum, setNuevaCeldaNum] = useState("");
   const [nuevaCeldaTorre, setNuevaCeldaTorre] = useState("");
   const [creandoCelda, setCreandoCelda] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{nombre: string, base64: string, mimeType?: string} | null>(null);
 
   const crearCeldaRapida = async () => {
     if (!nuevaCeldaNum.trim()) { toast.error("Indica el número de la celda"); return; }
@@ -390,6 +392,44 @@ export default function AdminNovedadesPage() {
                 </button>
             )}
        </div>
+
+       {/* DOCUMENT PREVIEW MODAL */}
+       {previewDoc && (
+          <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
+             <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setPreviewDoc(null)} />
+             <div className="w-full max-w-[800px] h-[80vh] liquid-glass rounded-[32px] p-6 border border-border/40 relative z-10 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center pb-2 border-b border-border">
+                   <div className="overflow-hidden">
+                      <h4 className="text-sm font-bold text-text truncate">{previewDoc.nombre}</h4>
+                      <p className="text-[10px] text-accent font-bold uppercase tracking-[0.2em] mt-0.5">Vista previa online</p>
+                   </div>
+                   <button 
+                     onClick={() => setPreviewDoc(null)} 
+                     className="w-10 h-10 rounded-full bg-text/5 flex items-center justify-center text-text hover:bg-text/10 transition-colors"
+                   >
+                      <X size={18} />
+                   </button>
+                </div>
+                
+                <div className="flex-1 w-full bg-black/40 rounded-2xl overflow-hidden relative flex items-center justify-center border border-border/30">
+                   {previewDoc.base64.startsWith('data:image/') || previewDoc.mimeType?.startsWith('image/') ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img 
+                        src={previewDoc.base64} 
+                        alt={previewDoc.nombre} 
+                        className="max-w-full max-h-full object-contain" 
+                      />
+                   ) : (
+                      <iframe 
+                        src={previewDoc.base64} 
+                        className="w-full h-full border-none rounded-xl"
+                        title={previewDoc.nombre}
+                      />
+                   )}
+                </div>
+             </div>
+          </div>
+       )}
 
        {/* Tabs */}
        <div className="flex bg-surface-2 rounded-full p-1 border border-border">
@@ -701,12 +741,22 @@ export default function AdminNovedadesPage() {
                                         <FileText size={14} className={doc.type === 'pdf' ? 'text-text' : 'text-text'} />
                                         <span className="text-[10px] text-text truncate">{doc.nombre}</span>
                                      </div>
-                                     <button 
-                                       onClick={() => downloadFile(doc.base64, doc.nombre)}
-                                       className="text-[10px] font-black text-accent uppercase tracking-widest hover:text-text transition-colors animate-in"
-                                     >
-                                        Descargar
-                                     </button>
+                                      <div className="flex gap-3">
+                                         <button 
+                                           type="button"
+                                           onClick={() => setPreviewDoc({ nombre: doc.nombre, base64: doc.base64, mimeType: doc.mimeType })}
+                                           className="text-[10px] font-black text-accent uppercase tracking-widest hover:text-text transition-colors animate-in"
+                                         >
+                                            Ver
+                                         </button>
+                                         <button 
+                                           type="button"
+                                           onClick={() => downloadFile(doc.base64, doc.nombre)}
+                                           className="text-[10px] font-black text-text/40 uppercase tracking-widest hover:text-text transition-colors animate-in"
+                                         >
+                                            Descargar
+                                         </button>
+                                      </div>
                                   </div>
                                ))}
                             </div>
