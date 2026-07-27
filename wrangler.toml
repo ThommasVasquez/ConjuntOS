@@ -19,7 +19,11 @@ compatibility_flags = [ "nodejs_compat" ]
 # AuthProvider contra el backend Rust. Mantenerlas solo servía para chocar con
 # las variables del dashboard de Pages ("Binding name 'AUTH_URL' already in use").
 [env.production.vars]
-NEXT_PUBLIC_API_URL = "https://api-conjuntos.host-ia.online"
+NEXT_PUBLIC_API_URL = "https://api.conjuntos.app"
+# Señalización wss de LiveKit. Hoy el cliente toma la URL del token que emite el
+# backend (LiveRoom.tsx usa `data.url`), así que esta var es informativa — pero se
+# mantiene alineada con LIVEKIT_URL del backend para que no diverjan.
+NEXT_PUBLIC_LIVEKIT_URL = "wss://livekit.conjuntos.app"
 NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BGR9jWtFAOh6MVaal_V0G5WWV4LSWkSxUHzyDiK8hm8GA8M8qW6v__K-YCW4fissUNsenZr4foTXYscFIRavBnk"
 SKIP_INSTALL_COMMAND = "true"
 VAPID_SUBJECT = "mailto:soporte@conjuntos.app"
