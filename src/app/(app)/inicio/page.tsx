@@ -60,6 +60,7 @@ import type {
 } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { getNotifTarget } from "@/lib/notif-routing";
+import { estaEnSesion } from "@/lib/asamblea";
 import { gsap } from "gsap";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -248,8 +249,10 @@ function HomeResidente() {
 
   const fetchActiveAsamblea = useCallback(async () => {
     try {
-      const data = await api.get<{ id: string; activa: boolean; titulo: string; descripcion?: string }>('/asambleas/activa/session');
-      if (data?.id && data?.activa) {
+      const data = await api.get<{ id: string; activa: boolean; sessionState?: unknown; titulo: string; descripcion?: string }>('/asambleas/activa/session');
+      // Only surface the "en vivo" card once the admin has actually started the
+      // session — a created-but-scheduled assembly has nothing to join yet.
+      if (data?.id && estaEnSesion(data)) {
         setActiveAsamblea({ id: data.id, titulo: data.titulo, descripcion: data.descripcion });
       } else {
         setActiveAsamblea(null);
@@ -966,13 +969,20 @@ function HomeAdmin() {
   const router = useRouter();
   const { user } = useAuth();
   const role = user?.rol;
-  const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string } | null>(null);
+  const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string; enSesion: boolean } | null>(null);
 
   useEffect(() => {
-    api.get<{ id: string; activa: boolean; titulo: string; descripcion?: string }>('/asambleas/activa/session')
+    api.get<{ id: string; activa: boolean; sessionState?: unknown; titulo: string; descripcion?: string }>('/asambleas/activa/session')
       .then((data) => {
+        // Unlike the resident card, a scheduled assembly still shows here — it
+        // is the admin who has to open the panel and start the session.
         if (data?.id && data?.activa) {
-          setActiveAsamblea({ id: data.id, titulo: data.titulo, descripcion: data.descripcion });
+          setActiveAsamblea({
+            id: data.id,
+            titulo: data.titulo,
+            descripcion: data.descripcion,
+            enSesion: estaEnSesion(data),
+          });
         }
       })
       .catch(() => {});
@@ -1017,7 +1027,11 @@ function HomeAdmin() {
             <div>
               <span className="text-[9px] text-accent font-black uppercase tracking-widest block mb-0.5">Asambleas</span>
               <h3 className="text-lg font-display font-bold leading-tight text-text">{activeAsamblea.titulo}</h3>
-              <p className="text-text text-xs mt-0.5 line-clamp-1">Sesión en vivo — entrar para moderar</p>
+              <p className="text-text text-xs mt-0.5 line-clamp-1">
+                {activeAsamblea.enSesion
+                  ? "Sesión en vivo — entrar para moderar"
+                  : "Programada — entrar para iniciar la sesión"}
+              </p>
             </div>
           </div>
           <button 

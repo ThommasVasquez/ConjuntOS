@@ -1,0 +1,1 @@
+DROP INDEX asambleas_una_activa_por_conjunto;

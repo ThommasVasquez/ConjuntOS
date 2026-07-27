@@ -29,6 +29,7 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
+import { estaEnSesion } from "@/lib/asamblea";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { LiveKitTokenDto } from "@/lib/api/types";
@@ -142,6 +143,13 @@ function fmtTime(iso: string): string {
   } catch { return ""; }
 }
 
+/** `datetime-local` needs a local-time string, not the ISO/UTC one. */
+function nowForDatetimeLocal(): string {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
 // ---------------------------------------------------------------------------
 // Page Component
 // ---------------------------------------------------------------------------
@@ -160,6 +168,12 @@ export default function AdminAsambleaPage() {
   const [asamblea, setAsamblea] = useState<AsambleaDto | null>(null);
   const [savingSession, setSavingSession] = useState(false);
   const [liveKitToken, setLiveKitToken] = useState<LiveKitTokenDto | null>(null);
+
+  // ── Crear asamblea ────────────────────────────────────────────────────────
+  const [showCrearModal, setShowCrearModal] = useState(false);
+  const [crearForm, setCrearForm] = useState({ titulo: "", descripcion: "", fecha: "" });
+  const [ordenDiaForm, setOrdenDiaForm] = useState<{ titulo: string; descripcion: string }[]>([]);
+  const [creandoAsamblea, setCreandoAsamblea] = useState(false);
 
   // ── Votaciones ────────────────────────────────────────────────────────────
   const [votaciones, setVotaciones] = useState<VotacionDto[]>([]);
@@ -322,6 +336,43 @@ export default function AdminAsambleaPage() {
   // Session mutations
   // =====================================================================
 
+  const openCrearModal = () => {
+    setCrearForm({ titulo: "", descripcion: "", fecha: nowForDatetimeLocal() });
+    setOrdenDiaForm([]);
+    setShowCrearModal(true);
+  };
+
+  const handleCrearAsamblea = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!crearForm.titulo.trim()) return;
+    setCreandoAsamblea(true);
+    try {
+      const ordenDia = ordenDiaForm
+        .filter((item) => item.titulo.trim())
+        .map((item) => ({
+          titulo: item.titulo.trim(),
+          descripcion: item.descripcion.trim() || undefined,
+        }));
+
+      const creada = await api.post<AsambleaDto>("/asambleas", {
+        titulo: crearForm.titulo.trim(),
+        descripcion: crearForm.descripcion.trim() || undefined,
+        // The input is local time; send the absolute instant the backend stores.
+        fecha: crearForm.fecha ? new Date(crearForm.fecha).toISOString() : undefined,
+        ordenDia,
+      });
+
+      setAsamblea(creada);
+      setShowCrearModal(false);
+      setTab("sesion");
+      toast.success("Asamblea creada");
+    } catch (e: unknown) {
+      toast.error(e instanceof ApiError ? e.detail : "Error al crear la asamblea");
+    } finally {
+      setCreandoAsamblea(false);
+    }
+  };
+
   const toggleSession = async (activa: boolean) => {
     if (!asamblea) return;
     setSavingSession(true);
@@ -470,9 +521,15 @@ export default function AdminAsambleaPage() {
             <div>
               <p className="text-text font-medium text-lg">No hay asamblea activa</p>
               <p className="text-xs text-text mt-1" style={{ opacity: 0.5 }}>
-                Inicia una nueva asamblea desde el panel de administración.
+                Crea una nueva asamblea para convocar a los copropietarios.
               </p>
             </div>
+            <button
+              onClick={openCrearModal}
+              className="px-6 py-3 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-95 transition-transform flex items-center gap-2"
+            >
+              <Plus size={16} /> Crear Asamblea
+            </button>
           </div>
         ) : (
           <>
@@ -480,13 +537,13 @@ export default function AdminAsambleaPage() {
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                  asamblea.activa
+                  estaEnSesion(asamblea)
                     ? "bg-[#57bf00]/10 border border-[#57bf00]/30"
                     : "bg-text/10 border border-text/20"
                 }`}>
-                  {asamblea.activa
+                  {estaEnSesion(asamblea)
                     ? <Play size={24} className="text-[#57bf00]" />
-                    : <Square size={24} className="text-text" />
+                    : <Clock size={24} className="text-text" />
                   }
                 </div>
                 <div className="min-w-0">
@@ -503,12 +560,12 @@ export default function AdminAsambleaPage() {
               </div>
 
               <span className={`shrink-0 text-[10px] font-bold uppercase px-3 py-1 rounded-full border flex items-center gap-1.5 ${
-                asamblea.activa
+                estaEnSesion(asamblea)
                   ? "bg-[#57bf00]/15 text-[#57bf00] border-[#57bf00]/30"
                   : "bg-text/10 text-text border-border"
               }`}>
-                <span className={`w-2 h-2 rounded-full ${asamblea.activa ? "bg-[#57bf00] animate-pulse" : "bg-text/30"}`} />
-                {asamblea.activa ? "En Vivo" : "Finalizada"}
+                <span className={`w-2 h-2 rounded-full ${estaEnSesion(asamblea) ? "bg-[#57bf00] animate-pulse" : "bg-text/30"}`} />
+                {estaEnSesion(asamblea) ? "En Vivo" : "Programada"}
               </span>
             </div>
 
@@ -547,7 +604,7 @@ export default function AdminAsambleaPage() {
 
             {/* Actions */}
             <div className="flex gap-3">
-              {!asamblea.activa ? (
+              {!estaEnSesion(asamblea) ? (
                 <button
                   disabled={savingSession}
                   onClick={() => toggleSession(true)}
@@ -573,7 +630,7 @@ export default function AdminAsambleaPage() {
                 </button>
               )}
 
-              {asamblea.activa && (
+              {estaEnSesion(asamblea) && (
                 <button
                   onClick={fetchLiveKitToken}
                   className="px-5 py-3 rounded-full bg-[#009df2]/15 text-[#009df2] border border-[#009df2]/30 font-bold text-xs active:scale-95 transition-transform flex items-center gap-2"
@@ -984,6 +1041,132 @@ export default function AdminAsambleaPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* CREATE ASAMBLEA MODAL */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {showCrearModal && (
+        <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0"
+            onClick={() => !creandoAsamblea && setShowCrearModal(false)}
+          />
+          <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[480px] max-h-[90vh] overflow-y-auto p-6 pb-10 sm:pb-6 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
+            <div className="flex items-center justify-between mb-5 pb-3 border-b border-border">
+              <h3 className="text-lg font-bold text-text">Nueva Asamblea</h3>
+              <button
+                onClick={() => !creandoAsamblea && setShowCrearModal(false)}
+                className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text hover:bg-text/10 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCrearAsamblea} className="flex flex-col gap-4">
+              {/* Título */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
+                  Título *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={crearForm.titulo}
+                  onChange={(e) => setCrearForm((prev) => ({ ...prev, titulo: e.target.value }))}
+                  placeholder="Ej: Asamblea General Ordinaria 2026"
+                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent placeholder:text-text"
+                />
+              </div>
+
+              {/* Descripción */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
+                  Descripción
+                </label>
+                <textarea
+                  rows={2}
+                  value={crearForm.descripcion}
+                  onChange={(e) => setCrearForm((prev) => ({ ...prev, descripcion: e.target.value }))}
+                  placeholder="Convocatoria, lugar, modalidad..."
+                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent placeholder:text-text resize-none"
+                />
+              </div>
+
+              {/* Fecha */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
+                  Fecha y hora
+                </label>
+                <input
+                  type="datetime-local"
+                  value={crearForm.fecha}
+                  onChange={(e) => setCrearForm((prev) => ({ ...prev, fecha: e.target.value }))}
+                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              {/* Orden del día */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1 flex items-center gap-1.5">
+                  <ListOrdered size={12} />
+                  Orden del día
+                </label>
+
+                <div className="flex flex-col gap-2">
+                  {ordenDiaForm.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="w-6 h-6 shrink-0 rounded-full bg-surface-2 border border-border flex items-center justify-center text-[10px] font-bold text-text">
+                        {i + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={item.titulo}
+                        onChange={(e) =>
+                          setOrdenDiaForm((prev) =>
+                            prev.map((it, idx) => (idx === i ? { ...it, titulo: e.target.value } : it))
+                          )
+                        }
+                        placeholder={`Punto ${i + 1}`}
+                        className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl py-2.5 px-3 text-sm text-text focus:outline-none focus:border-accent placeholder:text-text"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setOrdenDiaForm((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="w-8 h-8 shrink-0 rounded-full bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444] flex items-center justify-center hover:bg-[#EF4444]/20 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOrdenDiaForm((prev) => [...prev, { titulo: "", descripcion: "" }])}
+                  className="self-start mt-1 px-4 py-2 rounded-full bg-surface-2 border border-border text-text text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 hover:bg-text/10 transition-colors"
+                >
+                  <Plus size={12} /> Agregar punto
+                </button>
+
+                <span className="text-[10px] text-text" style={{ opacity: 0.4 }}>
+                  Los puntos vacíos se descartan. Podrás iniciar la sesión cuando la asamblea esté creada.
+                </span>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={creandoAsamblea || !crearForm.titulo.trim()}
+                className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+              >
+                {creandoAsamblea ? (
+                  <><Skeleton className="w-5 h-5 rounded-full" /> Creando...</>
+                ) : "Crear Asamblea"}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════════════ */}

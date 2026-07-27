@@ -52,6 +52,28 @@ pub struct SessionUpdateRequest {
     pub version: i32,
 }
 
+/// One agenda entry. Stored inside `asambleas.orden_dia` (jsonb array), which
+/// `AsambleaDto` echoes back verbatim.
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OrdenDiaItemDto {
+    /// Assigned server-side when the client omits it so the item keeps a stable
+    /// key as the agenda is reordered.
+    pub id: Option<String>,
+    pub titulo: String,
+    pub descripcion: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateAsambleaRequest {
+    pub titulo: String,
+    pub descripcion: Option<String>,
+    /// Defaults to now when omitted.
+    pub fecha: Option<DateTime<Utc>>,
+    pub orden_dia: Option<Vec<OrdenDiaItemDto>>,
+}
+
 // ── Pairing ──────────────────────────────────────────────────────────────
 
 #[derive(Serialize, ToSchema)]

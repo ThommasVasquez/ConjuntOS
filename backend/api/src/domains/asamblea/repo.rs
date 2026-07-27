@@ -13,8 +13,8 @@ use crate::db::schema::{
 use crate::db::DbConn;
 use crate::domains::asamblea::models::{
     Asamblea, AsambleaAsistencia, AsambleaOpinion, AsambleaPairing, AsambleaPoder, AsambleaTurno,
-    AsambleaVotacion, AsambleaVoto, NuevaAsistencia, NuevaOpinion, NuevaVotacion, NuevoPairing,
-    NuevoPoder, NuevoTurno, NuevoVoto,
+    AsambleaVotacion, AsambleaVoto, NuevaAsamblea, NuevaAsistencia, NuevaOpinion, NuevaVotacion,
+    NuevoPairing, NuevoPoder, NuevoTurno, NuevoVoto,
 };
 use crate::error::{ApiError, ApiResult};
 
@@ -83,6 +83,41 @@ pub async fn get_user_info(
 }
 
 // ── Session ──────────────────────────────────────────────────────────────
+
+/// Creates the conjunto's assembly as the active one.
+///
+/// The in-transaction pre-check exists to return the friendly "ya hay una
+/// asamblea activa" 409; the `asambleas_una_activa_por_conjunto` partial unique
+/// index is what actually holds under two concurrent creates (it surfaces as a
+/// generic 409 via the `UniqueViolation` mapping in error.rs).
+pub async fn create_asamblea(conn: &mut DbConn, nueva: NuevaAsamblea) -> ApiResult<Asamblea> {
+    conn.transaction(|conn| {
+        async move {
+            let activas: i64 = asambleas::table
+                .filter(asambleas::conjunto_id.eq(nueva.conjunto_id))
+                .filter(asambleas::activa.eq(true))
+                .count()
+                .get_result(conn)
+                .await?;
+
+            if activas > 0 {
+                return Err(ApiError::Conflict(
+                    "ya hay una asamblea activa; finalízala antes de crear otra".into(),
+                ));
+            }
+
+            let asamblea = diesel::insert_into(asambleas::table)
+                .values(&nueva)
+                .returning(Asamblea::as_returning())
+                .get_result(conn)
+                .await?;
+
+            Ok::<_, ApiError>(asamblea)
+        }
+        .scope_boxed()
+    })
+    .await
+}
 
 pub async fn get_active_session(conn: &mut DbConn, conjunto_id: Uuid) -> ApiResult<Asamblea> {
     asambleas::table

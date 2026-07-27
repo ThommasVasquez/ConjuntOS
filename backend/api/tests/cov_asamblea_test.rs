@@ -422,3 +422,230 @@ async fn resident_cannot_create_votacion() {
     .await;
     assert_eq!(s, StatusCode::FORBIDDEN);
 }
+
+// ── POST /asambleas ──────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn admin_creates_asamblea_scheduled_with_agenda_ids() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_admin_id, admin_email) = seed_user_in(&state, conj, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+
+    let (s, body) = request(
+        &app,
+        Method::POST,
+        "/api/v1/asambleas",
+        Some(&admin_token),
+        Some(json!({
+            "titulo": "  Asamblea General Ordinaria  ",
+            "descripcion": "Convocatoria anual",
+            "ordenDia": [
+                { "titulo": "Verificación de quórum" },
+                { "titulo": "   " },
+                { "titulo": "Aprobación de presupuesto", "descripcion": "Vigencia 2026" }
+            ]
+        })),
+    )
+    .await;
+
+    assert_eq!(s, StatusCode::OK, "create asamblea failed: {body}");
+    assert_eq!(body["titulo"], "Asamblea General Ordinaria");
+    // Open (so GET activa/session finds it) but not yet in session.
+    assert_eq!(body["activa"], true);
+    assert_eq!(body["sessionState"], "PROGRAMADA");
+    assert_eq!(body["version"], 0);
+    assert_eq!(body["itemActivoIndex"], 0);
+
+    // Blank agenda rows are dropped and every survivor gets an id.
+    let orden = body["ordenDia"].as_array().expect("ordenDia array");
+    assert_eq!(orden.len(), 2);
+    assert_eq!(orden[0]["titulo"], "Verificación de quórum");
+    assert_eq!(orden[1]["titulo"], "Aprobación de presupuesto");
+    for item in orden {
+        assert!(
+            item["id"].as_str().is_some_and(|id| !id.is_empty()),
+            "agenda item missing id: {item}"
+        );
+    }
+
+    // It is now the conjunto's active assembly.
+    let (s, session) = request(
+        &app,
+        Method::GET,
+        "/api/v1/asambleas/activa/session",
+        Some(&admin_token),
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    assert_eq!(session["id"], body["id"]);
+}
+
+#[tokio::test]
+async fn create_asamblea_rejects_non_admin() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_uid, email) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let token = login(&app, &email).await;
+
+    let (s, _) = request(
+        &app,
+        Method::POST,
+        "/api/v1/asambleas",
+        Some(&token),
+        Some(json!({ "titulo": "Asamblea pirata" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn create_asamblea_rejects_empty_titulo() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_admin_id, admin_email) = seed_user_in(&state, conj, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+
+    let (s, _) = request(
+        &app,
+        Method::POST,
+        "/api/v1/asambleas",
+        Some(&admin_token),
+        Some(json!({ "titulo": "   " })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn create_asamblea_conflicts_while_one_is_active() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_admin_id, admin_email) = seed_user_in(&state, conj, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+
+    let (_aid, _) = seed_asamblea(&state, conj).await;
+
+    let (s, _) = request(
+        &app,
+        Method::POST,
+        "/api/v1/asambleas",
+        Some(&admin_token),
+        Some(json!({ "titulo": "Segunda asamblea" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CONFLICT);
+}
+
+#[tokio::test]
+async fn create_asamblea_allowed_again_after_previous_is_closed() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_admin_id, admin_email) = seed_user_in(&state, conj, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+
+    let (_aid, v) = seed_asamblea(&state, conj).await;
+
+    // Close the running assembly the way the admin panel does.
+    let (s, body) = request(
+        &app,
+        Method::PUT,
+        "/api/v1/asambleas/activa/session",
+        Some(&admin_token),
+        Some(json!({ "activa": false, "sessionState": "FINALIZADA", "version": v })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "close session failed: {body}");
+
+    let (s, body) = request(
+        &app,
+        Method::POST,
+        "/api/v1/asambleas",
+        Some(&admin_token),
+        Some(json!({ "titulo": "Asamblea extraordinaria" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "create after close failed: {body}");
+    assert_eq!(body["titulo"], "Asamblea extraordinaria");
+}
+
+#[tokio::test]
+async fn create_asamblea_is_scoped_to_caller_conjunto() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj_a = seed_conjunto(&state).await;
+    let conj_b = seed_conjunto(&state).await;
+    let (_admin_id, admin_email) = seed_user_in(&state, conj_a, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+
+    // B already has one running; it must not block A, and A's must not land in B.
+    let (_bid, _) = seed_asamblea(&state, conj_b).await;
+
+    let (s, body) = request(
+        &app,
+        Method::POST,
+        "/api/v1/asambleas",
+        Some(&admin_token),
+        Some(json!({ "titulo": "Asamblea de A" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "create failed: {body}");
+
+    let (_uid_b, email_b) = seed_user_in(&state, conj_b, Rol::Administrador).await;
+    let token_b = login(&app, &email_b).await;
+    let (s, session_b) = request(
+        &app,
+        Method::GET,
+        "/api/v1/asambleas/activa/session",
+        Some(&token_b),
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    assert_eq!(session_b["titulo"], "Asamblea Test");
+}
+
+#[tokio::test]
+async fn finalizing_session_returns_the_closed_asamblea() {
+    // Regression: the handler used to re-read the row as "the active session"
+    // after writing, so closing an assembly 404'd a write that had committed.
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_admin_id, admin_email) = seed_user_in(&state, conj, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+
+    let (aid, v) = seed_asamblea(&state, conj).await;
+
+    let (s, body) = request(
+        &app,
+        Method::PUT,
+        "/api/v1/asambleas/activa/session",
+        Some(&admin_token),
+        Some(json!({ "activa": false, "sessionState": "FINALIZADA", "version": v })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "finalize failed: {body}");
+    assert_eq!(body["id"], aid);
+    assert_eq!(body["activa"], false);
+    assert_eq!(body["sessionState"], "FINALIZADA");
+    assert_eq!(body["version"], v + 1);
+
+    // And it is no longer the conjunto's active assembly.
+    let (s, session) = request(
+        &app,
+        Method::GET,
+        "/api/v1/asambleas/activa/session",
+        Some(&admin_token),
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    assert!(session.is_null(), "expected no active session, got {session}");
+}
