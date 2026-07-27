@@ -1,35 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import {
-  Video, ListOrdered, BarChart3, MessageSquare, Info,
-  CheckCircle, Circle, Play, Send, Hand, Users, Shield,
-  FileCheck, } from "lucide-react";
+  Video, ListOrdered, BarChart3, MessageSquare, Users,
+  CheckCircle2, Circle, Play, Send, Hand, Shield, X,
+  ChevronRight, UserCheck, Radio, ArrowRight,
+} from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/Skeleton";
 
 const LiveRoom = dynamic(() => import("@/components/asamblea/LiveRoom"), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-full">
-      <Skeleton className="w-5 h-5 rounded-full" />
+    <div className="h-full w-full grid place-items-center">
+      <span className="w-9 h-9 rounded-full border-2 border-white/15 border-t-white animate-spin" />
     </div>
   ),
 });
 
-type Tab = "video" | "agenda" | "votos" | "chat" | "info";
+type Panel = "agenda" | "votos" | "chat" | "personas";
 
 // Local DTOs mirroring backend/api/src/domains/asamblea/dto.rs
 // (these are not part of the shared src/lib/api/types.ts).
-interface OrdenDiaItem {
-  id?: string;
-  titulo: string;
-  descripcion?: string;
-}
+interface OrdenDiaItem { id?: string; titulo: string; descripcion?: string }
 
 interface Asamblea {
   id: string;
@@ -44,46 +40,24 @@ interface Asamblea {
 }
 
 interface Opinion {
-  id: string;
-  asambleaId: string;
-  usuarioId: string;
-  nombre: string;
-  apto: string | null;
-  contenido: string;
-  createdAt: string;
+  id: string; asambleaId: string; usuarioId: string;
+  nombre: string; apto: string | null; contenido: string; createdAt: string;
 }
 
 interface Votacion {
-  id: string;
-  asambleaId: string;
-  titulo: string;
-  descripcion: string | null;
-  opciones: string[];
-  activa: boolean;
-  createdAt: string;
+  id: string; asambleaId: string; titulo: string; descripcion: string | null;
+  opciones: string[]; activa: boolean; createdAt: string;
 }
 
 interface Voto {
-  id: string;
-  votacionId: string;
-  usuarioId: string;
-  unidadId: string | null;
-  respuesta: string;
-  coeficiente: number;
-  esVirtual: boolean;
-  hashFirma: string;
-  createdAt: string;
+  id: string; votacionId: string; usuarioId: string; unidadId: string | null;
+  respuesta: string; coeficiente: number; esVirtual: boolean;
+  hashFirma: string; createdAt: string;
 }
 
 interface Asistencia {
-  id: string;
-  asambleaId: string;
-  usuarioId: string;
-  tipo: string;
-  verificado: boolean;
-  ip: string | null;
-  dispositivo: string | null;
-  createdAt: string;
+  id: string; asambleaId: string; usuarioId: string; tipo: string;
+  verificado: boolean; ip: string | null; dispositivo: string | null; createdAt: string;
 }
 
 interface QuorumResponse {
@@ -94,31 +68,8 @@ interface QuorumResponse {
 }
 
 interface Turno {
-  id: string;
-  asambleaId: string;
-  usuarioId: string;
-  nombre: string;
-  apto: string | null;
-  estado: string;
-  createdAt: string;
-}
-
-interface Poder {
-  id: string;
-  asambleaId: string;
-  otorganteId: string;
-  apoderadoId: string;
-  documentoUrl: string;
-  verificado: boolean;
-  createdAt: string;
-}
-
-function voteColor(op: string): string {
-  const n = op.toUpperCase().trim();
-  if (["SI", "SÍ", "APROBAR"].includes(n)) return "bg-text/10";
-  if (["NO", "RECHAZAR"].includes(n)) return "bg-text/10";
-  if (["ABSTENCION", "ABSTENCIÓN", "BLANCO"].includes(n)) return "bg-text/10";
-  return "bg-text/10";
+  id: string; asambleaId: string; usuarioId: string;
+  nombre: string; apto: string | null; estado: string; createdAt: string;
 }
 
 function tally(votes: Voto[], options: string[]) {
@@ -126,7 +77,11 @@ function tally(votes: Voto[], options: string[]) {
   options.forEach((o) => (counts[o] = 0));
   votes.forEach((v) => (counts[v.respuesta] = (counts[v.respuesta] || 0) + 1));
   const total = votes.length || 1;
-  return options.map((o) => ({ option: o, count: counts[o] || 0, pct: Math.round(((counts[o] || 0) / total) * 100) }));
+  return options.map((o) => ({
+    option: o,
+    count: counts[o] || 0,
+    pct: Math.round(((counts[o] || 0) / total) * 100),
+  }));
 }
 
 function fmtTime(iso: string): string {
@@ -134,35 +89,50 @@ function fmtTime(iso: string): string {
   catch { return ""; }
 }
 
+/** Wall-clock length of the session, like the timer every call app shows. */
+function useElapsed(startIso?: string): string {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  if (!startIso) return "";
+  const start = new Date(startIso).getTime();
+  if (Number.isNaN(start)) return "";
+  const secs = Math.max(0, Math.floor((now - start) / 1000));
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
 export default function AsambleaPage() {
   const { user, loading: authLoading } = useAuth();
-  const isAdmin =
-    user?.rol === "ADMINISTRADOR" || user?.rol === "SUPER_ADMIN";
+  const isAdmin = user?.rol === "ADMINISTRADOR" || user?.rol === "SUPER_ADMIN";
 
-  const [activeTab, setActiveTab] = useState<Tab>("video");
   const [asamblea, setAsamblea] = useState<Asamblea | null>(null);
   const [asambleaId, setAsambleaId] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const [panel, setPanel] = useState<Panel | null>(null);
   const [opiniones, setOpiniones] = useState<Opinion[]>([]);
   const [votaciones, setVotaciones] = useState<Votacion[]>([]);
   const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
   const [turnos, setTurnos] = useState<Turno[]>([]);
-  const [poderes, setPoderes] = useState<Poder[]>([]);
-
-  const [quorum, setQuorum] = useState<{
-    totalCoeficiente: number;
-    presenteCoeficiente: number;
-    quorumPorcentaje: number;
-  } | null>(null);
+  const [quorum, setQuorum] = useState<QuorumResponse | null>(null);
   const [votos, setVotos] = useState<Record<string, Voto[]>>({});
+  const [misVotos, setMisVotos] = useState<Record<string, string>>({});
   const [newOpinion, setNewOpinion] = useState("");
+  const [seenOpiniones, setSeenOpiniones] = useState(0);
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchSession = useCallback(async () => {
     try {
       const data = await api.get<Asamblea>("/asambleas/activa/session");
       setAsamblea(data);
-      setAsambleaId(data.id);
+      setAsambleaId(data?.id ?? "");
     } catch {
       setAsamblea(null);
     } finally {
@@ -173,23 +143,17 @@ export default function AsambleaPage() {
   const fetchAll = useCallback(async () => {
     if (!asambleaId) return;
     try {
-      const [op, vot, asi, tur, pod] = await Promise.all([
+      const [op, vot, asi, tur] = await Promise.all([
         api.get<Opinion[]>(`/asambleas/${asambleaId}/opiniones`),
         api.get<Votacion[]>(`/asambleas/${asambleaId}/votaciones`),
         api.get<QuorumResponse>(`/asambleas/${asambleaId}/asistencias`),
         api.get<Turno[]>(`/asambleas/${asambleaId}/turnos`),
-        api.get<Poder[]>(`/asambleas/${asambleaId}/poderes`),
       ]);
       setOpiniones(op);
       setVotaciones(vot);
       setAsistencias(asi.asistencias ?? []);
-      setQuorum({
-        totalCoeficiente: asi.totalCoeficiente,
-        presenteCoeficiente: asi.presenteCoeficiente,
-        quorumPorcentaje: asi.quorumPorcentaje,
-      });
+      setQuorum(asi);
       setTurnos(tur);
-      setPoderes(pod);
     } catch (err) {
       console.error("fetch asamblea data:", err);
     }
@@ -197,489 +161,596 @@ export default function AsambleaPage() {
 
   useEffect(() => { fetchSession(); }, [fetchSession]);
   useEffect(() => { fetchAll(); }, [fetchAll]);
-
   useWsSubscription("asamblea", () => { fetchSession(); fetchAll(); });
+
+  // Keep the chat pinned to the newest message while the panel is open.
+  useEffect(() => {
+    if (panel === "chat") {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setSeenOpiniones(opiniones.length);
+    }
+  }, [panel, opiniones.length]);
+
+  const elapsed = useElapsed(asamblea?.fecha);
+
+  const ordenDia = useMemo<OrdenDiaItem[]>(
+    () => (Array.isArray(asamblea?.ordenDia) ? asamblea!.ordenDia : []),
+    [asamblea],
+  );
+  const currentItem = ordenDia[asamblea?.itemActivoIndex ?? 0];
+  const activeVotacion = votaciones.find((v) => v.activa);
+  const misTurnos = turnos.filter((t) => t.usuarioId === user?.id);
+  const handRaised = misTurnos.some((t) => t.estado === "PENDIENTE");
+  const tengoLaPalabra = misTurnos.some((t) => t.estado === "HABLANDO");
+  const colaTurnos = turnos.filter((t) => t.estado === "PENDIENTE" || t.estado === "HABLANDO");
+  const yaRegistrado = asistencias.some((a) => a.usuarioId === user?.id);
+  const chatBadge = Math.max(0, opiniones.length - seenOpiniones);
 
   const postOpinion = async () => {
     if (!newOpinion.trim() || !asambleaId) return;
+    const text = newOpinion.trim();
+    setNewOpinion("");
     try {
-      await api.post(`/asambleas/${asambleaId}/opiniones`, { contenido: newOpinion.trim() });
-      setNewOpinion("");
-      toast.success("Opinión enviada");
-    } catch { toast.error("Error al enviar opinión"); }
+      await api.post(`/asambleas/${asambleaId}/opiniones`, { contenido: text });
+      fetchAll();
+    } catch {
+      toast.error("Error al enviar el mensaje");
+      setNewOpinion(text);
+    }
   };
 
   const requestTurn = async () => {
     if (!asambleaId) return;
-    try { await api.post(`/asambleas/${asambleaId}/turnos`); toast.success("Turno solicitado"); }
-    catch { toast.error("Error al solicitar turno"); }
+    if (handRaised) { toast.info("Ya tienes la mano levantada"); return; }
+    try {
+      await api.post(`/asambleas/${asambleaId}/turnos`);
+      toast.success("Pediste la palabra — espera a que te den el turno");
+      fetchAll();
+    } catch { toast.error("Error al pedir la palabra"); }
   };
 
   const castVote = async (votacionId: string, respuesta: string) => {
-    try { await api.post(`/votaciones/${votacionId}/votos`, { respuesta }); toast.success("Voto registrado"); fetchAll(); }
-    catch { toast.error("Error al votar"); }
+    try {
+      await api.post(`/votaciones/${votacionId}/votos`, { respuesta });
+      setMisVotos((p) => ({ ...p, [votacionId]: respuesta }));
+      toast.success(`Voto registrado: ${respuesta}`);
+      fetchVotos(votacionId);
+    } catch { toast.error("Error al votar"); }
   };
 
   const fetchVotos = async (votacionId: string) => {
-    try { const d = await api.get<Voto[]>(`/votaciones/${votacionId}/votos`); setVotos((p) => ({ ...p, [votacionId]: d })); }
-    catch { /* silent */ }
+    try {
+      const d = await api.get<Voto[]>(`/votaciones/${votacionId}/votos`);
+      setVotos((p) => ({ ...p, [votacionId]: d }));
+    } catch { /* silent */ }
   };
 
   const registerAttendance = async () => {
     if (!asambleaId) return;
-    try { await api.post(`/asambleas/${asambleaId}/asistencias`, { tipo: "VIRTUAL" }); toast.success("Asistencia registrada"); fetchAll(); }
-    catch { toast.error("Error al registrar asistencia"); }
+    try {
+      await api.post(`/asambleas/${asambleaId}/asistencias`, { tipo: "VIRTUAL" });
+      toast.success("Asistencia registrada");
+      fetchAll();
+    } catch { toast.error("Error al registrar asistencia"); }
   };
 
   const advanceAgenda = async () => {
     if (!asamblea) return;
-    try { await api.put("/asambleas/activa/session", { itemActivoIndex: asamblea.itemActivoIndex + 1, version: asamblea.version }); toast.success("Punto avanzado"); }
-    catch { toast.error("Error al avanzar agenda"); }
-  };
-
-  const toggleVotacion = async (vid: string, activa: boolean) => {
-    if (!asambleaId) return;
-    try { await api.put(`/asambleas/${asambleaId}/votaciones/${vid}`, { activa }); toast.success(activa ? "Votación abierta" : "Votación cerrada"); fetchAll(); }
-    catch { toast.error("Error al actualizar votación"); }
+    try {
+      await api.put("/asambleas/activa/session", {
+        itemActivoIndex: asamblea.itemActivoIndex + 1,
+        version: asamblea.version,
+      });
+    } catch { toast.error("Error al avanzar la agenda"); }
   };
 
   const updateTurno = async (tid: string, estado: string) => {
     if (!asambleaId) return;
     try { await api.put(`/asambleas/${asambleaId}/turnos/${tid}`, { estado }); fetchAll(); }
-    catch { toast.error("Error al actualizar turno"); }
+    catch { toast.error("Error al actualizar el turno"); }
   };
 
-  if (authLoading || loading) return (
-    <div className="min-h-screen bg-[#000000] flex items-center justify-center">
-      <Skeleton className="w-10 h-10 rounded-full" />
-    </div>
-  );
+  const toggleVotacion = async (vid: string, activa: boolean) => {
+    if (!asambleaId) return;
+    try {
+      await api.put(`/asambleas/${asambleaId}/votaciones/${vid}`, { activa });
+      fetchAll();
+    } catch { toast.error("Error al actualizar la votación"); }
+  };
 
-  if (!asamblea) return (
-    <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
-      <div className="text-center">
-        <Video className="w-16 h-16 text-white mx-auto mb-4" />
-        <h1 className="text-xl font-bold text-white mb-2">No hay asamblea activa</h1>
-        <p className="text-white text-sm">Cuando un administrador inicie una asamblea, aparecerá aquí.</p>
+  // ── Loading / empty ─────────────────────────────────────────────────────
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-black grid place-items-center">
+        <span className="w-10 h-10 rounded-full border-2 border-white/15 border-t-white animate-spin" />
       </div>
-    </div>
-  );
+    );
+  }
 
-  const ordenDia: OrdenDiaItem[] = Array.isArray(asamblea.ordenDia) ? asamblea.ordenDia : [];
-  const currentItem = ordenDia[asamblea.itemActivoIndex];
-  const activeVotaciones = votaciones.filter((v) => v.activa);
-  const pendingTurnos = turnos.filter((t) => t.estado === "PENDIENTE" || t.estado === "HABLANDO");
+  if (!asamblea) {
+    return (
+      <div className="min-h-screen bg-black grid place-items-center p-6">
+        <div className="text-center max-w-sm">
+          <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 grid place-items-center mx-auto mb-5">
+            <Video className="w-8 h-8 text-white/40" />
+          </div>
+          <h1 className="text-xl font-semibold text-white mb-2">No hay asamblea activa</h1>
+          <p className="text-white/45 text-sm leading-relaxed">
+            Cuando la administración inicie una asamblea, la sala se abrirá aquí automáticamente.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: "video", label: "Video", icon: <Video size={20} /> },
-    { id: "agenda", label: "Agenda", icon: <ListOrdered size={20} /> },
-    { id: "votos", label: "Votos", icon: <BarChart3 size={20} />, badge: activeVotaciones.length || undefined },
-    { id: "chat", label: "Chat", icon: <MessageSquare size={20} />, badge: opiniones.length || undefined },
-    { id: "info", label: "Info", icon: <Info size={20} /> },
-  ];
+  const quorumPct = Number(quorum?.quorumPorcentaje ?? 0);
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col">
-      {/* Header */}
-      <header className="px-4 pt-4 pb-2 shrink-0">
-        <h1 className="text-lg font-bold truncate">{asamblea.titulo}</h1>
-        {currentItem && (
-          <p className="text-xs text-accent truncate">
-            Punto {asamblea.itemActivoIndex + 1}: {currentItem.titulo}
-          </p>
-        )}
+    <div className="fixed inset-0 bg-black text-white flex flex-col overflow-hidden">
+      {/* ── Top bar ────────────────────────────────────────────────────── */}
+      <header className="shrink-0 flex items-center gap-3 px-3 sm:px-5 h-14 border-b border-white/10 bg-black/80 backdrop-blur-xl z-20">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/15 border border-red-500/30 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-[9px] font-bold uppercase tracking-widest text-red-400">
+              En vivo
+            </span>
+          </span>
+          <h1 className="text-sm font-semibold truncate">{asamblea.titulo}</h1>
+        </div>
+
+        <span className="hidden sm:block text-xs text-white/40 tabular-nums shrink-0">{elapsed}</span>
+
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          {tengoLaPalabra && (
+            <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white text-black">
+              <Radio size={11} />
+              <span className="text-[9px] font-bold uppercase tracking-widest">Tienes la palabra</span>
+            </span>
+          )}
+
+          <button
+            onClick={() => setPanel(panel === "personas" ? null : "personas")}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+            title="Quórum y asistentes"
+          >
+            <Users size={13} className="text-white/70" />
+            <span className="text-[11px] font-semibold tabular-nums">
+              {quorumPct.toFixed(1)}%
+            </span>
+          </button>
+
+          {!yaRegistrado && (
+            <button
+              onClick={registerAttendance}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-black text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 transition-colors"
+            >
+              <UserCheck size={12} /> Registrar asistencia
+            </button>
+          )}
+        </div>
       </header>
 
-      {/* Content area — scrollable, padded for bottom bar */}
-      <main className="flex-1 overflow-y-auto px-4 pb-24">
-        {/* VIDEO */}
-        {activeTab === "video" && (
-          <div className="flex flex-col gap-4">
-            <div
-              className="bg-black rounded-2xl overflow-hidden"
-              style={{ minHeight: "40vh" }}
-            >
-              {asambleaId && <LiveRoom asambleaId={asambleaId} />}
-            </div>
-
-            {currentItem && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <p className="text-[10px] text-accent font-bold uppercase tracking-wide mb-1">
-                  Punto actual
-                </p>
-                <p className="font-bold text-sm">{currentItem.titulo}</p>
-                {currentItem.descripcion && (
-                  <p className="text-white text-xs mt-1">
-                    {currentItem.descripcion}
-                  </p>
-                )}
-              </div>
-            )}
-
+      {/* ── Agenda strip ───────────────────────────────────────────────── */}
+      {currentItem && (
+        <div className="shrink-0 flex items-center gap-2 px-3 sm:px-5 py-2 border-b border-white/[0.06] bg-white/[0.02]">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-white/35 shrink-0">
+            Punto {(asamblea.itemActivoIndex ?? 0) + 1}/{ordenDia.length}
+          </span>
+          <ChevronRight size={12} className="text-white/20 shrink-0" />
+          <p className="text-xs text-white/80 truncate">{currentItem.titulo}</p>
+          {isAdmin && asamblea.itemActivoIndex < ordenDia.length - 1 && (
             <button
-              onClick={requestTurn}
-              className="bg-accent/20 border border-accent/40 text-accent rounded-2xl py-3 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"
+              onClick={advanceAgenda}
+              className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 border border-white/12 hover:bg-white/15 transition-colors text-[10px] font-semibold"
             >
-              <Hand size={16} /> Pedir turno de habla
+              Siguiente <ArrowRight size={11} />
             </button>
-
-            {pendingTurnos.length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-                <p className="text-[10px] text-white font-bold uppercase tracking-wide">
-                  Turnos de habla
-                </p>
-                {pendingTurnos.map((t) => (
-                  <div key={t.id} className="flex items-center gap-2 text-sm">
-                    <span className="font-bold truncate">{t.nombre}</span>
-                    {t.apto && (
-                      <span className="text-white text-xs shrink-0">
-                        {t.apto}
-                      </span>
-                    )}
-                    <span
-                      className={`ml-auto text-[10px] font-bold uppercase shrink-0 ${
-                        t.estado === "HABLANDO"
-                          ? "text-text"
-                          : "text-white"
-                      }`}
-                    >
-                      {t.estado === "HABLANDO" ? "Hablando" : "Espera"}
-                    </span>
-                    {isAdmin && t.estado === "PENDIENTE" && (
-                      <button
-                        onClick={() => updateTurno(t.id, "HABLANDO")}
-                        className="text-[10px] text-accent font-bold shrink-0"
-                      >
-                        Dar turno
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* AGENDA */}
-        {activeTab === "agenda" && (
-          <div className="flex flex-col gap-3">
-            <h2 className="text-xs font-bold text-white uppercase tracking-widest">
-              Orden del día
-            </h2>
-            {ordenDia.map((item, i) => (
-              <div
-                key={item.id ?? i}
-                className={`p-4 rounded-2xl border transition-all ${
-                  i === asamblea.itemActivoIndex
-                    ? "border-accent bg-accent/10"
-                    : i < asamblea.itemActivoIndex
-                      ? "border-white/5 bg-white/5 opacity-60"
-                      : "border-white/10 bg-white/5"
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  {i < asamblea.itemActivoIndex ? (
-                    <CheckCircle size={20} className="text-text shrink-0 mt-0.5" />
-                  ) : i === asamblea.itemActivoIndex ? (
-                    <Play size={20} className="text-accent shrink-0 mt-0.5" />
-                  ) : (
-                    <Circle size={20} className="text-white shrink-0 mt-0.5" />
-                  )}
-                  <div className="min-w-0">
-                    <p className="font-bold text-sm">{item.titulo}</p>
-                    {item.descripcion && (
-                      <p className="text-white text-xs mt-0.5">
-                        {item.descripcion}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {isAdmin && (
-              <button
-                onClick={advanceAgenda}
-                disabled={asamblea.itemActivoIndex >= ordenDia.length - 1}
-                className="w-full bg-accent text-on-accent font-bold py-3 rounded-2xl text-xs uppercase tracking-wider disabled:opacity-30 mt-2 active:scale-95 transition-transform"
-              >
-                Avanzar al siguiente punto
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* VOTOS */}
-        {activeTab === "votos" && (
-          <div className="flex flex-col gap-4">
-            <h2 className="text-xs font-bold text-white uppercase tracking-widest">
-              Votaciones
-            </h2>
-
-            {votaciones.length === 0 ? (
-              <p className="text-white text-sm text-center py-8">
-                No hay votaciones creadas aún.
-              </p>
-            ) : (
-              votaciones.map((v) => (
-                <div
-                  key={v.id}
-                  className={`rounded-2xl border p-4 ${
-                    v.activa
-                      ? "border-accent bg-accent/5"
-                      : "border-white/10 bg-white/5"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="min-w-0">
-                      <p className="font-bold text-sm truncate">{v.titulo}</p>
-                      {v.descripcion && (
-                        <p className="text-white text-xs">{v.descripcion}</p>
-                      )}
-                    </div>
-                    <span
-                      className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full shrink-0 ml-2 ${
-                        v.activa
-                          ? "bg-text/20 text-text"
-                          : "bg-white/10 text-white"
-                      }`}
-                    >
-                      {v.activa ? "Abierta" : "Cerrada"}
-                    </span>
-                  </div>
-
-                  {v.activa && (
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {(v.opciones ?? []).map((op: string) => (
-                        <button
-                          key={op}
-                          onClick={() => castVote(v.id, op)}
-                          className={`flex-1 min-w-[80px] py-3 rounded-xl text-xs font-bold uppercase text-white active:scale-95 transition-transform ${voteColor(op)}`}
-                        >
-                          {op}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => fetchVotos(v.id)}
-                    className="text-[10px] text-accent font-bold uppercase tracking-wide"
-                  >
-                    Ver resultados
-                  </button>
-
-                  {votos[v.id] && (
-                    <div className="mt-2 space-y-1.5">
-                      {tally(votos[v.id], v.opciones ?? []).map(
-                        ({ option, count, pct }) => (
-                          <div key={option} className="flex items-center gap-2">
-                            <span className="text-xs w-20 truncate">
-                              {option}
-                            </span>
-                            <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-accent rounded-full transition-all"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] text-white w-16 text-right">
-                              {count} ({pct}%)
-                            </span>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  )}
-
-                  {isAdmin && (
-                    <button
-                      onClick={() => toggleVotacion(v.id, !v.activa)}
-                      className="mt-3 w-full text-xs font-bold py-2 rounded-xl border border-white/10 text-white active:scale-95 transition-transform"
-                    >
-                      {v.activa ? "Cerrar votación" : "Reabrir votación"}
-                    </button>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* CHAT */}
-        {activeTab === "chat" && (
-          <div className="flex flex-col gap-3 pb-16">
-            <h2 className="text-xs font-bold text-white uppercase tracking-widest">
-              Opiniones
-            </h2>
-            {opiniones.length === 0 ? (
-              <p className="text-white text-sm text-center py-8">
-                No hay opiniones aún. Sé el primero en opinar.
-              </p>
-            ) : (
-              opiniones.map((o) => (
-                <div
-                  key={o.id}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-3"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-7 h-7 rounded-full bg-accent/30 flex items-center justify-center text-[10px] font-bold text-accent shrink-0">
-                      {(o.nombre ?? "?")[0]}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold truncate">{o.nombre}</p>
-                      {o.apto && (
-                        <p className="text-[10px] text-white">{o.apto}</p>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-white ml-auto shrink-0">
-                      {fmtTime(o.createdAt)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-white pl-9">{o.contenido}</p>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* INFO */}
-        {activeTab === "info" && (
-          <div className="flex flex-col gap-4">
-            {/* Quorum card */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
-                <Users size={14} /> Quórum
-              </h3>
-              {quorum && (
-                <div className="flex items-center gap-4">
-                  <div className="relative w-20 h-20 shrink-0">
-                    <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                      <circle cx="18" cy="18" r="15.915" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3" />
-                      <circle
-                        cx="18" cy="18" r="15.915" fill="none"
-                        className="text-accent" stroke="currentColor"
-                        strokeWidth="3" strokeLinecap="round"
-                        strokeDasharray={`${Math.min(Number(quorum.quorumPorcentaje), 100)} 100`}
-                      />
-                    </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
-                      {Number(quorum.quorumPorcentaje).toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="text-xs space-y-1">
-                    <p>Coef. presente: <span className="font-bold">{Number(quorum.presenteCoeficiente).toFixed(2)}</span></p>
-                    <p>Coef. total: <span className="font-bold">{Number(quorum.totalCoeficiente).toFixed(2)}</span></p>
-                    <p>Asistentes: <span className="font-bold">{asistencias.length}</span></p>
-                  </div>
-                </div>
-              )}
-              <button
-                onClick={registerAttendance}
-                className="w-full mt-4 bg-accent/20 border border-accent/40 text-accent font-bold py-3 rounded-2xl text-xs uppercase tracking-wider active:scale-95 transition-transform"
-              >
-                Registrar mi asistencia
-              </button>
-            </div>
-
-            {/* Asistencias */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
-                <Shield size={14} /> Asistencias ({asistencias.length})
-              </h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {asistencias.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center justify-between text-xs py-1 border-b border-white/5 last:border-0"
-                  >
-                    <span className="font-bold truncate">
-                      {a.usuarioId?.slice(0, 8)}...
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold uppercase shrink-0 ${
-                        a.tipo === "PRESENCIAL"
-                          ? "text-text"
-                          : "text-text"
-                      }`}
-                    >
-                      {a.tipo}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Poderes */}
-            {poderes.length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <FileCheck size={14} /> Poderes ({poderes.length})
-                </h3>
-                <div className="space-y-2">
-                  {poderes.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between text-xs py-1 border-b border-white/5 last:border-0"
-                    >
-                      <span className="truncate">
-                        Otorgante: {p.otorganteId?.slice(0, 8)}...
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold shrink-0 ${
-                          p.verificado ? "text-text" : "text-text"
-                        }`}
-                      >
-                        {p.verificado ? "Verificado" : "Pendiente"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-
-      {/* Chat input */}
-      {activeTab === "chat" && (
-        <div className="fixed bottom-16 inset-x-0 bg-[#000000] border-t border-white/10 p-3 flex gap-2 z-10">
-          <input
-            value={newOpinion}
-            onChange={(e) => setNewOpinion(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && postOpinion()}
-            placeholder="Escribe tu opinión..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white focus:outline-none focus:border-accent/40"
-          />
-          <button
-            onClick={postOpinion}
-            disabled={!newOpinion.trim()}
-            className="bg-accent text-on-accent w-12 rounded-xl flex items-center justify-center disabled:opacity-30 active:scale-95 transition-transform"
-          >
-            <Send size={18} />
-          </button>
+          )}
         </div>
       )}
 
-      {/* Bottom tabs */}
-      <nav className="fixed bottom-0 inset-x-0 bg-[#000000]/95 backdrop-blur-lg border-t border-white/10 flex z-20 pb-[env(safe-area-inset-bottom)]">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 relative transition-colors ${
-              activeTab === tab.id ? "text-accent" : "text-white"
-            }`}
-          >
-            {tab.icon}
-            <span className="text-[10px] font-bold">{tab.label}</span>
-            {tab.badge != null && tab.badge > 0 && (
-              <span className="absolute top-1 right-1/4 w-4 h-4 bg-accent text-[8px] text-on-accent rounded-full flex items-center justify-center font-bold">
-                {tab.badge > 9 ? "9+" : tab.badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </nav>
+      {/* ── Stage + side panel ─────────────────────────────────────────── */}
+      <div className="flex-1 min-h-0 flex">
+        <main className="flex-1 min-w-0 min-h-0 relative">
+          {asambleaId && (
+            <LiveRoom
+              asambleaId={asambleaId}
+              titulo={asamblea.titulo}
+              onRequestFloor={requestTurn}
+              handRaised={handRaised}
+              onOpenPanel={(p) => setPanel((cur) => (cur === p ? null : p))}
+              chatBadge={chatBadge}
+              participantCount={asistencias.length || 1}
+            />
+          )}
+
+          {/* Live vote — floats over the stage so nobody misses it */}
+          {activeVotacion && (
+            <div className="absolute top-3 right-3 z-20 w-[min(92vw,320px)] rounded-2xl bg-black/75 backdrop-blur-xl border border-white/15 shadow-2xl overflow-hidden">
+              <div className="px-4 pt-3 pb-2 border-b border-white/10 flex items-start gap-2">
+                <BarChart3 size={14} className="text-white/60 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">
+                    Votación abierta
+                  </p>
+                  <p className="text-sm font-semibold leading-tight mt-0.5">{activeVotacion.titulo}</p>
+                </div>
+              </div>
+
+              {misVotos[activeVotacion.id] ? (
+                <div className="px-4 py-3">
+                  <p className="text-xs text-white/60">
+                    Votaste{" "}
+                    <span className="font-bold text-white">{misVotos[activeVotacion.id]}</span>
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 grid grid-cols-3 gap-2">
+                  {(activeVotacion.opciones ?? []).map((op) => (
+                    <button
+                      key={op}
+                      onClick={() => castVote(activeVotacion.id, op)}
+                      className="py-2.5 rounded-xl bg-white/10 border border-white/15 hover:bg-white hover:text-black transition-all text-[11px] font-bold uppercase tracking-wide active:scale-95"
+                    >
+                      {op}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+
+        {/* Side panel: docked on desktop, bottom sheet on mobile */}
+        {panel && (
+          <>
+            <div
+              className="sm:hidden fixed inset-0 bg-black/60 z-30"
+              onClick={() => setPanel(null)}
+            />
+            <aside
+              className="
+                z-40 flex flex-col bg-[#0a0a0a] border-white/10
+                fixed inset-x-0 bottom-0 h-[70vh] rounded-t-3xl border-t
+                sm:static sm:h-auto sm:w-[340px] sm:rounded-none sm:border-l sm:border-t-0
+              "
+            >
+              <div className="shrink-0 flex items-center gap-1 p-2 border-b border-white/10">
+                {([
+                  ["agenda", "Agenda", <ListOrdered key="a" size={13} />],
+                  ["votos", "Votos", <BarChart3 key="v" size={13} />],
+                  ["chat", "Chat", <MessageSquare key="c" size={13} />],
+                  ["personas", "Personas", <Users key="p" size={13} />],
+                ] as [Panel, string, React.ReactNode][]).map(([id, label, icon]) => (
+                  <button
+                    key={id}
+                    onClick={() => setPanel(id)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all ${
+                      panel === id ? "bg-white text-black" : "text-white/50 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {icon}
+                    <span className="hidden sm:inline">{label}</span>
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPanel(null)}
+                  className="w-8 h-8 rounded-xl grid place-items-center text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+                  aria-label="Cerrar panel"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-y-auto p-3">
+                {/* AGENDA */}
+                {panel === "agenda" && (
+                  <div className="flex flex-col gap-2">
+                    {ordenDia.length === 0 && (
+                      <p className="text-white/35 text-xs text-center py-8">
+                        Esta asamblea no tiene orden del día.
+                      </p>
+                    )}
+                    {ordenDia.map((item, i) => {
+                      const done = i < asamblea.itemActivoIndex;
+                      const current = i === asamblea.itemActivoIndex;
+                      return (
+                        <div
+                          key={item.id ?? i}
+                          className={`p-3 rounded-2xl border transition-all ${
+                            current
+                              ? "border-white/40 bg-white/[0.07]"
+                              : "border-white/8 bg-white/[0.02]"
+                          }`}
+                        >
+                          <div className="flex items-start gap-2.5">
+                            {done ? (
+                              <CheckCircle2 size={15} className="text-white/35 shrink-0 mt-0.5" />
+                            ) : current ? (
+                              <Play size={15} className="text-white shrink-0 mt-0.5" />
+                            ) : (
+                              <Circle size={15} className="text-white/20 shrink-0 mt-0.5" />
+                            )}
+                            <div className="min-w-0">
+                              <p className={`text-xs font-semibold ${done ? "text-white/35 line-through" : "text-white"}`}>
+                                {item.titulo}
+                              </p>
+                              {item.descripcion && (
+                                <p className="text-[11px] text-white/45 mt-0.5">{item.descripcion}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* VOTOS */}
+                {panel === "votos" && (
+                  <div className="flex flex-col gap-3">
+                    {votaciones.length === 0 && (
+                      <p className="text-white/35 text-xs text-center py-8">
+                        Todavía no hay votaciones.
+                      </p>
+                    )}
+                    {votaciones.map((v) => {
+                      const results = votos[v.id] ? tally(votos[v.id], v.opciones ?? []) : null;
+                      return (
+                        <div
+                          key={v.id}
+                          className={`rounded-2xl border p-3 ${
+                            v.activa ? "border-white/30 bg-white/[0.06]" : "border-white/8 bg-white/[0.02]"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <p className="text-xs font-semibold min-w-0">{v.titulo}</p>
+                            <span
+                              className={`shrink-0 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                v.activa ? "bg-white text-black" : "bg-white/10 text-white/50"
+                              }`}
+                            >
+                              {v.activa ? "Abierta" : "Cerrada"}
+                            </span>
+                          </div>
+
+                          {v.activa && !misVotos[v.id] && (
+                            <div className="grid grid-cols-3 gap-1.5 mb-2">
+                              {(v.opciones ?? []).map((op) => (
+                                <button
+                                  key={op}
+                                  onClick={() => castVote(v.id, op)}
+                                  className="py-2 rounded-lg bg-white/10 border border-white/12 hover:bg-white hover:text-black transition-all text-[10px] font-bold uppercase active:scale-95"
+                                >
+                                  {op}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {misVotos[v.id] && (
+                            <p className="text-[11px] text-white/50 mb-2">
+                              Tu voto: <span className="font-bold text-white">{misVotos[v.id]}</span>
+                            </p>
+                          )}
+
+                          {results ? (
+                            <div className="space-y-1.5">
+                              {results.map(({ option, count, pct }) => (
+                                <div key={option} className="flex items-center gap-2">
+                                  <span className="text-[10px] w-16 truncate text-white/60">{option}</span>
+                                  <div className="flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-white rounded-full transition-all duration-500"
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] text-white/45 w-12 text-right tabular-nums">
+                                    {count} · {pct}%
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => fetchVotos(v.id)}
+                              className="text-[10px] text-white/45 hover:text-white font-semibold uppercase tracking-wide transition-colors"
+                            >
+                              Ver resultados
+                            </button>
+                          )}
+
+                          {isAdmin && (
+                            <button
+                              onClick={() => toggleVotacion(v.id, !v.activa)}
+                              className="mt-2.5 w-full py-1.5 rounded-lg border border-white/10 text-[10px] font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                            >
+                              {v.activa ? "Cerrar votación" : "Reabrir votación"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* CHAT */}
+                {panel === "chat" && (
+                  <div className="flex flex-col gap-2.5">
+                    {opiniones.length === 0 && (
+                      <p className="text-white/35 text-xs text-center py-8">
+                        Nadie ha escrito todavía.
+                      </p>
+                    )}
+                    {opiniones.map((o) => {
+                      const mine = o.usuarioId === user?.id;
+                      return (
+                        <div key={o.id} className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
+                          <div className="w-7 h-7 rounded-full bg-white/10 border border-white/10 grid place-items-center text-[10px] font-bold text-white/70 shrink-0">
+                            {(o.nombre ?? "?")[0]}
+                          </div>
+                          <div className={`min-w-0 max-w-[80%] ${mine ? "items-end" : ""}`}>
+                            <div className={`flex items-baseline gap-1.5 mb-0.5 ${mine ? "justify-end" : ""}`}>
+                              <span className="text-[10px] font-semibold text-white/70 truncate">
+                                {mine ? "Tú" : o.nombre}
+                              </span>
+                              {o.apto && <span className="text-[9px] text-white/30">{o.apto}</span>}
+                              <span className="text-[9px] text-white/25 tabular-nums">
+                                {fmtTime(o.createdAt)}
+                              </span>
+                            </div>
+                            <div
+                              className={`px-3 py-2 rounded-2xl text-xs leading-relaxed ${
+                                mine
+                                  ? "bg-white text-black rounded-tr-sm"
+                                  : "bg-white/[0.07] border border-white/10 text-white/90 rounded-tl-sm"
+                              }`}
+                            >
+                              {o.contenido}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={chatEndRef} />
+                  </div>
+                )}
+
+                {/* PERSONAS */}
+                {panel === "personas" && (
+                  <div className="flex flex-col gap-4">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-16 h-16 shrink-0">
+                          <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+                            <circle
+                              cx="18" cy="18" r="15.915" fill="none" stroke="white"
+                              strokeWidth="3" strokeLinecap="round"
+                              strokeDasharray={`${Math.min(quorumPct, 100)} 100`}
+                              className="transition-all duration-700"
+                            />
+                          </svg>
+                          <span className="absolute inset-0 grid place-items-center text-[11px] font-bold tabular-nums">
+                            {quorumPct.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="text-[11px] space-y-0.5 text-white/60">
+                          <p className="text-[9px] uppercase tracking-widest text-white/35 font-bold mb-1">
+                            Quórum
+                          </p>
+                          <p>Presente: <span className="text-white font-semibold tabular-nums">
+                            {Number(quorum?.presenteCoeficiente ?? 0).toFixed(2)}
+                          </span></p>
+                          <p>Total: <span className="text-white font-semibold tabular-nums">
+                            {Number(quorum?.totalCoeficiente ?? 0).toFixed(2)}
+                          </span></p>
+                          <p>Asistentes: <span className="text-white font-semibold tabular-nums">
+                            {asistencias.length}
+                          </span></p>
+                        </div>
+                      </div>
+
+                      {!yaRegistrado && (
+                        <button
+                          onClick={registerAttendance}
+                          className="w-full mt-3 py-2.5 rounded-xl bg-white text-black text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 transition-colors"
+                        >
+                          Registrar mi asistencia
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-2 flex items-center gap-1.5">
+                        <Hand size={11} /> Cola de palabra ({colaTurnos.length})
+                      </p>
+                      {colaTurnos.length === 0 ? (
+                        <p className="text-white/30 text-[11px] py-2">Nadie ha pedido la palabra.</p>
+                      ) : (
+                        <div className="flex flex-col gap-1.5">
+                          {colaTurnos.map((t, i) => (
+                            <div
+                              key={t.id}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${
+                                t.estado === "HABLANDO"
+                                  ? "border-white/40 bg-white/[0.08]"
+                                  : "border-white/8 bg-white/[0.02]"
+                              }`}
+                            >
+                              <span className="w-5 h-5 rounded-full bg-white/8 grid place-items-center text-[9px] font-bold text-white/50 shrink-0">
+                                {t.estado === "HABLANDO" ? <Radio size={10} /> : i + 1}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="text-[11px] font-semibold truncate">{t.nombre}</p>
+                                {t.apto && <p className="text-[9px] text-white/35">{t.apto}</p>}
+                              </div>
+                              {isAdmin && (
+                                <button
+                                  onClick={() =>
+                                    updateTurno(t.id, t.estado === "HABLANDO" ? "COMPLETADO" : "HABLANDO")
+                                  }
+                                  className="ml-auto shrink-0 px-2.5 py-1 rounded-lg bg-white/10 border border-white/12 hover:bg-white hover:text-black transition-all text-[9px] font-bold uppercase"
+                                >
+                                  {t.estado === "HABLANDO" ? "Terminar" : "Dar palabra"}
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-2 flex items-center gap-1.5">
+                        <Shield size={11} /> Asistencia registrada ({asistencias.length})
+                      </p>
+                      <div className="flex flex-col gap-1">
+                        {asistencias.map((a) => (
+                          <div
+                            key={a.id}
+                            className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+                          >
+                            <span className="text-[11px] text-white/70 truncate">
+                              {a.usuarioId === user?.id ? "Tú" : `${a.usuarioId.slice(0, 8)}…`}
+                            </span>
+                            <span className="text-[9px] font-bold uppercase text-white/35 shrink-0">
+                              {a.tipo}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Chat composer */}
+              {panel === "chat" && (
+                <div className="shrink-0 p-2.5 border-t border-white/10 flex gap-2 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+                  <input
+                    value={newOpinion}
+                    onChange={(e) => setNewOpinion(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && postOpinion()}
+                    placeholder="Escribe un mensaje…"
+                    className="flex-1 min-w-0 bg-white/[0.06] border border-white/10 rounded-full px-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+                  />
+                  <button
+                    onClick={postOpinion}
+                    disabled={!newOpinion.trim()}
+                    aria-label="Enviar mensaje"
+                    className="w-10 h-10 shrink-0 rounded-full bg-white text-black grid place-items-center disabled:opacity-25 active:scale-90 transition-all"
+                  >
+                    <Send size={15} />
+                  </button>
+                </div>
+              )}
+            </aside>
+          </>
+        )}
+      </div>
     </div>
   );
 }

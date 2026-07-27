@@ -1,4 +1,4 @@
-# Despliegue backend — host 82.25.115.208 (zona `conjuntos.app`)
+# Despliegue backend — host 198.251.70.45 (zona `conjuntos.app`)
 
 El frontend va aparte en Vercel. Aquí solo vive el backend: API, Postgres, MinIO y
 LiveKit. Este directorio contiene los overrides propios de *este* host; los archivos
