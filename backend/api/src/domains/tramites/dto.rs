@@ -113,8 +113,11 @@ pub struct ResolverTramiteRequest {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VehiculoPayload {
     pub placa: String,
+    #[serde(default)]
     pub marca: Option<String>,
+    #[serde(default)]
     pub modelo: Option<String>,
+    #[serde(default)]
     pub color: Option<String>,
     pub tipo: TipoVehiculo,
 }
@@ -126,6 +129,8 @@ pub struct VehiculoPayload {
 pub struct MascotaPayload {
     pub nombre: String,
     pub tipo: TipoMascota,
+    #[serde(default)]
     pub raza: Option<String>,
+    #[serde(default)]
     pub foto_url: Option<String>,
 }
