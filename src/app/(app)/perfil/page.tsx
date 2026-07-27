@@ -37,6 +37,7 @@ export default function PerfilPage() {
 function ProfileContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const petPhotoInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { user, loading: authLoading, logout } = useAuth();
   const userId = user?.id;
@@ -55,7 +56,7 @@ function ProfileContent() {
   interface Recibo { id: string; servicio: string; monto: number; pagado: boolean; vencimiento: string; fechaPago?: string; createdAt?: string; }
   interface ReservaActiva { id: string; estado?: string; fechaInicio: string; fechaFin: string; areaNombre?: string; areaImagenUrl?: string; }
   interface PaqueteActivo { remitente?: string; origen?: string; guia?: string; fechaLlegada: string; }
-interface VisitaPerfil { id: string; nombre: string; documento?: string | null; tipo: string; fecha: string; estado: string; placa?: string | null; }
+  interface VisitaPerfil { id: string; nombre: string; documento?: string | null; tipo: string; fecha: string; estado: string; placa?: string | null; }
   interface ProfileFetch {
     nombre?: string;
     apto?: string;
@@ -141,7 +142,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
   const [regType, setRegType] = useState<"VEHICULO" | "MASCOTA" | "OTRO">("VEHICULO");
   const [isRegSubmitting, setIsRegSubmitting] = useState(false);
   const [regForm, setRegForm] = useState({
-    nombre: "", tipo: "", raza: "", // Pets
+    nombre: "", tipo: "", raza: "", fotoMascota: "", // Pets
     placa: "", marca: "", modelo: "", ano: "", color: "", tipoVehiculo: "" // Vehicles
   });
   const [regDocs, setRegDocs] = useState<{nombre: string, base64: string, mimeType: string}[]>([]);
@@ -384,6 +385,28 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
     }
   };
 
+  const handlePetPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("La imagen supera el límite de 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      try {
+        const compressed = await compressImage(base64);
+        setRegForm(prev => ({ ...prev, fotoMascota: compressed }));
+      } catch {
+        toast.error("Error al procesar la imagen de la mascota");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleRegisterAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (regDocs.length === 0) {
@@ -410,6 +433,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                 nombre: regForm.nombre,
                 tipo: regForm.tipo,
                 raza: regForm.raza || undefined,
+                fotoUrl: regForm.fotoMascota || undefined,
             };
         }
         await api.post('/tramites', {
@@ -421,7 +445,7 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
         setShowRegModal(false);
         setRegDocs([]);
         setRegForm({
-            nombre: "", tipo: "", raza: "",
+            nombre: "", tipo: "", raza: "", fotoMascota: "",
             placa: "", marca: "", modelo: "", ano: "", color: "", tipoVehiculo: ""
         });
         // Recargar trámites
@@ -1470,6 +1494,37 @@ interface VisitaPerfil { id: string; nombre: string; documento?: string | null; 
                     </>
                  ) : regType === "MASCOTA" ? (
                     <>
+                       {/* FOTO DE LA MASCOTA */}
+                       <div className="flex flex-col items-center justify-center space-y-3 mb-6 animate-in fade-in duration-300">
+                          <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black">Foto de la Mascota</label>
+                          <div className="relative group">
+                             <div className="w-24 h-24 rounded-full p-[3px] liquid-status-halo relative">
+                                <div className="w-full h-full rounded-full overflow-hidden shadow-xl z-20 relative bg-primary-light/80 flex items-center justify-center">
+                                   {regForm.fotoMascota ? (
+                                      <Image src={regForm.fotoMascota} alt="" width={96} height={96} className="w-full h-full object-cover rounded-full" />
+                                   ) : (
+                                      <PawPrint className="w-10 h-10 text-text/40" />
+                                   )}
+                                   <div className="absolute inset-0 border border-border rounded-full pointer-events-none" />
+                                </div>
+                             </div>
+                             <button 
+                               type="button"
+                               onClick={() => petPhotoInputRef.current?.click()}
+                               className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-accent text-primary flex items-center justify-center shadow-lg border-2 border-primary active:scale-90 transition-all hover:scale-110 z-30"
+                             >
+                                <Camera size={18} />
+                             </button>
+                          </div>
+                          <input 
+                             type="file" 
+                             ref={petPhotoInputRef} 
+                             className="hidden" 
+                             accept="image/*" 
+                             onChange={handlePetPhotoChange} 
+                          />
+                       </div>
+
                        <div className="space-y-1.5">
                           <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Nombre de la Mascota</label>
                           <input required placeholder="Ej: Toby" type="text" value={regForm.nombre} onChange={(e) => setRegForm({...regForm, nombre: e.target.value})} className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-sm text-text focus:outline-none focus:border-text/40 focus:bg-primary-light/80 transition-all placeholder:text-text" />

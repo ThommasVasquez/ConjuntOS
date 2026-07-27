@@ -220,6 +220,7 @@ pub async fn resolver_tramite(
                                 mascotas::nombre.eq(m.nombre.trim()),
                                 mascotas::tipo.eq(m.tipo),
                                 mascotas::raza.eq(m.raza),
+                                mascotas::foto_url.eq(m.foto_url),
                             ))
                             .execute(conn)
                             .await?;

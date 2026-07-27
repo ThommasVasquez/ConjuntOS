@@ -127,4 +127,5 @@ pub struct MascotaPayload {
     pub nombre: String,
     pub tipo: TipoMascota,
     pub raza: Option<String>,
+    pub foto_url: Option<String>,
 }
