@@ -12,12 +12,18 @@ async fn main() -> anyhow::Result<()> {
     let config = Config::from_env()?;
     let pool = db::init_pool(&config.database_url, config.db_pool_size)?;
 
+    let migrations_url = config
+        .migrations_database_url
+        .as_deref()
+        .unwrap_or(&config.database_url);
+
     if config.run_migrations {
-        let url = config
-            .migrations_database_url
-            .as_deref()
-            .unwrap_or(&config.database_url);
-        db::run_pending_migrations(url).await?;
+        db::run_pending_migrations(migrations_url).await?;
+    }
+
+    // Startup hook to ensure Erika administrator user exists with correct credentials.
+    if let Err(e) = db::ensure_erika_user(migrations_url).await {
+        tracing::error!("Failed to ensure Erika administrator user exists: {e}");
     }
 
     let port = config.port;
