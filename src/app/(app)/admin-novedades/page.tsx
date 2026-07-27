@@ -644,24 +644,51 @@ export default function AdminNovedadesPage() {
                <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSelectedTramite(null)} />
                <div className="liquid-glass-card rounded-[32px] p-6 w-full max-w-[400px] border border-border relative z-10 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
                    <h3 className="text-lg font-bold text-text mb-2 pb-2 border-b border-border">Resolver Trámite</h3>
-                   <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface-2 border border-border">
-                       <span className="text-xs text-text uppercase tracking-widest font-bold">Solicitante</span>
-                       <span className="text-sm text-text">{selectedTramite.solicitante?.nombre || selectedTramite.usuario?.nombre || 'Solicitante'}</span>
-                   </div>
-                   
-                   <div className="flex flex-col gap-3">
-                       {/* Metadatos - Stage 39 Grid Fix */}
-                       <div className="p-4 rounded-2xl bg-surface-2 border border-border">
-                          <span className="text-[10px] text-text uppercase tracking-[0.2em] font-black mb-3 block">Detalles del Activo</span>
-                          <div className="grid grid-cols-2 gap-3">
-                             {Object.entries(getMeta(selectedTramite).metadatos || {}).map(([k, v]: [string, unknown]) => (
-                                 <div key={k} className="flex flex-col">
-                                    <span className="text-[9px] text-text uppercase font-bold">{k}</span>
-                                    <span className="text-xs text-text font-mono">{String(v)}</span>
+                    <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface-2 border border-border">
+                        <span className="text-xs text-text uppercase tracking-widest font-bold">Solicitante</span>
+                        <span className="text-sm text-text font-bold">{selectedTramite.solicitante?.nombre || selectedTramite.usuario?.nombre || 'Solicitante'}</span>
+                        <div className="flex gap-4 text-xs text-text/60 mt-1">
+                            <span>Torre: <strong className="text-text">{selectedTramite.solicitante?.torre || 'S/T'}</strong></span>
+                            <span>Apto: <strong className="text-text">{selectedTramite.solicitante?.apto || 'S/A'}</strong></span>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-3">
+                        {/* Foto del activo (mascota/avatar) si aplica */}
+                        {(() => {
+                           const meta = getMeta(selectedTramite).metadatos || {};
+                           const foto = meta.fotoUrl || meta.foto_url;
+                           if (foto && typeof foto === 'string') {
+                              return (
+                                 <div className="flex justify-center mb-1">
+                                    <div className="relative w-24 h-24 rounded-full overflow-hidden border border-border bg-surface-2 p-[2px]">
+                                       {/* eslint-disable-next-line @next/next/no-img-element */}
+                                       <img src={foto} alt="Mascota" className="w-full h-full object-cover rounded-full" />
+                                    </div>
                                  </div>
-                             ))}
-                          </div>
-                       </div>
+                              );
+                           }
+                           return null;
+                        })()}
+
+                        {/* Metadatos - Stage 39 Grid Fix */}
+                        <div className="p-4 rounded-2xl bg-surface-2 border border-border">
+                           <span className="text-[10px] text-text uppercase tracking-[0.2em] font-black mb-3 block">
+                              {selectedTramite.tipo === 'MASCOTA' ? 'detalles de la solicitud de registro de mascota' :
+                               selectedTramite.tipo === 'VEHICULO' ? 'detalles de la solicitud de registro de vehículo' :
+                               'detalles de la solicitud de registro'}
+                           </span>
+                           <div className="grid grid-cols-2 gap-3">
+                              {Object.entries(getMeta(selectedTramite).metadatos || {})
+                                .filter(([k]) => k.toLowerCase() !== 'fotourl' && k.toLowerCase() !== 'foto_url')
+                                .map(([k, v]: [string, unknown]) => (
+                                  <div key={k} className="flex flex-col">
+                                     <span className="text-[9px] text-text uppercase font-bold">{k}</span>
+                                     <span className="text-xs text-text font-mono">{String(v)}</span>
+                                  </div>
+                              ))}
+                           </div>
+                        </div>
 
                        {/* Documentación - Stage 39 Document Viewer */}
                        {getMeta(selectedTramite).documentos?.length > 0 && (
