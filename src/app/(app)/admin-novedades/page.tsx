@@ -701,10 +701,15 @@ export default function AdminNovedadesPage() {
                            if (foto && typeof foto === 'string') {
                               return (
                                  <div className="flex justify-center mb-1">
-                                    <div className="relative w-24 h-24 rounded-full overflow-hidden border border-border bg-surface-2 p-[2px]">
+                                    <button 
+                                       type="button"
+                                       onClick={() => setPreviewDoc({ nombre: `Foto de ${meta.nombre || 'Mascota'}`, base64: foto, mimeType: 'image/jpeg' })}
+                                       className="relative w-24 h-24 rounded-full overflow-hidden border border-border bg-surface-2 p-[2px] active:scale-95 hover:border-accent/40 hover:scale-105 transition-all group cursor-pointer"
+                                       title="Ver foto en grande"
+                                    >
                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                       <img src={foto} alt="Mascota" className="w-full h-full object-cover rounded-full" />
-                                    </div>
+                                       <img src={foto} alt="Mascota" className="w-full h-full object-cover rounded-full group-hover:brightness-90 transition-all" />
+                                    </button>
                                  </div>
                               );
                            }
