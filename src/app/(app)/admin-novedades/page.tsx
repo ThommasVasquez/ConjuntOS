@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText, Upload, Trash2, Megaphone, RefreshCw, Pencil, X } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText, Upload, Trash2, Megaphone, RefreshCw, Pencil, X, Map } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -769,47 +769,63 @@ export default function AdminNovedadesPage() {
                        )}
                      </div>
 
-                    {selectedTramite.tipo === 'VEHICULO' && (
-                        <div className="flex flex-col gap-2 p-3 rounded-xl bg-accent/5 border border-accent/20">
-                            <label className="text-[10px] text-accent uppercase tracking-widest font-bold">Asignar Celda (Opcional)</label>
-                            {availableCells.length === 0 ? (
-                              <div className="flex flex-col gap-2 p-2 rounded-lg bg-text/5 border border-dashed border-border">
-                                 <span className="text-[11px] text-text">No hay celdas disponibles. Crea una para asignarla ahora mismo:</span>
-                                 <div className="flex gap-2">
-                                    <input
-                                      value={nuevaCeldaNum}
-                                      onChange={(e) => setNuevaCeldaNum(e.target.value)}
-                                      placeholder="N° celda (ej: A-101)"
-                                      className="flex-1 bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
-                                    />
-                                    <input
-                                      value={nuevaCeldaTorre}
-                                      onChange={(e) => setNuevaCeldaTorre(e.target.value)}
-                                      placeholder="Torre"
-                                      className="w-20 bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
-                                    />
-                                 </div>
-                                 <button
-                                   type="button"
-                                   disabled={creandoCelda}
-                                   onClick={crearCeldaRapida}
-                                   className="w-full py-2 rounded-lg bg-[#57bf00] text-white text-xs font-bold uppercase tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                     {selectedTramite.tipo === 'VEHICULO' && (
+                        <div className="flex flex-col gap-2.5 p-3.5 rounded-xl bg-accent/5 border border-accent/20">
+                            <div className="flex justify-between items-center mb-0.5">
+                                <label className="text-[10px] text-accent uppercase tracking-widest font-bold">Asignar Celda (Opcional)</label>
+                                <a 
+                                  href="/mapa-parqueadero" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] text-accent hover:underline flex items-center gap-1 font-bold active:scale-95 transition-transform"
+                                >
+                                   <Map size={11} /> Ver Mapa
+                                </a>
+                            </div>
+
+                            {/* Listado de celdas disponibles si existen */}
+                            {availableCells.length > 0 && (
+                              <div className="flex flex-col gap-1.5">
+                                 <span className="text-[10px] text-text/50 uppercase tracking-wider font-semibold">Seleccionar celda disponible:</span>
+                                 <select 
+                                   value={selectedCellId}
+                                   onChange={(e) => setSelectedCellId(e.target.value)}
+                                   className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
                                  >
-                                    {creandoCelda ? 'Creando...' : '+ Crear y asignar celda'}
-                                 </button>
+                                     <option value="" className="bg-primary text-text">No asignar puesto...</option>
+                                     {availableCells.map((c) => (
+                                         <option key={c.id} value={c.id} className="bg-primary text-text">Celda {c.numero} ({c.torre || 'N/A'})</option>
+                                     ))}
+                                 </select>
                               </div>
-                            ) : (
-                              <select 
-                                value={selectedCellId}
-                                onChange={(e) => setSelectedCellId(e.target.value)}
-                                className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
-                              >
-                                  <option value="" className="bg-primary text-text">No asignar puesto...</option>
-                                  {availableCells.map((c) => (
-                                      <option key={c.id} value={c.id} className="bg-primary text-text">Celda {c.numero} ({c.torre || 'N/A'})</option>
-                                  ))}
-                              </select>
                             )}
+
+                            {/* Crear celda nueva sobre la marcha */}
+                            <div className="p-3 rounded-lg bg-text/5 border border-dashed border-border/80 flex flex-col gap-2 mt-1">
+                               <span className="text-[10px] text-text/80 uppercase font-black tracking-wider block">¿Crear celda nueva?</span>
+                               <div className="flex gap-2">
+                                  <input
+                                    value={nuevaCeldaNum}
+                                    onChange={(e) => setNuevaCeldaNum(e.target.value)}
+                                    placeholder="N° celda (ej: A-101)"
+                                    className="flex-1 bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
+                                  />
+                                  <input
+                                    value={nuevaCeldaTorre}
+                                    onChange={(e) => setNuevaCeldaTorre(e.target.value)}
+                                    placeholder="Torre"
+                                    className="w-20 bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-accent"
+                                  />
+                               </div>
+                               <button
+                                 type="button"
+                                 disabled={creandoCelda}
+                                 onClick={crearCeldaRapida}
+                                 className="w-full py-2 rounded-lg bg-[#57bf00] text-white text-xs font-bold uppercase tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                               >
+                                  {creandoCelda ? 'Creando...' : '+ Crear y asignar celda'}
+                               </button>
+                            </div>
                             {selectedCellId && (
                                 <div className="flex flex-col gap-1.5 mt-1">
                                     <label className="text-[10px] text-accent uppercase tracking-widest font-bold">Cláusula de tiempo (asignación permanente)</label>
