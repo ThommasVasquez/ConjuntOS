@@ -29,7 +29,7 @@ interface ControlBarProps {
 
 /** Round control button — the shape both Meet and Zoom converged on. */
 function CtrlButton({
-  active, danger, disabled, locked, label, onClick, children,
+  active, danger, disabled, locked, label, onClick, className = '', children,
 }: {
   active?: boolean;
   danger?: boolean;
@@ -38,6 +38,7 @@ function CtrlButton({
   locked?: boolean;
   label: string;
   onClick: () => void;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -46,7 +47,7 @@ function CtrlButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`relative shrink-0 w-12 h-12 rounded-full grid place-items-center border transition-all duration-200 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`relative shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full grid place-items-center border transition-all duration-200 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed ${className} ${
         danger
           ? 'bg-red-500 border-red-400 text-white hover:bg-red-400 shadow-lg shadow-red-500/25'
           : locked
@@ -194,7 +195,7 @@ export default function ControlBar({
 
   return (
     <div className="flex items-center justify-center">
-      <div className="flex items-center gap-2 px-3 py-2.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* Mic and camera are always on the bar. Hiding them when the caller has
             no publish grant made the app look like it lacked the feature; a
             locked button that explains itself is clearer than an absent one. */}
@@ -265,16 +266,21 @@ export default function ControlBar({
 
         <ReactionPicker onPick={onReaction} />
 
-        <div className="w-px h-8 bg-white/10 mx-0.5 shrink-0" />
+        <div className="hidden sm:block w-px h-8 bg-white/10 mx-0.5 shrink-0" />
 
         <CtrlButton
           label={view === 'grid' ? 'Vista de orador' : 'Vista de mosaico'}
           onClick={onToggleView}
+          className="hidden sm:grid"
         >
           {view === 'grid' ? <User size={19} /> : <LayoutGrid size={19} />}
         </CtrlButton>
 
-        <CtrlButton label="Participantes" onClick={() => onOpenPanel('personas')}>
+        <CtrlButton
+          label="Participantes"
+          onClick={() => onOpenPanel('personas')}
+          className="hidden sm:grid"
+        >
           <span className="relative">
             <Users size={19} />
             <span className="absolute -top-2.5 -right-3 min-w-4 h-4 px-1 rounded-full bg-white text-black text-[9px] font-bold grid place-items-center">
@@ -294,7 +300,7 @@ export default function ControlBar({
           </span>
         </CtrlButton>
 
-        <div className="w-px h-8 bg-white/10 mx-0.5 shrink-0" />
+        <div className="hidden sm:block w-px h-8 bg-white/10 mx-0.5 shrink-0" />
 
         <CtrlButton
           label="Salir de la sala"

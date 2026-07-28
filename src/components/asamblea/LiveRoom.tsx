@@ -71,7 +71,7 @@ function RoomInterior({
         <ConferenceStage view={view} pinnedIdentity={pinnedIdentity} onPin={setPinnedIdentity} />
       </div>
 
-      <div className="shrink-0 pb-3 pt-1 px-2">
+      <div className="shrink-0 pt-1 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <ControlBar
           canPublish={canPublish}
           view={view}

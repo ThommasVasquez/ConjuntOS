@@ -4,13 +4,15 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useWsSubscription } from "@/hooks/useWebSocket";
+import { estaEnSesion } from "@/lib/asamblea";
 import {
   Video, ListOrdered, BarChart3, MessageSquare, Users,
   CheckCircle2, Circle, Play, Send, Hand, Shield, X,
-  ChevronRight, UserCheck, Radio, ArrowRight,
+  ChevronRight, UserCheck, Radio, ArrowRight, SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
+import ModeratorPanel from "@/components/asamblea/ModeratorPanel";
 
 const LiveRoom = dynamic(() => import("@/components/asamblea/LiveRoom"), {
   ssr: false,
@@ -21,7 +23,7 @@ const LiveRoom = dynamic(() => import("@/components/asamblea/LiveRoom"), {
   ),
 });
 
-type Panel = "agenda" | "votos" | "chat" | "personas";
+type Panel = "agenda" | "votos" | "chat" | "personas" | "moderar";
 
 // Local DTOs mirroring backend/api/src/domains/asamblea/dto.rs
 // (these are not part of the shared src/lib/api/types.ts).
@@ -72,6 +74,11 @@ interface Turno {
   nombre: string; apto: string | null; estado: string; createdAt: string;
 }
 
+interface Poder {
+  id: string; asambleaId: string; otorganteId: string; apoderadoId: string;
+  documentoUrl: string; verificado: boolean; createdAt: string;
+}
+
 function tally(votes: Voto[], options: string[]) {
   const counts: Record<string, number> = {};
   options.forEach((o) => (counts[o] = 0));
@@ -120,6 +127,7 @@ export default function AsambleaPage() {
   const [votaciones, setVotaciones] = useState<Votacion[]>([]);
   const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
   const [turnos, setTurnos] = useState<Turno[]>([]);
+  const [poderes, setPoderes] = useState<Poder[]>([]);
   const [quorum, setQuorum] = useState<QuorumResponse | null>(null);
   const [votos, setVotos] = useState<Record<string, Voto[]>>({});
   const [misVotos, setMisVotos] = useState<Record<string, string>>({});
@@ -143,17 +151,19 @@ export default function AsambleaPage() {
   const fetchAll = useCallback(async () => {
     if (!asambleaId) return;
     try {
-      const [op, vot, asi, tur] = await Promise.all([
+      const [op, vot, asi, tur, pod] = await Promise.all([
         api.get<Opinion[]>(`/asambleas/${asambleaId}/opiniones`),
         api.get<Votacion[]>(`/asambleas/${asambleaId}/votaciones`),
         api.get<QuorumResponse>(`/asambleas/${asambleaId}/asistencias`),
         api.get<Turno[]>(`/asambleas/${asambleaId}/turnos`),
+        api.get<Poder[]>(`/asambleas/${asambleaId}/poderes`).catch(() => [] as Poder[]),
       ]);
       setOpiniones(op);
       setVotaciones(vot);
       setAsistencias(asi.asistencias ?? []);
       setQuorum(asi);
       setTurnos(tur);
+      setPoderes(pod);
     } catch (err) {
       console.error("fetch asamblea data:", err);
     }
@@ -242,6 +252,43 @@ export default function AsambleaPage() {
         version: asamblea.version,
       });
     } catch { toast.error("Error al avanzar la agenda"); }
+  };
+
+  const setSession = async (patch: Record<string, unknown>, errMsg: string) => {
+    if (!asamblea) return;
+    try {
+      await api.put("/asambleas/activa/session", { ...patch, version: asamblea.version });
+      fetchSession();
+    } catch { toast.error(errMsg); }
+  };
+
+  const startSession = () =>
+    setSession({ activa: true, sessionState: "INICIADA" }, "Error al iniciar la sesión");
+
+  const finishSession = () =>
+    setSession({ activa: false, sessionState: "FINALIZADA" }, "Error al finalizar la asamblea");
+
+  const goToItem = (index: number) =>
+    setSession({ itemActivoIndex: index }, "Error al cambiar de punto");
+
+  const createVotacion = async (titulo: string, opciones: string[]) => {
+    if (!asambleaId || !titulo) return;
+    try {
+      await api.post(`/asambleas/${asambleaId}/votaciones`, {
+        titulo,
+        ...(opciones.length > 0 ? { opciones } : {}),
+      });
+      toast.success("Votación creada");
+      fetchAll();
+    } catch { toast.error("Error al crear la votación"); }
+  };
+
+  const verifyPoder = async (pid: string, verificado: boolean) => {
+    if (!asambleaId) return;
+    try {
+      await api.put(`/asambleas/${asambleaId}/poderes/${pid}`, { verificado });
+      fetchAll();
+    } catch { toast.error("Error al actualizar el poder"); }
   };
 
   const updateTurno = async (tid: string, estado: string) => {
@@ -423,6 +470,9 @@ export default function AsambleaPage() {
                   ["votos", "Votos", <BarChart3 key="v" size={13} />],
                   ["chat", "Chat", <MessageSquare key="c" size={13} />],
                   ["personas", "Personas", <Users key="p" size={13} />],
+                  ...(isAdmin
+                    ? ([["moderar", "Moderar", <SlidersHorizontal key="m" size={13} />]] as [Panel, string, React.ReactNode][])
+                    : []),
                 ] as [Panel, string, React.ReactNode][]).map(([id, label, icon]) => (
                   <button
                     key={id}
@@ -616,6 +666,25 @@ export default function AsambleaPage() {
                     })}
                     <div ref={chatEndRef} />
                   </div>
+                )}
+
+                {/* MODERAR */}
+                {panel === "moderar" && isAdmin && (
+                  <ModeratorPanel
+                    enSesion={estaEnSesion(asamblea)}
+                    ordenDia={ordenDia}
+                    itemActivoIndex={asamblea.itemActivoIndex}
+                    votaciones={votaciones}
+                    turnos={turnos}
+                    poderes={poderes}
+                    onStartSession={startSession}
+                    onFinishSession={finishSession}
+                    onGoToItem={goToItem}
+                    onCreateVotacion={createVotacion}
+                    onToggleVotacion={toggleVotacion}
+                    onUpdateTurno={updateTurno}
+                    onVerifyPoder={verifyPoder}
+                  />
                 )}
 
                 {/* PERSONAS */}
