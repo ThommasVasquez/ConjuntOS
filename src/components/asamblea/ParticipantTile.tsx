@@ -79,9 +79,9 @@ export default function ParticipantTile({
 
   return (
     <div
-      className={`group relative w-full h-full overflow-hidden rounded-2xl bg-[#0b0b0b] border transition-all duration-300 ${
+      className={`group relative w-full h-full overflow-hidden rounded-2xl bg-[#0b1614] border transition-all duration-300 ${
         isSpeaking && !isScreenShare
-          ? 'border-white/70 shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_0_28px_-4px_rgba(255,255,255,0.35)]'
+          ? 'border-[#2dd4bf] shadow-[0_0_0_1px_rgba(45,212,191,0.45),0_0_28px_-4px_rgba(45,212,191,0.5)]'
           : 'border-white/10'
       }`}
     >
@@ -94,7 +94,7 @@ export default function ParticipantTile({
           }`}
         />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0d0d0d]">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0b1614]">
           <div
             className={`${avatarSize} rounded-full flex items-center justify-center font-semibold text-white/90 border border-white/10 shadow-inner`}
             style={{ background: avatarGradient(participant.identity) }}
@@ -108,12 +108,12 @@ export default function ParticipantTile({
       <div className="absolute bottom-2 left-2 right-2 flex items-end justify-between gap-2 pointer-events-none">
         <div className="flex items-center gap-1.5 min-w-0 max-w-full px-2.5 py-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/10">
           {isMuted ? (
-            <MicOff size={12} className="text-red-400 shrink-0" />
+            <MicOff size={12} className="text-[#f87171] shrink-0" />
           ) : isSpeaking ? (
             <span className="flex items-end gap-[2px] h-3 shrink-0" aria-hidden>
-              <span className="w-[2px] bg-white rounded-full animate-[pulse_0.8s_ease-in-out_infinite] h-1.5" />
-              <span className="w-[2px] bg-white rounded-full animate-[pulse_0.6s_ease-in-out_infinite] h-3" />
-              <span className="w-[2px] bg-white rounded-full animate-[pulse_0.9s_ease-in-out_infinite] h-2" />
+              <span className="w-[2px] bg-[#2dd4bf] rounded-full animate-[pulse_0.8s_ease-in-out_infinite] h-1.5" />
+              <span className="w-[2px] bg-[#2dd4bf] rounded-full animate-[pulse_0.6s_ease-in-out_infinite] h-3" />
+              <span className="w-[2px] bg-[#2dd4bf] rounded-full animate-[pulse_0.9s_ease-in-out_infinite] h-2" />
             </span>
           ) : null}
 
@@ -139,7 +139,7 @@ export default function ParticipantTile({
           aria-label={pinned ? 'Quitar fijado' : 'Fijar participante'}
           className={`absolute top-2 right-2 w-8 h-8 rounded-full grid place-items-center border transition-all ${
             pinned
-              ? 'bg-white text-black border-white'
+              ? 'bg-[#2dd4bf] text-[#04211d] border-[#2dd4bf]'
               : 'bg-black/50 text-white/80 border-white/15 opacity-0 group-hover:opacity-100 focus:opacity-100'
           }`}
         >

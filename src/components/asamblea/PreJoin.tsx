@@ -87,7 +87,7 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
   const mics = devices.filter((d) => d.kind === 'audioinput');
 
   return (
-    <div className="fixed inset-0 bg-black grid place-items-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-[#050d0c] grid place-items-center p-4 overflow-y-auto">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/35 mb-2">
@@ -103,7 +103,7 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
 
         <div className="grid lg:grid-cols-[1.5fr_1fr] gap-5 items-center">
           {/* Preview */}
-          <div className="relative aspect-video rounded-3xl overflow-hidden bg-[#0b0b0b] border border-white/10">
+          <div className="relative aspect-video rounded-3xl overflow-hidden bg-[#0b1614] border border-white/10">
             {canPublish && videoEnabled ? (
               <video
                 ref={videoRef}
@@ -130,8 +130,8 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
             )}
 
             {permissionError && (
-              <div className="absolute inset-x-3 bottom-3 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/30">
-                <p className="text-[11px] text-red-200">{permissionError}</p>
+              <div className="absolute inset-x-3 bottom-3 px-3 py-2 rounded-xl bg-[#f87171]/15 border border-[#f87171]/35">
+                <p className="text-[11px] text-[#fecaca]">{permissionError}</p>
               </div>
             )}
 
@@ -143,7 +143,7 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
                   className={`w-11 h-11 rounded-full grid place-items-center border transition-all active:scale-90 ${
                     audioEnabled
                       ? 'bg-white/10 border-white/15 text-white hover:bg-white/20'
-                      : 'bg-red-500 border-red-400 text-white'
+                      : 'bg-[#f87171] border-[#f87171] text-[#2a0707]'
                   }`}
                 >
                   {audioEnabled ? <Mic size={17} /> : <MicOff size={17} />}
@@ -154,7 +154,7 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
                   className={`w-11 h-11 rounded-full grid place-items-center border transition-all active:scale-90 ${
                     videoEnabled
                       ? 'bg-white/10 border-white/15 text-white hover:bg-white/20'
-                      : 'bg-red-500 border-red-400 text-white'
+                      : 'bg-[#f87171] border-[#f87171] text-[#2a0707]'
                   }`}
                 >
                   {videoEnabled ? <VideoIcon size={17} /> : <VideoOff size={17} />}
@@ -223,7 +223,7 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
               onClick={() =>
                 onJoin({ audioEnabled, videoEnabled, audioDeviceId, videoDeviceId })
               }
-              className="w-full py-3.5 rounded-full bg-white text-black font-bold text-sm hover:bg-white/90 active:scale-[0.98] transition-all"
+              className="w-full py-3.5 rounded-full bg-[#2dd4bf] text-[#04211d] font-bold text-sm hover:bg-white/90 active:scale-[0.98] transition-all"
             >
               Entrar a la asamblea
             </button>

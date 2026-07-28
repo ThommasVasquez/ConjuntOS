@@ -126,7 +126,7 @@ export function ReactionPicker({ onPick }: { onPick: (emoji: string) => void }) 
         title="Reacciones"
         className={`w-12 h-12 sm:w-13 sm:h-13 rounded-full grid place-items-center border transition-all active:scale-90 ${
           open
-            ? 'bg-white border-white text-black'
+            ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#04211d]'
             : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
         }`}
       >

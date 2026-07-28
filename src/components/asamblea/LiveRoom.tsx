@@ -40,7 +40,7 @@ function ConnectionBanner() {
 
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 px-3.5 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-white/15 flex items-center gap-2">
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+      <span className="w-1.5 h-1.5 rounded-full bg-[#fbbf24] animate-pulse" />
       <span className="text-[11px] font-medium text-white/90">{label}</span>
     </div>
   );

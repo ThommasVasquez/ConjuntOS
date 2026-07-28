@@ -83,7 +83,7 @@ export default function ModeratorPanel({
           <button
             onClick={() => run('finish', onFinishSession)}
             disabled={busy !== null}
-            className="w-full py-3 rounded-2xl bg-red-500/15 border border-red-500/40 text-red-300 text-[11px] font-bold uppercase tracking-widest hover:bg-red-500/25 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-2xl bg-red-500/15 border border-red-500/40 text-[#fca5a5] text-[11px] font-bold uppercase tracking-widest hover:bg-[#f87171]/25 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {busy === 'finish' ? <Loader2 size={13} className="animate-spin" /> : <Square size={13} />}
             Finalizar asamblea
@@ -250,7 +250,7 @@ export default function ModeratorPanel({
                   disabled={busy !== null}
                   className={`ml-auto shrink-0 px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all disabled:opacity-50 ${
                     v.activa
-                      ? 'bg-white text-black hover:bg-white/90'
+                      ? 'bg-[#2dd4bf] text-[#04211d] hover:brightness-110'
                       : 'bg-white/10 border border-white/12 text-white hover:bg-white/20'
                   }`}
                 >

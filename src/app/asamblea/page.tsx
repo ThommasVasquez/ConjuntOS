@@ -309,7 +309,7 @@ export default function AsambleaPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-black grid place-items-center">
+      <div className="min-h-screen bg-[#050d0c] grid place-items-center">
         <span className="w-10 h-10 rounded-full border-2 border-white/15 border-t-white animate-spin" />
       </div>
     );
@@ -317,7 +317,7 @@ export default function AsambleaPage() {
 
   if (!asamblea) {
     return (
-      <div className="min-h-screen bg-black grid place-items-center p-6">
+      <div className="min-h-screen bg-[#050d0c] grid place-items-center p-6">
         <div className="text-center max-w-sm">
           <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 grid place-items-center mx-auto mb-5">
             <Video className="w-8 h-8 text-white/40" />
@@ -334,9 +334,9 @@ export default function AsambleaPage() {
   const quorumPct = Number(quorum?.quorumPorcentaje ?? 0);
 
   return (
-    <div className="fixed inset-0 bg-black text-white flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#050d0c] text-white flex flex-col overflow-hidden">
       {/* ── Top bar ────────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center gap-3 px-3 sm:px-5 h-14 border-b border-white/10 bg-black/80 backdrop-blur-xl z-20">
+      <header className="shrink-0 flex items-center gap-3 px-3 sm:px-5 h-14 border-b border-white/10 bg-[#050d0c]/85 backdrop-blur-xl z-20">
         <div className="flex items-center gap-2 min-w-0">
           <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/15 border border-red-500/30 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -351,7 +351,7 @@ export default function AsambleaPage() {
 
         <div className="ml-auto flex items-center gap-2 shrink-0">
           {tengoLaPalabra && (
-            <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white text-black">
+            <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2dd4bf] text-[#04211d]">
               <Radio size={11} />
               <span className="text-[9px] font-bold uppercase tracking-widest">Tienes la palabra</span>
             </span>
@@ -371,7 +371,7 @@ export default function AsambleaPage() {
           {!yaRegistrado && (
             <button
               onClick={registerAttendance}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-black text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 transition-colors"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#2dd4bf] text-[#04211d] text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 transition-colors"
             >
               <UserCheck size={12} /> Registrar asistencia
             </button>
@@ -459,7 +459,7 @@ export default function AsambleaPage() {
             />
             <aside
               className="
-                z-40 flex flex-col bg-[#0a0a0a] border-white/10
+                z-40 flex flex-col bg-[#0b1614] border-white/10
                 fixed inset-x-0 bottom-0 h-[70vh] rounded-t-3xl border-t
                 sm:static sm:h-auto sm:w-[340px] sm:rounded-none sm:border-l sm:border-t-0
               "
@@ -478,7 +478,7 @@ export default function AsambleaPage() {
                     key={id}
                     onClick={() => setPanel(id)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all ${
-                      panel === id ? "bg-white text-black" : "text-white/50 hover:text-white hover:bg-white/5"
+                      panel === id ? "bg-[#2dd4bf] text-[#04211d]" : "text-white/50 hover:text-white hover:bg-white/5"
                     }`}
                   >
                     {icon}
@@ -559,7 +559,7 @@ export default function AsambleaPage() {
                             <p className="text-xs font-semibold min-w-0">{v.titulo}</p>
                             <span
                               className={`shrink-0 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                                v.activa ? "bg-white text-black" : "bg-white/10 text-white/50"
+                                v.activa ? "bg-[#2dd4bf] text-[#04211d]" : "bg-white/10 text-white/50"
                               }`}
                             >
                               {v.activa ? "Abierta" : "Cerrada"}
@@ -593,7 +593,7 @@ export default function AsambleaPage() {
                                   <span className="text-[10px] w-16 truncate text-white/60">{option}</span>
                                   <div className="flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
                                     <div
-                                      className="h-full bg-white rounded-full transition-all duration-500"
+                                      className="h-full bg-[#2dd4bf] rounded-full transition-all duration-500"
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
@@ -696,7 +696,7 @@ export default function AsambleaPage() {
                           <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                             <circle cx="18" cy="18" r="15.915" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
                             <circle
-                              cx="18" cy="18" r="15.915" fill="none" stroke="white"
+                              cx="18" cy="18" r="15.915" fill="none" stroke="#2dd4bf"
                               strokeWidth="3" strokeLinecap="round"
                               strokeDasharray={`${Math.min(quorumPct, 100)} 100`}
                               className="transition-all duration-700"
@@ -810,7 +810,7 @@ export default function AsambleaPage() {
                     onClick={postOpinion}
                     disabled={!newOpinion.trim()}
                     aria-label="Enviar mensaje"
-                    className="w-10 h-10 shrink-0 rounded-full bg-white text-black grid place-items-center disabled:opacity-25 active:scale-90 transition-all"
+                    className="w-10 h-10 shrink-0 rounded-full bg-[#2dd4bf] text-[#04211d] grid place-items-center disabled:opacity-25 active:scale-90 transition-all"
                   >
                     <Send size={15} />
                   </button>

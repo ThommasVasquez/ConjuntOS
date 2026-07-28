@@ -49,11 +49,11 @@ function CtrlButton({
       title={label}
       className={`relative shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full grid place-items-center border transition-all duration-200 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed ${className} ${
         danger
-          ? 'bg-red-500 border-red-400 text-white hover:bg-red-400 shadow-lg shadow-red-500/25'
+          ? 'bg-[#f87171] border-[#f87171] text-[#2a0707] hover:brightness-110 shadow-lg shadow-[#f87171]/25'
           : locked
             ? 'bg-white/[0.04] border-white/10 text-white/35 hover:bg-white/10 hover:text-white/60'
             : active
-              ? 'bg-white border-white text-black hover:bg-white/90'
+              ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#04211d] hover:brightness-110'
               : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
       }`}
     >
@@ -283,7 +283,7 @@ export default function ControlBar({
         >
           <span className="relative">
             <Users size={19} />
-            <span className="absolute -top-2.5 -right-3 min-w-4 h-4 px-1 rounded-full bg-white text-black text-[9px] font-bold grid place-items-center">
+            <span className="absolute -top-2.5 -right-3 min-w-4 h-4 px-1 rounded-full bg-[#2dd4bf] text-[#04211d] text-[9px] font-bold grid place-items-center">
               {participantCount}
             </span>
           </span>
