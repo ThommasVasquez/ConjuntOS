@@ -135,6 +135,21 @@ export default function AsambleaPage() {
   const [seenOpiniones, setSeenOpiniones] = useState(0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const votosRef = useRef<Record<string, Voto[]>>({});
+  votosRef.current = votos;
+
+  // Trailing debounce keyed by concern; timers are cleared on unmount.
+  const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => { timers.forEach(clearTimeout); timers.clear(); };
+  }, []);
+  const schedule = useCallback((key: string, fn: () => void, ms: number) => {
+    const timers = timersRef.current;
+    const prev = timers.get(key);
+    if (prev) clearTimeout(prev);
+    timers.set(key, setTimeout(() => { timers.delete(key); fn(); }, ms));
+  }, []);
 
   const fetchSession = useCallback(async () => {
     try {
@@ -148,30 +163,131 @@ export default function AsambleaPage() {
     }
   }, []);
 
-  const fetchAll = useCallback(async () => {
+  // Granular fetchers. Previously one handler refetched everything on ANY
+  // asamblea event, so a 150-resident vote (150 broadcasts x 6 GETs x 150
+  // clients) turned one ballot into six figures of requests.
+  const fetchOpiniones = useCallback(async () => {
+    if (!asambleaId) return;
+    try { setOpiniones(await api.get<Opinion[]>(`/asambleas/${asambleaId}/opiniones`)); }
+    catch { /* keep previous */ }
+  }, [asambleaId]);
+
+  const fetchVotaciones = useCallback(async () => {
+    if (!asambleaId) return;
+    try { setVotaciones(await api.get<Votacion[]>(`/asambleas/${asambleaId}/votaciones`)); }
+    catch { /* keep previous */ }
+  }, [asambleaId]);
+
+  const fetchQuorum = useCallback(async () => {
     if (!asambleaId) return;
     try {
-      const [op, vot, asi, tur, pod] = await Promise.all([
-        api.get<Opinion[]>(`/asambleas/${asambleaId}/opiniones`),
-        api.get<Votacion[]>(`/asambleas/${asambleaId}/votaciones`),
-        api.get<QuorumResponse>(`/asambleas/${asambleaId}/asistencias`),
-        api.get<Turno[]>(`/asambleas/${asambleaId}/turnos`),
-        api.get<Poder[]>(`/asambleas/${asambleaId}/poderes`).catch(() => [] as Poder[]),
-      ]);
-      setOpiniones(op);
-      setVotaciones(vot);
+      const asi = await api.get<QuorumResponse>(`/asambleas/${asambleaId}/asistencias`);
       setAsistencias(asi.asistencias ?? []);
       setQuorum(asi);
-      setTurnos(tur);
-      setPoderes(pod);
-    } catch (err) {
-      console.error("fetch asamblea data:", err);
-    }
+    } catch { /* keep previous */ }
   }, [asambleaId]);
+
+  const fetchTurnos = useCallback(async () => {
+    if (!asambleaId) return;
+    try { setTurnos(await api.get<Turno[]>(`/asambleas/${asambleaId}/turnos`)); }
+    catch { /* keep previous */ }
+  }, [asambleaId]);
+
+  const fetchPoderes = useCallback(async () => {
+    if (!asambleaId) return;
+    try { setPoderes(await api.get<Poder[]>(`/asambleas/${asambleaId}/poderes`)); }
+    catch { /* poderes are admin-only; ignore 403 */ }
+  }, [asambleaId]);
+
+  /** Refresh the tallies the user actually has open. */
+  const refreshOpenTallies = useCallback(async () => {
+    const ids = Object.keys(votosRef.current);
+    if (ids.length === 0) return;
+    const pairs = await Promise.all(
+      ids.map(async (id) => {
+        try { return [id, await api.get<Voto[]>(`/votaciones/${id}/votos`)] as const; }
+        catch { return null; }
+      }),
+    );
+    setVotos((prev) => {
+      const next = { ...prev };
+      for (const pair of pairs) if (pair) next[pair[0]] = pair[1];
+      return next;
+    });
+  }, []);
+
+  const fetchAll = useCallback(async () => {
+    await Promise.all([
+      fetchOpiniones(), fetchVotaciones(), fetchQuorum(), fetchTurnos(), fetchPoderes(),
+    ]);
+  }, [fetchOpiniones, fetchVotaciones, fetchQuorum, fetchTurnos, fetchPoderes]);
 
   useEffect(() => { fetchSession(); }, [fetchSession]);
   useEffect(() => { fetchAll(); }, [fetchAll]);
-  useWsSubscription("asamblea", () => { fetchSession(); fetchAll(); });
+
+  /**
+   * Route each event to only what it invalidates, and coalesce bursts: during a
+   * live vote the broadcasts arrive in a storm, and one trailing refetch is as
+   * correct as 150 of them.
+   */
+  useWsSubscription("asamblea", (event) => {
+    switch (event.action) {
+      case "session_updated":
+      case "asamblea_created":
+        schedule("session", fetchSession, 150);
+        break;
+      case "votacion_created":
+      case "votacion_updated":
+        schedule("votaciones", () => { fetchVotaciones(); refreshOpenTallies(); }, 250);
+        break;
+      case "voto_cast":
+        // Keeps an open tally live instead of frozen at the moment it was opened.
+        schedule("votos", refreshOpenTallies, 700);
+        break;
+      case "opinion_created":
+        schedule("opiniones", fetchOpiniones, 250);
+        break;
+      case "asistencia_registered":
+        schedule("quorum", fetchQuorum, 700);
+        break;
+      case "turno_created":
+      case "turno_updated":
+        schedule("turnos", fetchTurnos, 200);
+        break;
+      case "poder_created":
+      case "poder_updated":
+        schedule("poderes", fetchPoderes, 400);
+        break;
+      default:
+        // "resync" after a dropped socket, or any action added later.
+        schedule("all", () => { fetchSession(); fetchAll(); refreshOpenTallies(); }, 100);
+    }
+  });
+
+  /**
+   * "Have I already voted?" must come from the server, not from local state:
+   * after a reload (or the room's token-driven remount) the ballot used to be
+   * offered again, and the second vote failed on the unique constraint with a
+   * raw error. Optimistic local answers still win over the fetched ones.
+   */
+  useEffect(() => {
+    if (!user?.id) return;
+    const derived: Record<string, string> = {};
+    for (const [vid, list] of Object.entries(votos)) {
+      const mine = list.find((v) => v.usuarioId === user.id);
+      if (mine) derived[vid] = mine.respuesta;
+    }
+    if (Object.keys(derived).length > 0) {
+      setMisVotos((prev) => ({ ...derived, ...prev }));
+    }
+  }, [votos, user?.id]);
+
+  // Load the open ballot's votes so the floating card knows whether this user
+  // already voted, and can show a live tally.
+  useEffect(() => {
+    const id = votaciones.find((v) => v.activa)?.id;
+    if (id) fetchVotos(id);
+  }, [votaciones]);
 
   // Keep the chat pinned to the newest message while the panel is open.
   useEffect(() => {

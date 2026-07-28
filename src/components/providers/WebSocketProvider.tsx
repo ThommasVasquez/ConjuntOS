@@ -19,6 +19,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const attemptRef = useRef(0);
+  // Distinguishes the first connect (nothing to resync) from a reconnect.
+  const hadConnectedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -86,6 +88,16 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         // would silently kill targeted events after the first reconnect.
         setCurrentUserId(userId);
         setConnected(true);
+
+        // Anything published while we were disconnected is lost — the hub does
+        // not replay. Ask every subscriber to refetch so the UI cannot sit on
+        // state that changed during the gap.
+        if (hadConnectedRef.current) {
+          // Read off the store rather than closing over it: the identity is
+          // stable, so this keeps the effect's dependency list unchanged.
+          useWsStore.getState().resyncAll();
+        }
+        hadConnectedRef.current = true;
       };
 
       ws.onmessage = (e) => {

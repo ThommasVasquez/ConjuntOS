@@ -816,3 +816,187 @@ async fn floor_in_another_asamblea_does_not_grant_publish() {
     .await;
     assert_eq!(s, StatusCode::NOT_FOUND, "cross-tenant token must be refused");
 }
+
+/// Give `usuario` a unidad with a real coeficiente so they can cast a weighted vote.
+async fn seed_unidad_para(state: &AppState, conjunto_id: Uuid, usuario: Uuid, coef: i64) -> Uuid {
+    use diesel::prelude::*;
+    use diesel_async::RunQueryDsl;
+    use enconjunto_api::db::schema::{unidades, usuarios};
+    let mut conn = state.pool.get().await.unwrap();
+    let unidad: Uuid = diesel::insert_into(unidades::table)
+        .values((
+            unidades::conjunto_id.eq(conjunto_id),
+            unidades::numero.eq(format!("U-{}", Uuid::new_v4().simple())),
+            unidades::tipo.eq("APARTAMENTO"),
+            unidades::coeficiente.eq(bigdecimal::BigDecimal::from(coef)),
+        ))
+        .returning(unidades::id)
+        .get_result(&mut conn)
+        .await
+        .unwrap();
+    diesel::update(usuarios::table.filter(usuarios::id.eq(usuario)))
+        .set(usuarios::unidad_id.eq(unidad))
+        .execute(&mut conn)
+        .await
+        .unwrap();
+    unidad
+}
+
+// ── Regressions found by the production audit ────────────────────────────
+
+#[tokio::test]
+async fn chat_shows_the_newest_messages_past_the_cap() {
+    // Regression: the 100-message cap was applied to an ASC ordering, so the
+    // endpoint returned the OLDEST 100 and the chat froze permanently at
+    // message 100 — nobody ever saw a new one again.
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_uid, email) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let token = login(&app, &email).await;
+    let (aid, _) = seed_asamblea(&state, conj).await;
+
+    let url = format!("/api/v1/asambleas/{aid}/opiniones");
+    for i in 0..105 {
+        let (s, _) = request(
+            &app,
+            Method::POST,
+            &url,
+            Some(&token),
+            Some(json!({ "contenido": format!("mensaje {i}") })),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK, "post {i} failed");
+    }
+
+    let (s, body) = request(&app, Method::GET, &url, Some(&token), None).await;
+    assert_eq!(s, StatusCode::OK);
+    let list = body.as_array().expect("array");
+    assert_eq!(list.len(), 100, "cap still 100");
+    // Newest must be present, oldest must have rolled off, order chronological.
+    assert_eq!(list[0]["contenido"], "mensaje 5");
+    assert_eq!(list[99]["contenido"], "mensaje 104");
+}
+
+#[tokio::test]
+async fn opinion_rejects_empty_and_oversized_content() {
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_uid, email) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let token = login(&app, &email).await;
+    let (aid, _) = seed_asamblea(&state, conj).await;
+    let url = format!("/api/v1/asambleas/{aid}/opiniones");
+
+    let (s, _) = request(&app, Method::POST, &url, Some(&token), Some(json!({ "contenido": "   " }))).await;
+    assert_eq!(s, StatusCode::BAD_REQUEST, "blank message must be rejected");
+
+    let huge = "a".repeat(1001);
+    let (s, _) = request(&app, Method::POST, &url, Some(&token), Some(json!({ "contenido": huge }))).await;
+    assert_eq!(s, StatusCode::BAD_REQUEST, "oversized message must be rejected");
+}
+
+#[tokio::test]
+async fn verifying_a_poder_after_the_otorgante_voted_is_refused() {
+    // Regression: verifying a poder retroactively moved the otorgante's weight
+    // onto the apoderado while the otorgante's own ballot stayed on record, so
+    // the unit was counted twice. The unique (votacion_id, unidad_id) index
+    // does not catch it because the apoderado votes under a different unidad.
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_admin, admin_email) = seed_user_in(&state, conj, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+
+    let (otorgante, otorgante_email) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let (apoderado, _apoderado_email) = seed_user_in(&state, conj, Rol::Propietario).await;
+    seed_unidad_para(&state, conj, otorgante, 10).await;
+    seed_unidad_para(&state, conj, apoderado, 15).await;
+    let otorgante_token = login(&app, &otorgante_email).await;
+
+    let (aid, _) = seed_asamblea(&state, conj).await;
+
+    // Open a votación and have the otorgante vote in it.
+    let (s, votacion) = request(
+        &app,
+        Method::POST,
+        &format!("/api/v1/asambleas/{aid}/votaciones"),
+        Some(&admin_token),
+        Some(json!({ "titulo": "Presupuesto" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "create votacion failed: {votacion}");
+    let vid = votacion["id"].as_str().expect("votacion id");
+
+    // Votaciones are created closed; open it before anyone can vote.
+    let (s, body) = request(
+        &app,
+        Method::PUT,
+        &format!("/api/v1/asambleas/{aid}/votaciones/{vid}"),
+        Some(&admin_token),
+        Some(json!({ "activa": true })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "open votacion failed: {body}");
+
+    let (s, body) = request(
+        &app,
+        Method::POST,
+        &format!("/api/v1/votaciones/{vid}/votos"),
+        Some(&otorgante_token),
+        Some(json!({ "respuesta": "SI" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "otorgante vote failed: {body}");
+
+    // Now the admin tries to verify a poder naming that same otorgante.
+    let (s, poder) = request(
+        &app,
+        Method::POST,
+        &format!("/api/v1/asambleas/{aid}/poderes"),
+        Some(&admin_token),
+        Some(json!({
+            "otorganteId": otorgante.to_string(),
+            "apoderadoId": apoderado.to_string(),
+            "documentoUrl": "https://storage.example/poder.pdf"
+        })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "create poder failed: {poder}");
+    let pid = poder["id"].as_str().expect("poder id");
+
+    let (s, body) = request(
+        &app,
+        Method::PUT,
+        &format!("/api/v1/asambleas/{aid}/poderes/{pid}"),
+        Some(&admin_token),
+        Some(json!({ "verificado": true })),
+    )
+    .await;
+    assert_eq!(
+        s,
+        StatusCode::CONFLICT,
+        "verifying after the otorgante voted must be refused: {body}"
+    );
+}
+
+#[tokio::test]
+async fn create_pairing_is_admin_only() {
+    // Regression: any resident could mint unlimited pending pairings, and
+    // get_pairing Argon2-verifies the submitted PIN against every pending row.
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_uid, email) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let token = login(&app, &email).await;
+
+    let (s, _) = request(
+        &app,
+        Method::POST,
+        "/api/v1/asambleas/pairing",
+        Some(&token),
+        Some(json!({ "pin": "123456" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::FORBIDDEN);
+}

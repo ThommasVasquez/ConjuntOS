@@ -14,6 +14,16 @@ struct VideoGrant {
     can_publish: bool,
     #[serde(rename = "canSubscribe")]
     can_subscribe: bool,
+    /// Data messages (reactions) are NOT media: everyone in the room may send
+    /// them, including watch-only participants.
+    ///
+    /// This must be set explicitly. LiveKit's `GetCanPublishData()` falls back
+    /// to `GetCanPublish()` when the claim is absent, so leaving it out meant
+    /// every resident without the floor — i.e. nearly the whole assembly — had
+    /// their reactions dropped by the server while still seeing their own
+    /// emoji animate locally.
+    #[serde(rename = "canPublishData")]
+    can_publish_data: bool,
 }
 
 #[derive(Serialize)]
@@ -46,6 +56,7 @@ pub fn generate_token(
             room: room.to_string(),
             can_publish,
             can_subscribe: true,
+            can_publish_data: true,
         },
         metadata: metadata.to_string(),
     };

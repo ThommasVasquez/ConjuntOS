@@ -285,11 +285,19 @@ async fn create_pairing(
     user: AuthUser,
     Json(req): Json<CreatePairingRequest>,
 ) -> ApiResult<Json<PairingDto>> {
+    // Admin-only: the PIN is displayed on the venue screen by whoever runs the
+    // assembly. Leaving this open let any resident mint unlimited pending
+    // pairings, and because get_pairing Argon2-verifies the submitted PIN
+    // against EVERY pending row, a few thousand of them turn each legitimate
+    // pairing attempt into a CPU exhaustion.
+    guard::require(&user, ADMIN_ROLES)?;
+
     if req.pin.trim().is_empty() {
         return Err(ApiError::BadRequest("pin es obligatorio".into()));
     }
     let pin_hash = password::hash_password_blocking(req.pin).await?;
-    let expires_minutes = req.expires_minutes.unwrap_or(5);
+    // Bounded: a pairing PIN is a short-lived credential, not a standing one.
+    let expires_minutes = req.expires_minutes.unwrap_or(5).clamp(1, 60);
     let expires_at = Utc::now()
         + chrono::Duration::try_minutes(expires_minutes)
             .ok_or_else(|| ApiError::BadRequest("expires_minutes inválido".into()))?;
@@ -620,6 +628,19 @@ async fn create_opinion(
         ));
     }
 
+    // Bounded: opiniones are broadcast to every participant over the WS hub, so
+    // an unbounded body is an amplification vector as well as a UI problem.
+    let contenido = req.contenido.trim();
+    if contenido.is_empty() {
+        return Err(ApiError::BadRequest("el mensaje no puede estar vacío".into()));
+    }
+    if contenido.chars().count() > 1000 {
+        return Err(ApiError::BadRequest(
+            "el mensaje no puede superar 1000 caracteres".into(),
+        ));
+    }
+    let contenido = contenido.to_string();
+
     let (nombre, torre, apto) = repo::get_user_info(&mut conn, user.id).await?;
     let apto_text = format_apto(&torre, &apto);
 
@@ -630,7 +651,7 @@ async fn create_opinion(
             usuario_id: user.id,
             nombre,
             apto: apto_text,
-            contenido: req.contenido.trim().to_string(),
+            contenido,
         },
     )
     .await?;
@@ -844,6 +865,23 @@ async fn update_poder(
     guard::require(&user, ADMIN_ROLES)?;
     let mut conn = state.pool.get().await?;
     repo::verify_asamblea_tenant(&mut conn, asamblea_id, user.conjunto_id).await?;
+
+    // Verifying a poder retroactively moves the otorgante's weight onto the
+    // apoderado. If the otorgante already voted, their ballot stays on record
+    // while the apoderado's effective coeficiente grows to include the same
+    // unit — the unit is counted twice and the unique (votacion_id, unidad_id)
+    // constraint does not catch it, because the apoderado votes under their own
+    // unidad. Refuse instead of silently corrupting the tally.
+    if req.verificado {
+        let poder = repo::get_poder(&mut conn, asamblea_id, pid).await?;
+        if repo::otorgante_ya_voto(&mut conn, asamblea_id, poder.otorgante_id).await? {
+            return Err(ApiError::Conflict(
+                "el otorgante ya votó en esta asamblea; no se puede verificar el poder \
+                 sin duplicar su coeficiente"
+                    .into(),
+            ));
+        }
+    }
 
     let poder = repo::update_poder(&mut conn, asamblea_id, pid, req.verificado).await?;
     let dto = PoderDto::from(poder);

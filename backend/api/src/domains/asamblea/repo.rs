@@ -69,6 +69,26 @@ pub async fn otorgante_has_verified_poder(
     Ok(n > 0)
 }
 
+/// True if `otorgante_id` has already cast a vote in any votación of this
+/// asamblea. Verifying their poder afterwards would double-count their unit:
+/// their own vote stays on record while the apoderado's effective coeficiente
+/// grows to include it, and the unique (votacion_id, unidad_id) constraint does
+/// not catch it because the apoderado votes under a different unidad.
+pub async fn otorgante_ya_voto(
+    conn: &mut DbConn,
+    asamblea_id: Uuid,
+    otorgante_id: Uuid,
+) -> ApiResult<bool> {
+    let n: i64 = asamblea_votos::table
+        .inner_join(asamblea_votaciones::table)
+        .filter(asamblea_votaciones::asamblea_id.eq(asamblea_id))
+        .filter(asamblea_votos::usuario_id.eq(otorgante_id))
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
 /// Returns (nombre, torre, apto) for denormalised opinion/turno fields.
 pub async fn get_user_info(
     conn: &mut DbConn,
@@ -505,18 +525,25 @@ pub async fn get_quorum(
 
 // ── Opiniones ────────────────────────────────────────────────────────────
 
+/// The 100 most recent messages, returned oldest-first for display.
+///
+/// The cap used to be applied to an ASC ordering, which returned the *oldest*
+/// 100: once an assembly passed 100 messages the chat froze permanently and no
+/// new message was ever visible to anyone. Take the newest 100, then flip back
+/// into chronological order.
 pub async fn list_opiniones(
     conn: &mut DbConn,
     asamblea_id: Uuid,
 ) -> ApiResult<Vec<AsambleaOpinion>> {
-    asamblea_opiniones::table
+    let mut recientes: Vec<AsambleaOpinion> = asamblea_opiniones::table
         .filter(asamblea_opiniones::asamblea_id.eq(asamblea_id))
-        .order(asamblea_opiniones::created_at.asc())
+        .order(asamblea_opiniones::created_at.desc())
         .limit(100)
         .select(AsambleaOpinion::as_select())
         .load(conn)
-        .await
-        .map_err(Into::into)
+        .await?;
+    recientes.reverse();
+    Ok(recientes)
 }
 
 pub async fn create_opinion(conn: &mut DbConn, nueva: NuevaOpinion) -> ApiResult<AsambleaOpinion> {
@@ -620,6 +647,20 @@ pub async fn create_poder(conn: &mut DbConn, nuevo: NuevoPoder) -> ApiResult<Asa
         .values(&nuevo)
         .returning(AsambleaPoder::as_returning())
         .get_result(conn)
+        .await
+        .map_err(Into::into)
+}
+
+pub async fn get_poder(
+    conn: &mut DbConn,
+    asamblea_id: Uuid,
+    poder_id: Uuid,
+) -> ApiResult<AsambleaPoder> {
+    asamblea_poderes::table
+        .filter(asamblea_poderes::id.eq(poder_id))
+        .filter(asamblea_poderes::asamblea_id.eq(asamblea_id))
+        .select(AsambleaPoder::as_select())
+        .first(conn)
         .await
         .map_err(Into::into)
 }
