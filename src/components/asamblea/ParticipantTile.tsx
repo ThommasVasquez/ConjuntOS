@@ -141,10 +141,11 @@ export default function ParticipantTile({
         <button
           onClick={onPin}
           aria-label={pinned ? 'Quitar fijado' : 'Fijar participante'}
-          className={`absolute top-2 right-2 w-8 h-8 rounded-full grid place-items-center border transition-all ${
+          // Always visible on touch, where there is no hover to reveal it.
+          className={`absolute top-2 right-2 w-11 h-11 rounded-full grid place-items-center border transition-all ${
             pinned
               ? 'bg-[#2dd4bf] text-[#04211d] border-[#2dd4bf]'
-              : 'bg-black/50 text-white/80 border-white/15 opacity-0 group-hover:opacity-100 focus:opacity-100'
+              : 'bg-black/50 text-white/80 border-white/15 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
           }`}
         >
           <Pin size={13} />

@@ -317,7 +317,7 @@ export default function CarteleraPage() {
          <div className="flex justify-end w-full">
             <button 
               onClick={() => setIsChatOpen(true)}
-              className="pointer-events-auto w-16 h-16 rounded-full bg-text/10 shadow-[0_15px_40px_rgba(128,128,128,0.3)] flex items-center justify-center text-white relative active:scale-95 hover:scale-105 transition-all group overflow-visible"
+              className="pointer-events-auto w-16 h-16 rounded-full bg-accent shadow-[0_15px_40px_rgba(45,212,191,0.28)] flex items-center justify-center text-on-accent relative active:scale-95 hover:scale-105 transition-all group overflow-visible"
             >
                <MessageCircle size={28} />
                
@@ -344,7 +344,7 @@ export default function CarteleraPage() {
                  <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-text/20 flex items-center justify-center border border-text/30 relative">
                        <Building2 size={24} className="text-text" />
-                       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-primary dark:border-[#0B0B0B] ${isAdminOnline ? 'bg-text/10 shadow-[0_0_10px_rgba(128,128,128,0.5)]' : 'bg-text/10'}`} />
+                       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-primary dark:border-[#0B0B0B] ${isAdminOnline ? 'bg-text/10 shadow-[0_0_10px_rgba(45, 212, 191, 0.5)]' : 'bg-text/10'}`} />
                     </div>
                     <div className="flex flex-col">
                        <h3 className="text-sm font-bold text-text tracking-tight">Atención al Copropietario</h3>
@@ -380,7 +380,7 @@ export default function CarteleraPage() {
                        <div className={`max-w-[85%] p-4 rounded-3xl text-sm leading-relaxed ${
                          m.esDeAdmin 
                            ? 'bg-surface-2 border border-border text-text rounded-tl-none shadow-sm' 
-                           : 'bg-text/10 text-white rounded-tr-none shadow-lg shadow-black/10 font-medium'
+                           : 'bg-accent text-on-accent rounded-tr-none shadow-lg shadow-black/10 font-medium'
                        }`}>
                           {m.mensaje}
                           <div className={`text-[8px] mt-2 opacity-40 flex items-center gap-1 ${m.esDeAdmin ? 'justify-start text-text' : 'justify-end font-normal text-white'}`}>
@@ -408,7 +408,7 @@ export default function CarteleraPage() {
                     <button 
                       onClick={sendMessage}
                       disabled={!newMessage.trim() || isSending}
-                      className="w-14 h-14 rounded-full bg-text/10 flex items-center justify-center text-white shadow-[0_10px_25px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-50 disabled:scale-100 group"
+                      className="w-14 h-14 rounded-full bg-accent flex items-center justify-center text-on-accent shadow-[0_10px_25px_rgba(45,212,191,0.28)] active:scale-90 transition-all disabled:opacity-50 disabled:scale-100 group"
                     >
                        {isSending ? <Skeleton className="w-6 h-6 rounded-full" /> : <ArrowRight size={24} className="group-hover:translate-x-0.5 transition-transform" />}
                     </button>

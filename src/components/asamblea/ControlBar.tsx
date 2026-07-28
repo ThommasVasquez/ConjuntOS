@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   useLocalParticipant,
   useRoomContext,
@@ -12,6 +12,7 @@ import {
   Hand, LayoutGrid, User, PhoneOff, MessageSquare, Users, ChevronUp, Check, Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePopoverA11y } from '@/hooks/useDialogA11y';
 import type { StageView } from './ConferenceStage';
 import { ReactionPicker } from './Reactions';
 
@@ -71,17 +72,9 @@ function CtrlButton({
 /** Chevron next to mic/camera that opens the device list, exactly like Zoom. */
 function DeviceMenu({ kind, label }: { kind: MediaDeviceKind; label: string }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const { devices, activeDeviceId, setActiveMediaDevice } = useMediaDeviceSelect({ kind });
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [open]);
+  // Escape + outside click; closing on mousedown alone stranded keyboard users.
+  const ref = usePopoverA11y(open, () => setOpen(false));
 
   if (devices.length <= 1) return null;
 
@@ -90,13 +83,15 @@ function DeviceMenu({ kind, label }: { kind: MediaDeviceKind; label: string }) {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={`Cambiar ${label}`}
+        aria-expanded={open}
+        aria-haspopup="menu"
         className="w-5 h-5 rounded-full grid place-items-center bg-white/15 border border-white/20 text-white hover:bg-white/30 transition-colors"
       >
         <ChevronUp size={11} className={open ? 'rotate-180 transition-transform' : 'transition-transform'} />
       </button>
 
       {open && (
-        <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-60 max-h-64 overflow-y-auto rounded-2xl bg-black/90 backdrop-blur-xl border border-white/15 shadow-2xl p-1.5">
+        <div role="menu" className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-60 max-h-64 overflow-y-auto rounded-2xl bg-black/90 backdrop-blur-xl border border-white/15 shadow-2xl p-1.5">
           <p className="px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-widest text-white/60">
             {label}
           </p>
@@ -109,7 +104,9 @@ function DeviceMenu({ kind, label }: { kind: MediaDeviceKind; label: string }) {
                 );
                 setOpen(false);
               }}
-              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left text-[11px] text-white/80 hover:bg-white/10 transition-colors"
+              role="menuitemradio"
+              aria-checked={d.deviceId === activeDeviceId}
+              className="w-full flex items-center gap-2 px-2.5 min-h-11 py-2 rounded-xl text-left text-[11px] text-white/80 hover:bg-white/10 transition-colors"
             >
               <span className="w-3.5 shrink-0">
                 {d.deviceId === activeDeviceId && <Check size={12} className="text-white" />}

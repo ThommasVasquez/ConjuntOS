@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useDataChannel, useLocalParticipant } from '@livekit/components-react';
 import { Smile } from 'lucide-react';
+import { usePopoverA11y } from '@/hooks/useDialogA11y';
 
 export const REACTION_EMOJI = ['👏', '👍', '👎', '😂', '🎉', '❤️'] as const;
 
@@ -86,17 +87,8 @@ export function ReactionOverlay({ floating }: { floating: FloatingReaction[] }) 
 
 export function ReactionPicker({ onPick }: { onPick: (emoji: string) => void }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const { localParticipant } = useLocalParticipant();
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [open]);
+  const ref = usePopoverA11y(open, () => setOpen(false));
 
   // Reactions ride the data channel, which every participant may use — even
   // watch-only ones, who have no publish grant for media.
@@ -113,7 +105,8 @@ export function ReactionPicker({ onPick }: { onPick: (emoji: string) => void }) 
                 onPick(emoji);
                 setOpen(false);
               }}
-              className="w-9 h-9 rounded-xl grid place-items-center text-xl hover:bg-white/15 hover:scale-125 transition-all"
+              aria-label={`Reaccionar ${emoji}`}
+              className="w-11 h-11 rounded-xl grid place-items-center text-xl hover:bg-white/15 hover:scale-125 transition-all"
             >
               {emoji}
             </button>
@@ -123,6 +116,8 @@ export function ReactionPicker({ onPick }: { onPick: (emoji: string) => void }) 
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Enviar reacción"
+        aria-expanded={open}
+        aria-haspopup="menu"
         title="Reacciones"
         className={`w-12 h-12 sm:w-13 sm:h-13 rounded-full grid place-items-center border transition-all active:scale-90 ${
           open

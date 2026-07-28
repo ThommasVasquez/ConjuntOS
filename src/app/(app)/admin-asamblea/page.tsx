@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { estaEnSesion } from "@/lib/asamblea";
+import { useDialogA11y } from "@/hooks/useDialogA11y";
 import { SkeletonRows } from "@/components/ui/Skeleton";
 
 // ---------------------------------------------------------------------------
@@ -72,6 +73,10 @@ export default function AdminAsambleaPage() {
   const [form, setForm] = useState({ titulo: "", descripcion: "", fecha: "" });
   const [ordenDia, setOrdenDia] = useState<{ titulo: string }[]>([]);
   const [creando, setCreando] = useState(false);
+  const { dialogProps } = useDialogA11y({
+    open: showCrear,
+    onClose: () => !creando && setShowCrear(false),
+  });
 
   const fetchSession = useCallback(async () => {
     try {
@@ -328,9 +333,13 @@ export default function AdminAsambleaPage() {
       {showCrear && (
         <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
           <div className="absolute inset-0" onClick={() => !creando && setShowCrear(false)} />
-          <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[480px] max-h-[90vh] overflow-y-auto p-6 pb-10 sm:pb-6 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
+          <div
+            {...dialogProps}
+            aria-labelledby="crear-asamblea-titulo"
+            className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[480px] max-h-[90vh] overflow-y-auto p-6 pb-10 sm:pb-6 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300 focus:outline-none"
+          >
             <div className="flex items-center justify-between mb-5 pb-3 border-b border-border">
-              <h3 className="text-lg font-bold text-text">Nueva asamblea</h3>
+              <h3 id="crear-asamblea-titulo" className="text-lg font-bold text-text">Nueva asamblea</h3>
               <button
                 onClick={() => !creando && setShowCrear(false)}
                 aria-label="Cerrar"
@@ -351,7 +360,7 @@ export default function AdminAsambleaPage() {
                   value={form.titulo}
                   onChange={(e) => setForm((p) => ({ ...p, titulo: e.target.value }))}
                   placeholder="Ej: Asamblea General Ordinaria 2026"
-                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent placeholder:text-text"
+                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent placeholder:text-text-muted"
                 />
               </div>
 
@@ -364,7 +373,7 @@ export default function AdminAsambleaPage() {
                   value={form.descripcion}
                   onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))}
                   placeholder="Convocatoria, lugar, modalidad…"
-                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent placeholder:text-text resize-none"
+                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent placeholder:text-text-muted resize-none"
                 />
               </div>
 
@@ -399,7 +408,7 @@ export default function AdminAsambleaPage() {
                           )
                         }
                         placeholder={`Punto ${i + 1}`}
-                        className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl py-2.5 px-3 text-sm text-text focus:outline-none focus:border-accent placeholder:text-text"
+                        className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl py-2.5 px-3 text-sm text-text focus:outline-none focus:border-accent placeholder:text-text-muted"
                       />
                       <button
                         type="button"

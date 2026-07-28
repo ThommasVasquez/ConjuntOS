@@ -192,7 +192,7 @@ export default function PaqueteriaPage() {
               className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-border"
             />
           </div>
-          <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-text/10 hover:bg-text/10 transition-colors rounded-2xl font-bold text-black shadow-[0_0_20px_rgba(128,128,128,0.3)] flex justify-center items-center gap-2">
+          <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-text/10 hover:bg-text/10 transition-colors rounded-2xl font-bold text-black shadow-[0_0_20px_rgba(45,212,191,0.28)] flex justify-center items-center gap-2">
             {isSubmitting ? "Registrando..." : <><Package size={18} /> Clasificar Envío</>}
           </button>
         </form>

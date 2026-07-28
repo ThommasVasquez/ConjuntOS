@@ -729,7 +729,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
              </button>
              <button
                 onClick={answerCall}
-                className="flex-1 py-3 bg-text/10 hover:bg-text/10 text-white rounded-2xl font-black text-xs shadow-xl shadow-black/20 cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 bg-accent hover:brightness-110 text-on-accent rounded-2xl font-black text-xs shadow-xl shadow-black/20 cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
              >
                 <Check size={14} /> Contestar
              </button>
@@ -747,7 +747,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
            </div>
            <button
               onClick={endCall}
-              className="w-10 h-10 rounded-full bg-text/10 hover:bg-text/10 flex items-center justify-center text-white cursor-pointer active:scale-95 transition-all shadow-lg"
+              className="w-10 h-10 rounded-full bg-accent hover:brightness-110 flex items-center justify-center text-on-accent cursor-pointer active:scale-95 transition-all shadow-lg"
            >
               <PhoneOff size={16} />
            </button>

@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { estaEnSesion, sessionIniciadaEn } from "@/lib/asamblea";
+import { useDialogA11y } from "@/hooks/useDialogA11y";
 import {
   Video, ListOrdered, BarChart3, MessageSquare, Users,
   CheckCircle2, Circle, Play, Send, Hand, Shield, X,
@@ -137,6 +138,14 @@ export default function AsambleaPage() {
   const [seenOpiniones, setSeenOpiniones] = useState(0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  // The panel is a modal bottom sheet on phones and a docked column on desktop;
+  // only the sheet traps focus and locks scrolling.
+  const esMovil = typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches;
+  const { dialogProps: panelProps } = useDialogA11y({
+    open: panel !== null,
+    onClose: () => setPanel(null),
+    modal: esMovil,
+  });
   const votosRef = useRef<Record<string, Voto[]>>({});
   votosRef.current = votos;
 
@@ -616,8 +625,10 @@ export default function AsambleaPage() {
               onClick={() => setPanel(null)}
             />
             <aside
+              {...panelProps}
+              aria-label="Panel de la asamblea"
               className="
-                z-40 flex flex-col bg-[#0b1614] border-white/10
+                z-40 flex flex-col bg-[#0b1614] border-white/10 focus:outline-none
                 fixed inset-x-0 bottom-0 h-[70vh] rounded-t-3xl border-t
                 sm:static sm:h-auto sm:w-[340px] sm:rounded-none sm:border-l sm:border-t-0
               "
@@ -635,7 +646,9 @@ export default function AsambleaPage() {
                   <button
                     key={id}
                     onClick={() => setPanel(id)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all ${
+                    aria-label={label}
+                    aria-current={panel === id ? "page" : undefined}
+                    className={`flex-1 flex items-center justify-center gap-1.5 min-h-11 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all ${
                       panel === id ? "bg-[#2dd4bf] text-[#04211d]" : "text-white/50 hover:text-white hover:bg-white/5"
                     }`}
                   >
@@ -786,7 +799,13 @@ export default function AsambleaPage() {
 
                 {/* CHAT */}
                 {panel === "chat" && (
-                  <div className="flex flex-col gap-2.5">
+                  <div
+                    className="flex flex-col gap-2.5"
+                    role="log"
+                    aria-live="polite"
+                    aria-relevant="additions"
+                    aria-label="Mensajes de la asamblea"
+                  >
                     {opiniones.length === 0 && (
                       <p className="text-white/60 text-xs text-center py-8">
                         Nadie ha escrito todavía.

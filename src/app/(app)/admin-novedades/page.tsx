@@ -599,7 +599,7 @@ export default function AdminNovedadesPage() {
                                     <button 
                                       type="button"
                                       onClick={() => setAnuncioForm(prev => ({ ...prev, imagenUrl: "" }))}
-                                      className="bg-text/10 text-white rounded-full p-2 hover:bg-text/10 transition-all shadow-md active:scale-90"
+                                      className="bg-accent text-on-accent rounded-full p-2 hover:brightness-110 transition-all shadow-md active:scale-90"
                                     >
                                         <XCircle size={16} />
                                     </button>

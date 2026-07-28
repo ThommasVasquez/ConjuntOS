@@ -1026,7 +1026,7 @@ function ProfileContent() {
                                <span className="text-lg font-black text-text">${Number(r.monto).toLocaleString()}</span>
                                <button 
                                  onClick={() => handlePay(r.id)}
-                                 className="px-4 py-1.5 rounded-full bg-text/20 text-text text-[10px] font-black uppercase hover:bg-text/10 hover:text-white transition-all active:scale-90"
+                                 className="px-4 py-1.5 rounded-full bg-accent text-text text-[10px] font-black uppercase hover:brightness-110 hover:text-on-accent transition-all active:scale-90"
                                >
                                  Pagar Ahora
                                </button>
@@ -1582,7 +1582,7 @@ function ProfileContent() {
                                 <Image src={doc.base64} alt="" fill className="object-cover opacity-60" />
                              )}
                              <span className="text-[8px] text-text truncate w-full text-center mt-1 px-1">{doc.nombre}</span>
-                             <button type="button" onClick={() => setRegDocs(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-text/80 text-white flex items-center justify-center scale-0 group-hover:scale-100 transition-transform">
+                             <button type="button" onClick={() => setRegDocs(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-accent text-on-accent flex items-center justify-center scale-0 group-hover:scale-100 transition-transform">
                                 <X size={12} />
                              </button>
                           </div>
