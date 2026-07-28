@@ -1081,3 +1081,51 @@ async fn poderes_are_frozen_while_a_votacion_is_open() {
         );
     }
 }
+
+#[tokio::test]
+async fn turno_requests_are_deduped_per_person() {
+    // Regression: create_turno had no dedupe, so a resident could flood the
+    // speaking queue and every turno_created fans out to every participant.
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_uid, email) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let token = login(&app, &email).await;
+    let (aid, _) = seed_asamblea(&state, conj).await;
+    let url = format!("/api/v1/asambleas/{aid}/turnos");
+
+    let (s, body) = request(&app, Method::POST, &url, Some(&token), None).await;
+    assert_eq!(s, StatusCode::OK, "first request failed: {body}");
+
+    let (s, _) = request(&app, Method::POST, &url, Some(&token), None).await;
+    assert_eq!(s, StatusCode::CONFLICT, "second open request must be refused");
+}
+
+#[tokio::test]
+async fn poder_documento_url_must_be_http() {
+    // The moderator panel renders this as a clickable link.
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_admin, admin_email) = seed_user_in(&state, conj, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+    let (otorgante, _oe) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let (apoderado, _ae) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let (aid, _) = seed_asamblea(&state, conj).await;
+
+    for bad in ["javascript:alert(1)", "no soy una url", "data:text/html,<script>"] {
+        let (s, _) = request(
+            &app,
+            Method::POST,
+            &format!("/api/v1/asambleas/{aid}/poderes"),
+            Some(&admin_token),
+            Some(json!({
+                "otorganteId": otorgante.to_string(),
+                "apoderadoId": apoderado.to_string(),
+                "documentoUrl": bad
+            })),
+        )
+        .await;
+        assert_eq!(s, StatusCode::BAD_REQUEST, "{bad} must be rejected");
+    }
+}

@@ -693,6 +693,15 @@ async fn create_turno(
     let mut conn = state.pool.get().await?;
     repo::verify_asamblea_tenant(&mut conn, asamblea_id, user.conjunto_id).await?;
 
+    // One open request per person. Without this a resident could hold the button
+    // and flood the queue, and every turno_created broadcast fans out to every
+    // participant.
+    if repo::tiene_turno_abierto(&mut conn, asamblea_id, user.id).await? {
+        return Err(ApiError::Conflict(
+            "ya pediste la palabra; espera tu turno".into(),
+        ));
+    }
+
     let (nombre, torre, apto) = repo::get_user_info(&mut conn, user.id).await?;
     let apto_text = format_apto(&torre, &apto);
 
@@ -814,13 +823,26 @@ async fn create_poder(
         ));
     }
 
+    // The moderator panel renders this as a clickable link, so only accept an
+    // absolute http(s) URL — never javascript:, data:, or free text.
+    let documento_url = req.documento_url.trim();
+    if !(documento_url.starts_with("https://") || documento_url.starts_with("http://")) {
+        return Err(ApiError::BadRequest(
+            "documentoUrl debe ser una URL http(s) válida".into(),
+        ));
+    }
+    if documento_url.len() > 2048 {
+        return Err(ApiError::BadRequest("documentoUrl demasiado largo".into()));
+    }
+    let documento_url = documento_url.to_string();
+
     let poder = repo::create_poder(
         &mut conn,
         NuevoPoder {
             asamblea_id,
             otorgante_id: req.otorgante_id,
             apoderado_id: req.apoderado_id,
-            documento_url: req.documento_url,
+            documento_url,
         },
     )
     .await?;

@@ -110,6 +110,24 @@ impl From<diesel::result::Error> for ApiError {
                     // GiST exclusion violation (23P01) arrives as `Unknown`; it means
                     // an overlapping reservation already exists for this area.
                     ApiError::Conflict("el horario seleccionado ya está reservado".into())
+                } else if matches!(kind, DatabaseErrorKind::CheckViolation) {
+                    // A CHECK violation means the client sent a value outside the
+                    // domain's allowed set (an unknown estado, tipo, etc.). That is
+                    // a bad request, not a server fault — returning 500 told the
+                    // caller to retry something that can never succeed, and paged
+                    // whoever watches the error rate.
+                    tracing::info!(detail = info.message(), "check constraint violation");
+                    ApiError::BadRequest("algún valor enviado no es válido".into())
+                } else if matches!(kind, DatabaseErrorKind::ForeignKeyViolation) {
+                    // The client referenced a row that does not exist (or deleted one
+                    // still in use). Also a 4xx.
+                    tracing::info!(detail = info.message(), "foreign key violation");
+                    ApiError::Unprocessable(
+                        "una de las referencias enviadas no existe o está en uso".into(),
+                    )
+                } else if matches!(kind, DatabaseErrorKind::NotNullViolation) {
+                    tracing::info!(detail = info.message(), "not-null violation");
+                    ApiError::BadRequest("falta un campo obligatorio".into())
                 } else {
                     ApiError::Internal(anyhow::Error::new(diesel::result::Error::DatabaseError(
                         kind, info,

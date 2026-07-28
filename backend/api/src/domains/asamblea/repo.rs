@@ -101,6 +101,26 @@ pub async fn hay_votacion_activa(conn: &mut DbConn, asamblea_id: Uuid) -> ApiRes
     Ok(n > 0)
 }
 
+/// True if this user already has a PENDIENTE or HABLANDO turn queued.
+pub async fn tiene_turno_abierto(
+    conn: &mut DbConn,
+    asamblea_id: Uuid,
+    usuario_id: Uuid,
+) -> ApiResult<bool> {
+    let n: i64 = asamblea_turnos::table
+        .filter(asamblea_turnos::asamblea_id.eq(asamblea_id))
+        .filter(asamblea_turnos::usuario_id.eq(usuario_id))
+        .filter(
+            asamblea_turnos::estado
+                .eq(EstadoTurno::Pendiente)
+                .or(asamblea_turnos::estado.eq(EstadoTurno::Hablando)),
+        )
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
 /// Returns (nombre, torre, apto) for denormalised opinion/turno fields.
 pub async fn get_user_info(
     conn: &mut DbConn,
