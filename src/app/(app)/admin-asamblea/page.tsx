@@ -205,12 +205,12 @@ export default function AdminAsambleaPage() {
                 <div
                   className={`w-12 h-12 rounded-2xl grid place-items-center shrink-0 border ${
                     enSesion
-                      ? "bg-[#57bf00]/10 border-[#57bf00]/30"
+                      ? "bg-success/10 border-success/30"
                       : "bg-surface-2 border-border"
                   }`}
                 >
                   {enSesion ? (
-                    <Play size={22} className="text-[#57bf00]" />
+                    <Play size={22} className="text-success" />
                   ) : (
                     <Clock size={22} className="text-text" />
                   )}
@@ -231,11 +231,11 @@ export default function AdminAsambleaPage() {
               <span
                 className={`shrink-0 text-[10px] font-bold uppercase px-3 py-1 rounded-full border flex items-center gap-1.5 ${
                   enSesion
-                    ? "bg-[#57bf00]/15 text-[#57bf00] border-[#57bf00]/30"
+                    ? "bg-success/15 text-success border-success/30"
                     : "bg-text/10 text-text border-border"
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${enSesion ? "bg-[#57bf00] animate-pulse" : "bg-text/30"}`} />
+                <span className={`w-2 h-2 rounded-full ${enSesion ? "bg-success animate-pulse" : "bg-text/30"}`} />
                 {enSesion ? "En vivo" : "Programada"}
               </span>
             </div>
@@ -315,7 +315,7 @@ export default function AdminAsambleaPage() {
                     "Error al finalizar la asamblea",
                   )
                 }
-                className="w-full py-3 rounded-full border border-[#EF4444]/30 bg-[#EF4444]/10 text-[#EF4444] font-bold text-xs uppercase tracking-widest active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-full border border-danger/30 bg-danger/10 text-danger font-bold text-xs uppercase tracking-widest active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <Square size={14} /> Finalizar asamblea
               </button>
@@ -405,7 +405,7 @@ export default function AdminAsambleaPage() {
                         type="button"
                         onClick={() => setOrdenDia((prev) => prev.filter((_, idx) => idx !== i))}
                         aria-label={`Quitar punto ${i + 1}`}
-                        className="w-8 h-8 shrink-0 rounded-full bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444] grid place-items-center hover:bg-[#EF4444]/20 transition-colors"
+                        className="w-8 h-8 shrink-0 rounded-full bg-danger/10 border border-danger/30 text-danger grid place-items-center hover:bg-danger/20 transition-colors"
                       >
                         <X size={14} />
                       </button>

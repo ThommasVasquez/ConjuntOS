@@ -454,8 +454,8 @@ export default function ReservasPage() {
                     </p>
                   </div>
                   <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
-                    r.estado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
-                    r.estado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+                    r.estado === "CONFIRMADA" ? "bg-success/20 text-success" :
+                    r.estado === "PENDIENTE" ? "bg-warning/20 text-warning" :
                     r.estado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
                     "bg-text/10 text-text/60"
                   }`}>
@@ -671,8 +671,8 @@ export default function ReservasPage() {
             <button onClick={() => setShowQrModal(false)} className="self-end text-text/50 hover:text-text"><X size={18} /></button>
             <h3 className="text-lg font-bold text-text">{qrReservaNombre}</h3>
             <span className={`text-[10px] px-3 py-0.5 rounded-full font-bold uppercase ${
-              qrReservaEstado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
-              qrReservaEstado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+              qrReservaEstado === "CONFIRMADA" ? "bg-success/20 text-success" :
+              qrReservaEstado === "PENDIENTE" ? "bg-warning/20 text-warning" :
               "bg-red-500/20 text-red-400"
             }`}>
               {qrReservaEstado === "CONFIRMADA" ? "Activa" : qrReservaEstado === "PENDIENTE" ? "Pendiente" : qrReservaEstado}

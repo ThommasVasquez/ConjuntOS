@@ -4,6 +4,7 @@
   --color-primary: var(--color-primary);
   --color-primary-light: var(--color-primary-light);
   --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
   --color-on-accent: var(--color-on-accent);
   --color-surface: var(--color-surface);
   --color-surface-2: var(--color-surface-2);
@@ -12,46 +13,51 @@
   --color-success: var(--color-success);
   --color-danger: var(--color-danger);
   --color-warning: var(--color-warning);
+  --color-info: var(--color-info);
   --color-border: var(--color-border);
 }
 
+/*  ConjuntOS — Trust Teal + Professional Blue sobre Liquid Glass.
+ *  Cada valor está verificado contra WCAG AA (4.5:1) sobre su fondo previsto;
+ *  la tabla completa vive en design-system/conjuntos/MASTER.md.
+ *
+ *  REGLA: nunca escribas un hex crudo en un componente. Usa los tokens
+ *  (text-accent, bg-success, border-danger…). Antes había 600+ hex sueltos y
+ *  success/danger/warning valían todos #ffffff, así que no significaban nada.
+ */
 :root {
-  /* Paleta Blanco y Negro PURO (sin tinte, alto contraste, Liquid Glass) */
-  --color-primary: #000000; /* Negro puro (fondo) */
-  --color-primary-light: #141414; /* Negro elevado neutro (tarjetas) */
-  --color-accent: #fff; /* Blanco puro como acento (CTAs/detalles) */
-  --color-on-accent: #000000; /* Texto/icono SOBRE el acento (negro sobre blanco) */
-  --color-surface: rgba(
-    255,
-    255,
-    255,
-    0.045
-  ); /* Glass: blanco puro translúcido */
-  --color-surface-2: rgba(255, 255, 255, 0.07); /* Glass más claro */
-  --color-text: #ffffff; /* Blanco puro */
-  --color-text-muted: rgba(
-    255,
-    255,
-    255,
-    0.92
-  ); /* Casi blanco puro (sin gris) */
-  --color-success: #ffffff;
-  --color-danger: #ffffff;
-  --color-warning: #ffffff;
-  --color-border: rgba(255, 255, 255, 0.14); /* Borde sutil para glass */
+  --color-primary: #050d0c; /* Fondo: negro con tinte teal profundo */
+  --color-primary-light: #0b1614; /* Tarjetas / superficies elevadas */
+  --color-accent: #2dd4bf; /* Teal — acción principal, foco, activo (10.55:1) */
+  --color-accent-soft: rgba(45, 212, 191, 0.14); /* Relleno suave del acento */
+  --color-on-accent: #04211d; /* Tinta sobre el acento (9.09:1) */
+  --color-surface: rgba(45, 212, 191, 0.05); /* Glass */
+  --color-surface-2: rgba(45, 212, 191, 0.09); /* Inputs, botón secundario */
+  --color-text: #f0fdfa; /* Texto principal (18.83:1) */
+  --color-text-muted: #93b5b0; /* Texto secundario REAL (8.86:1) */
+  --color-success: #34d399; /* Confirmado / presente (10.22:1) */
+  --color-danger: #f87171; /* Destructivo / rechazado (7.10:1) */
+  --color-warning: #fbbf24; /* Pendiente / por vencer (11.76:1) */
+  --color-info: #38bdf8; /* Informativo / enlaces (9.17:1) */
+  --color-border: rgba(45, 212, 191, 0.16);
 }
 
-/* Modo Claro override variables — blanco y negro puro invertido */
+/* Modo claro — tonos desaturados, no invertidos (color-dark-mode, HIG/MD) */
 .light {
-  --color-primary: #f1f5f9; /* Gris azulado suave (fondo) */
-  --color-primary-light: #ffffff; /* Blanco para tarjetas */
-  --color-accent: #000000; /* Negro puro como acento (CTAs/detalles) */
-  --color-on-accent: #ffffff; /* Texto/icono SOBRE el acento (blanco sobre negro) */
-  --color-surface: rgba(255, 255, 255, 0.72); /* Vidrio blanco translúcido */
-  --color-surface-2: rgba(0, 0, 0, 0.04); /* Fondo sutil de input/botón */
-  --color-text: #000000; /* Negro puro */
-  --color-text-muted: rgba(0, 0, 0, 0.92); /* Casi negro puro (sin gris) */
-  --color-border: rgba(0, 0, 0, 0.1); /* Bordes sutiles en claro */
+  --color-primary: #f0fdfa;
+  --color-primary-light: #ffffff;
+  --color-accent: #0f766e; /* Teal 700 (5.25:1) */
+  --color-accent-soft: rgba(15, 118, 110, 0.1);
+  --color-on-accent: #ffffff; /* (5.47:1) */
+  --color-surface: rgba(255, 255, 255, 0.72);
+  --color-surface-2: rgba(15, 118, 110, 0.06);
+  --color-text: #0f2e2a; /* (13.94:1) */
+  --color-text-muted: #4a6b66; /* (5.61:1) */
+  --color-success: #047857; /* (5.26:1) */
+  --color-danger: #dc2626; /* (4.63:1) */
+  --color-warning: #b45309; /* (4.81:1) */
+  --color-info: #0369a1; /* (5.69:1) */
+  --color-border: rgba(15, 118, 110, 0.18);
 }
 
 /* Base resets & view transitions */
@@ -111,15 +117,15 @@ body {
   padding-bottom: calc(env(safe-area-inset-bottom) + 120px);
 } /* Extra space for floating pill */
 
-/* Liquid Glass Utilities */
+/* Liquid Glass Utilities — el cristal lleva tinte teal, no blanco neutro */
 .liquid-glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(45, 212, 191, 0.04);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(45, 212, 191, 0.16);
   box-shadow:
-    0 10px 40px -10px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 40px -10px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(153, 246, 228, 0.18),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   transition:
     background-color 0.3s ease,
@@ -130,13 +136,13 @@ body {
 .liquid-glass-card {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.06) 0%,
-    rgba(255, 255, 255, 0.02) 100%
+    rgba(45, 212, 191, 0.08) 0%,
+    rgba(56, 189, 248, 0.03) 100%
   );
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(45, 212, 191, 0.14);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
   transition:
     background 0.3s ease,
     border-color 0.3s ease,
@@ -145,61 +151,79 @@ body {
 
 /* Light mode overrides for glass styles */
 .light .liquid-glass {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(15, 118, 110, 0.14);
   box-shadow:
-    0 10px 40px -10px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    0 10px 40px -10px rgba(15, 118, 110, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .light .liquid-glass-card {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(245, 245, 245, 0.85) 100%
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(240, 253, 250, 0.88) 100%
   );
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  box-shadow: 0 8px 32px 0 rgba(15, 118, 110, 0.07);
 }
 
-/* BottomNav active pill — liquid glass con tinte azul */
+/* BottomNav active pill — sigue al acento teal */
 .nav-active-glass {
-  background: rgba(0, 157, 242, 0.18);
+  background: rgba(45, 212, 191, 0.18);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(0, 157, 242, 0.35);
+  border: 1px solid rgba(45, 212, 191, 0.38);
   box-shadow:
-    0 4px 24px rgba(0, 157, 242, 0.3),
+    0 4px 24px rgba(45, 212, 191, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.25),
     inset 0 -1px 0 rgba(0, 0, 0, 0.1);
 }
 
 .light .nav-active-glass {
-  background: rgba(0, 157, 242, 0.14);
+  background: rgba(15, 118, 110, 0.12);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid rgba(0, 157, 242, 0.3);
+  border: 1px solid rgba(15, 118, 110, 0.28);
   box-shadow:
-    0 4px 20px rgba(0, 157, 242, 0.2),
+    0 4px 20px rgba(15, 118, 110, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-/* Glowing text */
-.text-glow {
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
-}
 .accent-glow {
   text-shadow: 0 0 15px var(--color-accent);
 }
 
+/* ── Accesibilidad global ──────────────────────────────────────────────────
+ * Nunca quites el anillo de foco (ux: focus-visible). Se aplica a todo lo
+ * interactivo salvo que el componente defina el suyo.
+ */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Respeta prefers-reduced-motion: la animación decorativa se detiene, la
+ * funcional se acorta. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-new(root),
+  ::view-transition-old(root) {
+    animation: none !important;
+  }
+}
+
 /* Sonner Overrides with ULTRALIQUID transparency */
 .liquid-glass-toast {
-  background: rgba(
-    8,
-    8,
-    8,
-    0.65
-  ) !important; /* Contraste máximo para lectura */
+  background: rgba(5, 13, 12, 0.72) !important; /* Contraste máximo para lectura */
   backdrop-filter: blur(250px) saturate(180%) !important; /* Blur total cinematográfico */
   -webkit-backdrop-filter: blur(250px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -223,18 +247,18 @@ body {
 .light .liquid-glass-toast {
   background: rgba(255, 255, 255, 0.85) !important;
   border: 1px solid rgba(0, 0, 0, 0.12) !important;
-  color: #000000 !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.12) !important;
+  color: #0f2e2a !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 118, 110, 0.14) !important;
 }
 
 [data-type="success"].liquid-glass-toast {
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(52, 211, 153, 0.55) !important;
+  box-shadow: 0 0 80px rgba(52, 211, 153, 0.22) !important;
 }
 
 [data-type="error"].liquid-glass-toast {
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 0 100px rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(248, 113, 113, 0.55) !important;
+  box-shadow: 0 0 80px rgba(248, 113, 113, 0.22) !important;
 }
 
 .light [data-type="success"].liquid-glass-toast {
@@ -257,7 +281,7 @@ body {
 
 .liquid-story-ring {
   position: relative;
-  background: linear-gradient(45deg, #ffffff, #ffffff, #ffffff);
+  background: linear-gradient(45deg, #2dd4bf, #38bdf8, #2dd4bf);
   background-size: 200% 200%;
   animation: story-bg 5s infinite linear;
   padding: 3px;
@@ -278,8 +302,8 @@ body {
   background: conic-gradient(
     from 0deg,
     transparent,
-    #009df2,
-    #57bf00,
+    #38bdf8,
+    #2dd4bf,
     transparent
   );
   animation: rotate-halo 3s linear infinite;
@@ -292,7 +316,7 @@ body {
   position: absolute;
   inset: 0px;
   border-radius: 9999px;
-  background: #009df2;
+  background: #2dd4bf;
   opacity: 0.4;
   animation: breathe-halo 2s ease-in-out infinite;
   filter: blur(4px);
@@ -332,7 +356,7 @@ body {
 }
 
 .text-glow {
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+  text-shadow: 0 0 12px rgba(45, 212, 191, 0.4);
 }
 
 .light .text-glow {

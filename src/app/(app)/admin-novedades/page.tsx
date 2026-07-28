@@ -435,19 +435,19 @@ export default function AdminNovedadesPage() {
        <div className="flex bg-surface-2 rounded-full p-1 border border-border">
             <button 
               onClick={() => setTab('PENDIENTE')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-[#009df2] text-white shadow-md' : 'text-text hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-info text-white shadow-md' : 'text-text hover:text-text'}`}
             >
                Pendientes
             </button>
             <button 
               onClick={() => setTab('HISTORIAL')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-[#009df2] text-white shadow-md' : 'text-text hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-info text-white shadow-md' : 'text-text hover:text-text'}`}
             >
                Historial
             </button>
             <button 
               onClick={() => setTab('PUBLICAR_ANUNCIO')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PUBLICAR_ANUNCIO' ? 'bg-[#009df2] text-white shadow-md' : 'text-text hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PUBLICAR_ANUNCIO' ? 'bg-info text-white shadow-md' : 'text-text hover:text-text'}`}
             >
                Publicar Anuncio
             </button>
@@ -821,7 +821,7 @@ export default function AdminNovedadesPage() {
                                  type="button"
                                  disabled={creandoCelda}
                                  onClick={crearCeldaRapida}
-                                 className="w-full py-2 rounded-lg bg-[#57bf00] text-white text-xs font-bold uppercase tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                                 className="w-full py-2 rounded-lg bg-success text-white text-xs font-bold uppercase tracking-wide active:scale-95 transition-transform disabled:opacity-50"
                                >
                                   {creandoCelda ? 'Creando...' : '+ Crear y asignar celda'}
                                </button>
@@ -871,7 +871,7 @@ export default function AdminNovedadesPage() {
                        <button 
                          disabled={isProcessing}
                          onClick={() => handleResolve('APROBAR')}
-                         className="w-full py-3 rounded-full bg-[#57bf00] text-white shadow-xl shadow-[#57bf00]/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                         className="w-full py-3 rounded-full bg-success text-white shadow-xl shadow-success/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
                        >
                            {isProcessing ? '...' : (selectedTramite.tipo === 'VEHICULO' && selectedCellId ? 'Aprobar y asignar' : 'Aprobar')}
                        </button>
@@ -886,8 +886,8 @@ export default function AdminNovedadesPage() {
              <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setAnuncioToDelete(null)} />
              <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
                 <div className="flex flex-col items-center text-center gap-4">
-                   <div className="w-16 h-16 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/40 flex items-center justify-center">
-                      <Trash2 size={28} className="text-[#EF4444]" />
+                   <div className="w-16 h-16 rounded-full bg-danger/15 border border-danger/40 flex items-center justify-center">
+                      <Trash2 size={28} className="text-danger" />
                    </div>
                    <div className="flex flex-col gap-1">
                       <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em]">Eliminar Anuncio</span>
@@ -908,7 +908,7 @@ export default function AdminNovedadesPage() {
                          type="button"
                          disabled={isDeletingAnuncio}
                          onClick={confirmDeleteAnuncio}
-                         className="flex-1 py-4 rounded-2xl bg-[#EF4444] text-white font-bold text-sm shadow-xl shadow-[#EF4444]/20 active:scale-95 transition-all disabled:opacity-60"
+                         className="flex-1 py-4 rounded-2xl bg-danger text-white font-bold text-sm shadow-xl shadow-danger/20 active:scale-95 transition-all disabled:opacity-60"
                       >
                          {isDeletingAnuncio ? "Eliminando..." : "Eliminar"}
                       </button>

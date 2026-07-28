@@ -371,18 +371,18 @@ function HomeResidente() {
         <section className="fade-up-home flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EF4444] opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-danger" />
             </span>
             <h2 className="text-text font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-              <ShieldAlert size={14} className="text-[#EF4444]" /> Cobro por aprobar — vehículo retenido
+              <ShieldAlert size={14} className="text-danger" /> Cobro por aprobar — vehículo retenido
             </h2>
           </div>
           <p className="text-[11px] text-text/70 px-1 -mt-1">
             El vehículo de tu visita está retenido en portería y <b>no puede salir</b> hasta que decidas. Aprueba para cargar el cobro a tu apartamento, o recházalo (el visitante pagará en portería).
           </p>
           {cargosRetenidos.map((c) => (
-            <div key={c.id} className="liquid-glass-card rounded-[28px] p-5 border border-[#EF4444]/40 flex flex-col gap-4">
+            <div key={c.id} className="liquid-glass-card rounded-[28px] p-5 border border-danger/40 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="text-lg font-bold text-text">Celda {c.celdaNumero}</span>
@@ -393,7 +393,7 @@ function HomeResidente() {
                 </div>
                 <div className="flex flex-col items-end shrink-0">
                   <span className="text-[10px] text-text/60 uppercase tracking-wider font-bold">Monto</span>
-                  <span className="text-2xl font-display font-bold text-[#FACC15]">
+                  <span className="text-2xl font-display font-bold text-warning">
                     ${Number(c.montoFinal || c.montoActual || 0).toLocaleString('es-CO')}
                   </span>
                 </div>
@@ -402,14 +402,14 @@ function HomeResidente() {
                 <button
                   disabled={busyAprob === c.id}
                   onClick={() => resolverCargoRetenido(c.id, 'rechazar')}
-                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-danger/10 hover:border-danger/40 active:scale-95 transition-all disabled:opacity-50"
                 >
                   Rechazar
                 </button>
                 <button
                   disabled={busyAprob === c.id}
                   onClick={() => resolverCargoRetenido(c.id, 'aprobar')}
-                  className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyAprob === c.id ? "Procesando..." : "Aprobar cobro"}
                 </button>
@@ -424,18 +424,18 @@ function HomeResidente() {
         <section className="fade-up-home flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FACC15] opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#FACC15]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-warning" />
             </span>
             <h2 className="text-text font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-              <Car size={14} className="text-[#FACC15]" /> Aprobación de Estacionamiento
+              <Car size={14} className="text-warning" /> Aprobación de Estacionamiento
             </h2>
           </div>
           <p className="text-[11px] text-text/70 px-1 -mt-1">
             Te solicitan asignarte un parqueadero de visitante. Tu aprobación es obligatoria.
           </p>
           {solicitudesParqueadero.map((s) => (
-            <div key={s.id} className="liquid-glass-card rounded-[28px] p-5 border border-[#FACC15]/40 flex flex-col gap-4">
+            <div key={s.id} className="liquid-glass-card rounded-[28px] p-5 border border-warning/40 flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <span className="text-lg font-bold text-text">Celda {s.celdaNumero}</span>
                 {s.detalle && <span className="text-xs text-text/80">{s.detalle}</span>}
@@ -445,14 +445,14 @@ function HomeResidente() {
                 <button
                   disabled={busyAprob === s.id}
                   onClick={() => resolverSolicitudParqueadero(s.id, 'rechazar')}
-                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-danger/10 hover:border-danger/40 active:scale-95 transition-all disabled:opacity-50"
                 >
                   Rechazar
                 </button>
                 <button
                   disabled={busyAprob === s.id}
                   onClick={() => resolverSolicitudParqueadero(s.id, 'aprobar')}
-                  className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyAprob === s.id ? "Procesando..." : "Aprobar"}
                 </button>
@@ -499,14 +499,14 @@ function HomeResidente() {
                   <button
                     disabled={busyAprob === v.id}
                     onClick={() => resolverVisitaPendiente(v.id, false)}
-                    className="flex-1 py-2.5 rounded-2xl bg-text/5 border border-border text-text font-bold text-xs hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                    className="flex-1 py-2.5 rounded-2xl bg-text/5 border border-border text-text font-bold text-xs hover:bg-danger/10 hover:border-danger/40 active:scale-95 transition-all disabled:opacity-50"
                   >
                     Rechazar
                   </button>
                   <button
                     disabled={busyAprob === v.id}
                     onClick={() => resolverVisitaPendiente(v.id, true)}
-                    className="flex-1 py-2.5 rounded-2xl bg-[#57bf00] text-white font-bold text-xs shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
+                    className="flex-1 py-2.5 rounded-2xl bg-success text-white font-bold text-xs shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                   >
                     {busyAprob === v.id ? "Procesando..." : "Aprobar ingreso"}
                   </button>
@@ -687,7 +687,7 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
     <div className="fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t border-border/20 transition-all active:scale-[0.98] relative overflow-hidden">
       <div className="p-5 flex justify-between items-center relative z-10">
          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs bg-[#009df2] text-white">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs bg-info text-white">
                {anuncio.tipo?.[0] || 'A'}
             </div>
             <div>
@@ -820,12 +820,12 @@ function HomeEstacionamiento() {
       >
         <span
           className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
-          style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
         >
           <Car size={22} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="text-[9px] font-black uppercase tracking-wider block mb-0.5" style={{ color: '#3b82f6' }}>
+          <span className="text-[9px] font-black uppercase tracking-wider block mb-0.5" style={{ color: 'var(--color-info)' }}>
             Control Operativo
           </span>
           <span className="block text-base font-display font-bold leading-tight text-text">Mapa de Parqueaderos</span>
@@ -833,7 +833,7 @@ function HomeEstacionamiento() {
             Celdas libres, ingresos/salidas y rondas.
           </span>
         </span>
-        <ArrowRight size={18} style={{ color: '#3b82f6' }} className="shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        <ArrowRight size={18} style={{ color: 'var(--color-info)' }} className="shrink-0 group-hover:translate-x-0.5 transition-transform" />
       </button>
 
       {/* Estadísticas de Ocupación */}
@@ -841,9 +841,9 @@ function HomeEstacionamiento() {
         <h3 className="text-base font-bold text-text mb-4">Estado del Parqueadero</h3>
         <div className="grid grid-cols-3 gap-3">
           {[
-            { value: `${stats.porcentajeOcupacion}%`, label: 'Ocupación', hex: '#3b82f6' },
-            { value: String(stats.libres), label: 'Libres', hex: '#10b981' },
-            { value: String(stats.ocupados), label: 'Ocupados', hex: '#f97316' },
+            { value: `${stats.porcentajeOcupacion}%`, label: 'Ocupación', hex: 'var(--color-info)' },
+            { value: String(stats.libres), label: 'Libres', hex: 'var(--color-success)' },
+            { value: String(stats.ocupados), label: 'Ocupados', hex: 'var(--color-warning)' },
           ].map((s) => (
             <div key={s.label} className="bg-surface-2 border border-border/40 rounded-2xl p-4 text-center min-w-0">
               {/* truncate on the value too — an unexpected string used to spill
@@ -860,8 +860,8 @@ function HomeEstacionamiento() {
 
 // Same inline-style approach as ADMIN_TILES below — see the note there.
 const CONSEJO_TILES = [
-  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas', desc: 'Cobros y reportes consolidados', hex: '#10b981' },
-  { href: '/cartelera', icon: Building2, title: 'Cartelera', desc: 'Circulares y anuncios generales', hex: '#3b82f6' },
+  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas', desc: 'Cobros y reportes consolidados', hex: 'var(--color-success)' },
+  { href: '/cartelera', icon: Building2, title: 'Cartelera', desc: 'Circulares y anuncios generales', hex: 'var(--color-info)' },
   { href: '/encuestas', icon: BarChart3, title: 'Encuestas', desc: 'Crear y ver resultados en vivo', hex: '#14b8a6' },
 ] as const;
 
@@ -883,7 +883,7 @@ function HomeConsejo() {
       <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm flex items-start gap-3">
         <span
           className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
-          style={{ backgroundColor: '#6366f11a', color: '#6366f1' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
         >
           <Scale size={22} />
         </span>
@@ -929,13 +929,13 @@ function HomeConsejo() {
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center gap-3 bg-surface-2 p-4 rounded-2xl border border-border/40">
             <span className="text-[11px] text-text/55 uppercase font-bold min-w-0">Recaudación General</span>
-            <span className="text-sm font-black shrink-0" style={{ color: '#10b981' }}>
+            <span className="text-sm font-black shrink-0" style={{ color: 'var(--color-success)' }}>
               ${Number(stats.recaudoMes || 0).toLocaleString()} COP
             </span>
           </div>
           <div className="flex justify-between items-center gap-3 bg-surface-2 p-4 rounded-2xl border border-border/40">
             <span className="text-[11px] text-text/55 uppercase font-bold min-w-0">Novedades / Solicitudes</span>
-            <span className="text-sm font-black shrink-0" style={{ color: '#f97316' }}>
+            <span className="text-sm font-black shrink-0" style={{ color: 'var(--color-warning)' }}>
               {stats.reservasPendientes} Pendientes
             </span>
           </div>
@@ -949,20 +949,20 @@ function HomeConsejo() {
 // tint regardless of which utilities the CSS build happens to have generated.
 // `${hex}1a` is the same 10% alpha as a `/10` class.
 const ADMIN_TILES = [
-  { href: '/admin-residentes', icon: Users, title: 'Residentes', desc: 'Gestionar unidades', hex: '#10b981' },
-  { href: '/citofonia', icon: UserIcon, title: 'Citofonía', desc: 'Llamar a unidades', hex: '#6366f1' },
-  { href: '/admin-novedades', icon: Building2, title: 'Novedades', desc: 'Anuncios y trámites', hex: '#3b82f6' },
-  { href: '/admin-pqrs', icon: Wrench, title: 'Solicitudes', desc: 'PQRS y servicios', hex: '#f97316' },
+  { href: '/admin-residentes', icon: Users, title: 'Residentes', desc: 'Gestionar unidades', hex: 'var(--color-success)' },
+  { href: '/citofonia', icon: UserIcon, title: 'Citofonía', desc: 'Llamar a unidades', hex: 'var(--color-info)' },
+  { href: '/admin-novedades', icon: Building2, title: 'Novedades', desc: 'Anuncios y trámites', hex: 'var(--color-info)' },
+  { href: '/admin-pqrs', icon: Wrench, title: 'Solicitudes', desc: 'PQRS y servicios', hex: 'var(--color-warning)' },
   { href: '/admin-areas', icon: MapPin, title: 'Áreas', desc: 'Espacios comunes', hex: '#f43f5e' },
   { href: '/encuestas', icon: BarChart3, title: 'Encuestas', desc: 'Crear y ver resultados', hex: '#14b8a6' },
-  { href: '/comite-convivencia', icon: Scale, title: 'Comité', desc: 'Convivencia y actas', hex: '#8b5cf6' },
-  { href: '/admin-documentos', icon: FileText, title: 'Documentos', desc: 'Gestión documental', hex: '#f59e0b' },
-  { href: '/reservas', icon: Calendar, title: 'Reservas', desc: 'Áreas comunes', hex: '#22c55e' },
+  { href: '/comite-convivencia', icon: Scale, title: 'Comité', desc: 'Convivencia y actas', hex: 'var(--color-info)' },
+  { href: '/admin-documentos', icon: FileText, title: 'Documentos', desc: 'Gestión documental', hex: 'var(--color-warning)' },
+  { href: '/reservas', icon: Calendar, title: 'Reservas', desc: 'Áreas comunes', hex: 'var(--color-success)' },
 ] as const;
 
 const ADMIN_SHORTCUTS = [
-  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas y Cartera', desc: 'Facturación, pagos y cartera', hex: '#10b981' },
-  { href: '/admin-parqueadero', icon: Car, title: 'Control de Parqueaderos', desc: 'Asignación y control de espacios', hex: '#3b82f6' },
+  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas y Cartera', desc: 'Facturación, pagos y cartera', hex: 'var(--color-success)' },
+  { href: '/admin-parqueadero', icon: Car, title: 'Control de Parqueaderos', desc: 'Asignación y control de espacios', hex: 'var(--color-info)' },
 ] as const;
 
 function HomeAdmin() {

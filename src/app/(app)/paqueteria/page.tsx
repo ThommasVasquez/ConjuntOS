@@ -144,7 +144,7 @@ export default function PaqueteriaPage() {
         <div className="flex items-center gap-3 mb-6">
           <div
             className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
-            style={{ backgroundColor: '#f973161a', color: '#f97316' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--color-warning) 10%, transparent)', color: 'var(--color-warning)' }}
           >
             <ScanLine size={22} />
           </div>
@@ -218,7 +218,7 @@ export default function PaqueteriaPage() {
       {activeTab === "pendientes" ? (
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center ml-2">
-            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><Clock size={16} style={{ color: "#f97316" }} /> Inventario Portería</h3>
+            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><Clock size={16} style={{ color: "var(--color-warning)" }} /> Inventario Portería</h3>
             <span className="bg-surface-2 text-text text-[10px] px-2 py-0.5 rounded-full font-bold">{paquetes.length} ÍTEMS</span>
           </div>
 
@@ -248,7 +248,7 @@ export default function PaqueteriaPage() {
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center ml-2">
-            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><History size={16} style={{ color: "#10b981" }} /> Entregados</h3>
+            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2"><History size={16} style={{ color: "var(--color-success)" }} /> Entregados</h3>
             <span className="bg-surface-2 text-text text-[10px] px-2 py-0.5 rounded-full font-bold">{entregados.length} ÍTEMS</span>
           </div>
 

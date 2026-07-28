@@ -93,13 +93,13 @@ const TIPO_ICON_MAP: Record<TipoCaso, React.ReactNode> = {
 function getEstadoBadge(estado: EstadoCaso): { label: string; className: string; icon: React.ReactNode } {
   switch (estado) {
     case "REPORTADO":
-      return { label: "Reportado", className: "bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30", icon: <AlertTriangle size={10} /> };
+      return { label: "Reportado", className: "bg-warning/15 text-warning border border-warning/30", icon: <AlertTriangle size={10} /> };
     case "EN_MEDIACION":
-      return { label: "En Mediación", className: "bg-[#009df2]/15 text-[#009df2] border border-[#009df2]/30", icon: <Users size={10} /> };
+      return { label: "En Mediación", className: "bg-info/15 text-info border border-info/30", icon: <Users size={10} /> };
     case "RESUELTO":
-      return { label: "Resuelto", className: "bg-[#57bf00]/15 text-[#57bf00] border border-[#57bf00]/30", icon: <CheckCircle2 size={10} /> };
+      return { label: "Resuelto", className: "bg-success/15 text-success border border-success/30", icon: <CheckCircle2 size={10} /> };
     case "ESCALADO":
-      return { label: "Escalado", className: "bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30", icon: <Siren size={10} /> };
+      return { label: "Escalado", className: "bg-danger/15 text-danger border border-danger/30", icon: <Siren size={10} /> };
     case "ARCHIVADO":
       return { label: "Archivado", className: "bg-text/10 text-text border border-border", icon: <FileText size={10} /> };
     default:
@@ -331,8 +331,8 @@ export default function ComiteConvivenciaPage() {
       <div className="rounded-[28px] bg-primary-light border border-border p-5 flex flex-col gap-5">
         {/* Header */}
         <div className="flex items-start gap-3">
-          <span className="w-12 h-12 shrink-0 rounded-2xl bg-[#009df2]/10 flex items-center justify-center">
-            <Scale size={22} className="text-[#009df2]" />
+          <span className="w-12 h-12 shrink-0 rounded-2xl bg-info/10 flex items-center justify-center">
+            <Scale size={22} className="text-info" />
           </span>
           <div className="min-w-0 flex-1">
             <h1 className="text-xl font-display font-bold text-text leading-tight">
@@ -364,10 +364,10 @@ export default function ComiteConvivenciaPage() {
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: "Total", value: stats.total, desc: "Casos registrados", color: "text-text", bg: "bg-surface-2", icon: <Scale size={20} className="text-indigo-500" /> },
-              { label: "Reportados", value: stats.reportados, desc: "Casos reportados", color: "text-[#EAB308]", bg: "bg-[#EAB308]/10", icon: <AlertTriangle size={20} className="text-[#EAB308]" /> },
-              { label: "En Mediación", value: stats.en_mediacion, desc: "En proceso de mediación", color: "text-[#009df2]", bg: "bg-[#009df2]/10", icon: <Users size={20} className="text-[#009df2]" /> },
-              { label: "Acuerdos", value: stats.acuerdos, desc: "Acuerdos alcanzados", color: "text-[#57bf00]", bg: "bg-[#57bf00]/10", icon: <CheckCircle2 size={20} className="text-[#57bf00]" /> },
-              { label: "Escalados", value: stats.escalados, desc: "Casos escalados", color: "text-[#EF4444]", bg: "bg-[#EF4444]/10", icon: <Siren size={20} className="text-[#EF4444]" /> },
+              { label: "Reportados", value: stats.reportados, desc: "Casos reportados", color: "text-warning", bg: "bg-warning/10", icon: <AlertTriangle size={20} className="text-warning" /> },
+              { label: "En Mediación", value: stats.en_mediacion, desc: "En proceso de mediación", color: "text-info", bg: "bg-info/10", icon: <Users size={20} className="text-info" /> },
+              { label: "Acuerdos", value: stats.acuerdos, desc: "Acuerdos alcanzados", color: "text-success", bg: "bg-success/10", icon: <CheckCircle2 size={20} className="text-success" /> },
+              { label: "Escalados", value: stats.escalados, desc: "Casos escalados", color: "text-danger", bg: "bg-danger/10", icon: <Siren size={20} className="text-danger" /> },
             ].map((s) => (
               <div key={s.label} className={`${s.bg} rounded-2xl p-3.5 border border-border/40 flex flex-col gap-2.5 min-w-0`}>
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -401,7 +401,7 @@ export default function ComiteConvivenciaPage() {
               key={key}
               onClick={() => setTab(key)}
               className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap px-2 ${
-                tab === key ? "bg-[#009df2] text-white shadow-md" : "text-text hover:text-text"
+                tab === key ? "bg-info text-white shadow-md" : "text-text hover:text-text"
               }`}
             >
               {label}
@@ -412,7 +412,7 @@ export default function ComiteConvivenciaPage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-black uppercase tracking-widest text-text mr-1">
-            <ArrowUpDown size={12} className="inline mr-1 text-[#009df2]" /> Tipo:
+            <ArrowUpDown size={12} className="inline mr-1 text-info" /> Tipo:
           </span>
           {TIPO_CASO.map((cat) => (
             <button
@@ -420,11 +420,11 @@ export default function ComiteConvivenciaPage() {
               onClick={() => setFiltroTipo((prev) => (prev === cat.key ? null : cat.key))}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
                 filtroTipo === cat.key
-                  ? "bg-[#009df2]/15 text-[#009df2] border-[#009df2]/30"
-                  : "bg-primary-light border-border text-text hover:border-[#009df2]/40"
+                  ? "bg-info/15 text-info border-info/30"
+                  : "bg-primary-light border-border text-text hover:border-info/40"
               }`}
             >
-              <span className={`shrink-0 ${filtroTipo === cat.key ? "" : "text-[#009df2]"}`}>{cat.icon}</span>
+              <span className={`shrink-0 ${filtroTipo === cat.key ? "" : "text-info"}`}>{cat.icon}</span>
               {cat.label}
             </button>
           ))}
@@ -541,7 +541,7 @@ export default function ComiteConvivenciaPage() {
                     onClick={() => setFormData((f) => ({ ...f, tipo: t.key }))}
                     className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all ${
                       formData.tipo === t.key
-                        ? "bg-[#009df2]/15 text-[#009df2] border-[#009df2]/30"
+                        ? "bg-info/15 text-info border-info/30"
                         : "bg-surface-2 border-border text-text hover:border-text/30"
                     }`}
                   >
@@ -555,7 +555,7 @@ export default function ComiteConvivenciaPage() {
             {/* Unidad que reporta */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-text">
-                Unidad que Reporta <span className="text-[#EF4444]">*</span>
+                Unidad que Reporta <span className="text-danger">*</span>
               </label>
               <select
                 value={formData.unidad_reporta_id}
@@ -587,7 +587,7 @@ export default function ComiteConvivenciaPage() {
             {/* Description */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-text">
-                Descripción <span className="text-[#EF4444]">*</span>
+                Descripción <span className="text-danger">*</span>
               </label>
               <textarea
                 rows={4}
@@ -665,8 +665,8 @@ export default function ComiteConvivenciaPage() {
 
             {/* Resolución (if exists) */}
             {selected.resolucion && (
-              <div className="bg-[#57bf00]/10 border border-[#57bf00]/30 rounded-2xl p-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#57bf00] mb-1">Resolución</p>
+              <div className="bg-success/10 border border-success/30 rounded-2xl p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-success mb-1">Resolución</p>
                 <p className="text-sm text-text">{selected.resolucion}</p>
               </div>
             )}

@@ -70,31 +70,31 @@ function getEstadoBadge(estado: EstadoSolicitud): { label: string; className: st
     case "ABIERTA":
       return {
         label: "Abierta",
-        className: "bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30",
+        className: "bg-warning/15 text-warning border border-warning/30",
         icon: <AlertCircle size={10} />,
       };
     case "ASIGNADA":
       return {
         label: "Asignada",
-        className: "bg-[#009df2]/15 text-[#009df2] border border-[#009df2]/30",
+        className: "bg-info/15 text-info border border-info/30",
         icon: <User size={10} />,
       };
     case "EN_PROGRESO":
       return {
         label: "En Progreso",
-        className: "bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30",
+        className: "bg-warning/15 text-warning border border-warning/30",
         icon: <Clock size={10} />,
       };
     case "RESUELTA":
       return {
         label: "Resuelta",
-        className: "bg-[#57bf00]/15 text-[#57bf00] border border-[#57bf00]/30",
+        className: "bg-success/15 text-success border border-success/30",
         icon: <CheckCircle2 size={10} />,
       };
     case "CERRADA":
       return {
         label: "Cerrada",
-        className: "bg-[#6B7280]/15 text-[#6B7280] border border-[#6B7280]/30",
+        className: "bg-text-muted/15 text-text-muted border border-text-muted/30",
         icon: <CheckCircle2 size={10} />,
       };
     default:
@@ -108,10 +108,10 @@ function getEstadoBadge(estado: EstadoSolicitud): { label: string; className: st
 
 function getPrioridadBadge(prioridad: PrioridadTicket): { label: string; className: string } {
   switch (prioridad) {
-    case "URGENTE": return { label: "Urgente", className: "bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30" };
-    case "ALTA": return { label: "Alta", className: "bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30" };
-    case "MEDIA": return { label: "Media", className: "bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30" };
-    case "BAJA": return { label: "Baja", className: "bg-[#6B7280]/15 text-[#6B7280] border border-[#6B7280]/30" };
+    case "URGENTE": return { label: "Urgente", className: "bg-danger/15 text-danger border border-danger/30" };
+    case "ALTA": return { label: "Alta", className: "bg-warning/15 text-warning border border-warning/30" };
+    case "MEDIA": return { label: "Media", className: "bg-warning/15 text-warning border border-warning/30" };
+    case "BAJA": return { label: "Baja", className: "bg-text-muted/15 text-text-muted border border-text-muted/30" };
   }
 }
 
@@ -338,7 +338,7 @@ export default function AdminPQRSPage() {
         </div>
         <div className="flex items-center gap-3">
           {pendingCount > 0 && (
-            <span className="bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+            <span className="bg-warning/15 text-warning border border-warning/30 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
               <AlertCircle size={12} />
               {pendingCount} pendiente{pendingCount !== 1 ? "s" : ""}
             </span>
@@ -356,10 +356,10 @@ export default function AdminPQRSPage() {
       {stats && (
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: "Abiertos", value: stats.abiertos, color: "bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/20" },
-            { label: "En Progreso", value: stats.enProgreso, color: "bg-[#F97316]/10 text-[#F97316] border-[#F97316]/20" },
-            { label: "Resueltos", value: stats.resueltos, color: "bg-[#57bf00]/10 text-[#57bf00] border-[#57bf00]/20" },
-            { label: "SLA Vencido", value: stats.slaVencidos, color: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20" },
+            { label: "Abiertos", value: stats.abiertos, color: "bg-warning/10 text-warning border-warning/20" },
+            { label: "En Progreso", value: stats.enProgreso, color: "bg-warning/10 text-warning border-warning/20" },
+            { label: "Resueltos", value: stats.resueltos, color: "bg-success/10 text-success border-success/20" },
+            { label: "SLA Vencido", value: stats.slaVencidos, color: "bg-danger/10 text-danger border-danger/20" },
           ].map((item) => (
             <div
               key={item.label}
@@ -410,7 +410,7 @@ export default function AdminPQRSPage() {
             }
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-all ${
               filtroCategoria === cat.key
-                ? "bg-[#009df2]/15 text-[#009df2] border-[#009df2]/30"
+                ? "bg-info/15 text-info border-info/30"
                 : "bg-surface-2 border-border text-text hover:border-text/30"
             }`}
           >
@@ -425,7 +425,7 @@ export default function AdminPQRSPage() {
           onClick={() => setFiltroUrgente((prev) => !prev)}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-all ${
             filtroUrgente
-              ? "bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30"
+              ? "bg-danger/15 text-danger border-danger/30"
               : "bg-surface-2 border-border text-text hover:border-text/30"
           }`}
         >
@@ -504,7 +504,7 @@ export default function AdminPQRSPage() {
                       </span>
                     )}
                     {s.urgente && (
-                      <span className="bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="bg-danger/20 text-danger border border-danger/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                         <AlertTriangle size={10} />
                         Urgente
                       </span>
@@ -611,7 +611,7 @@ export default function AdminPQRSPage() {
                 );
               })()}
               {selected.urgente && (
-                <span className="bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30 text-[10px] uppercase font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                <span className="bg-danger/20 text-danger border border-danger/30 text-[10px] uppercase font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
                   <AlertTriangle size={10} />
                   Urgente
                 </span>
@@ -789,7 +789,7 @@ export default function AdminPQRSPage() {
               <button
                 disabled={isProcessing}
                 onClick={() => handleCambiarEstado()}
-                className="w-full py-3 rounded-full bg-[#57bf00] text-white shadow-xl shadow-[#57bf00]/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-full bg-success text-white shadow-xl shadow-success/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isProcessing ? (
                   <>
@@ -813,7 +813,7 @@ export default function AdminPQRSPage() {
                   handleCambiarEstado("CERRADA");
                 }}
                 disabled={isProcessing || selected.estado === "CERRADA"}
-                className="flex-1 py-3 rounded-full border border-[#6B7280]/30 text-[#6B7280] font-bold text-xs tracking-wide hover:bg-[#6B7280]/10 transition-colors disabled:opacity-40"
+                className="flex-1 py-3 rounded-full border border-text-muted/30 text-text-muted font-bold text-xs tracking-wide hover:bg-text-muted/10 transition-colors disabled:opacity-40"
               >
                 Cerrar Ticket
               </button>
@@ -823,7 +823,7 @@ export default function AdminPQRSPage() {
                   handleCambiarEstado("ABIERTA");
                 }}
                 disabled={isProcessing || selected.estado === "ABIERTA"}
-                className="flex-1 py-3 rounded-full border border-[#EAB308]/30 text-[#EAB308] font-bold text-xs tracking-wide hover:bg-[#EAB308]/10 transition-colors disabled:opacity-40"
+                className="flex-1 py-3 rounded-full border border-warning/30 text-warning font-bold text-xs tracking-wide hover:bg-warning/10 transition-colors disabled:opacity-40"
               >
                 Reabrir
               </button>

@@ -335,13 +335,13 @@ export default function CitofoniaPage() {
               <>
                 <button
                    onClick={rejectCall}
-                   className="w-16 h-16 rounded-full bg-[#EF4444]/20 hover:bg-[#EF4444]/30 border border-[#EF4444]/40 flex items-center justify-center text-[#EF4444] shadow-2xl active:scale-90 transition-all cursor-pointer"
+                   className="w-16 h-16 rounded-full bg-danger/20 hover:bg-danger/30 border border-danger/40 flex items-center justify-center text-danger shadow-2xl active:scale-90 transition-all cursor-pointer"
                 >
                    <PhoneOff size={28} />
                 </button>
                 <button
                    onClick={answerCall}
-                   className="w-16 h-16 rounded-full bg-[#57bf00]/20 hover:bg-[#57bf00]/30 border border-[#57bf00]/40 flex items-center justify-center text-[#57bf00] shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                   className="w-16 h-16 rounded-full bg-success/20 hover:bg-success/30 border border-success/40 flex items-center justify-center text-success shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
                    style={{ animationDuration: '2s' }}
                 >
                    <Phone size={28} />
@@ -350,7 +350,7 @@ export default function CitofoniaPage() {
             ) : (
               <button
                  onClick={endCall}
-                 className="w-16 h-16 rounded-full bg-[#EF4444]/20 hover:bg-[#EF4444]/30 border border-[#EF4444]/40 flex items-center justify-center text-[#EF4444] shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
+                 className="w-16 h-16 rounded-full bg-danger/20 hover:bg-danger/30 border border-danger/40 flex items-center justify-center text-danger shadow-2xl hover:shadow-black/20 active:scale-90 transition-all cursor-pointer animate-bounce"
                  style={{ animationDuration: '3s' }}
               >
                  <PhoneOff size={28} />
@@ -367,16 +367,16 @@ export default function CitofoniaPage() {
             <div className="flex gap-2">
               <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-colors duration-500 ${
                 activeTab === "CITOFONIA"
-                  ? 'bg-[#57bf00]/10 border-[#57bf00]/30'
+                  ? 'bg-success/10 border-success/30'
                   : 'bg-text/10 border-text/20'
               }`}>
                  <div className={`w-1.5 h-1.5 rounded-full ${
                    activeTab === "CITOFONIA"
-                     ? 'bg-[#57bf00] animate-pulse shadow-[0_0_6px_#57bf00]'
+                     ? 'bg-success animate-pulse shadow-[0_0_6px_#57bf00]'
                      : 'bg-text/30'
                  }`} />
                  <span className={`text-[10px] font-black uppercase tracking-widest ${
-                   activeTab === "CITOFONIA" ? 'text-[#57bf00]' : 'text-text'
+                   activeTab === "CITOFONIA" ? 'text-success' : 'text-text'
                  }`}>
                    En Línea
                  </span>
@@ -396,7 +396,7 @@ export default function CitofoniaPage() {
               <button 
                 key={t.id}
                 onClick={() => setActiveTab(t.id as Tab)}
-                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-[#009df2] text-white shadow-md' : 'text-text/60 hover:text-text'}`}
+                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-info text-white shadow-md' : 'text-text/60 hover:text-text'}`}
               >
                 <t.icon size={16} strokeWidth={activeTab === t.id ? 2.5 : 1.5} />
                 <span className="text-[9px] font-bold uppercase tracking-wider">{t.label}</span>
@@ -444,7 +444,7 @@ export default function CitofoniaPage() {
                           </div>
                           <span
                             className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: '#57bf001a', color: '#57bf00' }}
+                            style={{ backgroundColor: 'color-mix(in srgb, var(--color-success) 10%, transparent)', color: 'var(--color-success)' }}
                           >
                              <Phone size={16} />
                           </span>
@@ -466,7 +466,7 @@ export default function CitofoniaPage() {
                 >
                    <span
                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                     style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+                     style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
                    >
                      <ShieldCheck size={24} />
                    </span>
@@ -479,7 +479,7 @@ export default function CitofoniaPage() {
                 >
                    <span
                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                     style={{ backgroundColor: '#8b5cf61a', color: '#8b5cf6' }}
+                     style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
                    >
                      <Car size={24} />
                    </span>
@@ -492,7 +492,7 @@ export default function CitofoniaPage() {
                 >
                    <span
                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                     style={{ backgroundColor: '#8b5cf61a', color: '#8b5cf6' }}
+                     style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
                    >
                      <Users size={24} />
                    </span>
@@ -538,8 +538,8 @@ export default function CitofoniaPage() {
                       onClick={() => handleCall()}
                       className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black cursor-pointer ${
                         callState !== "IDLE"
-                          ? 'bg-[#EF4444] hover:bg-[#d32f2f] shadow-[#EF4444]/20'
-                          : 'bg-[#57bf00] hover:bg-[#4ca600] shadow-[#57bf00]/20'
+                          ? 'bg-danger hover:bg-[#d32f2f] shadow-danger/20'
+                          : 'bg-success hover:bg-[#4ca600] shadow-success/20'
                       }`}
                     >
                       {callState !== "IDLE" ? <PhoneOff size={18} /> : <Phone size={18} />}
@@ -561,7 +561,7 @@ export default function CitofoniaPage() {
                     <div className="flex items-center gap-2 min-w-0">
                        <span
                          className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center"
-                         style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+                         style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
                        >
                          <Car size={16} />
                        </span>
@@ -573,7 +573,7 @@ export default function CitofoniaPage() {
                     <div className="flex items-center gap-2 min-w-0">
                        <span
                          className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center"
-                         style={{ backgroundColor: '#8b5cf61a', color: '#8b5cf6' }}
+                         style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
                        >
                          <Bike size={16} />
                        </span>

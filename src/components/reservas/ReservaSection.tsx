@@ -136,8 +136,8 @@ export default function ReservaSection({ excludedAreas }: { excludedAreas?: stri
                 </span>
               </div>
               <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
-                r.estado === "APROBADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
-                r.estado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+                r.estado === "APROBADA" ? "bg-success/20 text-success" :
+                r.estado === "PENDIENTE" ? "bg-warning/20 text-warning" :
                 "bg-text/10 text-text/60"
               }`}>
                 {r.estado === "APROBADA" ? "Aprobada" : r.estado === "PENDIENTE" ? "Pendiente" : r.estado}
@@ -197,7 +197,7 @@ export default function ReservaSection({ excludedAreas }: { excludedAreas?: stri
                   <p className="flex items-center gap-1"><Clock size={12} /> {area.horaApertura} → {area.horaCierre}</p>
                   <p className="flex items-center gap-1"><MapPin size={12} /> Capacidad: {area.capacidadMax} personas</p>
                   {area.requiereDeposito && (
-                    <p className="text-[#FACC15]">Depósito: ${area.depositoMonto || "—"}</p>
+                    <p className="text-warning">Depósito: ${area.depositoMonto || "—"}</p>
                   )}
                 </div>
               );

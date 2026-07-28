@@ -292,7 +292,7 @@ export default function AdminBannersPage() {
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-bold text-text truncate">{ad.nombre}</h3>
                         <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                          active ? "bg-[#57bf00]/20 text-[#57bf00]" : "bg-text/10 text-text/50"
+                          active ? "bg-success/20 text-success" : "bg-text/10 text-text/50"
                         }`}>
                           {active ? "Activo" : "Inactivo"}
                         </span>
@@ -327,10 +327,10 @@ export default function AdminBannersPage() {
                       </button>
                       <button
                         onClick={() => handleDelete(ad.id)}
-                        className="p-2 rounded-full hover:bg-[#EF4444]/10 transition-colors"
+                        className="p-2 rounded-full hover:bg-danger/10 transition-colors"
                         title="Eliminar"
                       >
-                        <Trash2 size={14} className="text-[#EF4444]" />
+                        <Trash2 size={14} className="text-danger" />
                       </button>
                     </div>
                   </div>

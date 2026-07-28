@@ -701,7 +701,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           </div>
           <button
              onClick={endCall}
-             className="w-full py-3 bg-[#EF4444]/20 hover:bg-[#EF4444]/30 border border-[#EF4444]/40 text-[#EF4444] rounded-2xl font-bold text-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2"
+             className="w-full py-3 bg-danger/20 hover:bg-danger/30 border border-danger/40 text-danger rounded-2xl font-bold text-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2"
           >
              <PhoneOff size={14} /> Colgar
           </button>

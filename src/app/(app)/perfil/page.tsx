@@ -515,13 +515,13 @@ function ProfileContent() {
   // tint regardless of which utilities the CSS build happens to have generated.
   // `${hex}1a` is the same 10% alpha as a `/10` class.
   const allStatusIcons = [
-    { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, hex: '#10b981', icon: <CreditCard size={18}/>, view: 'deuda' },
-    { label: 'Trámites', val: tramites.length.toString(), hex: '#3b82f6', icon: <ClipboardList size={18}/>, view: 'requests' },
-    { label: 'Mascotas', val: mascotas.length.toString(), hex: '#f59e0b', icon: <PawPrint size={18}/>, view: 'pets' },
-    { label: 'Vehículos', val: vehiculos.length.toString(), hex: '#6366f1', icon: <Car size={18}/>, view: 'vehicles' },
-    { label: 'Reservas', val: activeReservas.length.toString(), hex: '#8b5cf6', icon: <Calendar size={18}/>, view: 'reservas' },
+    { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, hex: 'var(--color-success)', icon: <CreditCard size={18}/>, view: 'deuda' },
+    { label: 'Trámites', val: tramites.length.toString(), hex: 'var(--color-info)', icon: <ClipboardList size={18}/>, view: 'requests' },
+    { label: 'Mascotas', val: mascotas.length.toString(), hex: 'var(--color-warning)', icon: <PawPrint size={18}/>, view: 'pets' },
+    { label: 'Vehículos', val: vehiculos.length.toString(), hex: 'var(--color-info)', icon: <Car size={18}/>, view: 'vehicles' },
+    { label: 'Reservas', val: activeReservas.length.toString(), hex: 'var(--color-info)', icon: <Calendar size={18}/>, view: 'reservas' },
     { label: 'Visitas', val: visitasHistorial.filter(v => v.estado === 'PENDIENTE').length.toString(), hex: '#14b8a6', icon: <UserIcon size={18}/>, view: 'visitas' },
-    { label: 'Paquetes', val: activePaquetes.length.toString(), hex: '#f97316', icon: <Package size={18}/>, view: 'paquetes' },
+    { label: 'Paquetes', val: activePaquetes.length.toString(), hex: 'var(--color-warning)', icon: <Package size={18}/>, view: 'paquetes' },
     { label: 'Corresp.', val: correspondenciaPendiente.length.toString(), hex: '#f43f5e', icon: <Mail size={18}/>, view: 'correspondencia' }
   ];
 
@@ -569,12 +569,12 @@ function ProfileContent() {
                   setShowEditModal(true);
                   setShowMenu(false);
                 }}
-                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-text hover:bg-[#009df2]/10 transition-colors text-left border-b border-[#009df2]/15 cursor-pointer"
+                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-text hover:bg-info/10 transition-colors text-left border-b border-info/15 cursor-pointer"
               >
-                <Edit size={18} className="text-[#009df2]"/> Editar Perfil
+                <Edit size={18} className="text-info"/> Editar Perfil
               </button>
-              <button className="w-full p-5 flex items-center gap-3 text-[15px] font-medium text-text hover:bg-[#57bf00]/10 transition-colors text-left border-b border-[#009df2]/15">
-                <ShieldCheck size={18} className="text-[#57bf00]"/> Privacidad
+              <button className="w-full p-5 flex items-center gap-3 text-[15px] font-medium text-text hover:bg-success/10 transition-colors text-left border-b border-info/15">
+                <ShieldCheck size={18} className="text-success"/> Privacidad
               </button>
               <button 
                 type="button"
@@ -640,20 +640,20 @@ function ProfileContent() {
         {/* PILLS */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-light border border-border shadow-sm">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#6366f1' }} />
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-info)' }} />
             <span className="text-[11px] font-bold text-text uppercase tracking-wider">Torre {userData.torre}</span>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-light border border-border shadow-sm">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#8b5cf6' }} />
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-info)' }} />
             <span className="text-[11px] font-bold text-text uppercase tracking-wider">Apto {userData.apto}</span>
           </div>
           {userData.numeroInterno && (
             <div
               className="flex items-center gap-2 px-4 py-2 rounded-full border"
-              style={{ backgroundColor: '#3b82f61a', borderColor: '#3b82f633' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-info) 20%, transparent)' }}
             >
-              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#3b82f6' }} />
-              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#3b82f6' }}>
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-info)' }} />
+              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--color-info)' }}>
                 Citofonía N° {userData.numeroInterno}
               </span>
             </div>
@@ -690,7 +690,7 @@ function ProfileContent() {
                  <div className="flex items-center gap-3 mb-6">
                     <div
                       className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
-                      style={{ backgroundColor: '#6366f11a', color: '#6366f1' }}
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
                     >
                       <UserIcon size={22} />
                     </div>
@@ -756,7 +756,7 @@ function ProfileContent() {
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-black uppercase tracking-tight ${minutosPara <= 30 ? 'text-[#FACC15]' : 'text-accent'}`}>
+                          <span className={`text-xs font-black uppercase tracking-tight ${minutosPara <= 30 ? 'text-warning' : 'text-accent'}`}>
                             {countdown}
                           </span>
                         </div>
@@ -813,8 +813,8 @@ function ProfileContent() {
                                 <div className="flex justify-between items-start mb-1">
                                   <span className="text-[10px] font-black text-accent uppercase tracking-widest">{res.areaNombre || "Cargando..."}</span>
                                   <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                                    res.estado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
-                                    res.estado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+                                    res.estado === "CONFIRMADA" ? "bg-success/20 text-success" :
+                                    res.estado === "PENDIENTE" ? "bg-warning/20 text-warning" :
                                     res.estado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
                                     "bg-text/20 text-text"
                                   }`}>
@@ -1663,8 +1663,8 @@ function ProfileContent() {
             </button>
             <h3 className="text-lg font-bold text-text">{qrReservaNombre}</h3>
             <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-              qrReservaEstado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
-              qrReservaEstado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+              qrReservaEstado === "CONFIRMADA" ? "bg-success/20 text-success" :
+              qrReservaEstado === "PENDIENTE" ? "bg-warning/20 text-warning" :
               qrReservaEstado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
               "bg-text/10 text-text"
             }`}>

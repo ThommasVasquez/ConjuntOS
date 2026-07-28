@@ -67,13 +67,13 @@ export default function AdminAnalyticsPage() {
                 icon={<Building2 size={20} />}
                 label="Unidades"
                 value={data.totalUnidades.toLocaleString("es-CO")}
-                color="#009df2"
+                color="var(--color-info)"
               />
               <KpiCard
                 icon={<Users size={20} />}
                 label="Usuarios"
                 value={data.totalUsuarios.toLocaleString("es-CO")}
-                color="#57bf00"
+                color="var(--color-success)"
               />
               <KpiCard
                 icon={<UserPlus size={20} />}
@@ -85,7 +85,7 @@ export default function AdminAnalyticsPage() {
                 icon={<Activity size={20} />}
                 label="Activos 30d"
                 value={data.activos30d.toLocaleString("es-CO")}
-                color="#f59e0b"
+                color="var(--color-warning)"
               />
             </div>
 

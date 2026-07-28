@@ -544,7 +544,7 @@ export default function AdminMensajesPage() {
                        onClick={handleCallResident}
                        disabled={callState !== "IDLE"}
                        title="Llamar por citofonía"
-                       className="w-10 h-10 rounded-2xl bg-[#57bf00]/15 border border-[#57bf00]/30 flex items-center justify-center text-[#57bf00] hover:bg-[#57bf00]/25 active:scale-90 transition-all disabled:opacity-30 disabled:scale-100"
+                       className="w-10 h-10 rounded-2xl bg-success/15 border border-success/30 flex items-center justify-center text-success hover:bg-success/25 active:scale-90 transition-all disabled:opacity-30 disabled:scale-100"
                     >
                        <Phone size={18} />
                     </button>

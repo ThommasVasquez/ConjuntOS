@@ -238,8 +238,8 @@ export default function ParqueaderoPage() {
         <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FACC15] opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#FACC15]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-warning" />
             </span>
             <h2 className="text-base font-display font-bold text-text tracking-tight">
               Aprobaciones pendientes
@@ -249,7 +249,7 @@ export default function ParqueaderoPage() {
             Te solicitan asignarte un parqueadero de visitante. Tu aprobación es obligatoria.
           </p>
           {solicitudesInquilino.map((s) => (
-            <div key={s.id} className="liquid-glass-card rounded-[28px] p-5 border border-[#FACC15]/40 flex flex-col gap-4">
+            <div key={s.id} className="liquid-glass-card rounded-[28px] p-5 border border-warning/40 flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <span className="text-lg font-bold text-text">Celda {s.celdaNumero}</span>
                 <span className="text-xs text-text/80">{s.detalle}</span>
@@ -259,14 +259,14 @@ export default function ParqueaderoPage() {
                 <button
                   disabled={busyAprob === s.id}
                   onClick={() => resolverSolicitud(s.id, 'rechazar')}
-                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-danger/10 hover:border-danger/40 active:scale-95 transition-all disabled:opacity-50"
                 >
                   Rechazar
                 </button>
                 <button
                   disabled={busyAprob === s.id}
                   onClick={() => resolverSolicitud(s.id, 'aprobar')}
-                  className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyAprob === s.id ? "Procesando..." : "Aprobar"}
                 </button>
@@ -280,7 +280,7 @@ export default function ParqueaderoPage() {
       {sesionesCobro.length > 0 && (
         <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
-            <Clock size={16} className="text-[#57bf00]" />
+            <Clock size={16} className="text-success" />
             <h2 className="text-base font-display font-bold text-text tracking-tight">
               Parqueadero de visitante
             </h2>
@@ -296,8 +296,8 @@ export default function ParqueaderoPage() {
         <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EF4444] opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-danger" />
             </span>
             <h2 className="text-base font-display font-bold text-text tracking-tight">
               Cobros por aprobar
@@ -307,7 +307,7 @@ export default function ParqueaderoPage() {
             Tu visita superó las 2h gratis. Aprueba para cargar el cobro a tu apartamento o recházalo.
           </p>
           {cargosPendientes.map((c) => (
-            <div key={c.id} className="liquid-glass-card rounded-[28px] p-5 border border-[#EF4444]/40 flex flex-col gap-4">
+            <div key={c.id} className="liquid-glass-card rounded-[28px] p-5 border border-danger/40 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="text-lg font-bold text-text">Celda {c.celdaNumero}</span>
@@ -318,7 +318,7 @@ export default function ParqueaderoPage() {
                 </div>
                 <div className="flex flex-col items-end shrink-0">
                   <span className="text-[10px] text-text/60 uppercase tracking-wider font-bold">Monto</span>
-                  <span className="text-2xl font-display font-bold text-[#FACC15]">
+                  <span className="text-2xl font-display font-bold text-warning">
                     ${Number(c.montoFinal || c.montoActual || 0).toLocaleString('es-CO')}
                   </span>
                 </div>
@@ -327,14 +327,14 @@ export default function ParqueaderoPage() {
                 <button
                   disabled={busyAprob === c.id}
                   onClick={() => resolverCargo(c.id, 'rechazar')}
-                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-text/5 border border-border text-text font-bold text-sm hover:bg-danger/10 hover:border-danger/40 active:scale-95 transition-all disabled:opacity-50"
                 >
                   Rechazar
                 </button>
                 <button
                   disabled={busyAprob === c.id}
                   onClick={() => resolverCargo(c.id, 'aprobar')}
-                  className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyAprob === c.id ? "Procesando..." : "Aprobar cobro"}
                 </button>
@@ -402,7 +402,7 @@ export default function ParqueaderoPage() {
                       {r.categoria === 'MOTO' ? 'Moto' : r.categoria === 'BICI' ? 'Bici' : 'Carro'}
                     </span>
                     {r.estado === 'LLEGO' && (
-                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#57bf00]/15 text-[#57bf00]">Llegó</span>
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-success/15 text-success">Llegó</span>
                     )}
                   </div>
                   {r.visitanteNombre && <span className="text-xs text-text/80">{r.visitanteNombre}</span>}
@@ -422,7 +422,7 @@ export default function ParqueaderoPage() {
                 <button
                   disabled={busyReserva === r.id}
                   onClick={() => cancelarReserva(r.id)}
-                  className="w-full py-2.5 rounded-2xl bg-text/5 border border-border text-text font-bold text-xs hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all disabled:opacity-50"
+                  className="w-full py-2.5 rounded-2xl bg-text/5 border border-border text-text font-bold text-xs hover:bg-danger/10 hover:border-danger/40 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyReserva === r.id ? "Cancelando..." : "Cancelar reserva"}
                 </button>
@@ -713,7 +713,7 @@ export default function ParqueaderoPage() {
                     <option className="bg-primary text-text" value="BICI">Bicicleta / Patineta</option>
                 </select>
                 
-                <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-[#57bf00] rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white shadow-xl shadow-[#57bf00]/30 active:scale-95 transition-transform disabled:opacity-50 cursor-pointer">
+                <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-success rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white shadow-xl shadow-success/30 active:scale-95 transition-transform disabled:opacity-50 cursor-pointer">
                     <ShieldCheck size={20} /> {isSubmitting ? 'Enviando...' : 'Pedir Aprobación'}
                 </button>
             </div>
@@ -768,14 +768,14 @@ function CuentaRegresivaCard({ sesion }: { sesion: SesionCobro }) {
   const avisoPronto = !enCobro && segGratis <= 20 * 60;
 
   return (
-    <div className={`liquid-glass-card rounded-[28px] p-5 border flex flex-col gap-3 ${enCobro ? 'border-[#FACC15]/50' : avisoPronto ? 'border-[#FACC15]/40' : 'border-[#57bf00]/40'}`}>
+    <div className={`liquid-glass-card rounded-[28px] p-5 border flex flex-col gap-3 ${enCobro ? 'border-warning/50' : avisoPronto ? 'border-warning/40' : 'border-success/40'}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Clock size={16} className={enCobro ? 'text-[#FACC15]' : 'text-[#57bf00]'} />
+          <Clock size={16} className={enCobro ? 'text-warning' : 'text-success'} />
           <span className="text-sm font-bold text-text">Celda {sesion.celdaNumero}</span>
           {sesion.placa && <span className="text-[10px] text-text/60 bg-text/5 px-2 py-0.5 rounded-full border border-border">{sesion.placa}</span>}
         </div>
-        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${enCobro ? 'bg-[#FACC15]/15 text-[#FACC15]' : 'bg-[#57bf00]/15 text-[#57bf00]'}`}>
+        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${enCobro ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success'}`}>
           {enCobro ? 'En cobro' : 'Gratis'}
         </span>
       </div>
@@ -783,17 +783,17 @@ function CuentaRegresivaCard({ sesion }: { sesion: SesionCobro }) {
       {!enCobro ? (
         <div className="flex flex-col items-center gap-1 py-2">
           <span className="text-[10px] text-text/60 uppercase tracking-widest font-bold">Tiempo gratis restante</span>
-          <span className={`text-4xl font-display font-bold tabular-nums ${avisoPronto ? 'text-[#FACC15]' : 'text-text'}`}>
+          <span className={`text-4xl font-display font-bold tabular-nums ${avisoPronto ? 'text-warning' : 'text-text'}`}>
             {hh > 0 ? `${fmt(hh)}:` : ''}{fmt(mm)}:{fmt(ss)}
           </span>
           {avisoPronto && (
-            <span className="text-[11px] text-[#FACC15] font-bold text-center">⚠️ Pronto inicia el cobro de ${Number(sesion.tarifaHora).toLocaleString('es-CO')}/hora</span>
+            <span className="text-[11px] text-warning font-bold text-center">⚠️ Pronto inicia el cobro de ${Number(sesion.tarifaHora).toLocaleString('es-CO')}/hora</span>
           )}
         </div>
       ) : (
         <div className="flex flex-col items-center gap-1 py-2">
           <span className="text-[10px] text-text/60 uppercase tracking-widest font-bold">Cobro acumulado</span>
-          <span className="text-4xl font-display font-bold text-[#FACC15] tabular-nums">
+          <span className="text-4xl font-display font-bold text-warning tabular-nums">
             ${montoVivo.toLocaleString('es-CO')}
           </span>
           <span className="text-[11px] text-text/60 text-center">Se cobra ${Number(sesion.tarifaHora).toLocaleString('es-CO')}/hora por minuto, hasta que el vehículo salga.</span>
@@ -958,7 +958,7 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
         </div>
 
         {/* Disponibilidad en vivo */}
-        <div className={`rounded-2xl p-4 mb-4 border flex items-center gap-3 ${checking ? 'bg-text/5 border-border' : hayCupo ? 'bg-[#57bf00]/10 border-[#57bf00]/40' : sinCupo ? 'bg-[#EF4444]/10 border-[#EF4444]/40' : 'bg-text/5 border-border'}`}>
+        <div className={`rounded-2xl p-4 mb-4 border flex items-center gap-3 ${checking ? 'bg-text/5 border-border' : hayCupo ? 'bg-success/10 border-success/40' : sinCupo ? 'bg-danger/10 border-danger/40' : 'bg-text/5 border-border'}`}>
           {checking ? (
             <>
               <Clock size={18} className="text-text/50 animate-pulse" />
@@ -966,14 +966,14 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
             </>
           ) : hayCupo ? (
             <>
-              <CheckCircle2 size={18} className="text-[#57bf00]" />
+              <CheckCircle2 size={18} className="text-success" />
               <span className="text-sm text-text">
-                <b className="text-[#57bf00]">{disp.libres}</b> {disp.libres === 1 ? 'cupo libre' : 'cupos libres'} de {disp.categoria === 'MOTO' ? 'moto' : 'carro'} en esa franja
+                <b className="text-success">{disp.libres}</b> {disp.libres === 1 ? 'cupo libre' : 'cupos libres'} de {disp.categoria === 'MOTO' ? 'moto' : 'carro'} en esa franja
               </span>
             </>
           ) : sinCupo ? (
             <>
-              <AlertCircle size={18} className="text-[#EF4444]" />
+              <AlertCircle size={18} className="text-danger" />
               <span className="text-sm text-text">Sin cupos de {disp.categoria === 'MOTO' ? 'moto' : 'carro'} en esa franja. Prueba otra hora.</span>
             </>
           ) : (

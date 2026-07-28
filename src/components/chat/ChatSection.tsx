@@ -407,8 +407,8 @@ export default function ChatSection({ compact = false, huespedId }: ChatSectionP
 
       {/* Voice recording bar */}
       {recording && (
-        <div className="mx-3 mb-1 px-4 py-2.5 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#EF4444] animate-pulse shrink-0" />
+        <div className="mx-3 mb-1 px-4 py-2.5 bg-danger/10 border border-danger/30 rounded-2xl flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-danger animate-pulse shrink-0" />
           <span className="text-sm text-text flex-1">
             Grabando… {formatDuration(recordingTime)}
           </span>

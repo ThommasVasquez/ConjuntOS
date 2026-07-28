@@ -71,7 +71,7 @@ export default function SplashScreen() {
       className={`fixed inset-0 ${isDark ? 'bg-[#000000]' : 'bg-[#ffffff]'} flex flex-col items-center justify-center overflow-hidden`}
       style={{ zIndex: 999999 }}
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-[#009df2]/8 blur-[120px] rounded-full" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-info/8 blur-[120px] rounded-full" />
       
       <div className="relative flex flex-col items-center">
         <div ref={logoRef} className="relative w-[95vw] max-w-[700px] aspect-[3/1]">
