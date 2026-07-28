@@ -1,0 +1,53 @@
+# livekit.deploy.yaml — LiveKit para el host 198.251.70.45 (zona conjuntos.app).
+#
+# Topología (distinta a la del VPS 82.25.115.208):
+#   - SEÑALIZACIÓN wss://livekit.conjuntos.app -> Cloudflare Tunnel -> livekit:7880.
+#     El túnel transporta WebSockets, así que no hacen falta ni Caddy ni un
+#     registro A en DNS. Caddy queda fuera de este despliegue.
+#   - MEDIA directo: Cloudflare no proxya UDP. LiveKit descubre y anuncia por ICE
+#     la IP pública del host (use_external_ip) y el navegador manda el media a
+#     198.251.70.45:7882/udp, publicado 1:1 por Docker.
+#
+# ⚠️ ESTADO REAL EN ESTE HOST (verificado 2026-07-27): el media NO llega.
+# El proveedor de la nube filtra el tráfico entrante *antes* del host: solo el
+# puerto 22 responde desde Internet. Comprobado abriendo 7883/tcp en ufw y
+# volviendo a escanear desde fuera — seguía cerrado, así que no es ufw ni Docker.
+# (Control del test: 22 = open, 443 = closed porque ufw solo admite rangos de
+# Cloudflare. El escáner es fiable.)
+#
+# Consecuencia: la señalización conecta y la llamada arranca, pero el ICE no
+# completa y no hay audio/vídeo. Para que la citofonía funcione hace falta UNA
+# de estas tres:
+#   1. Abrir 7882/udp (y 7883/tcp) en el firewall del proveedor de esta caja.
+#   2. Correr LiveKit en el VPS 82.25.115.208, que ya tiene esos puertos abiertos,
+#      y apuntar livekit.conjuntos.app a esa IP con un registro A (nube gris).
+#   3. Usar LiveKit Cloud y dejar de autoalojarlo.
+#
+# Las API keys NO van aquí: entran por LIVEKIT_KEYS (docker-compose.prod.yml).
+
+port: 7880
+
+rtc:
+  tcp_port: 7883
+  # UDP mux: un solo puerto para todo el media (evita mapear rangos en Docker).
+  udp_port: 7882
+  # Detecta y anuncia la IP pública del host (consulta STUN). Imprescindible aquí:
+  # el cliente llega por el túnel y no puede deducir la IP de media del hostname.
+  use_external_ip: true
+
+turn:
+  # DESACTIVADO en este host, a propósito.
+  #
+  # El TURN embebido necesita TLS con un certificado válido para turn.conjuntos.app,
+  # y ese cert solo se puede emitir si turn.conjuntos.app es un registro A (nube
+  # gris) apuntando aquí y el :80 acepta el reto HTTP-01. Hoy el firewall solo
+  # admite 80/443 desde rangos de Cloudflare, así que ACME no puede validar.
+  #
+  # Consecuencia: tras NAT simétrico / redes muy restrictivas ~10-15% de las
+  # llamadas no conectarán audio. Para recuperarlo hay que crear el registro A,
+  # abrir :80 al mundo y volver a poner enabled: true (ver deploy/README.md).
+  enabled: false
+
+logging:
+  level: info
+  json: false

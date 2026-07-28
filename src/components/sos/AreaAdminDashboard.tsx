@@ -203,8 +203,8 @@ export default function AreaAdminDashboard() {
 
       {/* Verification result */}
       {verificada && (
-        <div className="rounded-2xl p-4 border-2 border-[#57bf00] bg-[#57bf00]/10 space-y-2">
-          <div className="flex items-center gap-2 text-[#57bf00] font-bold">
+        <div className="rounded-2xl p-4 border-2 border-success bg-success/10 space-y-2">
+          <div className="flex items-center gap-2 text-success font-bold">
             <Check size={20} /> Reserva valida!
           </div>
           <div className="space-y-1 text-sm text-text">
@@ -256,7 +256,7 @@ export default function AreaAdminDashboard() {
             <span
               className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
                 r.estado === "CONFIRMADA"
-                  ? "bg-[#57bf00]/20 text-[#57bf00]"
+                  ? "bg-success/20 text-success"
                   : "bg-text/10 text-text/60"
               }`}
             >

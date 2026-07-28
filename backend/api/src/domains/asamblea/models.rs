@@ -26,6 +26,20 @@ pub struct Asamblea {
     pub version: i32,
 }
 
+/// `item_activo_index` and `version` are omitted on purpose — the columns
+/// default to 0 and the session endpoints own them from then on.
+#[derive(Insertable, Debug)]
+#[diesel(table_name = asambleas)]
+pub struct NuevaAsamblea {
+    pub conjunto_id: Uuid,
+    pub titulo: String,
+    pub descripcion: Option<String>,
+    pub fecha: DateTime<Utc>,
+    pub activa: bool,
+    pub orden_dia: serde_json::Value,
+    pub session_state: serde_json::Value,
+}
+
 // ── Pairings ─────────────────────────────────────────────────────────────
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]

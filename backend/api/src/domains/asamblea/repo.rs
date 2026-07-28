@@ -13,8 +13,8 @@ use crate::db::schema::{
 use crate::db::DbConn;
 use crate::domains::asamblea::models::{
     Asamblea, AsambleaAsistencia, AsambleaOpinion, AsambleaPairing, AsambleaPoder, AsambleaTurno,
-    AsambleaVotacion, AsambleaVoto, NuevaAsistencia, NuevaOpinion, NuevaVotacion, NuevoPairing,
-    NuevoPoder, NuevoTurno, NuevoVoto,
+    AsambleaVotacion, AsambleaVoto, NuevaAsamblea, NuevaAsistencia, NuevaOpinion, NuevaVotacion,
+    NuevoPairing, NuevoPoder, NuevoTurno, NuevoVoto,
 };
 use crate::error::{ApiError, ApiResult};
 
@@ -69,6 +69,58 @@ pub async fn otorgante_has_verified_poder(
     Ok(n > 0)
 }
 
+/// True if `otorgante_id` has already cast a vote in any votación of this
+/// asamblea. Verifying their poder afterwards would double-count their unit:
+/// their own vote stays on record while the apoderado's effective coeficiente
+/// grows to include it, and the unique (votacion_id, unidad_id) constraint does
+/// not catch it because the apoderado votes under a different unidad.
+pub async fn otorgante_ya_voto(
+    conn: &mut DbConn,
+    asamblea_id: Uuid,
+    otorgante_id: Uuid,
+) -> ApiResult<bool> {
+    let n: i64 = asamblea_votos::table
+        .inner_join(asamblea_votaciones::table)
+        .filter(asamblea_votaciones::asamblea_id.eq(asamblea_id))
+        .filter(asamblea_votos::usuario_id.eq(otorgante_id))
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
+/// True while any votación of this asamblea is open. The set of who represents
+/// whom must not change mid-ballot.
+pub async fn hay_votacion_activa(conn: &mut DbConn, asamblea_id: Uuid) -> ApiResult<bool> {
+    let n: i64 = asamblea_votaciones::table
+        .filter(asamblea_votaciones::asamblea_id.eq(asamblea_id))
+        .filter(asamblea_votaciones::activa.eq(true))
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
+/// True if this user already has a PENDIENTE or HABLANDO turn queued.
+pub async fn tiene_turno_abierto(
+    conn: &mut DbConn,
+    asamblea_id: Uuid,
+    usuario_id: Uuid,
+) -> ApiResult<bool> {
+    let n: i64 = asamblea_turnos::table
+        .filter(asamblea_turnos::asamblea_id.eq(asamblea_id))
+        .filter(asamblea_turnos::usuario_id.eq(usuario_id))
+        .filter(
+            asamblea_turnos::estado
+                .eq(EstadoTurno::Pendiente)
+                .or(asamblea_turnos::estado.eq(EstadoTurno::Hablando)),
+        )
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
 /// Returns (nombre, torre, apto) for denormalised opinion/turno fields.
 pub async fn get_user_info(
     conn: &mut DbConn,
@@ -83,6 +135,41 @@ pub async fn get_user_info(
 }
 
 // ── Session ──────────────────────────────────────────────────────────────
+
+/// Creates the conjunto's assembly as the active one.
+///
+/// The in-transaction pre-check exists to return the friendly "ya hay una
+/// asamblea activa" 409; the `asambleas_una_activa_por_conjunto` partial unique
+/// index is what actually holds under two concurrent creates (it surfaces as a
+/// generic 409 via the `UniqueViolation` mapping in error.rs).
+pub async fn create_asamblea(conn: &mut DbConn, nueva: NuevaAsamblea) -> ApiResult<Asamblea> {
+    conn.transaction(|conn| {
+        async move {
+            let activas: i64 = asambleas::table
+                .filter(asambleas::conjunto_id.eq(nueva.conjunto_id))
+                .filter(asambleas::activa.eq(true))
+                .count()
+                .get_result(conn)
+                .await?;
+
+            if activas > 0 {
+                return Err(ApiError::Conflict(
+                    "ya hay una asamblea activa; finalízala antes de crear otra".into(),
+                ));
+            }
+
+            let asamblea = diesel::insert_into(asambleas::table)
+                .values(&nueva)
+                .returning(Asamblea::as_returning())
+                .get_result(conn)
+                .await?;
+
+            Ok::<_, ApiError>(asamblea)
+        }
+        .scope_boxed()
+    })
+    .await
+}
 
 pub async fn get_active_session(conn: &mut DbConn, conjunto_id: Uuid) -> ApiResult<Asamblea> {
     asambleas::table
@@ -470,18 +557,25 @@ pub async fn get_quorum(
 
 // ── Opiniones ────────────────────────────────────────────────────────────
 
+/// The 100 most recent messages, returned oldest-first for display.
+///
+/// The cap used to be applied to an ASC ordering, which returned the *oldest*
+/// 100: once an assembly passed 100 messages the chat froze permanently and no
+/// new message was ever visible to anyone. Take the newest 100, then flip back
+/// into chronological order.
 pub async fn list_opiniones(
     conn: &mut DbConn,
     asamblea_id: Uuid,
 ) -> ApiResult<Vec<AsambleaOpinion>> {
-    asamblea_opiniones::table
+    let mut recientes: Vec<AsambleaOpinion> = asamblea_opiniones::table
         .filter(asamblea_opiniones::asamblea_id.eq(asamblea_id))
-        .order(asamblea_opiniones::created_at.asc())
+        .order(asamblea_opiniones::created_at.desc())
         .limit(100)
         .select(AsambleaOpinion::as_select())
         .load(conn)
-        .await
-        .map_err(Into::into)
+        .await?;
+    recientes.reverse();
+    Ok(recientes)
 }
 
 pub async fn create_opinion(conn: &mut DbConn, nueva: NuevaOpinion) -> ApiResult<AsambleaOpinion> {
@@ -503,6 +597,23 @@ pub async fn list_turnos(conn: &mut DbConn, asamblea_id: Uuid) -> ApiResult<Vec<
         .load(conn)
         .await
         .map_err(Into::into)
+}
+
+/// True while `usuario_id` holds the floor in this asamblea. Drives the LiveKit
+/// publish grant, so a resident given the turn can switch on camera and mic.
+pub async fn tiene_turno_hablando(
+    conn: &mut DbConn,
+    asamblea_id: Uuid,
+    usuario_id: Uuid,
+) -> ApiResult<bool> {
+    let n: i64 = asamblea_turnos::table
+        .filter(asamblea_turnos::asamblea_id.eq(asamblea_id))
+        .filter(asamblea_turnos::usuario_id.eq(usuario_id))
+        .filter(asamblea_turnos::estado.eq(EstadoTurno::Hablando))
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
 }
 
 pub async fn create_turno(conn: &mut DbConn, nuevo: NuevoTurno) -> ApiResult<AsambleaTurno> {
@@ -568,6 +679,20 @@ pub async fn create_poder(conn: &mut DbConn, nuevo: NuevoPoder) -> ApiResult<Asa
         .values(&nuevo)
         .returning(AsambleaPoder::as_returning())
         .get_result(conn)
+        .await
+        .map_err(Into::into)
+}
+
+pub async fn get_poder(
+    conn: &mut DbConn,
+    asamblea_id: Uuid,
+    poder_id: Uuid,
+) -> ApiResult<AsambleaPoder> {
+    asamblea_poderes::table
+        .filter(asamblea_poderes::id.eq(poder_id))
+        .filter(asamblea_poderes::asamblea_id.eq(asamblea_id))
+        .select(AsambleaPoder::as_select())
+        .first(conn)
         .await
         .map_err(Into::into)
 }

@@ -701,7 +701,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           </div>
           <button
              onClick={endCall}
-             className="w-full py-3 bg-[#EF4444]/20 hover:bg-[#EF4444]/30 border border-[#EF4444]/40 text-[#EF4444] rounded-2xl font-bold text-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2"
+             className="w-full py-3 bg-danger/20 hover:bg-danger/30 border border-danger/40 text-danger rounded-2xl font-bold text-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2"
           >
              <PhoneOff size={14} /> Colgar
           </button>
@@ -729,7 +729,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
              </button>
              <button
                 onClick={answerCall}
-                className="flex-1 py-3 bg-text/10 hover:bg-text/10 text-white rounded-2xl font-black text-xs shadow-xl shadow-black/20 cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 bg-accent hover:brightness-110 text-on-accent rounded-2xl font-black text-xs shadow-xl shadow-black/20 cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
              >
                 <Check size={14} /> Contestar
              </button>
@@ -747,7 +747,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
            </div>
            <button
               onClick={endCall}
-              className="w-10 h-10 rounded-full bg-text/10 hover:bg-text/10 flex items-center justify-center text-white cursor-pointer active:scale-95 transition-all shadow-lg"
+              className="w-10 h-10 rounded-full bg-accent hover:brightness-110 flex items-center justify-center text-on-accent cursor-pointer active:scale-95 transition-all shadow-lg"
            >
               <PhoneOff size={16} />
            </button>

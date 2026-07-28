@@ -112,7 +112,7 @@ export default function SeguridadPage() {
         ctx.fillRect(0, scanY, width, 4);
 
         // 2. Mock 3D rooms / shapes simulating security views
-        ctx.strokeStyle = thermalFilter ? "#ef4444" : "#10b981";
+        ctx.strokeStyle = thermalFilter ? "var(--color-danger)" : "var(--color-success)";
         ctx.lineWidth = 2;
         
         if (index === 0) {
@@ -126,7 +126,7 @@ export default function SeguridadPage() {
 
           // Simulating a person moving back and forth
           const px = 140 + Math.sin(frameCount * 0.03) * 30;
-          ctx.fillStyle = thermalFilter ? "#f59e0b" : "#34d399";
+          ctx.fillStyle = thermalFilter ? "var(--color-warning)" : "#34d399";
           ctx.beginPath();
           ctx.arc(px, 120, 8, 0, Math.PI * 2);
           ctx.fill();
@@ -183,14 +183,14 @@ export default function SeguridadPage() {
         }
 
         // Overlay text details
-        ctx.fillStyle = thermalFilter ? "#f87171" : "#10b981";
+        ctx.fillStyle = thermalFilter ? "var(--color-danger)" : "var(--color-success)";
         ctx.font = "bold 9px monospace";
         ctx.fillText(`${cam.name} - ${cam.location.toUpperCase()}`, 12, 20);
         ctx.fillText(`FPS: ${cam.fps} [${cam.status}]`, 12, 32);
 
         // Flashing REC text
         if (Math.floor(frameCount / 30) % 2 === 0) {
-          ctx.fillStyle = "#ef4444";
+          ctx.fillStyle = "var(--color-danger)";
           ctx.beginPath();
           ctx.arc(295, 17, 3, 0, Math.PI * 2);
           ctx.fill();
@@ -199,7 +199,7 @@ export default function SeguridadPage() {
         }
 
         // Realtime Clock overlay
-        ctx.fillStyle = thermalFilter ? "#f87171" : "#10b981";
+        ctx.fillStyle = thermalFilter ? "var(--color-danger)" : "var(--color-success)";
         ctx.font = "bold 9px monospace";
         ctx.fillText(new Date().toLocaleString(), 12, 225);
 
@@ -592,7 +592,7 @@ interface RondaConCheckpointsDto extends RondaDto {
                   disabled={nfcScanning || !nfcSupported || !!rondaHoy?.completada}
                   className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
                     nfcSupported
-                      ? "bg-[#009df2] hover:bg-[#0088d4] text-white shadow-lg"
+                      ? "bg-info hover:bg-[#0088d4] text-on-accent shadow-lg"
                       : "bg-surface-2 border border-border text-text/40"
                   } disabled:opacity-50`}
                 >

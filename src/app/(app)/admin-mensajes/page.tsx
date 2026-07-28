@@ -483,7 +483,7 @@ export default function AdminMensajesPage() {
                key={c.usuarioId}
                onClick={() => setSelectedUserId(c.usuarioId)}
                className={`conv-card w-full p-5 rounded-[32px] flex items-center gap-4 transition-all active:scale-[0.97] border relative group
-                 ${selectedUserId === c.usuarioId ? 'bg-text/10 border-border text-white' : 'bg-surface-2 border-border hover:bg-surface'}`}
+                 ${selectedUserId === c.usuarioId ? 'bg-accent border-border text-on-accent' : 'bg-surface-2 border-border hover:bg-surface'}`}
              >
                 <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center border border-border relative overflow-hidden flex-shrink-0">
                    {c.residente?.avatar ? <Image fill sizes="56px" src={c.residente.avatar} className="object-cover" alt={c.residente?.nombre || "Avatar del residente"} /> : <User size={24} className="text-text" />}
@@ -524,7 +524,7 @@ export default function AdminMensajesPage() {
                     </button>
                     <div className="w-12 h-12 rounded-2xl bg-text/10 flex items-center justify-center border border-text/20 relative overflow-hidden shadow-inner group-hover:border-text/40 transition-all">
                        {activeConv?.residente?.avatar ? <Image fill sizes="48px" src={activeConv.residente.avatar} className="object-cover" alt={activeConv?.residente?.nombre || "Avatar del residente"} /> : <User size={24} className="text-text" />}
-                       <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-primary bg-text/10 shadow-[0_0_10px_rgba(128,128,128,0.5)]" />
+                       <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-primary bg-text/10 shadow-[0_0_10px_rgba(45, 212, 191, 0.5)]" />
                     </div>
                     <div className="flex flex-col">
                        <h3 className="text-sm font-black text-text tracking-tight leading-none group-hover:text-text transition-colors uppercase italic flex items-center gap-2">
@@ -544,7 +544,7 @@ export default function AdminMensajesPage() {
                        onClick={handleCallResident}
                        disabled={callState !== "IDLE"}
                        title="Llamar por citofonía"
-                       className="w-10 h-10 rounded-2xl bg-[#57bf00]/15 border border-[#57bf00]/30 flex items-center justify-center text-[#57bf00] hover:bg-[#57bf00]/25 active:scale-90 transition-all disabled:opacity-30 disabled:scale-100"
+                       className="w-10 h-10 rounded-2xl bg-success/15 border border-success/30 flex items-center justify-center text-success hover:bg-success/25 active:scale-90 transition-all disabled:opacity-30 disabled:scale-100"
                     >
                        <Phone size={18} />
                     </button>
@@ -568,7 +568,7 @@ export default function AdminMensajesPage() {
                     <div key={idx} className={`flex ${m.esDeAdmin ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-400`}>
                        <div className={`max-w-[82%] px-5 py-4 rounded-[28px] text-[14px] leading-relaxed shadow-2xl relative
                          ${m.esDeAdmin 
-                           ? 'bg-text/10 text-white rounded-tr-none shadow-black/20 font-medium' 
+                           ? 'bg-accent text-on-accent rounded-tr-none shadow-black/20 font-medium' 
                            : 'bg-surface-2 border border-border text-text rounded-tl-none backdrop-blur-xl'
                          }`}>
                           
@@ -626,7 +626,7 @@ export default function AdminMensajesPage() {
                                 <span className="text-[9px] font-black uppercase tracking-widest text-text dark:text-text leading-none mb-1">Contacto Directo</span>
                                 <p className="text-[20px] font-black text-text dark:text-text italic leading-none">{residentInfo.profile.telefono || "CONSULTAR..."}</p>
                              </div>
-                             <div className="w-12 h-12 rounded-2xl bg-text/10 flex items-center justify-center text-white shadow-xl shadow-black/40">
+                             <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-on-accent shadow-xl shadow-black/40">
                                 <Phone size={22} fill="currentColor" />
                              </div>
                           </a>
@@ -681,7 +681,7 @@ export default function AdminMensajesPage() {
                         </div>
                         <button 
                           onClick={stopRecording}
-                          className="w-10 h-10 rounded-xl bg-text/10 flex items-center justify-center text-white shadow-lg active:scale-90 transition-all"
+                          className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-on-accent shadow-lg active:scale-90 transition-all"
                         >
                           <X size={20} />
                         </button>
@@ -709,7 +709,7 @@ export default function AdminMensajesPage() {
                       <button 
                         onClick={() => sendMessage()}
                         disabled={(!newMessage.trim() && !audioBlob) || sending}
-                        className="w-16 h-16 rounded-full bg-text/10 flex items-center justify-center text-white shadow-[0_20px_50px_rgba(128,128,128,0.3)] active:scale-90 transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100 group flex-shrink-0 border-[6px] border-surface-2"
+                        className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-on-accent shadow-[0_20px_50px_rgba(45,212,191,0.28)] active:scale-90 transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100 group flex-shrink-0 border-[6px] border-surface-2"
                       >
                          {sending ? <Skeleton className="w-7 h-7 rounded-full" /> : <ArrowRight size={32} className="group-hover:translate-x-1 transition-transform" />}
                       </button>
@@ -728,7 +728,7 @@ export default function AdminMensajesPage() {
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .shadow-glow { box-shadow: 0 0 20px rgba(128,128,128,0.15); }
+        .shadow-glow { box-shadow: 0 0 20px rgba(45, 212, 191, 0.15); }
       `}} />
     </div>
   );

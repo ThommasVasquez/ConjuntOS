@@ -1,5 +1,5 @@
 use axum::extract::{Path, Query, State};
-use axum::routing::{get, put};
+use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use chrono::Utc;
 use sha2::{Digest, Sha256};
@@ -10,15 +10,15 @@ use crate::auth::guard;
 use crate::auth::password;
 use crate::db::enums::{EstadoPairing, EstadoTurno, Rol};
 use crate::domains::asamblea::dto::{
-    AsambleaDto, AsistenciaDto, CreateAsistenciaRequest, CreateOpinionRequest,
-    CreatePairingRequest, CreatePoderRequest, CreateVotacionRequest, CreateVotoRequest,
-    LiveKitTokenDto, OpinionDto, PairingDto, PairingQuery, PoderDto, QuorumDto,
-    SessionUpdateRequest, TurnoDto, UpdatePoderRequest, UpdateTurnoRequest, UpdateVotacionRequest,
-    VotacionDto, VotoDto,
+    AsambleaDto, AsistenciaDto, CreateAsambleaRequest, CreateAsistenciaRequest,
+    CreateOpinionRequest, CreatePairingRequest, CreatePoderRequest, CreateVotacionRequest,
+    CreateVotoRequest, LiveKitTokenDto, OpinionDto, OrdenDiaItemDto, PairingDto, PairingQuery,
+    PoderDto, QuorumDto, SessionUpdateRequest, TurnoDto, UpdatePoderRequest, UpdateTurnoRequest,
+    UpdateVotacionRequest, VotacionDto, VotoDto,
 };
 use crate::domains::asamblea::models::{
-    AsambleaPairing, NuevaAsistencia, NuevaOpinion, NuevaVotacion, NuevoPairing, NuevoPoder,
-    NuevoTurno, NuevoVoto,
+    AsambleaPairing, NuevaAsamblea, NuevaAsistencia, NuevaOpinion, NuevaVotacion, NuevoPairing,
+    NuevoPoder, NuevoTurno, NuevoVoto,
 };
 use crate::domains::asamblea::repo;
 use crate::error::{ApiError, ApiResult};
@@ -29,6 +29,8 @@ const ADMIN_ROLES: &[Rol] = &[Rol::Administrador, Rol::SuperAdmin];
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        // Asambleas
+        .route("/asambleas", post(create_asamblea))
         // Session
         .route(
             "/asambleas/activa/session",
@@ -93,6 +95,85 @@ fn compute_hash_firma(
     format!("{hash:x}")
 }
 
+// ── Asambleas ────────────────────────────────────────────────────────────
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/asambleas",
+    tag = "asambleas",
+    request_body = CreateAsambleaRequest,
+    responses(
+        (status = 200, description = "Assembly created", body = AsambleaDto),
+        (status = 400, description = "titulo missing or orden_dia invalid"),
+        (status = 403, description = "Caller is not an administrator"),
+        (status = 409, description = "The conjunto already has an active assembly")
+    )
+)]
+async fn create_asamblea(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<CreateAsambleaRequest>,
+) -> ApiResult<Json<AsambleaDto>> {
+    guard::require(&user, ADMIN_ROLES)?;
+
+    let titulo = req.titulo.trim().to_string();
+    if titulo.is_empty() {
+        return Err(ApiError::BadRequest("titulo es obligatorio".into()));
+    }
+
+    // Agenda items keep a stable key across reorders, so fill in any id the
+    // client left out before the array is frozen into jsonb.
+    let orden_dia: Vec<OrdenDiaItemDto> = req
+        .orden_dia
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|item| !item.titulo.trim().is_empty())
+        .map(|item| OrdenDiaItemDto {
+            id: Some(item.id.unwrap_or_else(|| Uuid::new_v4().to_string())),
+            titulo: item.titulo.trim().to_string(),
+            descripcion: item.descripcion,
+        })
+        .collect();
+    let orden_dia_json = serde_json::to_value(&orden_dia)
+        .map_err(|e| ApiError::BadRequest(format!("ordenDia inválido: {e}")))?;
+
+    let mut conn = state.pool.get().await?;
+    let asamblea = repo::create_asamblea(
+        &mut conn,
+        NuevaAsamblea {
+            conjunto_id: user.conjunto_id,
+            titulo,
+            descripcion: req
+                .descripcion
+                .map(|d| d.trim().to_string())
+                .filter(|d| !d.is_empty()),
+            fecha: req.fecha.unwrap_or_else(Utc::now),
+            // Active = "this is the conjunto's current assembly", which is what
+            // GET /asambleas/activa/session looks up. The live phase is
+            // session_state, and it starts scheduled — not in session.
+            activa: true,
+            orden_dia: orden_dia_json,
+            session_state: serde_json::json!("PROGRAMADA"),
+        },
+    )
+    .await?;
+
+    let dto = AsambleaDto::from(asamblea);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "asamblea".into(),
+                action: "asamblea_created".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
 // ── Session ──────────────────────────────────────────────────────────────
 
 async fn get_session(
@@ -135,7 +216,10 @@ async fn update_session(
         ));
     }
 
-    let updated = repo::get_active_session(&mut conn, user.conjunto_id).await?;
+    // Re-read by id, not as "the active one": finalising the assembly flips
+    // `activa` to false, so looking it up again by that flag would 404 a write
+    // that already committed.
+    let updated = repo::verify_asamblea_tenant(&mut conn, current.id, user.conjunto_id).await?;
     let dto = AsambleaDto::from(updated);
     state
         .ws_hub
@@ -201,11 +285,19 @@ async fn create_pairing(
     user: AuthUser,
     Json(req): Json<CreatePairingRequest>,
 ) -> ApiResult<Json<PairingDto>> {
+    // Admin-only: the PIN is displayed on the venue screen by whoever runs the
+    // assembly. Leaving this open let any resident mint unlimited pending
+    // pairings, and because get_pairing Argon2-verifies the submitted PIN
+    // against EVERY pending row, a few thousand of them turn each legitimate
+    // pairing attempt into a CPU exhaustion.
+    guard::require(&user, ADMIN_ROLES)?;
+
     if req.pin.trim().is_empty() {
         return Err(ApiError::BadRequest("pin es obligatorio".into()));
     }
     let pin_hash = password::hash_password_blocking(req.pin).await?;
-    let expires_minutes = req.expires_minutes.unwrap_or(5);
+    // Bounded: a pairing PIN is a short-lived credential, not a standing one.
+    let expires_minutes = req.expires_minutes.unwrap_or(5).clamp(1, 60);
     let expires_at = Utc::now()
         + chrono::Duration::try_minutes(expires_minutes)
             .ok_or_else(|| ApiError::BadRequest("expires_minutes inválido".into()))?;
@@ -536,6 +628,19 @@ async fn create_opinion(
         ));
     }
 
+    // Bounded: opiniones are broadcast to every participant over the WS hub, so
+    // an unbounded body is an amplification vector as well as a UI problem.
+    let contenido = req.contenido.trim();
+    if contenido.is_empty() {
+        return Err(ApiError::BadRequest("el mensaje no puede estar vacío".into()));
+    }
+    if contenido.chars().count() > 1000 {
+        return Err(ApiError::BadRequest(
+            "el mensaje no puede superar 1000 caracteres".into(),
+        ));
+    }
+    let contenido = contenido.to_string();
+
     let (nombre, torre, apto) = repo::get_user_info(&mut conn, user.id).await?;
     let apto_text = format_apto(&torre, &apto);
 
@@ -546,7 +651,7 @@ async fn create_opinion(
             usuario_id: user.id,
             nombre,
             apto: apto_text,
-            contenido: req.contenido.trim().to_string(),
+            contenido,
         },
     )
     .await?;
@@ -587,6 +692,15 @@ async fn create_turno(
 ) -> ApiResult<Json<TurnoDto>> {
     let mut conn = state.pool.get().await?;
     repo::verify_asamblea_tenant(&mut conn, asamblea_id, user.conjunto_id).await?;
+
+    // One open request per person. Without this a resident could hold the button
+    // and flood the queue, and every turno_created broadcast fans out to every
+    // participant.
+    if repo::tiene_turno_abierto(&mut conn, asamblea_id, user.id).await? {
+        return Err(ApiError::Conflict(
+            "ya pediste la palabra; espera tu turno".into(),
+        ));
+    }
 
     let (nombre, torre, apto) = repo::get_user_info(&mut conn, user.id).await?;
     let apto_text = format_apto(&torre, &apto);
@@ -709,13 +823,26 @@ async fn create_poder(
         ));
     }
 
+    // The moderator panel renders this as a clickable link, so only accept an
+    // absolute http(s) URL — never javascript:, data:, or free text.
+    let documento_url = req.documento_url.trim();
+    if !(documento_url.starts_with("https://") || documento_url.starts_with("http://")) {
+        return Err(ApiError::BadRequest(
+            "documentoUrl debe ser una URL http(s) válida".into(),
+        ));
+    }
+    if documento_url.len() > 2048 {
+        return Err(ApiError::BadRequest("documentoUrl demasiado largo".into()));
+    }
+    let documento_url = documento_url.to_string();
+
     let poder = repo::create_poder(
         &mut conn,
         NuevoPoder {
             asamblea_id,
             otorgante_id: req.otorgante_id,
             apoderado_id: req.apoderado_id,
-            documento_url: req.documento_url,
+            documento_url,
         },
     )
     .await?;
@@ -760,6 +887,38 @@ async fn update_poder(
     guard::require(&user, ADMIN_ROLES)?;
     let mut conn = state.pool.get().await?;
     repo::verify_asamblea_tenant(&mut conn, asamblea_id, user.conjunto_id).await?;
+
+    // Verifying a poder retroactively moves the otorgante's weight onto the
+    // apoderado. If the otorgante already voted, their ballot stays on record
+    // while the apoderado's effective coeficiente grows to include the same
+    // unit — the unit is counted twice and the unique (votacion_id, unidad_id)
+    // constraint does not catch it, because the apoderado votes under their own
+    // unidad. Refuse instead of silently corrupting the tally.
+    // The asymmetry cuts both ways. Verifying moves the otorgante's weight onto
+    // the apoderado; un-verifying gives it back while the apoderado's ballot —
+    // already cast with the combined coeficiente — stays on record, freeing the
+    // otorgante to vote the same unit again. Neither is caught by the unique
+    // (votacion_id, unidad_id) index, because the delegated units are never
+    // written as rows of their own.
+    //
+    // So the representation set is frozen for as long as a ballot is open, and
+    // separately a poder may not be verified once its otorgante has voted.
+    if repo::hay_votacion_activa(&mut conn, asamblea_id).await? {
+        return Err(ApiError::Conflict(
+            "hay una votación abierta; cierra la votación antes de cambiar los poderes".into(),
+        ));
+    }
+
+    if req.verificado {
+        let poder = repo::get_poder(&mut conn, asamblea_id, pid).await?;
+        if repo::otorgante_ya_voto(&mut conn, asamblea_id, poder.otorgante_id).await? {
+            return Err(ApiError::Conflict(
+                "el otorgante ya votó en esta asamblea; no se puede verificar el poder \
+                 sin duplicar su coeficiente"
+                    .into(),
+            ));
+        }
+    }
 
     let poder = repo::update_poder(&mut conn, asamblea_id, pid, req.verificado).await?;
     let dto = PoderDto::from(poder);
@@ -817,7 +976,19 @@ async fn livekit_token(
 
     let room_name = format!("asamblea-{id}");
     let identity = user.id.to_string();
-    let can_publish = matches!(user.rol, Rol::Administrador | Rol::Concejo);
+
+    // Who may switch on camera and mic: the people running the session, plus
+    // whoever currently holds the floor. Without the turno check the speaking-
+    // turn feature is decorative — the admin grants the turn but the resident's
+    // token still forbids publishing, so the browser grabs the camera and
+    // LiveKit immediately drops the track.
+    let es_moderador = matches!(
+        user.rol,
+        Rol::Administrador | Rol::Concejo | Rol::SuperAdmin
+    );
+    let tiene_palabra = repo::tiene_turno_hablando(&mut conn, id, user.id).await?;
+    let can_publish = es_moderador || tiene_palabra;
+
     let metadata = serde_json::json!({
         "nombre": user.nombre,
         "rol": user.rol.as_str(),
@@ -843,5 +1014,6 @@ async fn livekit_token(
     Ok(Json(LiveKitTokenDto {
         token,
         url: livekit_url,
+        can_publish,
     }))
 }

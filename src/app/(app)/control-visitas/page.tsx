@@ -146,7 +146,7 @@ export default function ControlVisitas() {
           <div className="flex items-center gap-3 mb-6">
              <div
                 className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
-                style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
+                style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
              >
                 <Users size={22} />
              </div>
@@ -226,7 +226,7 @@ export default function ControlVisitas() {
              <button
                 type="submit"
                 disabled={isSubmitting}
-                style={{ backgroundColor: '#009df2' }}
+                style={{ backgroundColor: 'var(--color-info)' }}
                 className="mt-2 w-full py-4 rounded-2xl font-bold text-white shadow-md hover:opacity-90 active:scale-98 disabled:opacity-60 transition-all flex justify-center items-center gap-2"
              >
                 {isSubmitting ? "Registrando..." : <><PlusCircle size={18}/> Registrar Ingreso</>}
@@ -237,7 +237,7 @@ export default function ControlVisitas() {
        {/* Bitácora de Hoy */}
        <div className="flex flex-col gap-4">
           <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2">
-            <Eye size={16} style={{ color: '#3b82f6' }} /> Bitácora Reciente
+            <Eye size={16} style={{ color: 'var(--color-info)' }} /> Bitácora Reciente
           </h3>
           {visitas.length === 0 && (
             <div className="bg-primary-light rounded-3xl p-8 border border-border shadow-sm text-center">
@@ -253,9 +253,9 @@ export default function ControlVisitas() {
                      <p className="text-text text-xs">Visita a: {v.residente?.torre} - {v.residente?.apto}</p>
                    </div>
                    <div className="flex items-center gap-2">
-                     {v.estado === 'PENDIENTE' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f59e0b26', color: '#b45309' }}>PENDIENTE</span>}
-                     {v.estado === 'APROBADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#10b98126', color: '#047857' }}>APROBADA</span>}
-                     {v.estado === 'RECHAZADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ef444426', color: '#b91c1c' }}>RECHAZADA</span>}
+                     {v.estado === 'PENDIENTE' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--color-warning) 15%, transparent)', color: '#b45309' }}>PENDIENTE</span>}
+                     {v.estado === 'APROBADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)', color: 'var(--color-success)' }}>APROBADA</span>}
+                     {v.estado === 'RECHAZADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--color-danger) 15%, transparent)', color: 'var(--color-danger)' }}>RECHAZADA</span>}
                      <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
                       {(() => { const d = new Date(v.createdAt || v.fecha); return isNaN(d.getTime()) ? '--:--' : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); })()}
                      </div>
@@ -266,7 +266,7 @@ export default function ControlVisitas() {
                        entry types used to look identical — give each its own hue. */}
                    <div
                      className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
-                     style={{ color: v.tipo === 'VEHICULAR' ? '#8b5cf6' : '#3b82f6' }}
+                     style={{ color: v.tipo === 'VEHICULAR' ? 'var(--color-info)' : 'var(--color-info)' }}
                    >
                       {v.tipo === 'VEHICULAR' ? <Car size={14}/> : <Users size={14}/>} {v.tipo}
                    </div>

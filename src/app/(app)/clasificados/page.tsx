@@ -274,7 +274,7 @@ function ClasificadoCard({ item, onClick }: { item: Clasificado, onClick: () => 
              </div>
              <button 
                 onClick={handleWhatsApp}
-                className="w-10 h-10 rounded-2xl bg-text/10 border border-text/20 text-text dark:text-text flex items-center justify-center hover:bg-text/10 hover:text-white transition-all active:scale-90"
+                className="w-10 h-10 rounded-2xl bg-accent border border-text/20 text-text dark:text-text flex items-center justify-center hover:brightness-110 hover:text-on-accent transition-all active:scale-90"
              >
                 <MessageCircle size={18} />
              </button>
@@ -463,7 +463,7 @@ function ClasificadoDetail({ item, onClose }: { item: Clasificado, onClose: () =
             <div className="mt-auto py-8">
                <button 
                  onClick={handleWhatsApp}
-                 className="w-full py-5 bg-text/10 rounded-3xl flex items-center justify-center gap-4 text-white font-black text-lg shadow-xl shadow-black/20 active:scale-95 transition-all"
+                 className="w-full py-5 bg-accent rounded-3xl flex items-center justify-center gap-4 text-on-accent font-black text-lg shadow-xl shadow-black/20 active:scale-95 transition-all"
                >
                  <MessageCircle size={24} /> Contactar por WhatsApp
                </button>

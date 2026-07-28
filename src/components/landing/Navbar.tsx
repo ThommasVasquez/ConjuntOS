@@ -104,7 +104,7 @@ export default function Navbar() {
             className={`transition-all duration-300 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase whitespace-nowrap hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,0,0,0.3)] ${
               scrolled 
                 ? "text-text bg-text/5 border border-text/10 hover:bg-accent hover:text-on-accent"
-                : "text-white border border-text/20 hover:bg-accent hover:border-accent hover:text-on-accent"
+                : "text-on-accent border border-text/20 hover:bg-accent hover:border-accent hover:text-on-accent"
             }`}
           >
             {user ? "Mi Panel" : "Ingresar"}

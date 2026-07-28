@@ -131,7 +131,7 @@ export default function NovedadesPage() {
           </button>
           <div>
             <h2 className="text-xl font-bold text-text flex items-center gap-2">
-              <FileText size={22} className="text-[#009df2]"/> Libro de Novedades
+              <FileText size={22} className="text-info"/> Libro de Novedades
             </h2>
             <p className="text-xs text-text">Bitácora digital de incidentes y entregas de turno</p>
           </div>
@@ -183,7 +183,7 @@ export default function NovedadesPage() {
             />
           </div>
 
-          <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-[#57bf00] hover:bg-[#57bf00]/80 transition-colors rounded-full font-bold text-white shadow-lg shadow-[#57bf00]/30 flex justify-center items-center gap-2 cursor-pointer">
+          <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-success hover:bg-success/80 transition-colors rounded-full font-bold text-on-accent shadow-lg shadow-success/30 flex justify-center items-center gap-2 cursor-pointer">
             {isSubmitting ? "Registrando..." : <><PlusCircle size={18}/> Guardar Reporte</>}
           </button>
         </form>
@@ -191,7 +191,7 @@ export default function NovedadesPage() {
 
       <div className="flex flex-col gap-4 z-10">
         <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2">
-          <Clock size={16} className="text-[#009df2]"/> Historial de Novedades
+          <Clock size={16} className="text-info"/> Historial de Novedades
         </h3>
 
         {novedades.length === 0 ? (
@@ -202,8 +202,8 @@ export default function NovedadesPage() {
           <div className="relative pl-6 border-l-2 border-border/40 flex flex-col gap-6 ml-4">
             {novedades.map((nov) => (
               <div key={nov.id} className="relative bg-surface-2/10 border border-border/60 backdrop-blur-md rounded-[24px] p-5 shadow-lg">
-                <div className="absolute -left-[33px] top-6 w-4 h-4 rounded-full bg-text border-2 border-[#009df2] flex items-center justify-center shadow-lg">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#009df2]" />
+                <div className="absolute -left-[33px] top-6 w-4 h-4 rounded-full bg-text border-2 border-info flex items-center justify-center shadow-lg">
+                  <div className="w-1.5 h-1.5 rounded-full bg-info" />
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-border/40 pb-3 mb-3">

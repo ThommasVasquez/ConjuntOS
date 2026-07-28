@@ -163,6 +163,7 @@ use utoipa::OpenApi;
         crate::domains::ai::handlers::generate_acta,
         crate::domains::ai::handlers::acta_pdf,
         crate::domains::ai::handlers::asistente,
+        crate::domains::asamblea::handlers::create_asamblea,
         crate::domains::asamblea::handlers::get_pairing,
         crate::domains::asamblea::handlers::create_pairing,
         crate::domains::asamblea::handlers::update_votacion,

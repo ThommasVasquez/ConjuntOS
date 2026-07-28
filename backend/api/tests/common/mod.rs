@@ -24,6 +24,10 @@ use enconjunto_api::state::AppState;
 /// Password used by every seeded account.
 pub const TEST_PASSWORD: &str = "Secreta123!";
 
+/// HS256 secret the test AppState signs LiveKit tokens with, so tests can
+/// verify the grants inside them.
+pub const LIVEKIT_TEST_SECRET: &str = "livekit-integration-test-secret";
+
 static MIGRATED: OnceCell<()> = OnceCell::const_new();
 
 fn test_db_url() -> String {
@@ -65,9 +69,11 @@ pub async fn test_state() -> AppState {
         cookie_cross_site: false,
         cookie_domain: None,
         tester_emails: Vec::new(),
-        livekit_api_key: None,
-        livekit_api_secret: None,
-        livekit_url: None,
+        // Set so the livekit-token endpoint is exercisable; tests decode the
+        // returned JWT with LIVEKIT_TEST_SECRET to assert its grants.
+        livekit_api_key: Some("devkey".to_string()),
+        livekit_api_secret: Some(LIVEKIT_TEST_SECRET.to_string()),
+        livekit_url: Some("ws://livekit.test.local:7880".to_string()),
     };
     AppState::new(config, pool)
 }

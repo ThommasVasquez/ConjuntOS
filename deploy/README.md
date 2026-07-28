@@ -1,4 +1,4 @@
-# Despliegue backend — host 82.25.115.208 (zona `host-ia.online`)
+# Despliegue backend — host 198.251.70.45 (zona `conjuntos.app`)
 
 El frontend va aparte en Vercel. Aquí solo vive el backend: API, Postgres, MinIO y
 LiveKit. Este directorio contiene los overrides propios de *este* host; los archivos
@@ -9,12 +9,12 @@ describen el despliegue de `conjuntos.app`.
 
 | Hostname | Cómo entra | Destino |
 |---|---|---|
-| `api-conjuntos.host-ia.online` | Cloudflare Tunnel (proxied) | `backend:8080` |
-| `s3-conjuntos.host-ia.online` | Cloudflare Tunnel (proxied) | `minio:9000` |
-| `livekit-conjuntos.host-ia.online` | A directo → Caddy `:443` | `livekit:7880` (wss) |
-| `turn-conjuntos.host-ia.online` | A directo `:5349` | TURN/TLS embebido de LiveKit |
+| `api.conjuntos.app` | Cloudflare Tunnel (proxied) | `backend:8080` |
+| `storage.conjuntos.app` | Cloudflare Tunnel (proxied) | `minio:9000` |
+| `livekit.conjuntos.app` | A directo → Caddy `:443` | `livekit:7880` (wss) |
+| `turn.conjuntos.app` | A directo `:5349` | TURN/TLS embebido de LiveKit |
 
-`livekit-conjuntos` y `turn-conjuntos` **deben quedarse en DNS-only (nube gris)**:
+`livekit.conjuntos.app` y `turn.conjuntos.app` **deben quedarse en DNS-only (nube gris)**:
 Cloudflare no proxya el media UDP ni TURN/TLS, y Caddy necesita el reto HTTP-01
 por el `:80` directo. Ponerlos en naranja rompe las llamadas.
 
@@ -40,7 +40,7 @@ Las migraciones corren solas al arrancar el backend (`RUN_MIGRATIONS=true`).
 
 ## Certificado del TURN
 
-Caddy emite y renueva los certs de `livekit-conjuntos` y `turn-conjuntos`. LiveKit no
+Caddy emite y renueva los certs de `livekit.conjuntos.app` y `turn.conjuntos.app`. LiveKit no
 lee del almacén de Caddy, así que `scripts/sync-turn-cert.sh` copia el par a
 `certs/livekit/` y recarga LiveKit solo si cambió. Está en cron (03:17 diario) y el log
 va a `certs/renew.log`.

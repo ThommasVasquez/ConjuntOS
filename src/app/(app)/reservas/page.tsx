@@ -454,8 +454,8 @@ export default function ReservasPage() {
                     </p>
                   </div>
                   <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
-                    r.estado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
-                    r.estado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+                    r.estado === "CONFIRMADA" ? "bg-success/20 text-success" :
+                    r.estado === "PENDIENTE" ? "bg-warning/20 text-warning" :
                     r.estado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
                     "bg-text/10 text-text/60"
                   }`}>
@@ -632,7 +632,7 @@ export default function ReservasPage() {
 
       {step === 'SUCCESS' && selectedArea && selectedSlotIndex !== null && (
         <section className="fixed inset-0 z-100 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-primary to-primary-light animate-in slide-in-from-bottom-20 duration-700">
-           <div className="w-20 h-20 rounded-full bg-text/10 flex items-center justify-center shadow-[0_0_50px_rgba(128,128,128,0.3)] mb-8 animate-bounce delay-100"><CheckCircle2 size={40} className="text-white" /></div>
+           <div className="w-20 h-20 rounded-full bg-text/10 flex items-center justify-center shadow-[0_0_50px_rgba(45,212,191,0.28)] mb-8 animate-bounce delay-100"><CheckCircle2 size={40} className="text-white" /></div>
            <h2 className="text-3xl font-display font-bold text-text tracking-tight mb-2 text-glow">¡Reserva Confirmada!</h2>
            <p className="text-text text-sm mb-10 text-center font-light">Tu espacio ha sido separado exitosamente.</p>
            
@@ -671,8 +671,8 @@ export default function ReservasPage() {
             <button onClick={() => setShowQrModal(false)} className="self-end text-text/50 hover:text-text"><X size={18} /></button>
             <h3 className="text-lg font-bold text-text">{qrReservaNombre}</h3>
             <span className={`text-[10px] px-3 py-0.5 rounded-full font-bold uppercase ${
-              qrReservaEstado === "CONFIRMADA" ? "bg-[#57bf00]/20 text-[#57bf00]" :
-              qrReservaEstado === "PENDIENTE" ? "bg-[#FACC15]/20 text-[#FACC15]" :
+              qrReservaEstado === "CONFIRMADA" ? "bg-success/20 text-success" :
+              qrReservaEstado === "PENDIENTE" ? "bg-warning/20 text-warning" :
               "bg-red-500/20 text-red-400"
             }`}>
               {qrReservaEstado === "CONFIRMADA" ? "Activa" : qrReservaEstado === "PENDIENTE" ? "Pendiente" : qrReservaEstado}

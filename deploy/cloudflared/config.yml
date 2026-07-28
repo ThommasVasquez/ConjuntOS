@@ -5,19 +5,29 @@
 # El túnel corre como contenedor dentro de la red de compose, así que alcanza a
 # backend y minio por nombre de servicio: ninguno necesita puerto publicado.
 
-tunnel: d8e45356-9fd9-4544-a780-e9972de89f63
+tunnel: c8b5f3e6-a3da-4af8-82ed-13996d86aafb
 credentials-file: /etc/cloudflared/credentials.json
 
 # Sin métricas en localhost del contenedor no hay forma de ver el estado del túnel.
 metrics: 0.0.0.0:2000
 
 ingress:
-  - hostname: api-conjuntos.host-ia.online
+  - hostname: api.conjuntos.app
     service: http://backend:8080
 
   # Solo sirve las descargas públicas del bucket (mc anonymous set download).
   # El backend sigue subiendo/firmando por la red interna (S3_ENDPOINT=http://minio:9000).
-  - hostname: s3-conjuntos.host-ia.online
+  - hostname: storage.conjuntos.app
     service: http://minio:9000
+
+  # Señalización WebSocket de LiveKit. El túnel SÍ transporta WebSockets, así que
+  # la señalización no necesita ni Caddy ni un registro A: entra por el mismo
+  # túnel que api/storage.
+  #
+  # El MEDIA no pasa por aquí — Cloudflare no proxya UDP. LiveKit anuncia por ICE
+  # la IP pública del host (rtc.use_external_ip) y el navegador manda el audio/vídeo
+  # directo a 198.251.70.45:7882/udp, que Docker publica 1:1.
+  - hostname: livekit.conjuntos.app
+    service: http://livekit:7880
 
   - service: http_status:404

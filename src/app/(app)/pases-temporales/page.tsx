@@ -189,9 +189,9 @@ export default function PasesTemporalesPage() {
 
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
-      case "ACTIVO": return { bg: "bg-[#57bf00]/10", border: "border-[#57bf00]/30", text: "text-[#57bf00]", label: "ACTIVO" };
+      case "ACTIVO": return { bg: "bg-success/10", border: "border-success/30", text: "text-success", label: "ACTIVO" };
       case "EXPIRADO": return { bg: "bg-text/10", border: "border-text/30", text: "text-text", label: "EXPIRADO" };
-      case "REVOCADO": return { bg: "bg-[#EF4444]/10", border: "border-[#EF4444]/30", text: "text-[#EF4444]", label: "REVOCADO" };
+      case "REVOCADO": return { bg: "bg-danger/10", border: "border-danger/30", text: "text-danger", label: "REVOCADO" };
       default: return { bg: "bg-text/10", border: "border-text/30", text: "text-text", label: estado };
     }
   };
@@ -501,7 +501,7 @@ export default function PasesTemporalesPage() {
                       {pase.usuario_id && (
                         <button
                           onClick={() => router.push(`/chat?huespedId=${pase.usuario_id}`)}
-                          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#57bf00] bg-[#57bf00]/10 border border-[#57bf00]/30 rounded-full px-3 py-1 hover:bg-[#57bf00]/20 active:scale-95 transition-all"
+                          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-success bg-success/10 border border-success/30 rounded-full px-3 py-1 hover:bg-success/20 active:scale-95 transition-all"
                         >
                           <MessageCircle size={12} /> Mensajes
                         </button>
@@ -514,7 +514,7 @@ export default function PasesTemporalesPage() {
                       </button>
                       <button
                         onClick={() => handleRevocar(pase.id)}
-                        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-full px-3 py-1 hover:bg-[#EF4444]/20 active:scale-95 transition-all"
+                        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-danger bg-danger/10 border border-danger/30 rounded-full px-3 py-1 hover:bg-danger/20 active:scale-95 transition-all"
                       >
                         <ShieldAlert size={12} /> Revocar
                       </button>

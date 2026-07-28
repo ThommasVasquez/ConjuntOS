@@ -69,7 +69,7 @@ export default function QrScanner() {
       <div className="flex items-center gap-3">
         <div
           className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
-          style={{ backgroundColor: '#8b5cf61a', color: '#8b5cf6' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
         >
           <ScanLine size={22} />
         </div>
@@ -88,14 +88,14 @@ export default function QrScanner() {
           }`}
         >
           {verdict.ok ? (
-            <Check size={22} style={{ color: '#047857' }} />
+            <Check size={22} style={{ color: 'var(--color-success)' }} />
           ) : (
-            <X size={22} style={{ color: '#b91c1c' }} />
+            <X size={22} style={{ color: 'var(--color-danger)' }} />
           )}
           <div>
             <p
               className="text-sm font-bold"
-              style={{ color: verdict.ok ? '#047857' : '#b91c1c' }}
+              style={{ color: verdict.ok ? 'var(--color-success)' : 'var(--color-danger)' }}
             >
               {verdict.ok ? "Ingreso autorizado" : "Codigo rechazado"}
             </p>
@@ -110,11 +110,11 @@ export default function QrScanner() {
         <div className="relative rounded-2xl overflow-hidden border border-border">
           {cameraError ? (
             <div className="flex flex-col items-center justify-center p-6 gap-3 bg-red-500/10 border border-red-500/30 rounded-2xl">
-              <p className="text-xs text-center" style={{ color: '#b91c1c' }}>{cameraError}</p>
+              <p className="text-xs text-center" style={{ color: 'var(--color-danger)' }}>{cameraError}</p>
               <button
                 onClick={() => { setShowCamera(false); setCameraError(null); }}
                 className="text-xs font-bold px-3 py-1.5 rounded-xl"
-                style={{ backgroundColor: '#009df21a', color: '#009df2' }}
+                style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
               >
                 Cerrar
               </button>
@@ -148,7 +148,7 @@ export default function QrScanner() {
             }
             setShowCamera(true);
           }}
-          style={{ backgroundColor: '#009df2' }}
+          style={{ backgroundColor: 'var(--color-info)' }}
           className="w-full py-3 rounded-2xl text-white font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-90 active:scale-95 transition-all"
         >
           <Camera size={18} /> Escanear con camara

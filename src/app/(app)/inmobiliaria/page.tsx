@@ -159,7 +159,7 @@ export default function InmobiliariaPage() {
                   onClick={() => setFilterType(type)}
                   className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                     filterType === type
-                      ? "bg-[#009df2] text-white shadow-md"
+                      ? "bg-info text-on-accent shadow-md"
                       : "text-text/60 hover:text-text hover:bg-surface-2"
                   }`}
                 >
@@ -180,8 +180,8 @@ export default function InmobiliariaPage() {
                   onClick={() => setFilterUnidad(key)}
                   className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 border ${
                     filterUnidad === key
-                      ? "bg-[#009df2]/15 text-[#009df2] border-[#009df2]/30"
-                      : "bg-primary-light border-border text-text hover:border-[#009df2]/40"
+                      ? "bg-info/15 text-info border-info/30"
+                      : "bg-primary-light border-border text-text hover:border-info/40"
                   }`}
                 >
                   {label}
@@ -217,7 +217,7 @@ export default function InmobiliariaPage() {
           <div className="text-center py-16 bg-primary-light rounded-3xl border border-border shadow-sm">
              <div
                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-               style={{ backgroundColor: '#009df21a', color: '#009df2' }}
+               style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
              >
                <Search size={28} />
              </div>
@@ -271,7 +271,7 @@ function PropertyCard({ item, onClick, currentUserId, onEdit }: { item: Inmueble
 
   // `bg-text` and `bg-accent` are both #000 in light mode, so the two badges
   // were indistinguishable. Explicit hues keep Venta/Arriendo readable apart.
-  const negocioHex = item.tipoNegocio === "VENTA" ? "#10b981" : "#3b82f6";
+  const negocioHex = item.tipoNegocio === "VENTA" ? "var(--color-success)" : "var(--color-info)";
 
   return (
     <div

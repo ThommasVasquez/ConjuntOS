@@ -22,10 +22,10 @@ const ACCION_LABEL: Record<string, string> = {
 };
 
 const ESTADO_STYLE: Record<string, { label: string; color: string; bg: string }> = {
-  PENDIENTE: { label: "Pendiente", color: "#FACC15", bg: "rgba(250,204,21,0.12)" },
-  APROBADA: { label: "Aprobada", color: "#57bf00", bg: "rgba(87,191,0,0.12)" },
-  RECHAZADA: { label: "Rechazada", color: "#EF4444", bg: "rgba(239,68,68,0.12)" },
-  EJECUTADA: { label: "Ejecutada", color: "#009df2", bg: "rgba(0,157,242,0.12)" },
+  PENDIENTE: { label: "Pendiente", color: "var(--color-warning)", bg: "rgba(250,204,21,0.12)" },
+  APROBADA: { label: "Aprobada", color: "var(--color-success)", bg: "rgba(87,191,0,0.12)" },
+  RECHAZADA: { label: "Rechazada", color: "var(--color-danger)", bg: "rgba(239,68,68,0.12)" },
+  EJECUTADA: { label: "Ejecutada", color: "var(--color-info)", bg: "rgba(0,157,242,0.12)" },
 };
 
 // Solicitud de la bitácora de parqueadero devuelta por el backend.
@@ -128,7 +128,7 @@ export default function BitacoraParqueaderoPage() {
 
       {/* Aviso de inmutabilidad */}
       <div className="liquid-glass rounded-2xl p-4 border border-border/40 flex items-start gap-3">
-        <ShieldAlert size={18} className="text-[#FACC15] shrink-0 mt-0.5" />
+        <ShieldAlert size={18} className="text-warning shrink-0 mt-0.5" />
         <p className="text-xs text-text/80 leading-relaxed">
           Toda solicitud sobre celdas <strong>asignadas a residentes</strong> requiere tu aprobación.
           Este registro guarda <strong>quién</strong> lo pidió, <strong>cuándo</strong> y quién lo aprobó.
@@ -202,8 +202,8 @@ export default function BitacoraParqueaderoPage() {
                 {s.aprobadorNombre && (
                   <div className="flex items-center gap-2">
                     {s.estado === "APROBADA"
-                      ? <CheckCircle2 size={12} className="text-[#57bf00]" />
-                      : <XCircle size={12} className="text-[#EF4444]" />}
+                      ? <CheckCircle2 size={12} className="text-success" />
+                      : <XCircle size={12} className="text-danger" />}
                     <span>
                       {s.estado === "APROBADA" ? "Aprobado" : "Rechazado"} por{" "}
                       <strong className="text-text">{s.aprobadorNombre}</strong>
@@ -219,14 +219,14 @@ export default function BitacoraParqueaderoPage() {
                   <button
                     disabled={busy === s.id}
                     onClick={() => resolver(s.id, "rechazar")}
-                    className="flex-1 py-3 rounded-2xl bg-text/5 border border-border/50 text-text font-bold text-sm hover:bg-[#EF4444]/10 hover:border-[#EF4444]/40 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="flex-1 py-3 rounded-2xl bg-text/5 border border-border/50 text-text font-bold text-sm hover:bg-danger/10 hover:border-danger/40 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <X size={16} /> Rechazar
                   </button>
                   <button
                     disabled={busy === s.id}
                     onClick={() => resolver(s.id, "aprobar")}
-                    className="flex-1 py-3 rounded-2xl bg-[#57bf00] text-white font-bold text-sm shadow-xl shadow-[#57bf00]/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="flex-1 py-3 rounded-2xl bg-success text-on-accent font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <Check size={16} /> {busy === s.id ? "Procesando..." : "Aprobar"}
                   </button>

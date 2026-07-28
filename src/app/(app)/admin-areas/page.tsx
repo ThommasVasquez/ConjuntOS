@@ -88,10 +88,10 @@ const EMPTY_AREA_FORM: AreaFormData = {
 // ---------------------------------------------------------------------------
 
 const ESTADO_COLORS: Record<string, string> = {
-  CONFIRMADA: "bg-[#57bf00]/10 text-[#57bf00] border-[#57bf00]/30",
+  CONFIRMADA: "bg-success/10 text-success border-success/30",
   PENDIENTE: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30",
-  CANCELADA: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30",
-  COMPLETADA: "bg-[#009df2]/10 text-[#009df2] border-[#009df2]/30",
+  CANCELADA: "bg-danger/10 text-danger border-danger/30",
+  COMPLETADA: "bg-info/10 text-info border-info/30",
 };
 
 const ESTADO_LABEL: Record<string, string> = {
@@ -371,7 +371,7 @@ export default function AdminAreasPage() {
         {tab === "areas" && (
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-2 bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
+            className="flex items-center gap-2 bg-success text-on-accent rounded-full shadow-lg shadow-success/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
           >
             <Plus size={18} />
             Nueva Área
@@ -449,7 +449,7 @@ export default function AdminAreasPage() {
                       <div className="flex items-center gap-2 mt-0.5">
                         <span
                           className={`w-2 h-2 rounded-full ${
-                            area.activa ? "bg-[#57bf00]" : "bg-text/30"
+                            area.activa ? "bg-success" : "bg-text/30"
                           }`}
                         />
                         <span
@@ -551,7 +551,7 @@ export default function AdminAreasPage() {
                   onClick={() => setFilterEstado(opt.value)}
                   className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
                     filterEstado === opt.value
-                      ? "bg-[#009df2] text-white shadow-lg shadow-[#009df2]/30"
+                      ? "bg-info text-on-accent shadow-lg shadow-info/30"
                       : "bg-text/5 border border-border text-text hover:bg-text/10"
                   }`}
                 >
@@ -765,8 +765,8 @@ export default function AdminAreasPage() {
           />
           <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
             <div className="flex flex-col items-center text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/40 flex items-center justify-center">
-                <Trash2 size={28} className="text-[#EF4444]" />
+              <div className="w-16 h-16 rounded-full bg-danger/15 border border-danger/40 flex items-center justify-center">
+                <Trash2 size={28} className="text-danger" />
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] text-accent font-bold uppercase tracking-[0.2em]">
@@ -793,7 +793,7 @@ export default function AdminAreasPage() {
                   type="button"
                   disabled={deletingArea}
                   onClick={confirmDeleteArea}
-                  className="flex-1 py-4 rounded-2xl bg-[#EF4444] text-white font-bold text-sm shadow-xl shadow-[#EF4444]/20 active:scale-95 transition-all disabled:opacity-60"
+                  className="flex-1 py-4 rounded-2xl bg-danger text-on-accent font-bold text-sm shadow-xl shadow-danger/20 active:scale-95 transition-all disabled:opacity-60"
                 >
                   {deletingArea ? "Eliminando..." : "Eliminar"}
                 </button>
@@ -968,7 +968,7 @@ function AreaFormFields({
             }))
           }
           className={`relative w-12 h-7 rounded-full transition-colors ${
-            form.requiereDeposito ? "bg-[#57bf00]" : "bg-text/20"
+            form.requiereDeposito ? "bg-success" : "bg-text/20"
           }`}
         >
           <span
@@ -1012,7 +1012,7 @@ function AreaFormFields({
             setForm((prev) => ({ ...prev, activa: !prev.activa }))
           }
           className={`relative w-12 h-7 rounded-full transition-colors ${
-            form.activa ? "bg-[#57bf00]" : "bg-text/20"
+            form.activa ? "bg-success" : "bg-text/20"
           }`}
         >
           <span
@@ -1027,7 +1027,7 @@ function AreaFormFields({
       <button
         type="submit"
         disabled={saving}
-        className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+        className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
       >
         {saving ? (
           <>

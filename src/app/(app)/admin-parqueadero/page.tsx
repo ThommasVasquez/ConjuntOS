@@ -181,7 +181,7 @@ export default function AdminParqueaderoPage() {
             <div className="flex items-center justify-between gap-4">
                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-text/10 border border-border flex items-center justify-center">
-                     <LayoutGrid size={22} className="text-[#009df2]" />
+                     <LayoutGrid size={22} className="text-info" />
                   </div>
                   <div className="flex flex-col">
                      <span className="text-text font-bold text-lg">Celdas de Parqueadero</span>
@@ -194,7 +194,7 @@ export default function AdminParqueaderoPage() {
                </div>
                <button
                  onClick={() => setShowCreate(true)}
-                 className="shrink-0 flex items-center gap-2 px-4 py-3 rounded-full bg-[#57bf00] text-white font-bold text-xs uppercase tracking-wide shadow-lg shadow-[#57bf00]/30 active:scale-95 transition-transform"
+                 className="shrink-0 flex items-center gap-2 px-4 py-3 rounded-full bg-success text-on-accent font-bold text-xs uppercase tracking-wide shadow-lg shadow-success/30 active:scale-95 transition-transform"
                >
                   <Plus size={16} /> Crear celdas
                </button>
@@ -203,7 +203,7 @@ export default function AdminParqueaderoPage() {
               onClick={() => router.push("/bitacora-parqueadero")}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-text/5 border border-border/50 text-text font-bold text-xs uppercase tracking-wide hover:bg-text/10 active:scale-95 transition-all"
             >
-               <ScrollText size={15} className="text-[#009df2]" /> Ver bitácora y aprobaciones
+               <ScrollText size={15} className="text-info" /> Ver bitácora y aprobaciones
             </button>
          </section>
        )}
@@ -318,11 +318,11 @@ export default function AdminParqueaderoPage() {
                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-text/5 border border-border">
                   <button
                     onClick={() => setModo('lote')}
-                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'lote' ? 'bg-[#009df2] text-white' : 'text-text'}`}
+                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'lote' ? 'bg-info text-on-accent' : 'text-text'}`}
                   >En lote</button>
                   <button
                     onClick={() => setModo('individual')}
-                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'individual' ? 'bg-[#009df2] text-white' : 'text-text'}`}
+                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'individual' ? 'bg-info text-on-accent' : 'text-text'}`}
                   >Individual</button>
                </div>
 
@@ -339,7 +339,7 @@ export default function AdminParqueaderoPage() {
                        </div>
                     </div>
                     <span className="text-[11px] text-text">
-                       Se crearán <strong className="text-[#57bf00]">{prefijo}1</strong> … <strong className="text-[#57bf00]">{prefijo}{parseInt(cantidad, 10) || 0}</strong>
+                       Se crearán <strong className="text-success">{prefijo}1</strong> … <strong className="text-success">{prefijo}{parseInt(cantidad, 10) || 0}</strong>
                     </span>
                  </div>
                ) : (
@@ -361,7 +361,7 @@ export default function AdminParqueaderoPage() {
                           key={c.v}
                           type="button"
                           onClick={() => setCategoria(c.v)}
-                          className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-bold transition-all ${categoria === c.v ? 'bg-[#009df2]/15 border-[#009df2] text-text' : 'bg-text/5 border-border text-text/70'}`}
+                          className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-bold transition-all ${categoria === c.v ? 'bg-info/15 border-info text-text' : 'bg-text/5 border-border text-text/70'}`}
                         >
                            <span className="text-lg leading-none">{c.icon}</span>
                            {c.label}
@@ -389,7 +389,7 @@ export default function AdminParqueaderoPage() {
                <button
                  disabled={creating}
                  onClick={crearCeldas}
-                 className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm tracking-wide shadow-xl shadow-[#57bf00]/30 active:scale-95 transition-transform disabled:opacity-50"
+                 className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm tracking-wide shadow-xl shadow-success/30 active:scale-95 transition-transform disabled:opacity-50"
                >
                   {creating ? 'Creando...' : 'Crear celdas'}
                </button>

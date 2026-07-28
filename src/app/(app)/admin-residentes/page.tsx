@@ -363,7 +363,7 @@ export default function AdminResidentesPage() {
         </div>
         <button
           onClick={() => setShowInvite(true)}
-          className="flex items-center gap-2 bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
+          className="flex items-center gap-2 bg-success text-on-accent rounded-full shadow-lg shadow-success/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
         >
           <UserPlus size={18} />
           Invitar
@@ -395,7 +395,7 @@ export default function AdminResidentesPage() {
             onClick={() => setRolFilter(opt.value)}
             className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
               rolFilter === opt.value
-                ? "bg-[#009df2] text-white shadow-lg shadow-[#009df2]/30"
+                ? "bg-info text-on-accent shadow-lg shadow-info/30"
                 : "bg-text/5 border border-border text-text hover:bg-text/10"
             }`}
           >
@@ -444,7 +444,7 @@ export default function AdminResidentesPage() {
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          r.activo ? "bg-[#57bf00]" : "bg-text/30"
+                          r.activo ? "bg-success" : "bg-text/30"
                         }`}
                       />
                       <span className="text-[10px] text-text" style={{ opacity: 0.5 }}>
@@ -527,7 +527,7 @@ export default function AdminResidentesPage() {
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          detalle.activo ? "bg-[#57bf00]" : "bg-text/30"
+                          detalle.activo ? "bg-success" : "bg-text/30"
                         }`}
                       />
                       <span className="text-[10px] text-text" style={{ opacity: 0.5 }}>
@@ -692,9 +692,9 @@ export default function AdminResidentesPage() {
                           <span
                             className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${
                               p.estado === "PAGADO"
-                                ? "bg-[#57bf00]/10 text-[#57bf00] border-[#57bf00]/30"
+                                ? "bg-success/10 text-success border-success/30"
                                 : p.estado === "VENCIDO"
-                                ? "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30"
+                                ? "bg-danger/10 text-danger border-danger/30"
                                 : "bg-text/10 text-text border-text/20"
                             }`}
                           >
@@ -709,7 +709,7 @@ export default function AdminResidentesPage() {
                 {/* Edit button */}
                 <button
                   onClick={openEdit}
-                  className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mt-2"
+                  className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mt-2"
                 >
                   <Pencil size={18} />
                   Editar Residente
@@ -856,7 +856,7 @@ export default function AdminResidentesPage() {
                     setEditForm((prev) => ({ ...prev, activo: !prev.activo }))
                   }
                   className={`relative w-12 h-7 rounded-full transition-colors ${
-                    editForm.activo ? "bg-[#57bf00]" : "bg-text/20"
+                    editForm.activo ? "bg-success" : "bg-text/20"
                   }`}
                 >
                   <span
@@ -871,7 +871,7 @@ export default function AdminResidentesPage() {
               <button
                 type="submit"
                 disabled={savingEdit}
-                className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
               >
                 {savingEdit ? (
                   <>
@@ -1014,7 +1014,7 @@ export default function AdminResidentesPage() {
               <button
                 type="submit"
                 disabled={sendingInvite}
-                className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
               >
                 {sendingInvite ? (
                   <>

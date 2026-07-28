@@ -156,15 +156,15 @@ const ESTADO_BADGE: Record<
 > = {
   PAGADO: {
     label: "Pagado",
-    classes: "bg-[#57bf00]/20 text-[#57bf00]",
+    classes: "bg-success/20 text-success",
   },
   PENDIENTE: {
     label: "Pendiente",
-    classes: "bg-[#EAB308]/20 text-[#EAB308]",
+    classes: "bg-warning/20 text-warning",
   },
   VENCIDO: {
     label: "Vencido",
-    classes: "bg-[#EF4444]/20 text-[#EF4444]",
+    classes: "bg-danger/20 text-danger",
   },
   EN_DISPUTA: {
     label: "En Disputa",
@@ -538,8 +538,8 @@ export default function AdminFinanzasPage() {
           {/* Recaudación */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 shrink-0 rounded-xl bg-[#57bf00]/10 border border-[#57bf00]/20 flex items-center justify-center">
-                <DollarSign size={16} className="text-[#57bf00]" />
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-success/10 border border-success/20 flex items-center justify-center">
+                <DollarSign size={16} className="text-success" />
               </div>
               <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Recaudación
@@ -553,8 +553,8 @@ export default function AdminFinanzasPage() {
           {/* Morosidad */}
           <div className="liquid-glass rounded-3xl p-4 border border-border shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 shrink-0 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
-                <TrendingDown size={16} className="text-[#EF4444]" />
+              <div className="w-8 h-8 shrink-0 rounded-xl bg-danger/10 border border-danger/20 flex items-center justify-center">
+                <TrendingDown size={16} className="text-danger" />
               </div>
               <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
                 Morosidad
@@ -563,7 +563,7 @@ export default function AdminFinanzasPage() {
             <span
               className={`text-lg font-black ${
                 Number(resumen.morosidad) > 0
-                  ? "text-[#EF4444]"
+                  ? "text-danger"
                   : "text-text"
               }`}
             >
@@ -592,14 +592,14 @@ export default function AdminFinanzasPage() {
               <div
                 className={`w-8 h-8 rounded-xl border flex items-center justify-center ${
                   Number(resumen.balance) >= 0
-                    ? "bg-[#57bf00]/10 border-[#57bf00]/20"
-                    : "bg-[#EF4444]/10 border-[#EF4444]/20"
+                    ? "bg-success/10 border-success/20"
+                    : "bg-danger/10 border-danger/20"
                 }`}
               >
                 {Number(resumen.balance) >= 0 ? (
-                  <TrendingUp size={16} className="text-[#57bf00]" />
+                  <TrendingUp size={16} className="text-success" />
                 ) : (
-                  <TrendingDown size={16} className="text-[#EF4444]" />
+                  <TrendingDown size={16} className="text-danger" />
                 )}
               </div>
               <span className="text-[10px] text-text uppercase tracking-wider font-bold min-w-0 leading-tight">
@@ -609,8 +609,8 @@ export default function AdminFinanzasPage() {
             <span
               className={`text-lg font-black ${
                 Number(resumen.balance) >= 0
-                  ? "text-[#57bf00]"
-                  : "text-[#EF4444]"
+                  ? "text-success"
+                  : "text-danger"
               }`}
             >
               {COP(resumen.balance)}
@@ -644,7 +644,7 @@ export default function AdminFinanzasPage() {
           </p>
           <button
             onClick={fetchResumen}
-            className="text-xs font-bold text-[#009df2] underline"
+            className="text-xs font-bold text-info underline"
           >
             Reintentar
           </button>
@@ -659,7 +659,7 @@ export default function AdminFinanzasPage() {
           onClick={() => setTab("KPI")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             tab === "KPI"
-              ? "bg-[#009df2] text-white shadow-md"
+              ? "bg-info text-on-accent shadow-md"
               : "text-text hover:text-text"
           }`}
         >
@@ -669,7 +669,7 @@ export default function AdminFinanzasPage() {
           onClick={() => setTab("PAGOS")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             tab === "PAGOS"
-              ? "bg-[#009df2] text-white shadow-md"
+              ? "bg-info text-on-accent shadow-md"
               : "text-text hover:text-text"
           }`}
         >
@@ -679,7 +679,7 @@ export default function AdminFinanzasPage() {
           onClick={() => setTab("GASTOS")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             tab === "GASTOS"
-              ? "bg-[#009df2] text-white shadow-md"
+              ? "bg-info text-on-accent shadow-md"
               : "text-text hover:text-text"
           }`}
         >
@@ -689,7 +689,7 @@ export default function AdminFinanzasPage() {
           onClick={() => setTab("MOROSIDAD")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             tab === "MOROSIDAD"
-              ? "bg-[#009df2] text-white shadow-md"
+              ? "bg-info text-on-accent shadow-md"
               : "text-text hover:text-text"
           }`}
         >
@@ -878,7 +878,7 @@ export default function AdminFinanzasPage() {
           <div className="flex flex-col gap-3">
             <button
               onClick={openNewGasto}
-              className="flex items-center justify-center gap-2 w-full bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-3 text-sm font-bold active:scale-98 transition-transform"
+              className="flex items-center justify-center gap-2 w-full bg-success text-on-accent rounded-full shadow-lg shadow-success/30 px-5 py-3 text-sm font-bold active:scale-98 transition-transform"
             >
               <Plus size={18} />
               <span className="whitespace-nowrap">Registrar Gasto</span>
@@ -892,7 +892,7 @@ export default function AdminFinanzasPage() {
                   onClick={() => setGastosCatFilter("TODOS")}
                   className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
                     gastosCatFilter === "TODOS"
-                      ? "bg-[#009df2] text-white shadow-lg shadow-[#009df2]/30"
+                      ? "bg-info text-on-accent shadow-lg shadow-info/30"
                       : "bg-text/5 border border-border text-text hover:bg-text/10"
                   }`}
                 >
@@ -904,7 +904,7 @@ export default function AdminFinanzasPage() {
                     onClick={() => setGastosCatFilter(cat)}
                     className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
                       gastosCatFilter === cat
-                        ? "bg-[#009df2] text-white shadow-lg shadow-[#009df2]/30"
+                        ? "bg-info text-on-accent shadow-lg shadow-info/30"
                         : "bg-text/5 border border-border text-text hover:bg-text/10"
                     }`}
                   >
@@ -944,7 +944,7 @@ export default function AdminFinanzasPage() {
                   {/* Top row: category + date + actions */}
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 rounded-full bg-[#009df2]/10 border border-[#009df2]/20 text-[#009df2] text-[10px] font-bold uppercase tracking-wider">
+                      <span className="px-3 py-1 rounded-full bg-info/10 border border-info/20 text-info text-[10px] font-bold uppercase tracking-wider">
                         {CAT_GASTO_LABELS[g.categoria] || g.categoria}
                       </span>
                       <span className="text-[10px] text-text" style={{ opacity: 0.5 }}>
@@ -960,7 +960,7 @@ export default function AdminFinanzasPage() {
                       </button>
                       <button
                         onClick={() => setGastoToDelete(g.id)}
-                        className="w-8 h-8 rounded-lg bg-text/5 border border-border flex items-center justify-center text-text hover:bg-[#EF4444]/10 hover:border-[#EF4444]/30 hover:text-[#EF4444] active:scale-95 transition-all"
+                        className="w-8 h-8 rounded-lg bg-text/5 border border-border flex items-center justify-center text-text hover:bg-danger/10 hover:border-danger/30 hover:text-danger active:scale-95 transition-all"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -997,8 +997,8 @@ export default function AdminFinanzasPage() {
         <div className="flex flex-col gap-4">
           {morosidad.length > 0 && (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center">
-                <AlertCircle size={20} className="text-[#EF4444]" />
+              <div className="w-10 h-10 rounded-xl bg-danger/10 border border-danger/20 flex items-center justify-center">
+                <AlertCircle size={20} className="text-danger" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-text">
@@ -1017,7 +1017,7 @@ export default function AdminFinanzasPage() {
             <div className="liquid-glass rounded-3xl p-8 border border-border text-center">
               <CheckCircle2
                 size={40}
-                className="mx-auto text-[#57bf00] mb-3"
+                className="mx-auto text-success mb-3"
               />
               <p className="text-text font-medium">
                 ¡Todas las unidades están al día!
@@ -1036,7 +1036,7 @@ export default function AdminFinanzasPage() {
                   <div className="flex justify-between items-start">
                     {/* Unit info */}
                     <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-sm font-black text-[#EF4444]">
+                      <div className="w-11 h-11 rounded-xl bg-danger/10 border border-danger/20 flex items-center justify-center text-sm font-black text-danger">
                         {i + 1}
                       </div>
                       <div className="flex flex-col">
@@ -1054,7 +1054,7 @@ export default function AdminFinanzasPage() {
                     </div>
 
                     {/* Debt amount */}
-                    <span className="text-lg font-black text-[#EF4444]">
+                    <span className="text-lg font-black text-danger">
                       {COP(m.totalAdeudado)}
                     </span>
                   </div>
@@ -1062,7 +1062,7 @@ export default function AdminFinanzasPage() {
                   {/* Progress bar */}
                   <div className="w-full h-2 rounded-full bg-surface-2 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[#EF4444]"
+                      className="h-full rounded-full bg-danger"
                       style={{
                         width: `${Math.min(
                           100,
@@ -1213,7 +1213,7 @@ export default function AdminFinanzasPage() {
               <button
                 type="submit"
                 disabled={savingGasto}
-                className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
               >
                 {savingGasto ? (
                   <>
@@ -1242,11 +1242,11 @@ export default function AdminFinanzasPage() {
           />
           <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[430px] p-8 pb-12 sm:pb-8 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full duration-300">
             <div className="flex flex-col items-center text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/40 flex items-center justify-center">
-                <Trash2 size={28} className="text-[#EF4444]" />
+              <div className="w-16 h-16 rounded-full bg-danger/15 border border-danger/40 flex items-center justify-center">
+                <Trash2 size={28} className="text-danger" />
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-[#009df2] font-bold uppercase tracking-[0.2em]">
+                <span className="text-[10px] text-info font-bold uppercase tracking-[0.2em]">
                   Eliminar Gasto
                 </span>
                 <h3 className="text-2xl font-display font-bold text-text">
@@ -1269,7 +1269,7 @@ export default function AdminFinanzasPage() {
                   type="button"
                   disabled={deletingGasto}
                   onClick={confirmDeleteGasto}
-                  className="flex-1 py-4 rounded-2xl bg-[#EF4444] text-white font-bold text-sm shadow-xl shadow-[#EF4444]/20 active:scale-95 transition-all disabled:opacity-60"
+                  className="flex-1 py-4 rounded-2xl bg-danger text-on-accent font-bold text-sm shadow-xl shadow-danger/20 active:scale-95 transition-all disabled:opacity-60"
                 >
                   {deletingGasto ? "Eliminando..." : "Eliminar"}
                 </button>
