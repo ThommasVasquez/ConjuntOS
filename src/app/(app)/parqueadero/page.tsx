@@ -266,7 +266,7 @@ export default function ParqueaderoPage() {
                 <button
                   disabled={busyAprob === s.id}
                   onClick={() => resolverSolicitud(s.id, 'aprobar')}
-                  className="flex-1 py-3 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-success text-on-accent font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyAprob === s.id ? "Procesando..." : "Aprobar"}
                 </button>
@@ -334,7 +334,7 @@ export default function ParqueaderoPage() {
                 <button
                   disabled={busyAprob === c.id}
                   onClick={() => resolverCargo(c.id, 'aprobar')}
-                  className="flex-1 py-3 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-success text-on-accent font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyAprob === c.id ? "Procesando..." : "Aprobar cobro"}
                 </button>
@@ -713,7 +713,7 @@ export default function ParqueaderoPage() {
                     <option className="bg-primary text-text" value="BICI">Bicicleta / Patineta</option>
                 </select>
                 
-                <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-success rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white shadow-xl shadow-success/30 active:scale-95 transition-transform disabled:opacity-50 cursor-pointer">
+                <button disabled={isSubmitting} onClick={submitVehiculo} className="w-full mt-2 bg-success rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-on-accent shadow-xl shadow-success/30 active:scale-95 transition-transform disabled:opacity-50 cursor-pointer">
                     <ShieldCheck size={20} /> {isSubmitting ? 'Enviando...' : 'Pedir Aprobación'}
                 </button>
             </div>

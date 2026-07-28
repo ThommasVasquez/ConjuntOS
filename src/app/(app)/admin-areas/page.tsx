@@ -371,7 +371,7 @@ export default function AdminAreasPage() {
         {tab === "areas" && (
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-2 bg-success text-white rounded-full shadow-lg shadow-success/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
+            className="flex items-center gap-2 bg-success text-on-accent rounded-full shadow-lg shadow-success/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
           >
             <Plus size={18} />
             Nueva Área
@@ -551,7 +551,7 @@ export default function AdminAreasPage() {
                   onClick={() => setFilterEstado(opt.value)}
                   className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
                     filterEstado === opt.value
-                      ? "bg-info text-white shadow-lg shadow-info/30"
+                      ? "bg-info text-on-accent shadow-lg shadow-info/30"
                       : "bg-text/5 border border-border text-text hover:bg-text/10"
                   }`}
                 >
@@ -793,7 +793,7 @@ export default function AdminAreasPage() {
                   type="button"
                   disabled={deletingArea}
                   onClick={confirmDeleteArea}
-                  className="flex-1 py-4 rounded-2xl bg-danger text-white font-bold text-sm shadow-xl shadow-danger/20 active:scale-95 transition-all disabled:opacity-60"
+                  className="flex-1 py-4 rounded-2xl bg-danger text-on-accent font-bold text-sm shadow-xl shadow-danger/20 active:scale-95 transition-all disabled:opacity-60"
                 >
                   {deletingArea ? "Eliminando..." : "Eliminar"}
                 </button>
@@ -1027,7 +1027,7 @@ function AreaFormFields({
       <button
         type="submit"
         disabled={saving}
-        className="w-full py-3.5 rounded-full bg-success text-white font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+        className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
       >
         {saving ? (
           <>

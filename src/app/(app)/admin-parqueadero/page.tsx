@@ -194,7 +194,7 @@ export default function AdminParqueaderoPage() {
                </div>
                <button
                  onClick={() => setShowCreate(true)}
-                 className="shrink-0 flex items-center gap-2 px-4 py-3 rounded-full bg-success text-white font-bold text-xs uppercase tracking-wide shadow-lg shadow-success/30 active:scale-95 transition-transform"
+                 className="shrink-0 flex items-center gap-2 px-4 py-3 rounded-full bg-success text-on-accent font-bold text-xs uppercase tracking-wide shadow-lg shadow-success/30 active:scale-95 transition-transform"
                >
                   <Plus size={16} /> Crear celdas
                </button>
@@ -318,11 +318,11 @@ export default function AdminParqueaderoPage() {
                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-text/5 border border-border">
                   <button
                     onClick={() => setModo('lote')}
-                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'lote' ? 'bg-info text-white' : 'text-text'}`}
+                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'lote' ? 'bg-info text-on-accent' : 'text-text'}`}
                   >En lote</button>
                   <button
                     onClick={() => setModo('individual')}
-                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'individual' ? 'bg-info text-white' : 'text-text'}`}
+                    className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${modo === 'individual' ? 'bg-info text-on-accent' : 'text-text'}`}
                   >Individual</button>
                </div>
 
@@ -389,7 +389,7 @@ export default function AdminParqueaderoPage() {
                <button
                  disabled={creating}
                  onClick={crearCeldas}
-                 className="w-full py-3.5 rounded-full bg-success text-white font-bold text-sm tracking-wide shadow-xl shadow-success/30 active:scale-95 transition-transform disabled:opacity-50"
+                 className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm tracking-wide shadow-xl shadow-success/30 active:scale-95 transition-transform disabled:opacity-50"
                >
                   {creating ? 'Creando...' : 'Crear celdas'}
                </button>

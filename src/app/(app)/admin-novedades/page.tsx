@@ -435,19 +435,19 @@ export default function AdminNovedadesPage() {
        <div className="flex bg-surface-2 rounded-full p-1 border border-border">
             <button 
               onClick={() => setTab('PENDIENTE')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-info text-white shadow-md' : 'text-text hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-info text-on-accent shadow-md' : 'text-text hover:text-text'}`}
             >
                Pendientes
             </button>
             <button 
               onClick={() => setTab('HISTORIAL')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-info text-white shadow-md' : 'text-text hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'HISTORIAL' ? 'bg-info text-on-accent shadow-md' : 'text-text hover:text-text'}`}
             >
                Historial
             </button>
             <button 
               onClick={() => setTab('PUBLICAR_ANUNCIO')} 
-              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PUBLICAR_ANUNCIO' ? 'bg-info text-white shadow-md' : 'text-text hover:text-text'}`}
+              className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PUBLICAR_ANUNCIO' ? 'bg-info text-on-accent shadow-md' : 'text-text hover:text-text'}`}
             >
                Publicar Anuncio
             </button>
@@ -821,7 +821,7 @@ export default function AdminNovedadesPage() {
                                  type="button"
                                  disabled={creandoCelda}
                                  onClick={crearCeldaRapida}
-                                 className="w-full py-2 rounded-lg bg-success text-white text-xs font-bold uppercase tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                                 className="w-full py-2 rounded-lg bg-success text-on-accent text-xs font-bold uppercase tracking-wide active:scale-95 transition-transform disabled:opacity-50"
                                >
                                   {creandoCelda ? 'Creando...' : '+ Crear y asignar celda'}
                                </button>
@@ -871,7 +871,7 @@ export default function AdminNovedadesPage() {
                        <button 
                          disabled={isProcessing}
                          onClick={() => handleResolve('APROBAR')}
-                         className="w-full py-3 rounded-full bg-success text-white shadow-xl shadow-success/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+                         className="w-full py-3 rounded-full bg-success text-on-accent shadow-xl shadow-success/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50"
                        >
                            {isProcessing ? '...' : (selectedTramite.tipo === 'VEHICULO' && selectedCellId ? 'Aprobar y asignar' : 'Aprobar')}
                        </button>
@@ -908,7 +908,7 @@ export default function AdminNovedadesPage() {
                          type="button"
                          disabled={isDeletingAnuncio}
                          onClick={confirmDeleteAnuncio}
-                         className="flex-1 py-4 rounded-2xl bg-danger text-white font-bold text-sm shadow-xl shadow-danger/20 active:scale-95 transition-all disabled:opacity-60"
+                         className="flex-1 py-4 rounded-2xl bg-danger text-on-accent font-bold text-sm shadow-xl shadow-danger/20 active:scale-95 transition-all disabled:opacity-60"
                       >
                          {isDeletingAnuncio ? "Eliminando..." : "Eliminar"}
                       </button>

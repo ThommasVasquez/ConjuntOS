@@ -432,7 +432,7 @@ export default function MapaParqueaderoPage() {
                          <button
                             disabled={busyReservaLlegada === r.id}
                             onClick={() => marcarLlegadaReserva(r.id)}
-                            className="shrink-0 bg-info text-white text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl active:scale-95 transition-all disabled:opacity-50"
+                            className="shrink-0 bg-info text-on-accent text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl active:scale-95 transition-all disabled:opacity-50"
                          >
                             {busyReservaLlegada === r.id ? '...' : 'Llegó'}
                          </button>
@@ -473,7 +473,7 @@ export default function MapaParqueaderoPage() {
                       onClick={() => setNivel(n)}
                       className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all active:scale-95 ${
                          activo
-                            ? 'text-white border-transparent shadow-md bg-info'
+                            ? 'text-on-accent border-transparent shadow-md bg-info'
                             : 'bg-surface-2 text-text/70 border-border hover:text-text'
                       }`}
                    >
@@ -734,7 +734,7 @@ export default function MapaParqueaderoPage() {
                           key={opt.v}
                           type="button"
                           onClick={() => setTiempoEstimado(opt.v)}
-                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${tiempoEstimado === opt.v ? 'text-white border-transparent shadow-md bg-info' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
+                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${tiempoEstimado === opt.v ? 'text-on-accent border-transparent shadow-md bg-info' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
                         >
                           {opt.l}
                         </button>
@@ -759,7 +759,7 @@ export default function MapaParqueaderoPage() {
                   type="button"
                   disabled={isSubmitting || !residenteId}
                   onClick={asignarVisitante}
-                  className="w-full py-4 rounded-2xl bg-info text-white font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-50"
+                  className="w-full py-4 rounded-2xl bg-info text-on-accent font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-50"
                 >
                    {isSubmitting ? "Enviando..." : "Enviar para aprobación del residente"}
                 </button>
@@ -849,7 +849,7 @@ export default function MapaParqueaderoPage() {
                             type="button"
                             disabled={liquidando}
                             onClick={() => cerrarSesionLiquidando('VISITANTE_PAGO')}
-                            className="w-full py-4 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-60"
+                            className="w-full py-4 rounded-2xl bg-success text-on-accent font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-60"
                          >
                             {liquidando ? "Procesando..." : "Visitante pagó en sitio → liberar"}
                          </button>
@@ -867,7 +867,7 @@ export default function MapaParqueaderoPage() {
                             type="button"
                             disabled={liquidando}
                             onClick={() => cerrarSesionLiquidando('VISITANTE_PAGO')}
-                            className="w-full py-4 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-60"
+                            className="w-full py-4 rounded-2xl bg-success text-on-accent font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-60"
                          >
                             {liquidando ? "Procesando..." : "Visitante pagó en sitio"}
                          </button>
@@ -875,7 +875,7 @@ export default function MapaParqueaderoPage() {
                             type="button"
                             disabled={liquidando}
                             onClick={() => cerrarSesionLiquidando('CARGADO_APTO')}
-                            className="w-full py-4 rounded-2xl bg-info text-white font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-60"
+                            className="w-full py-4 rounded-2xl bg-info text-on-accent font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-60"
                          >
                             {liquidando ? "Procesando..." : "Cargar al apartamento (retiene el vehículo)"}
                          </button>
@@ -900,7 +900,7 @@ export default function MapaParqueaderoPage() {
                          type="button"
                          disabled={isSubmitting || liquidando}
                          onClick={() => sesionCobro ? cerrarSesionLiquidando('VISITANTE_PAGO') : liberarCelda(cellToRelease.id)}
-                         className="flex-1 py-4 rounded-2xl bg-info text-white font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-60"
+                         className="flex-1 py-4 rounded-2xl bg-info text-on-accent font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-60"
                       >
                          {(isSubmitting || liquidando) ? "Liberando..." : "Liberar Celda"}
                       </button>
@@ -993,7 +993,7 @@ export default function MapaParqueaderoPage() {
                           key={opt.v}
                           type="button"
                           onClick={() => setMesesResidente(opt.v)}
-                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${mesesResidente === opt.v ? 'text-white border-transparent shadow-md bg-info' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
+                          className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${mesesResidente === opt.v ? 'text-on-accent border-transparent shadow-md bg-info' : 'bg-text/5 text-text border-border hover:bg-text/10'}`}
                         >
                           {opt.l}
                         </button>
@@ -1005,7 +1005,7 @@ export default function MapaParqueaderoPage() {
                   type="button"
                   disabled={isSubmitting || !residenteId || !placaResidente.trim()}
                   onClick={asignarResidente}
-                  className="w-full py-4 rounded-2xl bg-info text-white font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-2xl bg-info text-on-accent font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                    <Car size={18} /> {isSubmitting ? "Asignando..." : "Asignar al apartamento"}
                 </button>

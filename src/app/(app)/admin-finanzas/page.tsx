@@ -659,7 +659,7 @@ export default function AdminFinanzasPage() {
           onClick={() => setTab("KPI")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             tab === "KPI"
-              ? "bg-info text-white shadow-md"
+              ? "bg-info text-on-accent shadow-md"
               : "text-text hover:text-text"
           }`}
         >
@@ -669,7 +669,7 @@ export default function AdminFinanzasPage() {
           onClick={() => setTab("PAGOS")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             tab === "PAGOS"
-              ? "bg-info text-white shadow-md"
+              ? "bg-info text-on-accent shadow-md"
               : "text-text hover:text-text"
           }`}
         >
@@ -679,7 +679,7 @@ export default function AdminFinanzasPage() {
           onClick={() => setTab("GASTOS")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             tab === "GASTOS"
-              ? "bg-info text-white shadow-md"
+              ? "bg-info text-on-accent shadow-md"
               : "text-text hover:text-text"
           }`}
         >
@@ -689,7 +689,7 @@ export default function AdminFinanzasPage() {
           onClick={() => setTab("MOROSIDAD")}
           className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             tab === "MOROSIDAD"
-              ? "bg-info text-white shadow-md"
+              ? "bg-info text-on-accent shadow-md"
               : "text-text hover:text-text"
           }`}
         >
@@ -878,7 +878,7 @@ export default function AdminFinanzasPage() {
           <div className="flex flex-col gap-3">
             <button
               onClick={openNewGasto}
-              className="flex items-center justify-center gap-2 w-full bg-success text-white rounded-full shadow-lg shadow-success/30 px-5 py-3 text-sm font-bold active:scale-98 transition-transform"
+              className="flex items-center justify-center gap-2 w-full bg-success text-on-accent rounded-full shadow-lg shadow-success/30 px-5 py-3 text-sm font-bold active:scale-98 transition-transform"
             >
               <Plus size={18} />
               <span className="whitespace-nowrap">Registrar Gasto</span>
@@ -892,7 +892,7 @@ export default function AdminFinanzasPage() {
                   onClick={() => setGastosCatFilter("TODOS")}
                   className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
                     gastosCatFilter === "TODOS"
-                      ? "bg-info text-white shadow-lg shadow-info/30"
+                      ? "bg-info text-on-accent shadow-lg shadow-info/30"
                       : "bg-text/5 border border-border text-text hover:bg-text/10"
                   }`}
                 >
@@ -904,7 +904,7 @@ export default function AdminFinanzasPage() {
                     onClick={() => setGastosCatFilter(cat)}
                     className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
                       gastosCatFilter === cat
-                        ? "bg-info text-white shadow-lg shadow-info/30"
+                        ? "bg-info text-on-accent shadow-lg shadow-info/30"
                         : "bg-text/5 border border-border text-text hover:bg-text/10"
                     }`}
                   >
@@ -1213,7 +1213,7 @@ export default function AdminFinanzasPage() {
               <button
                 type="submit"
                 disabled={savingGasto}
-                className="w-full py-3.5 rounded-full bg-success text-white font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
               >
                 {savingGasto ? (
                   <>
@@ -1269,7 +1269,7 @@ export default function AdminFinanzasPage() {
                   type="button"
                   disabled={deletingGasto}
                   onClick={confirmDeleteGasto}
-                  className="flex-1 py-4 rounded-2xl bg-danger text-white font-bold text-sm shadow-xl shadow-danger/20 active:scale-95 transition-all disabled:opacity-60"
+                  className="flex-1 py-4 rounded-2xl bg-danger text-on-accent font-bold text-sm shadow-xl shadow-danger/20 active:scale-95 transition-all disabled:opacity-60"
                 >
                   {deletingGasto ? "Eliminando..." : "Eliminar"}
                 </button>

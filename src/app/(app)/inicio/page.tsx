@@ -409,7 +409,7 @@ function HomeResidente() {
                 <button
                   disabled={busyAprob === c.id}
                   onClick={() => resolverCargoRetenido(c.id, 'aprobar')}
-                  className="flex-1 py-3 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-success text-on-accent font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyAprob === c.id ? "Procesando..." : "Aprobar cobro"}
                 </button>
@@ -452,7 +452,7 @@ function HomeResidente() {
                 <button
                   disabled={busyAprob === s.id}
                   onClick={() => resolverSolicitudParqueadero(s.id, 'aprobar')}
-                  className="flex-1 py-3 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 rounded-2xl bg-success text-on-accent font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {busyAprob === s.id ? "Procesando..." : "Aprobar"}
                 </button>
@@ -506,7 +506,7 @@ function HomeResidente() {
                   <button
                     disabled={busyAprob === v.id}
                     onClick={() => resolverVisitaPendiente(v.id, true)}
-                    className="flex-1 py-2.5 rounded-2xl bg-success text-white font-bold text-xs shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
+                    className="flex-1 py-2.5 rounded-2xl bg-success text-on-accent font-bold text-xs shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                   >
                     {busyAprob === v.id ? "Procesando..." : "Aprobar ingreso"}
                   </button>
@@ -687,7 +687,7 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
     <div className="fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t border-border/20 transition-all active:scale-[0.98] relative overflow-hidden">
       <div className="p-5 flex justify-between items-center relative z-10">
          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs bg-info text-white">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border font-bold text-xs bg-info text-on-accent">
                {anuncio.tipo?.[0] || 'A'}
             </div>
             <div>

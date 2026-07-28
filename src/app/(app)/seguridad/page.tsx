@@ -592,7 +592,7 @@ interface RondaConCheckpointsDto extends RondaDto {
                   disabled={nfcScanning || !nfcSupported || !!rondaHoy?.completada}
                   className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
                     nfcSupported
-                      ? "bg-info hover:bg-[#0088d4] text-white shadow-lg"
+                      ? "bg-info hover:bg-[#0088d4] text-on-accent shadow-lg"
                       : "bg-surface-2 border border-border text-text/40"
                   } disabled:opacity-50`}
                 >

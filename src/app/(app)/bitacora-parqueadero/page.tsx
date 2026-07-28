@@ -226,7 +226,7 @@ export default function BitacoraParqueaderoPage() {
                   <button
                     disabled={busy === s.id}
                     onClick={() => resolver(s.id, "aprobar")}
-                    className="flex-1 py-3 rounded-2xl bg-success text-white font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="flex-1 py-3 rounded-2xl bg-success text-on-accent font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <Check size={16} /> {busy === s.id ? "Procesando..." : "Aprobar"}
                   </button>

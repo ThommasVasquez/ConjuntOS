@@ -363,7 +363,7 @@ export default function AdminResidentesPage() {
         </div>
         <button
           onClick={() => setShowInvite(true)}
-          className="flex items-center gap-2 bg-success text-white rounded-full shadow-lg shadow-success/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
+          className="flex items-center gap-2 bg-success text-on-accent rounded-full shadow-lg shadow-success/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
         >
           <UserPlus size={18} />
           Invitar
@@ -395,7 +395,7 @@ export default function AdminResidentesPage() {
             onClick={() => setRolFilter(opt.value)}
             className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 ${
               rolFilter === opt.value
-                ? "bg-info text-white shadow-lg shadow-info/30"
+                ? "bg-info text-on-accent shadow-lg shadow-info/30"
                 : "bg-text/5 border border-border text-text hover:bg-text/10"
             }`}
           >
@@ -709,7 +709,7 @@ export default function AdminResidentesPage() {
                 {/* Edit button */}
                 <button
                   onClick={openEdit}
-                  className="w-full py-3.5 rounded-full bg-success text-white font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mt-2"
+                  className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mt-2"
                 >
                   <Pencil size={18} />
                   Editar Residente
@@ -871,7 +871,7 @@ export default function AdminResidentesPage() {
               <button
                 type="submit"
                 disabled={savingEdit}
-                className="w-full py-3.5 rounded-full bg-success text-white font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
               >
                 {savingEdit ? (
                   <>
@@ -1014,7 +1014,7 @@ export default function AdminResidentesPage() {
               <button
                 type="submit"
                 disabled={sendingInvite}
-                className="w-full py-3.5 rounded-full bg-success text-white font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-success text-on-accent font-bold text-sm shadow-lg shadow-success/30 active:scale-[0.98] transition-transform disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
               >
                 {sendingInvite ? (
                   <>

@@ -183,7 +183,7 @@ export default function NovedadesPage() {
             />
           </div>
 
-          <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-success hover:bg-success/80 transition-colors rounded-full font-bold text-white shadow-lg shadow-success/30 flex justify-center items-center gap-2 cursor-pointer">
+          <button type="submit" disabled={isSubmitting} className="mt-2 w-full py-4 bg-success hover:bg-success/80 transition-colors rounded-full font-bold text-on-accent shadow-lg shadow-success/30 flex justify-center items-center gap-2 cursor-pointer">
             {isSubmitting ? "Registrando..." : <><PlusCircle size={18}/> Guardar Reporte</>}
           </button>
         </form>

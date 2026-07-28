@@ -57,10 +57,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Pinch-zoom stays available: locking it (maximumScale 1 / userScalable false)
+  // fails WCAG 1.4.4, and residents reading a fine-print acta or a receipt on a
+  // phone genuinely need to zoom. The app-like feel is not worth the lockout.
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
-  themeColor: "#000000",
+  themeColor: "#050d0c",
 };
 
 import { Providers } from "@/components/Providers";

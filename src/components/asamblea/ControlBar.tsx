@@ -52,7 +52,7 @@ function CtrlButton({
         danger
           ? 'bg-[#f87171] border-[#f87171] text-[#2a0707] hover:brightness-110 shadow-lg shadow-[#f87171]/25'
           : locked
-            ? 'bg-white/[0.04] border-white/10 text-white/35 hover:bg-white/10 hover:text-white/60'
+            ? 'bg-white/[0.04] border-white/10 text-white/60 hover:bg-white/10 hover:text-white/60'
             : active
               ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#04211d] hover:brightness-110'
               : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
@@ -97,7 +97,7 @@ function DeviceMenu({ kind, label }: { kind: MediaDeviceKind; label: string }) {
 
       {open && (
         <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-60 max-h-64 overflow-y-auto rounded-2xl bg-black/90 backdrop-blur-xl border border-white/15 shadow-2xl p-1.5">
-          <p className="px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-widest text-white/35">
+          <p className="px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-widest text-white/60">
             {label}
           </p>
           {devices.map((d) => (

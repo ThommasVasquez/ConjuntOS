@@ -32,7 +32,7 @@ function OfflineScreen({ online }: { online: boolean }) {
       </p>
       <button
         onClick={() => checkAuth()}
-        className="bg-accent text-white text-[11px] font-bold px-5 py-2.5 rounded-full active:scale-95 transition-transform"
+        className="bg-accent text-on-accent text-[11px] font-bold px-5 py-2.5 rounded-full active:scale-95 transition-transform"
       >
         Reintentar
       </button>

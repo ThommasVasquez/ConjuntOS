@@ -59,10 +59,10 @@ export default function ConferenceStage({ view, pinnedIdentity, onPin }: Confere
       <div className="h-full w-full grid place-items-center">
         <div className="text-center">
           <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 grid place-items-center mx-auto mb-4">
-            <Users size={26} className="text-white/40" />
+            <Users size={26} className="text-white/60" />
           </div>
           <p className="text-white/70 text-sm font-medium">Aún no hay nadie en la sala</p>
-          <p className="text-white/35 text-xs mt-1">
+          <p className="text-white/60 text-xs mt-1">
             Los asistentes aparecerán aquí al conectarse
           </p>
         </div>

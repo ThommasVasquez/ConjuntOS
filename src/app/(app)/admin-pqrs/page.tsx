@@ -789,7 +789,7 @@ export default function AdminPQRSPage() {
               <button
                 disabled={isProcessing}
                 onClick={() => handleCambiarEstado()}
-                className="w-full py-3 rounded-full bg-success text-white shadow-xl shadow-success/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-full bg-success text-on-accent shadow-xl shadow-success/30 font-bold text-sm tracking-wide active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isProcessing ? (
                   <>

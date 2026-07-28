@@ -471,10 +471,10 @@ export default function AsambleaPage() {
       <div className="min-h-screen bg-[#050d0c] grid place-items-center p-6">
         <div className="text-center max-w-sm">
           <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 grid place-items-center mx-auto mb-5">
-            <Video className="w-8 h-8 text-white/40" />
+            <Video className="w-8 h-8 text-white/60" />
           </div>
           <h1 className="text-xl font-semibold text-white mb-2">No hay asamblea activa</h1>
-          <p className="text-white/45 text-sm leading-relaxed">
+          <p className="text-white/65 text-sm leading-relaxed">
             Cuando la administración inicie una asamblea, la sala se abrirá aquí automáticamente.
           </p>
         </div>
@@ -499,7 +499,7 @@ export default function AsambleaPage() {
         </div>
 
         {enSesion && (
-          <span className="hidden sm:block text-xs text-white/40 tabular-nums shrink-0">
+          <span className="hidden sm:block text-xs text-white/60 tabular-nums shrink-0">
             {elapsed}
           </span>
         )}
@@ -537,7 +537,7 @@ export default function AsambleaPage() {
       {/* ── Agenda strip ───────────────────────────────────────────────── */}
       {currentItem && (
         <div className="shrink-0 flex items-center gap-2 px-3 sm:px-5 py-2 border-b border-white/[0.06] bg-white/[0.02]">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-white/35 shrink-0">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-white/60 shrink-0">
             Punto {(asamblea.itemActivoIndex ?? 0) + 1}/{ordenDia.length}
           </span>
           <ChevronRight size={12} className="text-white/20 shrink-0" />
@@ -577,7 +577,7 @@ export default function AsambleaPage() {
               <div className="px-4 pt-3 pb-2 border-b border-white/10 flex items-start gap-2">
                 <BarChart3 size={14} className="text-white/60 mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-white/60">
                     Votación abierta
                   </p>
                   <p className="text-sm font-semibold leading-tight mt-0.5">{activeVotacion.titulo}</p>
@@ -645,7 +645,7 @@ export default function AsambleaPage() {
                 ))}
                 <button
                   onClick={() => setPanel(null)}
-                  className="w-8 h-8 rounded-xl grid place-items-center text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+                  className="w-8 h-8 rounded-xl grid place-items-center text-white/60 hover:text-white hover:bg-white/5 transition-colors"
                   aria-label="Cerrar panel"
                 >
                   <X size={15} />
@@ -657,7 +657,7 @@ export default function AsambleaPage() {
                 {panel === "agenda" && (
                   <div className="flex flex-col gap-2">
                     {ordenDia.length === 0 && (
-                      <p className="text-white/35 text-xs text-center py-8">
+                      <p className="text-white/60 text-xs text-center py-8">
                         Esta asamblea no tiene orden del día.
                       </p>
                     )}
@@ -675,18 +675,18 @@ export default function AsambleaPage() {
                         >
                           <div className="flex items-start gap-2.5">
                             {done ? (
-                              <CheckCircle2 size={15} className="text-white/35 shrink-0 mt-0.5" />
+                              <CheckCircle2 size={15} className="text-white/60 shrink-0 mt-0.5" />
                             ) : current ? (
                               <Play size={15} className="text-white shrink-0 mt-0.5" />
                             ) : (
                               <Circle size={15} className="text-white/20 shrink-0 mt-0.5" />
                             )}
                             <div className="min-w-0">
-                              <p className={`text-xs font-semibold ${done ? "text-white/35 line-through" : "text-white"}`}>
+                              <p className={`text-xs font-semibold ${done ? "text-white/60 line-through" : "text-white"}`}>
                                 {item.titulo}
                               </p>
                               {item.descripcion && (
-                                <p className="text-[11px] text-white/45 mt-0.5">{item.descripcion}</p>
+                                <p className="text-[11px] text-white/65 mt-0.5">{item.descripcion}</p>
                               )}
                             </div>
                           </div>
@@ -700,7 +700,7 @@ export default function AsambleaPage() {
                 {panel === "votos" && (
                   <div className="flex flex-col gap-3">
                     {votaciones.length === 0 && (
-                      <p className="text-white/35 text-xs text-center py-8">
+                      <p className="text-white/60 text-xs text-center py-8">
                         Todavía no hay votaciones.
                       </p>
                     )}
@@ -755,7 +755,7 @@ export default function AsambleaPage() {
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
-                                  <span className="text-[10px] text-white/45 w-12 text-right tabular-nums">
+                                  <span className="text-[10px] text-white/65 w-12 text-right tabular-nums">
                                     {count} · {pct}%
                                   </span>
                                 </div>
@@ -764,7 +764,7 @@ export default function AsambleaPage() {
                           ) : (
                             <button
                               onClick={() => fetchVotos(v.id)}
-                              className="text-[10px] text-white/45 hover:text-white font-semibold uppercase tracking-wide transition-colors"
+                              className="text-[10px] text-white/65 hover:text-white font-semibold uppercase tracking-wide transition-colors"
                             >
                               Ver resultados
                             </button>
@@ -788,7 +788,7 @@ export default function AsambleaPage() {
                 {panel === "chat" && (
                   <div className="flex flex-col gap-2.5">
                     {opiniones.length === 0 && (
-                      <p className="text-white/35 text-xs text-center py-8">
+                      <p className="text-white/60 text-xs text-center py-8">
                         Nadie ha escrito todavía.
                       </p>
                     )}
@@ -804,8 +804,8 @@ export default function AsambleaPage() {
                               <span className="text-[10px] font-semibold text-white/70 truncate">
                                 {mine ? "Tú" : o.nombre}
                               </span>
-                              {o.apto && <span className="text-[9px] text-white/30">{o.apto}</span>}
-                              <span className="text-[9px] text-white/25 tabular-nums">
+                              {o.apto && <span className="text-[9px] text-white/55">{o.apto}</span>}
+                              <span className="text-[9px] text-white/55 tabular-nums">
                                 {fmtTime(o.createdAt)}
                               </span>
                             </div>
@@ -865,7 +865,7 @@ export default function AsambleaPage() {
                           </span>
                         </div>
                         <div className="text-[11px] space-y-0.5 text-white/60">
-                          <p className="text-[9px] uppercase tracking-widest text-white/35 font-bold mb-1">
+                          <p className="text-[9px] uppercase tracking-widest text-white/60 font-bold mb-1">
                             Quórum
                           </p>
                           <p>Presente: <span className="text-white font-semibold tabular-nums">
@@ -891,11 +891,11 @@ export default function AsambleaPage() {
                     </div>
 
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-2 flex items-center gap-1.5">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-white/60 mb-2 flex items-center gap-1.5">
                         <Hand size={11} /> Cola de palabra ({colaTurnos.length})
                       </p>
                       {colaTurnos.length === 0 ? (
-                        <p className="text-white/30 text-[11px] py-2">Nadie ha pedido la palabra.</p>
+                        <p className="text-white/55 text-[11px] py-2">Nadie ha pedido la palabra.</p>
                       ) : (
                         <div className="flex flex-col gap-1.5">
                           {colaTurnos.map((t, i) => (
@@ -912,7 +912,7 @@ export default function AsambleaPage() {
                               </span>
                               <div className="min-w-0">
                                 <p className="text-[11px] font-semibold truncate">{t.nombre}</p>
-                                {t.apto && <p className="text-[9px] text-white/35">{t.apto}</p>}
+                                {t.apto && <p className="text-[9px] text-white/60">{t.apto}</p>}
                               </div>
                               {isAdmin && (
                                 <button
@@ -931,7 +931,7 @@ export default function AsambleaPage() {
                     </div>
 
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-2 flex items-center gap-1.5">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-white/60 mb-2 flex items-center gap-1.5">
                         <Shield size={11} /> Asistencia registrada ({asistencias.length})
                       </p>
                       <div className="flex flex-col gap-1">
@@ -943,7 +943,7 @@ export default function AsambleaPage() {
                             <span className="text-[11px] text-white/70 truncate">
                               {a.usuarioId === user?.id ? "Tú" : `${a.usuarioId.slice(0, 8)}…`}
                             </span>
-                            <span className="text-[9px] font-bold uppercase text-white/35 shrink-0">
+                            <span className="text-[9px] font-bold uppercase text-white/60 shrink-0">
                               {a.tipo}
                             </span>
                           </div>
@@ -962,7 +962,7 @@ export default function AsambleaPage() {
                     onChange={(e) => setNewOpinion(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && postOpinion()}
                     placeholder="Escribe un mensaje…"
-                    className="flex-1 min-w-0 bg-white/[0.06] border border-white/10 rounded-full px-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+                    className="flex-1 min-w-0 bg-white/[0.06] border border-white/10 rounded-full px-4 py-2.5 text-xs text-white placeholder:text-white/55 focus:outline-none focus:border-white/30 transition-colors"
                   />
                   <button
                     onClick={postOpinion}

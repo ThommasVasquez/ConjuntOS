@@ -40,7 +40,7 @@ interface ModeratorPanelProps {
 
 function SectionTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-2 flex items-center gap-1.5">
+    <p className="text-[9px] font-bold uppercase tracking-widest text-white/60 mb-2 flex items-center gap-1.5">
       {icon} {children}
     </p>
   );
@@ -124,16 +124,16 @@ export default function ModeratorPanel({
                   <div className="flex items-center gap-2">
                     <span
                       className={`w-5 h-5 rounded-full grid place-items-center text-[9px] font-bold shrink-0 ${
-                        current ? 'bg-white text-black' : done ? 'bg-white/10 text-white/40' : 'bg-white/5 text-white/40'
+                        current ? 'bg-white text-black' : done ? 'bg-white/10 text-white/60' : 'bg-white/5 text-white/60'
                       }`}
                     >
                       {done ? <CheckCircle2 size={11} /> : i + 1}
                     </span>
-                    <span className={`text-[11px] truncate ${done ? 'text-white/35 line-through' : 'text-white/85'}`}>
+                    <span className={`text-[11px] truncate ${done ? 'text-white/60 line-through' : 'text-white/85'}`}>
                       {item.titulo}
                     </span>
                     {!current && !done && (
-                      <ChevronRight size={12} className="ml-auto text-white/25 shrink-0" />
+                      <ChevronRight size={12} className="ml-auto text-white/55 shrink-0" />
                     )}
                   </div>
                 </button>
@@ -147,7 +147,7 @@ export default function ModeratorPanel({
       <div>
         <SectionTitle icon={<Hand size={11} />}>Cola de palabra ({pendientes.length})</SectionTitle>
         {pendientes.length === 0 ? (
-          <p className="text-white/30 text-[11px]">Nadie ha pedido la palabra.</p>
+          <p className="text-white/55 text-[11px]">Nadie ha pedido la palabra.</p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {pendientes.map((t, i) => (
@@ -164,7 +164,7 @@ export default function ModeratorPanel({
                 </span>
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold truncate">{t.nombre}</p>
-                  {t.apto && <p className="text-[9px] text-white/35">{t.apto}</p>}
+                  {t.apto && <p className="text-[9px] text-white/60">{t.apto}</p>}
                 </div>
                 <button
                   onClick={() =>
@@ -201,13 +201,13 @@ export default function ModeratorPanel({
               value={votacionTitulo}
               onChange={(e) => setVotacionTitulo(e.target.value)}
               placeholder="¿Qué se vota?"
-              className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
+              className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white placeholder:text-white/55 focus:outline-none focus:border-white/30"
             />
             <input
               value={votacionOpciones}
               onChange={(e) => setVotacionOpciones(e.target.value)}
               placeholder="Opciones separadas por coma (por defecto: Sí, No, Abstención)"
-              className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
+              className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white placeholder:text-white/55 focus:outline-none focus:border-white/30"
             />
             <button
               onClick={() =>
@@ -231,7 +231,7 @@ export default function ModeratorPanel({
         )}
 
         {votaciones.length === 0 ? (
-          <p className="text-white/30 text-[11px]">Todavía no hay votaciones.</p>
+          <p className="text-white/55 text-[11px]">Todavía no hay votaciones.</p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {votaciones.map((v) => (
@@ -243,7 +243,7 @@ export default function ModeratorPanel({
               >
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold truncate">{v.titulo}</p>
-                  <p className="text-[9px] text-white/35">{(v.opciones ?? []).join(' · ')}</p>
+                  <p className="text-[9px] text-white/60">{(v.opciones ?? []).join(' · ')}</p>
                 </div>
                 <button
                   onClick={() => run(`vot-${v.id}`, () => onToggleVotacion(v.id, !v.activa))}
@@ -282,7 +282,7 @@ export default function ModeratorPanel({
                     href={p.documentoUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[9px] text-white/40 underline hover:text-white/70"
+                    className="text-[9px] text-white/60 underline hover:text-white/70"
                   >
                     Ver documento
                   </a>

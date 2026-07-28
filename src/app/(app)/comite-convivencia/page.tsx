@@ -401,7 +401,7 @@ export default function ComiteConvivenciaPage() {
               key={key}
               onClick={() => setTab(key)}
               className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap px-2 ${
-                tab === key ? "bg-info text-white shadow-md" : "text-text hover:text-text"
+                tab === key ? "bg-info text-on-accent shadow-md" : "text-text hover:text-text"
               }`}
             >
               {label}

@@ -396,7 +396,7 @@ export default function CitofoniaPage() {
               <button 
                 key={t.id}
                 onClick={() => setActiveTab(t.id as Tab)}
-                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-info text-white shadow-md' : 'text-text/60 hover:text-text'}`}
+                className={`flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all gap-1 ${activeTab === t.id ? 'bg-info text-on-accent shadow-md' : 'text-text/60 hover:text-text'}`}
               >
                 <t.icon size={16} strokeWidth={activeTab === t.id ? 2.5 : 1.5} />
                 <span className="text-[9px] font-bold uppercase tracking-wider">{t.label}</span>

@@ -90,11 +90,11 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
     <div className="fixed inset-0 bg-[#050d0c] grid place-items-center p-4 overflow-y-auto">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/35 mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/60 mb-2">
             Asamblea
           </p>
           <h1 className="text-2xl sm:text-3xl font-semibold text-white">{titulo}</h1>
-          <p className="text-white/40 text-sm mt-2">
+          <p className="text-white/60 text-sm mt-2">
             {canPublish
               ? 'Revisa tu cámara y micrófono antes de entrar'
               : 'Entrarás en modo espectador'}
@@ -117,12 +117,12 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
                 <div className="text-center">
                   <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 grid place-items-center mx-auto mb-3">
                     {canPublish ? (
-                      <VideoOff size={26} className="text-white/30" />
+                      <VideoOff size={26} className="text-white/55" />
                     ) : (
-                      <Eye size={26} className="text-white/30" />
+                      <Eye size={26} className="text-white/55" />
                     )}
                   </div>
-                  <p className="text-white/40 text-xs">
+                  <p className="text-white/60 text-xs">
                     {canPublish ? 'Cámara apagada' : 'Modo espectador'}
                   </p>
                 </div>
@@ -175,7 +175,7 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
             {canPublish && showSettings && (
               <div className="flex flex-col gap-3">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-white/35">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-white/60">
                     Micrófono
                   </span>
                   <select
@@ -193,7 +193,7 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-white/35">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-white/60">
                     Cámara
                   </span>
                   <select
@@ -228,7 +228,7 @@ export default function PreJoin({ titulo, canPublish, onJoin }: PreJoinProps) {
               Entrar a la asamblea
             </button>
 
-            <p className="text-[10px] text-white/25 text-center">
+            <p className="text-[10px] text-white/55 text-center">
               Al entrar, tu asistencia puede registrarse para el quórum.
             </p>
           </div>

@@ -159,7 +159,7 @@ export default function InmobiliariaPage() {
                   onClick={() => setFilterType(type)}
                   className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                     filterType === type
-                      ? "bg-info text-white shadow-md"
+                      ? "bg-info text-on-accent shadow-md"
                       : "text-text/60 hover:text-text hover:bg-surface-2"
                   }`}
                 >
