@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import { useWsSubscription } from "@/hooks/useWebSocket";
-import { estaEnSesion } from "@/lib/asamblea";
+import { estaEnSesion, sessionIniciadaEn } from "@/lib/asamblea";
 import {
   Video, ListOrdered, BarChart3, MessageSquare, Users,
   CheckCircle2, Circle, Play, Send, Hand, Shield, X,
@@ -116,6 +117,7 @@ function useElapsed(startIso?: string): string {
 
 export default function AsambleaPage() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const isAdmin = user?.rol === "ADMINISTRADOR" || user?.rol === "SUPER_ADMIN";
 
   const [asamblea, setAsamblea] = useState<Asamblea | null>(null);
@@ -289,6 +291,27 @@ export default function AsambleaPage() {
     if (id) fetchVotos(id);
   }, [votaciones]);
 
+  /**
+   * Register attendance once, on entering the room.
+   *
+   * It used to be a manual button only, so the quorum percentage the assembly
+   * relies on legally counted just the handful of people who happened to press
+   * it — everyone else was present on video but absent from the quorum. The
+   * endpoint is idempotent (unique (asamblea_id, usuario_id)), and a duplicate
+   * 409 is the expected no-op on re-entry.
+   */
+  const asistenciaEnviada = useRef(false);
+  useEffect(() => {
+    if (!asambleaId || !user?.id || asistenciaEnviada.current) return;
+    asistenciaEnviada.current = true;
+    api
+      .post(`/asambleas/${asambleaId}/asistencias`, { tipo: "VIRTUAL" })
+      .then(() => fetchQuorum())
+      .catch(() => {
+        /* already registered, or offline — the manual button remains */
+      });
+  }, [asambleaId, user?.id, fetchQuorum]);
+
   // Keep the chat pinned to the newest message while the panel is open.
   useEffect(() => {
     if (panel === "chat") {
@@ -297,7 +320,10 @@ export default function AsambleaPage() {
     }
   }, [panel, opiniones.length]);
 
-  const elapsed = useElapsed(asamblea?.fecha);
+  const enSesion = asamblea ? estaEnSesion(asamblea) : false;
+  const elapsed = useElapsed(
+    sessionIniciadaEn(asamblea?.sessionState) ?? asamblea?.fecha,
+  );
 
   const ordenDia = useMemo<OrdenDiaItem[]>(
     () => (Array.isArray(asamblea?.ordenDia) ? asamblea!.ordenDia : []),
@@ -379,7 +405,16 @@ export default function AsambleaPage() {
   };
 
   const startSession = () =>
-    setSession({ activa: true, sessionState: "INICIADA" }, "Error al iniciar la sesión");
+    // Record WHEN it started: the call timer used to count from the scheduled
+    // date, so an assembly convened for 9am and started at 11am opened showing
+    // two hours already elapsed.
+    setSession(
+      {
+        activa: true,
+        sessionState: { estado: "INICIADA", iniciadaEn: new Date().toISOString() },
+      },
+      "Error al iniciar la sesión",
+    );
 
   const finishSession = () =>
     setSession({ activa: false, sessionState: "FINALIZADA" }, "Error al finalizar la asamblea");
@@ -463,7 +498,11 @@ export default function AsambleaPage() {
           <h1 className="text-sm font-semibold truncate">{asamblea.titulo}</h1>
         </div>
 
-        <span className="hidden sm:block text-xs text-white/40 tabular-nums shrink-0">{elapsed}</span>
+        {enSesion && (
+          <span className="hidden sm:block text-xs text-white/40 tabular-nums shrink-0">
+            {elapsed}
+          </span>
+        )}
 
         <div className="ml-auto flex items-center gap-2 shrink-0">
           {tengoLaPalabra && (
@@ -521,6 +560,9 @@ export default function AsambleaPage() {
             <LiveRoom
               asambleaId={asambleaId}
               titulo={asamblea.titulo}
+              // Hanging up used to disconnect the room and leave the user
+              // staring at a dead stage with no way back.
+              onDisconnect={() => router.push("/inicio")}
               onRequestFloor={requestTurn}
               handRaised={handRaised}
               onOpenPanel={(p) => setPanel((cur) => (cur === p ? null : p))}

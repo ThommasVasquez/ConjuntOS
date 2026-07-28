@@ -5,6 +5,7 @@ import {
   useLocalParticipant,
   useRoomContext,
   useMediaDeviceSelect,
+  useParticipants,
 } from '@livekit/components-react';
 import {
   Mic, MicOff, Video as VideoIcon, VideoOff, ScreenShare, ScreenShareOff,
@@ -127,6 +128,8 @@ export default function ControlBar({
   onOpenPanel, onReaction, chatBadge = 0, participantCount,
 }: ControlBarProps) {
   const room = useRoomContext();
+  // Live room membership, not the attendance register the page passes in.
+  const participantsInRoom = useParticipants().length;
   const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled, localParticipant } =
     useLocalParticipant();
   const [busy, setBusy] = useState(false);
@@ -284,7 +287,7 @@ export default function ControlBar({
           <span className="relative">
             <Users size={19} />
             <span className="absolute -top-2.5 -right-3 min-w-4 h-4 px-1 rounded-full bg-[#2dd4bf] text-[#04211d] text-[9px] font-bold grid place-items-center">
-              {participantCount}
+              {participantsInRoom || participantCount}
             </span>
           </span>
         </CtrlButton>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { VideoTrack, useIsSpeaking, useIsMuted, isTrackReference } from '@livekit/components-react';
+import { VideoTrack, useIsSpeaking, isTrackReference } from '@livekit/components-react';
 import type { TrackReferenceOrPlaceholder } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { MicOff, Pin, ScreenShare, Shield } from 'lucide-react';
@@ -56,7 +56,11 @@ export default function ParticipantTile({
 }: ParticipantTileProps) {
   const participant = trackRef.participant;
   const isSpeaking = useIsSpeaking(participant);
-  const isMuted = useIsMuted(trackRef);
+  // The badge means "this person's microphone is off". useIsMuted(trackRef)
+  // reports the mute state of the CAMERA track this tile renders, so a person
+  // with their camera off but speaking showed a red mic-off icon, and a muted
+  // person with video on showed none.
+  const isMuted = !participant.isMicrophoneEnabled;
   const isLocal = participant.isLocal;
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
   const hasVideo = isTrackReference(trackRef) && !trackRef.publication.isMuted;

@@ -141,9 +141,12 @@ export default function LiveRoom({
         canPublishRef.current = data.canPublish;
         setGrant(data);
         // Someone just got the floor: turn their mic on so they can speak
-        // without hunting for the button.
+        // without hunting for the button. Only for people already IN the room —
+        // `choices === null` means they are still in the green room, and
+        // filling it in would throw them straight into the live assembly with a
+        // camera they never checked and a mic that goes hot unannounced.
         if (data.canPublish) {
-          setChoices((c) => ({ ...(c ?? { videoEnabled: false }), audioEnabled: true }));
+          setChoices((c) => (c === null ? null : { ...c, audioEnabled: true }));
         }
       })
       .catch(() => {

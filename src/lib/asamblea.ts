@@ -30,3 +30,18 @@ export function sessionEstado(state: unknown): string | null {
 export function estaEnSesion(a: { activa: boolean; sessionState?: unknown }): boolean {
   return a.activa && sessionEstado(a.sessionState) !== "PROGRAMADA";
 }
+
+/**
+ * When the moderator started the session, if recorded.
+ *
+ * `sessionState` is opaque jsonb, so starting a session writes an object
+ * `{ estado: "INICIADA", iniciadaEn: <iso> }`. Older rows hold a bare string
+ * and return null — callers fall back to the scheduled date.
+ */
+export function sessionIniciadaEn(state: unknown): string | null {
+  if (state && typeof state === "object" && "iniciadaEn" in state) {
+    const v = (state as { iniciadaEn?: unknown }).iniciadaEn;
+    return typeof v === "string" ? v : null;
+  }
+  return null;
+}
