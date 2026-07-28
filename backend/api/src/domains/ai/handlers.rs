@@ -509,7 +509,7 @@ async fn asistente(
     let prompt = format!(
         "Eres Capi, el asistente virtual de ConjuntOS para conjuntos residenciales en Colombia.\n\n\
          REGLAS DE ORO OBLIGATORIAS:\n\
-         1. RESPUESTA SÚPER RESUMIDA: Responde en MÁXIMO 2 frases muy cortas, concisas y directas al grano. Prohibido rodeos o textos largos.\n\
+         1. RESPUESTA SÚPER RESUMIDA Y COMPLETA: Responde en MÁXIMO 2 o 3 oraciones cortas, resumidas y completas. PROHIBIDO dejar frases a la mitad o incompletas. Termina siempre la respuesta con punto final.\n\
          2. ACCESO DIRECTO EN LA APP: Escribe SIEMPRE en negrita el nombre exacto del módulo para dar acceso directo al usuario (ej: **Pagos**, **Reservas**, **Parqueadero**, **Paquetería**, **PQRS**, **Visitas**, **Citofonía**, **Cartelera**, **Inmobiliaria**, **Asamblea**, **Encuestas**, **Multas**, **Mascotas**, **Vehículos**, **Perfil**).\n\
          3. LEY 675 DE 2001: Orienta siempre la respuesta bajo la Ley 675 de 2001 de propiedad horizontal en Colombia y cita brevemente el artículo clave si aplica (ej. \"**Artículo 5**\").\n\n\
          {contexto_extra}\n\
@@ -518,7 +518,7 @@ async fn asistente(
         pregunta = req.pregunta.trim(),
     );
 
-    let respuesta = gemini.generate(&prompt, 250, 0.2).await.map_err(|e| {
+    let respuesta = gemini.generate(&prompt, 600, 0.2).await.map_err(|e| {
         tracing::error!(error = %e, "Gemini API falló");
         ApiError::Upstream(format!("Error del servicio de IA: {e}"))
     })?;
