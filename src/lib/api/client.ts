@@ -16,11 +16,7 @@
  * only the in-memory Bearer token. It does not survive a reload — see the
  * `/api/session` bridge, which keeps the middleware's cookie working.
  */
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-
-if (!API_BASE) {
-  throw new Error('NEXT_PUBLIC_API_URL is not set — add it to .env');
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.conjuntos.app";
 
 /**
  * In-memory Bearer token (same-session fallback for when the httpOnly `ec_session`
