@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { Scale, Send } from "lucide-react";
+import { Scale, Send, ArrowRight } from "lucide-react";
 import { api, ApiError } from "@/lib/api/client";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -15,7 +16,64 @@ const SUGERENCIAS = [
   "¿Qué es el coeficiente de copropiedad?",
 ];
 
+const MODULE_PATH_MAP: Record<string, { path: string; label: string }> = {
+  pagos: { path: "/pagos", label: "Pagos" },
+  pago: { path: "/pagos", label: "Pagos" },
+  cuotas: { path: "/pagos", label: "Pagos" },
+  reservas: { path: "/reservas", label: "Reservas" },
+  reserva: { path: "/reservas", label: "Reservas" },
+  parqueadero: { path: "/parqueadero", label: "Parqueadero" },
+  parqueaderos: { path: "/parqueadero", label: "Parqueadero" },
+  vehículo: { path: "/parqueadero", label: "Parqueadero" },
+  vehiculo: { path: "/parqueadero", label: "Parqueadero" },
+  paquetería: { path: "/paqueteria", label: "Paquetería" },
+  paqueteria: { path: "/paqueteria", label: "Paquetería" },
+  pqrs: { path: "/pqrs", label: "PQRS" },
+  pqr: { path: "/pqrs", label: "PQRS" },
+  visitantes: { path: "/visitantes", label: "Visitantes" },
+  visitas: { path: "/visitantes", label: "Visitantes" },
+  cartelera: { path: "/cartelera", label: "Cartelera" },
+  inmobiliaria: { path: "/inmobiliaria", label: "Inmobiliaria" },
+  citofonía: { path: "/citofonia", label: "Citofonía" },
+  citofonia: { path: "/citofonia", label: "Citofonía" },
+  asamblea: { path: "/asamblea", label: "Asamblea" },
+  encuestas: { path: "/encuestas", label: "Encuestas" },
+  multas: { path: "/pqrs", label: "Multas" },
+  mascotas: { path: "/perfil", label: "Mascotas" },
+  perfil: { path: "/perfil", label: "Perfil" },
+};
+
+function FormatTurno({ text, onNavigate }: { text: string; onNavigate: (path: string) => void }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <span>
+      {parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          const raw = part.slice(2, -2).trim();
+          const mapped = MODULE_PATH_MAP[raw.toLowerCase()];
+          if (mapped) {
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onNavigate(mapped.path)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 mx-1 my-0.5 rounded-full bg-[#57bf00] text-white hover:bg-[#4ba800] transition-all font-bold text-xs shadow-md cursor-pointer active:scale-95 border border-[#57bf00]/40 align-middle group"
+              >
+                <span>{raw}</span>
+                <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            );
+          }
+          return <strong key={i} className="text-accent font-bold">{raw}</strong>;
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+}
+
 export default function AsistentePage() {
+  const router = useRouter();
   const [pregunta, setPregunta] = useState("");
   const [historial, setHistorial] = useState<Turno[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,7 +124,9 @@ export default function AsistentePage() {
         {historial.map((t, i) => (
           <div key={i} className="flex flex-col gap-2">
             <div className="self-end max-w-[85%] bg-accent/20 border border-accent/30 rounded-2xl rounded-br-md px-4 py-2.5 text-sm text-text">{t.pregunta}</div>
-            <div className="self-start max-w-[90%] liquid-glass border border-border rounded-2xl rounded-bl-md px-4 py-3 text-sm text-text whitespace-pre-wrap">{t.respuesta}</div>
+            <div className="self-start max-w-[90%] liquid-glass border border-border rounded-2xl rounded-bl-md px-4 py-3 text-sm text-text">
+              <FormatTurno text={t.respuesta} onNavigate={(path) => router.push(path)} />
+            </div>
           </div>
         ))}
         {loading && (

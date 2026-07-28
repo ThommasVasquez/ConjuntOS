@@ -70,9 +70,40 @@ function filterModules(query: string, role?: string | null) {
   );
 }
 
+const MODULE_PATH_MAP: Record<string, { path: string; label: string }> = {
+  pagos: { path: "/pagos", label: "Pagos" },
+  pago: { path: "/pagos", label: "Pagos" },
+  cuotas: { path: "/pagos", label: "Pagos" },
+  reservas: { path: "/reservas", label: "Reservas" },
+  reserva: { path: "/reservas", label: "Reservas" },
+  parqueadero: { path: "/parqueadero", label: "Parqueadero" },
+  parqueaderos: { path: "/parqueadero", label: "Parqueadero" },
+  vehículo: { path: "/parqueadero", label: "Parqueadero" },
+  vehiculo: { path: "/parqueadero", label: "Parqueadero" },
+  vehículos: { path: "/parqueadero", label: "Parqueadero" },
+  vehiculos: { path: "/parqueadero", label: "Parqueadero" },
+  paquetería: { path: "/paqueteria", label: "Paquetería" },
+  paqueteria: { path: "/paqueteria", label: "Paquetería" },
+  paquetes: { path: "/paqueteria", label: "Paquetería" },
+  pqrs: { path: "/pqrs", label: "PQRS" },
+  pqr: { path: "/pqrs", label: "PQRS" },
+  visitantes: { path: "/visitantes", label: "Visitantes" },
+  visitas: { path: "/visitantes", label: "Visitantes" },
+  cartelera: { path: "/cartelera", label: "Cartelera" },
+  inmobiliaria: { path: "/inmobiliaria", label: "Inmobiliaria" },
+  citofonía: { path: "/citofonia", label: "Citofonía" },
+  citofonia: { path: "/citofonia", label: "Citofonía" },
+  asamblea: { path: "/asamblea", label: "Asamblea" },
+  encuestas: { path: "/encuestas", label: "Encuestas" },
+  multas: { path: "/pqrs", label: "Multas" },
+  mascotas: { path: "/perfil", label: "Mascotas" },
+  perfil: { path: "/perfil", label: "Perfil" },
+  documentos: { path: "/documentos", label: "Documentos" },
+};
+
 // ─── Typing Animation ─────────────────────────────────────────────────────────
 
-function TypingText({ text }: { text: string }) {
+function TypingText({ text, onNavigate }: { text: string; onNavigate: (path: string) => void }) {
   const [displayed, setDisplayed] = useState("");
   
   useEffect(() => {
@@ -92,11 +123,28 @@ function TypingText({ text }: { text: string }) {
   const parts = displayed.split(/(\*\*[^*]+\*\*)/g);
   return (
     <span>
-      {parts.map((part, i) =>
-        part.startsWith("**") && part.endsWith("**")
-          ? <strong key={i} className="text-[#57bf00] font-bold">{part.slice(2, -2)}</strong>
-          : <span key={i}>{part}</span>
-      )}
+      {parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          const raw = part.slice(2, -2).trim();
+          const mapped = MODULE_PATH_MAP[raw.toLowerCase()];
+          if (mapped) {
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onNavigate(mapped.path)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 mx-1 my-0.5 rounded-full bg-[#57bf00] text-white hover:bg-[#4ba800] transition-all font-bold text-xs shadow-md cursor-pointer active:scale-95 border border-[#57bf00]/40 align-middle group"
+                title={`Ir a ${mapped.label}`}
+              >
+                <span>{raw}</span>
+                <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            );
+          }
+          return <strong key={i} className="text-[#57bf00] font-bold">{raw}</strong>;
+        }
+        return <span key={i}>{part}</span>;
+      })}
       {displayed.length < text.length && (
         <span className="inline-block w-0.5 h-3.5 bg-[#009df2] ml-0.5 animate-pulse align-middle" />
       )}
@@ -266,9 +314,36 @@ export default function SearchModal({ isOpen, onClose, context = {} }: SearchMod
                     <span className="text-sm">Analizando tu pregunta...</span>
                   </div>
                 ) : aiAnswer ? (
-                  <p className="text-sm text-text leading-relaxed">
-                    <TypingText text={aiAnswer.text} />
-                  </p>
+                  <>
+                    <p className="text-sm text-text leading-relaxed">
+                      <TypingText text={aiAnswer.text} onNavigate={navigateTo} />
+                    </p>
+                    {(() => {
+                      const matches = Array.from(aiAnswer.text.matchAll(/\*\*([^*]+)\*\*/g))
+                        .map(m => m[1].trim())
+                        .map(title => ({ title, mapped: MODULE_PATH_MAP[title.toLowerCase()] }))
+                        .filter((x): x is { title: string; mapped: { path: string; label: string } } => Boolean(x.mapped));
+                      if (matches.length === 0) return null;
+                      const unique = Array.from(new Map(matches.map(m => [m.mapped.path, m])).values());
+                      return (
+                        <div className="mt-4 pt-3 border-t border-[#57bf00]/20 flex flex-wrap items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[#57bf00]">
+                            Accesos directos:
+                          </span>
+                          {unique.map(u => (
+                            <button
+                              key={u.mapped.path}
+                              onClick={() => navigateTo(u.mapped.path)}
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#57bf00] text-white hover:bg-[#4ba800] transition-all text-xs font-bold shadow-md active:scale-95 border border-[#57bf00]/40 group"
+                            >
+                              <span>Ir a {u.mapped.label}</span>
+                              <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </>
                 ) : null}
               </div>
             </div>
