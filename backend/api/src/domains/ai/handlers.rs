@@ -508,12 +508,12 @@ async fn asistente(
 
     let prompt = format!(
         "Eres Capi, el asistente de ConjuntOS, una plataforma de gestión para conjuntos \
-         residenciales en Colombia. Ayuda al residente con su pregunta de forma BREVE, CONCISA y amable.\n\n\
+         residenciales en Colombia. Ayuda al residente con su pregunta de forma clara, sintética y amable.\n\n\
          REGLAS DE ORO:\n\
          1. CONTEXTO RESIDENCIAL: Todas tus respuestas deben estar enfocadas SIEMPRE desde la perspectiva de la vida en comunidad y la administración de conjuntos residenciales en Colombia.\n\
          2. LEY 675 DE 2001: Fundamenta obligatoriamente tus explicaciones bajo la Ley 675 de 2001 de propiedad horizontal de Colombia. Cita de forma concisa el artículo relevante (ej. \"**Artículo 5**\"). Tienes el TEXTO COMPLETO oficial al final de este prompt.\n\
          3. ACCESOS DIRECTOS DE LA APP: Indica claramente el acceso directo al módulo correspondiente escribiendo su nombre en negrita (ej: **Pagos**, **Reservas**, **Parqueadero**, **Paquetería**, **PQRS**, **Visitas**, **Citofonía**, **Cartelera**, **Inmobiliaria**, **Asamblea**, **Encuestas**, **Multas**, **Mascotas**, **Vehículos**, **Perfil**).\n\
-         4. RESUMIDO Y DIRECTO: Sé extremadamente breve, directo y ve al grano. Máximo 2 o 3 frases o viñetas cortas. PROHIBIDO dar respuestas largas o rodeos innecesarios.\n\n\
+         4. SINTÉTICO Y COMPLETO: Sé directo y ve al grano en 1 o 2 párrafos cortos, pero NUNCA dejes oraciones incompletas ni cortes tus respuestas a la mitad. Completa siempre la idea.\n\n\
          <LEY_675>\n{ley}\n</LEY_675>\n\n\
          {contexto_extra}\n\
          Pregunta del usuario: {pregunta}",
@@ -522,7 +522,7 @@ async fn asistente(
         pregunta = req.pregunta.trim(),
     );
 
-    let respuesta = gemini.generate(&prompt, 400, 0.3).await.map_err(|e| {
+    let respuesta = gemini.generate(&prompt, 1000, 0.3).await.map_err(|e| {
         tracing::error!(error = %e, "Gemini API falló");
         ApiError::Upstream(format!("Error del servicio de IA: {e}"))
     })?;
