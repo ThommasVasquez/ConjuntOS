@@ -872,6 +872,21 @@ async fn update_poder(
     // unit — the unit is counted twice and the unique (votacion_id, unidad_id)
     // constraint does not catch it, because the apoderado votes under their own
     // unidad. Refuse instead of silently corrupting the tally.
+    // The asymmetry cuts both ways. Verifying moves the otorgante's weight onto
+    // the apoderado; un-verifying gives it back while the apoderado's ballot —
+    // already cast with the combined coeficiente — stays on record, freeing the
+    // otorgante to vote the same unit again. Neither is caught by the unique
+    // (votacion_id, unidad_id) index, because the delegated units are never
+    // written as rows of their own.
+    //
+    // So the representation set is frozen for as long as a ballot is open, and
+    // separately a poder may not be verified once its otorgante has voted.
+    if repo::hay_votacion_activa(&mut conn, asamblea_id).await? {
+        return Err(ApiError::Conflict(
+            "hay una votación abierta; cierra la votación antes de cambiar los poderes".into(),
+        ));
+    }
+
     if req.verificado {
         let poder = repo::get_poder(&mut conn, asamblea_id, pid).await?;
         if repo::otorgante_ya_voto(&mut conn, asamblea_id, poder.otorgante_id).await? {

@@ -1000,3 +1000,84 @@ async fn create_pairing_is_admin_only() {
     .await;
     assert_eq!(s, StatusCode::FORBIDDEN);
 }
+
+#[tokio::test]
+async fn poderes_are_frozen_while_a_votacion_is_open() {
+    // Regression (mirror case): un-verifying a poder after the apoderado voted
+    // with the combined weight would free the otorgante to vote the same unit
+    // again. The representation set is frozen while any ballot is open.
+    let state = test_state().await;
+    let app = router(state.clone());
+    let conj = seed_conjunto(&state).await;
+    let (_admin, admin_email) = seed_user_in(&state, conj, Rol::Administrador).await;
+    let admin_token = login(&app, &admin_email).await;
+    let (otorgante, _oe) = seed_user_in(&state, conj, Rol::Propietario).await;
+    let (apoderado, _ae) = seed_user_in(&state, conj, Rol::Propietario).await;
+    seed_unidad_para(&state, conj, otorgante, 10).await;
+    seed_unidad_para(&state, conj, apoderado, 15).await;
+
+    let (aid, _) = seed_asamblea(&state, conj).await;
+
+    let (s, poder) = request(
+        &app,
+        Method::POST,
+        &format!("/api/v1/asambleas/{aid}/poderes"),
+        Some(&admin_token),
+        Some(json!({
+            "otorganteId": otorgante.to_string(),
+            "apoderadoId": apoderado.to_string(),
+            "documentoUrl": "https://storage.example/poder.pdf"
+        })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "create poder failed: {poder}");
+    let pid = poder["id"].as_str().expect("poder id");
+
+    // With no ballot open, verification is allowed.
+    let (s, body) = request(
+        &app,
+        Method::PUT,
+        &format!("/api/v1/asambleas/{aid}/poderes/{pid}"),
+        Some(&admin_token),
+        Some(json!({ "verificado": true })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "verify before any votacion failed: {body}");
+
+    // Open a ballot; the representation set must now be frozen in both directions.
+    let (s, votacion) = request(
+        &app,
+        Method::POST,
+        &format!("/api/v1/asambleas/{aid}/votaciones"),
+        Some(&admin_token),
+        Some(json!({ "titulo": "Cuotas extraordinarias" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "create votacion failed: {votacion}");
+    let vid = votacion["id"].as_str().expect("votacion id");
+    let (s, _) = request(
+        &app,
+        Method::PUT,
+        &format!("/api/v1/asambleas/{aid}/votaciones/{vid}"),
+        Some(&admin_token),
+        Some(json!({ "activa": true })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+
+    for verificado in [false, true] {
+        let (s, body) = request(
+            &app,
+            Method::PUT,
+            &format!("/api/v1/asambleas/{aid}/poderes/{pid}"),
+            Some(&admin_token),
+            Some(json!({ "verificado": verificado })),
+        )
+        .await;
+        assert_eq!(
+            s,
+            StatusCode::CONFLICT,
+            "changing poderes to {verificado} during an open ballot must be refused: {body}"
+        );
+    }
+}

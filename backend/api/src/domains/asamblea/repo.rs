@@ -89,6 +89,18 @@ pub async fn otorgante_ya_voto(
     Ok(n > 0)
 }
 
+/// True while any votación of this asamblea is open. The set of who represents
+/// whom must not change mid-ballot.
+pub async fn hay_votacion_activa(conn: &mut DbConn, asamblea_id: Uuid) -> ApiResult<bool> {
+    let n: i64 = asamblea_votaciones::table
+        .filter(asamblea_votaciones::asamblea_id.eq(asamblea_id))
+        .filter(asamblea_votaciones::activa.eq(true))
+        .count()
+        .get_result(conn)
+        .await?;
+    Ok(n > 0)
+}
+
 /// Returns (nombre, torre, apto) for denormalised opinion/turno fields.
 pub async fn get_user_info(
     conn: &mut DbConn,
