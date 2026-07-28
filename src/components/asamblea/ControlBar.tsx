@@ -8,7 +8,7 @@ import {
 } from '@livekit/components-react';
 import {
   Mic, MicOff, Video as VideoIcon, VideoOff, ScreenShare, ScreenShareOff,
-  Hand, LayoutGrid, User, PhoneOff, MessageSquare, Users, ChevronUp, Check,
+  Hand, LayoutGrid, User, PhoneOff, MessageSquare, Users, ChevronUp, Check, Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { StageView } from './ConferenceStage';
@@ -29,11 +29,13 @@ interface ControlBarProps {
 
 /** Round control button — the shape both Meet and Zoom converged on. */
 function CtrlButton({
-  active, danger, disabled, label, onClick, children,
+  active, danger, disabled, locked, label, onClick, children,
 }: {
   active?: boolean;
   danger?: boolean;
   disabled?: boolean;
+  /** Present but not permitted — shows a lock and stays clickable to explain why. */
+  locked?: boolean;
   label: string;
   onClick: () => void;
   children: React.ReactNode;
@@ -44,15 +46,22 @@ function CtrlButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`relative w-12 h-12 rounded-full grid place-items-center border transition-all duration-200 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`relative shrink-0 w-12 h-12 rounded-full grid place-items-center border transition-all duration-200 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed ${
         danger
           ? 'bg-red-500 border-red-400 text-white hover:bg-red-400 shadow-lg shadow-red-500/25'
-          : active
-            ? 'bg-white border-white text-black hover:bg-white/90'
-            : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
+          : locked
+            ? 'bg-white/[0.04] border-white/10 text-white/35 hover:bg-white/10 hover:text-white/60'
+            : active
+              ? 'bg-white border-white text-black hover:bg-white/90'
+              : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
       }`}
     >
       {children}
+      {locked && (
+        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-black border border-white/20 grid place-items-center">
+          <Lock size={8} className="text-white/60" />
+        </span>
+      )}
     </button>
   );
 }
@@ -153,6 +162,16 @@ export default function ControlBar({
       'No se pudo compartir la pantalla',
     );
 
+  /** Tapping a locked mic/camera should teach, not fail silently. */
+  const requestFloorWithHint = () => {
+    if (handRaised) {
+      toast.info('Ya pediste la palabra — espera a que la administración te dé el turno');
+      return;
+    }
+    toast.info('Pide la palabra para activar tu micrófono y cámara');
+    onRequestFloor();
+  };
+
   // Keyboard shortcuts, matching the ones people already know from Zoom/Meet.
   useEffect(() => {
     if (!canPublish) return;
@@ -175,66 +194,78 @@ export default function ControlBar({
 
   return (
     <div className="flex items-center justify-center">
-      <div className="flex items-center gap-2 px-3 py-2.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl">
-        {canPublish ? (
-          <>
-            <div className="flex items-end gap-1">
-              <CtrlButton
-                label={isMicrophoneEnabled ? 'Silenciar micrófono (M)' : 'Activar micrófono (M)'}
-                active={isMicrophoneEnabled}
-                onClick={toggleMic}
-                disabled={busy}
-              >
-                {isMicrophoneEnabled ? <Mic size={19} /> : <MicOff size={19} />}
-              </CtrlButton>
-              <div className="-ml-3 mb-0.5">
-                <DeviceMenu kind="audioinput" label="Micrófono" />
-              </div>
-            </div>
-
-            <div className="flex items-end gap-1">
-              <CtrlButton
-                label={isCameraEnabled ? 'Apagar cámara (V)' : 'Encender cámara (V)'}
-                active={isCameraEnabled}
-                onClick={toggleCam}
-                disabled={busy}
-              >
-                {isCameraEnabled ? <VideoIcon size={19} /> : <VideoOff size={19} />}
-              </CtrlButton>
-              <div className="-ml-3 mb-0.5">
-                <DeviceMenu kind="videoinput" label="Cámara" />
-              </div>
-            </div>
-
-            <CtrlButton
-              label={isScreenShareEnabled ? 'Dejar de compartir' : 'Compartir pantalla'}
-              active={isScreenShareEnabled}
-              onClick={toggleShare}
-              disabled={busy || !canShare}
-            >
-              {isScreenShareEnabled ? <ScreenShareOff size={19} /> : <ScreenShare size={19} />}
-            </CtrlButton>
-          </>
-        ) : (
-          /* No publish grant: one clear call to action instead of three dead buttons. */
-          <button
-            onClick={onRequestFloor}
-            className={`h-12 px-5 rounded-full flex items-center gap-2 border transition-all active:scale-95 ${
-              handRaised
-                ? 'bg-white text-black border-white'
-                : 'bg-white/10 text-white border-white/15 hover:bg-white/20'
-            }`}
+      <div className="flex items-center gap-2 px-3 py-2.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Mic and camera are always on the bar. Hiding them when the caller has
+            no publish grant made the app look like it lacked the feature; a
+            locked button that explains itself is clearer than an absent one. */}
+        <div className="flex items-end gap-1 shrink-0">
+          <CtrlButton
+            label={
+              !canPublish
+                ? 'Necesitas la palabra para hablar'
+                : isMicrophoneEnabled
+                  ? 'Silenciar micrófono (M)'
+                  : 'Activar micrófono (M)'
+            }
+            active={canPublish && isMicrophoneEnabled}
+            locked={!canPublish}
+            onClick={canPublish ? toggleMic : requestFloorWithHint}
+            disabled={busy}
           >
-            <Hand size={18} className={handRaised ? 'animate-pulse' : ''} />
-            <span className="text-xs font-semibold tracking-wide whitespace-nowrap">
-              {handRaised ? 'Mano levantada' : 'Pedir la palabra'}
-            </span>
-          </button>
+            {canPublish && isMicrophoneEnabled ? <Mic size={19} /> : <MicOff size={19} />}
+          </CtrlButton>
+          {canPublish && (
+            <div className="-ml-3 mb-0.5">
+              <DeviceMenu kind="audioinput" label="Micrófono" />
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-end gap-1 shrink-0">
+          <CtrlButton
+            label={
+              !canPublish
+                ? 'Necesitas la palabra para encender la cámara'
+                : isCameraEnabled
+                  ? 'Apagar cámara (V)'
+                  : 'Encender cámara (V)'
+            }
+            active={canPublish && isCameraEnabled}
+            locked={!canPublish}
+            onClick={canPublish ? toggleCam : requestFloorWithHint}
+            disabled={busy}
+          >
+            {canPublish && isCameraEnabled ? <VideoIcon size={19} /> : <VideoOff size={19} />}
+          </CtrlButton>
+          {canPublish && (
+            <div className="-ml-3 mb-0.5">
+              <DeviceMenu kind="videoinput" label="Cámara" />
+            </div>
+          )}
+        </div>
+
+        {canPublish ? (
+          <CtrlButton
+            label={isScreenShareEnabled ? 'Dejar de compartir' : 'Compartir pantalla'}
+            active={isScreenShareEnabled}
+            onClick={toggleShare}
+            disabled={busy || !canShare}
+          >
+            {isScreenShareEnabled ? <ScreenShareOff size={19} /> : <ScreenShare size={19} />}
+          </CtrlButton>
+        ) : (
+          <CtrlButton
+            label={handRaised ? 'Mano levantada' : 'Pedir la palabra'}
+            active={handRaised}
+            onClick={onRequestFloor}
+          >
+            <Hand size={19} className={handRaised ? 'animate-pulse' : ''} />
+          </CtrlButton>
         )}
 
         <ReactionPicker onPick={onReaction} />
 
-        <div className="w-px h-8 bg-white/10 mx-0.5" />
+        <div className="w-px h-8 bg-white/10 mx-0.5 shrink-0" />
 
         <CtrlButton
           label={view === 'grid' ? 'Vista de orador' : 'Vista de mosaico'}
@@ -263,7 +294,7 @@ export default function ControlBar({
           </span>
         </CtrlButton>
 
-        <div className="w-px h-8 bg-white/10 mx-0.5" />
+        <div className="w-px h-8 bg-white/10 mx-0.5 shrink-0" />
 
         <CtrlButton
           label="Salir de la sala"

@@ -103,7 +103,7 @@ export function ReactionPicker({ onPick }: { onPick: (emoji: string) => void }) 
   void localParticipant;
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative shrink-0" ref={ref}>
       {open && (
         <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-2 rounded-2xl bg-black/85 backdrop-blur-xl border border-white/15 shadow-2xl">
           {REACTION_EMOJI.map((emoji) => (
