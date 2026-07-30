@@ -3,7 +3,6 @@ import '../global.css';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Stack, type ErrorBoundaryProps } from 'expo-router';
-import { BlurTargetView } from 'expo-blur';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -38,7 +37,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from 'nativewind';
 import { useReducedMotion } from 'react-native-reanimated';
 
-import { blurTargetRef } from '@/theme/blurTarget';
 import { darkTokens, tokensFor } from '@/theme/tokens';
 import { toastConfig } from '@/components/ui/toast';
 import { ThemeProvider } from '@/providers/ThemeProvider';
@@ -219,10 +217,6 @@ export default function RootLayout() {
                     style={{ flex: 1 }}
                     onLayout={onLayoutRootView}
                   >
-                    {/* Android blur source: every BlurView (LiquidGlass etc.)
-                        points its `blurTarget` at this wrapper. Plain View
-                        passthrough on iOS. */}
-                    <BlurTargetView ref={blurTargetRef} style={{ flex: 1 }}>
                     {/* Until fonts + auth resolve, render nothing over the splash. */}
                     {appReady ? (
                       <Stack
@@ -245,7 +239,6 @@ export default function RootLayout() {
                         <Stack.Screen name="(app)" />
                       </Stack>
                     ) : null}
-                    </BlurTargetView>
                   </View>
                 </CallProvider>
               </WebSocketProvider>

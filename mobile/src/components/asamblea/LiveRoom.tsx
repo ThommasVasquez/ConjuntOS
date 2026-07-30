@@ -24,6 +24,7 @@ import ConferenceStage, { type StageView } from '@/components/asamblea/Conferenc
 import ControlBar from '@/components/asamblea/ControlBar';
 import PreJoin, { type JoinChoices } from '@/components/asamblea/PreJoin';
 import { ensureMicPermission } from '@/components/asamblea/permissions';
+import { ensureBluetoothPermission } from '@/providers/CallProvider';
 import { ReactionOverlay, useReactions } from '@/components/asamblea/Reactions';
 import { chrome, ink, scrim } from '@/components/asamblea/stageChrome';
 import { useWsSubscription } from '@/hooks/useWebSocket';
@@ -218,9 +219,13 @@ export default function LiveRoom({
   useEffect(() => {
     let cancelled = false;
     ensureGlobals();
-    AudioSession.startAudioSession().catch(() => {
-      /* the room still connects; only routing may be off */
-    });
+    // BLUETOOTH_CONNECT first, or audioswitch starts blind to bonded devices and
+    // the room is stuck on earpiece+speaker. Never a gate — see CallProvider.
+    ensureBluetoothPermission()
+      .then(() => AudioSession.startAudioSession())
+      .catch(() => {
+        /* the room still connects; only routing may be off */
+      });
     fetchToken()
       .then((data) => {
         if (cancelled) return;

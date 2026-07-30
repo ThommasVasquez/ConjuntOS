@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
-import { blurTargetRef } from '@/theme/blurTarget';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   cancelAnimation,
@@ -1162,9 +1161,9 @@ export default function Perfil() {
           intensity={20}
           tint={isLight ? 'light' : 'dark'}
           style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: heroH * 0.4 }}
-          // SDK 56 Android API: method + app-wide target (ignored on iOS).
-          blurMethod="dimezisBlurView"
-          blurTarget={blurTargetRef}
+          // No Android blurMethod/blurTarget — see LiquidGlass.tsx: pointing at
+          // the app-wide target crashed RenderThread. Layer 3's gradient below
+          // already supplies the HUD contrast this blur was softening.
         />
         {/* Layer 3: HUD contrast gradient & base shadow */}
         <LinearGradient

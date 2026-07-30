@@ -4,7 +4,6 @@ import { useColorScheme } from 'nativewind';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import type { ReactNode } from 'react';
 
-import { blurTargetRef } from '@/theme/blurTarget';
 import { darkGlass, gradients, lightGlass, type GlassTokens } from '@/theme/tokens';
 
 export interface LiquidGlassProps {
@@ -93,11 +92,20 @@ export function LiquidGlass({
         <BlurView
           intensity={blurIntensity}
           tint={blurTint}
-          // Android needs an explicit method + target to actually blur (both
-          // android-only props, ignored on iOS). The target is the app-wide
-          // BlurTargetView mounted in app/_layout.tsx.
-          blurMethod="dimezisBlurView"
-          blurTarget={blurTargetRef}
+          // ponytail: Android intentionally left on the default blurMethod
+          // 'none' (a semi-transparent view). It used to pass
+          // blurMethod="dimezisBlurView" + blurTarget={blurTargetRef}, where the
+          // target was the BlurTargetView wrapping the whole <Stack> in
+          // app/_layout.tsx — i.e. an ancestor of every BlurView pointing at it.
+          // Dimezis blurs by re-drawing its target's view tree, so each of the
+          // 13 glass cards on (app)/inicio.tsx redrew a tree containing all 13,
+          // recursing until RenderThread blew its stack (SIGSEGV in
+          // RenderNode::prepareTreeImpl). Real Android blur needs a target that
+          // does NOT contain its BlurViews — a background-only layer — which
+          // would blur the page background rather than the content behind each
+          // card. The layers below (fill/gradient + border + edge highlights)
+          // already carry the glass look, so that rework isn't worth it. iOS is
+          // unaffected: both props are android-only and iOS blurs natively.
           style={StyleSheet.absoluteFill}
         />
 

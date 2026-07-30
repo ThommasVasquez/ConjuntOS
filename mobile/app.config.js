@@ -47,7 +47,27 @@ const config = {
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
-    permissions: ['RECORD_AUDIO', 'CAMERA', 'POST_NOTIFICATIONS', 'INTERNET'],
+    // BLUETOOTH_CONNECT is required from API 31+ for audioswitch (pulled in by
+    // @livekit/react-native) to enumerate bonded devices. Without it
+    // AudioSession.startAudioSession() finds no Bluetooth route and citofonía /
+    // asamblea audio is stuck on earpiece+speaker. The legacy BLUETOOTH /
+    // BLUETOOTH_ADMIN entries added by @config-plugins/react-native-webrtc are
+    // inert on 31+ and are left alone.
+    permissions: [
+      'RECORD_AUDIO',
+      'CAMERA',
+      'POST_NOTIFICATIONS',
+      'INTERNET',
+      'BLUETOOTH_CONNECT',
+    ],
+    // @config-plugins/react-native-webrtc adds SYSTEM_ALERT_WINDOW for
+    // draw-over-other-apps incoming-call UIs. We surface calls through
+    // expo-notifications + in-app navigation (src/providers/CallProvider.tsx),
+    // never an overlay, so the permission only serves to flag the listing in
+    // Play review. Debug builds keep it: android/app/src/debug/AndroidManifest.xml
+    // declares it and the debug source set outranks main's tools:node="remove",
+    // so the RN dev-menu overlay is unaffected. Verified in the merged manifests.
+    blockedPermissions: ['android.permission.SYSTEM_ALERT_WINDOW'],
   },
   web: {
     output: 'static',

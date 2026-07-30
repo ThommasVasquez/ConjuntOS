@@ -75,7 +75,6 @@ import { toast } from '@/components/ui/toast';
 import { api } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
-import { blurTargetRef } from '@/theme/blurTarget';
 import { darkTokens, tokensFor } from '@/theme/tokens';
 import type { RondaDto } from '@/lib/api/types';
 
@@ -1093,11 +1092,12 @@ function CamZoomModal({ cam, onClose }: { cam: Camera | null; onClose: () => voi
           accessibilityLabel="Cerrar"
           className="absolute inset-0"
         >
+          {/* No Android blurMethod/blurTarget — see LiquidGlass.tsx: pointing
+              at the app-wide target crashed RenderThread. The bg-black/90
+              overlay below already carries this scrim. */}
           <BlurView
             intensity={20}
             tint="dark"
-            blurMethod="dimezisBlurView"
-            blurTarget={blurTargetRef}
             style={StyleSheet.absoluteFill}
           />
           <View pointerEvents="none" className="absolute inset-0 bg-black/90" />
