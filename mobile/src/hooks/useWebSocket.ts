@@ -20,6 +20,8 @@ interface WsState {
   handlers: Map<string, Set<EventHandler>>;
   subscribe: (domain: string, handler: EventHandler) => () => void;
   dispatch: (event: WsEvent) => void;
+  /** Tell every subscriber to refetch after the socket was down. */
+  resyncAll: () => void;
   reset: () => void;
 }
 
@@ -56,6 +58,32 @@ export const useWsStore = create<WsState>((set, get) => ({
     }
     for (const h of wildcardHandlers) {
       try { h(event); } catch { /* swallow handler error */ }
+    }
+  },
+
+  /**
+   * Events that arrive while the socket is down are gone for good — the hub
+   * does not replay them. So on every RE-connect we synthesise one `resync`
+   * event per subscribed domain, which lands in the same handlers that already
+   * refetch on any event. Without this a client that briefly lost the network
+   * (screen lock, wifi handover) keeps showing stale state indefinitely: an
+   * assembly that has already been finalised still looks live to them.
+   *
+   * This matters MORE on native than on web: backgrounding the app tears the
+   * socket down routinely, so without a resync every event published while
+   * suspended is lost.
+   */
+  resyncAll: () => {
+    const { handlers } = get();
+    for (const domain of Array.from(handlers.keys())) {
+      const snapshot = Array.from(handlers.get(domain) ?? []);
+      for (const h of snapshot) {
+        try {
+          h({ domain, action: 'resync' });
+        } catch {
+          /* swallow handler error */
+        }
+      }
     }
   },
 

@@ -9,12 +9,14 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  cancelAnimation,
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   Easing,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -22,7 +24,6 @@ import {
   Car,
   Clock,
   Info,
-  Loader2,
   MapPin,
   Package,
   Phone,
@@ -34,7 +35,7 @@ import {
   X,
 } from 'lucide-react-native';
 
-import { api } from '@/lib/api/client';
+import { api, ApiError } from '@/lib/api/client';
 import type {
   CreateVisitaResidenteRequest,
   DirectorioUsuarioDto,
@@ -43,10 +44,10 @@ import type {
 import { useAuth } from '@/hooks/useAuth';
 import { useCall } from '@/providers/CallProvider';
 import { Screen } from '@/components/ui/Screen';
-import { LiquidGlass } from '@/components/ui/LiquidGlass';
 import { toast } from '@/components/ui/toast';
 import ProfileHeader from '@/components/shell/ProfileHeader';
-import { tokensFor } from '@/theme/tokens';
+import { Bouncing, CallAvatar, Equalizer } from '@/components/citofonia/CallVisuals';
+import { glassFor, onSemantic, tokensFor } from '@/theme/tokens';
 
 type Tab = 'CITOFONIA' | 'VISITAS' | 'RECEPCION';
 
@@ -83,7 +84,12 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-function PulsingDot({ color = '#57bf00' }: { color?: string }) {
+/**
+ * `bg-success animate-pulse shadow-[0_0_6px_…]` (web page.tsx:375). The web
+ * glow literal is itself a stale hex from the retired palette, so it is ported
+ * as a `success`-token glow.
+ */
+function PulsingDot({ color }: { color: string }) {
   const opacity = useSharedValue(1);
 
   useEffect(() => {
@@ -92,6 +98,7 @@ function PulsingDot({ color = '#57bf00' }: { color?: string }) {
       -1,
       true,
     );
+    return () => cancelAnimation(opacity);
   }, [opacity]);
 
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
@@ -99,7 +106,17 @@ function PulsingDot({ color = '#57bf00' }: { color?: string }) {
   return (
     <Animated.View
       style={[
-        { width: 6, height: 6, borderRadius: 3, backgroundColor: color },
+        {
+          width: 6,
+          height: 6,
+          borderRadius: 3,
+          backgroundColor: color,
+          shadowColor: color,
+          shadowOpacity: 0.9,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 4,
+        },
         style,
       ]}
     />
@@ -109,7 +126,26 @@ function PulsingDot({ color = '#57bf00' }: { color?: string }) {
 export default function Citofonia() {
   const router = useRouter();
   const { colorScheme } = useColorScheme();
-  const t = tokensFor(colorScheme === 'light' ? 'light' : 'dark');
+  const scheme = colorScheme === 'light' ? 'light' : 'dark';
+  const t = tokensFor(scheme);
+  const g = glassFor(scheme);
+  // Web builds every citofonía container as an OPAQUE elevated surface
+  // (`bg-primary-light shadow-sm`, page.tsx:364,414,465,506,604,645), not glass.
+  const cardShadow = {
+    shadowColor: g.shadowColor,
+    shadowOpacity: scheme === 'light' ? 0.06 : 0.3,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  } as const;
+  // Web `shadow-2xl` on the round call-overlay buttons (page.tsx:338,344,353).
+  const callButtonShadow = {
+    shadowColor: g.shadowColor,
+    shadowOpacity: scheme === 'light' ? 0.18 : 0.5,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
+  } as const;
   const { user } = useAuth();
   // Huéspedes temporales solo ven la pestaña de citófono (sin directorio ni
   // marcador) y su marcación rápida apunta a Estacionamientos, igual que web.
@@ -249,20 +285,25 @@ export default function Citofonia() {
   const submitVisita = async () => {
     const nombre = visitaNombre.trim();
     if (!nombre) {
-      toast.error('Por favor ingresa el nombre del invitado');
+      toast.error('Por favor, escribe el nombre del invitado.');
       return;
     }
     setSavingVisita(true);
     try {
       const isVehicular = visitaVehiculo !== 'NINGUNO';
       const placa = visitaPlaca.trim().toUpperCase();
-      // Like web: tieneParqueadero mirrors the vehicular flag (backend defaults
-      // it to false when omitted) and observacion is sent explicitly as null.
-      const body: Omit<CreateVisitaResidenteRequest, 'observacion'> & { observacion: null } = {
+      // Same six keys web always sends (page.tsx:100-107): `vehiculoTipo` goes
+      // out even as the literal 'NINGUNO', `placa` is an explicit null when
+      // blank or pedestrian, `tieneParqueadero` mirrors the vehicular flag and
+      // `observacion` is always null — so server-side defaulting is identical.
+      const body: Omit<CreateVisitaResidenteRequest, 'placa' | 'observacion'> & {
+        placa: string | null;
+        observacion: null;
+      } = {
         nombre,
         tipo: isVehicular ? 'VEHICULAR' : 'PEATONAL',
-        ...(isVehicular ? { vehiculoTipo: visitaVehiculo } : {}),
-        ...(isVehicular && placa ? { placa } : {}),
+        vehiculoTipo: visitaVehiculo,
+        placa: isVehicular ? placa || null : null,
         tieneParqueadero: isVehicular,
         observacion: null,
       };
@@ -273,8 +314,10 @@ export default function Citofonia() {
       setVisitaVehiculo('NINGUNO');
       setVisitaPlaca('');
       fetchData();
-    } catch {
-      toast.error('No se pudo agendar la visita');
+    } catch (e) {
+      // Web surfaces the backend message (e.g. a 409 "cupo agotado") and only
+      // falls back to the fixed copy.
+      toast.error(e instanceof ApiError ? e.detail : 'Error al programar la visita');
     } finally {
       setSavingVisita(false);
     }
@@ -288,23 +331,26 @@ export default function Citofonia() {
         <ProfileHeader />
 
         {/* COMPACT DASHBOARD HEADER */}
-        <LiquidGlass variant="card" radius={32} className="w-full p-5">
+        <View
+          className="w-full rounded-[32px] border border-border bg-primary-light p-5"
+          style={cardShadow}
+        >
           <View className="flex-row items-center justify-between px-2">
             <Text className="font-display text-xl font-bold tracking-tight text-text">
               Centro de Control
             </Text>
             <View className={`flex-row items-center gap-1.5 rounded-full border px-2.5 py-1 ${
               activeTab === 'CITOFONIA'
-                ? 'bg-[#57bf00]/10 border-[#57bf00]/30'
+                ? 'bg-success/10 border-success/30'
                 : 'bg-text/10 border-text/20'
             }`}>
               {activeTab === 'CITOFONIA' ? (
-                <PulsingDot />
+                <PulsingDot color={t.success} />
               ) : (
                 <View className="h-1.5 w-1.5 rounded-full bg-text/30" />
               )}
               <Text className={`text-[10px] font-black uppercase tracking-widest ${
-                activeTab === 'CITOFONIA' ? 'text-[#57bf00]' : 'text-text'
+                activeTab === 'CITOFONIA' ? 'text-success' : 'text-text'
               }`}>
                 En Línea
               </Text>
@@ -312,7 +358,7 @@ export default function Citofonia() {
           </View>
 
           {/* TAB SELECTOR */}
-          <View className="mt-4 flex-row rounded-2xl border border-border bg-surface p-1">
+          <View className="mt-4 flex-row rounded-2xl border border-border bg-text/5 p-1">
             {(
               isGuest
                 ? ([{ id: 'CITOFONIA', icon: Phone, label: 'Portería' }] as const)
@@ -328,27 +374,51 @@ export default function Citofonia() {
                 <Pressable
                   key={tab.id}
                   onPress={() => setActiveTab(tab.id)}
+                  // web: active = `bg-info text-on-accent shadow-md`,
+                  // inactive = `text-text/60` (page.tsx:399).
+                  style={
+                    active
+                      ? {
+                          shadowColor: g.shadowColor,
+                          shadowOpacity: scheme === 'light' ? 0.12 : 0.4,
+                          shadowRadius: 6,
+                          shadowOffset: { width: 0, height: 2 },
+                          elevation: 3,
+                        }
+                      : { opacity: 0.6 }
+                  }
                   className={`flex-1 items-center gap-1 rounded-xl py-2.5 ${
-                    active ? 'border border-border bg-surface2' : ''
+                    active ? 'bg-info' : ''
                   }`}
                 >
-                  <Icon size={16} color={t.text} strokeWidth={active ? 2.5 : 1.5} />
-                  <Text className="text-[9px] font-bold uppercase tracking-wider text-text">
+                  <Icon
+                    size={16}
+                    color={active ? t.onAccent : t.text}
+                    strokeWidth={active ? 2.5 : 1.5}
+                  />
+                  <Text
+                    className={`text-[9px] font-bold uppercase tracking-wider ${
+                      active ? 'text-on-accent' : 'text-text'
+                    }`}
+                  >
                     {tab.label}
                   </Text>
                 </Pressable>
               );
             })}
           </View>
-        </LiquidGlass>
+        </View>
 
         {/* CONTENT AREA */}
         {activeTab === 'CITOFONIA' && (
           <View className="gap-6">
             {/* SEARCH RESIDENTS — oculto para huéspedes */}
             {!isGuest && (
-            <LiquidGlass variant="card" radius={28} className="p-4">
-              <View className="flex-row items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3">
+            <View
+              className="rounded-[28px] border border-border bg-primary-light p-4"
+              style={cardShadow}
+            >
+              <View className="flex-row items-center gap-2 rounded-2xl border border-border bg-text/5 px-4 py-3">
                 <Search size={18} color={t.textMuted} />
                 <TextInput
                   value={searchQuery}
@@ -357,7 +427,7 @@ export default function Citofonia() {
                   placeholderTextColor={t.textMuted}
                   className="flex-1 text-sm text-text"
                 />
-                {searchLoading && <Loader2 size={16} color={t.textMuted} />}
+                {searchLoading && <ActivityIndicator size="small" color={t.textMuted} />}
                 {searchQuery.length > 0 && !searchLoading && (
                   <Pressable onPress={() => setSearchQuery('')}>
                     <X size={16} color={t.textMuted} />
@@ -374,7 +444,7 @@ export default function Citofonia() {
                         onPress={() => callDirectorioUser(u)}
                         disabled={callState !== 'IDLE'}
                         style={{ opacity: callState !== 'IDLE' ? 0.5 : 1 }}
-                        className="flex-row items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-3"
+                        className="flex-row items-center justify-between gap-3 rounded-2xl border border-border bg-text/5 p-3"
                       >
                         <View className="min-w-0 flex-1">
                           <Text className="text-sm font-bold text-text" numberOfLines={1}>
@@ -385,8 +455,9 @@ export default function Citofonia() {
                             {u.numeroInterno}
                           </Text>
                         </View>
-                        <View className="h-9 w-9 items-center justify-center rounded-full bg-surface2">
-                          <Phone size={16} color={t.accent} />
+                        {/* web: success at 10% fill + success ink (page.tsx:445-450). */}
+                        <View className="h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/10">
+                          <Phone size={16} color={t.success} />
                         </View>
                       </Pressable>
                     ))}
@@ -397,20 +468,25 @@ export default function Citofonia() {
               {searchQuery.trim().length >= 1 && !searchLoading && searchResults.length === 0 && (
                 <Text className="mt-3 text-center text-xs text-textMuted">Sin resultados</Text>
               )}
-            </LiquidGlass>
+            </View>
             )}
 
-            {/* QUICK CONTACTS */}
+            {/* QUICK CONTACTS — 48px info-tinted chip + 24px info icon (page.tsx:467-472) */}
             <View className="flex-row gap-4">
               <Pressable
                 onPress={() => {
                   setDialNum('P');
                   handleCall('P');
                 }}
-                className="flex-1 items-center gap-3 rounded-[28px] border border-border bg-primary-light p-6"
+                style={cardShadow}
+                className="flex-1 items-center gap-3 rounded-[28px] border border-border bg-primary-light p-5"
               >
-                <ShieldCheck size={28} color={t.accent} />
-                <Text className="text-xs font-bold text-text">Portería Principal</Text>
+                <View className="h-12 w-12 items-center justify-center rounded-2xl bg-info/10">
+                  <ShieldCheck size={24} color={t.info} />
+                </View>
+                <Text className="text-center text-xs font-bold leading-tight text-text">
+                  Portería Principal
+                </Text>
               </Pressable>
               {isGuest ? (
                 <Pressable
@@ -418,10 +494,15 @@ export default function Citofonia() {
                     setDialNum('E');
                     handleCall('E');
                   }}
-                  className="flex-1 items-center gap-3 rounded-[28px] border border-border bg-primary-light p-6"
+                  style={cardShadow}
+                  className="flex-1 items-center gap-3 rounded-[28px] border border-border bg-primary-light p-5"
                 >
-                  <Car size={28} color={t.text} />
-                  <Text className="text-xs font-bold text-text">Estacionamientos</Text>
+                  <View className="h-12 w-12 items-center justify-center rounded-2xl bg-info/10">
+                    <Car size={24} color={t.info} />
+                  </View>
+                  <Text className="text-center text-xs font-bold leading-tight text-text">
+                    Estacionamientos
+                  </Text>
                 </Pressable>
               ) : (
                 <Pressable
@@ -429,17 +510,34 @@ export default function Citofonia() {
                     setDialNum('A');
                     handleCall('A');
                   }}
-                  className="flex-1 items-center gap-3 rounded-[28px] border border-border bg-primary-light p-6"
+                  style={cardShadow}
+                  className="flex-1 items-center gap-3 rounded-[28px] border border-border bg-primary-light p-5"
                 >
-                  <Users size={28} color={t.text} />
-                  <Text className="text-xs font-bold text-text">Administración</Text>
+                  <View className="h-12 w-12 items-center justify-center rounded-2xl bg-info/10">
+                    <Users size={24} color={t.info} />
+                  </View>
+                  <Text className="text-center text-xs font-bold leading-tight text-text">
+                    Administración
+                  </Text>
                 </Pressable>
               )}
             </View>
 
             {/* NUMERIC DIALER — oculto para huéspedes */}
             {!isGuest && (
-            <LiquidGlass variant="card" radius={40} className="items-center gap-8 p-8">
+            <View
+              className="items-center gap-8 overflow-hidden rounded-[40px] border border-border bg-primary-light p-8"
+              style={cardShadow}
+            >
+              {/* Decorative accent top-edge glow (page.tsx:507). */}
+              <LinearGradient
+                colors={['transparent', t.accent, 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                pointerEvents="none"
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, opacity: 0.3 }}
+              />
+
               <View className="w-full items-center gap-2">
                 <View className="h-12 items-center justify-center">
                   <Text className="font-display text-4xl font-bold tracking-[8px] text-text">
@@ -453,13 +551,15 @@ export default function Citofonia() {
                 )}
               </View>
 
-              <View className="w-full max-w-[240px] flex-row flex-wrap justify-between gap-y-6">
+              {/* web: `grid grid-cols-3 gap-6 w-full max-w-[240px]` with
+                  `w-14 h-14 rounded-full` keys (page.tsx:518-523) — the keys must
+                  stay 56px CIRCLES, so the width is fixed, not a % of the row. */}
+              <View className="w-full max-w-[240px] flex-row flex-wrap justify-center gap-6">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '0', '#'].map((n) => (
                   <Pressable
                     key={n}
                     onPress={() => handleDial(n)}
-                    style={{ width: '30%' }}
-                    className="h-14 items-center justify-center rounded-full border border-border bg-surface"
+                    className="h-14 w-14 items-center justify-center rounded-full border border-border bg-text/5"
                   >
                     <Text className="text-xl font-bold text-text">{n}</Text>
                   </Pressable>
@@ -469,28 +569,37 @@ export default function Citofonia() {
               <View className="w-full flex-row gap-6 px-4">
                 <Pressable
                   onPress={() => setDialNum('')}
-                  className="flex-1 items-center justify-center rounded-2xl border border-border bg-surface py-4"
+                  className="flex-1 items-center justify-center rounded-2xl border border-border bg-text/5 py-4"
                 >
                   <Text className="text-xs font-bold text-text">Limpiar</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => handleCall()}
-                  style={{ flex: 2 }}
+                  // web: `bg-danger shadow-danger/20` in call, else
+                  // `bg-success shadow-success/20` (page.tsx:539-543).
+                  style={{
+                    flex: 2,
+                    shadowColor: inCall ? t.danger : t.success,
+                    shadowOpacity: 0.2,
+                    shadowRadius: 12,
+                    shadowOffset: { width: 0, height: 8 },
+                    elevation: 6,
+                  }}
                   className={`flex-row items-center justify-center gap-3 rounded-2xl py-4 ${
-                    inCall ? 'bg-[#EF4444]' : 'bg-[#57bf00]'
+                    inCall ? 'bg-danger' : 'bg-success'
                   }`}
                 >
                   {inCall ? (
-                    <PhoneOff size={18} color="white" />
+                    <PhoneOff size={18} color={onSemantic(scheme)} />
                   ) : (
-                    <Phone size={18} color="white" />
+                    <Phone size={18} color={onSemantic(scheme)} />
                   )}
-                  <Text className="font-black text-white">
+                  <Text className="font-black" style={{ color: onSemantic(scheme) }}>
                     {inCall ? 'COLGAR' : 'LLAMAR'}
                   </Text>
                 </Pressable>
               </View>
-            </LiquidGlass>
+            </View>
             )}
           </View>
         )}
@@ -499,33 +608,50 @@ export default function Citofonia() {
           <View className="gap-6">
             {/* PARKING STATUS */}
             <View className="flex-row gap-3">
-              <LiquidGlass variant="card" radius={24} className="flex-1 p-4">
-                <Text className="mb-1 text-[9px] font-black uppercase tracking-widest text-text">
+              <View
+                className="min-w-0 flex-1 rounded-[24px] border border-border bg-primary-light p-4"
+                style={cardShadow}
+              >
+                <Text className="mb-2 text-[9px] font-bold uppercase tracking-wider text-text/55">
                   Cupos Carros
                 </Text>
-                <View className="flex-row items-center gap-2">
-                  <Car size={16} color={t.accent} />
-                  <Text className="font-display text-lg font-bold text-text">
+                <View className="min-w-0 flex-row items-center gap-2">
+                  <View className="h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-info/10">
+                    <Car size={16} color={t.info} />
+                  </View>
+                  <Text className="font-display text-base font-bold text-text" numberOfLines={1}>
                     {parking.carros} Disponibles
                   </Text>
                 </View>
-              </LiquidGlass>
-              <LiquidGlass variant="card" radius={24} className="flex-1 p-4">
-                <Text className="mb-1 text-[9px] font-black uppercase tracking-widest text-text">
+              </View>
+              <View
+                className="min-w-0 flex-1 rounded-[24px] border border-border bg-primary-light p-4"
+                style={cardShadow}
+              >
+                <Text className="mb-2 text-[9px] font-bold uppercase tracking-wider text-text/55">
                   Cupos Motos
                 </Text>
-                <View className="flex-row items-center gap-2">
-                  <Bike size={16} color={t.text} />
-                  <Text className="font-display text-lg font-bold text-text">
+                <View className="min-w-0 flex-row items-center gap-2">
+                  <View className="h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-info/10">
+                    <Bike size={16} color={t.info} />
+                  </View>
+                  <Text className="font-display text-base font-bold text-text" numberOfLines={1}>
                     {parking.motos} Disponibles
                   </Text>
                 </View>
-              </LiquidGlass>
+              </View>
             </View>
 
             {/* ACTION BUTTON */}
             <Pressable
               onPress={() => setIsAddingVisita(true)}
+              style={{
+                shadowColor: t.accent,
+                shadowOpacity: 0.2,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 8 },
+                elevation: 6,
+              }}
               className="w-full flex-row items-center justify-center gap-2 rounded-[22px] bg-accent py-4"
             >
               <Plus size={18} color={t.onAccent} />
@@ -542,7 +668,7 @@ export default function Citofonia() {
                   <ActivityIndicator color={t.accent} />
                 </View>
               ) : visitas.length === 0 ? (
-                <View className="items-center rounded-3xl border border-dashed border-border bg-surface py-12">
+                <View className="items-center rounded-3xl border border-dashed border-border bg-text/5 py-12">
                   <Users size={40} strokeWidth={1} color={t.text} />
                   <Text className="mt-2 text-[10px] font-bold text-text">
                     No has programado visitas aún
@@ -550,10 +676,14 @@ export default function Citofonia() {
                 </View>
               ) : (
                 visitas.map((v) => (
-                  <LiquidGlass key={v.id} variant="card" radius={24} className="p-4">
+                  <View
+                    key={v.id}
+                    className="rounded-3xl border border-border bg-primary-light p-4"
+                    style={cardShadow}
+                  >
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center gap-4">
-                        <View className="h-12 w-12 items-center justify-center rounded-2xl border border-border bg-surface">
+                        <View className="h-12 w-12 items-center justify-center rounded-2xl border border-border bg-text/5">
                           {v.tipo === 'VEHICULAR' ? (
                             <Car size={20} color={t.text} />
                           ) : (
@@ -571,13 +701,13 @@ export default function Citofonia() {
                           </Text>
                         </View>
                       </View>
-                      <View className="rounded-lg border border-border bg-surface px-2 py-1">
+                      <View className="rounded-lg border border-border bg-text/5 px-2 py-1">
                         <Text className="text-[8px] font-black uppercase text-text">
                           PROGRAMADA
                         </Text>
                       </View>
                     </View>
-                  </LiquidGlass>
+                  </View>
                 ))
               )}
             </View>
@@ -588,7 +718,20 @@ export default function Citofonia() {
           <View className="gap-6">
             {/* ALERT IF PACKAGES */}
             {paquetes.length > 0 && (
-              <View className="gap-2 rounded-3xl border border-border bg-surface2 p-6">
+              <View className="gap-2 overflow-hidden rounded-3xl border border-border p-6">
+                {/* web: `bg-linear-to-r from-accent/20 to-secondary/20` + a blurred
+                    accent/20 blob top-right (page.tsx:624-625). */}
+                <LinearGradient
+                  colors={[`${t.accent}33`, `${t.info}33`]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  pointerEvents="none"
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                />
+                <View
+                  pointerEvents="none"
+                  className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-accent/20"
+                />
                 <View className="flex-row items-center gap-3">
                   <View className="rounded-xl bg-accent p-2">
                     <Package size={20} color={t.onAccent} />
@@ -620,7 +763,11 @@ export default function Citofonia() {
                 </View>
               ) : (
                 paquetes.map((p) => (
-                  <LiquidGlass key={p.id} variant="card" radius={32} className="gap-4 p-5">
+                  <View
+                    key={p.id}
+                    className="gap-4 rounded-[32px] border border-border bg-primary-light p-5"
+                    style={cardShadow}
+                  >
                     <View className="flex-row items-start justify-between">
                       <View>
                         <Text className="text-base font-bold text-text">{p.descripcion}</Text>
@@ -628,7 +775,7 @@ export default function Citofonia() {
                           De: {p.remitente}
                         </Text>
                       </View>
-                      <View className="rounded-xl border border-border bg-surface2 p-2">
+                      <View className="rounded-xl border border-accent/20 bg-accent/10 p-2">
                         <Package size={18} color={t.accent} />
                       </View>
                     </View>
@@ -648,7 +795,7 @@ export default function Citofonia() {
                         <Text className="text-[9px] font-bold text-text">Portería 1</Text>
                       </View>
                     </View>
-                  </LiquidGlass>
+                  </View>
                 ))
               )}
             </View>
@@ -683,40 +830,15 @@ export default function Citofonia() {
 
             {/* Pulse circle */}
             <View className="my-4 items-center justify-center">
-              <View className="mb-6 h-32 w-32 items-center justify-center">
-                <View
-                  className={`h-24 w-24 items-center justify-center rounded-full border border-border ${
-                    callState === 'RINGING' || callState === 'OUTGOING'
-                      ? 'bg-surface2'
-                      : 'bg-accent'
-                  }`}
-                >
-                  <Phone
-                    size={36}
-                    color={
-                      callState === 'RINGING' || callState === 'OUTGOING' ? t.text : t.onAccent
-                    }
-                  />
-                </View>
-              </View>
+              <CallAvatar ringing={callState === 'RINGING' || callState === 'OUTGOING'} />
 
               {/* Equalizer bars when connected */}
-              {(callState === 'CONNECTED' || callState === 'FALLBACK') && (
-                <View className="h-10 flex-row items-end justify-center gap-1.5">
-                  {[40, 90, 60, 100, 50, 80].map((h, i) => (
-                    <View
-                      key={i}
-                      style={{ height: `${h}%` }}
-                      className="w-1 rounded-full bg-accent"
-                    />
-                  ))}
-                </View>
-              )}
+              {(callState === 'CONNECTED' || callState === 'FALLBACK') && <Equalizer />}
             </View>
 
             {/* Dialogue box */}
             {(callState === 'CONNECTED' || callState === 'FALLBACK') && (
-              <View className="my-2 w-full max-w-sm rounded-3xl border border-border bg-surface p-6">
+              <View className="my-2 w-full max-w-sm rounded-3xl border border-border bg-text/5 p-6">
                 <Text className="mb-2 text-center text-[10px] font-black uppercase tracking-widest text-accent">
                   RESPUESTA RECIBIDA
                 </Text>
@@ -743,7 +865,7 @@ export default function Citofonia() {
                       <Pressable
                         key={idx}
                         onPress={() => handleOptionClick(opt.label, opt.reply)}
-                        className="w-full flex-row items-center justify-between rounded-2xl border border-border bg-surface px-5 py-3.5"
+                        className="w-full flex-row items-center justify-between rounded-2xl border border-border bg-text/5 px-5 py-3.5"
                       >
                         <Text className="flex-1 text-xs font-bold text-text">
                           &quot;{opt.label}&quot;
@@ -758,30 +880,38 @@ export default function Citofonia() {
               </View>
             )}
 
-            {/* Action buttons */}
+            {/* Action buttons — danger/success tinted, bouncing like web
+                (page.tsx:333-359). */}
             <View className="mb-8 w-full max-w-xs flex-row justify-center gap-6">
               {callState === 'RINGING' ? (
                 <>
                   <Pressable
                     onPress={rejectCall}
-                    className="h-16 w-16 items-center justify-center rounded-full border border-border bg-surface2"
+                    style={callButtonShadow}
+                    className="h-16 w-16 items-center justify-center rounded-full border border-danger/40 bg-danger/20"
                   >
-                    <PhoneOff size={28} color={t.text} />
+                    <PhoneOff size={28} color={t.danger} />
                   </Pressable>
-                  <Pressable
-                    onPress={answerCall}
-                    className="h-16 w-16 items-center justify-center rounded-full bg-surface2"
-                  >
-                    <Phone size={28} color={t.text} />
-                  </Pressable>
+                  <Bouncing durationMs={2000}>
+                    <Pressable
+                      onPress={answerCall}
+                      style={callButtonShadow}
+                      className="h-16 w-16 items-center justify-center rounded-full border border-success/40 bg-success/20"
+                    >
+                      <Phone size={28} color={t.success} />
+                    </Pressable>
+                  </Bouncing>
                 </>
               ) : (
-                <Pressable
-                  onPress={endCall}
-                  className="h-16 w-16 items-center justify-center rounded-full bg-surface2"
-                >
-                  <PhoneOff size={28} color={t.text} />
-                </Pressable>
+                <Bouncing durationMs={3000}>
+                  <Pressable
+                    onPress={endCall}
+                    style={callButtonShadow}
+                    className="h-16 w-16 items-center justify-center rounded-full border border-danger/40 bg-danger/20"
+                  >
+                    <PhoneOff size={28} color={t.danger} />
+                  </Pressable>
+                </Bouncing>
               )}
             </View>
           </View>
@@ -804,14 +934,14 @@ export default function Citofonia() {
               contentContainerStyle={{ paddingBottom: 48 }}
             >
               <View className="gap-8">
-                <View className="mx-auto h-1.5 w-12 rounded-full bg-surface2" />
+                <View className="mx-auto h-1.5 w-12 rounded-full bg-text/20" />
                 <View className="flex-row items-center justify-between">
                   <Text className="font-display text-2xl font-bold text-text">
                     Programar Visita
                   </Text>
                   <Pressable
                     onPress={closeVisitaModal}
-                    className="h-10 w-10 items-center justify-center rounded-full bg-surface"
+                    className="h-10 w-10 items-center justify-center rounded-full bg-text/5"
                   >
                     <X size={20} color={t.text} />
                   </Pressable>
@@ -827,63 +957,59 @@ export default function Citofonia() {
                       onChangeText={setVisitaNombre}
                       placeholder="Ej: Diana Prince"
                       placeholderTextColor={t.textMuted}
-                      className="rounded-2xl border border-border bg-surface px-5 py-4 text-text"
+                      className="rounded-2xl border border-border bg-text/5 px-5 py-4 text-text"
                     />
                   </View>
 
-                  <View className="flex-row gap-4">
-                    <View className="flex-1 gap-2">
-                      <Text className="text-[10px] font-black uppercase tracking-widest text-text">
-                        Tipo de Vehículo
-                      </Text>
-                      <View className="flex-row gap-2">
-                        {(
-                          [
-                            { value: 'NINGUNO', label: 'Peatonal' },
-                            { value: 'CARRO', label: 'Carro' },
-                            { value: 'MOTO', label: 'Moto' },
-                          ] as const
-                        ).map((opt) => {
-                          const active = visitaVehiculo === opt.value;
-                          return (
-                            <Pressable
-                              key={opt.value}
-                              onPress={() => setVisitaVehiculo(opt.value)}
-                              className={`flex-1 items-center rounded-2xl border px-2 py-3 ${
-                                active ? 'border-border bg-surface2' : 'border-border bg-surface'
-                              }`}
-                            >
-                              <Text
-                                className={`text-[11px] font-bold text-text ${
-                                  active ? '' : 'opacity-60'
-                                }`}
-                              >
-                                {opt.label}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
+                  {/* Web pairs a native <select> with an ALWAYS-VISIBLE Placa
+                      input (page.tsx:689-702). RN has no <select>, so the tipo
+                      stays a 3-button segmented control — full width so the
+                      labels fit — and Placa is kept mounted below instead of
+                      popping in and out. */}
+                  <View className="gap-2">
+                    <Text className="text-[10px] font-black uppercase tracking-widest text-text">
+                      Tipo de Vehículo
+                    </Text>
+                    <View className="flex-row gap-2">
+                      {(
+                        [
+                          { value: 'NINGUNO', label: 'Peatonal' },
+                          { value: 'CARRO', label: 'Carro' },
+                          { value: 'MOTO', label: 'Moto' },
+                        ] as const
+                      ).map((opt) => {
+                        const active = visitaVehiculo === opt.value;
+                        return (
+                          <Pressable
+                            key={opt.value}
+                            onPress={() => setVisitaVehiculo(opt.value)}
+                            style={active ? undefined : { opacity: 0.6 }}
+                            className={`flex-1 items-center rounded-2xl border px-2 py-3 ${
+                              active ? 'border-accent bg-accent/10' : 'border-border bg-text/5'
+                            }`}
+                          >
+                            <Text className="text-[11px] font-bold text-text">{opt.label}</Text>
+                          </Pressable>
+                        );
+                      })}
                     </View>
                   </View>
 
-                  {visitaVehiculo !== 'NINGUNO' && (
-                    <View className="gap-2">
-                      <Text className="text-[10px] font-black uppercase tracking-widest text-text">
-                        Placa (Si aplica)
-                      </Text>
-                      <TextInput
-                        value={visitaPlaca}
-                        onChangeText={(txt) => setVisitaPlaca(txt.toUpperCase())}
-                        autoCapitalize="characters"
-                        placeholder="ABC-123"
-                        placeholderTextColor={t.textMuted}
-                        className="rounded-2xl border border-border bg-surface px-5 py-4 text-text"
-                      />
-                    </View>
-                  )}
+                  <View className="gap-2">
+                    <Text className="text-[10px] font-black uppercase tracking-widest text-text">
+                      Placa (Si aplica)
+                    </Text>
+                    <TextInput
+                      value={visitaPlaca}
+                      onChangeText={(txt) => setVisitaPlaca(txt.toUpperCase())}
+                      autoCapitalize="characters"
+                      placeholder="ABC-123"
+                      placeholderTextColor={t.textMuted}
+                      className="rounded-2xl border border-border bg-text/5 px-5 py-4 text-text"
+                    />
+                  </View>
 
-                  <View className="flex-row items-center gap-4 rounded-2xl border border-border bg-surface2 p-4">
+                  <View className="flex-row items-center gap-4 rounded-2xl border border-accent/20 bg-accent/10 p-4">
                     <Info size={20} color={t.accent} />
                     <Text className="flex-1 text-[10px] font-medium leading-relaxed text-text">
                       Al activar el parqueadero, se reservará un cupo automáticamente por 2 horas
@@ -894,14 +1020,20 @@ export default function Citofonia() {
                   <Pressable
                     onPress={submitVisita}
                     disabled={savingVisita}
-                    style={{ opacity: savingVisita ? 0.6 : 1 }}
-                    className="mt-4 items-center justify-center rounded-2xl bg-accent py-5"
+                    style={{
+                      opacity: savingVisita ? 0.6 : 1,
+                      shadowColor: t.accent,
+                      shadowOpacity: 0.2,
+                      shadowRadius: 12,
+                      shadowOffset: { width: 0, height: 8 },
+                      elevation: 6,
+                    }}
+                    className="mt-4 flex-row items-center justify-center gap-3 rounded-2xl bg-accent py-5"
                   >
-                    {savingVisita ? (
-                      <ActivityIndicator color={t.onAccent} />
-                    ) : (
-                      <Text className="text-base font-black text-on-accent">PROGRAMAR AHORA</Text>
-                    )}
+                    {savingVisita && <ActivityIndicator size="small" color={t.onAccent} />}
+                    <Text className="text-base font-black text-on-accent">
+                      {savingVisita ? 'PROGRAMANDO...' : 'PROGRAMAR AHORA'}
+                    </Text>
                   </Pressable>
                 </View>
               </View>

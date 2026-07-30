@@ -17,7 +17,11 @@ const config = {
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'enconjunto',
-  userInterfaceStyle: 'automatic',
+  // Web hardcodes `<html className="light">` (src/app/layout.tsx:78) and
+  // ThemeContext defaults to "light", so the app ships light and the in-app
+  // toggle (perfil) switches to dark. 'automatic' would let the OS override
+  // that default and diverge from web on a dark-mode device.
+  userInterfaceStyle: 'light',
   newArchEnabled: true,
   ios: {
     bundleIdentifier: 'com.wowbabies.conjuntos',
@@ -59,10 +63,16 @@ const config = {
     '@config-plugins/react-native-webrtc',
     'expo-image-picker',
     'expo-audio',
+    // QR scanning for visitor check-in / pases temporales (web parity with
+    // src/components/visitas/QrScanner.tsx). Permission strings are declared in
+    // ios.infoPlist.NSCameraUsageDescription and android.permissions above.
+    'expo-camera',
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#208AEF',
+        // Matches web `--color-primary` (globals.css :root) — the app paints its
+        // background from this token, so the splash must not flash a different hue.
+        backgroundColor: '#050d0c',
         android: {
           image: './assets/images/splash-icon.png',
           imageWidth: 76,
@@ -70,6 +80,16 @@ const config = {
       },
     ],
   ],
+  extra: {
+    eas: {
+      // Required by getExpoPushTokenAsync (src/services/push.ts): without a
+      // projectId Expo cannot mint a device push token, so push is dead on real
+      // devices even though permissions are granted. `eas init` normally writes
+      // a literal here; reading it from the env keeps it settable per
+      // environment (EAS build profiles set env, see eas.json).
+      projectId: process.env.EAS_PROJECT_ID || undefined,
+    },
+  },
   experiments: {
     reactCompiler: true,
   },

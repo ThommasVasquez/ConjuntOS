@@ -7,9 +7,6 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from '@/providers/ThemeProvider';
 import { tokensFor } from '@/theme/tokens';
 
-/** Accent for interactive glyphs (matches the app-wide CTA blue). */
-const ACCENT = '#009df2';
-
 export interface InputProps extends TextInputProps {
   /** Optional field label rendered above the input. */
   label?: string;
@@ -67,9 +64,9 @@ export function Input({
             className="ml-3"
           >
             {hidden ? (
-              <EyeOff size={20} color={ACCENT} />
+              <EyeOff size={20} color={tokens.accent} />
             ) : (
-              <Eye size={20} color={ACCENT} />
+              <Eye size={20} color={tokens.accent} />
             )}
           </Pressable>
         ) : null}

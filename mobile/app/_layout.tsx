@@ -35,7 +35,11 @@ import {
 } from '@expo-google-fonts/jetbrains-mono';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useColorScheme } from 'nativewind';
+import { useReducedMotion } from 'react-native-reanimated';
+
 import { blurTargetRef } from '@/theme/blurTarget';
+import { darkTokens, tokensFor } from '@/theme/tokens';
 import { toastConfig } from '@/components/ui/toast';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { WebSocketProvider } from '@/providers/WebSocketProvider';
@@ -112,18 +116,27 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#000',
+        // The boundary renders outside ThemeProvider, so token values are read
+        // from the dark set directly rather than through the scheme context.
+        backgroundColor: darkTokens.primary,
         alignItems: 'center',
         justifyContent: 'center',
         padding: 32,
       }}
     >
-      <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 12 }}>
+      <Text
+        style={{
+          color: darkTokens.text,
+          fontSize: 20,
+          fontWeight: '800',
+          marginBottom: 12,
+        }}
+      >
         Algo salió mal
       </Text>
       <Text
         style={{
-          color: 'rgba(255,255,255,0.7)',
+          color: darkTokens.textMuted,
           fontSize: 14,
           textAlign: 'center',
           marginBottom: 24,
@@ -134,19 +147,30 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       <Pressable
         onPress={retry}
         style={{
-          backgroundColor: '#009df2',
+          // Error boundary renders outside the theme provider, so the dark
+          // token set is used directly (the boundary screen is always dark).
+          backgroundColor: darkTokens.accent,
           paddingHorizontal: 28,
           paddingVertical: 14,
           borderRadius: 24,
         }}
       >
-        <Text style={{ color: '#fff', fontWeight: '700' }}>Reintentar</Text>
+        <Text style={{ color: darkTokens.onAccent, fontWeight: '700' }}>Reintentar</Text>
       </Pressable>
     </View>
   );
 }
 
 export default function RootLayout() {
+  // NativeWind's colorScheme is a global observable (not React context), so it
+  // is readable here even though ThemeProvider is rendered below.
+  const { colorScheme } = useColorScheme();
+  const rootBg = tokensFor(colorScheme === 'dark' ? 'dark' : 'light').primary;
+  // Web clamps decorative motion under `prefers-reduced-motion`
+  // (globals.css:209-222), including the view-transition slide. Honour the OS
+  // setting the same way (WCAG 2.3.3).
+  const reduceMotion = useReducedMotion();
+
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -188,7 +212,13 @@ export default function RootLayout() {
               <WebSocketProvider>
                 <CallProvider>
                   <PushBridge />
-                  <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+                  {/* `font-sans` = Inter_400Regular, matching web's next/font
+                      body family on <html>. Descendants inherit it. */}
+                  <View
+                    className="font-sans"
+                    style={{ flex: 1 }}
+                    onLayout={onLayoutRootView}
+                  >
                     {/* Android blur source: every BlurView (LiquidGlass etc.)
                         points its `blurTarget` at this wrapper. Plain View
                         passthrough on iOS. */}
@@ -199,8 +229,15 @@ export default function RootLayout() {
                         screenOptions={{
                           headerShown: false,
                           // Match web `body { background: var(--color-primary) }`
-                          // (dark default) so login/index never flash white.
-                          contentStyle: { backgroundColor: '#000000' },
+                          // so login/index never flash the wrong color. Read from
+                          // the tokens per active scheme — this used to be a
+                          // hardcoded '#000000' from the retired B&W palette.
+                          contentStyle: { backgroundColor: rootBg },
+                          // Web's effective screen transition is the
+                          // view-transitions.css fade (300ms out / 400ms in).
+                          // A cross-fade is the closest native equivalent.
+                          animation: reduceMotion ? 'none' : 'fade',
+                          animationDuration: 400,
                         }}
                       >
                         <Stack.Screen name="index" />

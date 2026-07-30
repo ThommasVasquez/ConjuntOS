@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import BottomSheet, {
+import {
   BottomSheetBackdrop,
+  BottomSheetModal,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
@@ -19,33 +20,42 @@ export interface SheetProps {
 
 /**
  * Bottom-sheet wrapper around @gorhom/bottom-sheet. Driven declaratively by
- * the `open` boolean: expands to the first snap point when open and closes
+ * the `open` boolean: presents at the first snap point when open and dismisses
  * otherwise. Renders a tap-to-dismiss backdrop and calls `onClose` whenever
  * the sheet returns to the closed (-1) index.
+ *
+ * MUST be BottomSheetModal, not BottomSheet: a plain BottomSheet lays out inside
+ * whatever view renders it, so a sheet owned by a small component (the
+ * ProfileHeader bell, an in-row action) was clipped to that component's box —
+ * the notifications panel showed up as a sliver across the header instead of
+ * over the screen. The Modal variant portals to BottomSheetModalProvider at the
+ * root (app/_layout.tsx), so the sheet is always screen-sized wherever it lives.
  */
 export function Sheet({ open, onClose, children, snapPoints }: SheetProps) {
-  const ref = useRef<BottomSheet>(null);
+  const ref = useRef<BottomSheetModal>(null);
   const points = useMemo(() => snapPoints ?? ['50%'], [snapPoints]);
   const { theme } = useTheme();
   const tokens = tokensFor(theme);
 
   useEffect(() => {
     if (open) {
-      ref.current?.expand();
+      ref.current?.present();
     } else {
-      ref.current?.close();
+      ref.current?.dismiss();
     }
   }, [open]);
 
-  const handleChange = useCallback(
-    (index: number) => {
-      // index of -1 means the sheet has fully closed.
-      if (index === -1 && open) {
-        onClose();
-      }
-    },
-    [onClose, open],
-  );
+  // `onDismiss` is the ONLY close signal we act on. It fires exactly once, after
+  // the modal has actually gone away (backdrop tap, pan down, or our own
+  // dismiss()). Mirroring it with an onChange(-1) handler is worse than
+  // redundant: BottomSheetModal reports index -1 during mount/animation too, so
+  // the second signal could close a sheet the same tap had just opened. And if
+  // NO signal reaches the parent, `open` stays true, the next trigger tap is a
+  // true → true no-op, and the button looks dead — which is what happened to the
+  // notifications bell.
+  const syncClosed = useCallback(() => {
+    if (open) onClose();
+  }, [onClose, open]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -60,9 +70,8 @@ export function Sheet({ open, onClose, children, snapPoints }: SheetProps) {
   );
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={ref}
-      index={-1}
       snapPoints={points}
       // v5 defaults enableDynamicSizing to true, which injects a
       // content-measured snap point. Combined with flex:1 content (no intrinsic
@@ -70,19 +79,21 @@ export function Sheet({ open, onClose, children, snapPoints }: SheetProps) {
       // explicit snapPoints, so disable dynamic sizing for deterministic height.
       enableDynamicSizing={false}
       enablePanDownToClose
-      onChange={handleChange}
+      onDismiss={syncClosed}
       backdropComponent={renderBackdrop}
-      // Theme the sheet surface per scheme: elevated neutral (#141414 dark /
-      // #FFFFFF light) with a subtle glass border and a token-tinted handle,
-      // instead of the library's default white card.
+      // Theme the sheet surface per scheme: elevated surface (#0b1614 dark /
+      // #ffffff light) with a subtle glass border, instead of the library's
+      // default white card.
       backgroundStyle={{
         backgroundColor: tokens.primaryLight,
         borderWidth: 1,
         borderColor: tokens.border,
       }}
-      handleIndicatorStyle={{ backgroundColor: tokens.border, width: 44 }}
+      // The grab handle must use textMuted, not border: border is 16%-alpha teal
+      // and is effectively invisible against #0b1614.
+      handleIndicatorStyle={{ backgroundColor: tokens.textMuted, width: 44 }}
     >
       <BottomSheetView style={{ flex: 1 }}>{children}</BottomSheetView>
-    </BottomSheet>
+    </BottomSheetModal>
   );
 }

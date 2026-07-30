@@ -16,6 +16,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const attemptRef = useRef(0);
+  // False until the socket has opened once, so the first connect does not fire
+  // a redundant resync on top of each screen's initial fetch.
+  const hadConnectedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -92,6 +95,14 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         // chat, multas) after the first reconnect.
         setCurrentUserId(userId);
         setConnected(true);
+        // On a RE-connect (not the first connect) every event published while
+        // the socket was down is lost — the hub does not replay. Synthesise a
+        // `resync` per subscribed domain so screens refetch. Native tears the
+        // socket down on every backgrounding, so this fires often here.
+        if (hadConnectedRef.current) {
+          useWsStore.getState().resyncAll();
+        }
+        hadConnectedRef.current = true;
       };
 
       ws.onmessage = (e) => {

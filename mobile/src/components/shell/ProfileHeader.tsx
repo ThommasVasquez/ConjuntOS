@@ -18,6 +18,8 @@ import { getNotifTarget } from '@/lib/notif-routing';
 import { LiquidGlass } from '@/components/ui/LiquidGlass';
 import { Sheet } from '@/components/ui/Sheet';
 import { toast } from '@/components/ui/toast';
+import { useTheme } from '@/providers/ThemeProvider';
+import { onSemantic, tokensFor, type ColorTokens } from '@/theme/tokens';
 
 const FALLBACK_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000';
@@ -33,17 +35,21 @@ function greeting(gender: string): string {
   return 'Bienvenida';
 }
 
-function notifIcon(tipo: string) {
+function notifIcon(tipo: string, t: ColorTokens) {
   switch (tipo) {
     case 'APROBACION':
-      return <CheckCircle2 size={14} color="#ffffff" />;
+      // Icon sits on `surface2`, which follows the scheme (translucent over the
+      // Sheet's primaryLight = WHITE in light mode). A literal #ffffff here was
+      // invisible in light mode. Web uses `text-text` for this case
+      // (src/components/shell/ProfileHeader.tsx:182).
+      return <CheckCircle2 size={14} color={t.text} />;
     case 'SISTEMA':
-      return <AlertTriangle size={14} color="#ffffff" />;
+      return <AlertTriangle size={14} color={t.text} />;
     case 'PAQUETE':
-      return <Package size={14} color="#009df2" />;
+      return <Package size={14} color={t.info} />;
     case 'INFO':
     default:
-      return <Bell size={14} color="#009df2" />;
+      return <Bell size={14} color={t.info} />;
   }
 }
 
@@ -57,6 +63,8 @@ function formatTime(dateStr: string): string {
 }
 
 export function ProfileHeader() {
+  const { theme } = useTheme();
+  const tokens = tokensFor(theme);
   const user = useAuth((s) => s.user);
   const authLoading = useAuth((s) => s.loading);
   const router = useRouter();
@@ -237,7 +245,7 @@ export function ProfileHeader() {
               borderRadius: 28,
               overflow: 'hidden',
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.12)',
+              borderColor: tokens.border,
             }}
           >
             <Image
@@ -257,9 +265,9 @@ export function ProfileHeader() {
                 width: 16,
                 height: 16,
                 borderRadius: 8,
-                backgroundColor: '#EF4444',
+                backgroundColor: tokens.danger,
                 borderWidth: 2,
-                borderColor: '#0a0a0a',
+                borderColor: tokens.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -269,7 +277,7 @@ export function ProfileHeader() {
                   width: 6,
                   height: 6,
                   borderRadius: 3,
-                  backgroundColor: '#ffffff',
+                  backgroundColor: onSemantic(theme),
                 }}
               />
             </View>
@@ -279,7 +287,7 @@ export function ProfileHeader() {
         <View style={{ flexDirection: 'column' }}>
           <Text
             style={{
-              color: '#ffffff',
+              color: tokens.textMuted,
               fontSize: 10,
               fontWeight: '700',
               letterSpacing: 1.5,
@@ -291,7 +299,7 @@ export function ProfileHeader() {
           </Text>
           <Text
             style={{
-              color: '#ffffff',
+              color: tokens.text,
               fontSize: 20,
               fontWeight: '700',
               fontFamily: 'PlusJakartaSans_700Bold',
@@ -307,7 +315,7 @@ export function ProfileHeader() {
         accessibilityRole="button"
         accessibilityLabel="Notificaciones"
         onPress={() => setNotifOpen(true)}
-        style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.95 : 1 }] })}
+        hitSlop={8}
       >
         <LiquidGlass
           intensity={40}
@@ -320,7 +328,10 @@ export function ProfileHeader() {
             borderRadius: 24,
           }}
         >
-          <Bell size={22} color="#ffffff" />
+          {/* LiquidGlass fill is rgba(255,255,255,0.68) in light mode, so the
+              bell must follow the scheme. Web: `liquid-glass text-text`
+              (src/components/shell/ProfileHeader.tsx:287). */}
+          <Bell size={22} color={tokens.text} />
           {hasUnread ? (
             <View
               style={{
@@ -330,9 +341,9 @@ export function ProfileHeader() {
                 width: 10,
                 height: 10,
                 borderRadius: 5,
-                backgroundColor: '#EF4444',
+                backgroundColor: tokens.danger,
                 borderWidth: 2,
-                borderColor: '#0a0a0a',
+                borderColor: tokens.primary,
               }}
             />
           ) : null}
@@ -350,13 +361,13 @@ export function ProfileHeader() {
               paddingVertical: 12,
             }}
           >
-            <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '700' }}>
+            <Text style={{ color: tokens.text, fontSize: 16, fontWeight: '700' }}>
               Notificaciones
             </Text>
             <Pressable onPress={clearAll}>
               <Text
                 style={{
-                  color: '#009df2',
+                  color: tokens.info,
                   fontSize: 11,
                   fontWeight: '700',
                   textTransform: 'uppercase',
@@ -370,7 +381,7 @@ export function ProfileHeader() {
           {notifications.length === 0 ? (
             <Text
               style={{
-                color: 'rgba(255,255,255,0.6)',
+                color: tokens.textMuted,
                 fontSize: 13,
                 textAlign: 'center',
                 paddingVertical: 24,
@@ -389,7 +400,7 @@ export function ProfileHeader() {
                   gap: 12,
                   paddingVertical: 14,
                   borderBottomWidth: 1,
-                  borderBottomColor: 'rgba(255,255,255,0.08)',
+                  borderBottomColor: tokens.border,
                   opacity: notif.leida ? 0.6 : 1,
                 }}
               >
@@ -400,11 +411,11 @@ export function ProfileHeader() {
                     borderRadius: 16,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    backgroundColor: tokens.surface2,
                     marginTop: 2,
                   }}
                 >
-                  {notifIcon(notif.tipo)}
+                  {notifIcon(notif.tipo, tokens)}
                 </View>
                 <View style={{ flex: 1 }}>
                   <View
@@ -415,14 +426,14 @@ export function ProfileHeader() {
                       marginBottom: 2,
                     }}
                   >
-                    <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>
+                    <Text style={{ color: tokens.text, fontSize: 12, fontWeight: '700' }}>
                       {notif.titulo}
                     </Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9 }}>
+                    <Text style={{ color: tokens.textMuted, fontSize: 9 }}>
                       {formatTime(notif.createdAt)}
                     </Text>
                   </View>
-                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>
+                  <Text style={{ color: tokens.textMuted, fontSize: 11 }}>
                     {notif.mensaje}
                   </Text>
                 </View>

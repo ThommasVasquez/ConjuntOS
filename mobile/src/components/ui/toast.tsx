@@ -2,18 +2,24 @@ import { Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import type { ToastConfig } from 'react-native-toast-message';
 
+import { darkTokens, darkToast } from '@/theme/tokens';
+
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 /**
- * Accent left-border color per toast type. Liquid Glass palette:
- * success = active green, info = CTA blue, error = destructive red,
- * warning = amber.
+ * Per-type border tint + outer glow, from web's `[data-type=…]
+ * .liquid-glass-toast` rules (globals.css:254-262): a full 1px border tint plus
+ * a wide colored glow. Web has NO left accent border — the previous 4px
+ * `borderLeft` was invented on mobile, along with its four off-palette colors.
+ *
+ * `info` and `warning` have no web counterpart (sonner only emits
+ * success/error), so they follow the same formula with their own tokens.
  */
-const TYPE_ACCENT: Record<ToastType, string> = {
-  success: '#57bf00',
-  error: '#ff453a',
-  info: '#009df2',
-  warning: '#ffb800',
+const TYPE_STYLE: Record<ToastType, { border: string; glow: string }> = {
+  success: { border: darkToast.successBorder, glow: darkTokens.success },
+  error: { border: darkToast.errorBorder, glow: darkTokens.danger },
+  info: { border: 'rgba(56, 189, 248, 0.55)', glow: darkTokens.info },
+  warning: { border: 'rgba(251, 191, 36, 0.55)', glow: darkTokens.warning },
 };
 
 /**
@@ -32,34 +38,52 @@ interface GlassToastProps {
  * border by type. Deliberately dark in BOTH schemes (glass overlay look).
  */
 function GlassToast({ text1, text2, type }: GlassToastProps) {
+  const s = TYPE_STYLE[type];
   return (
     <View
       style={{
         width: '92%',
-        borderRadius: 16,
-        borderLeftWidth: 4,
-        borderLeftColor: TYPE_ACCENT[type],
+        minWidth: 320,
+        gap: 12,
+        // globals.css:230 — border-radius: 32px
+        borderRadius: darkToast.radius,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.14)',
-        backgroundColor: 'rgba(20, 20, 20, 0.96)',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        shadowColor: '#000',
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
+        // globals.css:255/260 — per-type border tint
+        borderColor: s.border,
+        // globals.css:226 — background: rgba(5,13,12,0.72), "contraste máximo
+        // para lectura". RN has no backdrop-filter, so the fill carries it.
+        backgroundColor: darkToast.background,
+        // globals.css:233 — padding: 22px 26px
+        paddingHorizontal: 26,
+        paddingVertical: 22,
+        // globals.css:256/261 — box-shadow 0 0 80px <tint>, over the base
+        // 0 25px 50px -12px rgba(0,0,0,0.5). RN allows one shadow, so the
+        // per-type glow wins (it is the distinguishing cue).
+        shadowColor: s.glow,
+        shadowOpacity: 0.22,
+        shadowRadius: 40,
+        shadowOffset: { width: 0, height: 0 },
         elevation: 8,
       }}
     >
       {text1 ? (
-        <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }} numberOfLines={2}>
+        <Text
+          style={{
+            color: darkToast.text,
+            fontSize: 14,
+            // globals.css:232/240 — font-weight 600, letter-spacing -0.01em
+            fontWeight: '600',
+            letterSpacing: -0.14,
+          }}
+          numberOfLines={2}
+        >
           {text1}
         </Text>
       ) : null}
       {text2 ? (
         <Text
           style={{
-            color: 'rgba(255, 255, 255, 0.92)',
+            color: darkTokens.textMuted,
             fontSize: 13,
             marginTop: text1 ? 2 : 0,
           }}

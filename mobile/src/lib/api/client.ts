@@ -73,6 +73,18 @@ export function setUnauthorizedHandler(fn: (() => void) | null): void {
   onUnauthorized = fn;
 }
 
+/**
+ * Suppresses the global 401 handler for the duration of an intentional logout.
+ * `POST /auth/logout` can itself answer 401 (the token may already be expired),
+ * which would re-enter `onUnauthorized` while the session teardown is still in
+ * flight. Set by `useAuth.logout()`.
+ */
+let _loggingOut = false;
+
+export function setLoggingOut(v: boolean): void {
+  _loggingOut = v;
+}
+
 export class ApiError extends Error {
   status: number;
   detail: string;
@@ -147,7 +159,20 @@ export async function apiFetch<T = unknown>(
     // attempt means the session/token is no longer valid — clear it and let the
     // auth gate route back to /login. (Bad-credentials 401s on /auth/login are
     // surfaced to the form instead.)
-    if (response.status === 401 && path !== '/auth/login') {
+    //
+    // Three paths are excluded beyond /auth/login:
+    //  - /auth/logout: may 401 on an already-expired token mid-teardown.
+    //  - /auth/me: the bootstrap probe. On a cold start it can fire before the
+    //    persisted token is attached, and treating that race as an expiry
+    //    logs the user out of a perfectly good session.
+    // `_loggingOut` covers the whole intentional-logout window.
+    if (
+      response.status === 401 &&
+      !_loggingOut &&
+      path !== '/auth/login' &&
+      path !== '/auth/logout' &&
+      path !== '/auth/me'
+    ) {
       onUnauthorized?.();
     }
     const contentType = response.headers.get('content-type') || '';

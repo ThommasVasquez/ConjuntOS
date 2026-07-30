@@ -137,6 +137,8 @@ export interface UpdateProfileRequest {
 
 export interface ProfileResponse extends UserDto {
   unidad: UnidadDto | null;
+  /** Nombre legible del conjunto al que pertenece el usuario (usuarios/dto.rs:84). */
+  conjuntoNombre?: string | null;
 }
 
 export interface UnidadDto {
@@ -560,14 +562,25 @@ export interface CreateVehiculoRequest {
   tipo: TipoVehiculo;
 }
 
+/**
+ * Categoría física de la celda: una bahía de carro no sirve para moto/bici.
+ * Mirrors backend `CategoriaParqueadero` (db/enums.rs:391).
+ */
+export type CategoriaParqueadero = 'CARRO' | 'MOTO' | 'BICI';
+
 export interface CeldaDto {
   id: string;
   numero: string;
   torre: string | null;
   tipo: TipoCeldaParqueadero;
   estado: EstadoParqueadero;
+  /** Required in the backend DTO (parqueadero/dto.rs:60), not optional. */
+  categoria: CategoriaParqueadero;
   usuarioId: string | null;
   createdAt: string;
+  /** Temporary-assignment window (parqueadero/dto.rs:63-64). */
+  asignadoEn: string | null;
+  asignadoHasta: string | null;
 }
 
 export interface OcupanteDto {
@@ -751,10 +764,14 @@ export interface InmuebleDto {
   banos: number;
   /** m2 serialized as string. */
   area: string | null;
+  /** Backend `Moneda` enum (inmuebles/dto.rs:27); serialized as a string. */
+  moneda?: string;
   imagenes: string[];
   caracteristicas: string[];
   estado: EstadoInmueble;
   destacado: boolean;
+  telefonoContacto?: string | null;
+  whatsappContacto?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1452,4 +1469,84 @@ export interface NativePushSubscribeRequest {
   platform: 'expo' | 'fcm' | 'apns';
   token: string;
   deviceId?: string;
+}
+
+// ===========================================================================
+// Gestión documental — mirrors web src/lib/api/types.ts:36,1080-1110
+// ===========================================================================
+
+/**
+ * Categoría del documento. The backend column is a plain `String`
+ * (gestion_documental/dto.rs:14) with the CHECK constraint doing the
+ * validation, so this union is a client-side narrowing that matches web.
+ */
+export type CatDoc =
+  | 'REGLAMENTO'
+  | 'CONVIVENCIA'
+  | 'MASCOTAS'
+  | 'PARQUEADERO'
+  | 'INFORME_EMPRESA'
+  | 'ACTA'
+  | 'CONTRATO'
+  | 'CUENTA_COBRO'
+  | 'CIRCULAR'
+  | 'OTRO';
+
+export interface DocumentoDto {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  categoria: CatDoc;
+  url: string;
+  version?: string | null;
+  subidoPor?: string | null;
+  subidoPorNombre?: string | null;
+  visibleResidentes: boolean;
+  fechaPublicacion: string;
+  createdAt: string;
+}
+
+export interface CreateDocumentoRequest {
+  nombre: string;
+  descripcion?: string;
+  categoria: CatDoc;
+  url: string;
+  version?: string;
+  visibleResidentes?: boolean;
+}
+
+export interface UpdateDocumentoRequest {
+  nombre?: string;
+  descripcion?: string;
+  categoria?: CatDoc;
+  url?: string;
+  version?: string | null;
+  visibleResidentes?: boolean;
+}
+
+// ===========================================================================
+// Uploads — responses were previously inlined per-screen
+// ===========================================================================
+
+export interface UploadImagenResponse {
+  url: string;
+}
+
+export interface UploadArchivoResponse {
+  url: string;
+  contentType: string;
+}
+
+// ===========================================================================
+// QR scan (visitas / pases temporales)
+// ===========================================================================
+
+export interface ScanRequest {
+  token: string;
+}
+
+export interface ScanVisitaDto {
+  id: string;
+  nombre: string;
+  tipo: TipoVisita;
 }

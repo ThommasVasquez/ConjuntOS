@@ -9,10 +9,11 @@
  *    (wa.me vía Linking; deshabilitado si no hay teléfono).
  *  - Publicar/editar (solo PROPIETARIO): POST /inmuebles, PUT /inmuebles/{id};
  *    imágenes via POST /uploads/imagen {carpeta:'inmobiliaria'}, video via
- *    /uploads/archivo (tope 16 MB). LOCAL fuerza ALQUILER.
+ *    /uploads/archivo. LOCAL fuerza ALQUILER.
  *  - Normalización de precios colombianos (cleanNumber) portada verbatim.
  *  - WS 'inmueble' → refetch.
- *  - Política web: ARRENDATARIO NO tiene acceso — se muestra un mensaje.
+ *  - Sin gate de rol: como en web, cualquier rol puede navegar el listado y sólo
+ *    el CTA "Publicar Oferta" / "Editar" queda restringido a PROPIETARIO.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -23,6 +24,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -32,6 +34,7 @@ import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
@@ -41,7 +44,7 @@ import {
   Building2,
   CheckCircle2,
   Film,
-  Lock,
+  Heart,
   MapPin,
   Maximize2,
   Plus,
@@ -50,27 +53,34 @@ import {
   Upload,
   X,
 } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 
+import { PropertyCardSkeletons } from '@/components/inmobiliaria/Skeletons';
+import { WhatsAppIcon } from '@/components/inmobiliaria/WhatsAppIcon';
 import ProfileHeader from '@/components/shell/ProfileHeader';
-import { LiquidGlass } from '@/components/ui/LiquidGlass';
 import { Screen } from '@/components/ui/Screen';
 import { toast } from '@/components/ui/toast';
+import { withAlpha } from '@/components/visitas/colorAlpha';
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
 import { api } from '@/lib/api/client';
 import type { InmuebleDto, TipoNegocio, TipoUnidad } from '@/lib/api/types';
+import { useTheme } from '@/providers/ThemeProvider';
+import { darkTokens, onSemantic, tokensFor } from '@/theme/tokens';
 
 // ---------------------------------------------------------------------------
 // Local types
 // ---------------------------------------------------------------------------
 
-// TODO(types-consolidate): InmuebleDto in '@/lib/api/types' lacks the
-// moneda / telefonoContacto / whatsappContacto fields that the backend and
-// the web DTO expose; extend it locally until types are consolidated.
+// `InmuebleDto` now carries moneda / telefonoContacto / whatsappContacto (they
+// were added to the shared types to match the backend and the web DTO), so this
+// no longer patches missing fields — it only NARROWS `moneda` from the shared
+// `string` to the two currencies the UI actually formats. The backend sends
+// `moneda` as a required `Moneda` enum (inmuebles/dto.rs:27), never null.
 type Moneda = 'COP' | 'USD';
 
 interface Inmueble extends InmuebleDto {
-  moneda: Moneda | null;
+  moneda?: Moneda;
   telefonoContacto: string | null;
   whatsappContacto: string | null;
 }
@@ -100,15 +110,14 @@ type FilterUnidad = 'TODOS' | 'APARTAMENTO' | 'PARQUEADERO' | 'LOCAL';
 // Constants / helpers
 // ---------------------------------------------------------------------------
 
-const ICON_COLOR = '#FFFFFF';
-/** Liquid Glass info/idle accent. */
-const ACCENT = '#009df2';
-/** WhatsApp brand green (same as the web CTA). */
+/** WhatsApp brand green — web hardcodes it too (page.tsx:572 `bg-[#25D366]`). */
 const WHATSAPP_GREEN = '#25D366';
-// Upload cap. Web promises "Max 16 MB", but the backend caps every request
-// body at 12 MiB (MAX_BODY_BYTES, backend lib.rs) and base64 inflates payloads
-// by 4/3, so anything over ~8 MB raw would pass a 16 MB client check yet 413
-// server-side. Keep the client cap at 8 MB so the promise is actually keepable.
+// Upload cap. Web's helper copy promises "Max 16 MB", but the backend caps every
+// request body at 12 MiB (MAX_BODY_BYTES, backend lib.rs) and base64 inflates
+// payloads by 4/3, so anything over ~8 MB raw would 413 server-side. The client
+// cap stays at 8 MB; the rejection toast deliberately states no number so the
+// product only ever shows ONE figure (web's) — see hoistNeeded: web's 16 MB
+// promise should come down to 8 MB.
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 
 const VEHICULO_KEYS = ['Moto', 'Carro', 'Bici'] as const;
@@ -116,7 +125,7 @@ const BANO_KEYS = ['Baño propio', 'Baño compartido', 'Sin baño'] as const;
 const CAMA_KEYS = ['Cama sencilla', 'Cama doble'] as const;
 
 /** Currency label, es-CO for COP / en-US for USD (Hermes-safe fallback). */
-function formatPrecio(precio: string, moneda: Moneda | null): string {
+function formatPrecio(precio: string, moneda: Moneda | null | undefined): string {
   const value = Number(precio || 0);
   const currency: Moneda = moneda === 'USD' ? 'USD' : 'COP';
   try {
@@ -216,13 +225,13 @@ function vehiculoEmojiLabel(tipo: string | null): string | null {
 
 export default function Inmobiliaria() {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const t = tokensFor(theme);
+  // Web does NOT gate this route by role (/inmobiliaria is absent from GATED in
+  // src/lib/permissions.ts): every role can browse the listing and only the
+  // "Publicar Oferta" CTA / "Editar" affordances are PROPIETARIO-only
+  // (src/app/(app)/inmobiliaria/page.tsx:129).
   const isPropietario = user?.rol === 'PROPIETARIO';
-  const isArrendatario = user?.rol === 'ARRENDATARIO';
-  // HUESPED_TEMPORAL gets the same lock view: listings expose owners' phone /
-  // WhatsApp contact data, which must not be browsable by temporary guests
-  // (backend /inmuebles has no role guard — this client gate is the only
-  // enforcement layer today).
-  const isBlocked = isArrendatario || user?.rol === 'HUESPED_TEMPORAL';
   const currentUserId = user?.id;
 
   const [inmuebles, setInmuebles] = useState<Inmueble[]>([]);
@@ -252,7 +261,6 @@ export default function Inmobiliaria() {
   useWsSubscription('inmueble', wsRefetch);
 
   useEffect(() => {
-    if (isBlocked) return;
     let active = true;
     (async () => {
       try {
@@ -268,7 +276,7 @@ export default function Inmobiliaria() {
     return () => {
       active = false;
     };
-  }, [fetchInmuebles, refreshKey, isBlocked]);
+  }, [fetchInmuebles, refreshKey]);
 
   const filteredInmuebles = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -278,34 +286,6 @@ export default function Inmobiliaria() {
         (inv.descripcion || '').toLowerCase().includes(q),
     );
   }, [inmuebles, searchQuery]);
-
-  // -- Gate: web policy — ARRENDATARIO has NO access to this section; -------
-  // HUESPED_TEMPORAL is blocked for contact-data safety (see isBlocked above).
-  if (isBlocked) {
-    return (
-      <Screen className="bg-primary">
-        <View className="flex-1 gap-6 px-6 pt-4">
-          <Animated.View entering={FadeInDown.duration(500)}>
-            <ProfileHeader />
-          </Animated.View>
-          <Animated.View entering={FadeInDown.delay(120).duration(500)}>
-            <LiquidGlass radius={32} className="items-center gap-4 rounded-[32px] border border-border p-10">
-              <View className="mb-2 h-16 w-16 items-center justify-center rounded-full bg-surface">
-                <Lock size={30} color={ICON_COLOR} />
-              </View>
-              <Text className="text-lg font-bold tracking-tight text-text">
-                Inmobiliaria Interna
-              </Text>
-              <Text className="px-4 text-center text-xs leading-relaxed text-text">
-                Esta sección está disponible únicamente para propietarios del conjunto. Si crees
-                que se trata de un error, contacta a la administración.
-              </Text>
-            </LiquidGlass>
-          </Animated.View>
-        </View>
-      </Screen>
-    );
-  }
 
   return (
     <Screen className="bg-primary">
@@ -320,7 +300,7 @@ export default function Inmobiliaria() {
         <Animated.View entering={FadeInDown.delay(80).duration(500)} className="gap-2 px-2">
           <View className="flex-row items-center justify-between gap-3">
             <View className="flex-row items-center gap-3">
-              <Building2 size={18} color={ACCENT} />
+              <Building2 size={18} color={t.accent} />
               <Text className="text-xs font-semibold uppercase tracking-widest text-text">
                 Inmobiliaria Interna
               </Text>
@@ -331,25 +311,25 @@ export default function Inmobiliaria() {
                 style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.95 : 1 }] })}
                 className="flex-row items-center gap-2 rounded-xl bg-accent px-4 py-2"
               >
-                <Plus size={16} color="#000000" />
+                <Plus size={16} color={t.onAccent} />
                 <Text className="text-sm font-bold text-on-accent">Publicar Oferta</Text>
               </Pressable>
             ) : null}
           </View>
-          <Text className="mb-2 text-3xl font-bold tracking-tight text-text">
+          <Text className="mb-6 text-4xl font-bold tracking-tight text-text">
             Encuentra tu proximo hogar aqui mismo.
           </Text>
 
           {/* SEARCH */}
           <View className="relative justify-center">
             <View className="absolute left-4 z-10">
-              <Search size={18} color={ICON_COLOR} />
+              <Search size={18} color={withAlpha(t.text, 0.5)} />
             </View>
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Buscar inmuebles..."
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={withAlpha(t.text, 0.4)}
               className="h-12 rounded-xl border border-border bg-surface2 pl-11 pr-4 text-sm text-text"
             />
           </View>
@@ -360,11 +340,11 @@ export default function Inmobiliaria() {
               <Pressable
                 key={type}
                 onPress={() => setFilterType(type)}
-                className={`rounded-lg px-5 py-2 ${filterType === type ? 'bg-accent' : ''}`}
+                className={`rounded-lg px-6 py-2 ${filterType === type ? 'bg-info' : ''}`}
               >
                 <Text
                   className={`text-sm font-semibold ${
-                    filterType === type ? 'text-on-accent' : 'text-text'
+                    filterType === type ? 'text-on-accent' : 'text-text/60'
                   }`}
                 >
                   {type === 'TODOS' ? 'Todos' : type === 'VENTA' ? 'En Venta' : 'En Arriendo'}
@@ -386,13 +366,13 @@ export default function Inmobiliaria() {
               <Pressable
                 key={key}
                 onPress={() => setFilterUnidad(key)}
-                className={`rounded-full border px-4 py-1.5 ${
-                  filterUnidad === key ? 'border-border bg-accent' : 'border-border'
+                className={`rounded-full border px-4 py-2 ${
+                  filterUnidad === key ? 'bg-info/15 border-info/30' : 'border-border bg-primary-light'
                 }`}
               >
                 <Text
                   className={`text-xs font-bold ${
-                    filterUnidad === key ? 'text-on-accent' : 'text-text'
+                    filterUnidad === key ? 'text-info' : 'text-text'
                   }`}
                 >
                   {label}
@@ -405,12 +385,7 @@ export default function Inmobiliaria() {
         {/* LIST */}
         <View className="gap-5 px-2">
           {isLoading ? (
-            <View className="items-center gap-4 py-20">
-              <ActivityIndicator size="large" color={ICON_COLOR} />
-              <Text className="text-[10px] font-bold uppercase tracking-widest text-text">
-                Cargando inmuebles...
-              </Text>
-            </View>
+            <PropertyCardSkeletons />
           ) : filteredInmuebles.length > 0 ? (
             filteredInmuebles.map((inv, i) => (
               <Animated.View key={inv.id} entering={FadeInDown.delay(i * 70).duration(450)}>
@@ -426,15 +401,20 @@ export default function Inmobiliaria() {
               </Animated.View>
             ))
           ) : (
-            <LiquidGlass radius={32} className="items-center gap-4 rounded-[32px] border border-border p-10">
-              <View className="mb-2 h-16 w-16 items-center justify-center rounded-full bg-surface">
-                <Search size={32} color={ICON_COLOR} />
+            <View className="items-center rounded-3xl border border-border bg-primary-light py-16">
+              <View
+                className="mb-4 h-16 w-16 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: withAlpha(t.info, 0.1) }}
+              >
+                <Search size={28} color={t.info} />
               </View>
-              <Text className="text-lg font-bold text-text">No se encontraron resultados</Text>
-              <Text className="px-6 text-center text-xs text-text">
+              <Text className="mb-1 text-base font-bold text-text">
+                No se encontraron resultados
+              </Text>
+              <Text className="px-6 text-center text-xs text-text/55">
                 Intenta con otros filtros o palabras clave.
               </Text>
-            </LiquidGlass>
+            </View>
           )}
         </View>
       </View>
@@ -483,6 +463,9 @@ interface PropertyCardProps {
 }
 
 function PropertyCard({ item, onPress, currentUserId, onEdit }: PropertyCardProps) {
+  const { theme } = useTheme();
+  const t = tokensFor(theme);
+  const [isLiked, setIsLiked] = useState(false);
   const imagenes = item.imagenes ?? [];
   const mainImage = imagenes[0];
   const isOwner = !!currentUserId && item.usuarioId === currentUserId;
@@ -492,19 +475,24 @@ function PropertyCard({ item, onPress, currentUserId, onEdit }: PropertyCardProp
   const room = parseRoomAttrs(item.caracteristicas);
   const formattedPrecio = formatPrecio(item.precio, item.moneda);
 
-  const chips: string[] = isParking
-    ? [vehiculoLabel ?? 'Parqueadero', 'Parqueadero Cubierto']
+  // Web chips embed lucide icons at `size={11} className="text-text/40"`.
+  const chips: { icon?: LucideIcon; label: string }[] = isParking
+    ? [{ label: vehiculoLabel ?? 'Parqueadero' }, { label: 'Parqueadero Cubierto' }]
     : isRoom
       ? [
-          `${item.area || '—'}m²`,
-          room.bano ?? 'Baño',
-          room.amoblada ? '🛋️ Amoblada' : '📦 No amoblada',
-          ...(room.amoblada && room.tv ? [`📺 ${room.tv}`] : []),
-          ...(room.amoblada && room.cama ? [room.cama] : []),
-          ...(room.amoblada && room.lavado ? ['🧺 Lavado incluido'] : []),
-          ...(room.aguaCaliente ? ['🔥 Agua caliente'] : []),
+          { icon: Maximize2, label: `${item.area || '—'}m²` },
+          { icon: Bath, label: room.bano ?? 'Baño' },
+          { label: room.amoblada ? '🛋️ Amoblada' : '📦 No amoblada' },
+          ...(room.amoblada && room.tv ? [{ label: `📺 ${room.tv}` }] : []),
+          ...(room.amoblada && room.cama ? [{ label: room.cama }] : []),
+          ...(room.amoblada && room.lavado ? [{ label: '🧺 Lavado incluido' }] : []),
+          ...(room.aguaCaliente ? [{ label: '🔥 Agua caliente' }] : []),
         ]
-      : [`${item.habitaciones} hab.`, `${item.banos} banos`, `${item.area || '—'}m²`];
+      : [
+          { icon: Bed, label: `${item.habitaciones} hab.` },
+          { icon: Bath, label: `${item.banos} banos` },
+          { icon: Maximize2, label: `${item.area || '—'}m²` },
+        ];
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
@@ -520,18 +508,43 @@ function PropertyCard({ item, onPress, currentUserId, onEdit }: PropertyCardProp
             />
           ) : (
             <View className="h-full w-full items-center justify-center">
-              <Building2 size={40} color="rgba(255,255,255,0.3)" />
+              <Building2 size={40} color={withAlpha(t.textMuted, 0.6)} />
             </View>
           )}
-          <View className="absolute left-3 top-3">
+          {/* Web: `absolute inset-0 bg-linear-to-t from-black/80 via-transparent
+              to-black/20` (page.tsx:289) — keeps the white badge + price legible
+              over light photos. The black stops are web-hardcoded. */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.2)', 'transparent', 'rgba(0,0,0,0.8)']}
+            locations={[0, 0.5, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <View className="absolute left-3 right-3 top-3 flex-row items-start justify-between">
             <View
               className="rounded-full px-2.5 py-1"
-              style={{ backgroundColor: item.tipoNegocio === 'VENTA' ? 'rgba(0,0,0,0.75)' : ACCENT }}
+              // Web picks explicit hues so Venta/Arriendo read apart (page.tsx:274).
+              style={{ backgroundColor: item.tipoNegocio === 'VENTA' ? t.success : t.info }}
             >
-              <Text className="text-[10px] font-black uppercase tracking-wider text-white">
+              {/* FILLED semantic surface: the dark scheme's success/info are LIGHT
+                  tints (#34d399 / #38bdf8) so white ink was ~1.9:1 there. Pair the
+                  fill with `onSemantic` (dark ink on dark scheme, white on light). */}
+              <Text
+                className="text-[10px] font-black uppercase tracking-wider"
+                style={{ color: onSemantic(theme) }}
+              >
                 {item.tipoNegocio === 'VENTA' ? 'En Venta' : 'Arriendo'}
               </Text>
             </View>
+            <Pressable
+              onPress={() => setIsLiked((prev) => !prev)}
+              className={`h-8 w-8 items-center justify-center rounded-full border ${
+                isLiked ? 'border-border bg-text/10' : 'border-white/20 bg-black/30'
+              }`}
+            >
+              {/* Web: `text-white` + fill white when liked (page.tsx:301). */}
+              <Heart size={14} color="#ffffff" fill={isLiked ? '#ffffff' : 'transparent'} />
+            </Pressable>
           </View>
           <View className="absolute bottom-3 left-3">
             <Text className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-white">
@@ -552,22 +565,24 @@ function PropertyCard({ item, onPress, currentUserId, onEdit }: PropertyCardProp
             {item.titulo}
           </Text>
           <View className="flex-row flex-wrap gap-1.5">
-            {chips.map((chip) => (
-              <View key={chip} className="rounded-full bg-surface2 px-2.5 py-1">
-                <Text className="text-[10px] font-semibold text-text">{chip}</Text>
-              </View>
-            ))}
+            {chips.map((chip, i) => {
+              const ChipIcon = chip.icon;
+              return (
+                <View
+                  key={`${chip.label}-${i}`}
+                  className="flex-row items-center gap-1.5 rounded-full bg-surface2 px-2.5 py-1"
+                >
+                  {ChipIcon ? <ChipIcon size={11} color={withAlpha(t.text, 0.4)} /> : null}
+                  <Text className="text-[10px] font-semibold text-text/70">{chip.label}</Text>
+                </View>
+              );
+            })}
           </View>
 
           <View className="mt-1 flex-row items-center justify-between gap-2 border-t border-border pt-3">
             <View className="flex-1 flex-row items-center gap-2">
-              <View
-                className="h-7 w-7 items-center justify-center rounded-full border border-border"
-                style={{ backgroundColor: 'rgba(0,157,242,0.12)' }}
-              >
-                <Text className="text-[9px] font-black" style={{ color: ACCENT }}>
-                  P
-                </Text>
+              <View className="h-7 w-7 items-center justify-center rounded-full border border-border bg-accent/10">
+                <Text className="text-[9px] font-black text-accent">P</Text>
               </View>
               <View className="flex-1">
                 <Text numberOfLines={1} className="text-[10px] font-bold text-text">
@@ -576,11 +591,8 @@ function PropertyCard({ item, onPress, currentUserId, onEdit }: PropertyCardProp
                 <Text className="text-[9px] text-text">Verificado</Text>
               </View>
             </View>
-            <View
-              className="rounded-lg border px-2 py-1"
-              style={{ borderColor: 'rgba(0,157,242,0.25)', backgroundColor: 'rgba(0,157,242,0.1)' }}
-            >
-              <Text className="text-[9px] font-bold uppercase" style={{ color: ACCENT }}>
+            <View className="rounded-lg border border-accent/20 bg-accent/10 px-2 py-1">
+              <Text className="text-[9px] font-bold uppercase text-accent">
                 {item.tipoNegocio}
               </Text>
             </View>
@@ -611,6 +623,8 @@ interface PropertyDetailProps {
 }
 
 function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetailProps) {
+  const { theme } = useTheme();
+  const t = tokensFor(theme);
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [carouselIndex, setCarouselIndex] = useState(0);
@@ -645,7 +659,9 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
 
   return (
     <Modal visible transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
-      <View className="flex-1 bg-primary">
+      {/* Web overrides the panel surface to pure #000000 in dark mode
+          (page.tsx:434 `bg-primary dark:bg-[#000000]`) — that hex is web's. */}
+      <View className="flex-1" style={{ backgroundColor: theme === 'dark' ? '#000000' : t.primary }}>
         {/* FLOATING CONTROLS */}
         <View
           className="absolute left-6 z-50"
@@ -653,10 +669,10 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
         >
           <Pressable
             onPress={onClose}
-            className="h-10 w-10 items-center justify-center rounded-full border border-border"
-            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+            className="h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/50"
           >
-            <X size={20} color="#FFFFFF" />
+            {/* Web hardcodes `text-white` on this control (page.tsx:436). */}
+            <X size={20} color="#ffffff" />
           </Pressable>
         </View>
         {isOwner ? (
@@ -708,13 +724,25 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
                 ) : null}
               </>
             ) : (
-              <View className="h-full w-full items-center justify-center bg-surface2">
-                <Building2 size={56} color="rgba(255,255,255,0.3)" />
+              /* The hero well is DARK IN BOTH SCHEMES: the badge + title that sit
+                 on top of it are white (they have to be, they normally overlay a
+                 photo), so a theme-following `bg-surface2` here rendered
+                 white-on-white in light mode. Pin the fill and its ink to the dark
+                 palette instead of `tokensFor(theme)`. */
+              <View
+                className="h-full w-full items-center justify-center"
+                style={{ backgroundColor: darkTokens.primaryLight }}
+              >
+                <Building2 size={56} color={withAlpha(darkTokens.textMuted, 0.6)} />
               </View>
             )}
             <View className="absolute bottom-6 left-6 right-6">
-              <View className="mb-2 self-start rounded-full px-3 py-1" style={{ backgroundColor: ACCENT }}>
-                <Text className="text-[10px] font-black uppercase text-white">{item.tipoNegocio}</Text>
+              <View className="mb-2 self-start rounded-full px-3 py-1" style={{ backgroundColor: t.accent }}>
+                {/* Filled ACCENT surface → `onAccent`, not white: the dark scheme's
+                    accent (#2dd4bf) gave white ink ~1.7:1. */}
+                <Text className="text-[10px] font-black uppercase text-on-accent">
+                  {item.tipoNegocio}
+                </Text>
               </View>
               <Text
                 numberOfLines={2}
@@ -733,7 +761,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
                 <Text className="mb-1 text-xs font-bold uppercase tracking-widest text-text">
                   Precio solicitado
                 </Text>
-                <Text numberOfLines={1} className="text-3xl font-black" style={{ color: ACCENT }}>
+                <Text numberOfLines={1} className="text-3xl font-black" style={{ color: t.accent }}>
                   {formattedPrecio}
                   {item.tipoNegocio === 'ALQUILER' ? (
                     <Text className="text-sm font-medium text-text"> / mes</Text>
@@ -742,8 +770,8 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
               </View>
               <View className="items-end">
                 <View className="flex-row items-center gap-1.5">
-                  <ShieldCheck size={14} color="#57bf00" />
-                  <Text className="text-xs font-bold" style={{ color: '#57bf00' }}>
+                  <ShieldCheck size={14} color={t.success} />
+                  <Text className="text-xs font-bold" style={{ color: t.success }}>
                     Publicacion Verificada
                   </Text>
                 </View>
@@ -771,7 +799,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
                 <View className="flex-row gap-3">
                   {specTile(
                     <>
-                      <Maximize2 size={22} color={ACCENT} />
+                      <Maximize2 size={22} color={t.accent} />
                       <View className="items-center">
                         <Text className="text-lg font-bold text-text">{item.area || '—'}</Text>
                         <Text className="text-[10px] font-bold uppercase text-text">m²</Text>
@@ -780,7 +808,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
                   )}
                   {specTile(
                     <>
-                      <Bath size={22} color={ACCENT} />
+                      <Bath size={22} color={t.accent} />
                       <View className="items-center">
                         <Text className="text-center text-sm font-bold text-text">
                           {room.bano || '—'}
@@ -841,7 +869,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
               <View className="flex-row gap-4">
                 {specTile(
                   <>
-                    <Bed size={22} color={ACCENT} />
+                    <Bed size={22} color={t.accent} />
                     <View className="items-center">
                       <Text className="text-lg font-bold text-text">{item.habitaciones}</Text>
                       <Text className="text-[10px] font-bold uppercase text-text">Hab.</Text>
@@ -850,7 +878,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
                 )}
                 {specTile(
                   <>
-                    <Bath size={22} color={ACCENT} />
+                    <Bath size={22} color={t.accent} />
                     <View className="items-center">
                       <Text className="text-lg font-bold text-text">{item.banos}</Text>
                       <Text className="text-[10px] font-bold uppercase text-text">Banos</Text>
@@ -859,7 +887,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
                 )}
                 {specTile(
                   <>
-                    <Maximize2 size={22} color={ACCENT} />
+                    <Maximize2 size={22} color={t.accent} />
                     <View className="items-center">
                       <Text className="text-lg font-bold text-text">{item.area || '—'}</Text>
                       <Text className="text-[10px] font-black uppercase text-text">m2</Text>
@@ -872,7 +900,7 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
             {/* LOCATION + DESCRIPTION */}
             <View className="gap-4">
               <View className="flex-row items-center gap-2">
-                <MapPin size={18} color={ACCENT} />
+                <MapPin size={18} color={t.accent} />
                 <Text className="text-sm font-bold text-text">Conjunto Residencial Interno</Text>
               </View>
               <View className="rounded-3xl border border-dashed border-border bg-surface2 p-5">
@@ -901,6 +929,9 @@ function PropertyDetail({ item, onClose, currentUserId, onEdit }: PropertyDetail
               })}
               className="h-16 w-full flex-row items-center justify-center gap-3 rounded-2xl"
             >
+              {/* Web renders the inline WhatsApp <svg> before the label
+                  (page.tsx:574-576); the glyph inherits the CTA's white ink. */}
+              <WhatsAppIcon size={24} color="#ffffff" />
               <Text className="text-lg font-black text-white">Contactar por WhatsApp</Text>
             </Pressable>
           ) : (
@@ -987,6 +1018,8 @@ interface PostingModalProps {
 
 function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps) {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const t = tokensFor(theme);
   const isEditing = !!editItem;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormState>(() => buildInitialForm(editItem));
@@ -1233,7 +1266,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                   disabled={isSubmitting}
                   className="h-10 w-10 items-center justify-center rounded-full bg-surface"
                 >
-                  <X size={20} color={ICON_COLOR} />
+                  <X size={20} color={t.text} />
                 </Pressable>
               </View>
 
@@ -1296,7 +1329,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                   value={formData.titulo}
                   onChangeText={(titulo) => set({ titulo })}
                   placeholder="Ej: Apartamento remodelado Torre 2"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={withAlpha(t.text, 0.4)}
                   editable={!isSubmitting}
                   className="h-14 rounded-2xl border border-border bg-surface2 px-4 text-text"
                 />
@@ -1310,7 +1343,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                     value={formData.precio}
                     onChangeText={(v) => set({ precio: v.replace(/[^0-9.,']/g, '') })}
                     placeholder="0.00"
-                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    placeholderTextColor={withAlpha(t.text, 0.4)}
                     keyboardType="numbers-and-punctuation"
                     editable={!isSubmitting}
                     className="h-14 flex-1 rounded-2xl border border-border bg-surface2 px-4 text-text"
@@ -1345,7 +1378,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                     value={formData.area}
                     onChangeText={(v) => set({ area: v.replace(/[^0-9.,]/g, '') })}
                     placeholder="0.00"
-                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    placeholderTextColor={withAlpha(t.text, 0.4)}
                     keyboardType="numbers-and-punctuation"
                     editable={!isSubmitting}
                     className="h-14 rounded-2xl border border-border bg-surface2 px-4 text-text"
@@ -1420,7 +1453,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                           value={formData.tvPulgadas}
                           onChangeText={(v) => set({ tvPulgadas: v.replace(/[^0-9]/g, '') })}
                           placeholder='Ej: 42"'
-                          placeholderTextColor="rgba(255,255,255,0.4)"
+                          placeholderTextColor={withAlpha(t.text, 0.4)}
                           keyboardType="number-pad"
                           editable={!isSubmitting}
                           className="h-14 rounded-2xl border border-border bg-surface2 px-4 text-text"
@@ -1488,7 +1521,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                   value={formData.telefonoContacto}
                   onChangeText={(telefonoContacto) => set({ telefonoContacto })}
                   placeholder="+57 315 705 2810"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={withAlpha(t.text, 0.4)}
                   keyboardType="phone-pad"
                   editable={!isSubmitting}
                   className="h-14 rounded-2xl border border-border bg-surface2 px-4 text-text"
@@ -1500,7 +1533,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                   value={formData.whatsappContacto}
                   onChangeText={(whatsappContacto) => set({ whatsappContacto })}
                   placeholder="+57 315 705 2810"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={withAlpha(t.text, 0.4)}
                   keyboardType="phone-pad"
                   editable={!isSubmitting}
                   className="h-14 rounded-2xl border border-border bg-surface2 px-4 text-text"
@@ -1521,7 +1554,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                       >
                         <Text className="text-lg font-bold text-text">−</Text>
                       </Pressable>
-                      <Text className="flex-1 text-center font-bold" style={{ color: ACCENT }}>
+                      <Text className="flex-1 text-center font-bold" style={{ color: t.accent }}>
                         {formData.habitaciones}
                       </Text>
                       <Pressable
@@ -1541,7 +1574,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                       >
                         <Text className="text-lg font-bold text-text">−</Text>
                       </Pressable>
-                      <Text className="flex-1 text-center font-bold" style={{ color: ACCENT }}>
+                      <Text className="flex-1 text-center font-bold" style={{ color: t.accent }}>
                         {formData.banos}
                       </Text>
                       <Pressable
@@ -1562,7 +1595,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                   value={formData.descripcion}
                   onChangeText={(descripcion) => set({ descripcion })}
                   placeholder="Detalles del inmueble: acabados, ubicacion, servicios cercanos..."
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={withAlpha(t.text, 0.4)}
                   multiline
                   textAlignVertical="top"
                   editable={!isSubmitting}
@@ -1581,7 +1614,7 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                     >
                       {m.isVideo ? (
                         <View className="h-full w-full items-center justify-center">
-                          <Film size={22} color={ICON_COLOR} />
+                          <Film size={22} color={t.text} />
                         </View>
                       ) : (
                         <Image
@@ -1603,14 +1636,14 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                     onPress={addImages}
                     className="h-20 w-20 items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border bg-surface"
                   >
-                    <Upload size={18} color={ICON_COLOR} />
+                    <Upload size={18} color={t.text} />
                     <Text className="text-[8px] font-semibold text-text">Subir</Text>
                   </Pressable>
                   <Pressable
                     onPress={addVideo}
                     className="h-20 w-20 items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border bg-surface"
                   >
-                    <Film size={18} color={ICON_COLOR} />
+                    <Film size={18} color={t.text} />
                     <Text className="text-[8px] font-semibold text-text">Video</Text>
                   </Pressable>
                 </View>
@@ -1629,11 +1662,13 @@ function PostingModal({ open, editItem, onClose, onSuccess }: PostingModalProps)
                 })}
                 className="h-16 w-full flex-row items-center justify-center gap-3 rounded-2xl bg-accent"
               >
+                {/* Filled ACCENT surface: black ink vanished on light mode's dark
+                    teal accent (#0f766e). Match the label's `text-on-accent`. */}
                 {isSubmitting ? (
-                  <ActivityIndicator color="#000000" />
+                  <ActivityIndicator color={t.onAccent} />
                 ) : (
                   <>
-                    <CheckCircle2 size={20} color="#000000" />
+                    <CheckCircle2 size={20} color={t.onAccent} />
                     <Text className="text-base font-bold text-on-accent">
                       {isEditing ? 'Guardar Cambios' : 'Publicar Anuncio Ahora'}
                     </Text>
