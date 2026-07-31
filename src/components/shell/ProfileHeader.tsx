@@ -263,7 +263,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
             >
               {(isInicioPage ? showGreeting : false) || !conjuntoNombre ? (
                 <span className="text-text text-[10px] font-bold uppercase tracking-widest">
-                  {userData.gender === 'masculino' ? 'Bienvenido' : userData.gender === 'neutro' ? 'Bienvenide' : 'Bienvenida'}
+                  {userData.gender === 'femenino' ? 'Bienvenida' : 'Bienvenido'}
                   {' '}<span className="wave-emoji">👋</span>
                 </span>
               ) : (

@@ -30,9 +30,8 @@ const dataKey = (id: string) => `conjuntos_profile_data_${id}`;
 type UserDisplay = { name: string; gender: string };
 
 function greeting(gender: string): string {
-  if (gender === 'masculino') return 'Bienvenido';
-  if (gender === 'neutro') return 'Bienvenide';
-  return 'Bienvenida';
+  if (gender === 'femenino') return 'Bienvenida';
+  return 'Bienvenido';
 }
 
 function notifIcon(tipo: string, t: ColorTokens) {
