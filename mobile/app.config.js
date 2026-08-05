@@ -13,6 +13,7 @@
 const config = {
   name: 'ConjuntOS',
   slug: 'conjuntos',
+  owner: 'conjuntoss-team',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
@@ -24,7 +25,7 @@ const config = {
   userInterfaceStyle: 'light',
   newArchEnabled: true,
   ios: {
-    bundleIdentifier: 'com.wowbabies.conjuntos',
+    bundleIdentifier: 'app.conjuntos',
     icon: './assets/expo.icon',
     supportsTablet: true,
     infoPlist: {
@@ -39,7 +40,7 @@ const config = {
     },
   },
   android: {
-    package: 'com.wowbabies.conjuntos',
+    package: 'app.conjuntos',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -104,10 +105,11 @@ const config = {
     eas: {
       // Required by getExpoPushTokenAsync (src/services/push.ts): without a
       // projectId Expo cannot mint a device push token, so push is dead on real
-      // devices even though permissions are granted. `eas init` normally writes
-      // a literal here; reading it from the env keeps it settable per
-      // environment (EAS build profiles set env, see eas.json).
-      projectId: process.env.EAS_PROJECT_ID || undefined,
+      // devices even though permissions are granted. `eas init` can't write to a
+      // dynamic config, so the literal for @conjuntoss-team/conjuntos is inlined
+      // here; the env var still wins so a different environment can override it.
+      // Do NOT change this id casually — it invalidates every issued push token.
+      projectId: process.env.EAS_PROJECT_ID || '5cced80d-5db8-43e5-8cc1-2323dba30a66',
     },
   },
   experiments: {
