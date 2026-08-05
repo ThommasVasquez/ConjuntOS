@@ -74,6 +74,14 @@ pub struct UpdateProfileRequest {
     pub apto: Option<String>,
 }
 
+/// Account deletion is irreversible, so it is re-authenticated: holding an
+/// unlocked phone must not be enough to destroy someone's account.
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteAccountRequest {
+    pub password: String,
+}
+
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProfileResponse {

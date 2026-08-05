@@ -60,7 +60,7 @@ import {
 
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
-import { api } from '@/lib/api/client';
+import { api, ApiError } from '@/lib/api/client';
 import type {
   CorrespondenciaDto,
   PagosResponse,
@@ -371,6 +371,8 @@ export default function Perfil() {
       info10: alpha(T.info, 0.1),
       info15: alpha(T.info, 0.15),
       info20: alpha(T.info, 0.2),
+      danger10: alpha(T.danger, 0.1),
+      danger20: alpha(T.danger, 0.2),
     }),
     [T],
   );
@@ -422,6 +424,12 @@ export default function Perfil() {
   const [showMenu, setShowMenu] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editForm, setEditForm] = useState<UserData>(userData);
+
+  // Account deletion — Google Play requires an in-app path to delete the account
+  // for any app that lets users create one (web parity: perfil/page.tsx).
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Reserva access QR modal (rendered locally; payload = reserva id)
   const [showQrModal, setShowQrModal] = useState(false);
@@ -704,6 +712,37 @@ export default function Perfil() {
     // Web does `window.location.href = "/login"` with no toast (perfil/page.tsx:338-341).
     router.replace('/login');
   }, [logout, router, userId]);
+
+  // -- account deletion ------------------------------------------------------
+  const handleDeleteAccount = useCallback(async () => {
+    if (!deletePassword) return;
+    setIsDeleting(true);
+    try {
+      await api.delete('/usuarios/me', { body: { password: deletePassword } });
+      // The account's own PII is already gone server-side; these two SecureStore
+      // keys are this screen's local copy of it (see handleLogout) and would
+      // otherwise outlive the account on this device.
+      if (userId) {
+        await Promise.all([
+          SecureStore.deleteItemAsync(picKey(userId)).catch(() => {}),
+          SecureStore.deleteItemAsync(dataKey(userId)).catch(() => {}),
+        ]);
+      }
+      // Every token was revoked by the backend; logout() just clears local state.
+      await logout();
+      router.replace('/login');
+    } catch (err) {
+      // 401 = wrong password, 409 = last administrator of the conjunto.
+      if (err instanceof ApiError && err.status === 401) {
+        toast.error('Contraseña incorrecta');
+      } else if (err instanceof ApiError && err.message) {
+        toast.error(err.message);
+      } else {
+        toast.error('No se pudo eliminar la cuenta');
+      }
+      setIsDeleting(false);
+    }
+  }, [deletePassword, logout, router, userId]);
 
   /** Web sets id/nombre/inicio/fin/estado before opening the modal (page.tsx:733-739, 796-801). */
   const openQrModal = useCallback(
@@ -2092,11 +2131,119 @@ export default function Perfil() {
               <ArrowRight size={18} color={C.muted} />
             </LiquidGlass>
           </Pressable>
+
+          <Pressable
+            onPress={() => { setDeletePassword(''); setShowDeleteModal(true); }}
+            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }] })}
+          >
+            <LiquidGlass radius={32} style={{ padding: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: C.danger20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.danger10, alignItems: 'center', justifyContent: 'center' }}>
+                  <Trash2 size={20} color={C.danger} />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: C.danger }}>Eliminar Cuenta</Text>
+                  <Text style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '900', marginTop: 4 }}>Acción permanente</Text>
+                </View>
+              </View>
+              <ArrowRight size={18} color={C.danger} />
+            </LiquidGlass>
+          </Pressable>
         </View>
 
         {/* GLOBAL BRANDING — web renders <BrandedFooter /> last (page.tsx:1699) */}
         <BrandedFooter isInternal />
       </ScrollView>
+
+      {/* ---- DELETE ACCOUNT MODAL ----
+          Play Store requires the user be told what is erased and what the
+          copropiedad keeps before confirming (web parity: perfil/page.tsx). */}
+      <Modal visible={showDeleteModal} transparent animationType="slide" onRequestClose={() => !isDeleting && setShowDeleteModal(false)}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <Pressable
+            style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)' }}
+            onPress={() => !isDeleting && setShowDeleteModal(false)}
+          />
+          <View style={{ backgroundColor: C.bg, borderTopLeftRadius: 40, borderTopRightRadius: 40, borderTopWidth: 1, borderColor: C.danger20, maxHeight: '90%' }}>
+            <ScrollView contentContainerStyle={{ padding: 28, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={{ fontSize: 24, fontWeight: '700', color: C.text, fontFamily: 'PlusJakartaSans_700Bold', letterSpacing: -0.3 }}>Eliminar Cuenta</Text>
+                  <Text style={{ fontSize: 10, color: C.danger, textTransform: 'uppercase', letterSpacing: 2, fontWeight: '900', marginTop: 4 }}>Esta acción no se puede deshacer</Text>
+                </View>
+                <Pressable
+                  onPress={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: C.faint, alignItems: 'center', justifyContent: 'center', opacity: isDeleting ? 0.4 : 1 }}
+                >
+                  <X size={20} color={C.text} />
+                </Pressable>
+              </View>
+
+              <View style={{ padding: 20, borderRadius: 24, backgroundColor: C.danger10, borderWidth: 1, borderColor: C.danger20, marginBottom: 12 }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, color: C.danger, marginBottom: 8 }}>Se elimina</Text>
+                <Text style={{ fontSize: 14, color: C.text, lineHeight: 21 }}>
+                  Tu nombre, correo, teléfono, foto de perfil, mascotas y vehículos registrados. Perderás el acceso inmediatamente en todos tus dispositivos.
+                </Text>
+              </View>
+
+              <View style={{ padding: 20, borderRadius: 24, backgroundColor: C.text5, borderWidth: 1, borderColor: C.border, marginBottom: 24 }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, color: C.muted, marginBottom: 8 }}>Se conserva</Text>
+                <Text style={{ fontSize: 14, color: C.muted, lineHeight: 21 }}>
+                  El histórico de pagos, multas y votos de asamblea queda en los libros del conjunto sin tu identidad, porque la copropiedad está obligada por ley a conservarlo.
+                </Text>
+              </View>
+
+              <LabeledInput
+                label="Confirma con tu contraseña"
+                value={deletePassword}
+                onChangeText={setDeletePassword}
+                placeholder="Tu contraseña actual"
+                secureTextEntry
+                autoCapitalize="none"
+                C={C}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+                <Pressable
+                  onPress={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    padding: 18,
+                    borderRadius: 24,
+                    backgroundColor: C.faint,
+                    borderWidth: 1,
+                    borderColor: C.border,
+                    alignItems: 'center',
+                    opacity: isDeleting ? 0.4 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  })}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: C.text }}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => void handleDeleteAccount()}
+                  disabled={isDeleting || !deletePassword}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    padding: 18,
+                    borderRadius: 24,
+                    backgroundColor: C.danger,
+                    alignItems: 'center',
+                    opacity: isDeleting || !deletePassword ? 0.4 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  })}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: C.onAccent }}>
+                    {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* ---- EDIT MODAL ---- */}
       <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
@@ -2419,6 +2566,8 @@ type Palette = {
   info10: string;
   info15: string;
   info20: string;
+  danger10: string;
+  danger20: string;
 };
 
 /** expo-image source for either a bundled asset module or a remote/base64 URI. */

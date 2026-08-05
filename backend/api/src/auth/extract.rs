@@ -41,12 +41,19 @@ impl FromRequestParts<AppState> for AuthUser {
         // password change (set on password change / unknown user → 401). One indexed
         // PK lookup per authenticated request.
         let mut conn = state.pool.get().await?;
-        let changed_at: DateTime<Utc> = usuarios::table
+        let (changed_at, activo): (DateTime<Utc>, bool) = usuarios::table
             .find(claims.sub)
-            .select(usuarios::password_changed_at)
+            .select((usuarios::password_changed_at, usuarios::activo))
             .first(&mut conn)
             .await
             .map_err(|_| ApiError::Unauthorized)?;
+        // Deactivated (or self-deleted) accounts lose every live session, not just
+        // the ability to log in again. This also makes revocation exact: `iat` has
+        // one-second resolution, so a token minted in the same second as the
+        // password_changed_at bump would otherwise slip past the comparison below.
+        if !activo {
+            return Err(ApiError::Unauthorized);
+        }
         if claims.iat < changed_at.timestamp() {
             return Err(ApiError::Unauthorized);
         }

@@ -1,16 +1,19 @@
 use bigdecimal::BigDecimal;
 use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel_async::scoped_futures::ScopedFutureExt;
+use diesel_async::{AsyncConnection, RunQueryDsl};
 use uuid::Uuid;
 
-use crate::db::enums::TipoUnidad;
-use crate::db::schema::{mascotas, tramites, unidades, usuarios, vehiculos};
+use crate::db::enums::{Rol, TipoUnidad};
+use crate::db::schema::{
+    mascotas, native_push_tokens, push_subscriptions, tramites, unidades, usuarios, vehiculos,
+};
 use crate::db::DbConn;
 use crate::domains::conjuntos::models::Unidad;
 use crate::domains::parqueadero::models::Vehiculo;
 use crate::domains::tramites::models::Tramite;
 use crate::domains::usuarios::models::Usuario;
-use crate::error::ApiResult;
+use crate::error::{ApiError, ApiResult};
 
 pub async fn find_by_email(conn: &mut DbConn, email: &str) -> ApiResult<Option<Usuario>> {
     let user = usuarios::table
@@ -175,6 +178,105 @@ pub async fn update_password(
         .execute(conn)
         .await?;
     Ok(())
+}
+
+/// Roles that keep a conjunto operable. If the last one deletes itself there is
+/// nobody left to bill, approve or re-invite anyone.
+fn manda_el_conjunto(rol: Rol) -> bool {
+    matches!(rol, Rol::Administrador | Rol::SuperAdmin)
+}
+
+/// Erases a user's personal data in place and deactivates the account
+/// (Play Store / GDPR "delete my account").
+///
+/// This is deliberately NOT a `DELETE FROM usuarios`: 30 tables carry a
+/// `usuario_id` FK with no ON DELETE rule, so the delete would simply fail — and
+/// several of those tables (pagos, multas, asamblea_votos) hold records the
+/// copropiedad is legally required to retain. Instead the PII is scrubbed off the
+/// row and the now-nameless row stays behind to satisfy those foreign keys.
+///
+/// Bumping `password_changed_at` revokes every JWT already issued to this user
+/// (auth/extract.rs:50), so all their sessions die the instant this commits.
+pub async fn anonymize_account(conn: &mut DbConn, user_id: Uuid) -> ApiResult<()> {
+    conn.transaction(|conn| {
+        async move {
+            let user = usuarios::table
+                .find(user_id)
+                .select(Usuario::as_select())
+                .first(conn)
+                .await
+                .optional()?
+                .ok_or(ApiError::Unauthorized)?;
+
+            if manda_el_conjunto(user.rol) {
+                let otros: i64 = usuarios::table
+                    .filter(usuarios::conjunto_id.eq(user.conjunto_id))
+                    .filter(usuarios::activo.eq(true))
+                    .filter(usuarios::id.ne(user_id))
+                    .filter(
+                        usuarios::rol
+                            .eq(Rol::Administrador)
+                            .or(usuarios::rol.eq(Rol::SuperAdmin)),
+                    )
+                    .count()
+                    .get_result(conn)
+                    .await?;
+                if otros == 0 {
+                    return Err(ApiError::Conflict(
+                        "eres el único administrador del conjunto; nombra otro administrador antes de eliminar tu cuenta".into(),
+                    ));
+                }
+            }
+
+            // Frees the real address for re-registration while keeping
+            // UNIQUE(email) satisfied. `.invalid` is reserved by RFC 2606 and can
+            // never resolve, so nothing can ever be mailed to this row again.
+            let lapida = format!("eliminado-{user_id}@conjuntos.invalid");
+
+            diesel::update(usuarios::table.find(user_id))
+                .set((
+                    usuarios::nombre.eq("Usuario eliminado"),
+                    usuarios::email.eq(lapida),
+                    // Not a parseable Argon2 hash, so verify_password always
+                    // returns false (auth/password.rs:24) — no password can ever
+                    // open this account again.
+                    usuarios::password_hash.eq(""),
+                    usuarios::telefono.eq(None::<String>),
+                    usuarios::avatar.eq(None::<String>),
+                    usuarios::genero.eq(None::<String>),
+                    usuarios::activo.eq(false),
+                    usuarios::password_changed_at.eq(chrono::Utc::now()),
+                ))
+                .execute(conn)
+                .await?;
+
+            // Push registrations are pure delivery routing with no retention
+            // basis; leaving them would keep pushing to a deleted user's device.
+            diesel::delete(
+                native_push_tokens::table.filter(native_push_tokens::usuario_id.eq(user_id)),
+            )
+            .execute(conn)
+            .await?;
+            diesel::delete(
+                push_subscriptions::table.filter(push_subscriptions::usuario_id.eq(user_id)),
+            )
+            .execute(conn)
+            .await?;
+
+            // Pets and vehicles are personal data (names, plates) and are leaf
+            // tables — nothing references them, so they can go for real.
+            diesel::delete(mascotas::table.filter(mascotas::usuario_id.eq(user_id)))
+                .execute(conn)
+                .await?;
+            diesel::delete(vehiculos::table.filter(vehiculos::usuario_id.eq(user_id)))
+                .execute(conn)
+                .await?;
+
+            Ok::<_, ApiError>(())
+        }
+        .scope_boxed()
+    })
+    .await
 }
 
 /// Legacy profile-save bootstrapped a unit when the resident filled torre/apto
