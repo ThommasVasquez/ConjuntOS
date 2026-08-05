@@ -26,7 +26,6 @@ const config = {
   newArchEnabled: true,
   ios: {
     bundleIdentifier: 'app.conjuntos',
-    icon: './assets/expo.icon',
     supportsTablet: true,
     infoPlist: {
       NSMicrophoneUsageDescription:
@@ -42,7 +41,10 @@ const config = {
   android: {
     package: 'app.conjuntos',
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      // Matches android-icon-background.png; the image wins when both are set,
+      // but leaving the old template blue here would silently change the icon
+      // background if that file were ever dropped.
+      backgroundColor: '#FFFFFF',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
