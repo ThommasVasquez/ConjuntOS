@@ -27,6 +27,15 @@ const nextConfig: NextConfig = {
     // block a production deploy. Type errors (above) DO block it.
     ignoreDuringBuilds: true,
   },
+  async redirects() {
+    // Las páginas legales viven en el landing (conjuntos.app), que es la URL
+    // pública canónica. Aquí solo quedan los redirects para no romper enlaces
+    // antiguos ni las tiendas de apps.
+    return [
+      { source: "/privacidad", destination: "https://conjuntos.app/privacidad", permanent: true },
+      { source: "/proteccion-datos", destination: "https://conjuntos.app/proteccion-datos", permanent: true },
+    ];
+  },
   async headers() {
     // Baseline security headers for all routes. CSP is intentionally omitted here
     // until it can be tested against LiveKit + remote images + GSAP inline styles.
