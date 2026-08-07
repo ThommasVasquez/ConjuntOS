@@ -70,3 +70,7 @@ target/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# landing (export estático)
+/landing/.next/
+/landing/out/

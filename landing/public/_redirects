@@ -1,0 +1,5 @@
+# Las páginas legales viven en la app principal (src/app/(legal)). El landing es
+# un export estático aparte, así que aquí solo se redirige para que las URLs
+# públicas de conjuntos.app no den 404.
+/privacidad        https://app.conjuntos.app/privacidad        301
+/proteccion-datos  https://app.conjuntos.app/proteccion-datos  301
