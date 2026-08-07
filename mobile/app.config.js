@@ -39,7 +39,12 @@ const config = {
     },
   },
   android: {
-    package: 'app.conjuntos',
+    // Must match the Play Console app record exactly — Play rejects any upload
+    // whose package differs, and the record's package name is permanent once
+    // created. The listing was registered as com.conjuntos.app, so this is
+    // fixed for the life of the app: do NOT "tidy" it back to app.conjuntos to
+    // match ios.bundleIdentifier.
+    package: 'com.conjuntos.app',
     adaptiveIcon: {
       // Matches android-icon-background.png; the image wins when both are set,
       // but leaving the old template blue here would silently change the icon
