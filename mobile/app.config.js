@@ -61,12 +61,22 @@ const config = {
     // asamblea audio is stuck on earpiece+speaker. The legacy BLUETOOTH /
     // BLUETOOTH_ADMIN entries added by @config-plugins/react-native-webrtc are
     // inert on 31+ and are left alone.
+    //
+    // FOREGROUND_SERVICE_MEDIA_PROJECTION: required from Android 14 (API 34)
+    // to run the mediaProjection foreground service that @livekit/react-native-
+    // webrtc's MediaProjectionService starts when a moderator shares their
+    // screen in the asamblea (ControlBar "Compartir pantalla"). The base
+    // FOREGROUND_SERVICE permission comes from @livekit/react-native's library
+    // manifest; FOREGROUND_SERVICE_MEDIA_PROJECTION is NOT declared by any
+    // dependency, so it must be added here or screen share throws
+    // SecurityException on API 34+.
     permissions: [
       'RECORD_AUDIO',
       'CAMERA',
       'POST_NOTIFICATIONS',
       'INTERNET',
       'BLUETOOTH_CONNECT',
+      'FOREGROUND_SERVICE_MEDIA_PROJECTION',
     ],
     // @config-plugins/react-native-webrtc adds SYSTEM_ALERT_WINDOW for
     // draw-over-other-apps incoming-call UIs. We surface calls through
@@ -90,7 +100,16 @@ const config = {
     // wire the iOS/Android native build (permissions, podspec, gradle).
     '@config-plugins/react-native-webrtc',
     'expo-image-picker',
-    'expo-audio',
+    // Background playback is DISABLED (enableBackgroundPlayback: false) on
+    // purpose: the app only plays short foreground audio (chat voice notes via
+    // createAudioPlayer, call ring tones), never lock-screen/background
+    // playback. The plugin default (true) injects
+    // android.permission.FOREGROUND_SERVICE + FOREGROUND_SERVICE_MEDIA_PLAYBACK
+    // and the mediaPlayback AudioControlsService into the manifest, which flags
+    // the listing with Play's "Foreground service permissions" declaration for
+    // a service type we never use. Keep this false. Voice-note playback and
+    // recording in the foreground are unaffected.
+    ['expo-audio', { enableBackgroundPlayback: false }],
     // QR scanning for visitor check-in / pases temporales (web parity with
     // src/components/visitas/QrScanner.tsx). Permission strings are declared in
     // ios.infoPlist.NSCameraUsageDescription and android.permissions above.
