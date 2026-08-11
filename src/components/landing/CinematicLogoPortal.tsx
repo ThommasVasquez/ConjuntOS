@@ -13,7 +13,7 @@ export default function CinematicLogoPortal({
   alwaysShow = true,
 }: CinematicLogoPortalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const logoWrapperRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -50,6 +50,11 @@ export default function CinematicLogoPortal({
       });
     }
 
+    // SVG ViewBox Camera Interpolation Object
+    // Initial viewBox: Full logo centered (0 0 517.15 325.73)
+    // Target viewBox: Focused directly into the Castle Window (233.0 113.6 1.0 0.63)
+    const viewBoxObj = { x: 0, y: 0, w: 517.15, h: 325.73 };
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         onComplete: () => {
@@ -67,19 +72,14 @@ export default function CinematicLogoPortal({
         },
       });
 
-      // ── Step 1: Smooth Fade-In of Centered Logo at Ideal Size (~260px) ──
+      // ── Step 1: Smooth Fade-In at Exact Centered Standard Size ──
       gsap.set(containerRef.current, { opacity: 1, pointerEvents: "all" });
-      gsap.set(logoWrapperRef.current, {
-        scale: 0.9,
-        opacity: 0,
-        transformOrigin: "45% 35%", // Focal origin pinned at the main castle window
-      });
+      gsap.set(svgRef.current, { opacity: 0 });
       gsap.set(glowRef.current, { opacity: 0, scale: 0.8 });
       gsap.set(textRef.current, { opacity: 0, y: 10 });
 
-      tl.to(logoWrapperRef.current, {
+      tl.to(svgRef.current, {
         opacity: 1,
-        scale: 1,
         duration: 0.55,
         ease: "power2.out",
       })
@@ -104,10 +104,10 @@ export default function CinematicLogoPortal({
           "-=0.3"
         )
 
-        // ── Step 2: Hold centered at compact size so logo can be well appreciated ──
+        // ── Step 2: Hold centered so full logo can be clearly appreciated ──
         .to({}, { duration: 0.55 })
 
-        // ── Step 3: Fluid Camera Zoom straight INTO the Main Castle Window ──
+        // ── Step 3: Native Vector SVG ViewBox Zoom (100% Crisp, ZERO Blurriness) ──
         .to(textRef.current, {
           opacity: 0,
           y: -10,
@@ -115,11 +115,22 @@ export default function CinematicLogoPortal({
           ease: "power1.in",
         })
         .to(
-          logoWrapperRef.current,
+          viewBoxObj,
           {
-            scale: 75, // Zoom focused into castle window (45% 35%)
-            duration: 1.2,
+            x: 233.0,
+            y: 113.6,
+            w: 1.0,
+            h: 0.63,
+            duration: 1.25,
             ease: "power3.inOut",
+            onUpdate: () => {
+              if (svgRef.current) {
+                svgRef.current.setAttribute(
+                  "viewBox",
+                  `${viewBoxObj.x} ${viewBoxObj.y} ${viewBoxObj.w} ${viewBoxObj.h}`
+                );
+              }
+            },
           },
           "-=0.15"
         )
@@ -131,7 +142,7 @@ export default function CinematicLogoPortal({
             duration: 0.9,
             ease: "power2.in",
           },
-          "-=1.2"
+          "-=1.25"
         )
 
         // As the window expands, the webpage comes forward seamlessly
@@ -140,10 +151,10 @@ export default function CinematicLogoPortal({
           {
             scale: 1,
             filter: "blur(0px)",
-            duration: 1.05,
+            duration: 1.1,
             ease: "power2.out",
           },
-          "-=0.95"
+          "-=1.0"
         )
 
         // Fade out overlay cleanly as the window portal encompasses the viewport
@@ -176,7 +187,7 @@ export default function CinematicLogoPortal({
       {/* Background Ambient Glow */}
       <div
         ref={glowRef}
-        className="absolute w-[340px] h-[340px] sm:w-[480px] sm:h-[480px] rounded-full pointer-events-none blur-[90px]"
+        className="absolute w-[360px] h-[360px] sm:w-[520px] sm:h-[520px] rounded-full pointer-events-none blur-[90px]"
         style={{
           background: isDarkMode
             ? "radial-gradient(circle, rgba(0,157,241,0.45) 0%, rgba(87,191,0,0.3) 50%, transparent 75%)"
@@ -184,18 +195,17 @@ export default function CinematicLogoPortal({
         }}
       />
 
-      {/* Centered Logo Container (Perfect Centering on Screen) */}
-      <div
-        ref={logoWrapperRef}
-        className="relative z-10 w-[220px] sm:w-[280px] md:w-[320px] flex items-center justify-center shrink-0 transform-gpu"
-        style={{ willChange: "transform, opacity" }}
+      {/* Full Viewport SVG displaying the Logo cleanly centered */}
+      {/* Animating the viewBox attribute forces native 4K vector math on every frame with ZERO blurriness! */}
+      <svg
+        ref={svgRef}
+        viewBox="0 0 517.15 325.73"
+        className="fixed inset-0 w-full h-full max-w-full max-h-full pointer-events-none z-10 p-6 sm:p-12 md:p-16"
+        preserveAspectRatio="xMidYMid meet"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <svg
-          viewBox="0 0 517.15 325.73"
-          className="w-full h-auto drop-shadow-[0_0_35px_rgba(0,157,241,0.45)]"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        <g className="drop-shadow-[0_0_35px_rgba(0,157,241,0.45)]">
           {/* Main Castle Body */}
           <path
             fill={textFill}
@@ -271,8 +281,8 @@ export default function CinematicLogoPortal({
             fill={textFill}
             d="M517.15,218.66c0,4.93-3.87,8.8-8.9,8.8s-8.96-3.87-8.96-8.8,3.97-8.69,8.96-8.69,8.9,3.87,8.9,8.69ZM501.52,218.66c0,3.87,2.86,6.94,6.78,6.94s6.62-3.07,6.62-6.89-2.81-7-6.68-7-6.73,3.13-6.73,6.94ZM506.87,223.21h-2.01v-8.69c.79-.16,1.91-.27,3.34-.27,1.64,0,2.38.27,3.02.64.48.37.85,1.06.85,1.91,0,.95-.74,1.7-1.8,2.01v.11c.85.32,1.33.95,1.59,2.12.26,1.32.42,1.85.64,2.17h-2.17c-.26-.32-.42-1.11-.69-2.12-.16-.95-.69-1.38-1.8-1.38h-.95v3.5ZM506.92,218.29h.95c1.11,0,2.01-.37,2.01-1.27,0-.79-.58-1.33-1.85-1.33-.53,0-.9.05-1.11.11v2.49Z"
           />
-        </svg>
-      </div>
+        </g>
+      </svg>
 
       {/* Footer Branding Text */}
       <div
