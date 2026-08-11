@@ -40,7 +40,7 @@ export default function CinematicLogoPortal({
       }
     }
 
-    // Set initial webpage scale & opacity for hardware-accelerated entry (no heavy main thread blurs)
+    // Set initial webpage scale & opacity for hardware-accelerated entry
     const mainElement = document.querySelector("main");
     if (mainElement) {
       gsap.set(mainElement, {
@@ -69,22 +69,22 @@ export default function CinematicLogoPortal({
         },
       });
 
-      // ── Step 1: Smooth Synchronized Entrance (0.0s - 0.45s) ──
+      // ── Step 1: Smooth Entrance at Compact Size (~280px) on High-Res 1200px Canvas ──
+      // Scale starts at 0.24 (1200px * 0.24 = 288px visual size), giving HD vector density with zero pixelation!
       gsap.set(containerRef.current, { opacity: 1, pointerEvents: "all" });
       gsap.set(logoWrapperRef.current, {
-        scale: 1,
+        scale: 0.24,
         opacity: 0,
-        transformOrigin: "45% 35%", // Pin transform origin at castle window
+        transformOrigin: "45% 35%", // Focal camera target at the castle window
       });
       gsap.set(glowRef.current, { opacity: 0, scale: 0.9 });
       gsap.set(textRef.current, { opacity: 0 });
 
-      tl.to(logoWrapperRef.current, { opacity: 1, duration: 0.45 })
+      tl.to(logoWrapperRef.current, { opacity: 1, scale: 0.25, duration: 0.45 })
         .to(glowRef.current, { opacity: 1, scale: 1, duration: 0.45 }, 0)
         .to(textRef.current, { opacity: 1, duration: 0.4 }, 0.1)
 
-        // ── Step 2 & 3: Seamless Continuous Camera Zoom (Single 120FPS GPU Sequence, NO micro-delays) ──
-        // The camera accelerates smoothly (+0.35s mark) directly into the castle window
+        // ── Step 2 & 3: Seamless Crisp Vector Zoom (No pixelation, 120FPS GPU Sequence) ──
         .to(
           textRef.current,
           { opacity: 0, duration: 0.25, ease: "power1.in" },
@@ -93,7 +93,7 @@ export default function CinematicLogoPortal({
         .to(
           logoWrapperRef.current,
           {
-            scale: 85,
+            scale: 18, // High-res canvas scale 18x passes full viewport with 100% sharp vectors
             duration: 1.15,
             ease: "power3.inOut",
           },
@@ -156,16 +156,18 @@ export default function CinematicLogoPortal({
         }}
       />
 
-      {/* Centered Logo Container */}
+      {/* High-Resolution 1200px SVG Canvas Container */}
       <div
         ref={logoWrapperRef}
-        className="relative z-10 w-[220px] sm:w-[280px] md:w-[320px] flex items-center justify-center shrink-0 transform-gpu"
+        className="relative z-10 w-[90vw] max-w-[1100px] h-auto flex items-center justify-center shrink-0 transform-gpu"
         style={{ opacity: 0, willChange: "transform, opacity" }}
       >
         <svg
           viewBox="0 0 517.15 325.73"
           className="w-full h-auto drop-shadow-[0_0_35px_rgba(0,157,241,0.45)] overflow-visible"
           fill="none"
+          shapeRendering="geometricPrecision"
+          textRendering="geometricPrecision"
           xmlns="http://www.w3.org/2000/svg"
         >
           <g>
@@ -220,7 +222,7 @@ export default function CinematicLogoPortal({
             />
             <path
               fill={textFill}
-              d="M301.84,253.16c-9.14.28-15.32,5.56-15.41,14.72l-.33,33.49-8.17-.04v-53.84c2.4-.46,4.17-.3,6.57-.18l1.55,7.72c5.94-9.59,21.51-11.07,30.39-5.32,4.49,2.91,6.45,8.38,6.49,13.68l.25,37.98-8.2-.02-.11-36.54c-.02-7.7-5.43-11.88-13.03-11.65Z"
+            d="M301.84,253.16c-9.14.28-15.32,5.56-15.41,14.72l-.33,33.49-8.17-.04v-53.84c2.4-.46,4.17-.3,6.57-.18l1.55,7.72c5.94-9.59,21.51-11.07,30.39-5.32,4.49,2.91,6.45,8.38,6.49,13.68l.25,37.98-8.2-.02-.11-36.54c-.02-7.7-5.43-11.88-13.03-11.65Z"
             />
             <path
               fill={textFill}
