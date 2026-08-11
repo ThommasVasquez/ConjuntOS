@@ -44,7 +44,7 @@ export default function CinematicLogoPortal({
     const mainElement = document.querySelector("main");
     if (mainElement) {
       gsap.set(mainElement, {
-        scale: 0.92,
+        scale: 0.94,
         filter: "blur(12px)",
         transformOrigin: "center center",
       });
@@ -67,85 +67,67 @@ export default function CinematicLogoPortal({
         },
       });
 
-      // ── Sequence 1: Initial Centered Appearance ──
-      // Pure vector group scale inside full-screen SVG (no bitmap texture rasterization)
+      // ── Step 1: Smooth Fade In at Exact Standard Size (No bounce/jump) ──
       gsap.set(containerRef.current, { opacity: 1, pointerEvents: "all" });
       gsap.set(svgGroupRef.current, {
-        scale: 0.85,
+        scale: 1,
         opacity: 0,
         transformOrigin: "405px 405px",
       });
-      gsap.set(glowRef.current, { opacity: 0, scale: 0.8 });
-      gsap.set(textRef.current, { opacity: 0, y: 10 });
+      gsap.set(glowRef.current, { opacity: 0, scale: 1 });
+      gsap.set(textRef.current, { opacity: 0, y: 0 });
 
       tl.to(svgGroupRef.current, {
         opacity: 1,
-        scale: 1,
-        duration: 0.45,
-        ease: "power3.out",
+        duration: 0.5,
+        ease: "power2.out",
       })
         .to(
           glowRef.current,
           {
             opacity: 1,
-            scale: 1.25,
-            duration: 0.45,
+            duration: 0.5,
             ease: "power2.out",
           },
-          "-=0.45"
+          "-=0.5"
         )
         .to(
           textRef.current,
           {
             opacity: 1,
-            y: 0,
             duration: 0.4,
             ease: "power2.out",
-          },
-          "-=0.35"
-        )
-
-        // ── Sequence 2: Brief Hold & Anticipation Pull-Back ──
-        .to(svgGroupRef.current, {
-          scale: 0.92,
-          duration: 0.3,
-          ease: "sine.inOut",
-        })
-        .to(
-          glowRef.current,
-          {
-            scale: 0.95,
-            duration: 0.3,
-            ease: "sine.inOut",
           },
           "-=0.3"
         )
 
-        // ── Sequence 3: Hyper-Speed Camera Zoom (Pure Vector Scaled at Retina Resolution) ──
+        // ── Step 2: Clean Pause at Standard Size (0.4s hold) ──
+        .to({}, { duration: 0.4 })
+
+        // ── Step 3: Single Continuous Smooth Zoom Towards Camera ──
         .to(textRef.current, {
           opacity: 0,
-          y: -10,
-          duration: 0.25,
-          ease: "power2.in",
+          duration: 0.3,
+          ease: "power1.in",
         })
         .to(
           svgGroupRef.current,
           {
-            scale: 45, // Native vector zoom inside full viewport SVG (0% pixelation!)
-            duration: 1.15,
-            ease: "expo.inOut",
+            scale: 48, // Smooth vector camera zoom forward
+            duration: 1.1,
+            ease: "power3.in",
           },
-          "-=0.1"
+          "-=0.2"
         )
         .to(
           glowRef.current,
           {
-            scale: 16,
+            scale: 15,
             opacity: 0,
             duration: 0.8,
-            ease: "power4.in",
+            ease: "power2.in",
           },
-          "-=1.15"
+          "-=1.1"
         )
 
         // Reveal webpage through the expanding logo portal synchronously
@@ -154,21 +136,21 @@ export default function CinematicLogoPortal({
           {
             scale: 1,
             filter: "blur(0px)",
-            duration: 1.1,
-            ease: "power3.out",
+            duration: 1.0,
+            ease: "power2.out",
           },
-          "-=1.0"
+          "-=0.9"
         )
 
-        // Fade out overlay as logo edges cross screen bounds
+        // Fade out overlay cleanly as logo edges cross screen
         .to(
           containerRef.current,
           {
             opacity: 0,
-            duration: 0.35,
+            duration: 0.3,
             ease: "power2.inOut",
           },
-          "-=0.4"
+          "-=0.3"
         );
     });
 
@@ -196,7 +178,7 @@ export default function CinematicLogoPortal({
         }}
       />
 
-      {/* Full Viewport Crisp Vector SVG View (Renders vector paths natively at screen resolution on every frame) */}
+      {/* Full Viewport Crisp Vector SVG View */}
       <svg
         viewBox="0 0 810 810"
         className="fixed inset-0 w-full h-full max-w-full max-h-full pointer-events-none z-10"
