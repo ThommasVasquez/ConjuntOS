@@ -13,7 +13,7 @@ export default function CinematicLogoPortal({
   alwaysShow = true,
 }: CinematicLogoPortalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const portalLogoRef = useRef<HTMLDivElement>(null);
+  const svgGroupRef = useRef<SVGGElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -67,22 +67,20 @@ export default function CinematicLogoPortal({
         },
       });
 
-      // ── Sequence 1: Initial Centered Appearance (0.0s - 0.45s) ──
-      // Note: SVG is rendered at high native resolution (640x640px) to prevent pixelation when zooming in!
+      // ── Sequence 1: Initial Centered Appearance ──
+      // Pure vector group scale inside full-screen SVG (no bitmap texture rasterization)
       gsap.set(containerRef.current, { opacity: 1, pointerEvents: "all" });
-      gsap.set(portalLogoRef.current, {
-        scale: 0.28, // Visual initial size ~180px
+      gsap.set(svgGroupRef.current, {
+        scale: 0.85,
         opacity: 0,
-        filter: "blur(16px)",
-        transformOrigin: "center center",
+        transformOrigin: "405px 405px",
       });
       gsap.set(glowRef.current, { opacity: 0, scale: 0.8 });
       gsap.set(textRef.current, { opacity: 0, y: 10 });
 
-      tl.to(portalLogoRef.current, {
+      tl.to(svgGroupRef.current, {
         opacity: 1,
-        scale: 0.32,
-        filter: "blur(0px)",
+        scale: 1,
         duration: 0.45,
         ease: "power3.out",
       })
@@ -90,7 +88,7 @@ export default function CinematicLogoPortal({
           glowRef.current,
           {
             opacity: 1,
-            scale: 1.2,
+            scale: 1.25,
             duration: 0.45,
             ease: "power2.out",
           },
@@ -107,9 +105,9 @@ export default function CinematicLogoPortal({
           "-=0.35"
         )
 
-        // ── Sequence 2: Brief Hold & Anticipation Pull-Back (0.45s - 0.75s) ──
-        .to(portalLogoRef.current, {
-          scale: 0.29,
+        // ── Sequence 2: Brief Hold & Anticipation Pull-Back ──
+        .to(svgGroupRef.current, {
+          scale: 0.92,
           duration: 0.3,
           ease: "sine.inOut",
         })
@@ -123,7 +121,7 @@ export default function CinematicLogoPortal({
           "-=0.3"
         )
 
-        // ── Sequence 3: Hyper-Speed Camera Zoom & Mask Portal Expansion (0.75s - 1.8s) ──
+        // ── Sequence 3: Hyper-Speed Camera Zoom (Pure Vector Scaled at Retina Resolution) ──
         .to(textRef.current, {
           opacity: 0,
           y: -10,
@@ -131,9 +129,9 @@ export default function CinematicLogoPortal({
           ease: "power2.in",
         })
         .to(
-          portalLogoRef.current,
+          svgGroupRef.current,
           {
-            scale: 22, // High resolution SVG container scales crisp without pixelation!
+            scale: 45, // Native vector zoom inside full viewport SVG (0% pixelation!)
             duration: 1.15,
             ease: "expo.inOut",
           },
@@ -142,7 +140,7 @@ export default function CinematicLogoPortal({
         .to(
           glowRef.current,
           {
-            scale: 12,
+            scale: 16,
             opacity: 0,
             duration: 0.8,
             ease: "power4.in",
@@ -198,19 +196,20 @@ export default function CinematicLogoPortal({
         }}
       />
 
-      {/* High Resolution Vector Logo Element (Scales into Camera without pixelation) */}
-      <div
-        ref={portalLogoRef}
-        className="relative z-10 w-[640px] h-[640px] flex items-center justify-center transform-gpu shrink-0"
-        style={{ willChange: "transform, opacity, filter" }}
+      {/* Full Viewport Crisp Vector SVG View (Renders vector paths natively at screen resolution on every frame) */}
+      <svg
+        viewBox="0 0 810 810"
+        className="fixed inset-0 w-full h-full max-w-full max-h-full pointer-events-none z-10"
+        preserveAspectRatio="xMidYMid meet"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <svg
-          viewBox="0 0 810 810"
-          className="w-full h-full drop-shadow-[0_0_35px_rgba(0,157,241,0.45)]"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
+        <g
+          ref={svgGroupRef}
+          style={{ transformOrigin: "405px 405px" }}
+          className="drop-shadow-[0_0_35px_rgba(0,157,241,0.45)]"
         >
-          {/* Logo Main Emblem Paths */}
+          {/* Logo Main Emblem Vector Paths */}
           <path
             fill={isDarkMode ? "#FFFFFF" : "#0F172A"}
             d="M417.42,24.44l-1.49,673.91-238.44,80.01-.06-550.38,56.16-18.42.41,71.47,41.73-13.55.55-72.71,58.67-19.95.77,70.57,36.57-12.27.4-70.75,28.36-10.82.49-56.54c-22.83,18.53-43.84,4.47-62.14-4.73-18.81,4.93-44.21,25.36-64.79,7.46,46.98-.18,53.55-41.21,64.54-42.8,8.23-1.19,24.57,16.7,33.06.04,8.87-17.38,24.36-24.74,45.2-30.56Z"
@@ -239,10 +238,10 @@ export default function CinematicLogoPortal({
             fill={isDarkMode ? "#FFFFFF" : "#0F172A"}
             d="M340.17,425.35l-82.75,24.94c-.45-39.68-5.01-81.63,22.53-99.31,12.25-7.86,28.25-9.78,42.17-2.81,11.36,5.69,17.07,18.16,17.27,30.52l.77,46.65Z"
           />
-        </svg>
-      </div>
+        </g>
+      </svg>
 
-      {/* Updated Footer Branding Text */}
+      {/* Footer Branding Text */}
       <div
         ref={textRef}
         className="absolute bottom-8 px-4 text-center tracking-widest text-[11px] sm:text-xs uppercase font-bold text-text-muted/80 z-20 pointer-events-none"
