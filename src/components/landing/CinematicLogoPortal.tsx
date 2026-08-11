@@ -14,7 +14,6 @@ export default function CinematicLogoPortal({
 }: CinematicLogoPortalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const logoWrapperRef = useRef<HTMLDivElement>(null);
-  const svgGroupRef = useRef<SVGGElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -41,26 +40,28 @@ export default function CinematicLogoPortal({
       }
     }
 
-    // Set initial webpage scale & blur for depth effect through the window
+    // Set initial webpage scale & opacity for hardware-accelerated entry (no heavy main thread blurs)
     const mainElement = document.querySelector("main");
     if (mainElement) {
       gsap.set(mainElement, {
-        scale: 0.88,
-        filter: "blur(10px)",
+        scale: 0.94,
+        opacity: 0.85,
         transformOrigin: "center center",
+        force3D: true,
       });
     }
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
+        defaults: { ease: "power2.out", force3D: true },
         onComplete: () => {
           if (!alwaysShow) {
             sessionStorage.setItem("conjuntos_cinematic_portal_shown", "true");
           }
-          // Restore webpage to normal scale and blur
+          // Restore webpage properties cleanly
           if (mainElement) {
             gsap.set(mainElement, {
-              clearProps: "scale,filter,transformOrigin",
+              clearProps: "scale,opacity,transformOrigin,force3D",
             });
           }
           setIsVisible(false);
@@ -68,93 +69,64 @@ export default function CinematicLogoPortal({
         },
       });
 
-      // ── Step 1: Smooth Fade-In at Exact Centered Compact Size (~260px) ──
+      // ── Step 1: Smooth Synchronized Entrance (0.0s - 0.45s) ──
       gsap.set(containerRef.current, { opacity: 1, pointerEvents: "all" });
       gsap.set(logoWrapperRef.current, {
         scale: 1,
         opacity: 0,
-        transformOrigin: "45% 35%", // Focal camera target at the castle window
+        transformOrigin: "45% 35%", // Pin transform origin at castle window
       });
-      gsap.set(glowRef.current, { opacity: 0, scale: 0.8 });
-      gsap.set(textRef.current, { opacity: 0, y: 10 });
+      gsap.set(glowRef.current, { opacity: 0, scale: 0.9 });
+      gsap.set(textRef.current, { opacity: 0 });
 
-      tl.to(logoWrapperRef.current, {
-        opacity: 1,
-        duration: 0.55,
-        ease: "power2.out",
-      })
-        .to(
-          glowRef.current,
-          {
-            opacity: 1,
-            scale: 1,
-            duration: 0.55,
-            ease: "power2.out",
-          },
-          "-=0.55"
-        )
+      tl.to(logoWrapperRef.current, { opacity: 1, duration: 0.45 })
+        .to(glowRef.current, { opacity: 1, scale: 1, duration: 0.45 }, 0)
+        .to(textRef.current, { opacity: 1, duration: 0.4 }, 0.1)
+
+        // ── Step 2 & 3: Seamless Continuous Camera Zoom (Single 120FPS GPU Sequence, NO micro-delays) ──
+        // The camera accelerates smoothly (+0.35s mark) directly into the castle window
         .to(
           textRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.4,
-            ease: "power2.out",
-          },
-          "-=0.3"
+          { opacity: 0, duration: 0.25, ease: "power1.in" },
+          "+=0.35"
         )
-
-        // ── Step 2: Hold centered at exact compact size so logo can be well appreciated ──
-        .to({}, { duration: 0.55 })
-
-        // ── Step 3: Camera Zooms straight INTO the Main Castle Window ──
-        .to(textRef.current, {
-          opacity: 0,
-          y: -10,
-          duration: 0.25,
-          ease: "power1.in",
-        })
         .to(
           logoWrapperRef.current,
           {
-            scale: 85, // Camera zoom focused into castle window (45% 35%)
-            duration: 1.2,
+            scale: 85,
+            duration: 1.15,
             ease: "power3.inOut",
           },
-          "-=0.15"
+          "-=0.25"
         )
         .to(
           glowRef.current,
           {
-            scale: 18,
+            scale: 16,
             opacity: 0,
-            duration: 0.9,
+            duration: 0.85,
             ease: "power2.in",
           },
-          "-=1.2"
+          "-=1.15"
         )
-
-        // As the window expands, the webpage comes forward seamlessly
         .to(
           mainElement,
           {
             scale: 1,
-            filter: "blur(0px)",
-            duration: 1.05,
+            opacity: 1,
+            duration: 1.0,
             ease: "power2.out",
           },
-          "-=0.95"
+          "-=0.9"
         )
-
-        // Fade out overlay cleanly as the window portal encompasses the viewport
         .to(
           containerRef.current,
           {
             opacity: 0,
-            duration: 0.3,
+            duration: 0.25,
             ease: "power2.inOut",
           },
-          "-=0.3"
+          "-=0.25"
         );
     });
 
@@ -184,11 +156,11 @@ export default function CinematicLogoPortal({
         }}
       />
 
-      {/* Centered Logo Container (Exact Compact Size: 220px / 280px / 320px) */}
+      {/* Centered Logo Container */}
       <div
         ref={logoWrapperRef}
-        className="relative z-10 w-[220px] sm:w-[280px] md:w-[320px] flex items-center justify-center shrink-0"
-        style={{ opacity: 0 }}
+        className="relative z-10 w-[220px] sm:w-[280px] md:w-[320px] flex items-center justify-center shrink-0 transform-gpu"
+        style={{ opacity: 0, willChange: "transform, opacity" }}
       >
         <svg
           viewBox="0 0 517.15 325.73"
@@ -196,7 +168,7 @@ export default function CinematicLogoPortal({
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <g ref={svgGroupRef}>
+          <g>
             {/* Main Castle Body */}
             <path
               fill={textFill}
