@@ -67,16 +67,9 @@ export default function CinematicLogoPortal({
         },
       });
 
-      // ── Step 1: Smooth Fade-In at a Compact, Easily Appreciable Size (~220px) ──
-      // Pinned transform origin directly at the main castle window: (233.5px, 114px)
+      // ── Step 1: Smooth Fade-In at a Compact Size (~200px) ──
+      // Inline styles pre-set scale:0.38 & opacity:0 to eliminate initial paint flash!
       gsap.set(containerRef.current, { opacity: 1, pointerEvents: "all" });
-      gsap.set(svgGroupRef.current, {
-        scale: 0.38,
-        opacity: 0,
-        transformOrigin: "233.5px 114px",
-      });
-      gsap.set(glowRef.current, { opacity: 0, scale: 0.8 });
-      gsap.set(textRef.current, { opacity: 0, y: 0 });
 
       tl.to(svgGroupRef.current, {
         opacity: 1,
@@ -104,7 +97,7 @@ export default function CinematicLogoPortal({
           "-=0.3"
         )
 
-        // ── Step 2: Hold at Compact Size so User can Appreciate full Logo Branding ──
+        // ── Step 2: Hold at Compact Size so User can Appreciate full Logo ──
         .to({}, { duration: 0.55 })
 
         // ── Step 3: Fluid Camera Zoom straight INTO the Main Castle Window ──
@@ -170,13 +163,15 @@ export default function CinematicLogoPortal({
       className={`fixed inset-0 z-[999999] flex items-center justify-center overflow-hidden transition-colors select-none ${
         isDarkMode ? "bg-[#050505] text-white" : "bg-[#ffffff] text-slate-900"
       }`}
-      style={{ opacity: 1 }}
+      style={{ opacity: 0 }}
     >
       {/* Background Ambient Glow */}
       <div
         ref={glowRef}
         className="absolute w-[360px] h-[360px] sm:w-[520px] sm:h-[520px] rounded-full pointer-events-none blur-[90px]"
         style={{
+          opacity: 0,
+          transform: "scale(0.8)",
           background: isDarkMode
             ? "radial-gradient(circle, rgba(0,157,241,0.45) 0%, rgba(87,191,0,0.3) 50%, transparent 75%)"
             : "radial-gradient(circle, rgba(0,157,241,0.35) 0%, rgba(87,191,0,0.25) 50%, transparent 75%)",
@@ -211,10 +206,14 @@ export default function CinematicLogoPortal({
           </mask>
         </defs>
 
-        {/* Scalable Vector Group: Starts compact (0.42x), zooms into the Castle Window (233.5px, 114px) */}
+        {/* Scalable Vector Group: Initialized inline at scale:0.38 & opacity:0 to prevent first-paint flash! */}
         <g
           ref={svgGroupRef}
-          style={{ transformOrigin: "233.5px 114px" }}
+          style={{
+            opacity: 0,
+            transform: "scale(0.38)",
+            transformOrigin: "233.5px 114px",
+          }}
           className="drop-shadow-[0_0_35px_rgba(0,157,241,0.45)]"
         >
           {/* Main Castle Body */}
@@ -298,6 +297,7 @@ export default function CinematicLogoPortal({
       {/* Footer Branding Text */}
       <div
         ref={textRef}
+        style={{ opacity: 0 }}
         className="absolute bottom-8 px-4 text-center tracking-widest text-[11px] sm:text-xs uppercase font-bold text-text-muted/80 z-20 pointer-events-none"
       >
         <span>
