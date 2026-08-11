@@ -67,30 +67,32 @@ export default function CinematicLogoPortal({
         },
       });
 
-      // ── Step 1: Smooth Fade-In at Exact Centered Standard Size ──
-      // Focal transform center is pinned exactly at the main castle window: (233.5px, 114px)
+      // ── Step 1: Smooth Fade-In at a Compact, Easily Appreciable Size (~220px) ──
+      // Pinned transform origin directly at the main castle window: (233.5px, 114px)
       gsap.set(containerRef.current, { opacity: 1, pointerEvents: "all" });
       gsap.set(svgGroupRef.current, {
-        scale: 1,
+        scale: 0.38,
         opacity: 0,
         transformOrigin: "233.5px 114px",
       });
-      gsap.set(glowRef.current, { opacity: 0, scale: 1 });
+      gsap.set(glowRef.current, { opacity: 0, scale: 0.8 });
       gsap.set(textRef.current, { opacity: 0, y: 0 });
 
       tl.to(svgGroupRef.current, {
         opacity: 1,
-        duration: 0.5,
+        scale: 0.42,
+        duration: 0.55,
         ease: "power2.out",
       })
         .to(
           glowRef.current,
           {
             opacity: 1,
-            duration: 0.5,
+            scale: 1,
+            duration: 0.55,
             ease: "power2.out",
           },
-          "-=0.5"
+          "-=0.55"
         )
         .to(
           textRef.current,
@@ -102,10 +104,10 @@ export default function CinematicLogoPortal({
           "-=0.3"
         )
 
-        // ── Step 2: Clean Centered Pause at Standard Size (0.4s hold) ──
-        .to({}, { duration: 0.4 })
+        // ── Step 2: Hold at Compact Size so User can Appreciate full Logo Branding ──
+        .to({}, { duration: 0.55 })
 
-        // ── Step 3: Camera Zooms Straight INTO the Main Castle Window ──
+        // ── Step 3: Fluid Camera Zoom straight INTO the Main Castle Window ──
         .to(textRef.current, {
           opacity: 0,
           duration: 0.25,
@@ -114,21 +116,21 @@ export default function CinematicLogoPortal({
         .to(
           svgGroupRef.current,
           {
-            scale: 56, // Native vector camera zoom focused directly into (233.5px, 114px)
-            duration: 1.15,
+            scale: 130, // Smooth vector camera zoom focused directly into (233.5px, 114px)
+            duration: 1.25,
             ease: "power3.inOut",
           },
-          "-=0.2"
+          "-=0.15"
         )
         .to(
           glowRef.current,
           {
             scale: 18,
             opacity: 0,
-            duration: 0.85,
+            duration: 0.9,
             ease: "power2.in",
           },
-          "-=1.15"
+          "-=1.25"
         )
 
         // As the window expands, the webpage comes forward seamlessly
@@ -137,10 +139,10 @@ export default function CinematicLogoPortal({
           {
             scale: 1,
             filter: "blur(0px)",
-            duration: 1.05,
+            duration: 1.1,
             ease: "power2.out",
           },
-          "-=0.95"
+          "-=1.0"
         )
 
         // Fade out overlay cleanly as the window portal encompasses the viewport
@@ -173,7 +175,7 @@ export default function CinematicLogoPortal({
       {/* Background Ambient Glow */}
       <div
         ref={glowRef}
-        className="absolute w-[400px] h-[400px] sm:w-[600px] sm:h-[600px] rounded-full pointer-events-none blur-[100px]"
+        className="absolute w-[360px] h-[360px] sm:w-[520px] sm:h-[520px] rounded-full pointer-events-none blur-[90px]"
         style={{
           background: isDarkMode
             ? "radial-gradient(circle, rgba(0,157,241,0.45) 0%, rgba(87,191,0,0.3) 50%, transparent 75%)"
@@ -209,7 +211,7 @@ export default function CinematicLogoPortal({
           </mask>
         </defs>
 
-        {/* Scalable Vector Group: Camera zooms directly into the Castle Window (233.5px, 114px) */}
+        {/* Scalable Vector Group: Starts compact (0.42x), zooms into the Castle Window (233.5px, 114px) */}
         <g
           ref={svgGroupRef}
           style={{ transformOrigin: "233.5px 114px" }}
