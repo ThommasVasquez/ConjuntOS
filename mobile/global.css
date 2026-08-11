@@ -1,3 +1,65 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Design tokens — mirror of web `src/app/globals.css`.
+   ConjuntOS: Trust Teal + Professional Blue sobre Liquid Glass.
+
+   WHY CSS VARIABLES AND NOT STATIC TAILWIND COLORS:
+   tailwind.config.js used to hardcode the DARK values on the unprefixed
+   classes, so `text-text` rendered near-white in BOTH schemes. With 624
+   unprefixed `text-text` uses against only 21 `dark:` variants, light mode was
+   illegible app-wide (white ink on a white background). Web solves this with
+   custom properties that swap per scheme; NativeWind v4 supports the same
+   thing (react-native-css-interop resolves `:root` / `.dark:root` variables
+   into a scheme-aware VariableRecord), so one unprefixed class is now correct
+   in both schemes — exactly like web.
+
+   `:root` holds the LIGHT scheme because web always applies `.light` on first
+   paint (src/app/layout.tsx:78 hardcodes `<html className="light">`, and
+   ThemeContext defaults `useState<Theme>("light")`). `.dark:root` holds the
+   dark overrides. Note this is INVERTED relative to web's CSS, where `:root`
+   carries dark and `.light` overrides it — the rendered result is identical,
+   but this ordering is what NativeWind's `dark:` variant expects.
+
+   Solid colors are space-separated RGB channels so Tailwind's opacity
+   modifiers keep working (`bg-text/5`, `bg-danger/20`, … — 129 such uses).
+   Inherently-translucent tokens stay as complete rgba() values; they are not
+   used with opacity modifiers.
+
+   REGLA (de globals.css): nunca escribas un hex crudo en un componente.
+   Usa los tokens (text-accent, bg-success, border-danger…).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* NOTE: only the LIGHT scheme lives here, as a static fallback for anything
+   that renders OUTSIDE ThemeProvider's vars() scope (e.g. the root error
+   boundary). The scheme SWITCH is done at runtime by ThemeProvider via
+   NativeWind's `vars()` helper — see cssVarsFor() in src/theme/tokens.ts.
+
+   A `.dark:root { … }` block was tried here and does NOT work: react-native-
+   css-interop compiles it into a rule keyed `dark` that only matches a
+   component literally classed `dark`, which `setColorScheme()` never applies,
+   so dark mode silently rendered the light values. Verified by running
+   css-to-rn over the compiled output. Do not reintroduce it. */
+:root {
+  /* —— LIGHT scheme (web `.light`, always applied on first paint) —— */
+  --color-primary: 240 253 250; /* #f0fdfa */
+  --color-primary-light: 255 255 255; /* #ffffff */
+  --color-accent: 15 118 110; /* #0f766e — Teal 700 (5.25:1) */
+  --color-on-accent: 255 255 255; /* #ffffff (5.47:1) */
+  --color-text: 15 46 42; /* #0f2e2a (13.94:1) */
+  --color-text-muted: 74 107 102; /* #4a6b66 (5.61:1) */
+  --color-success: 4 120 87; /* #047857 (5.26:1) */
+  --color-danger: 220 38 38; /* #dc2626 (4.63:1) */
+  --color-warning: 180 83 9; /* #b45309 (4.81:1) */
+  --color-info: 3 105 161; /* #0369a1 (5.69:1) */
+
+  /* Translucent tokens — complete rgba(), no opacity modifiers applied. */
+  --color-accent-soft: rgba(15, 118, 110, 0.1);
+  --color-surface: rgba(255, 255, 255, 0.72);
+  --color-surface-2: rgba(15, 118, 110, 0.06);
+  --color-border: rgba(15, 118, 110, 0.18);
+}
+
+/* The dark scheme is applied at runtime by ThemeProvider (vars()), not here. */

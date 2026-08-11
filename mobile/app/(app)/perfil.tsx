@@ -1,21 +1,27 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Modal,
   Platform,
   Pressable,
   ScrollView,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
-import { blurTargetRef } from '@/theme/blurTarget';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useColorScheme } from 'nativewind';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -32,6 +38,7 @@ import {
   ClipboardList,
   Clock,
   CreditCard,
+  Edit,
   FileText,
   HelpCircle,
   Info,
@@ -44,8 +51,6 @@ import {
   PawPrint,
   Phone,
   Plus,
-  QrCode,
-  Search,
   ShieldCheck,
   Sun,
   Trash2,
@@ -55,7 +60,7 @@ import {
 
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
-import { api } from '@/lib/api/client';
+import { api, ApiError } from '@/lib/api/client';
 import type {
   CorrespondenciaDto,
   PagosResponse,
@@ -67,7 +72,9 @@ import type {
 import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from '@/lib/flags';
 import { useTheme } from '@/providers/ThemeProvider';
 import { LiquidGlass } from '@/components/ui/LiquidGlass';
+import { BrandedFooter } from '@/components/shell/BrandedFooter';
 import { toast } from '@/components/ui/toast';
+import { tokensFor, type ColorTokens } from '@/theme/tokens';
 
 // ---------------------------------------------------------------------------
 // Local types (mirror the web page's loose `ProfileFetch`/finance shapes — the
@@ -177,24 +184,39 @@ type ViewMode =
 type RegType = 'VEHICULO' | 'MASCOTA' | 'OTRO';
 type RegDoc = { nombre: string; base64: string; mimeType: string };
 
-// Accent tints for estado badges (same palette as visitantes.tsx).
-const INFO = '#009df2';
-const SUCCESS = '#57bf00';
-const INFO_BG = 'rgba(0, 157, 242, 0.15)';
-const INFO_BORDER = 'rgba(0, 157, 242, 0.3)';
-const SUCCESS_BG = 'rgba(87, 191, 0, 0.15)';
-const SUCCESS_BORDER = 'rgba(87, 191, 0, 0.3)';
-const DANGER = '#FF453A';
-const DANGER_BG = 'rgba(255, 69, 58, 0.12)';
-const DANGER_BORDER = 'rgba(255, 69, 58, 0.35)';
-const WARN = '#FACC15';
-const WARN_BG = 'rgba(250, 204, 21, 0.12)';
-const WARN_BORDER = 'rgba(250, 204, 21, 0.35)';
+/** `#rrggbb` → `rgba(r, g, b, a)`; lets a token carry the `/NN` alpha web uses. */
+function alpha(hex: string, a: number): string {
+  const h = hex.replace('#', '');
+  const full =
+    h.length === 3
+      ? h
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : h;
+  const n = parseInt(full, 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-const DEFAULT_AVATAR =
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000';
+/* eslint-disable @typescript-eslint/no-require-imports --
+   Metro asset modules have no TS declarations, so `require()` is the only way to
+   reference a bundled image (same pattern as src/providers/CallProvider.tsx:94). */
+
+/** Web initialises `profilePic` to the bundled `/placeholder.svg` (perfil/page.tsx:46). */
+const DEFAULT_AVATAR = require('../../assets/images/placeholder.png') as number;
+
+/**
+ * Utility-bill logos web renders inside the correspondencia chip for
+ * ENERGIA/AGUA/GAS (perfil/page.tsx:1165-1169) — same three assets, bundled.
+ */
+const TIPO_LOGO: Record<string, number> = {
+  ENERGIA: require('../../assets/images/recibo-servicios-logo.jpg') as number,
+  AGUA: require('../../assets/images/recibo-agua-logo.jpg') as number,
+  GAS: require('../../assets/images/recibo-gas-logo.jpg') as number,
+};
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const picKey = (id: string) => `conjuntos_profile_pic_${id}`;
 const dataKey = (id: string) => `conjuntos_profile_data_${id}`;
@@ -209,6 +231,13 @@ const ES_MONTHS = [
   'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
 ];
 const ES_WEEKDAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+const ES_MONTHS_LONG = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+const ES_WEEKDAYS_LONG = [
+  'domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado',
+];
 
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;
@@ -219,11 +248,26 @@ function fmtDateDMY(iso?: string): string {
   if (Number.isNaN(d.getTime())) return '—';
   return `${d.getDate()} ${ES_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
+/** es-ES `{ weekday: 'short', day: 'numeric', month: 'short' }` → `mié, 5 ago`. */
 function fmtDateShort(iso?: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return `${ES_WEEKDAYS[d.getDay()]} ${d.getDate()} ${ES_MONTHS[d.getMonth()]}`;
+  return `${ES_WEEKDAYS[d.getDay()]}, ${d.getDate()} ${ES_MONTHS[d.getMonth()]}`;
+}
+/** Bare `toLocaleDateString()` (no options), which web uses for `Vence: …`. */
+function fmtDateNumeric(iso?: string): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+}
+/** es-CO `{ weekday: 'long', day: 'numeric', month: 'long' }`. */
+function fmtDateLong(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${ES_WEEKDAYS_LONG[d.getDay()]}, ${d.getDate()} de ${ES_MONTHS_LONG[d.getMonth()]}`;
 }
 function fmtTime(iso?: string): string {
   if (!iso) return '';
@@ -231,11 +275,20 @@ function fmtTime(iso?: string): string {
   if (Number.isNaN(d.getTime())) return '';
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
+/** es-ES `{ day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }`. */
 function fmtArrived(iso?: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
   return `${d.getDate()} ${ES_MONTHS[d.getMonth()]}, ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+/** es-CO `{ day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }` —
+ *  visitas use the padded day (web perfil/page.tsx:1268). */
+function fmtVisita(iso?: string): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${pad2(d.getDate())} ${ES_MONTHS[d.getMonth()]}, ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 function money(v: string | number): string {
   const n = typeof v === 'string' ? parseFloat(v) : v;
@@ -243,18 +296,39 @@ function money(v: string | number): string {
   return Math.round(n).toLocaleString('es-CO');
 }
 
-/** Color a future date by how close it is to lapsing (web DocsVacunas parity). */
-function docBadge(fecha?: string | null): {
-  label: string;
-  color?: string;
-  bg?: string;
-  border?: string;
-} {
+/**
+ * Color a future date by how close it is to lapsing (web DocsVacunas.tsx:24-30):
+ * Vencido = danger/10 + danger/40 border, Vence en Nd = warning, Vigente =
+ * success — all from the semantic tokens, per scheme.
+ */
+function docBadge(
+  fecha: string | null | undefined,
+  T: ColorTokens,
+): { label: string; color?: string; bg?: string; border?: string } {
   if (!fecha) return { label: 'Sin registrar' };
   const dias = Math.ceil((new Date(fecha).getTime() - Date.now()) / 86400000);
-  if (dias < 0) return { label: 'Vencido', color: DANGER, bg: DANGER_BG, border: DANGER_BORDER };
-  if (dias <= 30) return { label: `Vence en ${dias}d`, color: WARN, bg: WARN_BG, border: WARN_BORDER };
-  return { label: 'Vigente', color: SUCCESS, bg: SUCCESS_BG, border: SUCCESS_BORDER };
+  if (dias < 0) {
+    return {
+      label: 'Vencido',
+      color: T.danger,
+      bg: alpha(T.danger, 0.1),
+      border: alpha(T.danger, 0.4),
+    };
+  }
+  if (dias <= 30) {
+    return {
+      label: `Vence en ${dias}d`,
+      color: T.warning,
+      bg: alpha(T.warning, 0.1),
+      border: alpha(T.warning, 0.4),
+    };
+  }
+  return {
+    label: 'Vigente',
+    color: T.success,
+    bg: alpha(T.success, 0.1),
+    border: alpha(T.success, 0.4),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -262,29 +336,52 @@ function docBadge(fecha?: string | null): {
 export default function Perfil() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colorScheme } = useColorScheme();
-  const isLight = colorScheme === 'light';
   const { theme, toggleTheme } = useTheme();
+  const isLight = theme === 'light';
+  const { width: screenW, height: screenH } = useWindowDimensions();
   const user = useAuth((s) => s.user);
   const authLoading = useAuth((s) => s.loading);
   const logout = useAuth((s) => s.logout);
   const userId = user?.id;
 
-  // Theme-derived palette (NativeWind `dark:` can't reach inline styles).
-  const C = useMemo(
+  // Design-system tokens (NativeWind classes can't reach inline styles / icon
+  // `color=` props, so the runtime token set backs both).
+  const T = useMemo(() => tokensFor(theme), [theme]);
+
+  // Named tints that mirror the alpha classes the web page uses at each spot.
+  const C: Palette = useMemo(
     () => ({
-      bg: isLight ? '#FFFFFF' : '#000000',
-      text: isLight ? '#000000' : '#FFFFFF',
-      accent: isLight ? '#000000' : '#FFFFFF',
-      onAccent: isLight ? '#FFFFFF' : '#000000',
-      muted: isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)',
-      faint: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)',
-      border: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.14)',
+      bg: T.primary,
+      card: T.primaryLight,
+      text: T.text,
+      accent: T.accent,
+      onAccent: T.onAccent,
+      muted: T.textMuted,
+      faint: T.surface2,
+      border: T.border,
+      info: T.info,
+      success: T.success,
+      danger: T.danger,
+      warning: T.warning,
+      text5: alpha(T.text, 0.05),
+      text10: alpha(T.text, 0.1),
+      text20: alpha(T.text, 0.2),
+      accent10: alpha(T.accent, 0.1),
+      accent20: alpha(T.accent, 0.2),
+      info10: alpha(T.info, 0.1),
+      info15: alpha(T.info, 0.15),
+      info20: alpha(T.info, 0.2),
+      danger10: alpha(T.danger, 0.1),
+      danger20: alpha(T.danger, 0.2),
     }),
-    [isLight],
+    [T],
   );
 
-  const [profilePic, setProfilePic] = useState<string>(DEFAULT_AVATAR);
+  // Web sizes the hero at 65vh and starts the content at pt-[45vh].
+  const heroH = Math.round(screenH * 0.65);
+  const contentTop = Math.round(screenH * 0.45);
+
+  const [profilePic, setProfilePic] = useState<string | number>(DEFAULT_AVATAR);
   const [hasMounted, setHasMounted] = useState(false);
 
   const [userData, setUserData] = useState<UserData>({
@@ -313,6 +410,9 @@ export default function Perfil() {
   const [visitasTab, setVisitasTab] = useState<'pendientes' | 'historial'>(
     'pendientes',
   );
+  const [paquetesTab, setPaquetesTab] = useState<'pendientes' | 'historial'>(
+    'pendientes',
+  );
   const [financialData, setFinancialData] = useState<{
     pagos: Pago[];
     recibos: Recibo[];
@@ -325,10 +425,19 @@ export default function Perfil() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editForm, setEditForm] = useState<UserData>(userData);
 
+  // Account deletion — Google Play requires an in-app path to delete the account
+  // for any app that lets users create one (web parity: perfil/page.tsx).
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Reserva access QR modal (rendered locally; payload = reserva id)
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrReservaId, setQrReservaId] = useState('');
   const [qrReservaNombre, setQrReservaNombre] = useState('');
+  const [qrReservaInicio, setQrReservaInicio] = useState('');
+  const [qrReservaFin, setQrReservaFin] = useState('');
+  const [qrReservaEstado, setQrReservaEstado] = useState('');
 
   // DocsVacunas (web src/components/docs/DocsVacunas.tsx parity)
   const [vacunas, setVacunas] = useState<Record<string, Vacuna[]>>({});
@@ -344,6 +453,7 @@ export default function Perfil() {
     nombre: '',
     tipo: '',
     raza: '',
+    fotoMascota: '',
     placa: '',
     marca: '',
     modelo: '',
@@ -530,6 +640,15 @@ export default function Perfil() {
     });
     if (res.canceled || !res.assets?.[0]) return;
 
+    // Web rejects >5MB before reading the file (perfil/page.tsx:280-283).
+    if (
+      res.assets[0].fileSize != null &&
+      res.assets[0].fileSize > 5 * 1024 * 1024
+    ) {
+      toast.error('Imagen demasiado grande (máx 5MB)');
+      return;
+    }
+
     try {
       const compressed = await compressImage(res.assets[0].uri);
       setProfilePic(compressed);
@@ -590,9 +709,80 @@ export default function Perfil() {
       ]);
     }
     await logout();
+    // Web does `window.location.href = "/login"` with no toast (perfil/page.tsx:338-341).
     router.replace('/login');
-    toast.success('Sesión cerrada');
   }, [logout, router, userId]);
+
+  // -- account deletion ------------------------------------------------------
+  const handleDeleteAccount = useCallback(async () => {
+    if (!deletePassword) return;
+    setIsDeleting(true);
+    try {
+      await api.delete('/usuarios/me', { body: { password: deletePassword } });
+      // The account's own PII is already gone server-side; these two SecureStore
+      // keys are this screen's local copy of it (see handleLogout) and would
+      // otherwise outlive the account on this device.
+      if (userId) {
+        await Promise.all([
+          SecureStore.deleteItemAsync(picKey(userId)).catch(() => {}),
+          SecureStore.deleteItemAsync(dataKey(userId)).catch(() => {}),
+        ]);
+      }
+      // Every token was revoked by the backend; logout() just clears local state.
+      await logout();
+      router.replace('/login');
+    } catch (err) {
+      // 401 = wrong password, 409 = last administrator of the conjunto.
+      if (err instanceof ApiError && err.status === 401) {
+        toast.error('Contraseña incorrecta');
+      } else if (err instanceof ApiError && err.message) {
+        toast.error(err.message);
+      } else {
+        toast.error('No se pudo eliminar la cuenta');
+      }
+      setIsDeleting(false);
+    }
+  }, [deletePassword, logout, router, userId]);
+
+  /** Web sets id/nombre/inicio/fin/estado before opening the modal (page.tsx:733-739, 796-801). */
+  const openQrModal = useCallback(
+    (res: ReservaActiva, fallbackNombre: string) => {
+      setQrReservaId(res.id);
+      setQrReservaNombre(res.area?.nombre || fallbackNombre);
+      setQrReservaInicio(res.fechaInicio);
+      setQrReservaFin(res.fechaFin);
+      setQrReservaEstado(res.estado || '');
+      setShowQrModal(true);
+    },
+    [],
+  );
+
+  // -- reserva cancellation (web perfil/page.tsx:343-353) -------------------
+  const handleCancelarReserva = useCallback(
+    (id: string) => {
+      // `window.confirm` has no RN equivalent; Alert carries the same question.
+      Alert.alert('¿Seguro que quieres cancelar esta reserva?', undefined, [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Aceptar',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                await api.put(`/reservas/${id}/cancelar`, {});
+                setActiveReservas((prev) => prev.filter((r) => r.id !== id));
+                setShowQrModal(false);
+                toast.success('Reserva cancelada');
+              } catch {
+                toast.error('No se pudo cancelar la reserva');
+              }
+            })();
+          },
+        },
+      ]);
+    },
+    [],
+  );
 
   // -- registration: file pickers ------------------------------------------
   const addImageDocs = useCallback(async () => {
@@ -604,6 +794,11 @@ export default function Perfil() {
     });
     if (res.canceled || !res.assets) return;
     for (const asset of res.assets) {
+      // Same per-file 5MB rejection the web dropzone does (page.tsx:362-365).
+      if (asset.fileSize != null && asset.fileSize > 5 * 1024 * 1024) {
+        toast.error(`${asset.fileName || 'imagen'} es muy grande (máx 5MB)`);
+        continue;
+      }
       try {
         // Compress images to keep the base64 payload edge-friendly.
         const finalBase = await compressImage(asset.uri);
@@ -630,6 +825,11 @@ export default function Perfil() {
     });
     if (res.canceled || !res.assets) return;
     for (const asset of res.assets) {
+      // Same per-file 5MB rejection the web dropzone does (page.tsx:362-365).
+      if (asset.size != null && asset.size > 5 * 1024 * 1024) {
+        toast.error(`${asset.name} es muy grande (máx 5MB)`);
+        continue;
+      }
       // backend `deny_unknown_fields` requires the real mimeType.
       const mimeType = asset.mimeType || 'application/pdf';
       // expo-document-picker's `base64` field is web-only; on iOS/Android read
@@ -650,6 +850,31 @@ export default function Perfil() {
       ]);
     }
   }, []);
+
+  // -- registration: mascota photo (web handlePetPhotoChange, page.tsx:388-408)
+  const handlePetPhotoChange = useCallback(async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      toast.error('Permiso de galería denegado');
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 1,
+    });
+    if (res.canceled || !res.assets?.[0]) return;
+    const asset = res.assets[0];
+    if (asset.fileSize != null && asset.fileSize > 5 * 1024 * 1024) {
+      toast.error('La imagen supera el límite de 5MB');
+      return;
+    }
+    try {
+      const compressed = await compressImage(asset.uri);
+      setRegForm((prev) => ({ ...prev, fotoMascota: compressed }));
+    } catch {
+      toast.error('Error al procesar la imagen de la mascota');
+    }
+  }, [compressImage]);
 
   // -- registration submit (POST /tramites) --------------------------------
   const handleRegisterAsset = useCallback(async () => {
@@ -678,6 +903,7 @@ export default function Perfil() {
           nombre: regForm.nombre,
           tipo: regForm.tipo,
           raza: regForm.raza || undefined,
+          fotoUrl: regForm.fotoMascota || undefined,
         };
       }
 
@@ -693,6 +919,7 @@ export default function Perfil() {
         nombre: '',
         tipo: '',
         raza: '',
+        fotoMascota: '',
         placa: '',
         marca: '',
         modelo: '',
@@ -842,43 +1069,52 @@ export default function Perfil() {
   const userRole = user?.rol || 'RESIDENTE';
   const isGuest = user?.rol === 'HUESPED_TEMPORAL';
 
+  // Per-tile hues, verbatim from web perfil/page.tsx:517-526. Visitas ('#14b8a6')
+  // and Corresp. ('#f43f5e') are hardcoded there too — no token exists for them.
+  const TILE_TEAL = '#14b8a6'; // web perfil/page.tsx:523
+  const TILE_ROSE = '#f43f5e'; // web perfil/page.tsx:525
+
   const allStatusIcons: {
     label: string;
     val: string;
     view: ViewMode;
-    icon: React.ReactNode;
-    deuda?: boolean;
+    hex: string;
+    icon: (color: string) => React.ReactNode;
   }[] = [
     {
       label: 'Deuda',
       val: `$${money(financialData.totalDebt)}`,
       view: 'deuda',
-      icon: <CreditCard size={12} color={C.onAccent} />,
-      deuda: true,
+      hex: C.success,
+      icon: (c) => <CreditCard size={18} color={c} />,
     },
     {
       label: 'Trámites',
       val: String(tramites.length),
       view: 'requests',
-      icon: <ClipboardList size={12} color={C.text} />,
+      hex: C.info,
+      icon: (c) => <ClipboardList size={18} color={c} />,
     },
     {
       label: 'Mascotas',
       val: String(mascotas.length),
       view: 'pets',
-      icon: <PawPrint size={12} color={C.text} />,
+      hex: C.warning,
+      icon: (c) => <PawPrint size={18} color={c} />,
     },
     {
       label: 'Vehículos',
       val: String(vehiculos.length),
       view: 'vehicles',
-      icon: <Car size={12} color={C.text} />,
+      hex: C.info,
+      icon: (c) => <Car size={18} color={c} />,
     },
     {
       label: 'Reservas',
       val: String(activeReservas.length),
       view: 'reservas',
-      icon: <Calendar size={12} color={C.text} />,
+      hex: C.info,
+      icon: (c) => <Calendar size={18} color={c} />,
     },
     {
       label: 'Visitas',
@@ -886,19 +1122,22 @@ export default function Perfil() {
         visitasHistorial.filter((v) => v.estado === 'PENDIENTE').length,
       ),
       view: 'visitas',
-      icon: <UserIcon size={12} color={C.text} />,
+      hex: TILE_TEAL,
+      icon: (c) => <UserIcon size={18} color={c} />,
     },
     {
       label: 'Paquetes',
       val: String(activePaquetes.length),
       view: 'paquetes',
-      icon: <Package size={12} color={C.text} />,
+      hex: C.warning,
+      icon: (c) => <Package size={18} color={c} />,
     },
     {
       label: 'Corresp.',
       val: String(correspondenciaPendiente.length),
       view: 'correspondencia',
-      icon: <Mail size={12} color={C.text} />,
+      hex: TILE_ROSE,
+      icon: (c) => <Mail size={18} color={c} />,
     },
   ];
 
@@ -911,28 +1150,65 @@ export default function Perfil() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      {/* ---- HERO (simplified: one blurred bg image + gradient fade) ---- */}
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 420, overflow: 'hidden' }}>
+      {/* ---- HERO — cinematic stack, web perfil/page.tsx:594-630 ----
+           65vh container, layer 1 = heavy-blur bokeh backdrop (blur 60 / opacity
+           .6 / scale 1.25), layer 2 = the sharp copy at scale 1.05 faded out
+           toward the bottom (RN has no mask-image, so a gradient scrim does the
+           sharp→transparent fall-off), layer 2.1 = the progressive blur HUD over
+           the bottom edge, layer 3 = the 550px contrast gradient to `primary`. */}
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: heroH, overflow: 'hidden', backgroundColor: C.bg }}>
+        {/* Layer 1: base ambient blur (bokeh backdrop) */}
         <Image
-          source={{ uri: profilePic }}
-          style={{ width: '100%', height: '100%' }}
+          source={avatarSource(profilePic)}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: screenW,
+            height: heroH,
+            opacity: 0.6,
+            transform: [{ scale: 1.25 }],
+          }}
           contentFit="cover"
           contentPosition="top"
-          blurRadius={Platform.OS === 'android' ? 12 : 24}
+          blurRadius={Platform.OS === 'android' ? 25 : 60}
           transition={300}
         />
+        {/* Layer 2: sharp copy, scale 1.05 */}
+        <Image
+          source={avatarSource(profilePic)}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: screenW,
+            height: heroH,
+            transform: [{ scale: 1.05 }],
+          }}
+          contentFit="cover"
+          contentPosition="top"
+          transition={300}
+        />
+        {/* Layer 2 mask substitute: sharp 0-40%, fading to nothing by 100% */}
+        <LinearGradient
+          colors={['transparent', 'transparent', alpha(T.primary, 0.6), T.primary]}
+          locations={[0, 0.4, 0.65, 1]}
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: heroH }}
+        />
+        {/* Layer 2.1: progressive blur HUD over the bottom edge */}
         <BlurView
           intensity={20}
           tint={isLight ? 'light' : 'dark'}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 180 }}
-          // SDK 56 Android API: method + app-wide target (ignored on iOS).
-          blurMethod="dimezisBlurView"
-          blurTarget={blurTargetRef}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: heroH * 0.4 }}
+          // No Android blurMethod/blurTarget — see LiquidGlass.tsx: pointing at
+          // the app-wide target crashed RenderThread. Layer 3's gradient below
+          // already supplies the HUD contrast this blur was softening.
         />
+        {/* Layer 3: HUD contrast gradient & base shadow */}
         <LinearGradient
-          colors={['transparent', isLight ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', C.bg]}
-          locations={[0, 0.55, 1]}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 360 }}
+          colors={['transparent', alpha(T.primary, 0.3), alpha(T.primary, 0.7), alpha(T.primary, 0.95), T.primary]}
+          locations={[0, 0.35, 0.6, 0.82, 1]}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: heroH * 0.85 }}
         />
       </View>
 
@@ -960,10 +1236,8 @@ export default function Perfil() {
           </LiquidGlass>
         </Pressable>
 
+        {/* Web's header carries exactly two controls (page.tsx:536-551). */}
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          <LiquidGlass className="rounded-full" radius={24} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-            <Search size={20} color={C.text} />
-          </LiquidGlass>
           <Pressable
             onPress={() => setShowMenu((s) => !s)}
             style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.9 : 1 }] })}
@@ -998,13 +1272,14 @@ export default function Perfil() {
                   setShowEditModal(true);
                   setShowMenu(false);
                 }}
-                style={{ padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: C.border }}
+                style={{ padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: C.info15 }}
               >
-                <UserIcon size={18} color={C.accent} />
+                {/* web: <Edit size={18} className="text-info"/> (page.tsx:574) */}
+                <Edit size={18} color={C.info} />
                 <Text style={{ color: C.text, fontWeight: '700', fontSize: 15 }}>Editar Perfil</Text>
               </Pressable>
-              <View style={{ padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: C.border }}>
-                <ShieldCheck size={18} color={C.text} />
+              <View style={{ padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: C.info15 }}>
+                <ShieldCheck size={18} color={C.success} />
                 <Text style={{ color: C.text, fontWeight: '500', fontSize: 15 }}>Privacidad</Text>
               </View>
               <Pressable
@@ -1014,7 +1289,7 @@ export default function Perfil() {
                 }}
                 style={{ padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12 }}
               >
-                <LogOut size={18} color={C.text} />
+                <LogOut size={18} color={C.danger} />
                 <Text style={{ color: C.text, fontWeight: '700', fontSize: 15 }}>Cerrar Sesión</Text>
               </Pressable>
             </LiquidGlass>
@@ -1025,7 +1300,7 @@ export default function Perfil() {
       {/* ---- SCROLL BODY ---- */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: 280, paddingHorizontal: 24, paddingBottom: 128 }}
+        contentContainerStyle={{ paddingTop: contentTop, paddingHorizontal: 24, paddingBottom: 128 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Identity */}
@@ -1043,80 +1318,149 @@ export default function Perfil() {
           <Pill text={`Torre ${userData.torre}`} C={C} />
           <Pill text={`Apto ${userData.apto}`} C={C} />
           {userData.numeroInterno ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: C.border }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.accent }} />
-              <Text style={{ color: C.accent, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+            // web: info @10% fill, info @20% border, pulsing info dot, info label
+            // (page.tsx:650-660).
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: C.info10, borderWidth: 1, borderColor: C.info20 }}>
+              <PulseDot color={C.info} size={6} />
+              <Text style={{ color: C.info, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5 }}>
                 Citofonía N° {userData.numeroInterno}
               </Text>
             </View>
           ) : null}
         </View>
 
-        {/* status grid (8 buttons; HUESPED_TEMPORAL sees only Reservas+Paquetes) */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 40 }}>
-          {statusIcons.map((stat) => {
-            return (
+        {/* STATUS TILES — one grid, label INSIDE the card (web page.tsx:663-683).
+            Each tile: p-2.5 rounded-[20px] bg-primary-light border-border, then a
+            9x9 icon chip tinted `${hex}1a` with the hue as ink, the value, and the
+            9px label. HUESPED_TEMPORAL sees only Reservas+Paquetes. */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', marginHorizontal: -5, marginBottom: 40 }}>
+          {statusIcons.map((stat) => (
+            <View key={stat.view} style={{ width: isGuest ? '50%' : '25%', paddingHorizontal: 5, marginBottom: 10 }}>
               <Pressable
-                key={stat.label}
                 onPress={() => setViewMode(stat.view)}
                 style={({ pressed }) => ({
-                  width: isGuest ? '48%' : '23%',
-                  marginBottom: 10,
+                  padding: 10,
+                  borderRadius: 20,
+                  backgroundColor: C.card,
+                  borderWidth: 1,
+                  borderColor: C.border,
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 6,
                   transform: [{ scale: pressed ? 0.95 : 1 }],
                 })}
               >
-                <Text style={{ fontSize: 10, color: C.text, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '900' }}>
-                  {stat.label}
-                </Text>
                 <View
                   style={{
-                    width: '100%',
-                    height: 62,
-                    borderRadius: 22,
-                    borderWidth: 1,
-                    borderColor: C.border,
+                    width: 36,
+                    height: 36,
+                    borderRadius: 12,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 6,
-                    backgroundColor: stat.deuda ? C.accent : C.faint,
+                    backgroundColor: alpha(stat.hex, 0.1),
                   }}
                 >
-                  {!stat.deuda ? <View style={{ opacity: 0.6 }}>{stat.icon}</View> : null}
-                  <Text
-                    style={{
-                      color: stat.deuda ? C.onAccent : C.text,
-                      fontWeight: '900',
-                      fontSize: stat.label === 'Vehículos' ? 14 : 12,
-                      textTransform: 'uppercase',
-                    }}
-                    numberOfLines={1}
-                  >
-                    {stat.val}
-                  </Text>
+                  {stat.icon(stat.hex)}
                 </View>
+                <Text style={{ color: C.text, fontWeight: '700', fontSize: 14 }} numberOfLines={1}>
+                  {stat.val}
+                </Text>
+                <Text
+                  style={{ fontSize: 9, color: alpha(T.text, 0.55), textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: '700' }}
+                  numberOfLines={1}
+                >
+                  {stat.label}
+                </Text>
               </Pressable>
-            );
-          })}
+            </View>
+          ))}
         </View>
 
         {/* Dynamic view content */}
         <View style={{ marginBottom: 40 }}>
           {viewMode === 'profile' ? (
-            <GlassPanel C={C}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-                <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                  <UserIcon size={24} color={C.accent} />
+            <View style={{ gap: 12 }}>
+              <GlassPanel C={C}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                  {/* web: info @10% chip with info ink (page.tsx:691-696) */}
+                  <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.info10, alignItems: 'center', justifyContent: 'center' }}>
+                    <UserIcon size={22} color={C.info} />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: C.text, letterSpacing: -0.3 }}>Información</Text>
+                    <Text style={{ fontSize: 10, color: alpha(T.text, 0.55), textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: '700' }}>Datos Personales</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={{ fontSize: 20, fontWeight: '700', color: C.text, letterSpacing: -0.3 }}>Información</Text>
-                  <Text style={{ fontSize: 10, color: C.text, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '900' }}>Datos Personales</Text>
-                </View>
-              </View>
-              <Field label="Correo Electrónico" value={userData.email} C={C} />
-              <Field label="Teléfono" value={userData.phone || 'No especificado'} C={C} />
-            </GlassPanel>
+                <Field label="Correo Electrónico" value={userData.email} C={C} />
+                <Field label="Teléfono" value={userData.phone || 'No especificado'} C={C} />
+              </GlassPanel>
+
+              {/* ── PRÓXIMA RESERVA (web page.tsx:715-776) ── */}
+              {(() => {
+                const ahora = new Date();
+                const futuras = activeReservas
+                  .filter(
+                    (r) =>
+                      r.estado !== 'CANCELADA' &&
+                      new Date(r.fechaInicio).getTime() > ahora.getTime(),
+                  )
+                  .sort(
+                    (a, b) =>
+                      new Date(a.fechaInicio).getTime() -
+                      new Date(b.fechaInicio).getTime(),
+                  );
+                const proxima = futuras[0];
+                if (!proxima) return null;
+                const minutosPara = Math.round(
+                  (new Date(proxima.fechaInicio).getTime() - ahora.getTime()) / 60000,
+                );
+                const countdown =
+                  minutosPara <= 60
+                    ? `⏰ En ${minutosPara} min`
+                    : minutosPara < 1440
+                      ? `En ${Math.round(minutosPara / 60)}h ${minutosPara % 60}m`
+                      : fmtDateShort(proxima.fechaInicio);
+
+                return (
+                  <LiquidGlass variant="card" radius={32} style={{ padding: 0 }}>
+                    <Pressable
+                      onPress={() => openQrModal(proxima, 'Área común')}
+                      style={{ flexDirection: 'row', alignItems: 'stretch', borderRadius: 32, borderWidth: 1, borderColor: alpha(T.accent, 0.3), overflow: 'hidden' }}
+                    >
+                      <View style={{ width: 112, height: 112 }}>
+                        {proxima.area?.imagenUrl ? (
+                          <Image source={{ uri: proxima.area.imagenUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                        ) : (
+                          <View style={{ width: '100%', height: '100%', backgroundColor: C.text5, alignItems: 'center', justifyContent: 'center' }}>
+                            <Calendar size={32} color={alpha(T.accent, 0.4)} />
+                          </View>
+                        )}
+                      </View>
+                      <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
+                        <View>
+                          <Text style={{ fontSize: 10, fontWeight: '900', color: C.accent, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                            Próxima Reserva
+                          </Text>
+                          <Text style={{ fontSize: 16, fontWeight: '700', color: C.text }} numberOfLines={1}>
+                            {proxima.area?.nombre || 'Área común'}
+                          </Text>
+                        </View>
+                        <View style={{ gap: 4 }}>
+                          <Text style={{ fontSize: 12, fontWeight: '900', textTransform: 'uppercase', color: minutosPara <= 30 ? C.warning : C.accent }}>
+                            {countdown}
+                          </Text>
+                          <Text style={{ fontSize: 10, color: C.text, fontVariant: ['tabular-nums'] }}>
+                            {fmtTime(proxima.fechaInicio)} → {fmtTime(proxima.fechaFin)}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={{ alignItems: 'center', justifyContent: 'center', paddingRight: 12 }}>
+                        <ArrowRight size={18} color={C.accent} />
+                      </View>
+                    </Pressable>
+                  </LiquidGlass>
+                );
+              })()}
+            </View>
           ) : null}
 
           {viewMode === 'reservas' ? (
@@ -1132,7 +1476,11 @@ export default function Perfil() {
                 <EmptyState icon={<Calendar size={40} color={C.text} />} text="No tienes reservas activas en este momento." C={C} />
               ) : (
                 activeReservas.map((res, i) => (
-                  <View key={i} style={{ borderRadius: 28, overflow: 'hidden', borderWidth: 1, borderColor: C.border, flexDirection: 'row', backgroundColor: C.faint }}>
+                  <Pressable
+                    key={i}
+                    onPress={() => openQrModal(res, 'Área')}
+                    style={({ pressed }) => ({ borderRadius: 28, overflow: 'hidden', borderWidth: 1, borderColor: C.border, flexDirection: 'row', backgroundColor: C.faint, transform: [{ scale: pressed ? 0.98 : 1 }] })}
+                  >
                     <View style={{ width: 96, height: 96 }}>
                       {res.area?.imagenUrl ? (
                         <Image source={{ uri: res.area.imagenUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
@@ -1148,39 +1496,41 @@ export default function Perfil() {
                           <Text style={{ fontSize: 10, fontWeight: '900', color: C.accent, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                             {res.area?.nombre || 'Cargando...'}
                           </Text>
-                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.2)' }}>
-                            <Text style={{ fontSize: 8, fontWeight: '900', color: C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                          {/* web: CONFIRMADA success/20, PENDIENTE warning/20,
+                              CANCELADA danger/20, else text/20 (page.tsx:815-820) */}
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: estadoReservaTint(res.estado, C).bg }}>
+                            <Text style={{ fontSize: 8, fontWeight: '900', color: estadoReservaTint(res.estado, C).color, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                               {res.estado === 'PENDIENTE' ? 'En Proceso' : res.estado}
                             </Text>
                           </View>
                         </View>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: C.text, textTransform: 'capitalize' }}>{fmtDateShort(res.fechaInicio)}</Text>
+                        {/* web has no capitalize on this heading (page.tsx:824) */}
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: C.text }}>{fmtDateShort(res.fechaInicio)}</Text>
                       </View>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text style={{ fontSize: 10, color: C.text, fontVariant: ['tabular-nums'] }}>
                           {fmtTime(res.fechaInicio)} • {fmtTime(res.fechaFin)}
                         </Text>
-                        <Pressable
-                          onPress={() => {
-                            setQrReservaId(res.id);
-                            setQrReservaNombre(res.area?.nombre || 'Área');
-                            setShowQrModal(true);
-                          }}
-                          style={({ pressed }) => ({
-                            width: 28,
-                            height: 28,
-                            borderRadius: 8,
-                            backgroundColor: INFO_BG,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            opacity: pressed ? 0.7 : 1,
-                          })}
-                        >
-                          <QrCode size={14} color={INFO} />
-                        </Pressable>
+                        {/* web: danger-tinted Trash2 "Cancelar reserva" (page.tsx:832-843) */}
+                        {res.estado !== 'CANCELADA' ? (
+                          <Pressable
+                            onPress={() => handleCancelarReserva(res.id)}
+                            accessibilityLabel="Cancelar reserva"
+                            style={({ pressed }) => ({
+                              width: 28,
+                              height: 28,
+                              borderRadius: 8,
+                              backgroundColor: alpha(T.danger, pressed ? 0.2 : 0.1),
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            })}
+                          >
+                            <Trash2 size={13} color={C.danger} />
+                          </Pressable>
+                        ) : null}
                       </View>
                     </View>
-                  </View>
+                  </Pressable>
                 ))
               )}
             </View>
@@ -1193,6 +1543,8 @@ export default function Perfil() {
                 icon={<Car size={18} color={C.accent} />}
                 actionLabel="Solicitar Vinculación"
                 actionIcon={<Plus size={14} color={C.accent} />}
+                actionVariant="pill"
+                actionTone="accent"
                 onAction={() => {
                   setRegType('VEHICULO');
                   setShowRegModal(true);
@@ -1208,7 +1560,8 @@ export default function Perfil() {
                       <Text style={{ fontSize: 24, fontWeight: '900', color: C.text, letterSpacing: 2, fontVariant: ['tabular-nums'], textTransform: 'uppercase' }}>{v.placa}</Text>
                       <Text style={{ fontSize: 12, color: C.muted }}>{v.marca} {v.modelo} • {v.color}</Text>
                     </View>
-                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                    {/* web: bg-accent/20 text-accent (page.tsx:874) */}
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.accent20, alignItems: 'center', justifyContent: 'center' }}>
                       <CheckCircle2 size={18} color={C.accent} />
                     </View>
                   </View>
@@ -1224,6 +1577,8 @@ export default function Perfil() {
                 icon={<PawPrint size={18} color={C.text} />}
                 actionLabel="Solicitar Vinculación"
                 actionIcon={<Plus size={14} color={C.text} />}
+                actionVariant="pill"
+                actionTone="text"
                 onAction={() => {
                   setRegType('MASCOTA');
                   setShowRegModal(true);
@@ -1276,7 +1631,7 @@ export default function Perfil() {
                           ['tecnomecanicaVence', 'Tecnomecánica'],
                         ] as const
                       ).map(([campo, label]) => {
-                        const b = docBadge(v[campo]);
+                        const b = docBadge(v[campo], T);
                         return (
                           <View key={campo} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             <Text style={{ width: 88, fontSize: 11, color: C.muted }}>{label}</Text>
@@ -1312,7 +1667,7 @@ export default function Perfil() {
                     <View key={m.id} style={{ borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.border, backgroundColor: C.faint, gap: 8 }}>
                       <Text style={{ fontSize: 14, fontWeight: '700', color: C.text }}>{m.nombre}</Text>
                       {(vacunas[m.id!] ?? []).map((vac) => {
-                        const b = docBadge(vac.proxima);
+                        const b = docBadge(vac.proxima, T);
                         return (
                           <View key={vac.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             <Text style={{ flex: 1, fontSize: 12, color: C.text }}>
@@ -1407,7 +1762,8 @@ export default function Perfil() {
                       opacity: pressed ? 0.85 : 1,
                     })}
                   >
-                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                    {/* web: bg-accent/20 text-accent (page.tsx:945) */}
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.accent20, alignItems: 'center', justifyContent: 'center' }}>
                       {btn.icon}
                     </View>
                     <Text style={{ fontSize: 10, fontWeight: '700', color: C.text, textTransform: 'uppercase', letterSpacing: 1.5, textAlign: 'center' }}>{btn.label}</Text>
@@ -1425,7 +1781,8 @@ export default function Perfil() {
                       {/* fix: use createdAt for tramite date */}
                       <Text style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase' }}>{fmtDateDMY(t.createdAt)}</Text>
                     </View>
-                    <View style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.2)' }}>
+                    {/* web tints every trámite estado bg-text/20 text-text (page.tsx:964-968) */}
+                    <View style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: C.text20 }}>
                       <Text style={{ fontSize: 9, fontWeight: '900', color: C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>{t.estado}</Text>
                     </View>
                   </View>
@@ -1454,22 +1811,25 @@ export default function Perfil() {
                       key={`pago-${i}`}
                       tag="Administración"
                       title={p.concepto}
-                      sub={`Vence: ${fmtDateDMY(p.fechaVencimiento)}`}
+                      sub={`Vence: ${fmtDateNumeric(p.fechaVencimiento)}`}
                       amount={money(p.monto)}
                       actionLabel="Pagar"
                       onPay={() => handlePay(p.id)}
                       C={C}
                     />
                   ))}
+                  {/* Recibos: accent-filled "Pagar Ahora" + border-text/20 card
+                      (web page.tsx:1019,1027-1032) */}
                   {financialData.recibos.filter((r) => !r.pagado).map((r, i) => (
                     <ChargeRow
                       key={`recibo-${i}`}
                       tag="Servicios Públicos"
                       title={r.servicio}
-                      sub={`Vence: ${fmtDateDMY(r.vencimiento)}`}
+                      sub={`Vence: ${fmtDateNumeric(r.vencimiento)}`}
                       amount={money(r.monto)}
                       actionLabel="Pagar Ahora"
                       onPay={() => handlePay(r.id)}
+                      emphasis
                       C={C}
                     />
                   ))}
@@ -1525,21 +1885,27 @@ export default function Perfil() {
             <View style={{ gap: 16 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>Paquetes en Portería</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>Paquetería</Text>
                   <Package size={18} color={C.accent} />
                 </View>
-                <View style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)' }}>
-                  <Text style={{ fontSize: 10, fontWeight: '900', color: C.accent, textTransform: 'uppercase' }}>
-                    {activePaquetes.length} {activePaquetes.length === 1 ? 'Pendiente' : 'Pendientes'}
-                  </Text>
+                {/* Same pendientes/historial switcher as deuda & visitas (page.tsx:1079-1089) */}
+                <View style={{ flexDirection: 'row', gap: 8, padding: 4, borderRadius: 999, borderWidth: 1, borderColor: C.border, backgroundColor: C.faint }}>
+                  {(['pendientes', 'historial'] as const).map((tab) => (
+                    <Pressable key={tab} onPress={() => setPaquetesTab(tab)} style={{ paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999, backgroundColor: paquetesTab === tab ? C.accent : 'transparent' }}>
+                      <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, color: paquetesTab === tab ? C.onAccent : C.text }}>{tab}</Text>
+                    </Pressable>
+                  ))}
                 </View>
               </View>
-              {activePaquetes.length === 0 ? (
-                <EmptyState icon={<Package size={40} color={C.text} />} text="No hay paquetes registrados a tu nombre en este momento." C={C} />
+              {paquetesTab === 'historial' ? (
+                <EmptyState icon={<Package size={40} color={C.text} />} text="El historial de paquetes retirados estará disponible próximamente." C={C} />
+              ) : activePaquetes.length === 0 ? (
+                <EmptyState icon={<Package size={40} color={C.text} />} text="No hay paquetes pendientes en portería." C={C} />
               ) : (
                 activePaquetes.map((pkg, i) => (
                   <View key={i} style={{ borderRadius: 28, borderWidth: 1, borderColor: C.border, backgroundColor: C.faint, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                    <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                    {/* web: bg-accent/20 text-accent (page.tsx:1105) */}
+                    <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: C.accent20, alignItems: 'center', justifyContent: 'center' }}>
                       <Package size={24} color={C.accent} />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -1547,7 +1913,8 @@ export default function Perfil() {
                         <Text style={{ fontSize: 10, fontWeight: '900', color: C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                           {pkg.remitente || 'Remitente Desconocido'}
                         </Text>
-                        <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)' }}>
+                        {/* web: text-accent bg-accent/10 ring-accent/20 (page.tsx:1111) */}
+                        <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: C.accent10, borderWidth: 1, borderColor: C.accent20 }}>
                           <Text style={{ fontSize: 8, fontWeight: '900', color: C.accent, textTransform: 'uppercase' }}>{pkg.origen || 'Nacional'}</Text>
                         </View>
                       </View>
@@ -1555,18 +1922,21 @@ export default function Perfil() {
                       <Text style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase' }}>Recibido: {fmtArrived(pkg.fechaLlegada)}</Text>
                     </View>
                     <View style={{ alignItems: 'center', gap: 4 }}>
-                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)' }} />
+                      {/* web: bg-text/10 animate-pulse (page.tsx:1117) */}
+                      <PulseDot color={C.text10} size={8} />
                       <Text style={{ fontSize: 8, fontWeight: '900', color: C.text, textTransform: 'uppercase' }}>Listo</Text>
                     </View>
                   </View>
                 ))
               )}
-              <View style={{ marginTop: 16, padding: 16, borderRadius: 24, backgroundColor: C.faint, borderWidth: 1, borderColor: C.border, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                <Info size={16} color={C.text} />
-                <Text style={{ flex: 1, fontSize: 10, color: C.text, textTransform: 'uppercase', fontStyle: 'italic' }}>
-                  Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.
-                </Text>
-              </View>
+              {paquetesTab === 'pendientes' && activePaquetes.length > 0 ? (
+                <View style={{ marginTop: 16, padding: 16, borderRadius: 24, backgroundColor: C.text5, borderWidth: 1, borderColor: C.text20, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                  <Info size={16} color={C.text} />
+                  <Text style={{ flex: 1, fontSize: 10, color: C.text, textTransform: 'uppercase', fontStyle: 'italic' }}>
+                    Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.
+                  </Text>
+                </View>
+              ) : null}
             </View>
           ) : null}
 
@@ -1575,7 +1945,7 @@ export default function Perfil() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>Visitas</Text>
-                  <UserIcon size={18} color={INFO} />
+                  <UserIcon size={18} color={C.accent} />
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8, padding: 4, borderRadius: 999, borderWidth: 1, borderColor: C.border, backgroundColor: C.faint }}>
                   {(['pendientes', 'historial'] as const).map((tab) => (
@@ -1607,14 +1977,16 @@ export default function Perfil() {
                 }
 
                 return filtered.map((v) => {
+                  // web: PENDIENTE amber (warning), APROBADA emerald (success),
+                  // RECHAZADA red (danger) — bg 15%, border 30% (page.tsx:1242-1258).
                   const estadoTint =
                     v.estado === 'PENDIENTE'
-                      ? { color: INFO, bg: INFO_BG, border: INFO_BORDER }
+                      ? { color: C.warning, bg: alpha(T.warning, 0.15), border: alpha(T.warning, 0.3) }
                       : v.estado === 'APROBADA'
-                        ? { color: SUCCESS, bg: SUCCESS_BG, border: SUCCESS_BORDER }
+                        ? { color: C.success, bg: alpha(T.success, 0.15), border: alpha(T.success, 0.3) }
                         : v.estado === 'RECHAZADA'
-                          ? { color: DANGER, bg: DANGER_BG, border: DANGER_BORDER }
-                          : { color: C.text, bg: C.faint, border: C.border };
+                          ? { color: C.danger, bg: alpha(T.danger, 0.15), border: alpha(T.danger, 0.3) }
+                          : { color: C.text, bg: C.text10, border: C.border };
                   return (
                     <View key={v.id} style={{ borderRadius: 28, borderWidth: 1, borderColor: C.border, backgroundColor: C.faint, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
                       <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: estadoTint.bg, borderWidth: 1, borderColor: estadoTint.border }}>
@@ -1631,12 +2003,13 @@ export default function Perfil() {
                           {v.documento ? (
                             <Text style={{ fontSize: 10, color: C.muted, fontVariant: ['tabular-nums'] }}>{v.documento}</Text>
                           ) : null}
-                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: C.faint, borderWidth: 1, borderColor: C.border }}>
+                          {/* web: bg-text/10 text-text border-text/20 (page.tsx:1264) */}
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: C.text10, borderWidth: 1, borderColor: C.text20 }}>
                             <Text style={{ fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, color: C.text }}>{v.tipo}</Text>
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Clock size={10} color={C.muted} />
-                            <Text style={{ fontSize: 10, color: C.muted }}>{fmtArrived(v.fecha)}</Text>
+                            <Text style={{ fontSize: 10, color: C.muted }}>{fmtVisita(v.fecha)}</Text>
                           </View>
                         </View>
                       </View>
@@ -1652,9 +2025,10 @@ export default function Perfil() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>Correspondencia</Text>
-                  <Mail size={18} color={INFO} />
+                  <Mail size={18} color={C.accent} />
                 </View>
-                <View style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)' }}>
+                {/* web: bg-surface-2 (page.tsx:1145) */}
+                <View style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: C.faint }}>
                   <Text style={{ fontSize: 10, fontWeight: '900', color: C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                     {correspondenciaPendiente.length} en portería
                   </Text>
@@ -1676,16 +2050,27 @@ export default function Perfil() {
                   };
                   const esRecibo = ['ENERGIA', 'AGUA', 'GAS'].includes(corr.tipo);
                   return (
-                    <View key={corr.id} style={{ borderRadius: 28, borderWidth: 1, borderColor: esRecibo ? INFO_BORDER : C.border, backgroundColor: esRecibo ? 'rgba(0, 157, 242, 0.05)' : C.faint, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                      <View style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: esRecibo ? INFO_BG : (isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)') }}>
-                        <Mail size={24} color={esRecibo ? INFO : C.text} />
+                    // web: receipts get border-accent/40 + bg-accent/5 (page.tsx:1172)
+                    <View key={corr.id} style={{ borderRadius: 28, borderWidth: 1, borderColor: esRecibo ? alpha(T.accent, 0.4) : C.border, backgroundColor: esRecibo ? alpha(T.accent, 0.05) : C.faint, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                      <View style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: esRecibo ? 'transparent' : C.text10 }}>
+                        {esRecibo ? (
+                          <Image
+                            source={TIPO_LOGO[corr.tipo]}
+                            style={{ width: '100%', height: '100%' }}
+                            contentFit="cover"
+                            accessibilityLabel={tipoLabel[corr.tipo]}
+                          />
+                        ) : (
+                          <Mail size={24} color={C.text} />
+                        )}
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
-                          <Text style={{ fontSize: 10, fontWeight: '900', color: esRecibo ? INFO : C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '900', color: esRecibo ? C.accent : C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                             {tipoLabel[corr.tipo] || corr.tipo}
                           </Text>
-                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)' }}>
+                          {/* web: bg-surface-2 (page.tsx:1185) */}
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: C.faint }}>
                             <Text style={{ fontSize: 8, fontWeight: '900', color: C.text, textTransform: 'uppercase' }} numberOfLines={1}>{corr.remitente}</Text>
                           </View>
                         </View>
@@ -1693,14 +2078,15 @@ export default function Perfil() {
                         <Text style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase' }}>Recibido: {fmtArrived(corr.fechaLlegada)}</Text>
                       </View>
                       <View style={{ alignItems: 'center', gap: 4 }}>
-                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: esRecibo ? INFO : (isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)') }} />
+                        <PulseDot color={esRecibo ? C.accent : C.text10} size={8} />
                         <Text style={{ fontSize: 8, fontWeight: '900', color: C.text, textTransform: 'uppercase' }}>Portería</Text>
                       </View>
                     </View>
                   );
                 })
               )}
-              <View style={{ marginTop: 16, padding: 16, borderRadius: 24, backgroundColor: C.faint, borderWidth: 1, borderColor: C.border, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+              {/* web: bg-text/5 border-text/20 (page.tsx:1200) */}
+              <View style={{ marginTop: 16, padding: 16, borderRadius: 24, backgroundColor: C.text5, borderWidth: 1, borderColor: C.text20, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                 <Info size={16} color={C.text} />
                 <Text style={{ flex: 1, fontSize: 10, color: C.text, textTransform: 'uppercase', fontStyle: 'italic' }}>
                   Presenta tu identificación en la portería para reclamar tu correspondencia.
@@ -1715,7 +2101,8 @@ export default function Perfil() {
           <Pressable onPress={toggleTheme} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }] })}>
             <LiquidGlass radius={32} style={{ padding: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                {/* web: bg-accent/10 text-accent (page.tsx:1288) */}
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.accent10, alignItems: 'center', justifyContent: 'center' }}>
                   {theme === 'dark' ? <Sun size={20} color={C.accent} /> : <Moon size={20} color={C.accent} />}
                 </View>
                 <View>
@@ -1732,8 +2119,9 @@ export default function Perfil() {
           <Pressable onPress={() => void handleLogout()} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }] })}>
             <LiquidGlass radius={32} style={{ padding: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
-                  <LogOut size={20} color={C.muted} />
+                {/* web: bg-text/10 text-text/60 (page.tsx:1305) */}
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.text10, alignItems: 'center', justifyContent: 'center' }}>
+                  <LogOut size={20} color={alpha(T.text, 0.6)} />
                 </View>
                 <View>
                   <Text style={{ fontSize: 14, fontWeight: '700', color: C.text }}>Cerrar Sesión</Text>
@@ -1743,13 +2131,125 @@ export default function Perfil() {
               <ArrowRight size={18} color={C.muted} />
             </LiquidGlass>
           </Pressable>
+
+          <Pressable
+            onPress={() => { setDeletePassword(''); setShowDeleteModal(true); }}
+            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }] })}
+          >
+            <LiquidGlass radius={32} style={{ padding: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: C.danger20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.danger10, alignItems: 'center', justifyContent: 'center' }}>
+                  <Trash2 size={20} color={C.danger} />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: C.danger }}>Eliminar Cuenta</Text>
+                  <Text style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '900', marginTop: 4 }}>Acción permanente</Text>
+                </View>
+              </View>
+              <ArrowRight size={18} color={C.danger} />
+            </LiquidGlass>
+          </Pressable>
         </View>
+
+        {/* GLOBAL BRANDING — web renders <BrandedFooter /> last (page.tsx:1699) */}
+        <BrandedFooter isInternal />
       </ScrollView>
+
+      {/* ---- DELETE ACCOUNT MODAL ----
+          Play Store requires the user be told what is erased and what the
+          copropiedad keeps before confirming (web parity: perfil/page.tsx). */}
+      <Modal visible={showDeleteModal} transparent animationType="slide" onRequestClose={() => !isDeleting && setShowDeleteModal(false)}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <Pressable
+            style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)' }}
+            onPress={() => !isDeleting && setShowDeleteModal(false)}
+          />
+          <View style={{ backgroundColor: C.bg, borderTopLeftRadius: 40, borderTopRightRadius: 40, borderTopWidth: 1, borderColor: C.danger20, maxHeight: '90%' }}>
+            <ScrollView contentContainerStyle={{ padding: 28, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={{ fontSize: 24, fontWeight: '700', color: C.text, fontFamily: 'PlusJakartaSans_700Bold', letterSpacing: -0.3 }}>Eliminar Cuenta</Text>
+                  <Text style={{ fontSize: 10, color: C.danger, textTransform: 'uppercase', letterSpacing: 2, fontWeight: '900', marginTop: 4 }}>Esta acción no se puede deshacer</Text>
+                </View>
+                <Pressable
+                  onPress={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: C.faint, alignItems: 'center', justifyContent: 'center', opacity: isDeleting ? 0.4 : 1 }}
+                >
+                  <X size={20} color={C.text} />
+                </Pressable>
+              </View>
+
+              <View style={{ padding: 20, borderRadius: 24, backgroundColor: C.danger10, borderWidth: 1, borderColor: C.danger20, marginBottom: 12 }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, color: C.danger, marginBottom: 8 }}>Se elimina</Text>
+                <Text style={{ fontSize: 14, color: C.text, lineHeight: 21 }}>
+                  Tu nombre, correo, teléfono, foto de perfil, mascotas y vehículos registrados. Perderás el acceso inmediatamente en todos tus dispositivos.
+                </Text>
+              </View>
+
+              <View style={{ padding: 20, borderRadius: 24, backgroundColor: C.text5, borderWidth: 1, borderColor: C.border, marginBottom: 24 }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, color: C.muted, marginBottom: 8 }}>Se conserva</Text>
+                <Text style={{ fontSize: 14, color: C.muted, lineHeight: 21 }}>
+                  El histórico de pagos, multas y votos de asamblea queda en los libros del conjunto sin tu identidad, porque la copropiedad está obligada por ley a conservarlo.
+                </Text>
+              </View>
+
+              <LabeledInput
+                label="Confirma con tu contraseña"
+                value={deletePassword}
+                onChangeText={setDeletePassword}
+                placeholder="Tu contraseña actual"
+                secureTextEntry
+                autoCapitalize="none"
+                C={C}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+                <Pressable
+                  onPress={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    padding: 18,
+                    borderRadius: 24,
+                    backgroundColor: C.faint,
+                    borderWidth: 1,
+                    borderColor: C.border,
+                    alignItems: 'center',
+                    opacity: isDeleting ? 0.4 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  })}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: C.text }}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => void handleDeleteAccount()}
+                  disabled={isDeleting || !deletePassword}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    padding: 18,
+                    borderRadius: 24,
+                    backgroundColor: C.danger,
+                    alignItems: 'center',
+                    opacity: isDeleting || !deletePassword ? 0.4 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  })}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: C.onAccent }}>
+                    {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* ---- EDIT MODAL ---- */}
       <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <Pressable style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={() => setShowEditModal(false)} />
+          {/* web backdrop: bg-black/40 (page.tsx:1324) — literal black there too */}
+          <Pressable style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => setShowEditModal(false)} />
           <View style={{ backgroundColor: C.bg, borderTopLeftRadius: 40, borderTopRightRadius: 40, borderTopWidth: 1, borderColor: C.border, maxHeight: '90%' }}>
             <ScrollView contentContainerStyle={{ padding: 28, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
               <ModalHeader title="Editar Perfil" subtitle="Configuración personal" onClose={() => setShowEditModal(false)} C={C} />
@@ -1757,7 +2257,7 @@ export default function Perfil() {
               <View style={{ alignItems: 'center', marginBottom: 28 }}>
                 <View>
                   <View style={{ width: 96, height: 96, borderRadius: 48, overflow: 'hidden', borderWidth: 1, borderColor: C.border }}>
-                    <Image source={{ uri: profilePic }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    <Image source={avatarSource(profilePic)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                   </View>
                   <Pressable
                     onPress={() => void handlePhotoChange()}
@@ -1785,7 +2285,7 @@ export default function Perfil() {
                   <Pressable
                     key={g.v}
                     onPress={() => setEditForm({ ...editForm, gender: g.v })}
-                    style={{ paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: editForm.gender === g.v ? C.accent : C.border, backgroundColor: editForm.gender === g.v ? (isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)') : C.faint }}
+                    style={{ paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: editForm.gender === g.v ? C.accent : C.border, backgroundColor: editForm.gender === g.v ? C.accent20 : C.faint }}
                   >
                     <Text style={{ fontSize: 12, fontWeight: '700', color: editForm.gender === g.v ? C.accent : C.text }}>{g.l}</Text>
                   </Pressable>
@@ -1801,6 +2301,7 @@ export default function Perfil() {
       {/* ---- REGISTRATION / TRAMITE MODAL ---- */}
       <Modal visible={showRegModal} transparent animationType="slide" onRequestClose={() => setShowRegModal(false)}>
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          {/* web backdrop: bg-black/60 (page.tsx:1433) */}
           <Pressable style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setShowRegModal(false)} />
           <View style={{ backgroundColor: C.bg, borderTopLeftRadius: 40, borderTopRightRadius: 40, borderTopWidth: 1, borderColor: C.border, maxHeight: '92%' }}>
             <ScrollView contentContainerStyle={{ padding: 28, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
@@ -1819,7 +2320,7 @@ export default function Perfil() {
                       <Pressable
                         key={t}
                         onPress={() => setRegForm({ ...regForm, tipoVehiculo: t })}
-                        style={{ flex: 1, paddingVertical: 12, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: regForm.tipoVehiculo === t ? C.accent : C.border, backgroundColor: regForm.tipoVehiculo === t ? (isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)') : C.faint }}
+                        style={{ flex: 1, paddingVertical: 12, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: regForm.tipoVehiculo === t ? C.accent : C.border, backgroundColor: regForm.tipoVehiculo === t ? C.accent20 : C.faint }}
                       >
                         <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1.5, color: regForm.tipoVehiculo === t ? C.accent : C.text }}>{t}</Text>
                       </Pressable>
@@ -1845,6 +2346,26 @@ export default function Perfil() {
                 </>
               ) : regType === 'MASCOTA' ? (
                 <>
+                  {/* FOTO DE LA MASCOTA (web page.tsx:1497-1526) */}
+                  <View style={{ alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                    <Text style={{ fontSize: 10, color: C.text, textTransform: 'uppercase', letterSpacing: 2, fontWeight: '900' }}>Foto de la Mascota</Text>
+                    <View>
+                      <View style={{ width: 96, height: 96, borderRadius: 48, overflow: 'hidden', borderWidth: 1, borderColor: C.border, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
+                        {regForm.fotoMascota ? (
+                          <Image source={{ uri: regForm.fotoMascota }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                        ) : (
+                          <PawPrint size={40} color={alpha(T.text, 0.4)} />
+                        )}
+                      </View>
+                      <Pressable
+                        onPress={() => void handlePetPhotoChange()}
+                        style={{ position: 'absolute', bottom: -4, right: -4, width: 40, height: 40, borderRadius: 20, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg }}
+                      >
+                        <Camera size={18} color={C.onAccent} />
+                      </Pressable>
+                    </View>
+                  </View>
+
                   <LabeledInput label="Nombre de la Mascota" placeholder="Ej: Toby" value={regForm.nombre} onChangeText={(t) => setRegForm({ ...regForm, nombre: t })} C={C} />
                   <Text style={{ fontSize: 10, color: C.text, textTransform: 'uppercase', letterSpacing: 2, fontWeight: '900', marginLeft: 4, marginBottom: 6, marginTop: 4 }}>Tipo</Text>
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
@@ -1852,7 +2373,7 @@ export default function Perfil() {
                       <Pressable
                         key={t}
                         onPress={() => setRegForm({ ...regForm, tipo: t })}
-                        style={{ flex: 1, paddingVertical: 12, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: regForm.tipo === t ? C.accent : C.border, backgroundColor: regForm.tipo === t ? (isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)') : C.faint }}
+                        style={{ flex: 1, paddingVertical: 12, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: regForm.tipo === t ? C.accent : C.border, backgroundColor: regForm.tipo === t ? C.accent20 : C.faint }}
                       >
                         <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1, color: regForm.tipo === t ? C.accent : C.text }}>{t}</Text>
                       </Pressable>
@@ -1889,8 +2410,9 @@ export default function Perfil() {
                       <Image source={{ uri: doc.base64 }} style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.6 }} contentFit="cover" />
                     )}
                     <Text style={{ fontSize: 8, color: C.text, textAlign: 'center', marginTop: 4 }} numberOfLines={1}>{doc.nombre}</Text>
-                    <Pressable onPress={() => setRegDocs((prev) => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' }}>
-                      <X size={12} color="#fff" />
+                    {/* web: bg-accent text-on-accent (page.tsx:1585) */}
+                    <Pressable onPress={() => setRegDocs((prev) => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }}>
+                      <X size={12} color={C.onAccent} />
                     </Pressable>
                   </View>
                 ))}
@@ -1911,14 +2433,24 @@ export default function Perfil() {
                     : 'Adjuntar: Copia de Cédula o Documento que soporte el cambio.'}
               </Text>
 
-              {/* Coexistence notice */}
-              <View style={{ padding: 20, borderRadius: 24, backgroundColor: C.faint, borderWidth: 1, borderColor: C.border, flexDirection: 'row', gap: 16, marginTop: 16 }}>
+              {/* Coexistence notice — web bg-text/5 border-text/20 (page.tsx:1604) */}
+              <View style={{ padding: 20, borderRadius: 24, backgroundColor: C.text5, borderWidth: 1, borderColor: C.text20, flexDirection: 'row', gap: 16, marginTop: 16 }}>
                 <Info size={20} color={C.text} />
                 <View style={{ flex: 1, gap: 8 }}>
                   <Text style={{ fontSize: 11, fontWeight: '900', color: C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>Aviso de Reglas y Convivencia</Text>
+                  {/* Web wraps two phrases in `**…**` and the ⚠️ line in
+                      `font-bold` (page.tsx:1609-1611); the emphasis is
+                      reproduced as bold spans rather than literal asterisks. */}
                   <Text style={{ fontSize: 10, color: C.text, lineHeight: 16 }}>
-                    La vinculación está sujeta a aprobación administrativa y disponibilidad. Es indispensable estar a paz y salvo. Queda prohibido el lavado o reparaciones de vehículos en áreas comunes.
-                    {'\n'}⚠️ El incumplimiento de las normas de convivencia puede generar multas pecuniarias.
+                    La vinculación está sujeta a{' '}
+                    <Text style={{ fontWeight: '700' }}>aprobación administrativa y disponibilidad</Text>
+                    . Es indispensable estar{' '}
+                    <Text style={{ fontWeight: '700' }}>a paz y salvo</Text>
+                    . Queda prohibido el lavado o reparaciones de vehículos en áreas comunes.
+                    {'\n'}
+                    <Text style={{ fontWeight: '700' }}>
+                      ⚠️ El incumplimiento de las normas de convivencia puede generar multas pecuniarias.
+                    </Text>
                   </Text>
                 </View>
               </View>
@@ -1935,38 +2467,69 @@ export default function Perfil() {
       <Modal visible={showQrModal} transparent animationType="fade" onRequestClose={() => setShowQrModal(false)}>
         <Pressable
           onPress={() => setShowQrModal(false)}
+          // web backdrop: bg-black/80 (page.tsx:1651)
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', alignItems: 'center', justifyContent: 'center', padding: 16 }}
         >
           <Pressable onPress={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 384, backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, borderRadius: 32, padding: 24, alignItems: 'center', gap: 16 }}>
             <Pressable onPress={() => setShowQrModal(false)} style={{ alignSelf: 'flex-end' }}>
               <X size={20} color={C.muted} />
             </Pressable>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>QR de Reserva</Text>
-            <Text style={{ fontSize: 12, color: C.muted, marginTop: -12 }}>{qrReservaNombre}</Text>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>{qrReservaNombre}</Text>
+            {/* Estado badge — web page.tsx:1665-1672 */}
+            <View style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: estadoReservaTint(qrReservaEstado, C).bg }}>
+              <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, color: estadoReservaTint(qrReservaEstado, C).color }}>
+                {qrReservaEstado === 'CONFIRMADA'
+                  ? 'Activa'
+                  : qrReservaEstado === 'PENDIENTE'
+                    ? 'Pendiente'
+                    : qrReservaEstado}
+              </Text>
+            </View>
+            <View style={{ width: '100%', gap: 8, paddingHorizontal: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Calendar size={14} color={C.accent} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.text }}>{fmtDateLong(qrReservaInicio)}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Clock size={14} color={C.accent} />
+                <Text style={{ fontSize: 12, color: C.text, fontVariant: ['tabular-nums'] }}>
+                  {fmtTime(qrReservaInicio)} → {fmtTime(qrReservaFin)}
+                </Text>
+              </View>
+            </View>
+            {/* Web wraps the code in a hardcoded `bg-white` box (page.tsx:1689) —
+                a QR must stay black-on-white to stay scannable in both schemes. */}
             <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16 }}>
               {qrReservaId ? (
-                <QRCode value={qrReservaId} size={250} backgroundColor="#FFFFFF" color="#000000" />
+                <QRCode value={qrReservaId} size={220} backgroundColor="#FFFFFF" color="#000000" />
               ) : null}
             </View>
-            <Text style={{ fontSize: 10, color: C.muted, textAlign: 'center' }}>
-              Muestra este código al administrador del área para verificar tu reserva.
+            <Text style={{ fontSize: 10, color: alpha(T.text, 0.4), textAlign: 'center' }}>
+              Muestra este código al ingreso del área para acceder.
             </Text>
           </Pressable>
         </Pressable>
       </Modal>
 
-      {/* ---- PSE PROCESSING OVERLAY (stub; dead while payments are OFF) ---- */}
+      {/* ---- PSE PROCESSING OVERLAY (web page.tsx:1628-1646; dead while
+             PAYMENTS_ENABLED is false, kept for parity) ---- */}
       {isPaying ? (
+        // web backdrop: bg-black/80 backdrop-blur-3xl (page.tsx:1630)
         <View style={{ position: 'absolute', inset: 0, zIndex: 200, backgroundColor: 'rgba(0,0,0,0.8)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <View style={{ width: '100%', maxWidth: 380, backgroundColor: '#fff', borderRadius: 40, padding: 40, alignItems: 'center' }}>
-            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
-              <ShieldCheck size={40} color="#000" />
+          <View style={{ width: '100%', maxWidth: 380, backgroundColor: C.card, borderRadius: 40, padding: 40, alignItems: 'center' }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: C.text10, alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
+              <PulseRing color={C.text10} size={80} />
+              <ShieldCheck size={40} color={C.accent} />
             </View>
-            <Text style={{ color: '#000', fontSize: 22, fontWeight: '900', marginBottom: 12 }}>Procesando Pago</Text>
-            <Text style={{ color: '#444', fontSize: 14, textAlign: 'center', marginBottom: 32 }}>
+            <Text style={{ color: C.text, fontSize: 22, fontWeight: '900', marginBottom: 12 }}>Procesando Pago</Text>
+            <Text style={{ color: C.text, fontSize: 14, textAlign: 'center', marginBottom: 32 }}>
               Estamos conectando de forma segura con tu entidad financiera a través de PSE. Por favor, no cierres esta ventana.
             </Text>
-            <Text style={{ color: '#888', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '700' }}>Transacción Encriptada 256-bit</Text>
+            {/* 1.5px track whose bar animates to 100% over 2500ms (page.tsx:1640-1642) */}
+            <View style={{ width: '100%', height: 6, borderRadius: 999, overflow: 'hidden', backgroundColor: C.text10 }}>
+              <ProgressBar color={C.accent} />
+            </View>
+            <Text style={{ color: C.text, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '700', marginTop: 16 }}>Transacción Encriptada 256-bit</Text>
           </View>
         </View>
       ) : null}
@@ -1978,15 +2541,107 @@ export default function Perfil() {
 // Helpers + small sub-components
 // ---------------------------------------------------------------------------
 
+/**
+ * Runtime mirror of the token classes the web page uses. Every field maps to a
+ * `tokens.ts` token (or a documented alpha of one) — no raw hexes.
+ */
 type Palette = {
   bg: string;
+  card: string;
   text: string;
   accent: string;
   onAccent: string;
   muted: string;
   faint: string;
   border: string;
+  info: string;
+  success: string;
+  danger: string;
+  warning: string;
+  text5: string;
+  text10: string;
+  text20: string;
+  accent10: string;
+  accent20: string;
+  info10: string;
+  info15: string;
+  info20: string;
+  danger10: string;
+  danger20: string;
 };
+
+/** expo-image source for either a bundled asset module or a remote/base64 URI. */
+function avatarSource(pic: string | number) {
+  return typeof pic === 'string' ? { uri: pic } : pic;
+}
+
+/**
+ * Reserva estado badge tint — web pairs CONFIRMADA with bg-success/20
+ * text-success, PENDIENTE with warning, CANCELADA with red-500/20 text-red-400
+ * (the danger token) and anything else with bg-text/20 (page.tsx:815-820).
+ */
+function estadoReservaTint(
+  estado: string | undefined,
+  C: Palette,
+): { bg: string; color: string } {
+  if (estado === 'CONFIRMADA') return { bg: alpha(C.success, 0.2), color: C.success };
+  if (estado === 'PENDIENTE') return { bg: alpha(C.warning, 0.2), color: C.warning };
+  if (estado === 'CANCELADA') return { bg: alpha(C.danger, 0.2), color: C.danger };
+  return { bg: C.text20, color: C.text };
+}
+
+/** `animate-pulse` dot — opacity breathes 1 → 0.35 → 1. */
+function PulseDot({ color, size }: { color: string; size: number }) {
+  const o = useSharedValue(1);
+  useEffect(() => {
+    o.value = withRepeat(withTiming(0.35, { duration: 1000 }), -1, true);
+    return () => cancelAnimation(o);
+  }, [o]);
+  const style = useAnimatedStyle(() => ({ opacity: o.value }));
+  return (
+    <Animated.View
+      style={[
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: color },
+        style,
+      ]}
+    />
+  );
+}
+
+/** `animate-pulse` ring behind the PSE shield (web page.tsx:1633). */
+function PulseRing({ color, size }: { color: string; size: number }) {
+  const o = useSharedValue(1);
+  useEffect(() => {
+    o.value = withRepeat(withTiming(0.2, { duration: 1000 }), -1, true);
+    return () => cancelAnimation(o);
+  }, [o]);
+  const style = useAnimatedStyle(() => ({ opacity: o.value }));
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+/** Bar that fills to 100% over 2500ms, matching the web transition duration. */
+function ProgressBar({ color }: { color: string }) {
+  const w = useSharedValue(0);
+  useEffect(() => {
+    w.value = withTiming(100, { duration: 2500 });
+    return () => cancelAnimation(w);
+  }, [w]);
+  const style = useAnimatedStyle(() => ({ width: `${w.value}%` }));
+  return <Animated.View style={[{ height: '100%', backgroundColor: color }, style]} />;
+}
 
 function computeDebt(pagos: Pago[], recibos: Recibo[]): number {
   const items: Array<Pago | Recibo> = [...pagos, ...recibos];
@@ -1999,14 +2654,25 @@ function computeDebt(pagos: Pago[], recibos: Recibo[]): number {
     .reduce((acc, p) => acc + parseFloat(String(p.monto) || '0'), 0);
 }
 
+/** `bg-primary-light border-border` pill with an info-colored dot (page.tsx:642-649). */
 function Pill({ text, C }: { text: string; C: Palette }) {
   return (
-    <LiquidGlass className="rounded-full" radius={999} style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.muted }} />
-        <Text style={{ fontSize: 11, fontWeight: '700', color: C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>{text}</Text>
-      </View>
-    </LiquidGlass>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 999,
+        backgroundColor: C.card,
+        borderWidth: 1,
+        borderColor: C.border,
+      }}
+    >
+      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.info }} />
+      <Text style={{ fontSize: 11, fontWeight: '700', color: C.text, textTransform: 'uppercase', letterSpacing: 1.5 }}>{text}</Text>
+    </View>
   );
 }
 
@@ -2021,18 +2687,28 @@ function GlassPanel({ children, C }: { children: React.ReactNode; C: Palette }) 
 function Field({ label, value, C }: { label: string; value: string; C: Palette }) {
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={{ fontSize: 10, color: C.text, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '900', marginBottom: 4 }}>{label}</Text>
+      {/* web: text-[10px] text-text/55 uppercase tracking-wider font-bold (page.tsx:705) */}
+      <Text style={{ fontSize: 10, color: alpha(C.text, 0.55), textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: '700', marginBottom: 4 }}>{label}</Text>
       <Text style={{ fontSize: 14, fontWeight: '500', color: C.text }}>{value}</Text>
     </View>
   );
 }
 
+/**
+ * Section heading + optional action. Web ships two action shapes:
+ *  - `pill` — the "Solicitar Vinculación" button, `px-4 py-1.5 rounded-full`
+ *    with a 20% fill and 20% border, tinted accent for Vehículos
+ *    (page.tsx:860) and `text` for Mascotas (page.tsx:889).
+ *  - `text` — reservas' bare "Solicitar Nueva" link in accent/80 (page.tsx:784).
+ */
 function SectionHeader({
   title,
   icon,
   actionLabel,
   actionIcon,
   onAction,
+  actionVariant = 'text',
+  actionTone = 'accent',
   C,
 }: {
   title: string;
@@ -2040,8 +2716,12 @@ function SectionHeader({
   actionLabel?: string;
   actionIcon?: React.ReactNode;
   onAction?: () => void;
+  actionVariant?: 'text' | 'pill';
+  actionTone?: 'accent' | 'text';
   C: Palette;
 }) {
+  const tone = actionTone === 'accent' ? C.accent : C.text;
+  const isPill = actionVariant === 'pill';
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -2049,9 +2729,37 @@ function SectionHeader({
         {icon}
       </View>
       {actionLabel && onAction ? (
-        <Pressable onPress={onAction} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, flexDirection: 'row', alignItems: 'center', gap: 6 })}>
+        <Pressable
+          onPress={onAction}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            ...(isPill
+              ? {
+                  paddingHorizontal: 16,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: alpha(tone, 0.2),
+                  backgroundColor: alpha(tone, 0.2),
+                }
+              : null),
+          })}
+        >
           {actionIcon}
-          <Text style={{ fontSize: 10, fontWeight: '900', color: C.accent, textTransform: 'uppercase', letterSpacing: 0.5 }}>{actionLabel}</Text>
+          <Text
+            style={{
+              fontSize: isPill ? 11 : 10,
+              fontWeight: isPill ? '700' : '900',
+              color: isPill ? tone : alpha(tone, 0.8),
+              textTransform: 'uppercase',
+              letterSpacing: isPill ? 1 : 0.5,
+            }}
+          >
+            {actionLabel}
+          </Text>
         </Pressable>
       ) : null}
     </View>
@@ -2067,6 +2775,12 @@ function EmptyState({ icon, text, C }: { icon: React.ReactNode; text: string; C:
   );
 }
 
+/**
+ * Charge row. `emphasis` is the recibos (Servicios Públicos) variant web gives a
+ * border-text/20 card, a plain `text-text` tag and a filled `bg-accent`
+ * "Pagar Ahora" button; the default is the pagos (Administración) variant with
+ * an `text-accent/60` tag and a `bg-text/10` button (page.tsx:999-1035).
+ */
 function ChargeRow({
   tag,
   title,
@@ -2074,6 +2788,7 @@ function ChargeRow({
   amount,
   actionLabel,
   onPay,
+  emphasis = false,
   C,
 }: {
   tag: string;
@@ -2082,19 +2797,20 @@ function ChargeRow({
   amount: string;
   actionLabel: string;
   onPay: () => void;
+  emphasis?: boolean;
   C: Palette;
 }) {
   return (
-    <View style={{ borderRadius: 16, padding: 20, borderWidth: 1, borderColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.faint }}>
+    <View style={{ borderRadius: 16, padding: 20, borderWidth: 1, borderColor: emphasis ? C.text20 : C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.faint }}>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '900', marginBottom: 4 }}>{tag}</Text>
+        <Text style={{ fontSize: 10, color: emphasis ? C.text : alpha(C.accent, 0.6), textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '900', marginBottom: 4 }}>{tag}</Text>
         <Text style={{ fontSize: 14, fontWeight: '700', color: C.text }}>{title}</Text>
         <Text style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', marginTop: 4 }}>{sub}</Text>
       </View>
       <View style={{ alignItems: 'flex-end', gap: 8 }}>
         <Text style={{ fontSize: 18, fontWeight: '900', color: C.text }}>${amount}</Text>
-        <Pressable onPress={onPay} style={({ pressed }) => ({ paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999, backgroundColor: C.faint, opacity: pressed ? 0.7 : 1 })}>
-          <Text style={{ fontSize: 10, fontWeight: '900', color: C.text, textTransform: 'uppercase' }}>{actionLabel}</Text>
+        <Pressable onPress={onPay} style={({ pressed }) => ({ paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999, backgroundColor: emphasis ? C.accent : C.text10, opacity: pressed ? 0.7 : 1 })}>
+          <Text style={{ fontSize: 10, fontWeight: '900', color: emphasis ? C.onAccent : C.text, textTransform: 'uppercase' }}>{actionLabel}</Text>
         </Pressable>
       </View>
     </View>

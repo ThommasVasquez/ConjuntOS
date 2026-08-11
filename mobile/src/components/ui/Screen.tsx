@@ -2,6 +2,12 @@ import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  BACK_CHROME_HEIGHT,
+  BackButton,
+  useBackChrome,
+} from '@/components/shell/BackChrome';
+
 export interface ScreenProps {
   children: ReactNode;
   /** When true, wraps the content in a vertical ScrollView. Defaults to true. */
@@ -17,31 +23,40 @@ export interface ScreenProps {
  */
 export function Screen({ children, scroll = true, className }: ScreenProps) {
   const insets = useSafeAreaInsets();
-  // Top inset keeps content clear of the status bar / notch. Bottom padding
-  // leaves room for the floating tab bar that overlays every authed screen.
-  const topInset = insets.top;
-  const bottomPad = 128;
+  const { showBack } = useBackChrome();
+  // Top inset keeps content clear of the status bar / notch, plus room for the
+  // floating back button on routes that are not one of the role's tabs (see
+  // BackChrome) so it never lands on the first content row.
+  const topInset = insets.top + (showBack ? BACK_CHROME_HEIGHT : 0);
+  // Mirrors web `.safe-pb` = calc(env(safe-area-inset-bottom) + 120px). A flat
+  // 128 let the floating tab pill (which reaches ~94px from the edge) overlap
+  // the last row on devices with a home indicator.
+  const bottomPad = insets.bottom + 120;
 
-  if (scroll) {
-    return (
-      <ScrollView
-        className={className}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: topInset, paddingBottom: bottomPad }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
-    );
-  }
-
+  // The back button must live INSIDE the screen (see BackChrome) — as a sibling
+  // of <Tabs> it is painted over by the navigator. It also must not be a child
+  // of the ScrollView, or it would scroll away with the content.
   return (
-    <View
-      className={className}
-      style={{ flex: 1, paddingTop: topInset, paddingBottom: bottomPad }}
-    >
-      {children}
+    <View style={{ flex: 1 }}>
+      {scroll ? (
+        <ScrollView
+          className={className}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingTop: topInset, paddingBottom: bottomPad }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View
+          className={className}
+          style={{ flex: 1, paddingTop: topInset, paddingBottom: bottomPad }}
+        >
+          {children}
+        </View>
+      )}
+      <BackButton />
     </View>
   );
 }

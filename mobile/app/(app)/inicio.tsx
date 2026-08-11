@@ -15,7 +15,7 @@
  *   isQuestion heuristic + local MODULES/SUGGESTIONS filtering.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -70,6 +70,7 @@ import { useWsSubscription } from '@/hooks/useWebSocket';
 import { api, ApiError } from '@/lib/api/client';
 import { getNotifTarget } from '@/lib/notif-routing';
 import { safeHttpUrl } from '@/lib/safe-url';
+import { darkTokens, onSemantic, tokensFor } from '@/theme/tokens';
 import type {
   AdSpaceFeedDto,
   AnuncioDto,
@@ -131,9 +132,21 @@ function numFrom(v: number | string | null | undefined): number {
 // Mutable colors object — updated by useThemeColors() inside each top-level
 // component. Sub-components read from this module-level ref so they don't all
 // need the useColorScheme hook threaded through props.
+//
+// EVERY value comes from the design tokens (src/theme/tokens.ts), which are the
+// port of web's globals.css. It previously hardcoded a retired palette: `text`
+// and `bg` flipped between pure #FFFFFF/#000000 instead of the teal-tinted
+// #f0fdfa/#050d0c, and — worse — `blue`/`green`/`red`/`yellow`/`amber` were
+// initialised to the dead #009df2 / #57bf00 / raw Tailwind hexes and then NEVER
+// updated by useThemeColors(). That left the whole dashboard on a two-palettes-
+// ago scheme with white-on-white text in light mode.
 const COLORS: {
   text: string;
   muted: string;
+  accent: string;
+  onAccent: string;
+  /** Readable ink on a FILLED success/danger/warning surface. */
+  onSemantic: string;
   blue: string;
   green: string;
   red: string;
@@ -145,30 +158,46 @@ const COLORS: {
   surface: string;
   surface2: string;
 } = {
-  text: '#FFFFFF',
-  muted: 'rgba(255,255,255,0.6)',
-  blue: '#009df2',
-  green: '#57bf00',
-  red: '#EF4444',
-  yellow: '#FACC15',
-  amber: '#F59E0B',
-  amberLight: '#FBBF24',
-  border: 'rgba(255,255,255,0.14)',
-  bg: '#000000',
-  surface: 'rgba(255,255,255,0.045)',
-  surface2: 'rgba(255,255,255,0.07)',
+  text: darkTokens.text,
+  muted: darkTokens.textMuted,
+  accent: darkTokens.accent,
+  onAccent: darkTokens.onAccent,
+  onSemantic: onSemantic('dark'),
+  blue: darkTokens.info,
+  green: darkTokens.success,
+  red: darkTokens.danger,
+  yellow: darkTokens.warning,
+  amber: darkTokens.warning,
+  amberLight: darkTokens.warning,
+  border: darkTokens.border,
+  bg: darkTokens.primary,
+  surface: darkTokens.surface,
+  surface2: darkTokens.surface2,
 };
 
 /** Call at the top of each role component to sync COLORS with the current scheme. */
 function useThemeColors() {
   const { colorScheme } = useColorScheme();
-  const isLight = colorScheme === 'light';
-  COLORS.text = isLight ? '#000000' : '#FFFFFF';
-  COLORS.muted = isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)';
-  COLORS.border = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.14)';
-  COLORS.bg = isLight ? '#FFFFFF' : '#000000';
-  COLORS.surface = isLight ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.045)';
-  COLORS.surface2 = isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.07)';
+  const t = tokensFor(colorScheme === 'light' ? 'light' : 'dark');
+  COLORS.text = t.text;
+  COLORS.muted = t.textMuted;
+  COLORS.accent = t.accent;
+  COLORS.onAccent = t.onAccent;
+  COLORS.onSemantic = onSemantic(colorScheme === 'light' ? 'light' : 'dark');
+  // The semantic names are kept so the ~200 existing call sites keep compiling,
+  // but they now resolve to the real semantic tokens. `yellow`/`amber`/
+  // `amberLight` all collapse onto `warning`: the design system defines exactly
+  // one warning hue, which is the point of the token cleanup.
+  COLORS.blue = t.info;
+  COLORS.green = t.success;
+  COLORS.red = t.danger;
+  COLORS.yellow = t.warning;
+  COLORS.amber = t.warning;
+  COLORS.amberLight = t.warning;
+  COLORS.border = t.border;
+  COLORS.bg = t.primary;
+  COLORS.surface = t.surface;
+  COLORS.surface2 = t.surface2;
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -194,18 +223,30 @@ export default function InicioDashboard() {
 // HomeResidente
 // ───────────────────────────────────────────────────────────────────────────
 
-const CATEGORIES: { title: string; icon: ReactNode; path: string }[] = [
-  { title: 'Citofonía', icon: <UserIcon size={20} color={COLORS.green} />, path: '/citofonia' },
-  { title: 'Pagos', icon: <CreditCard size={20} color={COLORS.green} />, path: '/pagos' },
-  { title: 'Parqueo', icon: <Car size={20} color={COLORS.green} />, path: '/parqueadero' },
-  { title: 'Reservas', icon: <Calendar size={20} color={COLORS.green} />, path: '/reservas' },
-  { title: 'Cartelera', icon: <Megaphone size={20} color={COLORS.green} />, path: '/cartelera' },
-  { title: 'Encuestas', icon: <BarChart3 size={20} color={COLORS.green} />, path: '/encuestas' },
-  { title: 'Asistente', icon: <Scale size={20} color={COLORS.green} />, path: '/asistente' },
-  { title: 'PQRS', icon: <MessageSquare size={20} color={COLORS.green} />, path: '/pqrs' },
-  { title: 'Inmuebles', icon: <Building2 size={20} color={COLORS.green} />, path: '/inmobiliaria' },
-  { title: 'Clasificados', icon: <ShoppingBag size={20} color={COLORS.green} />, path: '/clasificados' },
-];
+/**
+ * Built per render — deliberately a FUNCTION, not a module-level array.
+ *
+ * The tiles' icons carry a colour, and a module-scope array is evaluated once at
+ * IMPORT time, before any component has run `useThemeColors()`. That froze every
+ * icon on `COLORS.green`'s dark default (#34d399), so in light mode the whole
+ * navigation strip rendered dark-scheme mint icons on the light tile surface
+ * (`COLORS.bg` = #f0fdfa) — ~1.7:1. Rebuilding per render re-reads the live token.
+ */
+function buildCategories(): { title: string; icon: ReactNode; path: string }[] {
+  const ink = COLORS.green;
+  return [
+    { title: 'Citofonía', icon: <UserIcon size={20} color={ink} />, path: '/citofonia' },
+    { title: 'Pagos', icon: <CreditCard size={20} color={ink} />, path: '/pagos' },
+    { title: 'Parqueo', icon: <Car size={20} color={ink} />, path: '/parqueadero' },
+    { title: 'Reservas', icon: <Calendar size={20} color={ink} />, path: '/reservas' },
+    { title: 'Cartelera', icon: <Megaphone size={20} color={ink} />, path: '/cartelera' },
+    { title: 'Encuestas', icon: <BarChart3 size={20} color={ink} />, path: '/encuestas' },
+    { title: 'Asistente', icon: <Scale size={20} color={ink} />, path: '/asistente' },
+    { title: 'PQRS', icon: <MessageSquare size={20} color={ink} />, path: '/pqrs' },
+    { title: 'Inmuebles', icon: <Building2 size={20} color={ink} />, path: '/inmobiliaria' },
+    { title: 'Clasificados', icon: <ShoppingBag size={20} color={ink} />, path: '/clasificados' },
+  ];
+}
 
 // Web renders the full static tile grid for every role that reaches the
 // resident dashboard (only the nav bar is role-gated): an ARRENDATARIO keeps
@@ -245,7 +286,8 @@ function HomeResidente() {
   const [visitasPendientes, setVisitasPendientes] = useState<VisitaDto[]>([]);
   const [busyAprob, setBusyAprob] = useState<string | null>(null);
 
-  const categories = CATEGORIES;
+  // Built per render so the tile icons follow the active scheme (see buildCategories).
+  const categories = buildCategories();
 
   const fetchAnuncios = useCallback(async () => {
     try {
@@ -462,46 +504,48 @@ function HomeResidente() {
           <RoleSwitcher />
           <ProfileHeader />
 
-          {/* SEARCH BAR */}
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Pressable
-              onPress={() => setIsSearchOpen(true)}
-              style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.85 : 1 })}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  backgroundColor: COLORS.surface,
-                  borderWidth: 1,
-                  borderColor: COLORS.border,
-                  borderRadius: 24,
-                  paddingVertical: 16,
-                  paddingHorizontal: 20,
-                }}
-              >
-                <Search size={18} color={COLORS.text} />
-                <Text style={{ color: COLORS.text, fontSize: 13 }}>Buscar o preguntar algo...</Text>
-              </View>
-            </Pressable>
-            <Pressable
-              onPress={() => setIsSearchOpen(true)}
-              style={({ pressed }) => ({
-                width: 56,
-                height: 56,
-                borderRadius: 22,
+          {/* SEARCH BAR — ONE full-width bar, AI affordance inside its right edge.
+              Styles are plain objects: NativeWind's Pressable interop drops a
+              function style, and this bar's `flex: 1` lived in one, which is why
+              it collapsed to the width of its placeholder with the Sparkles
+              button floating unstyled beside it. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Buscar o preguntar algo"
+            onPress={() => setIsSearchOpen(true)}
+            style={{
+              alignSelf: 'stretch',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              backgroundColor: COLORS.surface,
+              borderWidth: 1,
+              borderColor: COLORS.border,
+              borderRadius: 24,
+              paddingVertical: 12,
+              paddingLeft: 20,
+              paddingRight: 12,
+            }}
+          >
+            <Search size={18} color={COLORS.muted} />
+            <Text style={{ flex: 1, color: COLORS.muted, fontSize: 13.5 }}>
+              Buscar o preguntar algo...
+            </Text>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 14,
                 backgroundColor: COLORS.surface2,
                 borderWidth: 1,
                 borderColor: COLORS.border,
                 alignItems: 'center',
                 justifyContent: 'center',
-                transform: [{ scale: pressed ? 0.95 : 1 }],
-              })}
+              }}
             >
-              <Sparkles size={20} color={COLORS.text} />
-            </Pressable>
-          </View>
+              <Sparkles size={18} color={COLORS.accent} />
+            </View>
+          </Pressable>
         </Animated.View>
 
         {/* ASSEMBLY LIVE BANNER */}
@@ -555,7 +599,10 @@ function HomeResidente() {
                   </View>
                   <View style={styles.pillCta}>
                     <Text style={styles.pillCtaText}>Entrar</Text>
-                    <ArrowRight size={10} color="#000000" />
+                    {/* Sits on styles.pillCta, whose fill is COLORS.text — so the ink
+                  must be COLORS.bg, exactly like styles.pillCtaText. A literal
+                  black arrow disappeared on the dark-teal pill in light mode. */}
+              <ArrowRight size={10} color={COLORS.bg} />
                   </View>
                 </View>
               </LiquidGlass>
@@ -589,8 +636,9 @@ function HomeResidente() {
                     <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700' }}>
                       Celda {c.celdaNumero}
                     </Text>
+                    {/* On a LiquidGlass card (near-white in light mode) → themed ink. */}
                     {c.placa ? (
-                      <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>Placa {c.placa}</Text>
+                      <Text style={{ color: COLORS.muted, fontSize: 12 }}>Placa {c.placa}</Text>
                     ) : null}
                     <Text style={{ color: COLORS.muted, fontSize: 11, marginTop: 4 }}>
                       {c.minutosCobrados} min cobrables
@@ -646,8 +694,9 @@ function HomeResidente() {
                   <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700' }}>
                     Celda {s.celdaNumero}
                   </Text>
+                  {/* On a LiquidGlass card (near-white in light mode) — themed ink. */}
                   {s.detalle ? (
-                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>{s.detalle}</Text>
+                    <Text style={{ color: COLORS.muted, fontSize: 12 }}>{s.detalle}</Text>
                   ) : null}
                   {s.solicitanteNombre ? (
                     <Text style={{ color: COLORS.muted, fontSize: 11, marginTop: 4 }}>
@@ -745,10 +794,12 @@ function HomeResidente() {
                           paddingVertical: 2,
                           borderRadius: 999,
                           borderWidth: 1,
-                          backgroundColor:
-                            v.tipo === 'VEHICULAR' ? 'rgba(0,157,242,0.15)' : COLORS.surface2,
-                          borderColor:
-                            v.tipo === 'VEHICULAR' ? 'rgba(0,157,242,0.3)' : COLORS.border,
+                          // The VEHICULAR tint used to be rgba(0,157,242,…) — the
+                          // retired #009df2 blue, frozen two palettes ago. The badge
+                          // now sits on the themed surface and takes its distinction
+                          // from the live `info` token border + ink below.
+                          backgroundColor: COLORS.surface2,
+                          borderColor: v.tipo === 'VEHICULAR' ? COLORS.blue : COLORS.border,
                         }}
                       >
                         <Text
@@ -896,8 +947,11 @@ function HomeResidente() {
             overflow: 'hidden',
             minHeight: 120,
             borderWidth: 1,
-            borderColor: COLORS.border,
-            backgroundColor: debtPending ? '#171717' : '#3b3b3b',
+            // Deliberately dark in BOTH schemes (a contrast card on the page bg),
+            // so EVERY child below takes the dark token set, not the active
+            // scheme's — otherwise light mode paints dark ink on a dark card.
+            borderColor: darkTokens.border,
+            backgroundColor: debtPending ? darkTokens.primary : darkTokens.primaryLight,
             padding: 20,
             justifyContent: 'space-between',
           }}
@@ -909,41 +963,41 @@ function HomeResidente() {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: COLORS.surface2,
+                  backgroundColor: darkTokens.surface2,
                   borderWidth: 1,
-                  borderColor: COLORS.border,
+                  borderColor: darkTokens.border,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <CreditCard size={14} color="#FFFFFF" />
+                <CreditCard size={14} color={darkTokens.text} />
               </View>
-              <Text style={styles.heroEyebrow}>Mi Cuota</Text>
+              <Text style={styles.onDarkEyebrow}>Mi Cuota</Text>
             </View>
-            <View style={styles.heroBadge}>
-              <Text style={styles.heroEyebrow}>{debtPending ? 'Pendiente' : 'Paz y Salvo'}</Text>
+            <View style={styles.onDarkBadge}>
+              <Text style={styles.onDarkEyebrow}>{debtPending ? 'Pendiente' : 'Paz y Salvo'}</Text>
             </View>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <View>
-              <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>
+              <Text style={{ color: darkTokens.text, fontSize: 24, fontWeight: '700' }}>
                 $ {formatCOP(financialData.totalDebt)}
               </Text>
-              <Text style={{ color: '#FFFFFF', fontSize: 10, marginTop: 2 }}>
+              <Text style={{ color: darkTokens.textMuted, fontSize: 10, marginTop: 2 }}>
                 {debtPending ? 'Saldo pendiente' : 'Al dia con tus pagos'}
               </Text>
             </View>
             <Pressable
               onPress={() => router.push('/pagos' as never)}
               style={({ pressed }) => ({
-                backgroundColor: COLORS.text,
+                backgroundColor: darkTokens.text,
                 paddingHorizontal: 16,
                 paddingVertical: 8,
                 borderRadius: 999,
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               })}
             >
-              <Text style={{ color: COLORS.bg, fontSize: 11, fontWeight: '700' }}>
+              <Text style={{ color: darkTokens.primary, fontSize: 11, fontWeight: '700' }}>
                 {debtPending ? 'Pagar Ahora' : 'Ver Estado'}
               </Text>
             </Pressable>
@@ -988,7 +1042,8 @@ function HomeResidente() {
 
           {isLoadingAnuncios ? (
             <View style={{ paddingVertical: 40, alignItems: 'center', gap: 12 }}>
-              <ActivityIndicator color="#FFFFFF" />
+              {/* Spins on the page background, which follows the scheme. */}
+              <ActivityIndicator color={COLORS.text} />
               <Text style={styles.mutedCaption}>Cargando novedades...</Text>
             </View>
           ) : anuncios.length === 0 ? (
@@ -1078,7 +1133,7 @@ function ApprovalButton({
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
       })}
     >
-      <Text style={{ color: approve ? '#FFFFFF' : COLORS.text, fontSize: 14, fontWeight: '700' }}>
+      <Text style={{ color: approve ? COLORS.onSemantic : COLORS.text, fontSize: 14, fontWeight: '700' }}>
         {label}
       </Text>
     </Pressable>
@@ -1124,7 +1179,7 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
                 backgroundColor: COLORS.blue,
               }}
             >
-              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>
+              <Text style={{ color: COLORS.onSemantic, fontWeight: '700', fontSize: 12 }}>
                 {anuncio.tipo?.[0] || 'A'}
               </Text>
             </View>
@@ -1237,7 +1292,9 @@ function BannerAdCard({ ad }: { ad: AdSpaceFeedDto }) {
               backgroundColor: 'rgba(255,255,255,0.06)',
             }}
           >
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>{ad.nombre}</Text>
+            {/* Image-less ad placeholder: the fill is only 6% white, so the
+                effective surface is the scheme-following page behind it. */}
+            <Text style={{ color: COLORS.muted, fontSize: 14 }}>{ad.nombre}</Text>
           </View>
         )}
         <View
@@ -1253,7 +1310,8 @@ function BannerAdCard({ ad }: { ad: AdSpaceFeedDto }) {
         >
           <Text
             style={{
-              color: '#FFFFFF',
+              // Sits on a rgba(0,0,0,0.6) scrim, so it is always light ink.
+              color: darkTokens.text,
               fontSize: 9,
               textTransform: 'uppercase',
               letterSpacing: 1,
@@ -1287,7 +1345,8 @@ function ContentActionModal({ item, onClose }: { item: AnuncioDto | null; onClos
         {item ? (
           <View
             style={{
-              backgroundColor: '#0E0E0E',
+              // Sheet is dark in both schemes (backdrop is rgba(0,0,0,0.92)).
+              backgroundColor: darkTokens.primaryLight,
               borderTopLeftRadius: 40,
               borderTopRightRadius: 40,
               borderWidth: 1,
@@ -1301,7 +1360,17 @@ function ContentActionModal({ item, onClose }: { item: AnuncioDto | null; onClos
             </View>
             <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }} showsVerticalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: COLORS.blue, fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}>
+                {/* This sheet is dark in BOTH schemes (see backgroundColor above),
+                    so every descendant must take the DARK token set. `COLORS.*`
+                    would paint the light scheme's dark ink on the dark sheet. */}
+                <Text
+                  style={{
+                    color: darkTokens.info,
+                    fontSize: 10,
+                    fontWeight: '900',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   {item.tipo}
                 </Text>
                 <Pressable
@@ -1315,10 +1384,12 @@ function ContentActionModal({ item, onClose }: { item: AnuncioDto | null; onClos
                     justifyContent: 'center',
                   }}
                 >
-                  <X size={18} color={COLORS.text} />
+                  {/* Dark sheet in both schemes → pinned dark-scheme ink. */}
+                  <X size={18} color={darkTokens.text} />
                 </Pressable>
               </View>
-              <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: '700', lineHeight: 30 }}>
+              {/* Dark sheet in both schemes → pinned dark-scheme ink. */}
+              <Text style={{ color: darkTokens.text, fontSize: 24, fontWeight: '700', lineHeight: 30 }}>
                 {item.titulo}
               </Text>
               {item.imagenUrl ? (
@@ -1488,74 +1559,87 @@ interface SearchContext {
 const MODULES: {
   title: string;
   desc: string;
-  icon: ReactNode;
+  /**
+   * A render FUNCTION, not an element. These entries live at module scope, so a
+   * pre-built `<Icon color=… />` freezes its colour at import time — here it was
+   * a hardcoded `#FFFFFF`, and these icons render inside `styles.searchModIcon`
+   * on the `Sheet` primitive, whose surface is `tokens.primaryLight` = WHITE in
+   * light mode. White-on-white: the whole module list lost its icons.
+   */
+  icon: (color: string) => ReactNode;
   path: string;
   keywords: string[];
 }[] = [
   {
     title: 'Pagos',
     desc: 'Cuotas, recibos y sanciones',
-    icon: <CreditCard size={18} color="#FFFFFF" />,
+    icon: (color) => <CreditCard size={18} color={color} />,
     path: '/pagos',
     keywords: ['pago', 'cuota', 'administración', 'deuda', 'recibo', 'energía', 'gas', 'agua'],
   },
   {
     title: 'Reservas',
     desc: 'Salón, cancha, gimnasio y más',
-    icon: <Calendar size={18} color="#FFFFFF" />,
+    icon: (color) => <Calendar size={18} color={color} />,
     path: '/reservas',
     keywords: ['reserva', 'salón', 'salon', 'cancha', 'gimnasio', 'piscina', 'bbq', 'área', 'area'],
   },
   {
     title: 'Parqueadero',
     desc: 'Estado y asignación de cupos',
-    icon: <Car size={18} color="#FFFFFF" />,
+    icon: (color) => <Car size={18} color={color} />,
     path: '/parqueadero',
     keywords: ['parqueo', 'parqueadero', 'carro', 'moto', 'vehículo', 'vehiculo', 'cupo'],
   },
   {
     title: 'Paquetería',
     desc: 'Paquetes en portería',
-    icon: <Package size={18} color="#FFFFFF" />,
+    icon: (color) => <Package size={18} color={color} />,
     path: '/paqueteria',
     keywords: ['paquete', 'encomienda', 'portería', 'porteria', 'llegó', 'llego', 'domicilio', 'envío'],
   },
   {
     title: 'PQRS',
     desc: 'Peticiones, quejas y reclamos',
-    icon: <MessageSquare size={18} color="#FFFFFF" />,
+    icon: (color) => <MessageSquare size={18} color={color} />,
     path: '/pqrs',
     keywords: ['pqr', 'queja', 'petición', 'peticion', 'problema', 'reclamo', 'solicitud'],
   },
   {
     title: 'Visitantes',
     desc: 'Autorización de ingresos',
-    icon: <Users size={18} color="#FFFFFF" />,
+    icon: (color) => <Users size={18} color={color} />,
     path: '/visitantes',
     keywords: ['visita', 'visitante', 'invitado', 'ingreso', 'acceso', 'autoriza'],
   },
   {
     title: 'Cartelera',
     desc: 'Anuncios y novedades',
-    icon: <Megaphone size={18} color="#FFFFFF" />,
+    icon: (color) => <Megaphone size={18} color={color} />,
     path: '/cartelera',
     keywords: ['anuncio', 'novedad', 'asamblea', 'reunión', 'reunion', 'circular', 'cartelera'],
   },
   {
     title: 'Inmobiliaria',
     desc: 'Venta y arriendo en el conjunto',
-    icon: <Building2 size={18} color="#FFFFFF" />,
+    icon: (color) => <Building2 size={18} color={color} />,
     path: '/inmobiliaria',
     keywords: ['venta', 'arriendo', 'alquiler', 'inmueble', 'apartamento', 'apto'],
   },
 ];
 
-const SUGGESTIONS: { label: string; icon: ReactNode }[] = [
-  { label: '¿Cuánto debo?', icon: <AlertCircle size={14} color={COLORS.text} /> },
-  { label: 'Ver paquetes', icon: <Package size={14} color={COLORS.text} /> },
-  { label: 'Reservar el salón', icon: <Calendar size={14} color={COLORS.text} /> },
-  { label: 'Reportar un problema', icon: <MessageSquare size={14} color={COLORS.text} /> },
-  { label: 'Autorizar visita', icon: <Users size={14} color={COLORS.text} /> },
+/**
+ * Same hazard as MODULES: at module scope `color={COLORS.text}` is read ONCE at
+ * import, before any `useThemeColors()` has run, so every suggestion chip froze
+ * on the dark default (#f0fdfa) and went invisible on the light-mode Sheet.
+ * Render functions keep the colour live without a literal white in sight.
+ */
+const SUGGESTIONS: { label: string; icon: (color: string) => ReactNode }[] = [
+  { label: '¿Cuánto debo?', icon: (color) => <AlertCircle size={14} color={color} /> },
+  { label: 'Ver paquetes', icon: (color) => <Package size={14} color={color} /> },
+  { label: 'Reservar el salón', icon: (color) => <Calendar size={14} color={color} /> },
+  { label: 'Reportar un problema', icon: (color) => <MessageSquare size={14} color={color} /> },
+  { label: 'Autorizar visita', icon: (color) => <Users size={14} color={color} /> },
 ];
 
 function isQuestion(query: string): boolean {
@@ -1654,19 +1738,21 @@ function SearchModal({
     query.trim().length >= 2 && filteredModules.length === 0 && !aiAnswer && !isLoadingAI;
 
   return (
-    <Sheet open={isOpen} onClose={onClose} snapPoints={['85%']}>
+    // 62% fits the input + both suggestion blocks with no dead space; drag up to
+    // 92% once results/AI answers push the content past the fold.
+    <Sheet open={isOpen} onClose={onClose} snapPoints={['62%', '92%']}>
       <View style={{ flex: 1 }}>
         {/* Header / input */}
         <View
           style={{
-            paddingHorizontal: 24,
+            paddingHorizontal: 20,
             paddingTop: 8,
-            paddingBottom: 16,
+            paddingBottom: 14,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 16,
+            gap: 12,
             borderBottomWidth: 1,
-            borderBottomColor: 'rgba(255,255,255,0.05)',
+            borderBottomColor: COLORS.border,
           }}
         >
           <View
@@ -1674,28 +1760,31 @@ function SearchModal({
               width: 40,
               height: 40,
               borderRadius: 16,
-              backgroundColor: 'rgba(255,255,255,0.1)',
+              backgroundColor: COLORS.surface2,
               borderWidth: 1,
               borderColor: COLORS.border,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Sparkles size={18} color={COLORS.text} />
+            <Sparkles size={18} color={COLORS.accent} />
           </View>
           <SearchInput value={query} onChange={handleQueryChange} onSubmit={handleSubmit} />
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar búsqueda"
+            hitSlop={8}
             onPress={onClose}
             style={{
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: 'rgba(255,255,255,0.05)',
+              backgroundColor: COLORS.surface2,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <X size={18} color={COLORS.text} />
+            <X size={18} color={COLORS.muted} />
           </Pressable>
         </View>
 
@@ -1714,7 +1803,7 @@ function SearchModal({
                 borderWidth: 1,
                 borderColor: COLORS.border,
                 overflow: 'hidden',
-                backgroundColor: 'rgba(255,255,255,0.03)',
+                backgroundColor: COLORS.surface2,
               }}
             >
               <View
@@ -1725,22 +1814,30 @@ function SearchModal({
                   alignItems: 'center',
                   gap: 8,
                   borderBottomWidth: 1,
-                  borderBottomColor: 'rgba(255,255,255,0.05)',
+                  borderBottomColor: COLORS.border,
                 }}
               >
-                <Sparkles size={14} color={COLORS.text} />
-                <Text style={{ color: COLORS.text, fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}>
+                <Sparkles size={14} color={COLORS.accent} />
+                <Text
+                  style={{
+                    color: COLORS.muted,
+                    fontSize: 10,
+                    fontWeight: '900',
+                    letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                  }}
+                >
                   Asistente IA
                 </Text>
               </View>
               <View style={{ padding: 20 }}>
                 {isLoadingAI ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <Loader2 size={16} color={COLORS.text} />
-                    <Text style={{ color: COLORS.text, fontSize: 14 }}>Analizando tu pregunta...</Text>
+                    <Loader2 size={16} color={COLORS.accent} />
+                    <Text style={{ color: COLORS.muted, fontSize: 14 }}>Analizando tu pregunta...</Text>
                   </View>
                 ) : aiAnswer ? (
-                  <Text style={{ color: COLORS.text, fontSize: 14, lineHeight: 20 }}>{aiAnswer.text}</Text>
+                  <Text style={{ color: COLORS.text, fontSize: 14, lineHeight: 21 }}>{aiAnswer.text}</Text>
                 ) : null}
               </View>
             </View>
@@ -1753,25 +1850,25 @@ function SearchModal({
               {filteredModules.map((mod) => (
                 <Pressable
                   key={mod.path}
+                  accessibilityRole="button"
                   onPress={() => navigateTo(mod.path)}
-                  style={({ pressed }) => ({
+                  style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 16,
-                    padding: 16,
+                    gap: 14,
+                    padding: 14,
                     borderRadius: 20,
-                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    backgroundColor: COLORS.surface2,
                     borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.05)',
-                    opacity: pressed ? 0.85 : 1,
-                  })}
+                    borderColor: COLORS.border,
+                  }}
                 >
-                  <View style={styles.searchModIcon}>{mod.icon}</View>
-                  <View style={{ flex: 1 }}>
+                  <View style={styles.searchModIcon}>{mod.icon(COLORS.accent)}</View>
+                  <View style={{ flex: 1, gap: 2 }}>
                     <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: '700' }}>{mod.title}</Text>
-                    <Text style={{ color: COLORS.text, fontSize: 11 }}>{mod.desc}</Text>
+                    <Text style={{ color: COLORS.muted, fontSize: 11 }}>{mod.desc}</Text>
                   </View>
-                  <ChevronRight size={16} color={COLORS.text} />
+                  <ChevronRight size={16} color={COLORS.muted} />
                 </Pressable>
               ))}
             </View>
@@ -1780,58 +1877,71 @@ function SearchModal({
           {/* Suggestions / shortcuts */}
           {showSuggestions ? (
             <>
-              <View style={{ gap: 8 }}>
+              <View style={{ gap: 10 }}>
                 <Text style={styles.searchSectionLabel}>Preguntas frecuentes</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {SUGGESTIONS.map((s) => (
                     <Pressable
                       key={s.label}
+                      accessibilityRole="button"
                       onPress={() => handleSuggestion(s.label)}
-                      style={({ pressed }) => ({
+                      // Object style, NOT `({pressed}) => …`: NativeWind's Pressable
+                      // interop drops function styles, which is what left these
+                      // chips as bare icon-over-label text with no pill at all.
+                      style={{
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: 8,
-                        paddingHorizontal: 16,
+                        paddingLeft: 12,
+                        paddingRight: 16,
                         paddingVertical: 10,
                         borderRadius: 999,
-                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        backgroundColor: COLORS.surface2,
                         borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.08)',
-                        opacity: pressed ? 0.8 : 1,
-                      })}
+                        borderColor: COLORS.border,
+                      }}
                     >
-                      {s.icon}
-                      <Text style={{ color: COLORS.text, fontSize: 12, fontWeight: '600' }}>{s.label}</Text>
+                      {s.icon(COLORS.accent)}
+                      <Text style={{ color: COLORS.text, fontSize: 12.5, fontWeight: '600' }}>
+                        {s.label}
+                      </Text>
                     </Pressable>
                   ))}
                 </View>
               </View>
 
-              <View style={{ gap: 8 }}>
-                <Text style={styles.searchSectionLabel}>Accesos Directos</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+              <View style={{ gap: 10 }}>
+                <Text style={styles.searchSectionLabel}>Accesos directos</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                   {MODULES.slice(0, 4).map((mod) => (
                     <Pressable
                       key={mod.path}
+                      accessibilityRole="button"
                       onPress={() => navigateTo(mod.path)}
-                      style={({ pressed }) => ({
-                        width: '47%',
+                      style={{
+                        // Two per row: (100% - 10px gap) / 2, expressed as a basis so
+                        // the wrap stays even if a 5th shortcut is ever added.
+                        flexGrow: 1,
+                        flexBasis: '46%',
                         flexDirection: 'row',
                         alignItems: 'center',
-                        gap: 12,
-                        padding: 16,
+                        gap: 10,
+                        paddingHorizontal: 12,
+                        paddingVertical: 12,
                         borderRadius: 20,
-                        backgroundColor: 'rgba(255,255,255,0.04)',
+                        backgroundColor: COLORS.surface2,
                         borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.05)',
-                        opacity: pressed ? 0.85 : 1,
-                      })}
+                        borderColor: COLORS.border,
+                      }}
                     >
-                      <View style={styles.searchModIcon}>{mod.icon}</View>
-                      <View>
-                        <Text style={{ color: COLORS.text, fontSize: 12, fontWeight: '700' }}>{mod.title}</Text>
-                        <ArrowRight size={10} color={COLORS.text} style={{ marginTop: 2 }} />
-                      </View>
+                      <View style={styles.searchShortcutIcon}>{mod.icon(COLORS.accent)}</View>
+                      <Text
+                        numberOfLines={1}
+                        style={{ flex: 1, color: COLORS.text, fontSize: 12.5, fontWeight: '700' }}
+                      >
+                        {mod.title}
+                      </Text>
+                      <ChevronRight size={14} color={COLORS.muted} />
                     </Pressable>
                   ))}
                 </View>
@@ -1841,29 +1951,40 @@ function SearchModal({
 
           {/* No results */}
           {showNoResults ? (
-            <View style={{ alignItems: 'center', gap: 12, paddingVertical: 32 }}>
-              <Search size={32} color={COLORS.text} />
-              <Text style={{ color: COLORS.text, fontSize: 14, textAlign: 'center' }}>
+            <View style={{ alignItems: 'center', gap: 12, paddingVertical: 28 }}>
+              <View
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: COLORS.surface2,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Search size={26} color={COLORS.muted} />
+              </View>
+              <Text style={{ color: COLORS.muted, fontSize: 14, textAlign: 'center' }}>
                 Sin resultados para &quot;{query}&quot;
               </Text>
+              {/* The dead end is the whole point of this state — make the AI the
+                  obvious next step with a FILLED accent CTA, not a ghost pill. */}
               <Pressable
+                accessibilityRole="button"
                 onPress={() => navigateTo('/asistente')}
-                style={({ pressed }) => ({
-                  marginTop: 8,
+                style={{
+                  marginTop: 4,
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 8,
                   paddingHorizontal: 20,
-                  paddingVertical: 10,
+                  paddingVertical: 12,
                   borderRadius: 999,
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  borderWidth: 1,
-                  borderColor: COLORS.border,
-                  opacity: pressed ? 0.85 : 1,
-                })}
+                  backgroundColor: COLORS.accent,
+                }}
               >
-                <Sparkles size={14} color={COLORS.text} />
-                <Text style={{ color: COLORS.text, fontSize: 12, fontWeight: '700' }}>
+                <Sparkles size={14} color={COLORS.onAccent} />
+                <Text style={{ color: COLORS.onAccent, fontSize: 12, fontWeight: '700' }}>
                   Preguntar al asistente IA
                 </Text>
               </Pressable>
@@ -1871,22 +1992,33 @@ function SearchModal({
           ) : null}
         </ScrollView>
 
-        {/* Footer */}
+        {/* Footer — pinned below the scroll area, outside it, so it reads as sheet
+            chrome instead of floating after the last card. */}
         <View
           style={{
-            paddingHorizontal: 24,
-            paddingVertical: 16,
+            paddingHorizontal: 20,
+            paddingVertical: 14,
             borderTopWidth: 1,
-            borderTopColor: 'rgba(255,255,255,0.05)',
+            borderTopColor: COLORS.border,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <Text style={{ color: COLORS.text, fontSize: 10, fontWeight: '500' }}>ConjuntOS Search</Text>
+          <Text
+            style={{
+              color: COLORS.muted,
+              fontSize: 10,
+              fontWeight: '700',
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+            }}
+          >
+            ConjuntOS Search
+          </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.green }} />
-            <Text style={{ color: COLORS.text, fontSize: 10 }}>IA disponible</Text>
+            <Text style={{ color: COLORS.muted, fontSize: 10, fontWeight: '600' }}>IA disponible</Text>
           </View>
         </View>
       </View>
@@ -1912,8 +2044,10 @@ function SearchInput({
       onSubmitEditing={onSubmit}
       returnKeyType="search"
       placeholder="Buscar o preguntar algo..."
-      placeholderTextColor="rgba(255,255,255,0.55)"
-      style={{ flex: 1, color: '#FFFFFF', fontSize: 16, fontWeight: '500' }}
+      // The Sheet surface is tokens.primaryLight (WHITE in light mode), so the
+      // placeholder must be the themed muted token, not translucent white.
+      placeholderTextColor={COLORS.muted}
+      style={{ flex: 1, color: COLORS.text, fontSize: 16, fontWeight: '500' }}
     />
   );
 }
@@ -1958,7 +2092,7 @@ function PrimaryRow({ label, onPress, filled }: { label: string; onPress: () => 
         paddingVertical: 16,
         paddingHorizontal: 20,
         borderRadius: 16,
-        backgroundColor: filled ? '#FFFFFF' : 'rgba(255,255,255,0.05)',
+        backgroundColor: filled ? COLORS.text : COLORS.surface2,
         borderWidth: filled ? 0 : 1,
         borderColor: COLORS.border,
         alignItems: 'center',
@@ -1967,7 +2101,7 @@ function PrimaryRow({ label, onPress, filled }: { label: string; onPress: () => 
     >
       <Text
         style={{
-          color: filled ? '#000000' : COLORS.text,
+          color: filled ? COLORS.bg : COLORS.text,
           fontSize: 12,
           fontWeight: filled ? '900' : '700',
           textTransform: 'uppercase',
@@ -2249,7 +2383,10 @@ function HomeAdmin() {
             </View>
             <View style={styles.pillCta}>
               <Text style={styles.pillCtaText}>Gestionar</Text>
-              <ArrowRight size={10} color="#000000" />
+              {/* Sits on styles.pillCta, whose fill is COLORS.text — so the ink
+                  must be COLORS.bg, exactly like styles.pillCtaText. A literal
+                  black arrow disappeared on the dark-teal pill in light mode. */}
+              <ArrowRight size={10} color={COLORS.bg} />
             </View>
           </LiquidGlass>
         </Pressable>
@@ -2299,7 +2436,10 @@ function HomeAdmin() {
             </View>
             <View style={styles.pillCta}>
               <Text style={styles.pillCtaText}>Moderar</Text>
-              <ArrowRight size={10} color="#000000" />
+              {/* Sits on styles.pillCta, whose fill is COLORS.text — so the ink
+                  must be COLORS.bg, exactly like styles.pillCtaText. A literal
+                  black arrow disappeared on the dark-teal pill in light mode. */}
+              <ArrowRight size={10} color={COLORS.bg} />
             </View>
           </LiquidGlass>
         </Pressable>
@@ -2365,6 +2505,16 @@ function NavRow({ label, onPress }: { label: string; onPress: () => void }) {
 // Styles
 // ───────────────────────────────────────────────────────────────────────────
 
+/**
+ * Shared style fragments.
+ *
+ * Every color-bearing entry is a GETTER, not a plain value. This object lives at
+ * module scope, so a plain `color: COLORS.text` would be evaluated once at IMPORT
+ * time — before any component has run `useThemeColors()` — permanently freezing
+ * the dark defaults. That is exactly what made the hero eyebrow, the section
+ * labels and the "HOY" caption render white-on-white in light mode. A getter is
+ * re-evaluated on every property access, so it always reflects the live scheme.
+ */
 const styles = {
   sectionHeaderRow: {
     flexDirection: 'row' as const,
@@ -2372,109 +2522,150 @@ const styles = {
     alignItems: 'center' as const,
     paddingHorizontal: 4,
   },
-  sectionLabel: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: '700' as const,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
+  get sectionLabel() {
+    return {
+      color: COLORS.text,
+      fontSize: 12,
+      fontWeight: '700' as const,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase' as const,
+    };
   },
-  sectionAlertTitle: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '700' as const,
-    letterSpacing: 1,
-    textTransform: 'uppercase' as const,
+  get sectionAlertTitle() {
+    return {
+      color: COLORS.text,
+      fontSize: 14,
+      fontWeight: '700' as const,
+      letterSpacing: 1,
+      textTransform: 'uppercase' as const,
+    };
   },
-  alertHint: {
-    color: COLORS.muted,
-    fontSize: 11,
-    paddingHorizontal: 4,
-    lineHeight: 16,
+  get alertHint() {
+    return {
+      color: COLORS.muted,
+      fontSize: 11,
+      paddingHorizontal: 4,
+      lineHeight: 16,
+    };
   },
-  montoLabel: {
-    color: COLORS.muted,
+  get montoLabel() {
+    return {
+      color: COLORS.muted,
+      fontSize: 10,
+      fontWeight: '700' as const,
+      textTransform: 'uppercase' as const,
+    };
+  },
+  get liveEyebrow() {
+    return {
+      color: COLORS.text,
+      fontSize: 9,
+      fontWeight: '700' as const,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase' as const,
+    };
+  },
+  get pillCta() {
+    return {
+      backgroundColor: COLORS.text,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 4,
+    };
+  },
+  get pillCtaText() {
+    return {
+      color: COLORS.bg,
+      fontSize: 9,
+      fontWeight: '900' as const,
+      textTransform: 'uppercase' as const,
+      letterSpacing: 1,
+    };
+  },
+  // Used ONLY inside the wallet card, which is dark in both schemes. These are
+  // plain values (not getters) precisely because they must NOT follow the active
+  // scheme: a getter reading COLORS would paint dark ink on the dark card in
+  // light mode, which is what made "MI CUOTA" / "PAZ Y SALVO" unreadable.
+  onDarkEyebrow: {
+    color: darkTokens.textMuted,
     fontSize: 10,
     fontWeight: '700' as const,
-    textTransform: 'uppercase' as const,
-  },
-  liveEyebrow: {
-    color: COLORS.text,
-    fontSize: 9,
-    fontWeight: '700' as const,
     letterSpacing: 1.5,
     textTransform: 'uppercase' as const,
   },
-  pillCta: {
-    backgroundColor: COLORS.text,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-  },
-  pillCtaText: {
-    color: COLORS.bg,
-    fontSize: 9,
-    fontWeight: '900' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1,
-  },
-  heroEyebrow: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '700' as const,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
-  },
-  heroBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  onDarkBadge: {
+    backgroundColor: darkTokens.surface2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: darkTokens.border,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
   },
-  mutedCaption: {
-    color: COLORS.text,
-    fontSize: 10,
-    fontWeight: '700' as const,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
+  get mutedCaption() {
+    return {
+      color: COLORS.muted,
+      fontSize: 10,
+      fontWeight: '700' as const,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase' as const,
+    };
   },
-  searchSectionLabel: {
-    color: COLORS.text,
-    fontSize: 10,
-    fontWeight: '700' as const,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
-    paddingHorizontal: 4,
+  get searchSectionLabel() {
+    return {
+      color: COLORS.muted,
+      fontSize: 10,
+      fontWeight: '700' as const,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase' as const,
+      paddingHorizontal: 4,
+    };
   },
-  searchModIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: COLORS.surface2,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  get searchModIcon() {
+    return {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      backgroundColor: COLORS.surface2,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    };
   },
-  opIconChip: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: COLORS.surface2,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  /** Smaller sibling of searchModIcon for the 2-up "Accesos directos" tiles. */
+  get searchShortcutIcon() {
+    return {
+      width: 34,
+      height: 34,
+      borderRadius: 12,
+      backgroundColor: COLORS.bg,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    };
   },
-  opEyebrow: {
-    color: COLORS.text,
-    fontSize: 9,
-    fontWeight: '900' as const,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
-    marginBottom: 2,
+  get opIconChip() {
+    return {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: COLORS.surface2,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    };
+  },
+  get opEyebrow() {
+    return {
+      color: COLORS.text,
+      fontSize: 9,
+      fontWeight: '900' as const,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase' as const,
+      marginBottom: 2,
+    };
   },
 };

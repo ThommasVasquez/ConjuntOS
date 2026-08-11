@@ -8,6 +8,12 @@ export interface GlassCardProps {
   className?: string;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
+  /**
+   * `card` reproduces web's `.liquid-glass-card` (135deg teal→sky gradient,
+   * softer border and shadow); the default reproduces `.liquid-glass`.
+   * Match whichever class the equivalent web element uses.
+   */
+  variant?: 'glass' | 'card';
 }
 
 /**
@@ -15,9 +21,19 @@ export interface GlassCardProps {
  * `onPress` is provided the whole card becomes pressable (with a subtle
  * opacity feedback); otherwise it renders as a static surface.
  */
-export function GlassCard({ children, className, style, onPress }: GlassCardProps) {
+export function GlassCard({
+  children,
+  className,
+  style,
+  onPress,
+  variant = 'glass',
+}: GlassCardProps) {
   const card = (
-    <LiquidGlass className={`rounded-3xl p-4 ${className ?? ''}`} style={style}>
+    <LiquidGlass
+      variant={variant}
+      className={`rounded-3xl p-4 ${className ?? ''}`}
+      style={style}
+    >
       {children}
     </LiquidGlass>
   );

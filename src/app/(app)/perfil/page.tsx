@@ -19,7 +19,7 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/lib/api/client";
+import { api, ApiError } from "@/lib/api/client";
 import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import DocsVacunas from "@/components/docs/DocsVacunas";
@@ -130,6 +130,11 @@ function ProfileContent() {
   const [showMenu, setShowMenu] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editForm, setEditForm] = useState(userData);
+
+  // 🗑️ ACCOUNT DELETION — required by Google Play for apps with account creation.
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // 📝 REGISTRATION MODAL STATE (Stage 36)
   const [showRegModal, setShowRegModal] = useState(false);
@@ -338,6 +343,30 @@ function ProfileContent() {
   const handleLogout = async () => {
     await logout();
     window.location.href = "/login";
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) return;
+    setIsDeleting(true);
+    try {
+      await api.delete("/usuarios/me", { body: { password: deletePassword } });
+      // The backend has already revoked every token; logout() just clears the
+      // local cookie/cache so the next screen starts clean.
+      await logout();
+      window.location.href = "/login";
+    } catch (err) {
+      // 401 = wrong password, 409 = last administrator of the conjunto. Both
+      // carry a useful detail message from the API.
+      const status = err instanceof ApiError ? err.status : 0;
+      if (status === 401) {
+        toast.error("Contraseña incorrecta");
+      } else if (err instanceof ApiError && err.message) {
+        toast.error(err.message);
+      } else {
+        toast.error("No se pudo eliminar la cuenta");
+      }
+      setIsDeleting(false);
+    }
   };
 
   const handleCancelarReserva = async (id: string) => {
@@ -1312,10 +1341,91 @@ function ProfileContent() {
              </div>
              <ArrowRight className="text-text/20 group-hover:text-text group-hover:translate-x-2 transition-all" size={18} />
           </button>
+
+          <button onClick={() => { setDeletePassword(""); setShowDeleteModal(true); }} className="w-full p-6 liquid-glass rounded-[32px] flex items-center justify-between group border border-red-500/20 active:scale-95 shadow-xl shadow-black/5">
+             <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500/70 group-hover:text-red-500 transition-colors">
+                  <Trash2 size={20} />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-bold text-red-500/80 leading-none group-hover:text-red-500 transition-colors">Eliminar Cuenta</span>
+                  <span className="text-[10px] text-text/30 mt-1 uppercase tracking-widest font-black">Acción permanente</span>
+                </div>
+             </div>
+             <ArrowRight className="text-red-500/20 group-hover:text-red-500 group-hover:translate-x-2 transition-all" size={18} />
+          </button>
         </section>
 
         {/* GLOBAL BRANDING - Stage 29 */}
       </div>
+
+      {/* DELETE ACCOUNT MODAL — Play Store requires the user be told what is
+          erased and what the copropiedad keeps before they confirm. */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[10000] flex items-end justify-center p-0 animate-in fade-in duration-300 pointer-events-auto isolate">
+           <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" onClick={() => !isDeleting && setShowDeleteModal(false)} />
+
+           <div className="w-full max-w-[430px] liquid-glass rounded-t-[48px] p-8 pb-40 border-t border-red-500/30 shadow-[0_-20px_80px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 overflow-y-auto max-h-[90vh] relative z-10">
+              <div className="flex justify-between items-center mb-8">
+                 <div>
+                   <h2 className="text-2xl font-display font-bold text-text tracking-tight">Eliminar Cuenta</h2>
+                   <p className="text-[10px] text-red-500/70 uppercase tracking-[0.2em] mt-1 font-black">Esta acción no se puede deshacer</p>
+                 </div>
+                 <button onClick={() => setShowDeleteModal(false)} disabled={isDeleting} className="w-12 h-12 rounded-full bg-text/5 flex items-center justify-center text-text hover:bg-text/10 transition-colors disabled:opacity-40">
+                    <X size={20} />
+                 </button>
+              </div>
+
+              <div className="space-y-4 mb-8">
+                <div className="p-5 rounded-3xl bg-red-500/5 border border-red-500/20">
+                  <p className="text-xs font-black uppercase tracking-widest text-red-500/80 mb-2">Se elimina</p>
+                  <p className="text-sm text-text/70 leading-relaxed">
+                    Tu nombre, correo, teléfono, foto de perfil, mascotas y vehículos registrados. Perderás el acceso inmediatamente en todos tus dispositivos.
+                  </p>
+                </div>
+                <div className="p-5 rounded-3xl bg-text/5 border border-text/10">
+                  <p className="text-xs font-black uppercase tracking-widest text-text/50 mb-2">Se conserva</p>
+                  <p className="text-sm text-text/60 leading-relaxed">
+                    El histórico de pagos, multas y votos de asamblea queda en los libros del conjunto sin tu identidad, porque la copropiedad está obligada por ley a conservarlo.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text/40 ml-2">Confirma con tu contraseña</label>
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    autoComplete="current-password"
+                    placeholder="Tu contraseña actual"
+                    className="w-full mt-2 p-5 rounded-3xl bg-text/5 border border-text/10 text-text placeholder:text-text/20 focus:border-red-500/40 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(false)}
+                    disabled={isDeleting}
+                    className="flex-1 p-5 rounded-3xl bg-text/5 border border-text/10 text-text font-bold active:scale-95 transition-transform disabled:opacity-40"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting || !deletePassword}
+                    className="flex-1 p-5 rounded-3xl bg-red-500 text-white font-bold active:scale-95 transition-transform disabled:opacity-40"
+                  >
+                    {isDeleting ? "Eliminando..." : "Eliminar"}
+                  </button>
+                </div>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* EDIT MODAL - LIQUID GLASS VERSION (Transparency Restored) */}
       {showEditModal && (

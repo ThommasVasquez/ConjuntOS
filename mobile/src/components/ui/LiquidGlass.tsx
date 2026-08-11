@@ -1,10 +1,10 @@
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import type { ReactNode } from 'react';
 
-import { blurTargetRef } from '@/theme/blurTarget';
-import { darkGlass, lightGlass, type GlassTokens } from '@/theme/tokens';
+import { darkGlass, gradients, lightGlass, type GlassTokens } from '@/theme/tokens';
 
 export interface LiquidGlassProps {
   children?: ReactNode;
@@ -58,12 +58,16 @@ export function LiquidGlass({
   const { colorScheme } = useColorScheme();
   const g: GlassTokens = colorScheme === 'light' ? lightGlass : darkGlass;
 
-  const blurIntensity = intensity ?? g.blurIntensity; // 24
+  const isCard = variant === 'card';
+  // `.liquid-glass` is blur(24px); `.liquid-glass-card` is blur(20px).
+  const blurIntensity = intensity ?? (isCard ? g.cardBlurIntensity : g.blurIntensity);
   const blurTint = tint ?? g.blurTint;
 
-  // `.liquid-glass-card` uses a 135deg gradient; RN core has no gradient, so we
-  // approximate with the top stop as a flat fill (closest single-color match).
-  const fill = variant === 'card' ? g.cardFillTop : g.fill;
+  // `.liquid-glass-card` has a softer border than `.liquid-glass`.
+  const borderColor = isCard ? g.cardBorder : g.border;
+  // `.liquid-glass-card` 135deg gradient stops, per scheme.
+  const cardStops =
+    colorScheme === 'light' ? gradients.cardLight : gradients.cardDark;
 
   return (
     <View
@@ -72,11 +76,12 @@ export function LiquidGlass({
         styles.outer,
         {
           borderRadius: radius,
-          // iOS drop shadow (0 10px 40px -10px rgba(0,0,0,opacity)).
+          // iOS drop shadow. `.liquid-glass` is 0 10px 40px -10px; the card
+          // variant is the softer 0 8px 32px (globals.css:145 / :168).
           shadowColor: g.shadowColor,
-          shadowOpacity: g.shadowOpacity,
-          shadowRadius: g.shadowRadius,
-          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: isCard ? g.cardShadowOpacity : g.shadowOpacity,
+          shadowRadius: isCard ? g.cardShadowRadius : g.shadowRadius,
+          shadowOffset: { width: 0, height: isCard ? 8 : 10 },
           // Android elevation.
           elevation: g.elevation,
         },
@@ -87,19 +92,41 @@ export function LiquidGlass({
         <BlurView
           intensity={blurIntensity}
           tint={blurTint}
-          // Android needs an explicit method + target to actually blur (both
-          // android-only props, ignored on iOS). The target is the app-wide
-          // BlurTargetView mounted in app/_layout.tsx.
-          blurMethod="dimezisBlurView"
-          blurTarget={blurTargetRef}
+          // ponytail: Android intentionally left on the default blurMethod
+          // 'none' (a semi-transparent view). It used to pass
+          // blurMethod="dimezisBlurView" + blurTarget={blurTargetRef}, where the
+          // target was the BlurTargetView wrapping the whole <Stack> in
+          // app/_layout.tsx — i.e. an ancestor of every BlurView pointing at it.
+          // Dimezis blurs by re-drawing its target's view tree, so each of the
+          // 13 glass cards on (app)/inicio.tsx redrew a tree containing all 13,
+          // recursing until RenderThread blew its stack (SIGSEGV in
+          // RenderNode::prepareTreeImpl). Real Android blur needs a target that
+          // does NOT contain its BlurViews — a background-only layer — which
+          // would blur the page background rather than the content behind each
+          // card. The layers below (fill/gradient + border + edge highlights)
+          // already carry the glass look, so that rework isn't worth it. iOS is
+          // unaffected: both props are android-only and iOS blurs natively.
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Translucent fill painted over the blur. */}
-        <View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, { backgroundColor: fill }]}
-        />
+        {/* Translucent fill painted over the blur. The card variant is a real
+            135deg gradient (matches `.liquid-glass-card`); the base variant is
+            a flat rgba fill. */}
+        {isCard ? (
+          <LinearGradient
+            pointerEvents="none"
+            colors={cardStops}
+            // 135deg in CSS = top-left → bottom-right.
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : (
+          <View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { backgroundColor: g.fill }]}
+          />
+        )}
 
         {/* 1px translucent border. */}
         <View
@@ -108,13 +135,13 @@ export function LiquidGlass({
             StyleSheet.absoluteFill,
             {
               borderWidth: StyleSheet.hairlineWidth > 1 ? StyleSheet.hairlineWidth : 1,
-              borderColor: g.border,
+              borderColor,
               borderRadius: radius,
             },
           ]}
         />
 
-        {/* Faux top-edge inset highlight (inset 0 1px 0 rgba(255,255,255,…)). */}
+        {/* Faux top-edge inset highlight (inset 0 1px 0 rgba(153,246,228,…)). */}
         <View
           pointerEvents="none"
           style={[
@@ -122,6 +149,15 @@ export function LiquidGlass({
             { backgroundColor: g.topHighlight },
           ]}
         />
+
+        {/* Faux bottom-edge inset shade (inset 0 -1px 0 rgba(0,0,0,0.2)). The
+            light scheme has no such inset, so skip the layer entirely. */}
+        {g.bottomShade === 'transparent' ? null : (
+          <View
+            pointerEvents="none"
+            style={[styles.bottomShade, { backgroundColor: g.bottomShade }]}
+          />
+        )}
 
         {/* Content sits above all decorative layers. */}
         <View style={[styles.content, style]}>{children}</View>
@@ -142,6 +178,13 @@ const styles = StyleSheet.create({
   topHighlight: {
     position: 'absolute',
     top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+  },
+  bottomShade: {
+    position: 'absolute',
+    bottom: 0,
     left: 0,
     right: 0,
     height: 1,

@@ -14,8 +14,11 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 
 import { api } from "@/lib/api/client";
+import { useAuth } from "@/hooks/useAuth";
+import { getNotifTarget } from "@/lib/notif-routing";
 import { useCall } from "@/providers/CallProvider";
 
 /**
@@ -66,6 +69,24 @@ function extractCall(
 }
 
 /**
+ * Everything that is NOT a call: the push carries the same `{tipo, titulo,
+ * huespedId}` shape as an in-app notification row, so a tap can be routed with
+ * the very same map the header panel and the dashboard banner use
+ * (`getNotifTarget`) — one place decides where a "paquete en portería" or a
+ * "PQRS respondida" lands, per role.
+ */
+function extractNotif(
+  data: Record<string, unknown> | undefined,
+): { tipo?: string; titulo?: string; huespedId?: string | null } | undefined {
+  if (!data) return undefined;
+  const tipo = typeof data.tipo === "string" ? data.tipo : undefined;
+  const titulo = typeof data.titulo === "string" ? data.titulo : undefined;
+  const huespedId = typeof data.huespedId === "string" ? data.huespedId : null;
+  if (!tipo && !titulo) return undefined;
+  return { tipo, titulo, huespedId };
+}
+
+/**
  * Request permissions, mint an Expo push token, and register it with the
  * backend. Idempotent on the server (upserts by token). No-op off a physical
  * device — simulators/emulators can't receive push.
@@ -81,7 +102,9 @@ export async function registerForPushNotifications(): Promise<void> {
         name: "Notificaciones",
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#FFFFFF",
+        // Android notification LED / accent — the brand teal accent
+        // (--color-accent), not the retired pure-white palette value.
+        lightColor: "#2dd4bf",
       });
     }
 
@@ -94,9 +117,16 @@ export async function registerForPushNotifications(): Promise<void> {
     if (finalStatus !== "granted") return;
 
     const projectId = getProjectId();
-    const { data: token } = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined,
-    );
+    if (!projectId) {
+      // Loud on purpose: this is the one push failure that looks like "the
+      // backend never sends anything". Fix = `eas init` (writes
+      // extra.eas.projectId) or set EAS_PROJECT_ID before the build.
+      console.warn(
+        "Push deshabilitado: falta extra.eas.projectId (corre `eas init` o define EAS_PROJECT_ID).",
+      );
+      return;
+    }
+    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
 
     await api.post("/usuarios/me/push-subscriptions", {
       platform: "expo",
@@ -117,11 +147,29 @@ export async function registerForPushNotifications(): Promise<void> {
  */
 export function usePushRegistration(ready: boolean): void {
   const { answerFromPush } = useCall();
+  const rol = useAuth((s) => s.user?.rol);
 
   useEffect(() => {
     if (!ready) return;
 
     registerForPushNotifications();
+
+    /**
+     * A tapped notification: a call rings, anything else deep-links to the
+     * screen that owns it. Without the second branch every non-call push was a
+     * dead tap — the app opened on whatever screen it was last on.
+     */
+    const openFromPush = (
+      content: Notifications.NotificationRequest["content"],
+    ) => {
+      const call = extractCall(content.data);
+      if (call) {
+        answerFromPush(call.room, call.callerName);
+        return;
+      }
+      const notif = extractNotif(content.data);
+      if (notif) router.push(getNotifTarget(notif, rol) as never);
+    };
 
     // Foreground: a push arrives while the app is open. The WebSocket
     // `citofonia/incoming_call` event already rings the open app, so we DEFER
@@ -131,23 +179,26 @@ export function usePushRegistration(ready: boolean): void {
       /* no-op: the WS foreground path owns the in-app ring (see CallProvider). */
     });
 
-    // Background/quit: the user taps the notification → ring + deep-link so they
-    // can answer the call (mirrors the web "ANSWER_CALL" service-worker path).
+    // Background/quit: the user taps the notification → ring the call, or open
+    // the screen the notification is about (mirrors the web "ANSWER_CALL"
+    // service-worker path plus the in-app panel's routing).
     const responseSub = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const call = extractCall(response.notification.request.content.data);
-        if (call) answerFromPush(call.room, call.callerName);
-      },
+      (response) => openFromPush(response.notification.request.content),
     );
 
-    // Cold start: the app was launched by tapping the call notification.
+    // Cold start: the app was launched BY the notification tap. The navigator is
+    // still mounting at this point, so a push route has to wait a tick or it is
+    // swallowed by the initial route render.
     const last = Notifications.getLastNotificationResponse();
-    const coldCall = extractCall(last?.notification.request.content.data);
-    if (coldCall) answerFromPush(coldCall.room, coldCall.callerName);
+    const coldContent = last?.notification.request.content;
+    const coldTimer = coldContent
+      ? setTimeout(() => openFromPush(coldContent), 400)
+      : undefined;
 
     return () => {
       receivedSub.remove();
       responseSub.remove();
+      if (coldTimer) clearTimeout(coldTimer);
     };
-  }, [ready, answerFromPush]);
+  }, [ready, answerFromPush, rol]);
 }

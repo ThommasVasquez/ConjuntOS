@@ -8,14 +8,16 @@
  *  - radio (single) vs checkbox (multiple) selection per encuesta.multiple
  *  - results bars (pct = votos/total) once yaVote || cerrada
  *  - WS domain 'encuesta' delivers a full DTO -> upsert by id
- *  - countdown badge derived from cierraAt, closed badge from cerrada
- *  - Admin creation/close intentionally omitted on mobile (web-only for now).
+ *  - admin (ADMINISTRADOR/CONCEJO/SUPER_ADMIN): create form = POST /encuestas,
+ *    per-poll close = POST /encuestas/{id}/cerrar
+ *  - closure is communicated ONLY by the ` · cerrada` suffix in the meta line,
+ *    exactly like web (no countdown/closed badges).
  */
 
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { BarChart3, Check, Clock, Lock } from 'lucide-react-native';
+import { BarChart3, Check, Lock, Plus, X } from 'lucide-react-native';
 
 import { Screen } from '@/components/ui/Screen';
 import { LiquidGlass } from '@/components/ui/LiquidGlass';
@@ -24,48 +26,33 @@ import { toast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
-import type { EncuestaDto, VotarEncuestaRequest } from '@/lib/api/types';
+import type { CrearEncuestaRequest, EncuestaDto, VotarEncuestaRequest } from '@/lib/api/types';
+import { useTheme } from '@/providers/ThemeProvider';
+import { tokensFor } from '@/theme/tokens';
 
-// Accent tints (accent palette only — no grays).
-const ICON_COLOR = '#FFFFFF';
-const INFO = '#009df2';
-const SUCCESS = '#57bf00';
-const INFO_BG = 'rgba(0, 157, 242, 0.15)';
-const INFO_BORDER = 'rgba(0, 157, 242, 0.3)';
-const SUCCESS_BG = 'rgba(87, 191, 0, 0.15)';
-const SUCCESS_BORDER = 'rgba(87, 191, 0, 0.3)';
-
-/**
- * Human countdown until `cierraAt` (e.g. "2d 4h", "3h 12m", "45m").
- * Returns null when there is no deadline or it already passed.
- */
-function formatCountdown(cierraAt: string | null, now: number): string | null {
-  if (!cierraAt) return null;
-  const diff = new Date(cierraAt).getTime() - now;
-  if (!Number.isFinite(diff) || diff <= 0) return null;
-  const mins = Math.floor(diff / 60_000);
-  const days = Math.floor(mins / (60 * 24));
-  const hours = Math.floor((mins % (60 * 24)) / 60);
-  const minutes = mins % 60;
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${Math.max(minutes, 1)}m`;
-}
+// Must match backend encuestas ADMIN_ROLES (Administrador, Concejo, SuperAdmin).
+const ADMIN_ROLES = ['ADMINISTRADOR', 'CONCEJO', 'SUPER_ADMIN'];
 
 export default function EncuestasScreen() {
   const user = useAuth((s) => s.user);
+  const role = user?.rol;
+  const isAdmin = !!role && ADMIN_ROLES.includes(role);
+  const { theme } = useTheme();
+  const t = tokensFor(theme);
 
   const [encuestas, setEncuestas] = useState<EncuestaDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [selection, setSelection] = useState<Record<string, string[]>>({});
   const [votingId, setVotingId] = useState<string | null>(null);
-  // Minute tick so countdown badges stay fresh while the screen is open.
-  const [now, setNow] = useState(() => Date.now());
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(id);
-  }, []);
+  // Creator form
+  const [titulo, setTitulo] = useState('');
+  const [opciones, setOpciones] = useState<string[]>(['', '']);
+  const [multiple, setMultiple] = useState(false);
+  const [anonima, setAnonima] = useState(false);
+  // RN has no `:focus`; track the focused field to mirror web's focus:border-accent.
+  const [focused, setFocused] = useState<string | null>(null);
 
   // Initial fetch (mirrors the web page's mount effect).
   useEffect(() => {
@@ -128,6 +115,41 @@ export default function EncuestasScreen() {
     }
   }
 
+  async function cerrar(id: string) {
+    try {
+      const dto = await api.post<EncuestaDto>(`/encuestas/${id}/cerrar`);
+      setEncuestas((prev) => prev.map((e) => (e.id === dto.id ? dto : e)));
+    } catch {
+      toast.error('No se pudo cerrar la encuesta');
+    }
+  }
+
+  async function crear() {
+    const ops = opciones.map((o) => o.trim()).filter(Boolean);
+    if (!titulo.trim() || ops.length < 2) {
+      toast.error('Título y al menos 2 opciones');
+      return;
+    }
+    try {
+      const body: CrearEncuestaRequest = {
+        titulo: titulo.trim(),
+        opciones: ops,
+        multiple,
+        anonima,
+      };
+      const dto = await api.post<EncuestaDto>('/encuestas', body);
+      setEncuestas((prev) => [dto, ...prev]);
+      setCreating(false);
+      setTitulo('');
+      setOpciones(['', '']);
+      setMultiple(false);
+      setAnonima(false);
+      toast.success('Encuesta publicada');
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.detail : 'No se pudo crear');
+    }
+  }
+
   return (
     <Screen className="bg-primary">
       <View className="flex-1 gap-6 px-6 pt-4 pb-8">
@@ -138,26 +160,142 @@ export default function EncuestasScreen() {
         {/* HEADER */}
         <Animated.View
           entering={FadeInDown.delay(80).duration(500)}
-          className="flex-row items-center gap-3"
+          className="flex-row items-center justify-between"
         >
-          <View
-            className="h-12 w-12 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: INFO_BG, borderWidth: 1, borderColor: INFO_BORDER }}
-          >
-            <BarChart3 size={24} color={INFO} />
+          <View className="flex-1 flex-row items-center gap-3">
+            <View className="h-12 w-12 items-center justify-center rounded-2xl border border-accent/30 bg-accent/20">
+              <BarChart3 size={24} color={t.accent} />
+            </View>
+            <View className="flex-1">
+              <Text className="text-xl font-bold text-text">Encuestas</Text>
+              <Text className="text-xs text-text/70">Participa y mira los resultados en vivo</Text>
+            </View>
           </View>
-          <View>
-            <Text className="text-xl font-bold text-text">Encuestas</Text>
-            <Text className="text-xs text-text/70">Participa y mira los resultados en vivo</Text>
-          </View>
+          {isAdmin ? (
+            <Pressable
+              onPress={() => setCreating((v) => !v)}
+              accessibilityRole="button"
+              className="flex-row items-center gap-1 rounded-xl bg-accent px-3 py-2"
+            >
+              {creating ? (
+                <X size={16} color={t.onAccent} />
+              ) : (
+                <Plus size={16} color={t.onAccent} />
+              )}
+              <Text className="text-sm font-bold text-on-accent">
+                {creating ? 'Cerrar' : 'Nueva'}
+              </Text>
+            </Pressable>
+          ) : null}
         </Animated.View>
+
+        {/* CREATOR (admin) */}
+        {isAdmin && creating ? (
+          <Animated.View entering={FadeInDown.duration(300)}>
+            {/* LiquidGlass applies `className` to its OUTER wrapper and `style`
+                to the inner content View, so web's `p-5` + `gap-3` (20/12px)
+                must travel via `style` or the blur/fill/border gets inset and
+                the row gap is lost. */}
+            <LiquidGlass
+              radius={24}
+              className="rounded-3xl border border-border"
+              style={{ padding: 20, gap: 12 }}
+            >
+              <TextInput
+                value={titulo}
+                onChangeText={setTitulo}
+                placeholder="Pregunta de la encuesta"
+                placeholderTextColor={t.textMuted}
+                onFocus={() => setFocused('titulo')}
+                onBlur={() => setFocused(null)}
+                className={`w-full rounded-2xl border bg-primaryLight/50 px-4 py-3 text-sm text-text ${
+                  focused === 'titulo' ? 'border-accent' : 'border-border'
+                }`}
+              />
+              {opciones.map((o, i) => (
+                <View key={i} className="flex-row gap-2">
+                  <TextInput
+                    value={o}
+                    onChangeText={(v) =>
+                      setOpciones((prev) => prev.map((p, j) => (j === i ? v : p)))
+                    }
+                    placeholder={`Opción ${i + 1}`}
+                    placeholderTextColor={t.textMuted}
+                    onFocus={() => setFocused(`op-${i}`)}
+                    onBlur={() => setFocused(null)}
+                    className={`flex-1 rounded-2xl border bg-primaryLight/50 px-4 py-2.5 text-sm text-text ${
+                      focused === `op-${i}` ? 'border-accent' : 'border-border'
+                    }`}
+                  />
+                  {opciones.length > 2 ? (
+                    <Pressable
+                      onPress={() => setOpciones((prev) => prev.filter((_, j) => j !== i))}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Quitar opción ${i + 1}`}
+                      className="items-center justify-center rounded-2xl border border-border bg-text/10 px-3"
+                    >
+                      <X size={14} color={t.text} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              ))}
+              <Pressable
+                onPress={() => setOpciones((prev) => [...prev, ''])}
+                accessibilityRole="button"
+                className="self-start"
+              >
+                <Text className="text-xs font-bold text-accent">+ Añadir opción</Text>
+              </Pressable>
+              <View className="flex-row gap-4">
+                <Pressable
+                  onPress={() => setMultiple((v) => !v)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: multiple }}
+                  className="flex-row items-center gap-2"
+                >
+                  <View
+                    className={`h-4 w-4 items-center justify-center rounded border ${
+                      multiple ? 'border-accent bg-accent' : 'border-text/30'
+                    }`}
+                  >
+                    {multiple ? <Check size={10} color={t.onAccent} /> : null}
+                  </View>
+                  <Text className="text-xs text-text/80">Selección múltiple</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setAnonima((v) => !v)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: anonima }}
+                  className="flex-row items-center gap-2"
+                >
+                  <View
+                    className={`h-4 w-4 items-center justify-center rounded border ${
+                      anonima ? 'border-accent bg-accent' : 'border-text/30'
+                    }`}
+                  >
+                    {anonima ? <Check size={10} color={t.onAccent} /> : null}
+                  </View>
+                  <Text className="text-xs text-text/80">Anónima</Text>
+                </Pressable>
+              </View>
+              <Pressable
+                onPress={crear}
+                accessibilityRole="button"
+                style={({ pressed }) => ({
+                  opacity: pressed ? 0.9 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                })}
+                className="w-full items-center justify-center rounded-2xl bg-accent py-3"
+              >
+                <Text className="text-base font-bold text-on-accent">Publicar encuesta</Text>
+              </Pressable>
+            </LiquidGlass>
+          </Animated.View>
+        ) : null}
 
         {/* LIST */}
         {loading ? (
-          <View className="items-center gap-4 py-8">
-            <ActivityIndicator size="large" color={ICON_COLOR} />
-            <Text className="text-center text-sm text-text/50">Cargando…</Text>
-          </View>
+          <Text className="py-8 text-center text-sm text-text/50">Cargando…</Text>
         ) : encuestas.length === 0 ? (
           <Text className="py-8 text-center text-sm text-text/50">
             No hay encuestas todavía.
@@ -166,11 +304,14 @@ export default function EncuestasScreen() {
           encuestas.map((e, i) => {
             const mostrarResultados = e.yaVote || e.cerrada;
             const sel = selection[e.id] ?? [];
-            const countdown = e.cerrada ? null : formatCountdown(e.cierraAt, now);
             return (
               <Animated.View key={e.id} entering={FadeInDown.delay(160 + i * 60).duration(450)}>
-                <LiquidGlass radius={24} className="gap-3 rounded-3xl border border-border p-5">
-                  {/* Card header — título + meta + countdown/closed badge */}
+                <LiquidGlass
+                  radius={24}
+                  className="rounded-3xl border border-border"
+                  style={{ padding: 20, gap: 12 }}
+                >
+                  {/* Card header — título + meta + admin Cerrar */}
                   <View className="flex-row items-start justify-between gap-2">
                     <View className="flex-1">
                       <Text className="text-base font-bold text-text">{e.titulo}</Text>
@@ -180,30 +321,16 @@ export default function EncuestasScreen() {
                         {e.cerrada ? ' · cerrada' : ''}
                       </Text>
                     </View>
-                    {e.cerrada ? (
-                      <View className="flex-row items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1">
-                        <Lock size={11} color={ICON_COLOR} />
-                        <Text className="text-[10px] font-bold uppercase tracking-wider text-text/60">
-                          Cerrada
-                        </Text>
-                      </View>
-                    ) : countdown ? (
-                      <View
-                        className="flex-row items-center gap-1 rounded-lg px-2 py-1"
-                        style={{
-                          backgroundColor: INFO_BG,
-                          borderWidth: 1,
-                          borderColor: INFO_BORDER,
-                        }}
+                    {isAdmin && !e.cerrada ? (
+                      <Pressable
+                        onPress={() => cerrar(e.id)}
+                        accessibilityRole="button"
+                        className="flex-row items-center gap-1 rounded-lg border border-border px-2 py-1"
                       >
-                        <Clock size={11} color={INFO} />
-                        <Text
-                          className="text-[10px] font-bold uppercase tracking-wider"
-                          style={{ color: INFO }}
-                        >
-                          Cierra en {countdown}
-                        </Text>
-                      </View>
+                        {/* text/60 ink — textMuted is the token for secondary text. */}
+                        <Lock size={11} color={t.textMuted} />
+                        <Text className="text-[10px] text-text/60">Cerrar</Text>
+                      </Pressable>
                     ) : null}
                   </View>
 
@@ -222,18 +349,15 @@ export default function EncuestasScreen() {
                             </View>
                             <View className="h-2.5 overflow-hidden rounded-full bg-text/10">
                               <View
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${pct}%`,
-                                  backgroundColor: e.cerrada ? SUCCESS : INFO,
-                                }}
+                                className="h-full rounded-full bg-accent"
+                                style={{ width: `${pct}%` }}
                               />
                             </View>
                           </View>
                         );
                       })}
                       {e.yaVote && !e.cerrada ? (
-                        <Text className="text-[10px] font-bold" style={{ color: SUCCESS }}>
+                        <Text className="text-[10px] font-bold text-accent">
                           Ya votaste · resultados en vivo
                         </Text>
                       ) : null}
@@ -249,24 +373,16 @@ export default function EncuestasScreen() {
                             onPress={() => toggle(e, o.id)}
                             accessibilityRole={e.multiple ? 'checkbox' : 'radio'}
                             accessibilityState={{ checked }}
-                            className="flex-row items-center gap-3 rounded-2xl p-3"
-                            style={{
-                              borderWidth: 1,
-                              borderColor: checked ? INFO_BORDER : 'rgba(255,255,255,0.14)',
-                              backgroundColor: checked ? INFO_BG : 'transparent',
-                            }}
+                            className={`flex-row items-center gap-3 rounded-2xl border p-3 ${
+                              checked ? 'border-accent bg-accent/10' : 'border-border'
+                            }`}
                           >
                             <View
-                              className={`h-5 w-5 items-center justify-center ${
+                              className={`h-5 w-5 items-center justify-center border ${
                                 e.multiple ? 'rounded-md' : 'rounded-full'
-                              }`}
-                              style={{
-                                borderWidth: 1,
-                                borderColor: checked ? INFO : 'rgba(255,255,255,0.3)',
-                                backgroundColor: checked ? INFO : 'transparent',
-                              }}
+                              } ${checked ? 'border-accent bg-accent' : 'border-text/30'}`}
                             >
-                              {checked ? <Check size={12} color={ICON_COLOR} /> : null}
+                              {checked ? <Check size={12} color={t.onAccent} /> : null}
                             </View>
                             <Text className="flex-1 text-sm text-text">{o.texto}</Text>
                           </Pressable>
@@ -275,20 +391,14 @@ export default function EncuestasScreen() {
                       <Pressable
                         onPress={() => votar(e)}
                         disabled={votingId === e.id}
+                        accessibilityRole="button"
                         style={({ pressed }) => ({
-                          backgroundColor: INFO,
                           opacity: votingId === e.id ? 0.6 : pressed ? 0.9 : 1,
                           transform: [{ scale: pressed ? 0.98 : 1 }],
                         })}
-                        className="mt-1 w-full items-center justify-center rounded-2xl py-3"
+                        className="mt-1 w-full items-center justify-center rounded-2xl bg-accent py-3"
                       >
-                        {votingId === e.id ? (
-                          <ActivityIndicator color={ICON_COLOR} />
-                        ) : (
-                          <Text className="text-base font-bold" style={{ color: ICON_COLOR }}>
-                            Votar
-                          </Text>
-                        )}
+                        <Text className="text-base font-bold text-on-accent">Votar</Text>
                       </Pressable>
                     </View>
                   )}

@@ -3,8 +3,8 @@
  * Gestión de pases para huéspedes de alquiler corto (AirBnB).
  *
  * Ported from web src/app/(app)/pases-temporales/page.tsx. Behavior preserved:
- *  - roles PROPIETARIO / ADMINISTRADOR / SUPER_ADMIN (others get a friendly
- *    block instead of the web redirect; unauthenticated users go to /login)
+ *  - roles PROPIETARIO / ADMINISTRADOR / SUPER_ADMIN (others get the same
+ *    toast + redirect to /inicio as web; unauthenticated users go to /login)
  *  - list = GET /pases-temporales/mis-pases (+ silent refetch on WS
  *    'pase_temporal')
  *  - create = POST /pases-temporales (CrearPaseTemporalRequest, snake_case);
@@ -14,10 +14,21 @@
  *  - codigo_acceso copied via expo-clipboard
  *  - "Mensajes" deep-links to /chat?huespedId=<usuario_id> when the pase has
  *    a linked usuario_id
+ *
+ * Intentional divergences from web (documented, not accidental):
+ *  1. Fechas: web uses `<input type="date">` (page.tsx:314-331) so the browser
+ *     guarantees a real YYYY-MM-DD value. RN has no equivalent primitive and no
+ *     date-picker dependency is installed, so the two fields keep the
+ *     `AAAA-MM-DD` mask, auto-format the digits, and are validated (real
+ *     calendar date + fin >= inicio) before POST/PUT.
+ *  2. Revocar shows a native confirmation Alert; web (page.tsx:516) fires the
+ *     PUT immediately. Kept because the action is destructive and irreversible
+ *     on a phone.
  */
 
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
+import type { TextInputProps } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -44,23 +55,13 @@ import { toast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
+import { useTheme } from '@/providers/ThemeProvider';
+import { tokensFor } from '@/theme/tokens';
 import type {
   CrearPaseTemporalRequest,
   PaseTemporalDto,
   VehiculoTemporalInput,
 } from '@/lib/api/types';
-
-// Accent tints (accent palette only — no grays).
-const INFO = '#009df2';
-const INFO_BG = 'rgba(0, 157, 242, 0.1)';
-const INFO_BORDER = 'rgba(0, 157, 242, 0.3)';
-const SUCCESS = '#57bf00';
-const SUCCESS_BG = 'rgba(87, 191, 0, 0.1)';
-const SUCCESS_BORDER = 'rgba(87, 191, 0, 0.3)';
-const DANGER = '#EF4444';
-const DANGER_BG = 'rgba(239, 68, 68, 0.1)';
-const DANGER_BORDER = 'rgba(239, 68, 68, 0.3)';
-const PLACEHOLDER = 'rgba(255,255,255,0.5)';
 
 const ALLOWED_ROLES = ['PROPIETARIO', 'ADMINISTRADOR', 'SUPER_ADMIN'];
 
@@ -77,38 +78,120 @@ const PERMISOS = [
   { key: 'permiso_asamblea', label: 'Asamblea', Icon: Megaphone },
 ] as const;
 
-/** Estado badge tints — ported from web getEstadoBadge. */
+/** Web `font-display font-medium` — the Plus Jakarta Sans 500 face. */
+const DISPLAY_MEDIUM = 'PlusJakartaSans_500Medium';
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Keeps typing inside the `AAAA-MM-DD` shape web gets for free from `type="date"`. */
+function formatDateInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  return [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)]
+    .filter((p) => p.length > 0)
+    .join('-');
+}
+
+/** `true` only for a complete, real calendar date in YYYY-MM-DD. */
+function isRealDate(value: string): boolean {
+  if (!DATE_RE.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return (
+    dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d
+  );
+}
+
+/**
+ * Estado badge tints — ported VERBATIM from web getEstadoBadge
+ * (page.tsx:190-197): token classes, no hex literals.
+ */
 function getEstadoBadge(estado: string): {
   bg: string;
   border: string;
-  color: string;
+  text: string;
   label: string;
 } {
   switch (estado) {
     case 'ACTIVO':
-      return { bg: SUCCESS_BG, border: SUCCESS_BORDER, color: SUCCESS, label: 'ACTIVO' };
-    case 'REVOCADO':
-      return { bg: DANGER_BG, border: DANGER_BORDER, color: DANGER, label: 'REVOCADO' };
+      return {
+        bg: 'bg-success/10',
+        border: 'border-success/30',
+        text: 'text-success',
+        label: 'ACTIVO',
+      };
     case 'EXPIRADO':
+      return {
+        bg: 'bg-text/10',
+        border: 'border-text/30',
+        text: 'text-text',
+        label: 'EXPIRADO',
+      };
+    case 'REVOCADO':
+      return {
+        bg: 'bg-danger/10',
+        border: 'border-danger/30',
+        text: 'text-danger',
+        label: 'REVOCADO',
+      };
     default:
-      return { bg: 'transparent', border: '', color: '', label: estado };
+      return {
+        bg: 'bg-text/10',
+        border: 'border-text/30',
+        text: 'text-text',
+        label: estado,
+      };
   }
 }
 
-/** Permission chip — mirrors the web PermisoIcon pill. */
+/** Permission chip — mirrors the web PermisoIcon pill (page.tsx:207-211). */
 function PermisoChip({ activo, label }: { activo: boolean; label: string }) {
   return (
     <View
-      className={`rounded-full border px-2 py-1 ${activo ? '' : 'border-border bg-surface'}`}
-      style={activo ? { backgroundColor: INFO_BG, borderColor: INFO_BORDER } : undefined}
+      className={`rounded-full border px-2 py-1 ${
+        activo ? 'border-accent/30 bg-accent/10' : 'border-border bg-text/5'
+      }`}
     >
       <Text
-        className={`text-[9px] font-bold uppercase tracking-wider ${activo ? '' : 'text-textMuted'}`}
-        style={activo ? { color: INFO } : { opacity: 0.5 }}
+        className={`text-[9px] font-bold uppercase tracking-wider ${
+          activo ? 'text-accent' : 'text-text/40'
+        }`}
       >
         {label}
       </Text>
     </View>
+  );
+}
+
+/**
+ * TextInput carrying the web inputs' `focus:border-accent` behaviour
+ * (page.tsx:252, 270, 281, 295, 305, 319, 329, 388-421).
+ */
+function FieldInput({
+  className = '',
+  onFocus,
+  onBlur,
+  ...rest
+}: TextInputProps & { className?: string }) {
+  const [focused, setFocused] = useState(false);
+  const { theme } = useTheme();
+  const tokens = tokensFor(theme);
+
+  return (
+    <TextInput
+      {...rest}
+      onFocus={(e) => {
+        setFocused(true);
+        onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        onBlur?.(e);
+      }}
+      placeholderTextColor={tokens.textMuted}
+      className={`rounded-xl border bg-surface2 text-xs text-text ${
+        focused ? 'border-accent' : 'border-border'
+      } ${className}`}
+    />
   );
 }
 
@@ -120,6 +203,17 @@ export default function PasesTemporalesScreen() {
   const router = useRouter();
   const role = user?.rol;
   const allowed = !!role && ALLOWED_ROLES.includes(role);
+  const { theme } = useTheme();
+  const tokens = tokensFor(theme);
+
+  /** `shadow-lg shadow-accent/20` / `shadow-xl shadow-accent/20` (page.tsx:227, 431). */
+  const accentGlow = {
+    shadowColor: tokens.accent,
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  };
 
   const [pases, setPases] = useState<PaseTemporalDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,7 +264,12 @@ export default function PasesTemporalesScreen() {
       router.replace('/login' as never);
       return;
     }
-    if (!allowed) return; // friendly block rendered below
+    // Web (page.tsx:83-88): toast + redirect to /inicio for any other role.
+    if (!allowed) {
+      toast.error('Solo propietarios pueden acceder a esta sección.');
+      router.replace('/(app)/inicio' as never);
+      return;
+    }
 
     void fetchPases();
 
@@ -196,6 +295,15 @@ export default function PasesTemporalesScreen() {
   const handleSubmit = async () => {
     if (!formData.nombre_huesped || !formData.fecha_inicio || !formData.fecha_fin) {
       toast.error('Campos obligatorios: huésped y fechas');
+      return;
+    }
+    // Web delegates this to <input type="date">; RN must validate by hand.
+    if (!isRealDate(formData.fecha_inicio) || !isRealDate(formData.fecha_fin)) {
+      toast.error('Fechas inválidas: usa el formato AAAA-MM-DD');
+      return;
+    }
+    if (formData.fecha_fin < formData.fecha_inicio) {
+      toast.error('La fecha fin debe ser posterior a la fecha inicio');
       return;
     }
     if (!editingId && !formData.unidad_id) {
@@ -296,39 +404,21 @@ export default function PasesTemporalesScreen() {
     setVehiculosForm((prev) => prev.map((v, i) => (i === index ? { ...v, ...patch } : v)));
   };
 
-  if (authLoading || (allowed && loading)) {
+  // Full-screen block ONLY while auth resolves (web page.tsx:199-205); the list
+  // gets its own in-place spinner so the chrome stays visible.
+  if (authLoading) {
     return (
       <Screen scroll={false} className="bg-primary">
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FFFFFF" />
+          <ActivityIndicator size="large" color={tokens.accent} />
         </View>
       </Screen>
     );
   }
 
-  // Friendly block for roles without access (web redirects; mobile informs).
-  if (user && !allowed) {
-    return (
-      <Screen className="bg-primary">
-        <View className="flex flex-col gap-6 px-6 pt-4">
-          <ProfileHeader />
-          <Animated.View entering={FadeInDown.duration(500)}>
-            <GlassCard className="items-center gap-4 rounded-[32px] p-8">
-              <View className="h-14 w-14 items-center justify-center rounded-full border border-border bg-surface2">
-                <ShieldAlert size={28} color="#FFFFFF" />
-              </View>
-              <Text className="text-center text-base font-bold text-text">
-                Pases Temporales
-              </Text>
-              <Text className="text-center text-xs text-textMuted">
-                Solo propietarios pueden acceder a esta sección.
-              </Text>
-            </GlassCard>
-          </Animated.View>
-        </View>
-      </Screen>
-    );
-  }
+  // Unauthenticated / unauthorized: the effect above already toasted and
+  // redirected (same as web), so render nothing.
+  if (!user || !allowed) return null;
 
   return (
     <Screen className="bg-primary">
@@ -339,10 +429,16 @@ export default function PasesTemporalesScreen() {
         <Animated.View entering={FadeInDown.duration(500)}>
           <View className="flex-row items-center justify-between gap-3">
             <View className="flex-1">
-              <Text className="text-2xl font-medium tracking-wide text-text">
+              {/* Web h1 is `font-display font-medium` (page.tsx:219) = Plus
+                  Jakarta Sans @500. The `font-display` alias resolves to the
+                  700 face, so name the exact loaded 500 face. */}
+              <Text
+                className="text-2xl tracking-wide text-text"
+                style={{ fontFamily: DISPLAY_MEDIUM }}
+              >
                 Pases Temporales
               </Text>
-              <Text className="text-sm text-textMuted">
+              <Text className="text-sm text-text">
                 Huéspedes de alquiler corto (AirBnB)
               </Text>
             </View>
@@ -354,13 +450,16 @@ export default function PasesTemporalesScreen() {
                 }
                 setShowForm((v) => !v);
               }}
-              style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.95 : 1 }] })}
+              style={({ pressed }) => [
+                accentGlow,
+                { transform: [{ scale: pressed ? 0.95 : 1 }] },
+              ]}
               className="flex-row items-center gap-2 rounded-2xl bg-accent px-5 py-3"
             >
               {showForm ? (
-                <XCircle size={16} color="#000000" />
+                <XCircle size={16} color={tokens.onAccent} />
               ) : (
-                <PlusCircle size={16} color="#000000" />
+                <PlusCircle size={16} color={tokens.onAccent} />
               )}
               <Text className="text-xs font-bold uppercase tracking-widest text-on-accent">
                 {showForm ? 'Cancelar' : 'Nuevo Pase'}
@@ -372,7 +471,8 @@ export default function PasesTemporalesScreen() {
         {/* Formulario */}
         {showForm ? (
           <Animated.View entering={FadeInDown.duration(300)}>
-            <GlassCard className="rounded-[28px] p-6">
+            {/* web `liquid-glass-card` (page.tsx:238) → variant="card" */}
+            <GlassCard variant="card" className="rounded-[28px] p-6">
               <View className="flex flex-col gap-4">
                 <View className="border-b border-border pb-2">
                   <Text className="text-base font-bold text-text">
@@ -383,12 +483,12 @@ export default function PasesTemporalesScreen() {
                 {/* Unidad — solo al crear */}
                 {!editingId ? (
                   <View className="flex flex-col gap-1.5">
-                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-textMuted">
+                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-text">
                       Unidad *
                     </Text>
                     {unidades.length === 0 ? (
-                      <View className="rounded-xl border border-border bg-surface2 px-4 py-3">
-                        <Text className="text-xs text-textMuted">Seleccionar unidad...</Text>
+                      <View className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3">
+                        <Text className="text-xs text-danger">Selecciona una unidad</Text>
                       </View>
                     ) : (
                       unidades.map((u) => {
@@ -400,11 +500,14 @@ export default function PasesTemporalesScreen() {
                               setFormData((prev) => ({ ...prev, unidad_id: u.id }))
                             }
                             className={`rounded-xl border px-4 py-3 ${
-                              selected ? 'bg-surface2' : 'border-border bg-surface2'
+                              selected
+                                ? 'border-accent bg-accent/10'
+                                : 'border-border bg-surface2'
                             }`}
-                            style={selected ? { borderColor: INFO_BORDER } : undefined}
                           >
-                            <Text className="text-xs text-text">
+                            <Text
+                              className={`text-xs ${selected ? 'text-accent' : 'text-text'}`}
+                            >
                               {u.torre ? `Torre ${u.torre} - ` : ''}Apto {u.numero}
                             </Text>
                           </Pressable>
@@ -416,66 +519,62 @@ export default function PasesTemporalesScreen() {
 
                 {/* Anfitrión */}
                 <View className="flex flex-col gap-1.5">
-                  <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-textMuted">
+                  <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-text">
                     Anfitrión
                   </Text>
-                  <TextInput
+                  <FieldInput
                     value={formData.nombre_anfitrion}
                     onChangeText={(t) =>
                       setFormData((prev) => ({ ...prev, nombre_anfitrion: t }))
                     }
-                    placeholderTextColor={PLACEHOLDER}
-                    className="rounded-xl border border-border bg-surface2 px-4 py-3 text-xs text-text"
+                    className="px-4 py-3"
                   />
                 </View>
 
                 {/* Huésped */}
                 <View className="flex flex-col gap-1.5">
-                  <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-textMuted">
+                  <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-text">
                     Huésped *
                   </Text>
-                  <TextInput
+                  <FieldInput
                     value={formData.nombre_huesped}
                     onChangeText={(t) =>
                       setFormData((prev) => ({ ...prev, nombre_huesped: t }))
                     }
                     placeholder="Nombre del huésped"
-                    placeholderTextColor={PLACEHOLDER}
-                    className="rounded-xl border border-border bg-surface2 px-4 py-3 text-xs text-text"
+                    className="px-4 py-3"
                   />
                 </View>
 
                 {/* Email y Teléfono */}
                 <View className="flex-row gap-4">
                   <View className="flex-1 flex-col gap-1.5">
-                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-textMuted">
+                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-text">
                       Email
                     </Text>
-                    <TextInput
+                    <FieldInput
                       value={formData.email_huesped || ''}
                       onChangeText={(t) =>
                         setFormData((prev) => ({ ...prev, email_huesped: t }))
                       }
                       placeholder="huesped@email.com"
-                      placeholderTextColor={PLACEHOLDER}
                       keyboardType="email-address"
                       autoCapitalize="none"
-                      className="rounded-xl border border-border bg-surface2 px-4 py-3 text-xs text-text"
+                      className="px-4 py-3"
                     />
                   </View>
                   <View className="flex-1 flex-col gap-1.5">
-                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-textMuted">
+                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-text">
                       Teléfono
                     </Text>
-                    <TextInput
+                    <FieldInput
                       value={formData.telefono_huesped || ''}
                       onChangeText={(t) =>
                         setFormData((prev) => ({ ...prev, telefono_huesped: t }))
                       }
                       placeholder="+57 300..."
-                      placeholderTextColor={PLACEHOLDER}
                       keyboardType="phone-pad"
-                      className="rounded-xl border border-border bg-surface2 px-4 py-3 text-xs text-text"
+                      className="px-4 py-3"
                     />
                   </View>
                 </View>
@@ -483,40 +582,45 @@ export default function PasesTemporalesScreen() {
                 {/* Fechas (YYYY-MM-DD, como el input date del web) */}
                 <View className="flex-row gap-4">
                   <View className="flex-1 flex-col gap-1.5">
-                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-textMuted">
+                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-text">
                       Fecha Inicio *
                     </Text>
-                    <TextInput
+                    <FieldInput
                       value={formData.fecha_inicio}
                       onChangeText={(t) =>
-                        setFormData((prev) => ({ ...prev, fecha_inicio: t }))
+                        setFormData((prev) => ({
+                          ...prev,
+                          fecha_inicio: formatDateInput(t),
+                        }))
                       }
                       placeholder="AAAA-MM-DD"
-                      placeholderTextColor={PLACEHOLDER}
                       autoCapitalize="none"
-                      className="rounded-xl border border-border bg-surface2 px-4 py-3 text-xs text-text"
+                      keyboardType="number-pad"
+                      maxLength={10}
+                      className="px-4 py-3"
                     />
                   </View>
                   <View className="flex-1 flex-col gap-1.5">
-                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-textMuted">
+                    <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-text">
                       Fecha Fin *
                     </Text>
-                    <TextInput
+                    <FieldInput
                       value={formData.fecha_fin}
                       onChangeText={(t) =>
-                        setFormData((prev) => ({ ...prev, fecha_fin: t }))
+                        setFormData((prev) => ({ ...prev, fecha_fin: formatDateInput(t) }))
                       }
                       placeholder="AAAA-MM-DD"
-                      placeholderTextColor={PLACEHOLDER}
                       autoCapitalize="none"
-                      className="rounded-xl border border-border bg-surface2 px-4 py-3 text-xs text-text"
+                      keyboardType="number-pad"
+                      maxLength={10}
+                      className="px-4 py-3"
                     />
                   </View>
                 </View>
 
                 {/* Permisos */}
                 <View className="flex flex-col gap-2">
-                  <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-textMuted">
+                  <Text className="ml-1 text-[10px] font-black uppercase tracking-[2px] text-text">
                     Permisos
                   </Text>
                   <View className="flex-row flex-wrap gap-3">
@@ -529,21 +633,17 @@ export default function PasesTemporalesScreen() {
                             setFormData((prev) => ({ ...prev, [key]: !prev[key] }))
                           }
                           className={`flex-row items-center gap-2 rounded-xl border p-3 ${
-                            active ? '' : 'border-border bg-surface2'
-                          }`}
-                          style={[
-                            { width: '47%' },
                             active
-                              ? { backgroundColor: INFO_BG, borderColor: INFO_BORDER }
-                              : null,
-                          ]}
+                              ? 'border-accent/30 bg-accent/10'
+                              : 'border-border bg-surface2'
+                          }`}
+                          style={{ width: '47%' }}
                         >
-                          <Icon size={14} color={active ? INFO : '#FFFFFF'} />
+                          <Icon size={14} color={active ? tokens.accent : tokens.text} />
                           <Text
                             className={`text-[10px] font-bold uppercase tracking-wider ${
-                              active ? '' : 'text-text'
+                              active ? 'text-accent' : 'text-text'
                             }`}
-                            style={active ? { color: INFO } : undefined}
                           >
                             {label}
                           </Text>
@@ -557,7 +657,7 @@ export default function PasesTemporalesScreen() {
                 {formData.permiso_vehiculo ? (
                   <View className="flex flex-col gap-3 rounded-2xl border border-border bg-surface2 p-4">
                     <View className="flex-row items-center justify-between">
-                      <Text className="text-[10px] font-black uppercase tracking-[2px] text-textMuted">
+                      <Text className="text-[10px] font-black uppercase tracking-[2px] text-text">
                         Vehículos Autorizados
                       </Text>
                       <Pressable
@@ -566,45 +666,45 @@ export default function PasesTemporalesScreen() {
                         }
                         className="flex-row items-center gap-1"
                       >
-                        <PlusCircle size={12} color={INFO} />
-                        <Text
-                          className="text-[10px] font-bold uppercase tracking-wider"
-                          style={{ color: INFO }}
-                        >
+                        <PlusCircle size={12} color={tokens.accent} />
+                        <Text className="text-[10px] font-bold uppercase tracking-wider text-accent">
                           Agregar
                         </Text>
                       </Pressable>
                     </View>
                     {vehiculosForm.map((v, i) => (
-                      <View key={i} className="flex-row gap-2">
-                        <TextInput
+                      // Web is `grid grid-cols-4` (page.tsx:378); on a phone four
+                      // 25% columns truncate "Placa *", so the same four fields
+                      // wrap 2x2.
+                      <View key={i} className="flex-row flex-wrap gap-2">
+                        <FieldInput
                           value={v.placa}
                           onChangeText={(t) => updateVehiculo(i, { placa: t })}
                           placeholder="Placa *"
-                          placeholderTextColor={PLACEHOLDER}
                           autoCapitalize="characters"
-                          className="flex-1 rounded-xl border border-border bg-surface2 px-3 py-2 text-xs text-text"
+                          style={{ width: '48%' }}
+                          className="px-3 py-2"
                         />
-                        <TextInput
+                        <FieldInput
                           value={v.marca || ''}
                           onChangeText={(t) => updateVehiculo(i, { marca: t })}
                           placeholder="Marca"
-                          placeholderTextColor={PLACEHOLDER}
-                          className="flex-1 rounded-xl border border-border bg-surface2 px-3 py-2 text-xs text-text"
+                          style={{ width: '48%' }}
+                          className="px-3 py-2"
                         />
-                        <TextInput
+                        <FieldInput
                           value={v.modelo || ''}
                           onChangeText={(t) => updateVehiculo(i, { modelo: t })}
                           placeholder="Modelo"
-                          placeholderTextColor={PLACEHOLDER}
-                          className="flex-1 rounded-xl border border-border bg-surface2 px-3 py-2 text-xs text-text"
+                          style={{ width: '48%' }}
+                          className="px-3 py-2"
                         />
-                        <TextInput
+                        <FieldInput
                           value={v.color || ''}
                           onChangeText={(t) => updateVehiculo(i, { color: t })}
                           placeholder="Color"
-                          placeholderTextColor={PLACEHOLDER}
-                          className="flex-1 rounded-xl border border-border bg-surface2 px-3 py-2 text-xs text-text"
+                          style={{ width: '48%' }}
+                          className="px-3 py-2"
                         />
                       </View>
                     ))}
@@ -614,18 +714,24 @@ export default function PasesTemporalesScreen() {
                 <Pressable
                   onPress={() => void handleSubmit()}
                   disabled={isSubmitting}
-                  style={({ pressed }) => ({
-                    opacity: isSubmitting ? 0.5 : pressed ? 0.9 : 1,
-                  })}
-                  className="mt-2 w-full items-center rounded-2xl bg-accent py-4"
+                  style={({ pressed }) => [
+                    accentGlow,
+                    { opacity: isSubmitting ? 0.5 : pressed ? 0.9 : 1 },
+                  ]}
+                  className="mt-2 w-full flex-row items-center justify-center gap-2 rounded-2xl bg-accent py-4"
                 >
                   {isSubmitting ? (
-                    <ActivityIndicator color="#000000" />
-                  ) : (
-                    <Text className="text-xs font-bold uppercase tracking-widest text-on-accent">
-                      {editingId ? 'Guardar Cambios' : 'Emitir Pase Temporal'}
-                    </Text>
-                  )}
+                    <ActivityIndicator size="small" color={tokens.onAccent} />
+                  ) : null}
+                  <Text className="text-xs font-bold uppercase tracking-widest text-on-accent">
+                    {isSubmitting
+                      ? editingId
+                        ? 'Guardando...'
+                        : 'Emitiendo...'
+                      : editingId
+                        ? 'Guardar Cambios'
+                        : 'Emitir Pase Temporal'}
+                  </Text>
                 </Pressable>
               </View>
             </GlassCard>
@@ -635,54 +741,49 @@ export default function PasesTemporalesScreen() {
         {/* Lista de pases */}
         <Animated.View entering={FadeInDown.duration(500).delay(80)}>
           <View className="flex flex-col gap-4">
-            <Text className="px-1 text-xs font-black uppercase tracking-[2px] text-textMuted">
+            <Text className="px-1 text-xs font-black uppercase tracking-[2px] text-text">
               Pases Emitidos ({pases.length})
             </Text>
 
-            {pases.length === 0 ? (
+            {loading ? (
+              // Web: small in-list pulse, chrome stays visible (page.tsx:445-447).
+              <View className="w-full items-center justify-center py-10">
+                <ActivityIndicator color={tokens.accent} />
+              </View>
+            ) : pases.length === 0 ? (
               <GlassCard className="rounded-3xl p-8">
-                <Text className="text-center text-xs italic text-textMuted">
+                <Text className="text-center text-xs italic text-text">
                   No has emitido ningún pase temporal.
                 </Text>
               </GlassCard>
             ) : (
               pases.map((pase, i) => {
                 const badge = getEstadoBadge(pase.estado);
-                const neutral = pase.estado !== 'ACTIVO' && pase.estado !== 'REVOCADO';
                 return (
                   <Animated.View
                     key={pase.id}
                     entering={FadeInDown.duration(400).delay(i * 60)}
                   >
-                    <GlassCard className="rounded-2xl p-5">
+                    {/* web `liquid-glass-card` (page.tsx:456) → variant="card" */}
+                    <GlassCard variant="card" className="rounded-2xl p-5">
                       <View className="flex flex-col gap-3">
                         <View className="flex-row items-start justify-between">
                           <View className="flex-1">
                             <View className="mb-1 flex-row items-center gap-2">
-                              <Users size={14} color={INFO} />
+                              <Users size={14} color={tokens.accent} />
                               <Text className="text-sm font-bold text-text">
                                 {pase.nombre_huesped}
                               </Text>
                             </View>
-                            <Text className="text-[10px] text-textMuted">
+                            <Text className="text-[10px] text-text">
                               Anfitrión: {pase.nombre_anfitrion}
                             </Text>
                           </View>
                           <View
-                            className={`rounded-full border px-2.5 py-0.5 ${
-                              neutral ? 'border-border bg-surface2' : ''
-                            }`}
-                            style={
-                              neutral
-                                ? undefined
-                                : { backgroundColor: badge.bg, borderColor: badge.border }
-                            }
+                            className={`rounded-full border px-2.5 py-0.5 ${badge.bg} ${badge.border}`}
                           >
                             <Text
-                              className={`text-[9px] font-black uppercase tracking-widest ${
-                                neutral ? 'text-text' : ''
-                              }`}
-                              style={neutral ? undefined : { color: badge.color }}
+                              className={`text-[9px] font-black uppercase tracking-widest ${badge.text}`}
                             >
                               {badge.label}
                             </Text>
@@ -691,7 +792,7 @@ export default function PasesTemporalesScreen() {
 
                         {/* Fechas */}
                         <View className="flex-row items-center gap-2 rounded-xl border border-border bg-surface2 px-3 py-2">
-                          <Calendar size={12} color="#FFFFFF" />
+                          <Calendar size={12} color={tokens.text} />
                           <Text className="text-[10px] text-text">
                             {pase.fecha_inicio} → {pase.fecha_fin}
                           </Text>
@@ -709,81 +810,66 @@ export default function PasesTemporalesScreen() {
                           <PermisoChip activo={pase.permiso_asamblea} label="Asamblea" />
                         </View>
 
-                        {/* Código de acceso (copiar) */}
-                        <Pressable
-                          onPress={() => void handleCopyCodigo(pase.codigo_acceso)}
-                          accessibilityLabel="Copiar código de acceso"
-                          style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-                          className="flex-row items-center gap-2 self-start"
-                        >
-                          <ClipboardList size={14} color={INFO} />
-                          <Text className="text-[10px] font-bold tracking-wider text-text">
-                            {pase.codigo_acceso}
-                          </Text>
-                        </Pressable>
+                        {/* Código y acciones — web keeps both on ONE wrapping
+                            row: `flex items-center justify-between flex-wrap
+                            gap-2` (page.tsx:486). */}
+                        <View className="flex-row flex-wrap items-center justify-between gap-2">
+                          <Pressable
+                            onPress={() => void handleCopyCodigo(pase.codigo_acceso)}
+                            accessibilityLabel="Copiar código de acceso"
+                            style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                            className="flex-row items-center gap-2"
+                          >
+                            <ClipboardList size={14} color={tokens.accent} />
+                            <Text className="font-mono text-[10px] font-bold tracking-wider text-text">
+                              {pase.codigo_acceso}
+                            </Text>
+                          </Pressable>
 
-                        {/* Acciones — solo pases activos */}
-                        {pase.estado === 'ACTIVO' ? (
-                          <View className="flex-row flex-wrap items-center gap-2">
-                            {pase.usuario_id ? (
-                              <Pressable
-                                onPress={() =>
-                                  router.push(
-                                    `/chat?huespedId=${pase.usuario_id}` as never,
-                                  )
-                                }
-                                style={({ pressed }) => ({
-                                  backgroundColor: SUCCESS_BG,
-                                  borderColor: SUCCESS_BORDER,
-                                  opacity: pressed ? 0.8 : 1,
-                                })}
-                                className="flex-row items-center gap-1 rounded-full border px-3 py-1"
-                              >
-                                <MessageCircle size={12} color={SUCCESS} />
-                                <Text
-                                  className="text-[10px] font-bold uppercase tracking-widest"
-                                  style={{ color: SUCCESS }}
+                          {/* Acciones — solo pases activos */}
+                          {pase.estado === 'ACTIVO' ? (
+                            // `shrink` so the three pills wrap inside the card
+                            // instead of overflowing it on a narrow phone.
+                            <View className="shrink flex-row flex-wrap items-center gap-2">
+                              {pase.usuario_id ? (
+                                <Pressable
+                                  onPress={() =>
+                                    router.push(
+                                      `/(app)/chat?huespedId=${pase.usuario_id}` as never,
+                                    )
+                                  }
+                                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                                  className="flex-row items-center gap-1 rounded-full border border-success/30 bg-success/10 px-3 py-1"
                                 >
-                                  Mensajes
+                                  <MessageCircle size={12} color={tokens.success} />
+                                  <Text className="text-[10px] font-bold uppercase tracking-widest text-success">
+                                    Mensajes
+                                  </Text>
+                                </Pressable>
+                              ) : null}
+                              <Pressable
+                                onPress={() => startEditing(pase)}
+                                style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                                className="flex-row items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-3 py-1"
+                              >
+                                <Pencil size={12} color={tokens.accent} />
+                                <Text className="text-[10px] font-bold uppercase tracking-widest text-accent">
+                                  Editar
                                 </Text>
                               </Pressable>
-                            ) : null}
-                            <Pressable
-                              onPress={() => startEditing(pase)}
-                              style={({ pressed }) => ({
-                                backgroundColor: INFO_BG,
-                                borderColor: INFO_BORDER,
-                                opacity: pressed ? 0.8 : 1,
-                              })}
-                              className="flex-row items-center gap-1 rounded-full border px-3 py-1"
-                            >
-                              <Pencil size={12} color={INFO} />
-                              <Text
-                                className="text-[10px] font-bold uppercase tracking-widest"
-                                style={{ color: INFO }}
+                              <Pressable
+                                onPress={() => handleRevocar(pase)}
+                                style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                                className="flex-row items-center gap-1 rounded-full border border-danger/30 bg-danger/10 px-3 py-1"
                               >
-                                Editar
-                              </Text>
-                            </Pressable>
-                            <Pressable
-                              onPress={() => handleRevocar(pase)}
-                              style={({ pressed }) => ({
-                                backgroundColor: DANGER_BG,
-                                borderColor: DANGER_BORDER,
-                                opacity: pressed ? 0.8 : 1,
-                              })}
-                              className="flex-row items-center gap-1 rounded-full border px-3 py-1"
-                            >
-                              <ShieldAlert size={12} color={DANGER} />
-                              <Text
-                                className="text-[10px] font-bold uppercase tracking-widest"
-                                style={{ color: DANGER }}
-                              >
-                                Revocar
-                              </Text>
-                            </Pressable>
-                          </View>
-                        ) : null}
+                                <ShieldAlert size={12} color={tokens.danger} />
+                                <Text className="text-[10px] font-bold uppercase tracking-widest text-danger">
+                                  Revocar
+                                </Text>
+                              </Pressable>
+                            </View>
+                          ) : null}
+                        </View>
 
                         {/* Vehículos del pase */}
                         {pase.vehiculos.length > 0 ? (
@@ -791,9 +877,9 @@ export default function PasesTemporalesScreen() {
                             {pase.vehiculos.map((v) => (
                               <View
                                 key={v.id}
-                                className="flex-row items-center gap-1 rounded-full border border-border bg-surface px-2 py-1"
+                                className="flex-row items-center gap-1 rounded-full border border-border bg-text/5 px-2 py-1"
                               >
-                                <Car size={10} color="#FFFFFF" />
+                                <Car size={10} color={tokens.text} />
                                 <Text className="text-[9px] font-bold uppercase tracking-wider text-text">
                                   {v.placa}
                                   {v.marca ? ` (${v.marca})` : ''}

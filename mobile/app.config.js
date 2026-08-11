@@ -13,15 +13,19 @@
 const config = {
   name: 'ConjuntOS',
   slug: 'conjuntos',
+  owner: 'conjuntoss-team',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'enconjunto',
-  userInterfaceStyle: 'automatic',
+  // Web hardcodes `<html className="light">` (src/app/layout.tsx:78) and
+  // ThemeContext defaults to "light", so the app ships light and the in-app
+  // toggle (perfil) switches to dark. 'automatic' would let the OS override
+  // that default and diverge from web on a dark-mode device.
+  userInterfaceStyle: 'light',
   newArchEnabled: true,
   ios: {
-    bundleIdentifier: 'com.wowbabies.conjuntos',
-    icon: './assets/expo.icon',
+    bundleIdentifier: 'app.conjuntos',
     supportsTablet: true,
     infoPlist: {
       NSMicrophoneUsageDescription:
@@ -35,15 +39,53 @@ const config = {
     },
   },
   android: {
-    package: 'com.wowbabies.conjuntos',
+    // Must match the Play Console app record exactly — Play rejects any upload
+    // whose package differs, and the record's package name is permanent once
+    // created. The listing was registered as com.conjuntos.app, so this is
+    // fixed for the life of the app: do NOT "tidy" it back to app.conjuntos to
+    // match ios.bundleIdentifier.
+    package: 'com.conjuntos.app',
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      // Matches android-icon-background.png; the image wins when both are set,
+      // but leaving the old template blue here would silently change the icon
+      // background if that file were ever dropped.
+      backgroundColor: '#FFFFFF',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
-    permissions: ['RECORD_AUDIO', 'CAMERA', 'POST_NOTIFICATIONS', 'INTERNET'],
+    // BLUETOOTH_CONNECT is required from API 31+ for audioswitch (pulled in by
+    // @livekit/react-native) to enumerate bonded devices. Without it
+    // AudioSession.startAudioSession() finds no Bluetooth route and citofonía /
+    // asamblea audio is stuck on earpiece+speaker. The legacy BLUETOOTH /
+    // BLUETOOTH_ADMIN entries added by @config-plugins/react-native-webrtc are
+    // inert on 31+ and are left alone.
+    //
+    // FOREGROUND_SERVICE_MEDIA_PROJECTION: required from Android 14 (API 34)
+    // to run the mediaProjection foreground service that @livekit/react-native-
+    // webrtc's MediaProjectionService starts when a moderator shares their
+    // screen in the asamblea (ControlBar "Compartir pantalla"). The base
+    // FOREGROUND_SERVICE permission comes from @livekit/react-native's library
+    // manifest; FOREGROUND_SERVICE_MEDIA_PROJECTION is NOT declared by any
+    // dependency, so it must be added here or screen share throws
+    // SecurityException on API 34+.
+    permissions: [
+      'RECORD_AUDIO',
+      'CAMERA',
+      'POST_NOTIFICATIONS',
+      'INTERNET',
+      'BLUETOOTH_CONNECT',
+      'FOREGROUND_SERVICE_MEDIA_PROJECTION',
+    ],
+    // @config-plugins/react-native-webrtc adds SYSTEM_ALERT_WINDOW for
+    // draw-over-other-apps incoming-call UIs. We surface calls through
+    // expo-notifications + in-app navigation (src/providers/CallProvider.tsx),
+    // never an overlay, so the permission only serves to flag the listing in
+    // Play review. Debug builds keep it: android/app/src/debug/AndroidManifest.xml
+    // declares it and the debug source set outranks main's tools:node="remove",
+    // so the RN dev-menu overlay is unaffected. Verified in the merged manifests.
+    blockedPermissions: ['android.permission.SYSTEM_ALERT_WINDOW'],
   },
   web: {
     output: 'static',
@@ -58,11 +100,26 @@ const config = {
     // wire the iOS/Android native build (permissions, podspec, gradle).
     '@config-plugins/react-native-webrtc',
     'expo-image-picker',
-    'expo-audio',
+    // Background playback is DISABLED (enableBackgroundPlayback: false) on
+    // purpose: the app only plays short foreground audio (chat voice notes via
+    // createAudioPlayer, call ring tones), never lock-screen/background
+    // playback. The plugin default (true) injects
+    // android.permission.FOREGROUND_SERVICE + FOREGROUND_SERVICE_MEDIA_PLAYBACK
+    // and the mediaPlayback AudioControlsService into the manifest, which flags
+    // the listing with Play's "Foreground service permissions" declaration for
+    // a service type we never use. Keep this false. Voice-note playback and
+    // recording in the foreground are unaffected.
+    ['expo-audio', { enableBackgroundPlayback: false }],
+    // QR scanning for visitor check-in / pases temporales (web parity with
+    // src/components/visitas/QrScanner.tsx). Permission strings are declared in
+    // ios.infoPlist.NSCameraUsageDescription and android.permissions above.
+    'expo-camera',
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#208AEF',
+        // Matches web `--color-primary` (globals.css :root) — the app paints its
+        // background from this token, so the splash must not flash a different hue.
+        backgroundColor: '#050d0c',
         android: {
           image: './assets/images/splash-icon.png',
           imageWidth: 76,
@@ -70,6 +127,17 @@ const config = {
       },
     ],
   ],
+  extra: {
+    eas: {
+      // Required by getExpoPushTokenAsync (src/services/push.ts): without a
+      // projectId Expo cannot mint a device push token, so push is dead on real
+      // devices even though permissions are granted. `eas init` can't write to a
+      // dynamic config, so the literal for @conjuntoss-team/conjuntos is inlined
+      // here; the env var still wins so a different environment can override it.
+      // Do NOT change this id casually — it invalidates every issued push token.
+      projectId: process.env.EAS_PROJECT_ID || '5cced80d-5db8-43e5-8cc1-2323dba30a66',
+    },
+  },
   experiments: {
     reactCompiler: true,
   },

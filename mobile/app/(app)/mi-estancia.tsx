@@ -10,6 +10,12 @@
  *  - Permission-scoped ReservaSection (GET /areas-comunes + GET /reservas,
  *    POST /reservas) showing only the gym/pool areas the pass permits, mirroring
  *    the web exclusion-by-name filtering.
+ *
+ * Surfaces mirror web exactly: every section card is a FLAT
+ * `bg-surface-2 rounded-xl border border-border p-4` (page.tsx:80) — no glass,
+ * no gradient, no 28px radius — and both modals are flat `bg-primary` panels.
+ * Colors come from the tokens only (`tokensFor(theme)` / unprefixed classes),
+ * so a single class reads correctly in both schemes.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,6 +30,8 @@ import {
 import type { ComponentType } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import QRCode from 'react-native-qrcode-svg';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import {
   Calendar,
   Car,
@@ -40,13 +48,13 @@ import {
 } from 'lucide-react-native';
 
 import { Screen } from '@/components/ui/Screen';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { LiquidGlass } from '@/components/ui/LiquidGlass';
 import { ProfileHeader } from '@/components/shell/ProfileHeader';
 import { toast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
+import { useTheme } from '@/providers/ThemeProvider';
+import { tokensFor } from '@/theme/tokens';
 import type {
   AreaComunDto,
   CreateReservaRequest,
@@ -54,21 +62,18 @@ import type {
   ReservaDto,
 } from '@/lib/api/types';
 
-// Accent tints (accent palette only — no grays).
-const INFO = '#009df2';
-const SUCCESS = '#57bf00';
-const SUCCESS_BG = 'rgba(87, 191, 0, 0.15)';
-const WARNING = '#FACC15';
-const WARNING_BG = 'rgba(250, 204, 21, 0.15)';
-const URGENT = '#f87171'; // web: text-red-400 on "Último día"
-const INFO_BG = 'rgba(0, 157, 242, 0.1)';
+/** Web section card: `bg-surface-2 rounded-xl p-4 border border-border` (page.tsx:80). */
+const CARD = 'rounded-xl border border-border bg-surface2 p-4';
 
 type IconType = ComponentType<{ size?: number; color?: string }>;
 
 function PermisoBadge({ icon: Icon, label }: { icon: IconType; label: string }) {
+  const { theme } = useTheme();
+  const tokens = tokensFor(theme);
   return (
-    <View className="flex-row items-center gap-2 rounded-lg bg-surface2 p-2.5">
-      <Icon size={16} color={INFO} />
+    // web page.tsx:210 — `bg-surface rounded-lg p-2.5`
+    <View className="flex-row items-center gap-2 rounded-lg bg-surface p-2.5">
+      <Icon size={16} color={tokens.accent} />
       <Text className="text-sm text-text">{label}</Text>
     </View>
   );
@@ -136,6 +141,8 @@ function computeTimeOptions(area: AreaComunDto | null): string[] {
 }
 
 function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
+  const { theme } = useTheme();
+  const tokens = tokensFor(theme);
   const [areas, setAreas] = useState<AreaComunDto[]>([]);
   const [reservas, setReservas] = useState<ReservaDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,6 +206,9 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
         areaId: selectedArea.id,
         fechaInicio: fechaInicio.toISOString(),
         fechaFin: fechaFin.toISOString(),
+        // web ReservaSection.tsx:86 sends `notas: null`; `CreateReservaRequest`
+        // types it `notas?: string`, so it is omitted here — the backend
+        // deserializes an absent key and an explicit null identically.
       };
       await api.post('/reservas', body);
       toast.success(`Reserva creada: ${selectedArea.nombre}`);
@@ -215,7 +225,8 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
   if (loading) {
     return (
       <View className="items-center justify-center py-8">
-        <ActivityIndicator color={INFO} />
+        {/* web ReservaSection.tsx:102 — a `bg-text/10` Skeleton dot. */}
+        <ActivityIndicator color={tokens.text} />
       </View>
     );
   }
@@ -237,8 +248,17 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
             // EstadoReserva union uses CONFIRMADA — accept both off the wire.
             const aprobada = (r.estado as string) === 'APROBADA' || r.estado === 'CONFIRMADA';
             return (
-            <View key={r.id} className="flex-row items-center gap-3 rounded-lg bg-surface2 p-3">
-              <Calendar size={16} color={INFO} />
+            <View key={r.id} className="flex-row items-center gap-3 rounded-lg bg-surface p-3">
+              {r.areaImagenUrl ? (
+                <Image
+                  source={{ uri: r.areaImagenUrl }}
+                  alt={r.areaNombre}
+                  contentFit="cover"
+                  className="h-10 w-10 shrink-0 rounded-lg"
+                />
+              ) : (
+                <Calendar size={16} color={tokens.accent} />
+              )}
               <View className="min-w-0 flex-1">
                 <Text numberOfLines={1} className="text-sm font-medium text-text">
                   {r.areaNombre}
@@ -261,25 +281,25 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
                   })}
                 </Text>
               </View>
+              {/* web ReservaSection.tsx:138-144 — bg-success/20 text-success,
+                  bg-warning/20 text-warning, else bg-text/10 text-text/60. */}
               <View
-                className="shrink-0 rounded-full px-2 py-0.5"
-                style={{
-                  backgroundColor: aprobada
-                    ? SUCCESS_BG
+                className={`shrink-0 rounded-full px-2 py-0.5 ${
+                  aprobada
+                    ? 'bg-success/20'
                     : r.estado === 'PENDIENTE'
-                      ? WARNING_BG
-                      : 'rgba(255,255,255,0.1)',
-                }}
+                      ? 'bg-warning/20'
+                      : 'bg-text/10'
+                }`}
               >
                 <Text
-                  className="text-[9px] font-bold uppercase"
-                  style={{
-                    color: aprobada
-                      ? SUCCESS
+                  className={`text-[9px] font-bold uppercase ${
+                    aprobada
+                      ? 'text-success'
                       : r.estado === 'PENDIENTE'
-                        ? WARNING
-                        : 'rgba(255,255,255,0.6)',
-                  }}
+                        ? 'text-warning'
+                        : 'text-text/60'
+                  }`}
                 >
                   {aprobada ? 'Aprobada' : r.estado === 'PENDIENTE' ? 'Pendiente' : r.estado}
                 </Text>
@@ -297,7 +317,7 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
           style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
           className="w-full flex-row items-center justify-center gap-2 rounded-2xl bg-accent py-3"
         >
-          <Plus size={18} color="#000000" />
+          <Plus size={18} color={tokens.onAccent} />
           <Text className="text-sm font-bold text-on-accent">Reservar área común</Text>
         </Pressable>
       ) : (
@@ -316,9 +336,10 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
       >
         <View className="flex-1 justify-end">
           <Pressable className="absolute inset-0 bg-black/60" onPress={() => setShowModal(false)} />
-          <LiquidGlass
-            radius={28}
-            className="rounded-t-[28px] border-t border-border"
+          {/* web ReservaSection.tsx:168 — flat `bg-primary border border-border
+              rounded-[28px]`; native keeps the bottom-sheet position. */}
+          <View
+            className="rounded-t-[28px] border-t border-border bg-primary"
             style={{ maxHeight: '85%' }}
           >
             <ScrollView
@@ -327,11 +348,8 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
             >
               <View className="mb-4 flex-row items-center justify-between">
                 <Text className="text-lg font-bold text-text">Reservar área</Text>
-                <Pressable
-                  onPress={() => setShowModal(false)}
-                  className="h-9 w-9 items-center justify-center rounded-full bg-surface2"
-                >
-                  <X size={18} color="#FFFFFF" />
+                <Pressable onPress={() => setShowModal(false)} hitSlop={12}>
+                  <X size={18} color={tokens.textMuted} />
                 </Pressable>
               </View>
 
@@ -364,23 +382,33 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
 
               {selectedArea ? (
                 <View className="mb-4 flex flex-col gap-2 rounded-xl bg-surface2 p-3">
+                  {/* web ReservaSection.tsx:191-195 — `w-full h-32 rounded-lg` cover. */}
+                  {selectedArea.imagenUrl ? (
+                    <Image
+                      source={{ uri: selectedArea.imagenUrl }}
+                      alt={selectedArea.nombre}
+                      contentFit="cover"
+                      className="mb-2 h-32 w-full rounded-lg"
+                    />
+                  ) : null}
                   {selectedArea.descripcion ? (
                     <Text className="text-xs text-textMuted">{selectedArea.descripcion}</Text>
                   ) : null}
                   <View className="flex-row items-center gap-1.5">
-                    <Clock size={12} color={INFO} />
+                    <Clock size={12} color={tokens.textMuted} />
                     <Text className="text-xs text-textMuted">
                       {selectedArea.horaApertura} → {selectedArea.horaCierre}
                     </Text>
                   </View>
                   <View className="flex-row items-center gap-1.5">
-                    <MapPin size={12} color={INFO} />
+                    <MapPin size={12} color={tokens.textMuted} />
                     <Text className="text-xs text-textMuted">
                       Capacidad: {selectedArea.capacidadMax} personas
                     </Text>
                   </View>
+                  {/* web ReservaSection.tsx:200 — `text-warning`. */}
                   {selectedArea.requiereDeposito ? (
-                    <Text className="text-xs" style={{ color: WARNING }}>
+                    <Text className="text-xs text-warning">
                       Depósito: ${selectedArea.depositoMonto || '—'}
                     </Text>
                   ) : null}
@@ -498,7 +526,7 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
                 </Pressable>
               </View>
             </ScrollView>
-          </LiquidGlass>
+          </View>
         </View>
       </Modal>
     </>
@@ -511,12 +539,23 @@ function ReservaSection({ excludedAreas }: { excludedAreas: string[] }) {
 
 export default function MiEstanciaScreen() {
   const user = useAuth((s) => s.user);
+  const authLoading = useAuth((s) => s.loading);
+  const router = useRouter();
+  const { theme } = useTheme();
+  const tokens = tokensFor(theme);
 
   const [pase, setPase] = useState<MiPaseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQR, setShowQR] = useState(false);
 
+  // web page.tsx:36-44 — wait for auth, bounce to /login, then fetch.
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
     let cancelled = false;
     api
       .get<MiPaseDto>('/pases-temporales/mi-pase')
@@ -538,7 +577,7 @@ export default function MiEstanciaScreen() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user, authLoading, router]);
 
   // Web excludes areas the pass does NOT permit (by name), mirrored verbatim.
   const excludedAreas = useMemo(() => {
@@ -548,11 +587,12 @@ export default function MiEstanciaScreen() {
     return excluded;
   }, [pase]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <Screen scroll={false} className="bg-primary">
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FFFFFF" />
+          {/* web page.tsx:49 — a `bg-text/10` pulsing dot. */}
+          <ActivityIndicator size="large" color={tokens.text} />
         </View>
       </Screen>
     );
@@ -564,7 +604,8 @@ export default function MiEstanciaScreen() {
         <View className="flex flex-col gap-8 px-6 pt-4">
           <ProfileHeader />
           <View className="items-center p-6">
-            <User size={48} color="rgba(255,255,255,0.6)" />
+            {/* web page.tsx:59 — `text-text-secondary`. */}
+            <User size={48} color={tokens.textMuted} />
             <Text className="mb-2 mt-4 text-lg text-text">No tienes una estancia activa</Text>
             <Text className="text-center text-sm text-textMuted">
               Contacta al administrador de tu conjunto para obtener acceso.
@@ -594,25 +635,23 @@ export default function MiEstanciaScreen() {
 
         {/* Info del anfitrión */}
         <Animated.View entering={FadeInDown.duration(400)}>
-          <GlassCard className="rounded-[28px] p-4">
+          <View className={CARD}>
             <Text className="mb-3 text-xs font-medium uppercase tracking-wider text-textMuted">
               Anfitrión
             </Text>
             <View className="flex-row items-center gap-3">
-              <View
-                className="h-10 w-10 items-center justify-center rounded-full"
-                style={{ backgroundColor: INFO_BG }}
-              >
-                <User size={20} color={INFO} />
+              {/* web page.tsx:83-84 — `bg-accent/10` + `text-accent`. */}
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-accent/10">
+                <User size={20} color={tokens.accent} />
               </View>
               <Text className="text-lg font-medium text-text">{pase.nombre_anfitrion}</Text>
             </View>
-          </GlassCard>
+          </View>
         </Animated.View>
 
         {/* Fechas */}
         <Animated.View entering={FadeInDown.delay(80).duration(400)}>
-          <GlassCard className="rounded-[28px] p-4">
+          <View className={CARD}>
             <Text className="mb-3 text-xs font-medium uppercase tracking-wider text-textMuted">
               Estancia
             </Text>
@@ -639,19 +678,20 @@ export default function MiEstanciaScreen() {
               </View>
             </View>
             <View className="mt-3 flex-row items-center gap-2 border-t border-border pt-3">
-              <Clock size={16} color={diasRestantes <= 1 ? URGENT : INFO} />
+              {/* web page.tsx:106 — `text-red-400` when urgent, else `text-accent`. */}
+              <Clock size={16} color={diasRestantes <= 1 ? tokens.danger : tokens.accent} />
               <Text className="text-sm text-text">
                 {diasRestantes <= 0
                   ? 'Último día'
                   : `${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} restante${diasRestantes !== 1 ? 's' : ''}`}
               </Text>
             </View>
-          </GlassCard>
+          </View>
         </Animated.View>
 
         {/* Permisos */}
         <Animated.View entering={FadeInDown.delay(160).duration(400)}>
-          <GlassCard className="rounded-[28px] p-4">
+          <View className={CARD}>
             <Text className="mb-3 text-xs font-medium uppercase tracking-wider text-textMuted">
               Permisos
             </Text>
@@ -685,32 +725,33 @@ export default function MiEstanciaScreen() {
             {sinPermisos ? (
               <Text className="text-sm text-textMuted">Sin permisos especiales</Text>
             ) : null}
-          </GlassCard>
+          </View>
         </Animated.View>
 
         {/* Reservar áreas comunes — solo si tiene al menos un permiso de área */}
         {pase.permiso_gimnasio || pase.permiso_piscina ? (
           <Animated.View entering={FadeInDown.delay(240).duration(400)}>
-            <GlassCard className="rounded-[28px] p-4">
+            <View className={CARD}>
               <Text className="mb-3 text-xs font-medium uppercase tracking-wider text-textMuted">
                 Reservar áreas
               </Text>
               <ReservaSection excludedAreas={excludedAreas} />
-            </GlassCard>
+            </View>
           </Animated.View>
         ) : null}
 
         {/* Vehículos */}
         {pase.vehiculos && pase.vehiculos.length > 0 ? (
           <Animated.View entering={FadeInDown.delay(320).duration(400)}>
-            <GlassCard className="rounded-[28px] p-4">
+            <View className={CARD}>
               <Text className="mb-3 text-xs font-medium uppercase tracking-wider text-textMuted">
                 Vehículos
               </Text>
               <View className="flex flex-col gap-2">
                 {pase.vehiculos.map((v, i) => (
-                  <View key={i} className="flex-row items-center gap-3 rounded-lg bg-surface2 p-3">
-                    <Car size={18} color={INFO} />
+                  // web page.tsx:150-151 — `bg-surface` row, `text-accent` icon.
+                  <View key={i} className="flex-row items-center gap-3 rounded-lg bg-surface p-3">
+                    <Car size={18} color={tokens.accent} />
                     <View className="flex-row flex-wrap items-baseline gap-2">
                       <Text className="font-mono font-bold text-text">{v.placa}</Text>
                       {v.marca || v.color ? (
@@ -722,32 +763,35 @@ export default function MiEstanciaScreen() {
                   </View>
                 ))}
               </View>
-            </GlassCard>
+            </View>
           </Animated.View>
         ) : null}
 
         {/* Código de acceso */}
         <Animated.View entering={FadeInDown.delay(400).duration(400)}>
-          <GlassCard className="items-center rounded-[28px] p-4">
-            <QrCode size={24} color={INFO} />
+          <View className={`items-center ${CARD}`}>
+            <QrCode size={24} color={tokens.accent} />
             <Text className="mb-1 mt-2 text-xs text-textMuted">Tu código de acceso</Text>
+            {/* web page.tsx:170 — `text-3xl font-mono font-bold text-accent
+                tracking-[0.3em]` → 0.3em of 30px = 9px. */}
             <Text
               selectable
-              className="font-mono text-3xl font-bold"
-              style={{ color: INFO, letterSpacing: 8 }}
+              className="font-mono text-3xl font-bold text-accent"
+              style={{ letterSpacing: 9 }}
             >
               {pase.codigo_acceso}
             </Text>
+            {/* web page.tsx:173 — `bg-surface border border-border`. */}
             <Pressable
               onPress={() => setShowQR(true)}
               style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-              className="mt-3 w-full flex-row items-center justify-center gap-2 rounded-2xl border border-border bg-surface2 py-2.5"
+              className="mt-3 w-full flex-row items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-2.5"
             >
-              <Maximize2 size={16} color="#FFFFFF" />
+              <Maximize2 size={16} color={tokens.text} />
               <Text className="text-sm font-medium text-text">Mostrar código QR</Text>
             </Pressable>
             <Text className="mt-2 text-xs text-textMuted">Muéstralo en portería al ingresar</Text>
-          </GlassCard>
+          </View>
         </Animated.View>
       </View>
 
@@ -765,29 +809,31 @@ export default function MiEstanciaScreen() {
         >
           {/* Inner pressable stops backdrop taps from closing the modal. */}
           <Pressable onPress={() => {}} className="w-full max-w-sm">
-            <LiquidGlass radius={28} variant="card" className="rounded-[28px]">
+            {/* web page.tsx:185 — flat `bg-primary border border-border rounded-[28px] p-6`. */}
+            <View className="rounded-[28px] border border-border bg-primary">
               <View className="flex flex-col items-center gap-4 p-6">
                 <View className="w-full flex-row items-center justify-between">
                   <Text className="text-lg font-bold text-text">Código QR de acceso</Text>
-                  <Pressable
-                    onPress={() => setShowQR(false)}
-                    className="h-9 w-9 items-center justify-center rounded-full bg-surface2"
-                  >
-                    <X size={22} color="#FFFFFF" />
+                  {/* web page.tsx:190-192 — bare X in `text-text/60`, no chip. */}
+                  <Pressable onPress={() => setShowQR(false)} hitSlop={12}>
+                    <X size={22} color={tokens.textMuted} />
                   </Pressable>
                 </View>
-                <View className="rounded-2xl bg-white p-4">
+                {/* The QR frame is hardcoded white on web too (`bg-white`,
+                    page.tsx:194) — a QR must stay black-on-white to scan. */}
+                <View className="rounded-2xl p-4" style={{ backgroundColor: '#ffffff' }}>
                   <QRCode
                     value={pase.codigo_acceso}
                     size={250}
                     color="#000000"
-                    backgroundColor="#FFFFFF"
+                    backgroundColor="#ffffff"
                   />
                 </View>
+                {/* web page.tsx:197 — `text-accent tracking-[0.3em]` (9px @ 30px). */}
                 <Text
                   selectable
-                  className="font-mono text-3xl font-bold"
-                  style={{ color: INFO, letterSpacing: 8 }}
+                  className="font-mono text-3xl font-bold text-accent"
+                  style={{ letterSpacing: 9 }}
                 >
                   {pase.codigo_acceso}
                 </Text>
@@ -795,7 +841,7 @@ export default function MiEstanciaScreen() {
                   Muestra este QR en portería para validar tu ingreso
                 </Text>
               </View>
-            </LiquidGlass>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>

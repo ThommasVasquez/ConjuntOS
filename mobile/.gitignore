@@ -17,6 +17,8 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+# Keystore/cert passwords in plaintext — this repo is PUBLIC.
+credentials.json
 
 # Metro
 .metro-health-check*

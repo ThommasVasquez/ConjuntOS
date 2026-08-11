@@ -4,8 +4,9 @@
  * src/app/(app)/parqueadero/page.tsx. Behavior preserved (money-touching —
  * UI copy mirrors web strings exactly):
  *  - GET /parqueadero/mio -> { vehiculos, celdas|misCeldas, disponibilidadVisitantes }
- *  - Vehicle registration: POST /tramites { tipo:'VEHICULO', payload:{...} }
- *    (web's POST /vehiculos nested-descripcion body 422s against the backend)
+ *  - Vehicle registration: POST /vehiculos { placa, marca?, modelo?, color?, tipo }
+ *    (same flat CreateVehiculoRequest body web sends; the vehicle is created
+ *    immediately and arrives back through useWsSubscription('vehiculo'))
  *  - Tenant approval inbox: GET /parqueadero/solicitudes/mias +
  *    POST /parqueadero/solicitudes/{id}/inquilino/aprobar|rechazar
  *  - Live billing: GET /parqueadero/sesiones/mias with a 1s local ticker
@@ -17,7 +18,7 @@
  *    DELETE /parqueadero/reservas/{id}
  *  - useWsSubscription('vehiculo') + ('parqueadero') silent refetch
  *  - Reglamento modal + CTA to citofonia (VISITAS tab)
- *  - Web's mocked 'Historial de Accesos' is intentionally SKIPPED.
+ *  - 'Historial de Accesos' modal (mocked rows, verbatim from web)
  */
 
 import { useEffect, useState } from 'react';
@@ -38,7 +39,6 @@ import {
   AlertCircle,
   ArrowRight,
   Bike,
-  Calendar,
   Car,
   CheckCircle2,
   ChevronRight,
@@ -52,13 +52,16 @@ import {
 } from 'lucide-react-native';
 
 import ProfileHeader from '@/components/shell/ProfileHeader';
-import { GuestGate } from '@/components/GuestGate';
 import { Screen } from '@/components/ui/Screen';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { toast } from '@/components/ui/toast';
+import { HistorialAccesosModal } from '@/components/parqueadero/HistorialAccesosModal';
+import { LlegadaPicker } from '@/components/parqueadero/LlegadaPicker';
+import { AccentBlob, AccentWash, PingDot, PulseBlock } from '@/components/parqueadero/parts';
+import { formatCOP, formatFechaCorta } from '@/components/parqueadero/format';
 import { api } from '@/lib/api/client';
 import { useWsSubscription } from '@/hooks/useWebSocket';
-import { tokensFor } from '@/theme/tokens';
+import { onSemantic, tokensFor } from '@/theme/tokens';
 import type {
   CargoParqueaderoDto,
   CeldaDto,
@@ -71,25 +74,15 @@ import type {
   VehiculoDto,
 } from '@/lib/api/types';
 
-// Accent palette (matches web page hexes; no grays).
-const INFO = '#009df2';
-const SUCCESS = '#57bf00';
-const WARN = '#FACC15';
-const DANGER = '#EF4444';
-const INFO_BG = 'rgba(0, 157, 242, 0.15)';
-const INFO_BORDER = 'rgba(0, 157, 242, 0.4)';
-const SUCCESS_BG = 'rgba(87, 191, 0, 0.15)';
-const SUCCESS_BORDER = 'rgba(87, 191, 0, 0.4)';
-const WARN_BG = 'rgba(250, 204, 21, 0.15)';
-const WARN_BORDER = 'rgba(250, 204, 21, 0.4)';
-const DANGER_BG = 'rgba(239, 68, 68, 0.1)';
-const DANGER_BORDER = 'rgba(239, 68, 68, 0.4)';
+// Colors come exclusively from the design tokens: single unprefixed NativeWind
+// classes (`text-accent`, `bg-success`, `border-warning/40`) for anything a
+// class can express, and `tokensFor(scheme)` for icon/shadow props. The retired
+// #009df2 / #57bf00 / #FACC15 / #EF4444 constants are gone — web paints this
+// page with accent / success / warning / danger.
 
-// Vehicle registration goes through POST /tramites (pending-approval flow,
-// same as perfil.tsx). NOTE: the web page still posts a nested `descripcion`
-// body to /vehiculos, which the backend's CreateVehiculoRequest (flat
-// `{placa, tipo, ...}`) rejects with 422 — that shape was a live bug, not a
-// contract, so it is NOT mirrored here.
+// Vehicle registration posts the same flat CreateVehiculoRequest body as web
+// (page.tsx:196): the backend creates the vehicle right away and broadcasts the
+// 'vehiculo' WS event this screen already listens to.
 type TipoVehiculoRegistro = 'AUTOMOVIL' | 'MOTO' | 'BICICLETA';
 /** Form labels → backend TipoVehiculo variants (CARRO/MOTO/BICI). */
 const TIPO_VEHICULO_API: Record<TipoVehiculoRegistro, 'CARRO' | 'MOTO' | 'BICI'> = {
@@ -97,24 +90,6 @@ const TIPO_VEHICULO_API: Record<TipoVehiculoRegistro, 'CARRO' | 'MOTO' | 'BICI'>
   MOTO: 'MOTO',
   BICICLETA: 'BICI',
 };
-
-/** COP-style thousands grouping (no decimals), Hermes-safe. Mirrors web `toLocaleString('es-CO')`. */
-function formatCOP(n: number): string {
-  const rounded = Math.round(n);
-  const sign = rounded < 0 ? '-' : '';
-  return sign + Math.abs(rounded).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-/** Hermes-safe "DD mmm, HH:MM" — mirrors web toLocaleString('es-CO', {day,month,hour,minute}). */
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-function formatFechaCorta(dateStr: string | Date): string {
-  const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-  if (Number.isNaN(d.getTime())) return '';
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${dd} ${MESES[d.getMonth()]}, ${hh}:${mi}`;
-}
 
 interface VehiculoForm {
   placa: string;
@@ -132,20 +107,15 @@ const EMPTY_VEHICULO_FORM: VehiculoForm = {
   tipo: 'AUTOMOVIL',
 };
 
+// No role gate: web renders /parqueadero for every authenticated role
+// (src/lib/permissions.ts does not list it, and page.tsx:78 has no check). A
+// HUESPED_TEMPORAL simply gets empty arrays from /parqueadero/mio, exactly as
+// on web — so the previous mobile-only GuestGate was drift.
 export default function ParqueaderoScreen() {
-  // HUESPED_TEMPORAL must not reach the resident parking flow (deep links /
-  // notif routing keep the route reachable even without a tab).
-  return (
-    <GuestGate>
-      <ParqueaderoInner />
-    </GuestGate>
-  );
-}
-
-function ParqueaderoInner() {
   const router = useRouter();
   const { colorScheme } = useColorScheme();
-  const t = tokensFor(colorScheme === 'light' ? 'light' : 'dark');
+  const scheme = colorScheme === 'light' ? 'light' : 'dark';
+  const t = tokensFor(scheme);
 
   const [vehiculos, setVehiculos] = useState<VehiculoDto[]>([]);
   const [misCeldas, setMisCeldas] = useState<CeldaDto[]>([]);
@@ -279,6 +249,7 @@ function ParqueaderoInner() {
   const [showVehiculoModal, setShowVehiculoModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [vehiculoForm, setVehiculoForm] = useState<VehiculoForm>(EMPTY_VEHICULO_FORM);
+  const [showHistorialModal, setShowHistorialModal] = useState(false);
   const [showReglamentoModal, setShowReglamentoModal] = useState(false);
 
   const submitVehiculo = async () => {
@@ -288,17 +259,13 @@ function ParqueaderoInner() {
     }
     setIsSubmitting(true);
     try {
-      // Same contract as perfil.tsx: tramites payload is validated on approval
-      // against VehiculoPayload { placa, marca?, modelo?, color?, tipo }.
-      await api.post('/tramites', {
-        tipo: 'VEHICULO',
-        payload: {
-          placa: vehiculoForm.placa.trim().toUpperCase(),
-          marca: vehiculoForm.marca || undefined,
-          modelo: vehiculoForm.modelo || undefined,
-          color: vehiculoForm.color || undefined,
-          tipo: TIPO_VEHICULO_API[vehiculoForm.tipo],
-        },
+      // Flat CreateVehiculoRequest, byte-for-byte web's body (page.tsx:196).
+      await api.post('/vehiculos', {
+        placa: vehiculoForm.placa,
+        marca: vehiculoForm.marca || undefined,
+        modelo: vehiculoForm.modelo || undefined,
+        color: vehiculoForm.color || undefined,
+        tipo: TIPO_VEHICULO_API[vehiculoForm.tipo],
       });
       toast.success('Solicitud enviada. Pendiente de aprobación.');
       setShowVehiculoModal(false);
@@ -333,7 +300,7 @@ function ParqueaderoInner() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Mount-only, igual que el useEffect de web (page.tsx:207-230).
   }, []);
 
   const reservasVigentes = misReservas.filter(
@@ -349,7 +316,7 @@ function ParqueaderoInner() {
         {solicitudesInquilino.length > 0 ? (
           <Animated.View entering={FadeInDown.duration(500)} className="flex flex-col gap-3">
             <View className="flex-row items-center gap-2 px-1">
-              <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: WARN }} />
+              <PingDot tone="warning" />
               <Text className="text-base font-bold tracking-tight text-text">
                 Aprobaciones pendientes
               </Text>
@@ -358,11 +325,7 @@ function ParqueaderoInner() {
               Te solicitan asignarte un parqueadero de visitante. Tu aprobación es obligatoria.
             </Text>
             {solicitudesInquilino.map((s) => (
-              <GlassCard
-                key={s.id}
-                className="rounded-[28px] p-5"
-                style={{ borderWidth: 1, borderColor: WARN_BORDER }}
-              >
+              <GlassCard key={s.id} className="rounded-[28px] border border-warning/40 p-5">
                 <View className="flex flex-col gap-1">
                   <Text className="text-lg font-bold text-text">Celda {s.celdaNumero}</Text>
                   <Text className="text-xs text-textMuted">{s.detalle}</Text>
@@ -386,11 +349,16 @@ function ParqueaderoInner() {
                     onPress={() => void resolverSolicitud(s.id, 'aprobar')}
                     style={({ pressed }) => ({
                       opacity: busyAprob === s.id ? 0.5 : pressed ? 0.85 : 1,
-                      backgroundColor: SUCCESS,
+                      // web: shadow-xl shadow-success/20 (page.tsx:269)
+                      shadowColor: t.success,
+                      shadowOpacity: 0.2,
+                      shadowRadius: 12,
+                      shadowOffset: { width: 0, height: 8 },
+                      elevation: 6,
                     })}
-                    className="flex-1 items-center rounded-2xl py-3"
+                    className="flex-1 items-center rounded-2xl bg-success py-3"
                   >
-                    <Text className="text-sm font-bold text-white">
+                    <Text className="text-sm font-bold" style={{ color: onSemantic(scheme) }}>
                       {busyAprob === s.id ? 'Procesando...' : 'Aprobar'}
                     </Text>
                   </Pressable>
@@ -404,7 +372,7 @@ function ParqueaderoInner() {
         {sesionesCobro.length > 0 ? (
           <Animated.View entering={FadeInDown.duration(500)} className="flex flex-col gap-3">
             <View className="flex-row items-center gap-2 px-1">
-              <Clock size={16} color={SUCCESS} />
+              <Clock size={16} color={t.success} />
               <Text className="text-base font-bold tracking-tight text-text">
                 Parqueadero de visitante
               </Text>
@@ -419,7 +387,7 @@ function ParqueaderoInner() {
         {cargosPendientes.length > 0 ? (
           <Animated.View entering={FadeInDown.duration(500)} className="flex flex-col gap-3">
             <View className="flex-row items-center gap-2 px-1">
-              <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: DANGER }} />
+              <PingDot tone="danger" />
               <Text className="text-base font-bold tracking-tight text-text">
                 Cobros por aprobar
               </Text>
@@ -429,16 +397,12 @@ function ParqueaderoInner() {
               recházalo.
             </Text>
             {cargosPendientes.map((c) => (
-              <GlassCard
-                key={c.id}
-                className="rounded-[28px] p-5"
-                style={{ borderWidth: 1, borderColor: DANGER_BORDER }}
-              >
+              <GlassCard key={c.id} className="rounded-[28px] border border-danger/40 p-5">
                 <View className="flex-row items-start justify-between gap-3">
                   <View className="flex flex-col gap-1">
                     <Text className="text-lg font-bold text-text">Celda {c.celdaNumero}</Text>
                     {c.placa ? (
-                      <Text className="text-xs text-textMuted">Placa {c.placa}</Text>
+                      <Text className="font-mono text-xs text-textMuted">Placa {c.placa}</Text>
                     ) : null}
                     <Text className="mt-1 text-[11px] text-textMuted">
                       {c.minutosCobrados} min cobrables ·{' '}
@@ -449,7 +413,7 @@ function ParqueaderoInner() {
                     <Text className="text-[10px] font-bold uppercase tracking-wider text-textMuted">
                       Monto
                     </Text>
-                    <Text className="text-2xl font-bold" style={{ color: WARN }}>
+                    <Text className="text-2xl font-bold text-warning">
                       ${formatCOP(Number(c.montoFinal || c.montoActual || 0))}
                     </Text>
                   </View>
@@ -470,11 +434,16 @@ function ParqueaderoInner() {
                     onPress={() => void resolverCargo(c.id, 'aprobar')}
                     style={({ pressed }) => ({
                       opacity: busyAprob === c.id ? 0.5 : pressed ? 0.85 : 1,
-                      backgroundColor: SUCCESS,
+                      // web: shadow-xl shadow-success/20 (page.tsx:337)
+                      shadowColor: t.success,
+                      shadowOpacity: 0.2,
+                      shadowRadius: 12,
+                      shadowOffset: { width: 0, height: 8 },
+                      elevation: 6,
                     })}
-                    className="flex-1 items-center rounded-2xl py-3"
+                    className="flex-1 items-center rounded-2xl bg-success py-3"
                   >
-                    <Text className="text-sm font-bold text-white">
+                    <Text className="text-sm font-bold" style={{ color: onSemantic(scheme) }}>
                       {busyAprob === c.id ? 'Procesando...' : 'Aprobar cobro'}
                     </Text>
                   </Pressable>
@@ -508,16 +477,12 @@ function ParqueaderoInner() {
           </GlassCard>
 
           <GlassCard
-            className="flex-1 rounded-[32px] p-5"
-            style={{ borderWidth: 1, borderColor: INFO_BORDER }}
+            className="flex-1 rounded-[32px] border border-accent/40 p-5"
             onPress={() => setShowReservaModal(true)}
           >
             <View className="flex-row items-center justify-between">
-              <View
-                className="h-10 w-10 items-center justify-center rounded-full"
-                style={{ backgroundColor: INFO_BG, borderWidth: 1, borderColor: INFO_BORDER }}
-              >
-                <MapPin size={18} color={INFO} />
+              <View className="h-10 w-10 items-center justify-center rounded-full border border-accent/40 bg-accent/20">
+                <MapPin size={18} color={t.accent} />
               </View>
               <View className="rounded-full border border-border px-2.5 py-1">
                 <Text className="text-[10px] font-bold uppercase tracking-widest text-text">
@@ -534,10 +499,8 @@ function ParqueaderoInner() {
               </Text>
             </View>
             <View className="mt-1 flex-row items-center gap-1.5">
-              <Clock size={13} color={INFO} />
-              <Text className="text-[11px] font-bold" style={{ color: INFO }}>
-                Reservar cupo →
-              </Text>
+              <Clock size={13} color={t.accent} />
+              <Text className="text-[11px] font-bold text-accent">Reservar cupo →</Text>
             </View>
           </GlassCard>
         </Animated.View>
@@ -554,38 +517,26 @@ function ParqueaderoInner() {
                 className="flex-row items-center gap-1"
                 style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
               >
-                <Plus size={13} color={INFO} strokeWidth={3} />
-                <Text className="text-[11px] font-bold" style={{ color: INFO }}>
-                  Nueva
-                </Text>
+                <Plus size={13} color={t.accent} strokeWidth={3} />
+                <Text className="text-[11px] font-bold text-accent">Nueva</Text>
               </Pressable>
             </View>
             {reservasVigentes.map((r) => (
-              <GlassCard
-                key={r.id}
-                className="rounded-[28px] p-5"
-                style={{ borderWidth: 1, borderColor: 'rgba(0, 157, 242, 0.3)' }}
-              >
+              <GlassCard key={r.id} className="rounded-[28px] border border-accent/30 p-5">
                 <View className="flex-row items-start justify-between gap-3">
                   <View className="flex flex-col gap-1">
                     <View className="flex-row items-center gap-2">
                       {r.categoria === 'MOTO' ? (
-                        <Bike size={16} color={INFO} />
+                        <Bike size={16} color={t.accent} />
                       ) : (
-                        <Car size={16} color={INFO} />
+                        <Car size={16} color={t.accent} />
                       )}
                       <Text className="text-sm font-bold text-text">
                         {r.categoria === 'MOTO' ? 'Moto' : r.categoria === 'BICI' ? 'Bici' : 'Carro'}
                       </Text>
                       {r.estado === 'LLEGO' ? (
-                        <View
-                          className="rounded-full px-2 py-0.5"
-                          style={{ backgroundColor: SUCCESS_BG }}
-                        >
-                          <Text
-                            className="text-[9px] font-bold uppercase tracking-wider"
-                            style={{ color: SUCCESS }}
-                          >
+                        <View className="rounded-full bg-success/15 px-2 py-0.5">
+                          <Text className="text-[9px] font-black uppercase tracking-wider text-success">
                             Llegó
                           </Text>
                         </View>
@@ -595,7 +546,7 @@ function ParqueaderoInner() {
                       <Text className="text-xs text-textMuted">{r.visitanteNombre}</Text>
                     ) : null}
                     {r.placa ? (
-                      <Text className="text-[11px] text-textMuted">Placa {r.placa}</Text>
+                      <Text className="font-mono text-[11px] text-textMuted">Placa {r.placa}</Text>
                     ) : null}
                   </View>
                   <View className="shrink-0 flex-col items-end">
@@ -638,19 +589,26 @@ function ParqueaderoInner() {
               className="h-10 w-10 items-center justify-center rounded-full border border-border bg-surface2"
               style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
             >
-              <Plus size={20} color={INFO} strokeWidth={3} />
+              <Plus size={20} color={t.accent} strokeWidth={3} />
             </Pressable>
           </View>
 
           {isLoading ? (
-            <View className="flex-row gap-4">
+            /* web: los placeholders viven en el MISMO carril horizontal que las
+               tarjetas (`flex gap-4 overflow-x-auto -mx-6 px-6 py-2`, page.tsx:446). */
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="-mx-6"
+              contentContainerStyle={{ paddingHorizontal: 24, gap: 16, paddingVertical: 8 }}
+            >
               {[1, 2].map((i) => (
-                <View
+                <PulseBlock
                   key={i}
-                  className="h-[160px] w-[280px] rounded-[32px] border border-border bg-surface2"
+                  className="h-[160px] w-[280px] rounded-[32px] border border-border"
                 />
               ))}
-            </View>
+            </ScrollView>
           ) : vehiculos.length > 0 ? (
             <ScrollView
               horizontal
@@ -659,7 +617,9 @@ function ParqueaderoInner() {
               contentContainerStyle={{ paddingHorizontal: 24, gap: 16, paddingVertical: 8 }}
             >
               {vehiculos.map((v) => (
-                <GlassCard key={v.id} className="rounded-[40px] p-6" style={{ width: 280 }}>
+                <GlassCard key={v.id} className="w-[280px] rounded-[40px] p-6">
+                  {/* web: absolute -right-4 -top-4 w-32 h-32 bg-accent/10 blur-2xl (page.tsx:454) */}
+                  <AccentBlob />
                   <View className="mb-6 flex-row items-start justify-between">
                     <View className="rounded-2xl border border-border bg-surface2 p-3">
                       {v.tipo === 'CARRO' ? (
@@ -700,10 +660,7 @@ function ParqueaderoInner() {
                   onPress={() => setShowVehiculoModal(true)}
                   style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
                 >
-                  <Text
-                    className="mt-4 text-xs font-bold uppercase tracking-widest"
-                    style={{ color: INFO }}
-                  >
+                  <Text className="mt-4 text-xs font-bold uppercase tracking-widest text-accent">
                     Registrar ahora
                   </Text>
                 </Pressable>
@@ -712,7 +669,7 @@ function ParqueaderoInner() {
           )}
         </Animated.View>
 
-        {/* QUICK ACTIONS (web's mocked 'Historial de Accesos' intentionally skipped) */}
+        {/* QUICK ACTIONS */}
         <Animated.View entering={FadeInDown.delay(240).duration(500)} className="flex flex-col gap-4">
           <Text className="px-1 text-lg font-bold tracking-tight text-text">Acciones Rápidas</Text>
 
@@ -727,6 +684,23 @@ function ParqueaderoInner() {
                     Registrar Nuevo Vehículo
                   </Text>
                   <Text className="text-[11px] text-textMuted">Notificar a portería</Text>
+                </View>
+                <ChevronRight size={16} color={t.text} />
+              </View>
+            </GlassCard>
+
+            <GlassCard className="rounded-3xl p-4" onPress={() => setShowHistorialModal(true)}>
+              <View className="flex-row items-center gap-4">
+                <View className="rounded-2xl border border-border bg-surface2 p-3">
+                  <Clock size={20} color={t.text} />
+                </View>
+                <View className="flex-1">
+                  <Text className="mb-1.5 text-sm font-bold leading-none text-text">
+                    Historial de Accesos
+                  </Text>
+                  <Text className="text-[11px] text-textMuted">
+                    Ver registros de entrada y salida
+                  </Text>
                 </View>
                 <ChevronRight size={16} color={t.text} />
               </View>
@@ -752,12 +726,11 @@ function ParqueaderoInner() {
         {/* RULES & INFO */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)}>
           <GlassCard className="rounded-[40px] p-8">
+            {/* web: bg-linear-to-br from-accent/5 to-transparent wash (page.tsx:525) */}
+            <AccentWash accent={t.accent} />
             <View className="mb-6 flex-row items-center gap-3">
-              <View
-                className="h-10 w-10 items-center justify-center rounded-full"
-                style={{ backgroundColor: INFO_BG, borderWidth: 1, borderColor: INFO_BORDER }}
-              >
-                <Info size={18} color={INFO} />
+              <View className="h-10 w-10 items-center justify-center rounded-full border border-accent/30 bg-accent/20">
+                <Info size={18} color={t.accent} />
               </View>
               <View>
                 <Text className="text-lg font-bold tracking-tight text-text">Reglamento</Text>
@@ -775,10 +748,7 @@ function ParqueaderoInner() {
                 'Parqueadero de visitantes limitado a 12h.',
               ].map((rule, i) => (
                 <View key={i} className="flex-row items-start gap-4">
-                  <View
-                    className="mt-1.5 h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: 'rgba(0, 157, 242, 0.4)' }}
-                  />
+                  <View className="mt-1.5 h-1.5 w-1.5 rounded-full bg-accent/40" />
                   <Text className="flex-1 text-sm leading-relaxed text-text">{rule}</Text>
                 </View>
               ))}
@@ -788,16 +758,27 @@ function ParqueaderoInner() {
               onPress={() => router.push('/citofonia?tab=VISITAS' as never)}
               style={({ pressed }) => ({
                 opacity: pressed ? 0.9 : 1,
-                backgroundColor: INFO,
+                // web: shadow-[0_10px_25px_rgba(0,0,0,0.3)] (page.tsx:553)
+                shadowColor: '#000000',
+                shadowOpacity: 0.3,
+                shadowRadius: 12.5,
+                shadowOffset: { width: 0, height: 10 },
+                elevation: 8,
               })}
-              className="w-full flex-row items-center justify-center gap-3 rounded-2xl py-4"
+              className="w-full flex-row items-center justify-center gap-3 rounded-2xl bg-accent py-4"
             >
-              <Text className="text-sm font-bold text-white">Pedir Parqueo para Visita</Text>
-              <ArrowRight size={18} color="#FFFFFF" />
+              <Text className="text-sm font-bold text-onAccent">Pedir Parqueo para Visita</Text>
+              <ArrowRight size={18} color={t.onAccent} />
             </Pressable>
           </GlassCard>
         </Animated.View>
       </View>
+
+      {/* MODAL HISTORIAL DE ACCESOS */}
+      <HistorialAccesosModal
+        open={showHistorialModal}
+        onClose={() => setShowHistorialModal(false)}
+      />
 
       {/* MODAL REGLAMENTO COMPLETO */}
       <ReglamentoModal open={showReglamentoModal} onClose={() => setShowReglamentoModal(false)} />
@@ -829,6 +810,8 @@ function ParqueaderoInner() {
 /// Tarjeta de sesión de parqueadero de visitante con conteo regresivo en vivo.
 /// Tras las 2h gratis muestra el cobro acumulado prorrateado por minuto.
 function CuentaRegresivaCard({ sesion }: { sesion: SesionCobroDto }) {
+  const { colorScheme } = useColorScheme();
+  const t = tokensFor(colorScheme === 'light' ? 'light' : 'dark');
   // Reloj local: arranca desde los segundos que envió el backend y descuenta.
   const [segGratis, setSegGratis] = useState<number>(sesion.segundosRestantesGratis ?? 0);
   const [montoVivo, setMontoVivo] = useState<number>(Number(sesion.montoActual ?? 0));
@@ -860,17 +843,18 @@ function CuentaRegresivaCard({ sesion }: { sesion: SesionCobroDto }) {
   const fmt = (n: number) => String(n).padStart(2, '0');
   const avisoPronto = !enCobro && segGratis <= 20 * 60;
 
-  const borderColor = enCobro
-    ? 'rgba(250, 204, 21, 0.5)'
+  // web: border-warning/50 (en cobro) · border-warning/40 (aviso) · border-success/40
+  const borderClass = enCobro
+    ? 'border border-warning/50'
     : avisoPronto
-      ? WARN_BORDER
-      : SUCCESS_BORDER;
+      ? 'border border-warning/40'
+      : 'border border-success/40';
 
   return (
-    <GlassCard className="rounded-[28px] p-5" style={{ borderWidth: 1, borderColor }}>
+    <GlassCard className={`rounded-[28px] p-5 ${borderClass}`}>
       <View className="flex-row items-center justify-between">
         <View className="flex-1 flex-row items-center gap-2">
-          <Clock size={16} color={enCobro ? WARN : SUCCESS} />
+          <Clock size={16} color={enCobro ? t.warning : t.success} />
           <Text className="text-sm font-bold text-text">Celda {sesion.celdaNumero}</Text>
           {sesion.placa ? (
             <View className="rounded-full border border-border bg-surface2 px-2 py-0.5">
@@ -879,12 +863,16 @@ function CuentaRegresivaCard({ sesion }: { sesion: SesionCobroDto }) {
           ) : null}
         </View>
         <View
-          className="rounded-full px-2 py-1"
-          style={{ backgroundColor: enCobro ? WARN_BG : SUCCESS_BG }}
+          className={
+            enCobro ? 'rounded-full bg-warning/15 px-2 py-1' : 'rounded-full bg-success/15 px-2 py-1'
+          }
         >
           <Text
-            className="text-[9px] font-black uppercase tracking-wider"
-            style={{ color: enCobro ? WARN : SUCCESS }}
+            className={
+              enCobro
+                ? 'text-[9px] font-black uppercase tracking-wider text-warning'
+                : 'text-[9px] font-black uppercase tracking-wider text-success'
+            }
           >
             {enCobro ? 'En cobro' : 'Gratis'}
           </Text>
@@ -897,14 +885,14 @@ function CuentaRegresivaCard({ sesion }: { sesion: SesionCobroDto }) {
             Tiempo gratis restante
           </Text>
           <Text
-            className="text-4xl font-bold text-text"
-            style={[{ fontVariant: ['tabular-nums'] }, avisoPronto ? { color: WARN } : null]}
+            className={avisoPronto ? 'text-4xl font-bold text-warning' : 'text-4xl font-bold text-text'}
+            style={{ fontVariant: ['tabular-nums'] }}
           >
             {hh > 0 ? `${fmt(hh)}:` : ''}
             {fmt(mm)}:{fmt(ss)}
           </Text>
           {avisoPronto ? (
-            <Text className="text-center text-[11px] font-bold" style={{ color: WARN }}>
+            <Text className="text-center text-[11px] font-bold text-warning">
               ⚠️ Pronto inicia el cobro de ${formatCOP(Number(sesion.tarifaHora))}/hora
             </Text>
           ) : null}
@@ -915,8 +903,8 @@ function CuentaRegresivaCard({ sesion }: { sesion: SesionCobroDto }) {
             Cobro acumulado
           </Text>
           <Text
-            className="text-4xl font-bold"
-            style={{ color: WARN, fontVariant: ['tabular-nums'] }}
+            className="text-4xl font-bold text-warning"
+            style={{ fontVariant: ['tabular-nums'] }}
           >
             ${formatCOP(montoVivo)}
           </Text>
@@ -940,9 +928,10 @@ function ReglamentoModal({ open, onClose }: { open: boolean; onClose: () => void
   return (
     <Modal visible={open} transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
       <View className="flex-1 justify-end">
+        {/* web: bg-black/90 backdrop-blur-2xl (page.tsx:613) */}
         <Pressable
           onPress={onClose}
-          className="absolute inset-0 bg-black/80"
+          className="absolute inset-0 bg-black/90"
           accessibilityRole="button"
           accessibilityLabel="Cerrar"
         />
@@ -974,10 +963,15 @@ function ReglamentoModal({ open, onClose }: { open: boolean; onClose: () => void
               contentContainerStyle={{ paddingHorizontal: 32, paddingBottom: 24, gap: 24 }}
             >
               <View className="gap-4 border-b border-border pb-4">
-                <Text className="text-sm font-black uppercase tracking-[0.15em] text-text">
-                  I. Disposiciones Generales
-                </Text>
-                <Text className="text-sm leading-relaxed text-textMuted">
+                {/* web: cada h4 lleva un punto `w-1.5 h-1.5 rounded-full bg-text/10`
+                    antes del título (page.tsx:629, :638, :657, :669). */}
+                <View className="flex-row items-center gap-2">
+                  <View className="h-1.5 w-1.5 rounded-full bg-text/10" />
+                  <Text className="text-sm font-black uppercase tracking-[0.15em] text-text">
+                    I. Disposiciones Generales
+                  </Text>
+                </View>
+                <Text className="text-sm leading-relaxed text-text">
                   El uso de las zonas de parqueo está restringido exclusivamente a los vehículos
                   registrados y vinculados a las unidades residenciales. Queda prohibido el
                   estacionamiento de vehículos no autorizados en celdas privadas.
@@ -985,9 +979,12 @@ function ReglamentoModal({ open, onClose }: { open: boolean; onClose: () => void
               </View>
 
               <View className="gap-4 border-b border-border pb-4">
-                <Text className="text-sm font-black uppercase tracking-[0.15em] text-text">
-                  II. Velocidad y Seguridad
-                </Text>
+                <View className="flex-row items-center gap-2">
+                  <View className="h-1.5 w-1.5 rounded-full bg-text/10" />
+                  <Text className="text-sm font-black uppercase tracking-[0.15em] text-text">
+                    II. Velocidad y Seguridad
+                  </Text>
+                </View>
                 <View className="gap-3">
                   {[
                     'Velocidad máxima de 10 km/h en todos los sótanos y áreas comunes.',
@@ -997,23 +994,26 @@ function ReglamentoModal({ open, onClose }: { open: boolean; onClose: () => void
                   ].map((item, i) => (
                     <View key={i} className="flex-row gap-3">
                       <Text className="shrink-0 font-bold text-text">•</Text>
-                      <Text className="flex-1 text-sm text-textMuted">{item}</Text>
+                      <Text className="flex-1 text-sm text-text">{item}</Text>
                     </View>
                   ))}
                 </View>
               </View>
 
               <View className="gap-4 border-b border-border pb-4">
-                <Text className="text-sm font-black uppercase tracking-[0.15em] text-text">
-                  III. Parqueo de Visitantes
-                </Text>
-                <Text className="text-sm leading-relaxed text-textMuted">
+                <View className="flex-row items-center gap-2">
+                  <View className="h-1.5 w-1.5 rounded-full bg-text/10" />
+                  <Text className="text-sm font-black uppercase tracking-[0.15em] text-text">
+                    III. Parqueo de Visitantes
+                  </Text>
+                </View>
+                <Text className="text-sm leading-relaxed text-text">
                   Los visitantes tienen derecho a un maximum de 12 horas continuas de parqueo
                   gratuito. A partir de la hora 13, se aplicará el cobro de la tarifa vigente
                   establecida por la asamblea.
                 </Text>
                 <View className="rounded-2xl border border-border bg-surface2 p-3">
-                  <Text className="text-[11px] font-bold italic text-textMuted">
+                  <Text className="text-[11px] font-bold italic text-text">
                     * El mal uso de las celdas de visitantes (parqueo recurrente) será causal de
                     sanción administrativa.
                   </Text>
@@ -1021,10 +1021,13 @@ function ReglamentoModal({ open, onClose }: { open: boolean; onClose: () => void
               </View>
 
               <View className="gap-4">
-                <Text className="text-sm font-black uppercase tracking-[0.15em] text-text">
-                  IV. Sanciones Económicas
-                </Text>
-                <Text className="text-sm leading-relaxed text-textMuted">
+                <View className="flex-row items-center gap-2">
+                  <View className="h-1.5 w-1.5 rounded-full bg-text/10" />
+                  <Text className="text-sm font-black uppercase tracking-[0.15em] text-text">
+                    IV. Sanciones Económicas
+                  </Text>
+                </View>
+                <Text className="text-sm leading-relaxed text-text">
                   El incumplimiento de las normas anteriores generará sanciones que van desde el
                   20% hasta el 100% de la cuota de administración ordinaria, según la gravedad de
                   la falta.
@@ -1066,7 +1069,8 @@ interface VehiculoModalProps {
 function VehiculoModal({ open, isSubmitting, form, onChange, onClose, onSubmit }: VehiculoModalProps) {
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
-  const t = tokensFor(colorScheme === 'light' ? 'light' : 'dark');
+  const scheme = colorScheme === 'light' ? 'light' : 'dark';
+  const t = tokensFor(scheme);
 
   return (
     <Modal visible={open} transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
@@ -1141,15 +1145,16 @@ function VehiculoModal({ open, isSubmitting, form, onChange, onClose, onSubmit }
                     <Pressable
                       key={opt.v}
                       onPress={() => onChange({ ...form, tipo: opt.v })}
-                      className="rounded-2xl border px-4 py-3"
-                      style={{
-                        borderColor: selected ? INFO : t.border,
-                        backgroundColor: selected ? INFO_BG : t.surface2,
-                      }}
+                      className={
+                        selected
+                          ? 'rounded-2xl border border-accent bg-accent/15 px-4 py-3'
+                          : 'rounded-2xl border border-border bg-surface2 px-4 py-3'
+                      }
                     >
                       <Text
-                        className="text-xs font-bold"
-                        style={{ color: selected ? INFO : t.text }}
+                        className={
+                          selected ? 'text-xs font-bold text-accent' : 'text-xs font-bold text-text'
+                        }
                       >
                         {opt.l}
                       </Text>
@@ -1163,16 +1168,21 @@ function VehiculoModal({ open, isSubmitting, form, onChange, onClose, onSubmit }
                 onPress={onSubmit}
                 style={({ pressed }) => ({
                   opacity: isSubmitting ? 0.5 : pressed ? 0.9 : 1,
-                  backgroundColor: SUCCESS,
+                  // web: shadow-xl shadow-success/30 (page.tsx:716)
+                  shadowColor: t.success,
+                  shadowOpacity: 0.3,
+                  shadowRadius: 12,
+                  shadowOffset: { width: 0, height: 8 },
+                  elevation: 6,
                 })}
-                className="mt-2 w-full flex-row items-center justify-center gap-3 rounded-2xl py-4"
+                className="mt-2 w-full flex-row items-center justify-center gap-3 rounded-2xl bg-success py-4"
               >
                 {isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={onSemantic(scheme)} />
                 ) : (
-                  <ShieldCheck size={20} color="#FFFFFF" />
+                  <ShieldCheck size={20} color={onSemantic(scheme)} />
                 )}
-                <Text className="font-bold text-white">
+                <Text className="font-bold" style={{ color: onSemantic(scheme) }}>
                   {isSubmitting ? 'Enviando...' : 'Pedir Aprobación'}
                 </Text>
               </Pressable>
@@ -1194,8 +1204,8 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const { colorScheme } = useColorScheme();
   const t = tokensFor(colorScheme === 'light' ? 'light' : 'dark');
 
-  // Por defecto: dentro de 1 hora, redondeado (segundos en 0).
-  const [llegadaMs, setLlegadaMs] = useState<number>(() => {
+  // Por defecto: dentro de 1 hora, redondeado (segundos en 0) — igual que web.
+  const [llegadaMs, setLlegadaMs] = useState<number | null>(() => {
     const d = new Date(Date.now() + 60 * 60 * 1000);
     d.setSeconds(0, 0);
     return d.getTime();
@@ -1216,6 +1226,8 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
   useEffect(() => {
     let cancel = false;
     const run = async () => {
+      // web page.tsx:835 — sin hora de llegada no se consulta disponibilidad.
+      if (llegadaMs == null) return;
       setChecking(true);
       try {
         const iso = new Date(llegadaMs).toISOString();
@@ -1239,6 +1251,10 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
   }, [categoria, llegadaMs, duracionMin]);
 
   const crear = async () => {
+    if (llegadaMs == null) {
+      toast.error('Elige la hora de llegada');
+      return;
+    }
     setSubmitting(true);
     try {
       const iso = new Date(llegadaMs).toISOString();
@@ -1261,17 +1277,15 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const hayCupo = disp?.hayCupo === true;
   const sinCupo = !!disp && disp.hayCupo === false;
 
-  const ajustarLlegada = (mins: number) => {
-    setLlegadaMs((prev) => prev + mins * 60000);
-  };
-
-  const dispBoxStyle = checking
-    ? { backgroundColor: t.surface2, borderColor: t.border }
+  // web page.tsx:961 — bg-success/10 border-success/40 · bg-danger/10
+  // border-danger/40 · bg-text/5 border-border mientras consulta.
+  const dispBoxClass = checking
+    ? 'border-border bg-surface2'
     : hayCupo
-      ? { backgroundColor: 'rgba(87, 191, 0, 0.1)', borderColor: SUCCESS_BORDER }
+      ? 'border-success/40 bg-success/10'
       : sinCupo
-        ? { backgroundColor: DANGER_BG, borderColor: DANGER_BORDER }
-        : { backgroundColor: t.surface2, borderColor: t.border };
+        ? 'border-danger/40 bg-danger/10'
+        : 'border-border bg-surface2';
 
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
@@ -1320,20 +1334,21 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
                   <Pressable
                     key={tipo}
                     onPress={() => setCategoria(tipo)}
-                    className="flex-1 items-center gap-2 rounded-2xl border py-4"
-                    style={{
-                      borderColor: selected ? INFO : t.border,
-                      backgroundColor: selected ? INFO_BG : t.surface2,
-                    }}
+                    className={
+                      selected
+                        ? 'flex-1 items-center gap-2 rounded-2xl border border-accent bg-accent/15 py-4'
+                        : 'flex-1 items-center gap-2 rounded-2xl border border-border bg-surface2 py-4'
+                    }
                   >
                     {tipo === 'CARRO' ? (
-                      <Car size={22} color={selected ? INFO : t.text} />
+                      <Car size={22} color={selected ? t.accent : t.text} />
                     ) : (
-                      <Bike size={22} color={selected ? INFO : t.text} />
+                      <Bike size={22} color={selected ? t.accent : t.text} />
                     )}
                     <Text
-                      className="text-xs font-bold"
-                      style={{ color: selected ? INFO : t.text }}
+                      className={
+                        selected ? 'text-xs font-bold text-accent' : 'text-xs font-bold text-text'
+                      }
                     >
                       {tipo === 'CARRO' ? 'Carro' : 'Moto'}
                     </Text>
@@ -1342,34 +1357,12 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
               })}
             </View>
 
-            {/* Hora de llegada (steppers en vez del datetime-local web) */}
+            {/* Hora de llegada — día + hora, equivalente al datetime-local web */}
             <Text className="px-1 text-[11px] font-bold uppercase tracking-wider text-textMuted">
               Hora tentativa de llegada
             </Text>
-            <View className="mb-4 mt-2 rounded-2xl border border-border bg-surface2 p-3">
-              <View className="flex-row items-center justify-center gap-2">
-                <Calendar size={16} color={t.textMuted} />
-                <Text className="text-base font-bold text-text">
-                  {formatFechaCorta(new Date(llegadaMs))}
-                </Text>
-              </View>
-              <View className="mt-3 flex-row justify-center gap-2">
-                {[
-                  { l: '−1 h', m: -60 },
-                  { l: '−15 m', m: -15 },
-                  { l: '+15 m', m: 15 },
-                  { l: '+1 h', m: 60 },
-                ].map((opt) => (
-                  <Pressable
-                    key={opt.l}
-                    onPress={() => ajustarLlegada(opt.m)}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-                    className="rounded-xl border border-border bg-surface px-4 py-2"
-                  >
-                    <Text className="text-xs font-bold text-text">{opt.l}</Text>
-                  </Pressable>
-                ))}
-              </View>
+            <View className="mb-4 mt-2">
+              <LlegadaPicker valueMs={llegadaMs} onChange={setLlegadaMs} />
             </View>
 
             {/* Duración */}
@@ -1389,16 +1382,17 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
                   <Pressable
                     key={opt.v}
                     onPress={() => setDuracion(opt.v)}
-                    className="items-center rounded-xl border px-4 py-2.5"
-                    style={{
-                      minWidth: '30%',
-                      borderColor: selected ? INFO : t.border,
-                      backgroundColor: selected ? INFO_BG : t.surface2,
-                    }}
+                    className={
+                      selected
+                        ? 'items-center rounded-xl border border-accent bg-accent/15 px-4 py-2.5'
+                        : 'items-center rounded-xl border border-border bg-surface2 px-4 py-2.5'
+                    }
+                    style={{ minWidth: '30%' }}
                   >
                     <Text
-                      className="text-xs font-bold"
-                      style={{ color: selected ? INFO : t.text }}
+                      className={
+                        selected ? 'text-xs font-bold text-accent' : 'text-xs font-bold text-text'
+                      }
                     >
                       {opt.l}
                     </Text>
@@ -1431,16 +1425,13 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
                   placeholder="ABC123"
                   placeholderTextColor={t.textMuted}
                   autoCapitalize="characters"
-                  className="mt-2 w-full rounded-2xl border border-border bg-surface2 px-4 py-3 text-sm text-text"
+                  className="mt-2 w-full rounded-2xl border border-border bg-surface2 px-4 py-3 font-mono text-sm text-text"
                 />
               </View>
             </View>
 
             {/* Disponibilidad en vivo */}
-            <View
-              className="mb-4 flex-row items-center gap-3 rounded-2xl border p-4"
-              style={dispBoxStyle}
-            >
+            <View className={`mb-4 flex-row items-center gap-3 rounded-2xl border p-4 ${dispBoxClass}`}>
               {checking ? (
                 <>
                   <Clock size={18} color={t.textMuted} />
@@ -1450,18 +1441,16 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
                 </>
               ) : hayCupo && disp ? (
                 <>
-                  <CheckCircle2 size={18} color={SUCCESS} />
+                  <CheckCircle2 size={18} color={t.success} />
                   <Text className="flex-1 text-sm text-text">
-                    <Text className="font-bold" style={{ color: SUCCESS }}>
-                      {disp.libres}
-                    </Text>{' '}
+                    <Text className="font-bold text-success">{disp.libres}</Text>{' '}
                     {disp.libres === 1 ? 'cupo libre' : 'cupos libres'} de{' '}
                     {disp.categoria === 'MOTO' ? 'moto' : 'carro'} en esa franja
                   </Text>
                 </>
               ) : sinCupo && disp ? (
                 <>
-                  <AlertCircle size={18} color={DANGER} />
+                  <AlertCircle size={18} color={t.danger} />
                   <Text className="flex-1 text-sm text-text">
                     Sin cupos de {disp.categoria === 'MOTO' ? 'moto' : 'carro'} en esa franja.
                     Prueba otra hora.
@@ -1479,14 +1468,19 @@ function ReservaCupoModal({ onClose, onCreated }: { onClose: () => void; onCreat
               onPress={() => void crear()}
               style={({ pressed }) => ({
                 opacity: submitting || !hayCupo ? 0.4 : pressed ? 0.9 : 1,
-                backgroundColor: INFO,
+                // web: shadow-xl shadow-accent/20 (page.tsx:987)
+                shadowColor: t.accent,
+                shadowOpacity: 0.2,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 8 },
+                elevation: 6,
               })}
-              className="w-full items-center rounded-2xl py-4"
+              className="w-full items-center rounded-2xl bg-accent py-4"
             >
               {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={t.onAccent} />
               ) : (
-                <Text className="text-sm font-bold text-white">Reservar cupo</Text>
+                <Text className="text-sm font-bold text-onAccent">Reservar cupo</Text>
               )}
             </Pressable>
             <Text className="mt-3 text-center text-[11px] leading-relaxed text-textMuted">

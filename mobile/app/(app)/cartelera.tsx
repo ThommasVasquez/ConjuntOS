@@ -5,40 +5,54 @@
  * Ported from web src/app/(app)/cartelera/page.tsx:
  *  - GET /anuncios → Notice view-model (tipo→priority: URGENTE=ALTA,
  *    MANTENIMIENTO=MEDIA, resto BAJA), realtime refetch via WS 'anuncio'.
- *  - Category tabs, pinned (fijado) notices float to the top with a badge.
- *  - Full-screen detail sheet with native Share (RN Share.share).
+ *  - Category tabs over the real TipoAnuncio values (page.tsx:185).
+ *  - Full-screen detail sheet with the 'Documentos Adjuntos' list and native
+ *    Share (RN Share.share) + clipboard fallback.
  *  - Embedded resident→admin chat: GET /chat on open, POST /chat {mensaje}
  *    with optimistic append + rollback on error.
- *  - The web's hardcoded 'Circular_Informativa.pdf' download is intentionally
- *    NOT ported (fake download).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
   ScrollView,
   Share,
+  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeInDown, SlideInDown } from 'react-native-reanimated';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  FadeIn,
+  FadeInDown,
+  SlideInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 import {
   ArrowRight,
   Building2,
   Calendar,
   Clock,
+  Download,
   FileText,
+  Info,
   Megaphone,
   MessageCircle,
-  Pin,
   Share2,
   ShieldAlert,
   Wrench,
@@ -51,22 +65,27 @@ import { ProfileHeader } from '@/components/shell/ProfileHeader';
 import { toast } from '@/components/ui/toast';
 import { api } from '@/lib/api/client';
 import type { AnuncioDto, ChatMensajeDto } from '@/lib/api/types';
+import { safeHttpUrl } from '@/lib/safe-url';
 import { useAuth } from '@/hooks/useAuth';
 import { useWsSubscription } from '@/hooks/useWebSocket';
+import { useTheme } from '@/providers/ThemeProvider';
+import { tokensFor } from '@/theme/tokens';
 
-// Accent tints (pure b/w theme + the two allowed accents).
-const ICON_COLOR = '#FFFFFF';
-const INFO = '#009df2';
-const SUCCESS = '#57bf00';
+/**
+ * Web hardcodes the detail overlay as `bg-primary dark:bg-[#000000]`
+ * (page.tsx:240) and the chat sheet as `bg-primary dark:bg-[#0B0B0B]`
+ * (page.tsx:340) — the only two raw hexes on the page, kept verbatim.
+ */
+const DETAIL_SHEET_DARK_BG = '#000000';
+const CHAT_SHEET_DARK_BG = '#0B0B0B';
 
-const CATEGORIES = [
-  'TODOS',
-  'ADMINISTRACION',
-  'LICITACION',
-  'SEGURIDAD',
-  'EVENTO',
-  'MANTENIMIENTO',
-] as const;
+/** Shared link for the Compartir action — the RN stand-in for web's
+ *  `window.location.href` (page.tsx:298). */
+const CARTELERA_LINK = 'https://app.conjuntos.app/cartelera';
+
+// Mirrors web's tab list verbatim (page.tsx:185); these are the real
+// TipoAnuncio values, so every tab can actually match an `a.tipo`.
+const CATEGORIES = ['TODOS', 'GENERAL', 'URGENTE', 'MANTENIMIENTO', 'EVENTO'] as const;
 
 // ---------------------------------------------------------------------------
 // View-model — mirrors the web page's `Notice` mapping of AnuncioDto.
@@ -82,6 +101,7 @@ interface Notice {
   author: string;
   image?: string;
   fijado?: boolean;
+  archivosUrl?: string[];
 }
 
 function mapAnuncio(a: AnuncioDto): Notice {
@@ -99,10 +119,13 @@ function mapAnuncio(a: AnuncioDto): Notice {
     author: 'Administración',
     image: a.imagenUrl || undefined,
     fijado: a.fijado,
+    archivosUrl: a.archivosUrl || [],
   };
 }
 
-function getNoticeIcon(cat: string, size = 18, color: string = INFO): ReactElement {
+/** Mirrors web's `getNoticeIcon` (page.tsx:161-168) exactly: only URGENTE,
+ *  MANTENIMIENTO and EVENTO are special-cased; everything else is a Megaphone. */
+function getNoticeIcon(cat: string, color: string, size = 18): ReactElement {
   switch (cat) {
     case 'URGENTE':
       return <ShieldAlert size={size} color={color} />;
@@ -110,10 +133,6 @@ function getNoticeIcon(cat: string, size = 18, color: string = INFO): ReactEleme
       return <Wrench size={size} color={color} />;
     case 'EVENTO':
       return <Calendar size={size} color={color} />;
-    case 'LICITACION':
-      return <FileText size={size} color={color} />;
-    case 'ADMINISTRACION':
-      return <Building2 size={size} color={color} />;
     default:
       return <Megaphone size={size} color={color} />;
   }
@@ -123,9 +142,101 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+/**
+ * Web's shared `<Skeleton>` (src/components/ui/Skeleton.tsx:10) —
+ * `animate-pulse rounded-lg bg-text/10`. The page uses it for the feed's
+ * loading placeholder (page.tsx:196) and inside the chat send button while a
+ * message is in flight (page.tsx:413); web never renders a tinted spinner in
+ * either spot, so an ActivityIndicator would be off-palette drift.
+ */
+function SkeletonBlock({ className = '' }: { className?: string }) {
+  const opacity = useSharedValue(0.5);
+
+  useEffect(() => {
+    opacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
+    // Infinite loop (-1) — stop it on unmount rather than leaving it running
+    // against a freed shared value.
+    return () => {
+      cancelAnimation(opacity);
+    };
+  }, [opacity]);
+
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return <Animated.View className={`rounded-lg bg-text/10 ${className}`} style={style} />;
+}
+
+/**
+ * `animate-ping` (web page.tsx:326): the ring scales to 2× while fading out,
+ * on a 1s infinite loop. Web's ring is `bg-text/10` under `opacity-40`, i.e.
+ * an effective alpha of 0.04 — reproduced here as the solid text token with an
+ * animated 0.04 → 0 opacity.
+ */
+function PingRing({ color }: { color: string }) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withRepeat(
+      withTiming(1, { duration: 1000, easing: Easing.out(Easing.ease) }),
+      -1,
+      false,
+    );
+    return () => {
+      cancelAnimation(progress);
+    };
+  }, [progress]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + progress.value }],
+    opacity: 0.04 * (1 - progress.value),
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        StyleSheet.absoluteFill,
+        { borderRadius: 999, backgroundColor: color },
+        animatedStyle,
+      ]}
+    />
+  );
+}
+
+/** `animate-pulse` (web page.tsx:354): opacity oscillates 1 → 0.5 → 1 over 2s. */
+function PulseDot({ color }: { color: string }) {
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(withTiming(0.5, { duration: 1000 }), withTiming(1, { duration: 1000 })),
+      -1,
+      false,
+    );
+    return () => {
+      cancelAnimation(opacity);
+    };
+  }, [opacity]);
+
+  // `bg-text/10` — the fill is the text token at 10%, so the pulse rides on
+  // top of that base alpha rather than replacing it.
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: 0.1 * opacity.value }));
+
+  return (
+    <Animated.View
+      style={[
+        { width: 4, height: 4, borderRadius: 2, backgroundColor: color },
+        animatedStyle,
+      ]}
+    />
+  );
+}
+
 export default function Cartelera() {
   const { user } = useAuth();
   const userId = user?.id;
+  const { theme } = useTheme();
+  const t = tokensFor(theme);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('TODOS');
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
@@ -165,23 +276,22 @@ export default function Cartelera() {
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, userId]);
 
-  const filteredNotices = (
+  // No sorting — web keeps the server order and never surfaces `fijado`
+  // (page.tsx:159).
+  const filteredNotices =
     selectedCategory === 'TODOS'
       ? notices
-      : notices.filter((n) => n.category === selectedCategory)
-  )
-    // Pinned (fijado) notices float to the top of the feed.
-    .slice()
-    .sort((a, b) => Number(b.fijado ?? false) - Number(a.fijado ?? false));
+      : notices.filter((n) => n.category === selectedCategory);
 
   return (
     <Screen scroll={false} className="bg-primary">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 32, gap: 24 }}
+        // Web root: `p-6 pt-16 pb-32 … gap-8` (page.tsx:180). `gap-8` is 32,
+        // not 24; the top inset is supplied by <Screen>.
+        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 32, gap: 32 }}
       >
         <Animated.View entering={FadeInDown.duration(500)}>
           <ProfileHeader />
@@ -204,13 +314,31 @@ export default function Cartelera() {
                   className={`rounded-2xl border px-5 py-2.5 ${
                     active ? 'border-accent bg-accent' : 'border-border bg-surface2'
                   }`}
+                  // `shadow-lg` on the active tab (page.tsx:186) — Tailwind's
+                  // default shadow color is black at 10%.
+                  style={
+                    active
+                      ? {
+                          shadowColor: '#000000',
+                          shadowOpacity: 0.1,
+                          shadowRadius: 8,
+                          shadowOffset: { width: 0, height: 4 },
+                          elevation: 4,
+                        }
+                      : undefined
+                  }
                 >
                   <Text
+                    // Active tab is a filled `bg-accent` surface, so its ink is
+                    // the on-accent token. (Web writes `text-primary` here,
+                    // which only *happens* to invert correctly — primary is
+                    // near-white in light and near-black in dark; on-accent is
+                    // the token that is guaranteed legible on an accent fill.)
                     className={`text-[10px] font-bold uppercase tracking-widest ${
                       active ? 'text-on-accent' : 'text-text'
                     }`}
                   >
-                    {cat}
+                    {cat === 'TODOS' ? 'Todos' : cat}
                   </Text>
                 </Pressable>
               );
@@ -222,17 +350,31 @@ export default function Cartelera() {
         <View className="gap-6">
           {isLoadingNotices ? (
             <View className="items-center justify-center gap-4 py-20">
-              <ActivityIndicator size="large" color={INFO} />
-              <Text className="text-[10px] font-bold uppercase tracking-widest text-text">
+              {/* `<Skeleton className="w-10 h-10 rounded-full" />` (page.tsx:196). */}
+              <SkeletonBlock className="h-10 w-10 rounded-full" />
+              <Text className="text-xs font-bold uppercase tracking-widest text-text">
                 Sincronizando Cartelera...
               </Text>
             </View>
           ) : filteredNotices.length === 0 ? (
             <LiquidGlass
+              variant="card"
               radius={32}
-              className="items-center justify-center gap-4 rounded-[32px] border border-border p-10"
+              className="rounded-[32px] border border-border"
+              // Web is `py-20 gap-4 … p-10` (page.tsx:200): Tailwind emits the
+              // `p-10` shorthand before `py-20`, so vertical padding is 80 and
+              // horizontal 40 — not a uniform 40.
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 16,
+                paddingVertical: 80,
+                paddingHorizontal: 40,
+              }}
             >
-              <Megaphone size={32} color={ICON_COLOR} />
+              <View className="mb-2">
+                <Megaphone size={32} color={t.text} />
+              </View>
               <Text className="text-sm font-bold text-text">No hay avisos publicados</Text>
             </LiquidGlass>
           ) : (
@@ -243,6 +385,7 @@ export default function Cartelera() {
                   style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
                 >
                   <LiquidGlass
+                    variant="card"
                     radius={32}
                     className="overflow-hidden rounded-[32px] border border-border"
                   >
@@ -250,47 +393,38 @@ export default function Cartelera() {
                       <View className="h-40 w-full overflow-hidden">
                         <Image
                           source={{ uri: notice.image }}
+                          alt={notice.title}
                           style={{ width: '100%', height: '100%' }}
                           contentFit="cover"
                           transition={300}
+                        />
+                        {/* `bg-linear-to-t from-black/60 to-transparent opacity-60`
+                            (page.tsx:209) — web hardcodes the black scrim. */}
+                        <LinearGradient
+                          pointerEvents="none"
+                          colors={['transparent', 'rgba(0, 0, 0, 0.6)']}
+                          style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
                         />
                       </View>
                     ) : null}
                     <View className="gap-4 p-6">
                       <View className="flex-row items-start justify-between">
-                        <View className="flex-row items-center gap-2">
-                          <View className="rounded-lg border border-border bg-surface2 px-2.5 py-1">
-                            <Text className="text-[9px] font-black uppercase tracking-widest text-text">
-                              Prioridad {notice.priority}
-                            </Text>
-                          </View>
-                          {notice.fijado ? (
-                            <View
-                              className="flex-row items-center gap-1 rounded-lg border px-2.5 py-1"
-                              style={{
-                                borderColor: 'rgba(0, 157, 242, 0.3)',
-                                backgroundColor: 'rgba(0, 157, 242, 0.15)',
-                              }}
-                            >
-                              <Pin size={10} color={INFO} />
-                              <Text
-                                className="text-[9px] font-black uppercase tracking-widest"
-                                style={{ color: INFO }}
-                              >
-                                Fijado
-                              </Text>
-                            </View>
-                          ) : null}
+                        {/* getPriorityColor (page.tsx:170-177) returns the same
+                            neutral chip for ALTA/MEDIA/BAJA. */}
+                        <View className="rounded-lg border border-text/20 bg-text/10 px-2.5 py-1 dark:border-text/30 dark:bg-text/20">
+                          <Text className="text-[9px] font-black uppercase tracking-widest text-text">
+                            Prioridad {notice.priority}
+                          </Text>
                         </View>
                         <Text className="text-[10px] font-bold text-text">{notice.date}</Text>
                       </View>
 
                       <View className="gap-2">
                         <View className="flex-row items-center gap-2">
-                          {getNoticeIcon(notice.category)}
+                          {getNoticeIcon(notice.category, t.accent)}
                           <Text
-                            className="text-[10px] font-bold uppercase tracking-widest"
-                            style={{ color: INFO, opacity: 0.8 }}
+                            className="text-[10px] font-bold uppercase tracking-widest text-accent"
+                            style={{ opacity: 0.8 }}
                           >
                             {notice.category}
                           </Text>
@@ -303,19 +437,16 @@ export default function Cartelera() {
                         </Text>
                       </View>
 
-                      <View className="flex-row items-center justify-between border-t border-border pt-4">
+                      <View className="flex-row items-center justify-between border-t border-border pt-2">
                         <View className="flex-row items-center gap-2">
-                          <Megaphone size={12} color={ICON_COLOR} />
+                          <Megaphone size={12} color={t.text} />
                           <Text className="text-[10px] text-text">{notice.author}</Text>
                         </View>
                         <View className="flex-row items-center gap-1">
-                          <Text
-                            className="text-[10px] font-bold uppercase"
-                            style={{ color: INFO }}
-                          >
+                          <Text className="text-[10px] font-bold uppercase text-accent">
                             Leer más
                           </Text>
-                          <ArrowRight size={14} color={INFO} />
+                          <ArrowRight size={14} color={t.accent} />
                         </View>
                       </View>
                     </View>
@@ -340,32 +471,38 @@ export default function Cartelera() {
             width: 64,
             height: 64,
             borderRadius: 32,
-            backgroundColor: INFO,
+            backgroundColor: t.accent,
             alignItems: 'center',
             justifyContent: 'center',
-            shadowColor: INFO,
-            shadowOpacity: 0.4,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 8 },
+            // shadow-[0_15px_40px_rgba(45,212,191,0.28)] (page.tsx:320).
+            shadowColor: t.accent,
+            shadowOpacity: 0.28,
+            shadowRadius: 20,
+            shadowOffset: { width: 0, height: 15 },
             elevation: 8,
             transform: [{ scale: pressed ? 0.95 : 1 }],
           })}
         >
-          <MessageCircle size={28} color="#FFFFFF" />
-          {/* Status Indicator Dot */}
+          <MessageCircle size={28} color={t.onAccent} />
+          {/* Status Indicator Dot — web fills it `bg-text/10` in BOTH states and
+              rings it `border-4 border-primary` (page.tsx:325-327). */}
           <View
+            className="bg-text/10"
             style={{
               position: 'absolute',
               top: -2,
               right: -2,
-              width: 18,
-              height: 18,
-              borderRadius: 9,
+              width: 20,
+              height: 20,
+              borderRadius: 10,
               borderWidth: 4,
-              borderColor: '#000000',
-              backgroundColor: isAdminOnline ? SUCCESS : 'rgba(255,255,255,0.3)',
+              borderColor: t.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-          />
+          >
+            {isAdminOnline ? <PingRing color={t.text} /> : null}
+          </View>
         </Pressable>
       </View>
 
@@ -381,8 +518,8 @@ export default function Cartelera() {
 }
 
 // ---------------------------------------------------------------------------
-// Detail modal — full-screen slide-up sheet mirroring the web overlay.
-// The web's hardcoded "Circular_Informativa.pdf" download is skipped.
+// Detail modal — full-screen slide-up sheet mirroring the web overlay,
+// including the 'Documentos Adjuntos' list (page.tsx:265-291).
 // ---------------------------------------------------------------------------
 
 interface NoticeDetailModalProps {
@@ -392,16 +529,32 @@ interface NoticeDetailModalProps {
 
 function NoticeDetailModal({ notice, onClose }: NoticeDetailModalProps) {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const t = tokensFor(theme);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (!notice) return;
-    Share.share({
-      title: notice.title,
-      message: `${notice.title}\n\n${notice.content}`,
-    }).catch(() => {
-      toast.error('No se pudo compartir el aviso');
-    });
+    try {
+      // Web passes { title, text: content, url: window.location.href }
+      // (page.tsx:294-299). iOS takes a discrete `url`; Android only shares
+      // `message`, so the link is appended there.
+      await Share.share(
+        Platform.OS === 'ios'
+          ? { title: notice.title, message: notice.content, url: CARTELERA_LINK }
+          : { title: notice.title, message: `${notice.content}\n\n${CARTELERA_LINK}` },
+      );
+    } catch {
+      // Same fallback as web's `.catch()` / no-navigator.share branch.
+      await Clipboard.setStringAsync(CARTELERA_LINK);
+      toast.success('Link copiado al portapapeles');
+    }
   }, [notice]);
+
+  const openAttachment = useCallback((url: string) => {
+    const safe = safeHttpUrl(url);
+    if (!safe) return;
+    Linking.openURL(safe).catch(() => {});
+  }, []);
 
   return (
     <Modal
@@ -424,8 +577,11 @@ function NoticeDetailModal({ notice, onClose }: NoticeDetailModalProps) {
         {notice ? (
           <Animated.View
             entering={SlideInDown.duration(400)}
-            className="overflow-hidden rounded-t-[40px] border-t border-border bg-primary"
-            style={{ maxHeight: '85%' }}
+            className="overflow-hidden rounded-t-[40px] border-t border-border"
+            style={{
+              maxHeight: '85%',
+              backgroundColor: theme === 'dark' ? DETAIL_SHEET_DARK_BG : t.primary,
+            }}
           >
             <ScrollView
               showsVerticalScrollIndicator={false}
@@ -435,13 +591,29 @@ function NoticeDetailModal({ notice, onClose }: NoticeDetailModalProps) {
                 <View className="h-56 w-full">
                   <Image
                     source={{ uri: notice.image }}
+                    alt=""
                     style={{ width: '100%', height: '100%' }}
                     contentFit="cover"
                     transition={300}
                   />
+                  {/* `bg-linear-to-t from-primary dark:from-[#000000] to-transparent`
+                      (page.tsx:245) — the photo fades into the sheet. */}
+                  <LinearGradient
+                    pointerEvents="none"
+                    colors={[
+                      'transparent',
+                      theme === 'dark' ? DETAIL_SHEET_DARK_BG : t.primary,
+                    ]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  {/* Web hardcodes `border-white/20` + `text-white` on this
+                      button because it sits over the photo (page.tsx:246). */}
                   <Pressable
                     onPress={onClose}
-                    className="absolute right-6 top-6 h-10 w-10 items-center justify-center rounded-full border border-border bg-black/40"
+                    accessibilityRole="button"
+                    accessibilityLabel="Cerrar"
+                    className="absolute right-6 top-6 h-10 w-10 items-center justify-center rounded-full border bg-black/40"
+                    style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}
                   >
                     <X size={20} color="#FFFFFF" />
                   </Pressable>
@@ -453,42 +625,42 @@ function NoticeDetailModal({ notice, onClose }: NoticeDetailModalProps) {
                   <View className="flex-row justify-end">
                     <Pressable
                       onPress={onClose}
+                      accessibilityRole="button"
+                      accessibilityLabel="Cerrar"
                       className="h-10 w-10 items-center justify-center rounded-full border border-border bg-surface2"
                     >
-                      <X size={20} color={ICON_COLOR} />
+                      <X size={20} color={t.text} />
                     </Pressable>
                   </View>
                 ) : null}
 
                 <View className="gap-3">
                   <View className="flex-row items-center gap-3">
-                    <View
-                      className="h-10 w-10 items-center justify-center rounded-2xl"
-                      style={{ backgroundColor: INFO }}
-                    >
-                      {getNoticeIcon(notice.category, 18, '#FFFFFF')}
+                    {/* `bg-accent … text-primary` (page.tsx:253). The tile is a
+                        filled accent surface, so the glyph uses the on-accent
+                        token rather than primary — primary only reads on an
+                        accent fill by coincidence of the two schemes. */}
+                    <View className="h-10 w-10 items-center justify-center rounded-2xl bg-accent">
+                      {getNoticeIcon(notice.category, t.onAccent)}
                     </View>
                     <View className="flex-1">
-                      <Text
-                        className="text-[10px] font-bold uppercase tracking-widest"
-                        style={{ color: INFO }}
-                      >
+                      <Text className="text-[10px] font-bold uppercase tracking-widest text-accent">
                         {notice.category}
                       </Text>
-                      <Text className="mt-1 text-2xl font-bold leading-tight tracking-tight text-text">
+                      <Text className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight text-text">
                         {notice.title}
                       </Text>
                     </View>
                   </View>
                   <View className="mt-2 flex-row items-center gap-4">
                     <View className="flex-row items-center gap-1.5">
-                      <Clock size={12} color={ICON_COLOR} />
+                      <Clock size={12} color={t.text} />
                       <Text className="text-[10px] font-bold uppercase tracking-widest text-text">
                         {notice.date}
                       </Text>
                     </View>
                     <View className="flex-row items-center gap-1.5">
-                      <Megaphone size={12} color={ICON_COLOR} />
+                      <Megaphone size={12} color={t.text} />
                       <Text className="text-[10px] font-bold uppercase tracking-widest text-text">
                         {notice.author}
                       </Text>
@@ -498,16 +670,59 @@ function NoticeDetailModal({ notice, onClose }: NoticeDetailModalProps) {
 
                 <Text className="text-base leading-relaxed text-text">{notice.content}</Text>
 
+                {notice.archivosUrl && notice.archivosUrl.length > 0 ? (
+                  <View className="gap-4 border-t border-border pt-6">
+                    <View className="flex-row items-center gap-2">
+                      <Info size={16} color={t.accent} />
+                      <Text className="text-[10px] font-bold uppercase tracking-widest text-text">
+                        Documentos Adjuntos
+                      </Text>
+                    </View>
+                    {notice.archivosUrl.map((url, idx) => {
+                      const fileName = url.split('/').pop() || `Documento ${idx + 1}`;
+                      const ext = fileName.split('.').pop()?.toUpperCase() || 'DOC';
+                      return (
+                        <Pressable
+                          key={`${url}-${idx}`}
+                          onPress={() => openAttachment(url)}
+                          accessibilityRole="link"
+                          accessibilityLabel={fileName}
+                          className="w-full flex-row items-center justify-between rounded-2xl border border-border bg-surface2 p-4"
+                        >
+                          <View className="flex-1 flex-row items-center gap-3">
+                            <View className="h-10 w-10 items-center justify-center rounded-xl bg-text/10">
+                              <FileText size={18} color={t.text} />
+                            </View>
+                            <View className="flex-1">
+                              <Text className="text-sm font-bold text-text">{fileName}</Text>
+                              <Text className="text-[10px] font-bold uppercase tracking-tighter text-text">
+                                {ext}
+                              </Text>
+                            </View>
+                          </View>
+                          <Download size={18} color={t.text} />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
+
                 <Pressable
                   onPress={handleShare}
+                  accessibilityRole="button"
                   style={({ pressed }) => ({
-                    backgroundColor: INFO,
+                    // shadow-xl shadow-accent/20 (page.tsx:305).
+                    shadowColor: t.accent,
+                    shadowOpacity: 0.2,
+                    shadowRadius: 12,
+                    shadowOffset: { width: 0, height: 8 },
+                    elevation: 6,
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   })}
-                  className="w-full flex-row items-center justify-center gap-2 rounded-2xl py-4"
+                  className="w-full flex-row items-center justify-center gap-2 rounded-2xl bg-accent py-4"
                 >
-                  <Share2 size={18} color="#FFFFFF" />
-                  <Text className="text-base font-bold text-white">Compartir</Text>
+                  <Share2 size={18} color={t.onAccent} />
+                  <Text className="text-base font-bold text-on-accent">Compartir</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -532,6 +747,9 @@ interface AdminChatModalProps {
 function AdminChatModal({ open, isAdminOnline, onClose }: AdminChatModalProps) {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
+  const { theme } = useTheme();
+  const t = tokensFor(theme);
+  const sheetBg = theme === 'dark' ? CHAT_SHEET_DARK_BG : t.primary;
 
   const [chatMessages, setChatMessages] = useState<ChatMensajeDto[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -612,15 +830,18 @@ function AdminChatModal({ open, isAdminOnline, onClose }: AdminChatModalProps) {
         {open ? (
           <Animated.View
             entering={SlideInDown.duration(450)}
-            className="overflow-hidden rounded-t-[40px] border-t border-border bg-primary"
-            style={{ height: '90%' }}
+            className="overflow-hidden rounded-t-[40px] border-t border-border"
+            style={{ height: '90%', backgroundColor: sheetBg }}
           >
             {/* Chat Header */}
-            <View className="flex-row items-center justify-between border-b border-border bg-surface p-6">
+            <View className="flex-row items-center justify-between border-b border-border bg-surface-2 p-6">
               <View className="flex-row items-center gap-4">
-                <View className="h-12 w-12 items-center justify-center rounded-full border border-border bg-surface2">
-                  <Building2 size={24} color={ICON_COLOR} />
+                <View className="h-12 w-12 items-center justify-center rounded-full border border-text/30 bg-text/20">
+                  <Building2 size={24} color={t.text} />
+                  {/* `border-2 border-primary dark:border-[#0B0B0B]`, filled
+                      `bg-text/10` in BOTH states (page.tsx:347). */}
                   <View
+                    className="bg-text/10"
                     style={{
                       position: 'absolute',
                       bottom: -2,
@@ -629,8 +850,7 @@ function AdminChatModal({ open, isAdminOnline, onClose }: AdminChatModalProps) {
                       height: 14,
                       borderRadius: 7,
                       borderWidth: 2,
-                      borderColor: '#000000',
-                      backgroundColor: isAdminOnline ? SUCCESS : 'rgba(255,255,255,0.3)',
+                      borderColor: sheetBg,
                     }}
                   />
                 </View>
@@ -639,16 +859,7 @@ function AdminChatModal({ open, isAdminOnline, onClose }: AdminChatModalProps) {
                     Atención al Copropietario
                   </Text>
                   <View className="flex-row items-center gap-1.5">
-                    {isAdminOnline ? (
-                      <View
-                        style={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: 2,
-                          backgroundColor: SUCCESS,
-                        }}
-                      />
-                    ) : null}
+                    {isAdminOnline ? <PulseDot color={t.text} /> : null}
                     <Text className="text-[10px] font-medium uppercase tracking-widest text-text">
                       {isAdminOnline ? 'Disponible' : 'Ausente'}
                     </Text>
@@ -657,65 +868,91 @@ function AdminChatModal({ open, isAdminOnline, onClose }: AdminChatModalProps) {
               </View>
               <Pressable
                 onPress={onClose}
-                className="h-10 w-10 items-center justify-center rounded-full bg-surface2"
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+                className="h-10 w-10 items-center justify-center rounded-full bg-surface-2"
               >
-                <X size={20} color={ICON_COLOR} />
+                <X size={20} color={t.text} />
               </Pressable>
             </View>
 
             {/* Chat Body (Messages) */}
-            <ScrollView
-              ref={scrollRef}
-              className="flex-1"
-              contentContainerStyle={{ padding: 24, gap: 16, flexGrow: 1 }}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-            >
-              {chatMessages.length === 0 ? (
-                <View className="flex-1 items-center justify-center gap-4">
-                  <MessageCircle size={48} color="rgba(255,255,255,0.5)" />
-                  <Text className="max-w-[200px] text-center text-[10px] font-bold uppercase leading-relaxed tracking-[2px] text-text">
-                    Envía un mensaje para iniciar una conversación directa con la administración
-                  </Text>
-                </View>
-              ) : (
-                chatMessages.map((m) => (
-                  <View
-                    key={m.id}
-                    className={`flex-row ${m.esDeAdmin ? 'justify-start' : 'justify-end'}`}
-                  >
-                    <View
-                      className={`max-w-[85%] rounded-3xl p-4 ${
-                        m.esDeAdmin
-                          ? 'rounded-tl-none border border-border bg-surface2'
-                          : 'rounded-tr-none'
-                      }`}
-                      style={m.esDeAdmin ? undefined : { backgroundColor: INFO }}
-                    >
-                      <Text
-                        className={`text-sm leading-relaxed ${
-                          m.esDeAdmin ? 'text-text' : 'font-medium text-white'
-                        }`}
-                      >
-                        {m.mensaje}
-                      </Text>
-                      <Text
-                        className={`mt-2 text-[8px] opacity-40 ${
-                          m.esDeAdmin ? 'text-left text-text' : 'text-right text-white'
-                        }`}
-                      >
-                        {formatTime(m.createdAt)}
-                      </Text>
+            <View className="flex-1">
+              {/* `bg-linear-to-b from-transparent to-black/20` (page.tsx:370). */}
+              <LinearGradient
+                pointerEvents="none"
+                colors={['transparent', 'rgba(0, 0, 0, 0.2)']}
+                style={StyleSheet.absoluteFill}
+              />
+              <ScrollView
+                ref={scrollRef}
+                className="flex-1"
+                contentContainerStyle={{ padding: 24, gap: 16, flexGrow: 1 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+              >
+                {chatMessages.length === 0 ? (
+                  <View className="flex-1 items-center justify-center gap-4">
+                    {/* `text-text/50` (page.tsx:373). */}
+                    <View style={{ opacity: 0.5 }}>
+                      <MessageCircle size={48} color={t.text} />
                     </View>
+                    <Text className="max-w-[200px] text-center text-[10px] font-bold uppercase leading-relaxed tracking-[2px] text-text">
+                      Envía un mensaje para iniciar una conversación directa con la administración
+                    </Text>
                   </View>
-                ))
-              )}
-            </ScrollView>
+                ) : (
+                  chatMessages.map((m) => (
+                    <View
+                      key={m.id}
+                      className={`flex-row ${m.esDeAdmin ? 'justify-start' : 'justify-end'}`}
+                    >
+                      <View
+                        className={`max-w-[85%] rounded-3xl p-4 ${
+                          m.esDeAdmin
+                            ? 'rounded-tl-none border border-border bg-surface-2'
+                            : 'rounded-tr-none bg-accent'
+                        }`}
+                        style={
+                          m.esDeAdmin
+                            ? undefined
+                            : {
+                                // shadow-lg shadow-black/10 (page.tsx:383).
+                                shadowColor: '#000000',
+                                shadowOpacity: 0.1,
+                                shadowRadius: 8,
+                                shadowOffset: { width: 0, height: 4 },
+                                elevation: 3,
+                              }
+                        }
+                      >
+                        <Text
+                          className={`text-sm leading-relaxed ${
+                            m.esDeAdmin ? 'text-text' : 'font-medium text-on-accent'
+                          }`}
+                        >
+                          {m.mensaje}
+                        </Text>
+                        <Text
+                          className={`mt-2 text-[8px] opacity-40 ${
+                            m.esDeAdmin
+                              ? 'text-left text-text'
+                              : 'text-right font-normal text-on-accent'
+                          }`}
+                        >
+                          {formatTime(m.createdAt)}
+                        </Text>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            </View>
 
             {/* Chat Input */}
             <View
-              className="border-t border-border bg-surface p-6"
+              className="border-t border-border bg-surface-2 p-6"
               style={{ paddingBottom: insets.bottom + 16 }}
             >
               <View className="flex-row items-center gap-3">
@@ -726,33 +963,43 @@ function AdminChatModal({ open, isAdminOnline, onClose }: AdminChatModalProps) {
                     onSubmitEditing={sendMessage}
                     returnKeyType="send"
                     placeholder="Describe tu solicitud o duda..."
-                    placeholderTextColor="rgba(255,255,255,0.5)"
+                    // web: `placeholder:text-text` (page.tsx:405).
+                    placeholderTextColor={t.text}
                     className="flex-1 text-sm text-text"
                   />
                 </View>
                 <Pressable
                   onPress={sendMessage}
                   disabled={!newMessage.trim() || isSending}
+                  accessibilityRole="button"
+                  accessibilityLabel="Enviar"
                   style={({ pressed }) => ({
                     width: 56,
                     height: 56,
                     borderRadius: 28,
-                    backgroundColor: INFO,
+                    backgroundColor: t.accent,
                     alignItems: 'center',
                     justifyContent: 'center',
+                    // shadow-[0_10px_25px_rgba(45,212,191,0.28)] (page.tsx:411).
+                    shadowColor: t.accent,
+                    shadowOpacity: 0.28,
+                    shadowRadius: 12,
+                    shadowOffset: { width: 0, height: 10 },
+                    elevation: 6,
                     opacity: !newMessage.trim() || isSending ? 0.5 : 1,
                     transform: [{ scale: pressed ? 0.9 : 1 }],
                   })}
                 >
                   {isSending ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    /* `<Skeleton className="w-6 h-6 rounded-full" />` (page.tsx:413). */
+                    <SkeletonBlock className="h-6 w-6 rounded-full" />
                   ) : (
-                    <ArrowRight size={24} color="#FFFFFF" />
+                    <ArrowRight size={24} color={t.onAccent} />
                   )}
                 </Pressable>
               </View>
               <View className="mt-4 flex-row items-center justify-center gap-2">
-                <ShieldAlert size={10} color={ICON_COLOR} />
+                <ShieldAlert size={10} color={t.text} />
                 <Text className="text-[9px] font-bold uppercase tracking-widest text-text">
                   Conexión Segura & Encriptada
                 </Text>

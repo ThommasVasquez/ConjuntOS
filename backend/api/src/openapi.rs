@@ -20,6 +20,7 @@ use utoipa::OpenApi;
         crate::domains::auth_routes::ws_ticket,
         crate::domains::usuarios::handlers::get_profile,
         crate::domains::usuarios::handlers::update_profile,
+        crate::domains::usuarios::handlers::delete_account,
         crate::domains::conjuntos::handlers::list_conjuntos,
         crate::domains::conjuntos::handlers::create_conjunto,
         crate::domains::conjuntos::handlers::update_conjunto,

@@ -125,6 +125,33 @@ async function ensureMicPermission(): Promise<boolean> {
   }
 }
 
+/**
+ * Ask for BLUETOOTH_CONNECT before starting an audio session.
+ *
+ * From API 31+ audioswitch (via @livekit/react-native) needs this to see bonded
+ * devices; without it the call is stuck on earpiece+speaker with no headset
+ * route. Deliberately not a gate — a denied prompt only costs Bluetooth output,
+ * so the call must still connect. Android caches the answer, so calling this on
+ * every session start prompts at most once.
+ */
+export async function ensureBluetoothPermission(): Promise<void> {
+  if (Platform.OS !== "android") return;
+  try {
+    await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+      {
+        title: "Bluetooth",
+        message:
+          "Se necesita Bluetooth para escuchar la llamada en tus audífonos o el manos libres del carro.",
+        buttonPositive: "Permitir",
+        buttonNegative: "Ahora no",
+      }
+    );
+  } catch {
+    /* no Bluetooth routing; the call still works on earpiece/speaker */
+  }
+}
+
 export function CallProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -318,6 +345,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // Start the native audio session around the call.
     if (!audioSessionActiveRef.current) {
       try {
+        await ensureBluetoothPermission();
         await AudioSession.startAudioSession();
         audioSessionActiveRef.current = true;
       } catch (e) {

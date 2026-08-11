@@ -1,12 +1,14 @@
 use axum::extract::{Query, State};
+use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
 use serde::Deserialize;
 
 use crate::auth::extract::AuthUser;
+use crate::auth::password::verify_password_blocking;
 use crate::domains::usuarios::dto::{
-    DirectorioUsuarioDto, MascotaPerfilDto, ProfileResponse, UnidadDto, UpdateProfileRequest,
-    UserDto, VehiculoPerfilDto,
+    DeleteAccountRequest, DirectorioUsuarioDto, MascotaPerfilDto, ProfileResponse, UnidadDto,
+    UpdateProfileRequest, UserDto, VehiculoPerfilDto,
 };
 use crate::domains::usuarios::repo::{self, ProfileChanges};
 use crate::error::{ApiError, ApiResult};
@@ -19,6 +21,7 @@ const MAX_AVATAR_BYTES: usize = 150 * 1024;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/usuarios/me/profile", get(get_profile).put(update_profile))
+        .route("/usuarios/me", axum::routing::delete(delete_account))
         .route("/usuarios/directorio", get(directorio))
 }
 
@@ -61,6 +64,44 @@ pub async fn directorio(
         )
         .collect();
     Ok(Json(out))
+}
+
+/// Self-service account deletion, required by Google Play for any app that lets
+/// users create an account.
+///
+/// Personal data is erased and the account is deactivated; records the
+/// copropiedad must legally retain (pagos, multas, votos de asamblea) survive
+/// detached from any identity. See `repo::anonymize_account` for why this is not
+/// a row delete.
+#[utoipa::path(
+    delete,
+    path = "/api/v1/usuarios/me",
+    tag = "usuarios",
+    request_body = DeleteAccountRequest,
+    responses(
+        (status = 204, description = "Account deleted; every session is now invalid"),
+        (status = 401, description = "Not authenticated, or wrong password"),
+        (status = 409, description = "Caller is the conjunto's last administrator")
+    )
+)]
+pub async fn delete_account(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<DeleteAccountRequest>,
+) -> ApiResult<StatusCode> {
+    let mut conn = state.pool.get().await?;
+    let usuario = repo::find_by_id(&mut conn, user.id)
+        .await?
+        .ok_or(ApiError::Unauthorized)?;
+
+    // Re-authenticate: a session token alone must not be able to destroy the
+    // account. Same 401 as a bad login — no oracle for which part was wrong.
+    if !verify_password_blocking(req.password, usuario.password_hash).await? {
+        return Err(ApiError::Unauthorized);
+    }
+
+    repo::anonymize_account(&mut conn, user.id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(

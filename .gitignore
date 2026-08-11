@@ -33,6 +33,15 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Android/Play signing material. THIS REPO IS PUBLIC — a keystore or its
+# passwords committed here is published to the internet permanently (git history
+# + GitHub's fork network survive a later delete) and lets anyone sign releases
+# as this app. Never opt these back in.
+*.jks
+*.keystore
+keystore-credentials.txt
+*.credentials.json
+
 # vercel
 .vercel
 
@@ -61,3 +70,7 @@ target/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# landing (export estático)
+/landing/.next/
+/landing/out/
