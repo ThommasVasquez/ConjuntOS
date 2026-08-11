@@ -13,7 +13,7 @@ export default function CinematicLogoPortal({
   alwaysShow = true,
 }: CinematicLogoPortalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const svgGroupRef = useRef<SVGGElement>(null);
+  const logoWrapperRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -67,13 +67,19 @@ export default function CinematicLogoPortal({
         },
       });
 
-      // ── Step 1: Smooth Fade-In at a Compact Size (~200px) ──
-      // Inline styles pre-set scale:0.38 & opacity:0 to eliminate initial paint flash!
+      // ── Step 1: Smooth Fade-In of Centered Logo at Ideal Size (~260px) ──
       gsap.set(containerRef.current, { opacity: 1, pointerEvents: "all" });
+      gsap.set(logoWrapperRef.current, {
+        scale: 0.9,
+        opacity: 0,
+        transformOrigin: "45% 35%", // Focal origin pinned at the main castle window
+      });
+      gsap.set(glowRef.current, { opacity: 0, scale: 0.8 });
+      gsap.set(textRef.current, { opacity: 0, y: 10 });
 
-      tl.to(svgGroupRef.current, {
+      tl.to(logoWrapperRef.current, {
         opacity: 1,
-        scale: 0.42,
+        scale: 1,
         duration: 0.55,
         ease: "power2.out",
       })
@@ -91,26 +97,28 @@ export default function CinematicLogoPortal({
           textRef.current,
           {
             opacity: 1,
+            y: 0,
             duration: 0.4,
             ease: "power2.out",
           },
           "-=0.3"
         )
 
-        // ── Step 2: Hold at Compact Size so User can Appreciate full Logo ──
+        // ── Step 2: Hold centered at compact size so logo can be well appreciated ──
         .to({}, { duration: 0.55 })
 
         // ── Step 3: Fluid Camera Zoom straight INTO the Main Castle Window ──
         .to(textRef.current, {
           opacity: 0,
+          y: -10,
           duration: 0.25,
           ease: "power1.in",
         })
         .to(
-          svgGroupRef.current,
+          logoWrapperRef.current,
           {
-            scale: 130, // Smooth vector camera zoom focused directly into (233.5px, 114px)
-            duration: 1.25,
+            scale: 75, // Zoom focused into castle window (45% 35%)
+            duration: 1.2,
             ease: "power3.inOut",
           },
           "-=0.15"
@@ -123,7 +131,7 @@ export default function CinematicLogoPortal({
             duration: 0.9,
             ease: "power2.in",
           },
-          "-=1.25"
+          "-=1.2"
         )
 
         // As the window expands, the webpage comes forward seamlessly
@@ -132,10 +140,10 @@ export default function CinematicLogoPortal({
           {
             scale: 1,
             filter: "blur(0px)",
-            duration: 1.1,
+            duration: 1.05,
             ease: "power2.out",
           },
-          "-=1.0"
+          "-=0.95"
         )
 
         // Fade out overlay cleanly as the window portal encompasses the viewport
@@ -160,61 +168,33 @@ export default function CinematicLogoPortal({
   return (
     <div
       ref={containerRef}
-      className={`fixed inset-0 z-[999999] flex items-center justify-center overflow-hidden transition-colors select-none ${
+      className={`fixed inset-0 z-[999999] flex flex-col items-center justify-center overflow-hidden transition-colors select-none ${
         isDarkMode ? "bg-[#050505] text-white" : "bg-[#ffffff] text-slate-900"
       }`}
-      style={{ opacity: 0 }}
+      style={{ opacity: 1 }}
     >
       {/* Background Ambient Glow */}
       <div
         ref={glowRef}
-        className="absolute w-[360px] h-[360px] sm:w-[520px] sm:h-[520px] rounded-full pointer-events-none blur-[90px]"
+        className="absolute w-[340px] h-[340px] sm:w-[480px] sm:h-[480px] rounded-full pointer-events-none blur-[90px]"
         style={{
-          opacity: 0,
-          transform: "scale(0.8)",
           background: isDarkMode
             ? "radial-gradient(circle, rgba(0,157,241,0.45) 0%, rgba(87,191,0,0.3) 50%, transparent 75%)"
             : "radial-gradient(circle, rgba(0,157,241,0.35) 0%, rgba(87,191,0,0.25) 50%, transparent 75%)",
         }}
       />
 
-      {/* Full Viewport SVG Portal Mask & Complete Attached Logo (viewBox="0 0 517.15 325.73") */}
-      <svg
-        viewBox="0 0 517.15 325.73"
-        className="fixed inset-0 w-full h-full max-w-full max-h-full pointer-events-none z-10"
-        preserveAspectRatio="xMidYMid meet"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
+      {/* Centered Logo Container (Perfect Centering on Screen) */}
+      <div
+        ref={logoWrapperRef}
+        className="relative z-10 w-[220px] sm:w-[280px] md:w-[320px] flex items-center justify-center shrink-0 transform-gpu"
+        style={{ willChange: "transform, opacity" }}
       >
-        <defs>
-          {/* Mask Layer: Opaque backdrop overlay everywhere EXCEPT the main castle window cutout */}
-          <mask
-            id="window-portal-cutout"
-            maskUnits="userSpaceOnUse"
-            x="-2000"
-            y="-2000"
-            width="4810"
-            height="4810"
-          >
-            {/* Opaque cover everywhere */}
-            <rect x="-2000" y="-2000" width="4810" height="4810" fill="white" />
-            {/* Cutout Hole shaped exactly like the Castle's Main Window (Center: 233.5px, 114px) */}
-            <path
-              fill="black"
-              d="M221.01,129.56c-.14-11.98-1.51-24.65,6.8-29.98,3.7-2.37,8.53-2.95,12.73-.85,3.43,1.72,5.15,5.48,5.22,9.21l.23,14.08-24.98,7.53Z"
-            />
-          </mask>
-        </defs>
-
-        {/* Scalable Vector Group: Initialized inline at scale:0.38 & opacity:0 to prevent first-paint flash! */}
-        <g
-          ref={svgGroupRef}
-          style={{
-            opacity: 0,
-            transform: "scale(0.38)",
-            transformOrigin: "233.5px 114px",
-          }}
-          className="drop-shadow-[0_0_35px_rgba(0,157,241,0.45)]"
+        <svg
+          viewBox="0 0 517.15 325.73"
+          className="w-full h-auto drop-shadow-[0_0_35px_rgba(0,157,241,0.45)]"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
         >
           {/* Main Castle Body */}
           <path
@@ -291,13 +271,12 @@ export default function CinematicLogoPortal({
             fill={textFill}
             d="M517.15,218.66c0,4.93-3.87,8.8-8.9,8.8s-8.96-3.87-8.96-8.8,3.97-8.69,8.96-8.69,8.9,3.87,8.9,8.69ZM501.52,218.66c0,3.87,2.86,6.94,6.78,6.94s6.62-3.07,6.62-6.89-2.81-7-6.68-7-6.73,3.13-6.73,6.94ZM506.87,223.21h-2.01v-8.69c.79-.16,1.91-.27,3.34-.27,1.64,0,2.38.27,3.02.64.48.37.85,1.06.85,1.91,0,.95-.74,1.7-1.8,2.01v.11c.85.32,1.33.95,1.59,2.12.26,1.32.42,1.85.64,2.17h-2.17c-.26-.32-.42-1.11-.69-2.12-.16-.95-.69-1.38-1.8-1.38h-.95v3.5ZM506.92,218.29h.95c1.11,0,2.01-.37,2.01-1.27,0-.79-.58-1.33-1.85-1.33-.53,0-.9.05-1.11.11v2.49Z"
           />
-        </g>
-      </svg>
+        </svg>
+      </div>
 
       {/* Footer Branding Text */}
       <div
         ref={textRef}
-        style={{ opacity: 0 }}
         className="absolute bottom-8 px-4 text-center tracking-widest text-[11px] sm:text-xs uppercase font-bold text-text-muted/80 z-20 pointer-events-none"
       >
         <span>
