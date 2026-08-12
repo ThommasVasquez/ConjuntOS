@@ -158,11 +158,11 @@ export default function Navbar() {
             className="relative group rounded-full font-semibold text-xs transition-all duration-300 active:scale-95"
           >
             {/* 1. Orbiting Conic Organic Halo Glow (Unclipped Ambient Glow) */}
-            <div className="absolute -inset-2 rounded-full overflow-hidden opacity-80 group-hover:opacity-100 transition-opacity duration-500 blur-md group-hover:blur-lg pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280%] aspect-square rounded-full overflow-hidden opacity-80 group-hover:opacity-100 transition-opacity duration-500 blur-md group-hover:blur-lg pointer-events-none">
               <div 
-                className="w-[250%] h-[250%] -translate-x-1/3 -translate-y-1/3 animate-[spin_4s_linear_infinite]"
+                className="w-full h-full animate-[spin_5s_linear_infinite]"
                 style={{
-                  background: 'conic-gradient(from 0deg at 50% 50%, #009df1 0%, #57bf00 35%, #06b6d4 70%, #009df1 100%)',
+                  background: 'conic-gradient(from 0deg, #009df1 0%, #57bf00 25%, #009df1 50%, #57bf00 75%, #009df1 100%)',
                 }}
               />
             </div>
@@ -171,9 +171,9 @@ export default function Navbar() {
             <div className="relative rounded-full p-[1.5px] overflow-hidden shadow-[0_0_20px_rgba(0,157,241,0.4)]">
               {/* Rotating Conic Light Beam for Border */}
               <div 
-                className="absolute -inset-[150%] animate-[spin_4s_linear_infinite]"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300%] aspect-square animate-[spin_5s_linear_infinite] pointer-events-none"
                 style={{
-                  background: 'conic-gradient(from 0deg at 50% 50%, #009df1 0%, #57bf00 35%, #06b6d4 70%, #009df1 100%)',
+                  background: 'conic-gradient(from 0deg, #009df1 0%, #57bf00 25%, #009df1 50%, #57bf00 75%, #009df1 100%)',
                 }}
               />
 
