@@ -526,96 +526,74 @@ export default function SuperAdminPage() {
               <Grid size={16} className="text-accent shrink-0" /> 3. Estructura Física y Nomenclatura Interna
             </h3>
 
-            {/* 1. Tipo de Agrupación Principal (Torre, Interior, Bloque, Etapa, Sin Bloque, Custom) */}
-            <div className="flex flex-col gap-2 w-full">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
-                Denominación de Bloque / Edificación Principal
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 w-full">
-                {[
-                  { id: "Torre", label: "🏢 Torre", desc: "Ej: Torre 4" },
-                  { id: "Interior", label: "🏠 Interior", desc: "Ej: Interior 2" },
-                  { id: "Bloque", label: "🧩 Bloque", desc: "Ej: Bloque B" },
-                  { id: "Etapa", label: "🌿 Etapa", desc: "Ej: Etapa 1" },
-                  { id: "Sin Bloque", label: "🏡 Sin Bloque", desc: "Casas directas" },
-                  { id: "Custom", label: "✏️ Personalizada", desc: "Escribir texto" },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, tipoAgrupacion: opt.id })}
-                    className={`py-2.5 px-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer min-w-0 ${
-                      formData.tipoAgrupacion === opt.id
-                        ? "bg-accent/15 border-accent text-accent shadow-md"
-                        : "bg-surface-2 border-border text-text hover:border-text/30"
-                    }`}
-                  >
-                    <span className="text-xs font-bold truncate">{opt.label}</span>
-                    <span className="text-[9px] opacity-70 mt-0.5 truncate">{opt.desc}</span>
-                  </button>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+              {/* 1. Tipo de Agrupación Principal Dropdown */}
+              <div className="flex flex-col gap-1.5 min-w-0 w-full">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                  Denominación de Bloque / Edificación Principal *
+                </label>
+                <select
+                  value={formData.tipoAgrupacion}
+                  onChange={(e) => setFormData({ ...formData, tipoAgrupacion: e.target.value })}
+                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent cursor-pointer min-w-0"
+                >
+                  <option value="Torre">🏢 Torre (Ej: Torre 4)</option>
+                  <option value="Interior">🏠 Interior (Ej: Interior 2)</option>
+                  <option value="Bloque">🧩 Bloque (Ej: Bloque B)</option>
+                  <option value="Etapa">🌿 Etapa (Ej: Etapa 1)</option>
+                  <option value="Sin Bloque">🏡 Sin Bloque (Casas directas / Sin agrupador)</option>
+                  <option value="Custom">✏️ Personalizado (Escribir texto manualmente)</option>
+                </select>
+
+                {formData.tipoAgrupacion === "Custom" && (
+                  <div className="flex flex-col gap-1 mt-1.5 min-w-0 w-full">
+                    <label className="text-[9px] text-text/80 font-bold uppercase tracking-widest pl-1 truncate">
+                      Escribe la nomenclatura personalizada para la agrupación:
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.tipoAgrupacionCustom}
+                      onChange={(e) => setFormData({ ...formData, tipoAgrupacionCustom: e.target.value })}
+                      placeholder="Ej: Módulo, Sector, Manzana, Villa, Cluster..."
+                      className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent min-w-0"
+                    />
+                  </div>
+                )}
               </div>
 
-              {formData.tipoAgrupacion === "Custom" && (
-                <div className="flex flex-col gap-1 mt-1 min-w-0 w-full">
-                  <label className="text-[9px] text-text font-bold uppercase tracking-widest pl-1 truncate">
-                    Escribe la nomenclatura personalizada para la agrupación:
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.tipoAgrupacionCustom}
-                    onChange={(e) => setFormData({ ...formData, tipoAgrupacionCustom: e.target.value })}
-                    placeholder="Ej: Módulo, Sector, Manzana, Villa, Unidad..."
-                    className="w-full bg-surface-2 border border-border rounded-xl py-2.5 px-4 text-sm text-text focus:outline-none focus:border-accent min-w-0"
-                  />
-                </div>
-              )}
-            </div>
+              {/* 2. Tipo de Inmueble / Unidad Privada Dropdown */}
+              <div className="flex flex-col gap-1.5 min-w-0 w-full">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                  Tipo de Inmueble / Unidad Privada *
+                </label>
+                <select
+                  value={formData.tipoUnidadPrivada}
+                  onChange={(e) => setFormData({ ...formData, tipoUnidadPrivada: e.target.value })}
+                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent cursor-pointer min-w-0"
+                >
+                  <option value="Apartamento">🚪 Apartamento (Ej: Apto 1410)</option>
+                  <option value="Casa">🏠 Casa (Ej: Casa 15)</option>
+                  <option value="Local">🏪 Local Comercial (Ej: Local 101)</option>
+                  <option value="Oficina">🏢 Oficina (Ej: Oficina 302)</option>
+                  <option value="Penthouse">🌟 Penthouse (Ej: PH 1201)</option>
+                  <option value="Custom">✏️ Personalizado (Escribir texto manualmente)</option>
+                </select>
 
-            {/* 2. Tipo de Inmueble / Unidad Privada */}
-            <div className="flex flex-col gap-2 w-full">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
-                Tipo de Inmueble / Unidad Privada
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 w-full">
-                {[
-                  { id: "Apartamento", label: "🚪 Apartamento", desc: "Ej: Apto 1410" },
-                  { id: "Casa", label: "🏠 Casa", desc: "Ej: Casa 15" },
-                  { id: "Local", label: "🏪 Local", desc: "Ej: Local 101" },
-                  { id: "Oficina", label: "🏢 Oficina", desc: "Ej: Oficina 302" },
-                  { id: "Penthouse", label: "🌟 Penthouse", desc: "Ej: PH 1201" },
-                  { id: "Custom", label: "✏️ Personalizada", desc: "Escribir texto" },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, tipoUnidadPrivada: opt.id })}
-                    className={`py-2.5 px-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer min-w-0 ${
-                      formData.tipoUnidadPrivada === opt.id
-                        ? "bg-accent/15 border-accent text-accent shadow-md"
-                        : "bg-surface-2 border-border text-text hover:border-text/30"
-                    }`}
-                  >
-                    <span className="text-xs font-bold truncate">{opt.label}</span>
-                    <span className="text-[9px] opacity-70 mt-0.5 truncate">{opt.desc}</span>
-                  </button>
-                ))}
+                {formData.tipoUnidadPrivada === "Custom" && (
+                  <div className="flex flex-col gap-1 mt-1.5 min-w-0 w-full">
+                    <label className="text-[9px] text-text/80 font-bold uppercase tracking-widest pl-1 truncate">
+                      Escribe la nomenclatura personalizada para la unidad privada:
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.tipoUnidadCustom}
+                      onChange={(e) => setFormData({ ...formData, tipoUnidadCustom: e.target.value })}
+                      placeholder="Ej: Suite, Depósito, Bodega, Chalet, Estudio..."
+                      className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent min-w-0"
+                    />
+                  </div>
+                )}
               </div>
-
-              {formData.tipoUnidadPrivada === "Custom" && (
-                <div className="flex flex-col gap-1 mt-1 min-w-0 w-full">
-                  <label className="text-[9px] text-text font-bold uppercase tracking-widest pl-1 truncate">
-                    Escribe la nomenclatura personalizada para la unidad privada:
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.tipoUnidadCustom}
-                    onChange={(e) => setFormData({ ...formData, tipoUnidadCustom: e.target.value })}
-                    placeholder="Ej: Suite, Depósito, Bodega, Chalet, Estudio..."
-                    className="w-full bg-surface-2 border border-border rounded-xl py-2.5 px-4 text-sm text-text focus:outline-none focus:border-accent min-w-0"
-                  />
-                </div>
-              )}
             </div>
 
             {/* 3. Subdominios y Direccionamiento Interno */}
