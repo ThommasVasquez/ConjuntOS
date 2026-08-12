@@ -105,13 +105,13 @@ export default function Navbar() {
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none rounded-t-full" />
         )}
         
-        {/* 1. Logo Container (Theme-Aware Icon Emblem: Attached Black Castle in Light Mode, Inverted White Castle in Dark Mode) */}
-        <div className="transition-all duration-700 flex items-center w-10">
+        {/* 1. Logo Container (Theme-Aware Icon Emblem: Attached Black Castle in Light Mode, Inverted White Castle in Dark Mode - 30% Larger) */}
+        <div className="transition-all duration-700 flex items-center w-12">
           <div 
             onClick={() => navigate("/")} 
             className="flex items-center justify-center cursor-pointer group"
           >
-            <div className="h-9 w-9 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+            <div className="h-12 w-12 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
               <CastleIcon isDark={isDark} />
             </div>
           </div>
