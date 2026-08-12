@@ -47,17 +47,17 @@ export default function Navbar() {
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none rounded-t-full" />
         )}
         
-        {/* 1. Logo Container (Consistent white vector branding) */}
-        <div className={`transition-all duration-700 flex items-center ${scrolled ? "w-[120px]" : "w-[150px]"}`}>
+        {/* 1. Logo Container (Icon-Only Castle Emblem) */}
+        <div className="transition-all duration-700 flex items-center w-10">
           <div 
             onClick={() => navigate("/")} 
-            className="flex items-center cursor-pointer group"
+            className="flex items-center justify-center cursor-pointer group"
           >
-            <div className="h-10 w-[130px] flex items-center justify-center">
+            <div className="h-10 w-10 flex items-center justify-center">
               <img 
-                src="/logo-verticalW.svg" 
+                src="/solo-light.svg" 
                 alt="ConjuntOS" 
-                className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.3)]"
+                className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.3)] transition-transform duration-300 group-hover:scale-105"
               />
             </div>
           </div>
