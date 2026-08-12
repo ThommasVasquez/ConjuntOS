@@ -271,13 +271,13 @@ export default function Hero() {
             </p>
 
             <div className="flex items-center gap-8">
-              {/* "Lo quiero en mi conjunto!" Button - EXACT IDENTICAL CODE AND STYLING TO NAVBAR BUTTON */}
+              {/* "Lo quiero en mi conjunto!" Button - Normal Accent by Default, Aqua/Green Halo ONLY on Mouseover */}
               <button
                 onClick={() => navigate("/login")}
-                className="relative group rounded-full font-semibold text-xs transition-all duration-300 active:scale-95 cursor-pointer"
+                className="relative group rounded-full font-bold text-xs tracking-widest uppercase transition-all duration-300 active:scale-95 cursor-pointer"
               >
-                {/* 1. Orbiting Conic Organic Halo Glow (Unclipped Ambient Glow) */}
-                <div className="absolute -inset-2 rounded-full overflow-hidden opacity-80 group-hover:opacity-100 transition-opacity duration-500 blur-md group-hover:blur-lg pointer-events-none">
+                {/* 1. Orbiting Conic Organic Halo Glow (Activates ONLY on Mouseover) */}
+                <div className="absolute -inset-2 rounded-full overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md group-hover:blur-lg pointer-events-none">
                   <div
                     className="w-[250%] h-[250%] -translate-x-1/3 -translate-y-1/3 animate-[spin_4s_linear_infinite]"
                     style={{
@@ -288,19 +288,19 @@ export default function Hero() {
                 </div>
 
                 {/* 2. Organic Orbiting Conic Border Ring Container */}
-                <div className="relative rounded-full p-[1.5px] overflow-hidden shadow-[0_0_20px_rgba(0,157,241,0.4)]">
-                  {/* Rotating Conic Light Beam for Border */}
+                <div className="relative rounded-full p-[1.5px] overflow-hidden shadow-lg transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(0,157,241,0.6)]">
+                  {/* Rotating Conic Light Beam for Border (Visible ONLY on Mouseover) */}
                   <div
-                    className="absolute -inset-[150%] animate-[spin_4s_linear_infinite]"
+                    className="absolute -inset-[150%] animate-[spin_4s_linear_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                     style={{
                       background:
                         "conic-gradient(from 0deg at 50% 50%, #009df1 0%, #57bf00 35%, #06b6d4 70%, #009df1 100%)",
                     }}
                   />
 
-                  {/* Inner Dark Pill Content */}
-                  <span className="relative block px-8 py-4 rounded-full bg-[#0a0f1d] group-hover:bg-[#070b16] transition-all duration-300">
-                    <span className="relative text-white font-bold tracking-wide flex items-center gap-1.5 drop-shadow-[0_0_10px_rgba(0,157,241,0.9)] uppercase">
+                  {/* Inner Content Surface: Normal bg-accent text-on-accent -> bg-[#0a0f1d] text-white on mouseover */}
+                  <span className="relative block px-8 py-4 rounded-full bg-accent group-hover:bg-[#0a0f1d] text-on-accent group-hover:text-white transition-all duration-300">
+                    <span className="relative flex items-center gap-2 drop-shadow-[0_0_8px_rgba(0,157,241,0.5)] uppercase">
                       Lo quiero en mi conjunto!
                     </span>
                   </span>
