@@ -5,11 +5,13 @@ import { Search, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/components/providers/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   const { navigate } = useViewTransition();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
@@ -27,6 +29,8 @@ export default function Navbar() {
 
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const isDark = theme === "dark";
 
   return (
     <nav 
@@ -47,7 +51,7 @@ export default function Navbar() {
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none rounded-t-full" />
         )}
         
-        {/* 1. Logo Container (Icon-Only Castle Emblem) */}
+        {/* 1. Logo Container (Theme-Aware Icon Emblem: White in Dark Mode, Black in Light Mode) */}
         <div className="transition-all duration-700 flex items-center w-10">
           <div 
             onClick={() => navigate("/")} 
@@ -55,9 +59,9 @@ export default function Navbar() {
           >
             <div className="h-10 w-10 flex items-center justify-center">
               <img 
-                src="/solo-light.svg" 
+                src={isDark ? "/solo-light.svg" : "/solo-dark.svg"} 
                 alt="ConjuntOS" 
-                className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.3)] transition-transform duration-300 group-hover:scale-105"
+                className="w-full h-full object-contain transition-all duration-300 group-hover:scale-105"
               />
             </div>
           </div>
