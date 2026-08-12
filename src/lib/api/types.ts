@@ -169,6 +169,10 @@ export interface ConjuntoDto {
   fechaEscritura: string | null;
   matriculaInmobiliaria: string | null;
   totalUnidades: number | null;
+  tipoAgrupacion?: string | null;
+  tipoUnidadPrivada?: string | null;
+  tieneSubdominiosBloques?: boolean | null;
+  formatoNomenclatura?: string | null;
   creadoEn: string;
 }
 
@@ -187,6 +191,10 @@ export interface CreateConjuntoRequest {
   fechaEscritura?: string;
   matriculaInmobiliaria?: string;
   totalUnidades?: number;
+  tipoAgrupacion?: string;
+  tipoUnidadPrivada?: string;
+  tieneSubdominiosBloques?: boolean;
+  formatoNomenclatura?: string;
 }
 
 export interface UpdateConjuntoRequest {

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   Building2, Plus, FileText, ShieldCheck, MapPin,
-  User, Calendar, Layers,   Upload, Edit3
+  User, Calendar, Layers, Upload, Edit3, Home, Grid, ToggleLeft, ToggleRight
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useWsSubscription } from "@/hooks/useWebSocket";
-import { Skeleton, SkeletonRows } from "@/components/ui/Skeleton";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 export default function SuperAdminPage() {
   const { user, loading: authLoading } = useAuth();
@@ -28,7 +28,7 @@ export default function SuperAdminPage() {
   const [tab, setTab] = useState<"CREAR" | "LISTAR">("CREAR");
   const [editingConjuntoId, setEditingConjuntoId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   // Form State
   const [formData, setFormData] = useState({
     nombre: "",
@@ -42,12 +42,24 @@ export default function SuperAdminPage() {
     fechaEscritura: "",
     matriculaInmobiliaria: "",
     totalUnidades: "1",
+    tipoAgrupacion: "Torre", // "Torre", "Interior", "Bloque", "Etapa", "Sin Bloque", "Custom"
+    tipoAgrupacionCustom: "",
+    tipoUnidadPrivada: "Apartamento", // "Apartamento", "Casa", "Local", "Oficina", "Penthouse", "Custom"
+    tipoUnidadCustom: "",
+    tieneSubdominiosBloques: true,
+    ejemploBloque: "4",
+    ejemploUnidad: "1410",
     logoUrl: "",
-    colorPrimario: "#404040" // Default premium blue
+    colorPrimario: "#404040",
   });
 
   const handleEditClick = (c: ConjuntoDto) => {
     setEditingConjuntoId(c.id);
+    const tipoAgrup = c.tipoAgrupacion || "Torre";
+    const isAgrupKnown = ["Torre", "Interior", "Bloque", "Etapa", "Sin Bloque"].includes(tipoAgrup);
+    const tipoUnidad = c.tipoUnidadPrivada || "Apartamento";
+    const isUnidadKnown = ["Apartamento", "Casa", "Local", "Oficina", "Penthouse"].includes(tipoUnidad);
+
     setFormData({
       nombre: c.nombre || "",
       nit: c.nit || "",
@@ -57,11 +69,18 @@ export default function SuperAdminPage() {
       representanteLegal: c.representanteLegal || "",
       notariaEscritura: c.notariaEscritura || "",
       numeroEscritura: c.numeroEscritura || "",
-      fechaEscritura: c.fechaEscritura ? new Date(c.fechaEscritura).toISOString().split('T')[0] : "",
+      fechaEscritura: c.fechaEscritura ? new Date(c.fechaEscritura).toISOString().split("T")[0] : "",
       matriculaInmobiliaria: c.matriculaInmobiliaria || "",
       totalUnidades: c.totalUnidades ? String(c.totalUnidades) : "1",
+      tipoAgrupacion: isAgrupKnown ? tipoAgrup : "Custom",
+      tipoAgrupacionCustom: isAgrupKnown ? "" : tipoAgrup,
+      tipoUnidadPrivada: isUnidadKnown ? tipoUnidad : "Custom",
+      tipoUnidadCustom: isUnidadKnown ? "" : tipoUnidad,
+      tieneSubdominiosBloques: c.tieneSubdominiosBloques ?? true,
+      ejemploBloque: "4",
+      ejemploUnidad: "1410",
       logoUrl: c.logoUrl || "",
-      colorPrimario: c.colorPrimario || "#404040"
+      colorPrimario: c.colorPrimario || "#404040",
     });
     setTab("CREAR");
   };
@@ -80,8 +99,15 @@ export default function SuperAdminPage() {
       fechaEscritura: "",
       matriculaInmobiliaria: "",
       totalUnidades: "1",
+      tipoAgrupacion: "Torre",
+      tipoAgrupacionCustom: "",
+      tipoUnidadPrivada: "Apartamento",
+      tipoUnidadCustom: "",
+      tieneSubdominiosBloques: true,
+      ejemploBloque: "4",
+      ejemploUnidad: "1410",
       logoUrl: "",
-      colorPrimario: "#404040"
+      colorPrimario: "#404040",
     });
   };
 
@@ -95,10 +121,9 @@ export default function SuperAdminPage() {
 
     setIsUploading(true);
     try {
-      // TODO: File upload endpoint pending on Rust backend. Using inline base64 for now.
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, logoUrl: reader.result as string }));
+        setFormData((prev) => ({ ...prev, logoUrl: reader.result as string }));
         toast.success("Logotipo cargado correctamente");
         setIsUploading(false);
       };
@@ -115,7 +140,7 @@ export default function SuperAdminPage() {
 
   const fetchConjuntos = async () => {
     try {
-      const data = await api.get<ConjuntoDto[]>('/superadmin/conjuntos');
+      const data = await api.get<ConjuntoDto[]>("/superadmin/conjuntos");
       setConjuntos(data);
     } catch {
       toast.error("Error al cargar conjuntos registrados");
@@ -124,8 +149,7 @@ export default function SuperAdminPage() {
     }
   };
 
-  // Real-time WebSocket subscription
-  useWsSubscription('conjunto', () => fetchConjuntos());
+  useWsSubscription("conjunto", () => fetchConjuntos());
 
   useEffect(() => {
     if (authLoading) return;
@@ -145,9 +169,7 @@ export default function SuperAdminPage() {
 
   useEffect(() => {
     if (!loading) {
-      const ctx = gsap.context(() => {
-        
-}, containerRef);
+      const ctx = gsap.context(() => {}, containerRef);
       return () => ctx.revert();
     }
   }, [loading, tab]);
@@ -162,13 +184,38 @@ export default function SuperAdminPage() {
 
     setIsSubmitting(true);
     try {
-      // Sanitize before sending: the Rust backend expects typed fields, not the
-      // raw string-only form state. totalUnidades must be a number (i32), and
-      // optional fields left blank must be omitted (so serde sees them as None)
-      // instead of being sent as "" — an empty string fails to deserialize into
-      // Option<DateTime>/Option<i32> and triggers a 422.
-      const payload: Record<string, unknown> = {};
+      const resolvedTipoAgrupacion =
+        formData.tipoAgrupacion === "Custom"
+          ? formData.tipoAgrupacionCustom.trim() || "Bloque"
+          : formData.tipoAgrupacion;
+
+      const resolvedTipoUnidad =
+        formData.tipoUnidadPrivada === "Custom"
+          ? formData.tipoUnidadCustom.trim() || "Unidad"
+          : formData.tipoUnidadPrivada;
+
+      const payload: Record<string, unknown> = {
+        tipoAgrupacion: resolvedTipoAgrupacion,
+        tipoUnidadPrivada: resolvedTipoUnidad,
+        tieneSubdominiosBloques: formData.tieneSubdominiosBloques,
+        formatoNomenclatura: formData.tieneSubdominiosBloques && resolvedTipoAgrupacion !== "Sin Bloque"
+          ? `${resolvedTipoAgrupacion} {bloque} - ${resolvedTipoUnidad} {unidad}`
+          : `${resolvedTipoUnidad} {unidad}`,
+      };
+
       Object.entries(formData).forEach(([key, value]) => {
+        if (
+          key === "tipoAgrupacion" ||
+          key === "tipoAgrupacionCustom" ||
+          key === "tipoUnidadPrivada" ||
+          key === "tipoUnidadCustom" ||
+          key === "tieneSubdominiosBloques" ||
+          key === "ejemploBloque" ||
+          key === "ejemploUnidad"
+        ) {
+          return;
+        }
+
         if (value === "" || value === null || value === undefined) return;
         if (key === "totalUnidades") {
           const n = parseInt(String(value), 10);
@@ -181,26 +228,14 @@ export default function SuperAdminPage() {
       if (editingConjuntoId) {
         await api.put(`/superadmin/conjuntos/${editingConjuntoId}`, payload);
       } else {
-        await api.post('/superadmin/conjuntos', payload);
+        await api.post("/superadmin/conjuntos", payload);
       }
-      toast.success(editingConjuntoId ? "Copropiedad actualizada con éxito" : "Conjunto de Propiedad Horizontal registrado con éxito");
-      // Reset form
-      setFormData({
-        nombre: "",
-        nit: "",
-        subdominio: "",
-        direccion: "",
-        ciudad: "",
-        representanteLegal: "",
-        notariaEscritura: "",
-        numeroEscritura: "",
-        fechaEscritura: "",
-        matriculaInmobiliaria: "",
-        totalUnidades: "1",
-        logoUrl: "",
-        colorPrimario: "#404040"
-      });
-      setEditingConjuntoId(null);
+      toast.success(
+        editingConjuntoId
+          ? "Copropiedad actualizada con éxito"
+          : "Conjunto de Propiedad Horizontal registrado con éxito",
+      );
+      handleCancelEdit();
       fetchConjuntos();
       setTab("LISTAR");
     } catch {
@@ -208,6 +243,20 @@ export default function SuperAdminPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const getAgrupacionLabel = () => {
+    if (formData.tipoAgrupacion === "Custom") {
+      return formData.tipoAgrupacionCustom.trim() || "Bloque";
+    }
+    return formData.tipoAgrupacion;
+  };
+
+  const getUnidadLabel = () => {
+    if (formData.tipoUnidadPrivada === "Custom") {
+      return formData.tipoUnidadCustom.trim() || "Inmueble";
+    }
+    return formData.tipoUnidadPrivada;
   };
 
   if (loading || authLoading) {
@@ -219,13 +268,20 @@ export default function SuperAdminPage() {
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden">
+    <div
+      ref={containerRef}
+      className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden"
+    >
       <ProfileHeader />
 
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent italic">SuperAdmin Dashboard</span>
-          <h1 className="text-3xl font-display font-bold text-text leading-none mt-1">Registrar Copropiedad</h1>
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent italic">
+            SuperAdmin Dashboard
+          </span>
+          <h1 className="text-3xl font-display font-bold text-text leading-none mt-1">
+            Registrar Copropiedad
+          </h1>
         </div>
         <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent">
           <Building2 size={22} />
@@ -234,15 +290,23 @@ export default function SuperAdminPage() {
 
       {/* Tabs */}
       <div className="flex bg-surface-2 rounded-full p-1 border border-border">
-        <button 
-          onClick={() => setTab("CREAR")} 
-          className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === "CREAR" ? "bg-accent/10 text-accent shadow-inner" : "text-text hover:text-text"}`}
+        <button
+          onClick={() => setTab("CREAR")}
+          className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
+            tab === "CREAR"
+              ? "bg-accent/10 text-accent shadow-inner"
+              : "text-text hover:text-text"
+          }`}
         >
           Nuevo Registro
         </button>
-        <button 
-          onClick={() => setTab("LISTAR")} 
-          className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${tab === "LISTAR" ? "bg-surface text-text border border-border shadow-md" : "text-text hover:text-text"}`}
+        <button
+          onClick={() => setTab("LISTAR")}
+          className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
+            tab === "LISTAR"
+              ? "bg-surface text-text border border-border shadow-md"
+              : "text-text hover:text-text"
+          }`}
         >
           Ver Registrados ({conjuntos.length})
         </button>
@@ -254,9 +318,12 @@ export default function SuperAdminPage() {
             <div className="flex items-center justify-between bg-accent/15 border border-accent/20 rounded-2xl p-4 text-xs text-text shadow-lg">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-accent animate-ping" />
-                <span>Modo edición activo: Editando <strong>{formData.nombre || "copropiedad"}</strong></span>
+                <span>
+                  Modo edición activo: Editando{" "}
+                  <strong>{formData.nombre || "copropiedad"}</strong>
+                </span>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={handleCancelEdit}
                 className="py-1.5 px-3 rounded-xl border border-border text-[9px] font-black uppercase tracking-wider bg-surface hover:bg-text/5 text-text cursor-pointer transition-all active:scale-95"
@@ -265,6 +332,7 @@ export default function SuperAdminPage() {
               </button>
             </div>
           )}
+
           {/* SECCIÓN 1: IDENTIFICACIÓN GENERAL */}
           <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
             <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2">
@@ -273,25 +341,29 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Nombre Comercial *</label>
-                <input 
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Nombre Comercial *
+                </label>
+                <input
                   required
-                  type="text" 
+                  type="text"
                   value={formData.nombre}
-                  onChange={e => setFormData({...formData, nombre: e.target.value})}
-                  placeholder="Ej: Residencial Club del Sol" 
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  placeholder="Ej: Residencial Club del Sol"
                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">NIT *</label>
-                <input 
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  NIT *
+                </label>
+                <input
                   required
-                  type="text" 
+                  type="text"
                   value={formData.nit}
-                  onChange={e => setFormData({...formData, nit: e.target.value})}
-                  placeholder="Ej: 900.123.456-1" 
+                  onChange={(e) => setFormData({ ...formData, nit: e.target.value })}
+                  placeholder="Ej: 900.123.456-1"
                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                 />
               </div>
@@ -299,48 +371,56 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Dirección de Ubicación *</label>
-                <input 
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Dirección de Ubicación *
+                </label>
+                <input
                   required
-                  type="text" 
+                  type="text"
                   value={formData.direccion}
-                  onChange={e => setFormData({...formData, direccion: e.target.value})}
-                  placeholder="Ej: Calle 26 # 69-76" 
+                  onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+                  placeholder="Ej: Calle 26 # 69-76"
                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Municipio / Ciudad *</label>
-                <input 
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Municipio / Ciudad *
+                </label>
+                <input
                   required
-                  type="text" 
+                  type="text"
                   value={formData.ciudad}
-                  onChange={e => setFormData({...formData, ciudad: e.target.value})}
-                  placeholder="Ej: Medellín" 
+                  onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+                  placeholder="Ej: Medellín"
                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                 />
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Subdominio Único (Tenant ID) *</label>
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Subdominio Único (Tenant ID) *
+              </label>
               <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3 focus-within:border-accent transition-colors">
-                <input 
+                <input
                   required
-                  type="text" 
+                  type="text"
                   value={formData.subdominio}
-                  onChange={e => setFormData({...formData, subdominio: e.target.value})}
-                  placeholder="clubdelsol" 
+                  onChange={(e) => setFormData({ ...formData, subdominio: e.target.value })}
+                  placeholder="clubdelsol"
                   className="bg-transparent border-none outline-none text-sm text-text flex-1"
                 />
                 <span className="text-xs text-text font-mono">.conjuntos.app</span>
               </div>
-              <p className="text-[9px] text-text pl-1 mt-0.5">Identificador de URL único para acceso directo al portal de residentes.</p>
+              <p className="text-[9px] text-text pl-1 mt-0.5">
+                Identificador de URL único para acceso directo al portal de residentes.
+              </p>
             </div>
           </div>
 
-          {/* SECCIÓN 2: DATOS DE REGULACIÓN LEGAL (LEY 675 DE 2001) */}
+          {/* SECCIÓN 2: REGISTRO DE PERSONERÍA JURÍDICA */}
           <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
             <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2">
               <FileText size={16} className="text-accent" /> 2. Registro de Personería Jurídica y Representación
@@ -348,26 +428,30 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Representante Legal (Administrador)</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Representante Legal (Administrador)
+                </label>
                 <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
                   <User size={16} className="text-text mr-2" />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={formData.representanteLegal}
-                    onChange={e => setFormData({...formData, representanteLegal: e.target.value})}
-                    placeholder="Nombre completo" 
+                    onChange={(e) => setFormData({ ...formData, representanteLegal: e.target.value })}
+                    placeholder="Nombre completo"
                     className="bg-transparent border-none outline-none text-sm text-text flex-1"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Notaría del Reglamento H.P.</label>
-                <input 
-                  type="text" 
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Notaría del Reglamento H.P.
+                </label>
+                <input
+                  type="text"
                   value={formData.notariaEscritura}
-                  onChange={e => setFormData({...formData, notariaEscritura: e.target.value})}
-                  placeholder="Ej: Notaría Primera de Envigado" 
+                  onChange={(e) => setFormData({ ...formData, notariaEscritura: e.target.value })}
+                  placeholder="Ej: Notaría Primera de Envigado"
                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                 />
               </div>
@@ -375,66 +459,227 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Número Escritura Pública</label>
-                <input 
-                  type="text" 
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Número Escritura Pública
+                </label>
+                <input
+                  type="text"
                   value={formData.numeroEscritura}
-                  onChange={e => setFormData({...formData, numeroEscritura: e.target.value})}
-                  placeholder="Ej: Escritura 4289" 
+                  onChange={(e) => setFormData({ ...formData, numeroEscritura: e.target.value })}
+                  placeholder="Ej: Escritura 4289"
                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Fecha de la Escritura</label>
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Fecha de la Escritura
+                </label>
                 <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
                   <Calendar size={16} className="text-text mr-2" />
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={formData.fechaEscritura}
-                    onChange={e => setFormData({...formData, fechaEscritura: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, fechaEscritura: e.target.value })}
                     className="bg-transparent border-none outline-none text-sm text-text flex-1"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Matrícula Principal Oficina Registro</label>
-                <input 
-                  type="text" 
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Matrícula Principal Oficina Registro
+                </label>
+                <input
+                  type="text"
                   value={formData.matriculaInmobiliaria}
-                  onChange={e => setFormData({...formData, matriculaInmobiliaria: e.target.value})}
-                  placeholder="Ej: 001-1234567" 
+                  onChange={(e) => setFormData({ ...formData, matriculaInmobiliaria: e.target.value })}
+                  placeholder="Ej: 001-1234567"
                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                 />
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Total Unidades Privadas (Aptos / Casas)</label>
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Total Unidades Privadas (Aptos / Casas)
+              </label>
               <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
                 <Layers size={16} className="text-text mr-2" />
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   min="1"
                   value={formData.totalUnidades}
-                  onChange={e => setFormData({...formData, totalUnidades: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, totalUnidades: e.target.value })}
                   className="bg-transparent border-none outline-none text-sm text-text flex-1"
                 />
               </div>
-              <p className="text-[9px] text-text pl-1 mt-0.5">Define la cantidad de inmuebles que componen la asamblea general de copropietarios.</p>
+              <p className="text-[9px] text-text pl-1 mt-0.5">
+                Define la cantidad de inmuebles que componen la asamblea general de copropietarios.
+              </p>
             </div>
           </div>
 
-          {/* SECCIÓN 3: PERSONALIZACIÓN */}
+          {/* SECCIÓN 3: ESTRUCTURA FÍSICA Y NOMENCLATURA INTERNA */}
+          <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-5">
+            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2">
+              <Grid size={16} className="text-accent" /> 3. Estructura Física y Nomenclatura Interna
+            </h3>
+
+            {/* 1. Tipo de Agrupación Principal (Torre, Interior, Bloque, Etapa, Sin Bloque, Custom) */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Denominación de Bloque / Edificación Principal
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                {[
+                  { id: "Torre", label: "🏢 Torre", desc: "Ej: Torre 4" },
+                  { id: "Interior", label: "🏠 Interior", desc: "Ej: Interior 2" },
+                  { id: "Bloque", label: "🧩 Bloque", desc: "Ej: Bloque B" },
+                  { id: "Etapa", label: "🌿 Etapa", desc: "Ej: Etapa 1" },
+                  { id: "Sin Bloque", label: "🏡 Sin Bloque", desc: "Casas directas" },
+                  { id: "Custom", label: "✏️ Personalizada", desc: "Escribir texto" },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, tipoAgrupacion: opt.id })}
+                    className={`py-2.5 px-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                      formData.tipoAgrupacion === opt.id
+                        ? "bg-accent/15 border-accent text-accent shadow-md"
+                        : "bg-surface-2 border-border text-text hover:border-text/30"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{opt.label}</span>
+                    <span className="text-[9px] opacity-70 mt-0.5">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              {formData.tipoAgrupacion === "Custom" && (
+                <div className="flex flex-col gap-1 mt-1">
+                  <label className="text-[9px] text-text font-bold uppercase tracking-widest pl-1">
+                    Escribe la nomenclatura personalizada para la agrupación:
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tipoAgrupacionCustom}
+                    onChange={(e) => setFormData({ ...formData, tipoAgrupacionCustom: e.target.value })}
+                    placeholder="Ej: Módulo, Sector, Manzana, Villa, Unidad..."
+                    className="w-full bg-surface-2 border border-border rounded-xl py-2.5 px-4 text-sm text-text focus:outline-none focus:border-accent"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 2. Tipo de Inmueble / Unidad Privada */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Tipo de Inmueble / Unidad Privada
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                {[
+                  { id: "Apartamento", label: "🚪 Apartamento", desc: "Ej: Apto 1410" },
+                  { id: "Casa", label: "🏠 Casa", desc: "Ej: Casa 15" },
+                  { id: "Local", label: "🏪 Local", desc: "Ej: Local 101" },
+                  { id: "Oficina", label: "🏢 Oficina", desc: "Ej: Oficina 302" },
+                  { id: "Penthouse", label: "🌟 Penthouse", desc: "Ej: PH 1201" },
+                  { id: "Custom", label: "✏️ Personalizada", desc: "Escribir texto" },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, tipoUnidadPrivada: opt.id })}
+                    className={`py-2.5 px-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                      formData.tipoUnidadPrivada === opt.id
+                        ? "bg-accent/15 border-accent text-accent shadow-md"
+                        : "bg-surface-2 border-border text-text hover:border-text/30"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{opt.label}</span>
+                    <span className="text-[9px] opacity-70 mt-0.5">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              {formData.tipoUnidadPrivada === "Custom" && (
+                <div className="flex flex-col gap-1 mt-1">
+                  <label className="text-[9px] text-text font-bold uppercase tracking-widest pl-1">
+                    Escribe la nomenclatura personalizada para la unidad privada:
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tipoUnidadCustom}
+                    onChange={(e) => setFormData({ ...formData, tipoUnidadCustom: e.target.value })}
+                    placeholder="Ej: Suite, Depósito, Bodega, Chalet, Estudio..."
+                    className="w-full bg-surface-2 border border-border rounded-xl py-2.5 px-4 text-sm text-text focus:outline-none focus:border-accent"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 3. Subdominios y Direccionamiento Interno */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-surface-2 border border-border rounded-2xl p-4 mt-1">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-text">
+                    ¿Tendrá subdominios / bloques de agrupación?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        tieneSubdominiosBloques: !formData.tieneSubdominiosBloques,
+                      })
+                    }
+                    className="text-accent cursor-pointer transition-transform active:scale-95"
+                    title="Alternar subdominios internos"
+                  >
+                    {formData.tieneSubdominiosBloques ? (
+                      <ToggleRight size={32} className="text-accent" />
+                    ) : (
+                      <ToggleLeft size={32} className="text-text/40" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-[10px] text-text/70 leading-relaxed">
+                  {formData.tieneSubdominiosBloques
+                    ? "Formato activado con prefijos de bloques/torres (Ej: Torre 4 - Apto 1410)."
+                    : "Formato directo sin bloques internos (Ej: Casa 42 o Apto 101)."}
+                </p>
+              </div>
+
+              {/* Live Preview Box */}
+              <div className="bg-surface border border-accent/30 rounded-xl p-3.5 flex items-center gap-3 shadow-md">
+                <div className="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0">
+                  <Home size={18} />
+                </div>
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-wider text-accent italic block">
+                    Vista previa de nomenclatura interna:
+                  </span>
+                  <p className="text-sm font-bold text-text font-mono mt-0.5">
+                    {formData.tieneSubdominiosBloques && formData.tipoAgrupacion !== "Sin Bloque"
+                      ? `${getAgrupacionLabel()} ${formData.ejemploBloque || "4"} - ${getUnidadLabel()} ${formData.ejemploUnidad || "1410"}`
+                      : `${getUnidadLabel()} ${formData.ejemploUnidad || "1410"}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECCIÓN 4: PERSONALIZACIÓN */}
           <div className="liquid-glass rounded-[28px] p-6 border border-border shadow-2xl flex flex-col gap-4">
             <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2">
-              <Plus size={16} className="text-accent" /> 3. Personalización del Portal ConjuntOS
+              <Plus size={16} className="text-accent" /> 4. Personalización del Portal ConjuntOS
             </h3>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Logotipo de la Copropiedad</label>
-              
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Logotipo de la Copropiedad
+              </label>
+
               <div className="flex flex-col sm:flex-row gap-4 items-center bg-surface-2 border border-border rounded-2xl p-4">
                 {formData.logoUrl ? (
                   <div className="w-16 h-16 rounded-xl bg-white border border-border overflow-hidden flex items-center justify-center p-1 relative group shrink-0">
@@ -446,9 +691,9 @@ export default function SuperAdminPage() {
                       unoptimized
                       className="w-full h-full object-contain"
                     />
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, logoUrl: ""})}
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, logoUrl: "" })}
                       className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold uppercase tracking-wider transition-opacity cursor-pointer"
                     >
                       Remover
@@ -462,60 +707,66 @@ export default function SuperAdminPage() {
 
                 <div className="flex-1 flex flex-col gap-2 w-full">
                   <div className="relative">
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept="image/*"
                       onChange={handleLogoUpload}
                       disabled={isUploading}
                       id="logo-file-input"
                       className="hidden"
                     />
-                    <label 
+                    <label
                       htmlFor="logo-file-input"
-                      className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border text-xs font-bold uppercase tracking-wider text-text bg-surface hover:bg-text/5 cursor-pointer active:scale-98 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                      className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border text-xs font-bold uppercase tracking-wider text-text bg-surface hover:bg-text/5 cursor-pointer active:scale-98 transition-all ${isUploading ? "opacity-50 pointer-events-none" : ""}`}
                     >
                       {isUploading ? (
-                        <>
-                          <Skeleton className="w-3 h-3 rounded-full" /> Subiendo...
-                        </>
+                        <>Subiendo...</>
                       ) : (
                         <>
-                          <Upload size={12} className="text-accent" /> {formData.logoUrl ? 'Cambiar Logotipo' : 'Subir Logotipo'}
+                          <Upload size={12} className="text-accent" />{" "}
+                          {formData.logoUrl ? "Cambiar Logotipo" : "Subir Logotipo"}
                         </>
                       )}
                     </label>
                   </div>
-                  <p className="text-[9px] text-text leading-tight">Formatos permitidos: PNG, JPG, WebP, SVG. Max 5MB.</p>
+                  <p className="text-[9px] text-text leading-tight">
+                    Formatos permitidos: PNG, JPG, WebP, SVG. Max 5MB.
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Color de Marca Primario</label>
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Color de Marca Primario
+              </label>
               <div className="flex items-center gap-4 bg-surface-2 border border-border rounded-xl px-4 py-2">
-                <input 
-                  type="color" 
+                <input
+                  type="color"
                   value={formData.colorPrimario}
-                  onChange={e => setFormData({...formData, colorPrimario: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, colorPrimario: e.target.value })}
                   className="w-10 h-10 border-0 rounded-full cursor-pointer bg-transparent"
                 />
-                <span className="text-xs text-text font-mono font-bold">{formData.colorPrimario}</span>
+                <span className="text-xs text-text font-mono font-bold">
+                  {formData.colorPrimario}
+                </span>
               </div>
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            disabled={isSubmitting || isUploading} 
+          <button
+            type="submit"
+            disabled={isSubmitting || isUploading}
             className="w-full py-4 bg-accent hover:bg-accent/90 transition-all rounded-2xl font-black uppercase text-xs tracking-widest text-on-accent shadow-xl shadow-accent/20 active:scale-[0.98] flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
-              <>
-                <Skeleton className="w-4 h-4 rounded-full" /> {editingConjuntoId ? "Guardando Cambios..." : "Registrando Copropiedad..."}
-              </>
+              <>Guardando...</>
             ) : (
               <>
-                <ShieldCheck size={18} /> {editingConjuntoId ? "Guardar Cambios de Personería" : "Validar y Crear Personería Jurídica"}
+                <ShieldCheck size={18} />{" "}
+                {editingConjuntoId
+                  ? "Guardar Cambios de Personería"
+                  : "Validar y Crear Personería Jurídica"}
               </>
             )}
           </button>
@@ -524,22 +775,36 @@ export default function SuperAdminPage() {
         /* LISTADO DE CONJUNTOS REGISTRADOS */
         <div className="flex flex-col gap-4">
           {conjuntos.length === 0 ? (
-            <p className="text-center text-text text-sm py-12">No hay conjuntos registrados en el sistema.</p>
+            <p className="text-center text-text text-sm py-12">
+              No hay conjuntos registrados en el sistema.
+            </p>
           ) : (
             conjuntos.map((c, idx) => (
-              <div key={c.id || idx} className="liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 relative overflow-hidden group hover:border-accent/40 transition-all">
+              <div
+                key={c.id || idx}
+                className="liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 relative overflow-hidden group hover:border-accent/40 transition-all"
+              >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl pointer-events-none translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/15 transition-all"></div>
-                
+
                 <div className="flex justify-between items-start">
                   <div className="flex gap-3 items-center">
                     {c.logoUrl && (
                       <div className="w-10 h-10 rounded-lg bg-white border border-border overflow-hidden p-0.5 flex items-center justify-center shrink-0">
-                        <Image src={c.logoUrl} alt="Logotipo de la copropiedad" width={40} height={40} unoptimized className="w-full h-full object-contain" />
+                        <Image
+                          src={c.logoUrl}
+                          alt="Logotipo de la copropiedad"
+                          width={40}
+                          height={40}
+                          unoptimized
+                          className="w-full h-full object-contain"
+                        />
                       </div>
                     )}
                     <div>
                       <h3 className="text-lg font-bold text-text leading-tight">{c.nombre}</h3>
-                      <p className="text-accent font-mono text-[10px] tracking-widest uppercase font-black">{c.nit}</p>
+                      <p className="text-accent font-mono text-[10px] tracking-widest uppercase font-black">
+                        {c.nit}
+                      </p>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 items-end">
@@ -558,29 +823,44 @@ export default function SuperAdminPage() {
                 <div className="flex flex-col gap-1 text-xs text-text border-t border-border/40 pt-3 mt-1">
                   <div className="flex items-center gap-2">
                     <MapPin size={12} className="text-text" />
-                    <span>{c.direccion}, {c.ciudad}</span>
+                    <span>
+                      {c.direccion}, {c.ciudad}
+                    </span>
                   </div>
                   {c.representanteLegal && (
                     <div className="flex items-center gap-2">
                       <User size={12} className="text-text" />
-                      <span>Rep. Legal: <strong>{c.representanteLegal}</strong></span>
+                      <span>
+                        Rep. Legal: <strong>{c.representanteLegal}</strong>
+                      </span>
                     </div>
                   )}
-                  {c.matriculaInmobiliaria && (
+                  {c.tipoAgrupacion && (
                     <div className="flex items-center gap-2">
-                      <FileText size={12} className="text-text" />
-                      <span>F. Matrícula: <strong className="font-mono text-[11px]">{c.matriculaInmobiliaria}</strong></span>
+                      <Grid size={12} className="text-accent" />
+                      <span>
+                        Estructura:{" "}
+                        <strong>
+                          {c.tipoAgrupacion} / {c.tipoUnidadPrivada || "Apartamento"}
+                        </strong>{" "}
+                        ({c.tieneSubdominiosBloques ? "Con Subdominios de Bloque" : "Sin Bloque Directo"})
+                      </span>
                     </div>
                   )}
                   {c.numeroEscritura && (
                     <div className="flex items-center gap-2">
                       <ShieldCheck size={12} className="text-text" />
-                      <span>{c.notariaEscritura || "Deed"}: {c.numeroEscritura} ({c.fechaEscritura ? new Date(c.fechaEscritura).toLocaleDateString() : "N/A"})</span>
+                      <span>
+                        {c.notariaEscritura || "Deed"}: {c.numeroEscritura} (
+                        {c.fechaEscritura ? new Date(c.fechaEscritura).toLocaleDateString() : "N/A"})
+                      </span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
                     <Layers size={12} className="text-text" />
-                    <span>Unidades Totales: <strong>{c.totalUnidades || 1} celdas/unidades</strong></span>
+                    <span>
+                      Unidades Totales: <strong>{c.totalUnidades || 1} celdas/unidades</strong>
+                    </span>
                   </div>
                 </div>
               </div>
