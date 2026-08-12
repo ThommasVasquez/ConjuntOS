@@ -1,7 +1,7 @@
 "use client";
 
 import { useViewTransition } from "@/components/providers/ViewTransitionContext";
-import { Search } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useAuth } from "@/hooks/useAuth";
@@ -98,16 +98,23 @@ export default function Navbar() {
 
           <ThemeToggle />
 
+          {/* "Ir a la App" / "Ingresar" Button with Premium Aqua/Cyan Halo Glow */}
           <button
             onClick={() => navigate(user ? "/inicio" : "/login")}
-            className="relative group overflow-hidden rounded-full p-px font-semibold text-xs transition-all duration-300"
+            className="relative group rounded-full font-semibold text-xs transition-all duration-300 active:scale-95"
           >
-            <span className="absolute inset-0 bg-gradient-to-r from-accent via-cyan-400 to-accent animate-gradient-x" />
-            <span className="relative block px-5 py-2.5 rounded-full bg-primary transition-all duration-300 group-hover:bg-opacity-0">
-              <span className="relative text-text group-hover:text-white font-medium tracking-wide">
-                {user ? "Ir a la App" : "Ingresar"}
+            {/* Outer Pulsing Aqua Halo Glow Effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#009df1] via-cyan-400 to-[#57bf00] rounded-full blur-md opacity-80 group-hover:opacity-100 transition-all duration-500 animate-pulse group-hover:blur-lg" />
+
+            {/* Glowing Border & Content Inner Container */}
+            <div className="relative rounded-full p-[1.5px] bg-gradient-to-r from-[#009df1] via-cyan-400 to-[#57bf00] shadow-[0_0_20px_rgba(0,157,241,0.5)]">
+              <span className="relative block px-5 py-2.5 rounded-full bg-[#0a0f1d] transition-all duration-300 group-hover:bg-opacity-80">
+                <span className="relative text-white font-bold tracking-wide flex items-center gap-1.5 drop-shadow-[0_0_8px_rgba(0,157,241,0.8)]">
+                  {user ? "Ir a la App" : "Ingresar"}
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                </span>
               </span>
-            </span>
+            </div>
           </button>
         </div>
       </div>
