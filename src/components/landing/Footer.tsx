@@ -12,7 +12,10 @@ export default function Footer() {
   const { navigate } = useViewTransition();
 
   return (
-    <footer className="bg-[#0A0A0A] text-white pt-24 overflow-hidden relative">
+    <footer className="bg-[#0A0A0A] text-white pt-24 overflow-hidden relative border-t border-white/10">
+      {/* Glowing Top Hairline Divider */}
+      <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+
       {/* Background Orb */}
       <div className="absolute bottom-0 right-[-10%] w-[500px] h-[500px] bg-white/5 blur-[120px] rounded-full pointer-events-none" />
 
