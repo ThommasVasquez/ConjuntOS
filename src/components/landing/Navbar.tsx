@@ -54,13 +54,13 @@ export default function Navbar() {
             className="flex items-center cursor-pointer group"
           >
             <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center ${
-              scrolled ? "h-10 w-10 text-text" : "h-10 w-[140px]"
+              scrolled ? "h-10 w-10 text-white" : "h-10 w-[140px]"
             }`}>
               {scrolled ? (
                 <img 
-                  src="/solo-dark.svg" 
+                  src="/solo-light.svg" 
                   alt="ConjuntOS" 
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]"
                 />
               ) : (
                 <img 
@@ -80,37 +80,46 @@ export default function Navbar() {
               <button 
                 key={item}
                 onClick={() => {
-                  if (item === "Asambleas") navigate("/asamblea");
+                  const sectionId = item.toLowerCase().replace(/á/g, 'a');
+                  const element = document.getElementById(sectionId);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
                 }}
-                className={`transition-all duration-500 text-[11px] font-bold tracking-widest uppercase hover:text-accent cursor-pointer ${
-                  scrolled ? "text-text" : "text-white"
-                }`}
+                className="text-sm font-medium text-text-muted hover:text-text transition-colors relative py-1 group"
               >
                 {item}
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full" />
               </button>
             ))}
           </div>
         </div>
 
-        {/* 3. Actions Container (Fixed width to balance left side) */}
-        <div className={`transition-all duration-700 flex items-center justify-end gap-6 ${scrolled ? "w-[120px]" : "w-[180px]"}`}>
-          <button className="text-white hover:text-accent transition-colors duration-300">
-            <Search size={16} strokeWidth={2.5} />
-          </button>
-          <ThemeToggle className="text-white" />
-          <div className="h-4 w-[1px] bg-text/10 mx-1" />
-          <button 
-            onClick={() => navigate(user ? "/inicio" : "/login")} 
-            className={`transition-all duration-300 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase whitespace-nowrap hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,0,0,0.3)] ${
-              scrolled 
-                ? "text-text bg-text/5 border border-text/10 hover:bg-accent hover:text-on-accent"
-                : "text-on-accent border border-text/20 hover:bg-accent hover:border-accent hover:text-on-accent"
-            }`}
+        {/* 3. Action Controls Container (Right side) */}
+        <div className="flex items-center gap-4 justify-end">
+          {/* Quick Search Launcher */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('open-search-modal'))}
+            className="p-2.5 rounded-full text-text-muted hover:text-text hover:bg-surface/50 transition-all border border-transparent hover:border-white/10 group"
+            title="Buscar o consultar IA..."
           >
-            {user ? "Mi Panel" : "Ingresar"}
+            <Search className="w-4 h-4 transition-transform group-hover:scale-110" />
+          </button>
+
+          <ThemeToggle />
+
+          <button
+            onClick={() => navigate(user ? "/inicio" : "/login")}
+            className="relative group overflow-hidden rounded-full p-px font-semibold text-xs transition-all duration-300"
+          >
+            <span className="absolute inset-0 bg-gradient-to-r from-accent via-cyan-400 to-accent animate-gradient-x" />
+            <span className="relative block px-5 py-2.5 rounded-full bg-primary transition-all duration-300 group-hover:bg-opacity-0">
+              <span className="relative text-text group-hover:text-white font-medium tracking-wide">
+                {user ? "Ir a la App" : "Ingresar"}
+              </span>
+            </span>
           </button>
         </div>
-
       </div>
     </nav>
   );
