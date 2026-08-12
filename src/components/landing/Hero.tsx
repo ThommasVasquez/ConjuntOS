@@ -276,6 +276,13 @@ export default function Hero() {
             </div>
           </div>
         </div>
+
+        {/* Soft Blurred Gradient Transition Mask to next section */}
+        <div className={`absolute inset-x-0 bottom-0 h-40 z-30 pointer-events-none transition-all duration-300 ${
+          isLight
+            ? "bg-gradient-to-t from-white via-white/80 to-transparent backdrop-blur-[2px]"
+            : "bg-gradient-to-t from-[#000000] via-[#000000]/80 to-transparent backdrop-blur-[2px]"
+        }`} />
       </div>
     </section>
   );
