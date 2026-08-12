@@ -276,10 +276,10 @@ export default function SuperAdminPage() {
 
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent italic truncate block">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent italic block">
             SuperAdmin Dashboard
           </span>
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-text leading-none mt-1 truncate">
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-text leading-tight mt-1">
             Registrar Copropiedad
           </h1>
         </div>
@@ -292,7 +292,7 @@ export default function SuperAdminPage() {
       <div className="flex bg-surface-2 rounded-full p-1 border border-border w-full">
         <button
           onClick={() => setTab("CREAR")}
-          className={`flex-1 py-3 px-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all truncate ${
+          className={`flex-1 py-3 px-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all text-center ${
             tab === "CREAR"
               ? "bg-accent/10 text-accent shadow-inner"
               : "text-text hover:text-text"
@@ -302,7 +302,7 @@ export default function SuperAdminPage() {
         </button>
         <button
           onClick={() => setTab("LISTAR")}
-          className={`flex-1 py-3 px-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all truncate ${
+          className={`flex-1 py-3 px-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all text-center ${
             tab === "LISTAR"
               ? "bg-surface text-text border border-border shadow-md"
               : "text-text hover:text-text"
@@ -318,7 +318,7 @@ export default function SuperAdminPage() {
             <div className="flex items-center justify-between gap-2 bg-accent/15 border border-accent/20 rounded-2xl p-4 text-xs text-text shadow-lg">
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-accent animate-ping shrink-0" />
-                <span className="truncate">
+                <span className="break-words">
                   Modo edición activo: Editando{" "}
                   <strong>{formData.nombre || "copropiedad"}</strong>
                 </span>
@@ -335,13 +335,13 @@ export default function SuperAdminPage() {
 
           {/* SECCIÓN 1: IDENTIFICACIÓN GENERAL */}
           <div className="liquid-glass rounded-[28px] p-5 md:p-6 border border-border shadow-2xl flex flex-col gap-4 w-full">
-            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2 truncate">
+            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2 leading-relaxed">
               <Building2 size={16} className="text-accent shrink-0" /> 1. Datos Generales de la Copropiedad
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               <div className="flex flex-col gap-1.5 min-w-0">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Nombre Comercial *
                 </label>
                 <input
@@ -355,7 +355,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5 min-w-0">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   NIT *
                 </label>
                 <input
@@ -371,7 +371,7 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
               <div className="flex flex-col gap-1.5 md:col-span-2 min-w-0">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Dirección de Ubicación *
                 </label>
                 <input
@@ -385,7 +385,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5 min-w-0">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Municipio / Ciudad *
                 </label>
                 <input
@@ -400,7 +400,7 @@ export default function SuperAdminPage() {
             </div>
 
             <div className="flex flex-col gap-1.5 min-w-0 w-full">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                 Subdominio Único (Tenant ID) *
               </label>
               <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3 focus-within:border-accent transition-colors w-full min-w-0">
@@ -414,7 +414,7 @@ export default function SuperAdminPage() {
                 />
                 <span className="text-xs text-text font-mono shrink-0 ml-2">.conjuntos.app</span>
               </div>
-              <p className="text-[9px] text-text/70 pl-1 mt-0.5">
+              <p className="text-[9px] text-text/70 pl-1 mt-0.5 leading-normal">
                 Identificador de URL único para acceso directo al portal de residentes.
               </p>
             </div>
@@ -422,13 +422,13 @@ export default function SuperAdminPage() {
 
           {/* SECCIÓN 2: REGISTRO DE PERSONERÍA JURÍDICA */}
           <div className="liquid-glass rounded-[28px] p-5 md:p-6 border border-border shadow-2xl flex flex-col gap-4 w-full">
-            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2 truncate">
+            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2 leading-relaxed">
               <FileText size={16} className="text-accent shrink-0" /> 2. Registro de Personería Jurídica y Representación
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               <div className="flex flex-col gap-1.5 min-w-0">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Representante Legal (Administrador)
                 </label>
                 <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3 w-full min-w-0">
@@ -444,7 +444,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5 min-w-0">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Notaría del Reglamento H.P.
                 </label>
                 <input
@@ -459,7 +459,7 @@ export default function SuperAdminPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
               <div className="flex flex-col gap-1.5 min-w-0">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Número Escritura Pública
                 </label>
                 <input
@@ -472,7 +472,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5 min-w-0">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Fecha de la Escritura
                 </label>
                 <div className="flex items-center bg-surface-2 border border-border rounded-xl px-3 py-3 w-full min-w-0">
@@ -487,7 +487,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="flex flex-col gap-1.5 min-w-0">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Matrícula Principal Oficina Registro
                 </label>
                 <input
@@ -501,7 +501,7 @@ export default function SuperAdminPage() {
             </div>
 
             <div className="flex flex-col gap-1.5 min-w-0 w-full">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                 Total Unidades Privadas (Aptos / Casas)
               </label>
               <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3 w-full min-w-0">
@@ -514,7 +514,7 @@ export default function SuperAdminPage() {
                   className="bg-transparent border-none outline-none text-sm text-text flex-1 min-w-0"
                 />
               </div>
-              <p className="text-[9px] text-text/70 pl-1 mt-0.5">
+              <p className="text-[9px] text-text/70 pl-1 mt-0.5 leading-normal">
                 Define la cantidad de inmuebles que componen la asamblea general de copropietarios.
               </p>
             </div>
@@ -522,14 +522,14 @@ export default function SuperAdminPage() {
 
           {/* SECCIÓN 3: ESTRUCTURA FÍSICA Y NOMENCLATURA INTERNA */}
           <div className="liquid-glass rounded-[28px] p-5 md:p-6 border border-border shadow-2xl flex flex-col gap-5 w-full">
-            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2 truncate">
+            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2 leading-relaxed">
               <Grid size={16} className="text-accent shrink-0" /> 3. Estructura Física y Nomenclatura Interna
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
               {/* 1. Tipo de Agrupación Principal Dropdown */}
               <div className="flex flex-col gap-1.5 min-w-0 w-full">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Denominación de Bloque / Edificación Principal *
                 </label>
                 <select
@@ -547,7 +547,7 @@ export default function SuperAdminPage() {
 
                 {formData.tipoAgrupacion === "Custom" && (
                   <div className="flex flex-col gap-1 mt-1.5 min-w-0 w-full">
-                    <label className="text-[9px] text-text/80 font-bold uppercase tracking-widest pl-1 truncate">
+                    <label className="text-[9px] text-text/80 font-bold uppercase tracking-widest pl-1 leading-normal">
                       Escribe la nomenclatura personalizada para la agrupación:
                     </label>
                     <input
@@ -563,7 +563,7 @@ export default function SuperAdminPage() {
 
               {/* 2. Tipo de Inmueble / Unidad Privada Dropdown */}
               <div className="flex flex-col gap-1.5 min-w-0 w-full">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                   Tipo de Inmueble / Unidad Privada *
                 </label>
                 <select
@@ -581,7 +581,7 @@ export default function SuperAdminPage() {
 
                 {formData.tipoUnidadPrivada === "Custom" && (
                   <div className="flex flex-col gap-1 mt-1.5 min-w-0 w-full">
-                    <label className="text-[9px] text-text/80 font-bold uppercase tracking-widest pl-1 truncate">
+                    <label className="text-[9px] text-text/80 font-bold uppercase tracking-widest pl-1 leading-normal">
                       Escribe la nomenclatura personalizada para la unidad privada:
                     </label>
                     <input
@@ -600,7 +600,7 @@ export default function SuperAdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-surface-2 border border-border rounded-2xl p-4 mt-1 w-full">
               <div className="flex flex-col gap-2 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-text truncate">
+                  <span className="text-xs font-bold text-text leading-normal">
                     ¿Tendrá subdominios / bloques de agrupación?
                   </span>
                   <button
@@ -634,10 +634,10 @@ export default function SuperAdminPage() {
                   <Home size={18} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-accent italic block truncate">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-accent italic block leading-normal">
                     Vista previa de nomenclatura interna:
                   </span>
-                  <p className="text-sm font-bold text-text font-mono mt-0.5 truncate">
+                  <p className="text-sm font-bold text-text font-mono mt-0.5 break-words">
                     {formData.tieneSubdominiosBloques && formData.tipoAgrupacion !== "Sin Bloque"
                       ? `${getAgrupacionLabel()} ${formData.ejemploBloque || "4"} - ${getUnidadLabel()} ${formData.ejemploUnidad || "1410"}`
                       : `${getUnidadLabel()} ${formData.ejemploUnidad || "1410"}`}
@@ -649,12 +649,12 @@ export default function SuperAdminPage() {
 
           {/* SECCIÓN 4: PERSONALIZACIÓN */}
           <div className="liquid-glass rounded-[28px] p-5 md:p-6 border border-border shadow-2xl flex flex-col gap-4 w-full">
-            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2 truncate">
+            <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2 border-b border-border/40 pb-2 leading-relaxed">
               <Plus size={16} className="text-accent shrink-0" /> 4. Personalización del Portal ConjuntOS
             </h3>
 
             <div className="flex flex-col gap-1.5 min-w-0 w-full">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                 Logotipo de la Copropiedad
               </label>
 
@@ -707,7 +707,7 @@ export default function SuperAdminPage() {
                       )}
                     </label>
                   </div>
-                  <p className="text-[9px] text-text/70 leading-tight truncate">
+                  <p className="text-[9px] text-text/70 leading-normal">
                     Formatos permitidos: PNG, JPG, WebP, SVG. Max 5MB.
                   </p>
                 </div>
@@ -715,7 +715,7 @@ export default function SuperAdminPage() {
             </div>
 
             <div className="flex flex-col gap-1.5 min-w-0 w-full">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 truncate">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1 leading-normal">
                 Color de Marca Primario
               </label>
               <div className="flex items-center gap-4 bg-surface-2 border border-border rounded-xl px-4 py-2 w-full min-w-0">
@@ -725,7 +725,7 @@ export default function SuperAdminPage() {
                   onChange={(e) => setFormData({ ...formData, colorPrimario: e.target.value })}
                   className="w-10 h-10 border-0 rounded-full cursor-pointer bg-transparent shrink-0"
                 />
-                <span className="text-xs text-text font-mono font-bold truncate">
+                <span className="text-xs text-text font-mono font-bold">
                   {formData.colorPrimario}
                 </span>
               </div>
@@ -779,14 +779,14 @@ export default function SuperAdminPage() {
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-lg font-bold text-text leading-tight truncate">{c.nombre}</h3>
-                      <p className="text-accent font-mono text-[10px] tracking-widest uppercase font-black truncate">
+                      <h3 className="text-lg font-bold text-text leading-tight break-words">{c.nombre}</h3>
+                      <p className="text-accent font-mono text-[10px] tracking-widest uppercase font-black">
                         {c.nit}
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 items-end shrink-0">
-                    <span className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[9px] font-black text-text font-mono truncate">
+                    <span className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[9px] font-black text-text font-mono">
                       {c.subdominio}.conjuntos.app
                     </span>
                     <button
@@ -798,17 +798,17 @@ export default function SuperAdminPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1 text-xs text-text border-t border-border/40 pt-3 mt-1 min-w-0">
+                <div className="flex flex-col gap-1.5 text-xs text-text border-t border-border/40 pt-3 mt-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin size={12} className="text-text shrink-0" />
-                    <span className="truncate">
+                    <span className="break-words">
                       {c.direccion}, {c.ciudad}
                     </span>
                   </div>
                   {c.representanteLegal && (
                     <div className="flex items-center gap-2 min-w-0">
                       <User size={12} className="text-text shrink-0" />
-                      <span className="truncate">
+                      <span className="break-words">
                         Rep. Legal: <strong>{c.representanteLegal}</strong>
                       </span>
                     </div>
@@ -816,7 +816,7 @@ export default function SuperAdminPage() {
                   {c.tipoAgrupacion && (
                     <div className="flex items-center gap-2 min-w-0">
                       <Grid size={12} className="text-accent shrink-0" />
-                      <span className="truncate">
+                      <span className="break-words">
                         Estructura:{" "}
                         <strong>
                           {c.tipoAgrupacion} / {c.tipoUnidadPrivada || "Apartamento"}
@@ -828,7 +828,7 @@ export default function SuperAdminPage() {
                   {c.numeroEscritura && (
                     <div className="flex items-center gap-2 min-w-0">
                       <ShieldCheck size={12} className="text-text shrink-0" />
-                      <span className="truncate">
+                      <span className="break-words">
                         {c.notariaEscritura || "Deed"}: {c.numeroEscritura} (
                         {c.fechaEscritura ? new Date(c.fechaEscritura).toLocaleDateString() : "N/A"})
                       </span>
@@ -836,7 +836,7 @@ export default function SuperAdminPage() {
                   )}
                   <div className="flex items-center gap-2 min-w-0">
                     <Layers size={12} className="text-text shrink-0" />
-                    <span className="truncate">
+                    <span>
                       Unidades Totales: <strong>{c.totalUnidades || 1} celdas/unidades</strong>
                     </span>
                   </div>
