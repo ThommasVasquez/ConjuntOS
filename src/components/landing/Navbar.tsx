@@ -47,28 +47,18 @@ export default function Navbar() {
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
         )}
         
-        {/* 1. Logo Container (Fixed width to balance right side) */}
-        <div className={`transition-all duration-700 flex items-center ${scrolled ? "w-[120px]" : "w-[180px]"}`}>
+        {/* 1. Logo Container (Consistent white vector branding) */}
+        <div className={`transition-all duration-700 flex items-center ${scrolled ? "w-[120px]" : "w-[150px]"}`}>
           <div 
             onClick={() => navigate("/")} 
             className="flex items-center cursor-pointer group"
           >
-            <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center ${
-              scrolled ? "h-10 w-10 text-white" : "h-10 w-[140px]"
-            }`}>
-              {scrolled ? (
-                <img 
-                  src="/solo-light.svg" 
-                  alt="ConjuntOS" 
-                  className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]"
-                />
-              ) : (
-                <img 
-                  src="/SplashWHITE.png" 
-                  alt="ConjuntOS" 
-                  className="w-full h-full object-contain"
-                />
-              )}
+            <div className="h-10 w-[130px] flex items-center justify-center">
+              <img 
+                src="/logo-verticalW.svg" 
+                alt="ConjuntOS" 
+                className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.3)]"
+              />
             </div>
           </div>
         </div>
