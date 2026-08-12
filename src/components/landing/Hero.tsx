@@ -4,7 +4,6 @@ import { useViewTransition } from "@/components/providers/ViewTransitionContext"
 import { useTheme } from "@/components/providers/ThemeContext";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
-import Image from "next/image";
 
 const slides = [
   {
@@ -43,7 +42,7 @@ const slides = [
       {
         title: "Asambleas Virtuales",
         desc: "Dirige y ordena asambleas con votaciones en tiempo real y registro de quórum automático.",
-        img: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=600&q=80"
+        img: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80"
       },
       {
         title: "Finanzas y Cartera",
@@ -53,7 +52,7 @@ const slides = [
       {
         title: "Cartelera Oficial",
         desc: "Publica avisos, circulares y comunicados con notificación directa al smartphone del residente.",
-        img: "https://images.unsplash.com/photo-1432888622747-4eb9a8f2c205?auto=format&fit=crop&w=600&q=80"
+        img: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80"
       }
     ]
   },
@@ -67,18 +66,18 @@ const slides = [
     features: [
       {
         title: "Pases QR de Acceso",
-        desc: "Entrada rápida y segura para invitados previa autorización del propietario desde la app.",
-        img: "https://images.unsplash.com/photo-1551808198-b30a64776194?auto=format&fit=crop&w=600&q=80"
+        desc: "Entrada rápida y segura para invitados previa autorización del propietario mediante escaneo de código QR.",
+        img: "https://images.unsplash.com/photo-1595079676339-1534801ad6cf?auto=format&fit=crop&w=600&q=80"
       },
       {
         title: "Citofonía Virtual",
         desc: "Llamadas inmediatas desde portería al celular del residente sin depender de cables obsoletos.",
-        img: "https://images.unsplash.com/photo-1563906267088-b029e7101114?auto=format&fit=crop&w=600&q=80"
+        img: "https://images.unsplash.com/photo-1586105251261-72a756497a11?auto=format&fit=crop&w=600&q=80"
       },
       {
         title: "Bitácora de Eventos",
-        desc: "Registro en tiempo real de novedades e ingresos con fotos y respaldo en la nube.",
-        img: "https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=600&q=80"
+        desc: "Registro en tiempo real de novedades e ingresos con fotos y respaldo digital en la nube.",
+        img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80"
       }
     ]
   },
@@ -93,17 +92,17 @@ const slides = [
       {
         title: "Reserva de Cupos",
         desc: "Permite a tus visitas asegurar su lugar antes de llegar. Control estricto de cupos disponibles.",
-        img: "https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?auto=format&fit=crop&w=600&q=80"
+        img: "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80"
       },
       {
         title: "Control de Tiempos",
         desc: "Monitoreo en línea de duraciones de estacionamiento para evitar estancias prolongadas o indebidas.",
-        img: "https://images.unsplash.com/photo-1595079676339-1534801ad6cf?auto=format&fit=crop&w=600&q=80"
+        img: "https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=600&q=80"
       },
       {
         title: "Alertas de Sobrecupo",
-        desc: "Notificaciones automáticas a la portería ante ocupaciones no autorizadas enbahías.",
-        img: "https://images.unsplash.com/photo-1470224114660-3f6686c562eb?auto=format&fit=crop&w=600&q=80"
+        desc: "Notificaciones automáticas a la portería ante ocupaciones no autorizadas en bahías.",
+        img: "https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?auto=format&fit=crop&w=600&q=80"
       }
     ]
   }
@@ -117,7 +116,7 @@ export default function Hero() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeFeature, setActiveFeature] = useState(0);
 
-  // Main Timer for Slides (+1s extra duration = 11 seconds per main tab)
+  // Main Timer for Slides (11 seconds per main tab)
   useEffect(() => {
     const mainTimer = setInterval(() => {
       handleSlideChange((activeSlide + 1) % slides.length);
@@ -126,7 +125,7 @@ export default function Hero() {
     return () => clearInterval(mainTimer);
   }, [activeSlide]);
 
-  // Feature Rotation Timer (+1s extra duration = 4 seconds per feature thumbnail step)
+  // Feature Rotation Timer (4 seconds per feature thumbnail step)
   useEffect(() => {
     const featureTimer = setInterval(() => {
       // First, animate current content out
@@ -150,7 +149,7 @@ export default function Hero() {
 
   const handleSlideChange = (index: number) => {
     if (index === activeSlide) return;
-    // Smooth cinematic timeline transition (+1s extended timing)
+    // Smooth cinematic timeline transition
     gsap.timeline({ overwrite: "auto" })
       .to([".hero-text", ".hero-card"], { opacity: 0, y: 12, duration: 0.4, ease: "power2.in" })
       .add(() => {
@@ -244,15 +243,13 @@ export default function Hero() {
           <div className={`hero-card backdrop-blur-xl p-10 rounded-[40px] w-[480px] shadow-2xl relative overflow-hidden border ${isLight ? "bg-white/80 border-black/10 shadow-[0_20px_60px_rgba(0,0,0,0.08)]" : "bg-white/5 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"}`}>
             <div className="relative z-10">
               <div className="feature-content">
-                {/* Thumbnail Image Container */}
-                <div className={`w-24 h-24 rounded-2xl overflow-hidden mb-6 flex items-center justify-center border shadow-md ${isLight ? "bg-black/5 border-black/10" : "bg-white/5 border-white/15"}`}>
-                   <Image
-                      width={96}
-                      height={96}
+                {/* High-Definition Verified Thumbnail Image Container */}
+                <div className={`w-24 h-24 rounded-2xl overflow-hidden mb-6 flex items-center justify-center border shadow-md relative ${isLight ? "bg-black/5 border-black/10" : "bg-white/5 border-white/15"}`}>
+                   <img
                       src={currentFeature.img}
                       alt={currentFeature.title}
                       className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
-                      unoptimized
+                      loading="eager"
                     />
                 </div>
                 <div>
@@ -265,7 +262,7 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* 3 Step Indicators for the 3 Key Amenities */}
+              {/* 3 Step Indicators for the 3 Key Features */}
               <div className="flex gap-2.5 mt-6">
                 {current.features.map((feat, i) => (
                   <button
