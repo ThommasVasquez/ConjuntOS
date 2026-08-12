@@ -37,14 +37,14 @@ export default function Navbar() {
           : "top-0 w-full max-w-7xl px-6"
       }`}
     >
-      <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center px-8 relative overflow-hidden ${
+      <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center px-8 relative overflow-visible ${
         scrolled 
           ? "liquid-glass rounded-full py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
           : "bg-transparent py-6 border-transparent rounded-none"
       }`}>
         {/* Specular Edge Highlight */}
         {scrolled && (
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none rounded-t-full" />
         )}
         
         {/* 1. Logo Container (Consistent white vector branding) */}
@@ -98,20 +98,36 @@ export default function Navbar() {
 
           <ThemeToggle />
 
-          {/* "Ir a la App" / "Ingresar" Button with Premium Aqua/Cyan Halo Glow */}
+          {/* "Ir a la App" / "Ingresar" Button with 360° Organic Orbiting Green/Aqua Conic Halo */}
           <button
             onClick={() => navigate(user ? "/inicio" : "/login")}
             className="relative group rounded-full font-semibold text-xs transition-all duration-300 active:scale-95"
           >
-            {/* Outer Pulsing Aqua Halo Glow Effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#009df1] via-cyan-400 to-[#57bf00] rounded-full blur-md opacity-80 group-hover:opacity-100 transition-all duration-500 animate-pulse group-hover:blur-lg" />
+            {/* 1. Orbiting Conic Organic Halo Glow (Unclipped Ambient Glow) */}
+            <div className="absolute -inset-2 rounded-full overflow-hidden opacity-80 group-hover:opacity-100 transition-opacity duration-500 blur-md group-hover:blur-lg pointer-events-none">
+              <div 
+                className="w-[250%] h-[250%] -translate-x-1/3 -translate-y-1/3 animate-[spin_4s_linear_infinite]"
+                style={{
+                  background: 'conic-gradient(from 0deg at 50% 50%, #009df1 0%, #57bf00 35%, #06b6d4 70%, #009df1 100%)',
+                }}
+              />
+            </div>
 
-            {/* Glowing Border & Content Inner Container */}
-            <div className="relative rounded-full p-[1.5px] bg-gradient-to-r from-[#009df1] via-cyan-400 to-[#57bf00] shadow-[0_0_20px_rgba(0,157,241,0.5)]">
-              <span className="relative block px-5 py-2.5 rounded-full bg-[#0a0f1d] transition-all duration-300 group-hover:bg-opacity-80">
-                <span className="relative text-white font-bold tracking-wide flex items-center gap-1.5 drop-shadow-[0_0_8px_rgba(0,157,241,0.8)]">
+            {/* 2. Organic Orbiting Conic Border Ring Container */}
+            <div className="relative rounded-full p-[1.5px] overflow-hidden shadow-[0_0_20px_rgba(0,157,241,0.4)]">
+              {/* Rotating Conic Light Beam for Border */}
+              <div 
+                className="absolute -inset-[150%] animate-[spin_4s_linear_infinite]"
+                style={{
+                  background: 'conic-gradient(from 0deg at 50% 50%, #009df1 0%, #57bf00 35%, #06b6d4 70%, #009df1 100%)',
+                }}
+              />
+
+              {/* Inner Dark Pill Content */}
+              <span className="relative block px-5 py-2.5 rounded-full bg-[#0a0f1d] group-hover:bg-[#070b16] transition-all duration-300">
+                <span className="relative text-white font-bold tracking-wide flex items-center gap-1.5 drop-shadow-[0_0_10px_rgba(0,157,241,0.9)]">
                   {user ? "Ir a la App" : "Ingresar"}
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 text-[#57bf00]" />
                 </span>
               </span>
             </div>
