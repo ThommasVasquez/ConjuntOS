@@ -8,6 +8,60 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/components/providers/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
 
+/**
+ * High-Precision Vector Castle Emblem
+ * Light mode: Solid Black Castle (#111213) with transparent window cutout
+ * Dark mode: Solid White Castle (#FFFFFF) with transparent window cutout
+ */
+function CastleIcon({ isDark }: { isDark: boolean }) {
+  const fill = isDark ? "#FFFFFF" : "#111213";
+  return (
+    <svg
+      viewBox="170 0 160 250"
+      className="w-full h-full object-contain"
+      fill="none"
+      shapeRendering="geometricPrecision"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <g>
+        {/* Main Castle Body with fillRule="evenodd" cutout window */}
+        <path
+          fill={fill}
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M255.67,10.23c-2.57,5.03-7.5-.37-9.98-.01-3.32.48-5.3,12.87-19.48,12.92,6.21,5.4,13.88-.76,19.56-2.25,5.52,2.78,11.87,7.02,18.76,1.43l-.15,17.07-8.56,3.27-.12,21.36-11.04,3.7-.23-21.31-17.71,6.02-.17,21.95-12.6,4.09-.13-21.58-16.95,5.56.02,166.16,71.99-24.16.45-203.45c-6.29,1.76-10.97,3.98-13.65,9.23ZM221.01,129.56c-.14-11.98-1.51-24.65,6.8-29.98,3.7-2.37,8.53-2.95,12.73-.85,3.43,1.72,5.15,5.48,5.22,9.21l.23,14.08-24.98,7.53Z"
+        />
+
+        {/* Right Castle Side Piece */}
+        <path
+          fill={fill}
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M313.1,130.3l-21.73-10.58c-1.11-9.65-.78-21.44,6.47-24.03,3.79-1.35,7.48-.13,10.35,2.62,3.31,3.17,4.53,7.73,5.03,12.36l-.13,19.64Z"
+        />
+
+        {/* Castle Flags / Roof Points */}
+        <polygon
+          fill={fill}
+          points="301.46 72.67 285.82 65.36 300.66 52.78 301.46 72.67"
+        />
+        <polygon
+          fill={fill}
+          points="322.96 81.73 309.05 75.32 322.83 63.69 322.96 81.73"
+        />
+
+        {/* Right Small Window Cutout */}
+        <path
+          fill={fill}
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M199.28,232.71c-.09,3.34-2.03,5.23-4.68,5.26s-4.61-1.84-4.87-4.84,1.24-5.54,4.18-5.87,5.46,1.81,5.36,5.45Z"
+        />
+      </g>
+    </svg>
+  );
+}
+
 export default function Navbar() {
   const { navigate } = useViewTransition();
   const { user } = useAuth();
@@ -51,18 +105,14 @@ export default function Navbar() {
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none rounded-t-full" />
         )}
         
-        {/* 1. Logo Container (Theme-Aware Icon Emblem: White in Dark Mode, Black in Light Mode) */}
+        {/* 1. Logo Container (Theme-Aware Icon Emblem: Attached Black Castle in Light Mode, Inverted White Castle in Dark Mode) */}
         <div className="transition-all duration-700 flex items-center w-10">
           <div 
             onClick={() => navigate("/")} 
             className="flex items-center justify-center cursor-pointer group"
           >
-            <div className="h-10 w-10 flex items-center justify-center">
-              <img 
-                src={isDark ? "/solo-light.svg" : "/solo-dark.svg"} 
-                alt="ConjuntOS" 
-                className="w-full h-full object-contain transition-all duration-300 group-hover:scale-105"
-              />
+            <div className="h-9 w-9 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+              <CastleIcon isDark={isDark} />
             </div>
           </div>
         </div>
