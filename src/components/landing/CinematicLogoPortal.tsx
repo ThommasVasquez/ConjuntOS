@@ -45,7 +45,7 @@ export default function CinematicLogoPortal({
     if (mainElement) {
       gsap.set(mainElement, {
         scale: 0.94,
-        opacity: 0.85,
+        opacity: 0.9,
         transformOrigin: "center center",
         force3D: true,
       });
@@ -69,8 +69,7 @@ export default function CinematicLogoPortal({
         },
       });
 
-      // ── Step 1: Smooth Entrance at Compact Size (~280px) on High-Res 1200px Canvas ──
-      // Scale starts at 0.24 (1200px * 0.24 = 288px visual size), giving HD vector density with zero pixelation!
+      // ── Step 1: Smooth Entrance at Compact Size (~280px) on High-Res 1100px Canvas ──
       gsap.set(containerRef.current, { opacity: 1, pointerEvents: "all" });
       gsap.set(logoWrapperRef.current, {
         scale: 0.24,
@@ -84,7 +83,7 @@ export default function CinematicLogoPortal({
         .to(glowRef.current, { opacity: 1, scale: 1, duration: 0.45 }, 0)
         .to(textRef.current, { opacity: 1, duration: 0.4 }, 0.1)
 
-        // ── Step 2 & 3: Seamless Crisp Vector Zoom (No pixelation, 120FPS GPU Sequence) ──
+        // ── Step 2 & 3: Camera Zooms straight INTO the Transparent Castle Window ──
         .to(
           textRef.current,
           { opacity: 0, duration: 0.25, ease: "power1.in" },
@@ -93,7 +92,7 @@ export default function CinematicLogoPortal({
         .to(
           logoWrapperRef.current,
           {
-            scale: 18, // High-res canvas scale 18x passes full viewport with 100% sharp vectors
+            scale: 18,
             duration: 1.15,
             ease: "power3.inOut",
           },
@@ -156,7 +155,7 @@ export default function CinematicLogoPortal({
         }}
       />
 
-      {/* High-Resolution 1200px SVG Canvas Container */}
+      {/* High-Resolution 1100px SVG Canvas Container */}
       <div
         ref={logoWrapperRef}
         className="relative z-10 w-[90vw] max-w-[1100px] h-auto flex items-center justify-center shrink-0 transform-gpu"
@@ -171,15 +170,19 @@ export default function CinematicLogoPortal({
           xmlns="http://www.w3.org/2000/svg"
         >
           <g>
-            {/* Main Castle Body */}
+            {/* Main Castle Body with fillRule="evenodd" so the main window is a TRANSPARENT CUTOUT WINDOW */}
             <path
               fill={textFill}
+              fillRule="evenodd"
+              clipRule="evenodd"
               d="M255.67,10.23c-2.57,5.03-7.5-.37-9.98-.01-3.32.48-5.3,12.87-19.48,12.92,6.21,5.4,13.88-.76,19.56-2.25,5.52,2.78,11.87,7.02,18.76,1.43l-.15,17.07-8.56,3.27-.12,21.36-11.04,3.7-.23-21.31-17.71,6.02-.17,21.95-12.6,4.09-.13-21.58-16.95,5.56.02,166.16,71.99-24.16.45-203.45c-6.29,1.76-10.97,3.98-13.65,9.23ZM221.01,129.56c-.14-11.98-1.51-24.65,6.8-29.98,3.7-2.37,8.53-2.95,12.73-.85,3.43,1.72,5.15,5.48,5.22,9.21l.23,14.08-24.98,7.53Z"
             />
 
-            {/* Right Castle Side Piece */}
+            {/* Right Castle Side Piece with fillRule="evenodd" */}
             <path
               fill={textFill}
+              fillRule="evenodd"
+              clipRule="evenodd"
               d="M313.1,130.3l-21.73-10.58c-1.11-9.65-.78-21.44,6.47-24.03,3.79-1.35,7.48-.13,10.35,2.62,3.31,3.17,4.53,7.73,5.03,12.36l-.13,19.64Z"
             />
 
@@ -196,6 +199,8 @@ export default function CinematicLogoPortal({
             {/* Right Small Window Cutout */}
             <path
               fill={textFill}
+              fillRule="evenodd"
+              clipRule="evenodd"
               d="M199.28,232.71c-.09,3.34-2.03,5.23-4.68,5.26s-4.61-1.84-4.87-4.84,1.24-5.54,4.18-5.87,5.46,1.81,5.36,5.45Z"
             />
 
@@ -222,7 +227,7 @@ export default function CinematicLogoPortal({
             />
             <path
               fill={textFill}
-            d="M301.84,253.16c-9.14.28-15.32,5.56-15.41,14.72l-.33,33.49-8.17-.04v-53.84c2.4-.46,4.17-.3,6.57-.18l1.55,7.72c5.94-9.59,21.51-11.07,30.39-5.32,4.49,2.91,6.45,8.38,6.49,13.68l.25,37.98-8.2-.02-.11-36.54c-.02-7.7-5.43-11.88-13.03-11.65Z"
+              d="M301.84,253.16c-9.14.28-15.32,5.56-15.41,14.72l-.33,33.49-8.17-.04v-53.84c2.4-.46,4.17-.3,6.57-.18l1.55,7.72c5.94-9.59,21.51-11.07,30.39-5.32,4.49,2.91,6.45,8.38,6.49,13.68l.25,37.98-8.2-.02-.11-36.54c-.02-7.7-5.43-11.88-13.03-11.65Z"
             />
             <path
               fill={textFill}
