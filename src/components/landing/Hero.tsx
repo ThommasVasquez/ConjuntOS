@@ -271,18 +271,18 @@ export default function Hero() {
             </p>
 
             <div className="flex items-center gap-8">
-              {/* "Lo quiero en mi conjunto!" Button with Aqua/Green Orbiting Halo on Hover */}
+              {/* "Lo quiero en mi conjunto!" Button with Perfectly Symmetric 360° Infinite Liquid Conic Halo */}
               <button
                 onClick={() => navigate("/login")}
                 className="relative group rounded-full font-bold text-xs tracking-widest uppercase transition-all duration-300 active:scale-95 cursor-pointer"
               >
-                {/* 1. Orbiting Conic Organic Halo Glow (Activates on Hover) */}
-                <div className="absolute -inset-2 rounded-full overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md group-hover:blur-lg pointer-events-none">
+                {/* 1. Orbiting Conic Organic Halo Glow (Perfect 4-Quadrant Symmetric Seamless Loop) */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280%] aspect-square rounded-full overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md group-hover:blur-lg pointer-events-none">
                   <div
-                    className="w-[250%] h-[250%] -translate-x-1/3 -translate-y-1/3 animate-[spin_4s_linear_infinite]"
+                    className="w-full h-full animate-[spin_5s_linear_infinite]"
                     style={{
                       background:
-                        "conic-gradient(from 0deg at 50% 50%, #009df1 0%, #57bf00 35%, #06b6d4 70%, #009df1 100%)",
+                        "conic-gradient(from 0deg, #009df1 0%, #57bf00 25%, #009df1 50%, #57bf00 75%, #009df1 100%)",
                     }}
                   />
                 </div>
@@ -290,10 +290,10 @@ export default function Hero() {
                 {/* 2. Border Ring Container with Rotating Conic Light Beam */}
                 <div className="relative rounded-full p-[1.5px] overflow-hidden shadow-lg transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(0,157,241,0.6)]">
                   <div
-                    className="absolute -inset-[150%] animate-[spin_4s_linear_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300%] aspect-square animate-[spin_5s_linear_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                     style={{
                       background:
-                        "conic-gradient(from 0deg at 50% 50%, #009df1 0%, #57bf00 35%, #06b6d4 70%, #009df1 100%)",
+                        "conic-gradient(from 0deg, #009df1 0%, #57bf00 25%, #009df1 50%, #57bf00 75%, #009df1 100%)",
                     }}
                   />
 
@@ -305,8 +305,6 @@ export default function Hero() {
                   </span>
                 </div>
               </button>
-
-
             </div>
           </div>
 
