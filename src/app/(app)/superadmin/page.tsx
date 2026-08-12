@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/lib/api/client";
+import { api, ApiError } from "@/lib/api/client";
 import type { ConjuntoDto } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
@@ -182,6 +182,15 @@ export default function SuperAdminPage() {
       return toast.error("Por favor completa todos los campos obligatorios");
     }
 
+    const cleanSubdominio = formData.subdominio
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9-]/g, "");
+
+    if (!cleanSubdominio) {
+      return toast.error("El subdominio debe ser un identificador válido (solo letras, números y guiones)");
+    }
+
     setIsSubmitting(true);
     try {
       const resolvedTipoAgrupacion =
@@ -195,35 +204,38 @@ export default function SuperAdminPage() {
           : formData.tipoUnidadPrivada;
 
       const payload: Record<string, unknown> = {
+        nombre: formData.nombre.trim(),
+        subdominio: cleanSubdominio,
+        direccion: formData.direccion.trim(),
+        ciudad: formData.ciudad.trim(),
         tipoAgrupacion: resolvedTipoAgrupacion,
         tipoUnidadPrivada: resolvedTipoUnidad,
         tieneSubdominiosBloques: formData.tieneSubdominiosBloques,
-        formatoNomenclatura: formData.tieneSubdominiosBloques && resolvedTipoAgrupacion !== "Sin Bloque"
-          ? `${resolvedTipoAgrupacion} {bloque} - ${resolvedTipoUnidad} {unidad}`
-          : `${resolvedTipoUnidad} {unidad}`,
+        formatoNomenclatura:
+          formData.tieneSubdominiosBloques && resolvedTipoAgrupacion !== "Sin Bloque"
+            ? `${resolvedTipoAgrupacion} {bloque} - ${resolvedTipoUnidad} {unidad}`
+            : `${resolvedTipoUnidad} {unidad}`,
       };
 
-      Object.entries(formData).forEach(([key, value]) => {
-        if (
-          key === "tipoAgrupacion" ||
-          key === "tipoAgrupacionCustom" ||
-          key === "tipoUnidadPrivada" ||
-          key === "tipoUnidadCustom" ||
-          key === "tieneSubdominiosBloques" ||
-          key === "ejemploBloque" ||
-          key === "ejemploUnidad"
-        ) {
-          return;
-        }
+      if (formData.nit.trim()) payload.nit = formData.nit.trim();
+      if (formData.representanteLegal.trim()) payload.representanteLegal = formData.representanteLegal.trim();
+      if (formData.notariaEscritura.trim()) payload.notariaEscritura = formData.notariaEscritura.trim();
+      if (formData.numeroEscritura.trim()) payload.numeroEscritura = formData.numeroEscritura.trim();
 
-        if (value === "" || value === null || value === undefined) return;
-        if (key === "totalUnidades") {
-          const n = parseInt(String(value), 10);
-          if (!Number.isNaN(n)) payload[key] = n;
-        } else {
-          payload[key] = value;
-        }
-      });
+      if (formData.fechaEscritura.trim()) {
+        const d = formData.fechaEscritura.trim();
+        payload.fechaEscritura = d.includes("T") ? d : `${d}T00:00:00Z`;
+      }
+
+      if (formData.matriculaInmobiliaria.trim()) payload.matriculaInmobiliaria = formData.matriculaInmobiliaria.trim();
+
+      const numUnidades = parseInt(formData.totalUnidades, 10);
+      if (!Number.isNaN(numUnidades) && numUnidades > 0) {
+        payload.totalUnidades = numUnidades;
+      }
+
+      if (formData.logoUrl) payload.logoUrl = formData.logoUrl;
+      if (formData.colorPrimario) payload.colorPrimario = formData.colorPrimario;
 
       if (editingConjuntoId) {
         await api.put(`/superadmin/conjuntos/${editingConjuntoId}`, payload);
@@ -238,8 +250,14 @@ export default function SuperAdminPage() {
       handleCancelEdit();
       fetchConjuntos();
       setTab("LISTAR");
-    } catch {
-      toast.error("Error de conexión al servidor");
+    } catch (err: unknown) {
+      const msg =
+        err instanceof ApiError
+          ? err.detail || err.message
+          : err instanceof Error
+          ? err.message
+          : "Error de validación al registrar copropiedad";
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
