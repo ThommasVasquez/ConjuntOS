@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Navbar from '@/components/landing/Navbar';
 import Hero from '@/components/landing/Hero';
-import AboutStatement from '@/components/landing/AboutStatement';
+// import AboutStatement from '@/components/landing/AboutStatement';
 import StorySection from '@/components/landing/StorySection';
 import CraftsmanshipSection from '@/components/landing/CraftsmanshipSection';
 import TeamSection from '@/components/landing/TeamSection';
@@ -27,7 +27,7 @@ export default function LandingPage() {
         <main className="min-h-screen bg-primary text-text selection:bg-text/20 selection:text-primary overflow-hidden">
           <Navbar />
           <Hero />
-          <AboutStatement />
+          {/* <AboutStatement /> */}
           <StorySection />
           <CraftsmanshipSection />
           <TeamSection />
