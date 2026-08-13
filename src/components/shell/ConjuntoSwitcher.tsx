@@ -70,7 +70,7 @@ export default function ConjuntoSwitcher() {
   };
 
   return (
-    <div className="relative w-full mb-4 z-[100]">
+    <div className="w-full flex flex-col gap-2 mb-4">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -107,17 +107,17 @@ export default function ConjuntoSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-[110]">
-          <div className="p-3 border-b border-border/40 bg-surface-2/50">
+        <div className="w-full liquid-glass-card border border-accent/40 rounded-2xl p-2.5 flex flex-col gap-1 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="p-3 border-b border-border/40 bg-surface-2/60 rounded-xl mb-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-accent block">
               Cambiar Copropiedad
             </span>
             <p className="text-xs text-text/70 mt-0.5">
-              Selecciona el conjunto residencial que deseas gestionar:
+              Selecciona la copropiedad que deseas gestionar:
             </p>
           </div>
 
-          <div className="max-h-[320px] overflow-y-auto hide-scrollbar">
+          <div className="flex flex-col gap-1 max-h-[300px] overflow-y-auto hide-scrollbar">
             {conjuntos.map((c) => {
               const active = activeConjunto?.id === c.id;
               return (
@@ -125,8 +125,10 @@ export default function ConjuntoSwitcher() {
                   key={c.id || c.subdominio}
                   type="button"
                   onClick={() => handleSelectConjunto(c)}
-                  className={`w-full px-4 py-3 flex items-center justify-between text-left text-sm transition-colors border-b border-border/40 last:border-0 hover:bg-accent/10 cursor-pointer ${
-                    active ? "bg-accent/15 font-bold text-text" : "text-text"
+                  className={`w-full px-4 py-3 rounded-xl flex items-center justify-between text-left text-sm transition-all border cursor-pointer ${
+                    active
+                      ? "bg-accent/20 border-accent/50 font-bold text-text shadow-sm"
+                      : "bg-surface-2/40 border-border/40 text-text hover:bg-accent/10"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -134,7 +136,7 @@ export default function ConjuntoSwitcher() {
                       className={`w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold shrink-0 ${
                         active
                           ? "bg-accent text-on-accent border-accent"
-                          : "bg-surface-2 border-border text-text"
+                          : "bg-surface border-border text-text"
                       }`}
                     >
                       {c.nombre.substring(0, 2).toUpperCase()}
