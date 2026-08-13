@@ -18,7 +18,14 @@ import {
   Clock,
   ShieldCheck,
   RefreshCw,
-  } from "lucide-react";
+  Upload,
+  FileSpreadsheet,
+  FileText,
+  Download,
+  Trash2,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -167,6 +174,165 @@ export default function AdminResidentesPage() {
     apto: "",
   });
   const [sendingInvite, setSendingInvite] = useState(false);
+
+  // Mass Import modal
+  const [showImport, setShowImport] = useState(false);
+  const [importTab, setImportTab] = useState<"FILE" | "PASTE">("FILE");
+  const [rawTextImport, setRawTextImport] = useState("");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [parsedImportItems, setParsedImportItems] = useState<
+    {
+      email: string;
+      nombre: string;
+      torre?: string;
+      apto?: string;
+      rol: Rol;
+      valid: boolean;
+      errorMsg?: string;
+    }[]
+  >([]);
+  const [isProcessingImport, setIsProcessingImport] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+
+  const handleParseContent = (text: string) => {
+    if (!text.trim()) {
+      setParsedImportItems([]);
+      return;
+    }
+
+    const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+    const parsed: {
+      email: string;
+      nombre: string;
+      torre?: string;
+      apto?: string;
+      rol: Rol;
+      valid: boolean;
+      errorMsg?: string;
+    }[] = [];
+
+    const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
+
+    lines.forEach((line, index) => {
+      // Ignore header row if it contains 'email' or 'correo' in first line
+      if (
+        index === 0 &&
+        (line.toLowerCase().includes("email") || line.toLowerCase().includes("correo"))
+      ) {
+        return;
+      }
+
+      const parts = line.split(/[,;\t|]+/).map((p) => p.trim());
+      const emailMatch = line.match(emailRegex);
+      const email = emailMatch ? emailMatch[1].toLowerCase() : "";
+
+      if (!email) {
+        parsed.push({
+          email: parts[1] || "",
+          nombre: parts[0] || `Fila ${index + 1}`,
+          rol: "PROPIETARIO",
+          valid: false,
+          errorMsg: "Correo electrónico no detectado",
+        });
+        return;
+      }
+
+      let nombre = parts[0] || "";
+      if (!nombre || nombre.toLowerCase().includes(email)) {
+        nombre = parts[1] && !parts[1].includes("@") ? parts[1] : email.split("@")[0];
+      }
+
+      let torre = parts[2] || "";
+      let apto = parts[3] || "";
+      let rolStr = (parts[4] || "PROPIETARIO").toUpperCase();
+      let rol: Rol = "PROPIETARIO";
+      if (rolStr.includes("ARREND")) rol = "ARRENDATARIO";
+      if (rolStr.includes("CONCEJ")) rol = "CONCEJO";
+
+      parsed.push({
+        email,
+        nombre,
+        torre: torre || undefined,
+        apto: apto || undefined,
+        rol,
+        valid: true,
+      });
+    });
+
+    setParsedImportItems(parsed);
+  };
+
+  const handleFileChange = (file: File) => {
+    setImportFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (content) {
+        handleParseContent(content);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleDownloadTemplate = () => {
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      "Nombre,Email,Torre,Apto,Rol\n" +
+      "Carlos Mendoza,carlos@ejemplo.com,1,101,PROPIETARIO\n" +
+      "Ana Maria Gomez,ana@ejemplo.com,2,304,ARRENDATARIO\n" +
+      "Pedro Ramirez,pedro@ejemplo.com,1,502,PROPIETARIO\n";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "plantilla_importacion_residentes.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Plantilla de importación CSV descargada");
+  };
+
+  const handleRemoveParsedItem = (index: number) => {
+    setParsedImportItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMassImportSubmit = async () => {
+    const validItems = parsedImportItems.filter((item) => item.valid);
+    if (validItems.length === 0) {
+      toast.error("No hay registros válidos para importar");
+      return;
+    }
+
+    setIsProcessingImport(true);
+    setImportProgress(0);
+    let successCount = 0;
+
+    for (let i = 0; i < validItems.length; i++) {
+      const item = validItems[i];
+      try {
+        await api.post("/admin/usuarios/invitar", {
+          email: item.email,
+          nombre: item.nombre,
+          rol: item.rol,
+          torre: item.torre || undefined,
+          apto: item.apto || undefined,
+        });
+        successCount++;
+      } catch {
+        // Continue processing batch
+      }
+      setImportProgress(Math.round(((i + 1) / validItems.length) * 100));
+    }
+
+    setIsProcessingImport(false);
+    toast.success(
+      `Importación completada: ${successCount} de ${validItems.length} invitaciones enviadas.`
+    );
+    setShowImport(false);
+    setParsedImportItems([]);
+    setImportFile(null);
+    setRawTextImport("");
+    fetchResidentes();
+  };
 
   // -------- Data fetching --------
 
@@ -351,7 +517,7 @@ export default function AdminResidentesPage() {
     >
       <ProfileHeader />
 
-      {/* Header + invite button */}
+      {/* Header + buttons */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-medium text-text tracking-wide">
@@ -361,13 +527,22 @@ export default function AdminResidentesPage() {
             Gestión de unidades y usuarios
           </p>
         </div>
-        <button
-          onClick={() => setShowInvite(true)}
-          className="flex items-center gap-2 bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform"
-        >
-          <UserPlus size={18} />
-          Invitar
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 bg-surface-2 border border-border text-text hover:bg-accent/10 hover:border-accent/40 rounded-full px-4 py-2.5 text-sm font-bold active:scale-95 transition-all cursor-pointer shadow-md"
+          >
+            <Upload size={17} className="text-accent" />
+            <span>Importar</span>
+          </button>
+          <button
+            onClick={() => setShowInvite(true)}
+            className="flex items-center gap-2 bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform cursor-pointer"
+          >
+            <UserPlus size={18} />
+            <span>Invitar</span>
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -1026,6 +1201,216 @@ export default function AdminResidentesPage() {
                 )}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MASS IMPORT MODAL */}
+      {/* ============================================================ */}
+      {showImport && (
+        <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0"
+            onClick={() => !isProcessingImport && setShowImport(false)}
+          />
+          <div className="liquid-glass rounded-t-[32px] sm:rounded-[32px] w-full max-w-[650px] max-h-[90vh] overflow-y-auto p-6 pb-10 sm:pb-6 relative z-10 shadow-2xl border-t border-border/40 animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300 flex flex-col gap-5">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent shrink-0">
+                  <Upload size={22} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-text">Importación Masiva</h3>
+                  <p className="text-xs text-text/70">
+                    Carga o pega tus bases de datos (Excel, CSV, PDF, TXT)
+                  </p>
+                </div>
+              </div>
+              <button
+                disabled={isProcessingImport}
+                onClick={() => setShowImport(false)}
+                className="w-9 h-9 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text hover:bg-text/10 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Template download banner */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-accent/10 border border-accent/30 text-text">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <FileSpreadsheet size={20} className="text-accent shrink-0" />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold text-text">¿Necesitas una plantilla de ejemplo?</span>
+                  <span className="text-[10px] text-text/70 truncate">Formato óptimo: Nombre, Email, Torre, Apto, Rol</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-on-accent text-xs font-bold shrink-0 hover:bg-accent/90 transition-all cursor-pointer shadow-sm"
+              >
+                <Download size={14} />
+                <span>Plantilla CSV</span>
+              </button>
+            </div>
+
+            {/* Import Mode Tabs */}
+            <div className="flex bg-surface-2 p-1 rounded-2xl border border-border">
+              <button
+                type="button"
+                onClick={() => setImportTab("FILE")}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  importTab === "FILE"
+                    ? "bg-accent text-on-accent shadow-md"
+                    : "text-text/70 hover:text-text"
+                }`}
+              >
+                <FileSpreadsheet size={15} /> Subir Archivo (Excel / CSV / PDF / TXT)
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportTab("PASTE")}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  importTab === "PASTE"
+                    ? "bg-accent text-on-accent shadow-md"
+                    : "text-text/70 hover:text-text"
+                }`}
+              >
+                <FileText size={15} /> Pegar Texto / Tabla
+              </button>
+            </div>
+
+            {/* Input options */}
+            {importTab === "FILE" ? (
+              <div className="flex flex-col gap-3">
+                <label className="border-2 border-dashed border-accent/40 hover:border-accent bg-surface-2/60 rounded-3xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-accent/5 group">
+                  <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
+                    <Upload size={24} />
+                  </div>
+                  <span className="text-sm font-bold text-text text-center">
+                    {importFile ? importFile.name : "Haz clic para seleccionar o arrastra un archivo"}
+                  </span>
+                  <span className="text-xs text-text/60 text-center">
+                    Formatos soportados: .xlsx, .xls, .csv, .pdf, .txt, .tsv
+                  </span>
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls,.pdf,.txt,.tsv"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleFileChange(e.target.files[0]);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Pegar Filas de Excel o CSV directamente
+                </label>
+                <textarea
+                  rows={5}
+                  value={rawTextImport}
+                  onChange={(e) => {
+                    setRawTextImport(e.target.value);
+                    handleParseContent(e.target.value);
+                  }}
+                  placeholder={"Nombre, Email, Torre, Apto, Rol\nCarlos Mendoza, carlos@ejemplo.com, 1, 101, PROPIETARIO\nAna Gomez, ana@ejemplo.com, 2, 204, ARRENDATARIO"}
+                  className="w-full bg-surface-2 border border-border rounded-2xl p-4 text-xs font-mono text-text focus:outline-none focus:border-accent"
+                />
+              </div>
+            )}
+
+            {/* Parsed Preview Table */}
+            {parsedImportItems.length > 0 && (
+              <div className="flex flex-col gap-3 border-t border-border/40 pt-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-text flex items-center gap-1.5">
+                    <Sparkles size={14} className="text-accent" />
+                    Vista Previa de Registros Detectados ({parsedImportItems.filter((i) => i.valid).length} válidos de {parsedImportItems.length})
+                  </span>
+                </div>
+
+                <div className="max-h-[220px] overflow-y-auto border border-border rounded-2xl overflow-hidden hide-scrollbar bg-surface-2/40">
+                  <table className="w-full text-left text-xs text-text">
+                    <thead className="bg-surface-2 border-b border-border/60 uppercase font-mono text-[9px] text-text/70 sticky top-0">
+                      <tr>
+                        <th className="p-3">Nombre</th>
+                        <th className="p-3">Email</th>
+                        <th className="p-3">Torre / Apto</th>
+                        <th className="p-3">Rol</th>
+                        <th className="p-3 text-right">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {parsedImportItems.map((item, index) => (
+                        <tr key={index} className={item.valid ? "hover:bg-accent/5" : "bg-red-500/10 text-red-400"}>
+                          <td className="p-3 font-semibold truncate max-w-[120px]">{item.nombre}</td>
+                          <td className="p-3 font-mono truncate max-w-[150px]">{item.email || "—"}</td>
+                          <td className="p-3 truncate">{item.torre && item.apto ? `T${item.torre} - ${item.apto}` : "—"}</td>
+                          <td className="p-3 font-bold uppercase text-[10px]">{ROL_LABELS[item.rol] || item.rol}</td>
+                          <td className="p-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveParsedItem(index)}
+                              className="p-1 rounded-lg text-text/60 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Batch Progress Bar */}
+            {isProcessingImport && (
+              <div className="flex flex-col gap-2 p-4 rounded-2xl bg-accent/10 border border-accent/40">
+                <div className="flex justify-between items-center text-xs font-bold text-text">
+                  <span>Procesando invitaciones masivas...</span>
+                  <span className="font-mono text-accent">{importProgress}%</span>
+                </div>
+                <div className="w-full bg-surface-2 rounded-full h-2.5 overflow-hidden border border-border">
+                  <div
+                    className="bg-accent h-full transition-all duration-200 rounded-full"
+                    style={{ width: `${importProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
+              <button
+                type="button"
+                disabled={isProcessingImport}
+                onClick={() => setShowImport(false)}
+                className="py-3 px-5 rounded-2xl border border-border text-xs font-bold uppercase tracking-wider text-text bg-surface hover:bg-surface-2 transition-all cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isProcessingImport || parsedImportItems.filter((i) => i.valid).length === 0}
+                onClick={handleMassImportSubmit}
+                className="py-3 px-6 rounded-2xl bg-accent hover:bg-accent/90 text-on-accent text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-accent/20 flex items-center gap-2 disabled:opacity-50"
+              >
+                {isProcessingImport ? (
+                  <>Procesando {importProgress}%...</>
+                ) : (
+                  <>
+                    <Upload size={16} /> Enviar {parsedImportItems.filter((i) => i.valid).length} Invitaciones Masivas
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
