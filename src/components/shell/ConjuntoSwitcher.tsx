@@ -70,7 +70,7 @@ export default function ConjuntoSwitcher() {
   };
 
   return (
-    <div className="relative w-full mb-4 z-[55]">
+    <div className="relative w-full mb-4 z-[100]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -107,7 +107,7 @@ export default function ConjuntoSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 liquid-glass backdrop-blur-3xl rounded-2xl border border-border shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-50">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-[110]">
           <div className="p-3 border-b border-border/40 bg-surface-2/50">
             <span className="text-[10px] font-black uppercase tracking-widest text-accent block">
               Cambiar Copropiedad
