@@ -852,52 +852,50 @@ export default function SuperAdminPage() {
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl pointer-events-none translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/15 transition-all"></div>
 
-                <div className="flex flex-col gap-3.5 w-full">
-                  {/* Header row: Logo + Nombre + Subdominio */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
-                    <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto flex-1">
-                      {c.logoUrl && (
-                        <div className="w-12 h-12 rounded-xl bg-white border border-border overflow-hidden p-1 flex items-center justify-center shrink-0 shadow-sm">
-                          <Image
-                            src={c.logoUrl}
-                            alt="Logotipo de la copropiedad"
-                            width={48}
-                            height={48}
-                            unoptimized
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-base sm:text-lg font-bold text-text leading-snug break-words">
-                          {c.nombre}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="text-accent font-mono text-[10px] tracking-widest uppercase font-black">
-                            NIT: {c.nit}
-                          </span>
-                          <span className="bg-surface-2 px-2.5 py-0.5 rounded-full border border-border text-[10px] font-black text-text font-mono">
-                            {c.subdominio}.conjuntos.app
-                          </span>
-                        </div>
+                <div className="flex flex-col gap-4 w-full">
+                  {/* Bloque Superior: Logo + Datos + Subdominio */}
+                  <div className="flex items-start gap-3 w-full border-b border-border/40 pb-3">
+                    {c.logoUrl && (
+                      <div className="w-12 h-12 rounded-xl bg-white border border-border overflow-hidden p-1 flex items-center justify-center shrink-0 shadow-sm">
+                        <Image
+                          src={c.logoUrl}
+                          alt="Logotipo de la copropiedad"
+                          width={48}
+                          height={48}
+                          unoptimized
+                          className="w-full h-full object-contain"
+                        />
                       </div>
+                    )}
+                    <div className="flex flex-col gap-1 w-full min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap w-full">
+                        <span className="text-accent font-mono text-[10px] tracking-widest uppercase font-black shrink-0">
+                          NIT: {c.nit}
+                        </span>
+                        <span className="bg-surface-2 px-2.5 py-0.5 rounded-full border border-border text-[10px] font-black text-text font-mono shrink-0">
+                          {c.subdominio}.conjuntos.app
+                        </span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-text leading-snug w-full break-words whitespace-normal">
+                        {c.nombre}
+                      </h3>
                     </div>
+                  </div>
 
-                    {/* Acciones: Botones */}
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40 shrink-0">
-                      <button
-                        onClick={() => handleOpenAssignAdminModal(c)}
-                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl border border-accent/40 text-[11px] font-black uppercase tracking-wider text-on-accent bg-accent hover:bg-accent/90 active:scale-95 transition-all cursor-pointer shadow-md shadow-accent/20"
-                      >
-                        <UserPlus size={14} /> Asignar Administrador
-                      </button>
-                      <button
-                        onClick={() => handleEditClick(c)}
-                        className="inline-flex items-center justify-center gap-1 py-2 px-3 rounded-xl border border-border text-[11px] font-black uppercase tracking-wider text-text bg-surface-2 hover:bg-surface-2/80 active:scale-95 transition-all cursor-pointer"
-                      >
-                        <Edit3 size={12} /> Editar
-                      </button>
-                    </div>
+                  {/* Bloque de Acciones (Botones) */}
+                  <div className="flex items-center gap-2 w-full">
+                    <button
+                      onClick={() => handleOpenAssignAdminModal(c)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-accent/40 text-xs font-black uppercase tracking-wider text-on-accent bg-accent hover:bg-accent/90 active:scale-95 transition-all cursor-pointer shadow-md shadow-accent/20"
+                    >
+                      <UserPlus size={15} /> Asignar Administrador
+                    </button>
+                    <button
+                      onClick={() => handleEditClick(c)}
+                      className="inline-flex items-center justify-center gap-1 py-2.5 px-4 rounded-xl border border-border text-xs font-black uppercase tracking-wider text-text bg-surface-2 hover:bg-surface-2/80 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Edit3 size={13} /> Editar
+                    </button>
                   </div>
 
                   {/* Detalle e información */}
