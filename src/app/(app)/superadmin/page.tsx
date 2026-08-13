@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   Building2, Plus, FileText, ShieldCheck, MapPin,
-  User, Calendar, Layers, Upload, Edit3, Home, Grid, ToggleLeft, ToggleRight
+  User, Calendar, Layers, Upload, Edit3, Home, Grid, ToggleLeft, ToggleRight,
+  UserPlus, Key, Mail, Phone, CheckCircle2, X
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,7 +30,17 @@ export default function SuperAdminPage() {
   const [editingConjuntoId, setEditingConjuntoId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Form State
+  // Modal State for Assigning Administrator
+  const [adminModalConjunto, setAdminModalConjunto] = useState<ConjuntoDto | null>(null);
+  const [isAssigningAdmin, setIsAssigningAdmin] = useState(false);
+  const [adminForm, setAdminForm] = useState({
+    nombre: "",
+    email: "",
+    telefono: "",
+    password: "Admin2026!",
+  });
+
+  // Form State for Copropiedad
   const [formData, setFormData] = useState({
     nombre: "",
     nit: "",
@@ -52,6 +63,65 @@ export default function SuperAdminPage() {
     logoUrl: "",
     colorPrimario: "#404040",
   });
+
+  const handleOpenAssignAdminModal = (c: ConjuntoDto) => {
+    setAdminModalConjunto(c);
+    setAdminForm({
+      nombre: c.representanteLegal || "",
+      email: `${c.subdominio}@conjuntos.app`,
+      telefono: "",
+      password: `Admin${Math.floor(1000 + Math.random() * 9000)}!`,
+    });
+  };
+
+  const handleAssignAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminModalConjunto) return;
+
+    if (!adminForm.nombre || !adminForm.email || !adminForm.password) {
+      return toast.error("Por favor completa el nombre, correo y contraseña temporal");
+    }
+
+    setIsAssigningAdmin(true);
+    try {
+      const payload = {
+        conjuntoId: adminModalConjunto.id,
+        nombre: adminForm.nombre.trim(),
+        email: adminForm.email.trim().toLowerCase(),
+        telefono: adminForm.telefono.trim() || undefined,
+        password: adminForm.password.trim(),
+        rol: "ADMINISTRADOR",
+      };
+
+      try {
+        await api.post(`/superadmin/conjuntos/${adminModalConjunto.id}/administrador`, payload);
+      } catch {
+        // Fallback endpoint
+        await api.post(`/admin/residentes`, payload);
+      }
+
+      // Update local representant legal name on conjunto
+      await api.put(`/superadmin/conjuntos/${adminModalConjunto.id}`, {
+        representanteLegal: adminForm.nombre.trim(),
+      });
+
+      toast.success(
+        `Administrador ${adminForm.nombre} asignado a "${adminModalConjunto.nombre}" con éxito.`,
+      );
+      setAdminModalConjunto(null);
+      fetchConjuntos();
+    } catch (err: unknown) {
+      const msg =
+        err instanceof ApiError
+          ? err.detail || err.message
+          : err instanceof Error
+          ? err.message
+          : "Error al asignar administrador al conjunto";
+      toast.error(msg);
+    } finally {
+      setIsAssigningAdmin(false);
+    }
+  };
 
   const handleEditClick = (c: ConjuntoDto) => {
     setEditingConjuntoId(c.id);
@@ -455,7 +525,7 @@ export default function SuperAdminPage() {
                     type="text"
                     value={formData.representanteLegal}
                     onChange={(e) => setFormData({ ...formData, representanteLegal: e.target.value })}
-                    placeholder="Nombre completo"
+                    placeholder="Nombre completo del administrador"
                     className="bg-transparent border-none outline-none text-sm text-text flex-1 min-w-0"
                   />
                 </div>
@@ -778,11 +848,11 @@ export default function SuperAdminPage() {
             conjuntos.map((c, idx) => (
               <div
                 key={c.id || idx}
-                className="liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 relative overflow-hidden group hover:border-accent/40 transition-all w-full"
+                className="liquid-glass-card rounded-[24px] p-5 border border-border flex flex-col gap-3 relative overflow-hidden group hover:border-accent/40 transition-all w-full shadow-lg"
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl pointer-events-none translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/15 transition-all"></div>
 
-                <div className="flex justify-between items-start gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="flex gap-3 items-center min-w-0 flex-1">
                     {c.logoUrl && (
                       <div className="w-10 h-10 rounded-lg bg-white border border-border overflow-hidden p-0.5 flex items-center justify-center shrink-0">
@@ -803,13 +873,20 @@ export default function SuperAdminPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 items-end shrink-0">
-                    <span className="bg-surface-2 px-3 py-1 rounded-full border border-border text-[9px] font-black text-text font-mono">
+
+                  <div className="flex items-center gap-2 flex-wrap shrink-0">
+                    <span className="bg-surface-2 px-3 py-1.5 rounded-full border border-border text-[10px] font-black text-text font-mono">
                       {c.subdominio}.conjuntos.app
                     </span>
                     <button
+                      onClick={() => handleOpenAssignAdminModal(c)}
+                      className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border border-accent/40 text-[10px] font-black uppercase tracking-wider text-on-accent bg-accent hover:bg-accent/90 active:scale-95 transition-all cursor-pointer shadow-md shadow-accent/20"
+                    >
+                      <UserPlus size={13} /> Asignar Administrador
+                    </button>
+                    <button
                       onClick={() => handleEditClick(c)}
-                      className="inline-flex items-center gap-1 py-1.5 px-3 rounded-xl border border-border text-[10px] font-black uppercase tracking-wider text-accent bg-accent/5 hover:bg-accent/10 active:scale-95 transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1 py-1.5 px-3 rounded-xl border border-border text-[10px] font-black uppercase tracking-wider text-text bg-surface-2 hover:bg-surface-2/80 active:scale-95 transition-all cursor-pointer"
                     >
                       <Edit3 size={10} /> Editar
                     </button>
@@ -823,12 +900,17 @@ export default function SuperAdminPage() {
                       {c.direccion}, {c.ciudad}
                     </span>
                   </div>
-                  {c.representanteLegal && (
-                    <div className="flex items-center gap-2 min-w-0">
-                      <User size={12} className="text-text shrink-0" />
+                  {c.representanteLegal ? (
+                    <div className="flex items-center gap-2 min-w-0 text-accent">
+                      <CheckCircle2 size={13} className="text-accent shrink-0" />
                       <span className="break-words">
-                        Rep. Legal: <strong>{c.representanteLegal}</strong>
+                        Administrador Asignado: <strong>{c.representanteLegal}</strong>
                       </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 min-w-0 text-text/60 italic">
+                      <User size={12} className="text-text/50 shrink-0" />
+                      <span>Sin administrador asignado en sistema</span>
                     </div>
                   )}
                   {c.tipoAgrupacion && (
@@ -847,7 +929,7 @@ export default function SuperAdminPage() {
                     <div className="flex items-center gap-2 min-w-0">
                       <ShieldCheck size={12} className="text-text shrink-0" />
                       <span className="break-words">
-                        {c.notariaEscritura || "Deed"}: {c.numeroEscritura} (
+                        {c.notariaEscritura || "Notaría"}: {c.numeroEscritura} (
                         {c.fechaEscritura ? new Date(c.fechaEscritura).toLocaleDateString() : "N/A"})
                       </span>
                     </div>
@@ -862,6 +944,140 @@ export default function SuperAdminPage() {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* MODAL: ASIGNAR ADMINISTRADOR DE COPROPIEDAD */}
+      {adminModalConjunto && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="liquid-glass rounded-[32px] border border-border p-6 md:p-8 max-w-lg w-full shadow-2xl flex flex-col gap-6 relative animate-in fade-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setAdminModalConjunto(null)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text hover:text-text cursor-pointer transition-transform active:scale-95"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-border/40 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+                <UserPlus size={24} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[9px] font-black uppercase tracking-widest text-accent block">
+                  Asignación de Acceso
+                </span>
+                <h3 className="text-lg font-bold text-text leading-tight break-words">
+                  Asignar Administrador Principal
+                </h3>
+                <p className="text-xs text-text/70 mt-0.5 truncate">
+                  {adminModalConjunto.nombre} ({adminModalConjunto.subdominio}.conjuntos.app)
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAssignAdminSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Nombre Completo del Administrador *
+                </label>
+                <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
+                  <User size={16} className="text-text mr-2 shrink-0" />
+                  <input
+                    required
+                    type="text"
+                    value={adminForm.nombre}
+                    onChange={(e) => setAdminForm({ ...adminForm, nombre: e.target.value })}
+                    placeholder="Ej: Sergio Vásquez Meneses"
+                    className="bg-transparent border-none outline-none text-sm text-text flex-1"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                  Correo Electrónico (Login de Acceso) *
+                </label>
+                <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
+                  <Mail size={16} className="text-text mr-2 shrink-0" />
+                  <input
+                    required
+                    type="email"
+                    value={adminForm.email}
+                    onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+                    placeholder="admin@conjunto.com"
+                    className="bg-transparent border-none outline-none text-sm text-text flex-1"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                    Teléfono Móvil
+                  </label>
+                  <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
+                    <Phone size={16} className="text-text mr-2 shrink-0" />
+                    <input
+                      type="text"
+                      value={adminForm.telefono}
+                      onChange={(e) => setAdminForm({ ...adminForm, telefono: e.target.value })}
+                      placeholder="Ej: 300 123 4567"
+                      className="bg-transparent border-none outline-none text-sm text-text flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                    Contraseña Temporal *
+                  </label>
+                  <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
+                    <Key size={16} className="text-accent mr-2 shrink-0" />
+                    <input
+                      required
+                      type="text"
+                      value={adminForm.password}
+                      onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                      placeholder="Contraseña"
+                      className="bg-transparent border-none outline-none text-sm text-text flex-1 font-mono font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-surface-2 border border-border rounded-2xl p-4 text-xs text-text/80 leading-relaxed mt-1">
+                <p>
+                  💡 <strong>Nota del Sistema:</strong> Se registrará una cuenta con rol{" "}
+                  <strong className="text-accent">ADMINISTRADOR</strong> vinculada al Tenant ID{" "}
+                  <strong className="font-mono text-text">{adminModalConjunto.subdominio}</strong>.
+                  El administrador podrá acceder a través del portal con este correo y clave temporal.
+                </p>
+              </div>
+
+              <div className="flex gap-3 justify-end mt-2">
+                <button
+                  type="button"
+                  onClick={() => setAdminModalConjunto(null)}
+                  className="py-3 px-5 rounded-2xl border border-border text-xs font-bold uppercase tracking-wider text-text bg-surface hover:bg-surface-2 transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAssigningAdmin}
+                  className="py-3 px-6 rounded-2xl bg-accent hover:bg-accent/90 text-on-accent text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-accent/20 flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isAssigningAdmin ? (
+                    <>Asignando...</>
+                  ) : (
+                    <>
+                      <UserPlus size={16} /> Crear Acceso de Administrador
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
