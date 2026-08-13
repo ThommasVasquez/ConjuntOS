@@ -11,7 +11,7 @@ use crate::domains::vigilancia::dto::{
     AprobarVisitaRequest, ComunicacionesDto, CorrespondenciaDto, CorrespondenciaVigilanciaDto,
     CreateCorrespondenciaRequest, CreateNovedadRequest, CreatePaqueteRequest,
     CreateVisitaResidenteRequest, CreateVisitaVigilanciaRequest, NovedadDto, NovedadVigilanciaDto,
-    PaqueteDto, PaqueteVigilanciaDto, ResolverNovedadRequest, VigilanciaStatsDto, VisitaDto,
+    PaqueteDto, PaqueteVigilanciaDto, ResolverNovedadRequest, UpdateVisitaRequest, VigilanciaStatsDto, VisitaDto,
     VisitaVigilanciaDto,
 };
 use crate::domains::vigilancia::models::{NuevaNovedad, NuevaVisita};
@@ -33,6 +33,7 @@ pub fn router() -> Router<AppState> {
             "/vigilancia/visitas",
             get(listar_visitas_hoy).post(crear_visita_vigilancia),
         )
+        .route("/vigilancia/visitas/{id}", put(actualizar_visita))
         .route(
             "/vigilancia/paquetes",
             get(listar_paquetes).post(crear_paquete),
@@ -147,6 +148,31 @@ pub async fn crear_visita_vigilancia(
                 action: "created".into(),
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
                 target_user_id: Some(req.usuario_id),
+            },
+        )
+        .await;
+    Ok(Json(dto))
+}
+
+pub async fn actualizar_visita(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateVisitaRequest>,
+) -> ApiResult<Json<VisitaDto>> {
+    guard::require(&user, ROLES_VIGILANCIA)?;
+    let mut conn = state.pool.get().await?;
+    let updated = repo::update_visita(&mut conn, user.conjunto_id, id, req).await?;
+    let dto = VisitaDto::from(updated);
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "visita".into(),
+                action: "updated".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: None,
             },
         )
         .await;

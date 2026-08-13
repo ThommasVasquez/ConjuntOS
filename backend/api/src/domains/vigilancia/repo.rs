@@ -68,6 +68,46 @@ pub async fn crear_visita(conn: &mut DbConn, nueva: NuevaVisita) -> ApiResult<Vi
     Ok(row)
 }
 
+pub async fn update_visita(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    visita_id: Uuid,
+    req: crate::domains::vigilancia::dto::UpdateVisitaRequest,
+) -> ApiResult<Visita> {
+    let target = visitas::table
+        .filter(visitas::id.eq(visita_id))
+        .filter(visitas::conjunto_id.eq(conjunto_id));
+
+    if let Some(n) = req.nombre {
+        diesel::update(target).set(visitas::nombre.eq(n)).execute(conn).await?;
+    }
+    if let Some(doc) = req.documento {
+        diesel::update(target).set(visitas::documento.eq(doc)).execute(conn).await?;
+    }
+    if let Some(t) = req.tipo {
+        diesel::update(target).set(visitas::tipo.eq(t)).execute(conn).await?;
+    }
+    if let Some(vt) = req.vehiculo_tipo {
+        diesel::update(target).set(visitas::vehiculo_tipo.eq(vt)).execute(conn).await?;
+    }
+    if let Some(p) = req.placa {
+        diesel::update(target).set(visitas::placa.eq(p)).execute(conn).await?;
+    }
+    if let Some(obs) = req.observacion {
+        diesel::update(target).set(visitas::observacion.eq(obs)).execute(conn).await?;
+    }
+    if let Some(st) = req.estado {
+        diesel::update(target).set(visitas::estado.eq(st)).execute(conn).await?;
+    }
+
+    let row = visitas::table
+        .filter(visitas::id.eq(visita_id))
+        .select(Visita::as_select())
+        .first(conn)
+        .await?;
+    Ok(row)
+}
+
 pub async fn visitas_propias(
     conn: &mut DbConn,
     conjunto_id: Uuid,

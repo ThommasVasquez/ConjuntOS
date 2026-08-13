@@ -87,6 +87,18 @@ pub struct CreateVisitaVigilanciaRequest {
 
 #[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
+pub struct UpdateVisitaRequest {
+    pub nombre: Option<String>,
+    pub documento: Option<String>,
+    pub tipo: Option<TipoVisita>,
+    pub vehiculo_tipo: Option<TipoVehiculoVisita>,
+    pub placa: Option<String>,
+    pub observacion: Option<String>,
+    pub estado: Option<EstadoVisita>,
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateVisitaResidenteRequest {
     pub nombre: String,
     pub tipo: TipoVisita,
