@@ -63,7 +63,7 @@ export default function RoleSwitcher() {
   };
 
   return (
-    <div className="relative w-full mb-4 z-[60]">
+    <div className="relative w-full mb-4 z-[50]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
