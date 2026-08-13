@@ -295,6 +295,19 @@ export default function AdminResidentesPage() {
     setParsedImportItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleUpdateParsedItem = (index: number, field: string, value: string) => {
+    setParsedImportItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+        const updated = { ...item, [field]: value };
+        const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
+        updated.valid =
+          emailRegex.test(updated.email) && updated.nombre.trim().length > 0;
+        return updated;
+      })
+    );
+  };
+
   const handleMassImportSubmit = async () => {
     const validItems = parsedImportItems.filter((item) => item.valid);
     if (validItems.length === 0) {
@@ -1349,15 +1362,59 @@ export default function AdminResidentesPage() {
                     <tbody className="divide-y divide-border/40">
                       {parsedImportItems.map((item, index) => (
                         <tr key={index} className={item.valid ? "hover:bg-accent/5" : "bg-red-500/10 text-red-400"}>
-                          <td className="p-3 font-semibold truncate max-w-[120px]">{item.nombre}</td>
-                          <td className="p-3 font-mono truncate max-w-[150px]">{item.email || "—"}</td>
-                          <td className="p-3 truncate">{item.torre && item.apto ? `T${item.torre} - ${item.apto}` : "—"}</td>
-                          <td className="p-3 font-bold uppercase text-[10px]">{ROL_LABELS[item.rol] || item.rol}</td>
-                          <td className="p-3 text-right">
+                          <td className="p-2">
+                            <input
+                              type="text"
+                              value={item.nombre}
+                              onChange={(e) => handleUpdateParsedItem(index, "nombre", e.target.value)}
+                              placeholder="Nombre"
+                              className="w-full bg-surface-2 border border-border/60 rounded-lg px-2.5 py-1 text-xs text-text font-semibold focus:outline-none focus:border-accent"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="email"
+                              value={item.email}
+                              onChange={(e) => handleUpdateParsedItem(index, "email", e.target.value)}
+                              placeholder="correo@ejemplo.com"
+                              className="w-full bg-surface-2 border border-border/60 rounded-lg px-2.5 py-1 text-xs font-mono text-text focus:outline-none focus:border-accent"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <div className="flex gap-1">
+                              <input
+                                type="text"
+                                value={item.torre || ""}
+                                onChange={(e) => handleUpdateParsedItem(index, "torre", e.target.value)}
+                                placeholder="Torre"
+                                className="w-14 bg-surface-2 border border-border/60 rounded-lg px-1.5 py-1 text-xs text-text focus:outline-none focus:border-accent"
+                              />
+                              <input
+                                type="text"
+                                value={item.apto || ""}
+                                onChange={(e) => handleUpdateParsedItem(index, "apto", e.target.value)}
+                                placeholder="Apto"
+                                className="w-16 bg-surface-2 border border-border/60 rounded-lg px-1.5 py-1 text-xs text-text focus:outline-none focus:border-accent"
+                              />
+                            </div>
+                          </td>
+                          <td className="p-2">
+                            <select
+                              value={item.rol}
+                              onChange={(e) => handleUpdateParsedItem(index, "rol", e.target.value)}
+                              className="bg-surface-2 border border-border/60 rounded-lg px-2 py-1 text-[11px] font-bold text-text focus:outline-none focus:border-accent uppercase cursor-pointer"
+                            >
+                              <option value="PROPIETARIO">PROPIETARIO</option>
+                              <option value="ARRENDATARIO">ARRENDATARIO</option>
+                              <option value="CONCEJO">CONCEJO</option>
+                            </select>
+                          </td>
+                          <td className="p-2 text-right">
                             <button
                               type="button"
                               onClick={() => handleRemoveParsedItem(index)}
-                              className="p-1 rounded-lg text-text/60 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-text/60 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                              title="Eliminar fila"
                             >
                               <Trash2 size={14} />
                             </button>
