@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
 import type { ConjuntoDto } from "@/lib/api/types";
 import { toast } from "sonner";
+import Image from "next/image";
 
 export default function ConjuntoSwitcher() {
   const { user } = useAuth();
@@ -78,9 +79,23 @@ export default function ConjuntoSwitcher() {
         className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl liquid-glass-card border border-accent/30 text-text shadow-lg hover:border-accent/60 transition-all active:scale-[0.99] group cursor-pointer"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent shrink-0 group-hover:scale-105 transition-transform">
-            <Building2 size={18} />
-          </div>
+          {activeConjunto?.logoUrl ? (
+            <div className="w-9 h-9 rounded-xl bg-white border border-border overflow-hidden p-0.5 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <Image
+                src={activeConjunto.logoUrl}
+                alt={activeConjunto.nombre}
+                width={36}
+                height={36}
+                unoptimized
+                className="w-full h-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent shrink-0 group-hover:scale-105 transition-transform">
+              <Building2 size={18} />
+            </div>
+          )}
+
           <div className="flex flex-col items-start leading-tight min-w-0">
             <span className="text-[9px] text-accent font-black uppercase tracking-widest flex items-center gap-1">
               <Sparkles size={9} /> Copropiedad Activa
@@ -132,15 +147,28 @@ export default function ConjuntoSwitcher() {
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold shrink-0 ${
-                        active
-                          ? "bg-accent text-on-accent border-accent"
-                          : "bg-surface border-border text-text"
-                      }`}
-                    >
-                      {c.nombre.substring(0, 2).toUpperCase()}
-                    </div>
+                    {c.logoUrl ? (
+                      <div className="w-8 h-8 rounded-lg bg-white border border-border overflow-hidden p-0.5 flex items-center justify-center shrink-0 shadow-sm">
+                        <Image
+                          src={c.logoUrl}
+                          alt={c.nombre}
+                          width={32}
+                          height={32}
+                          unoptimized
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        className={`w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold shrink-0 ${
+                          active
+                            ? "bg-accent text-on-accent border-accent"
+                            : "bg-surface border-border text-text"
+                        }`}
+                      >
+                        {c.nombre.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div className="flex flex-col min-w-0">
                       <span className="truncate font-semibold text-text">{c.nombre}</span>
                       <span className="text-[10px] font-mono text-text/70">
