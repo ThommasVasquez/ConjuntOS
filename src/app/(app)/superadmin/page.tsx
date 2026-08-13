@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import {
   Building2, Plus, FileText, ShieldCheck, MapPin,
   User, Calendar, Layers, Upload, Edit3, Home, Grid, ToggleLeft, ToggleRight,
-  UserPlus, Key, Mail, Phone, CheckCircle2, X
+  UserPlus, Key, Mail, Phone, CheckCircle2, X, Search, Check
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,12 +33,47 @@ export default function SuperAdminPage() {
   // Modal State for Assigning Administrator
   const [adminModalConjunto, setAdminModalConjunto] = useState<ConjuntoDto | null>(null);
   const [isAssigningAdmin, setIsAssigningAdmin] = useState(false);
+  const [assignMode, setAssignMode] = useState<"SELECT" | "CREATE">("SELECT");
+  const [searchAdminQuery, setSearchAdminQuery] = useState("");
+  const [selectedAdminEmail, setSelectedAdminEmail] = useState<string | null>(null);
   const [adminForm, setAdminForm] = useState({
     nombre: "",
     email: "",
     telefono: "",
     password: "Admin2026!",
   });
+
+  // Extract unique registered administrators from existing coproperties and defaults
+  const existingAdmins = useMemo(() => {
+    const list: { nombre: string; email: string; conjunto?: string }[] = [];
+    const seen = new Set<string>();
+
+    const defaults = [
+      { nombre: "Sergio Vásquez (Admin Principal)", email: "admin@demo.conjuntos.app", conjunto: "Demo Copropiedades" },
+      { nombre: "SuperAdmin Demo", email: "superadmin@demo.conjuntos.app", conjunto: "Plataforma" },
+    ];
+
+    defaults.forEach((d) => {
+      seen.add(d.email.toLowerCase());
+      list.push(d);
+    });
+
+    conjuntos.forEach((c) => {
+      if (c.representanteLegal) {
+        const email = `${c.subdominio}@conjuntos.app`;
+        if (!seen.has(email.toLowerCase())) {
+          seen.add(email.toLowerCase());
+          list.push({
+            nombre: c.representanteLegal,
+            email,
+            conjunto: c.nombre,
+          });
+        }
+      }
+    });
+
+    return list;
+  }, [conjuntos]);
 
   // Form State for Copropiedad
   const [formData, setFormData] = useState({
@@ -66,11 +101,23 @@ export default function SuperAdminPage() {
 
   const handleOpenAssignAdminModal = (c: ConjuntoDto) => {
     setAdminModalConjunto(c);
+    setAssignMode("SELECT");
+    setSearchAdminQuery("");
+    setSelectedAdminEmail(null);
     setAdminForm({
       nombre: c.representanteLegal || "",
       email: `${c.subdominio}@conjuntos.app`,
       telefono: "",
       password: `Admin${Math.floor(1000 + Math.random() * 9000)}!`,
+    });
+  };
+
+  const handleSelectExistingAdmin = (admin: { nombre: string; email: string }) => {
+    setSelectedAdminEmail(admin.email);
+    setAdminForm({
+      ...adminForm,
+      nombre: admin.nombre,
+      email: admin.email,
     });
   };
 
@@ -982,53 +1029,146 @@ export default function SuperAdminPage() {
               </div>
             </div>
 
-            <form onSubmit={handleAssignAdminSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
-                  Nombre Completo del Administrador *
-                </label>
-                <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
-                  <User size={16} className="text-text mr-2 shrink-0" />
-                  <input
-                    required
-                    type="text"
-                    value={adminForm.nombre}
-                    onChange={(e) => setAdminForm({ ...adminForm, nombre: e.target.value })}
-                    placeholder="Ej: Sergio Vásquez Meneses"
-                    className="bg-transparent border-none outline-none text-sm text-text flex-1"
-                  />
-                </div>
-              </div>
+            {/* Selector de Modo: Buscar Existente vs Registrar Nuevo */}
+            <div className="flex bg-surface-2 p-1 rounded-2xl border border-border">
+              <button
+                type="button"
+                onClick={() => setAssignMode("SELECT")}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  assignMode === "SELECT"
+                    ? "bg-accent text-on-accent shadow-md"
+                    : "text-text/70 hover:text-text"
+                }`}
+              >
+                <Search size={14} /> Seleccionar Existente
+              </button>
+              <button
+                type="button"
+                onClick={() => setAssignMode("CREATE")}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  assignMode === "CREATE"
+                    ? "bg-accent text-on-accent shadow-md"
+                    : "text-text/70 hover:text-text"
+                }`}
+              >
+                <UserPlus size={14} /> Registrar Nuevo
+              </button>
+            </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
-                  Correo Electrónico (Login de Acceso) *
-                </label>
-                <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
-                  <Mail size={16} className="text-text mr-2 shrink-0" />
-                  <input
-                    required
-                    type="email"
-                    value={adminForm.email}
-                    onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
-                    placeholder="admin@conjunto.com"
-                    className="bg-transparent border-none outline-none text-sm text-text flex-1"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {assignMode === "SELECT" ? (
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
-                    Teléfono Móvil
+                    Buscar Administrador Registrado
                   </label>
                   <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
-                    <Phone size={16} className="text-text mr-2 shrink-0" />
+                    <Search size={16} className="text-accent mr-2 shrink-0" />
                     <input
                       type="text"
-                      value={adminForm.telefono}
-                      onChange={(e) => setAdminForm({ ...adminForm, telefono: e.target.value })}
-                      placeholder="Ej: 300 123 4567"
+                      value={searchAdminQuery}
+                      onChange={(e) => setSearchAdminQuery(e.target.value)}
+                      placeholder="Buscar por nombre o correo (ej: Sergio...)"
+                      className="bg-transparent border-none outline-none text-sm text-text flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto hide-scrollbar">
+                  {existingAdmins
+                    .filter(
+                      (a) =>
+                        a.nombre.toLowerCase().includes(searchAdminQuery.toLowerCase()) ||
+                        a.email.toLowerCase().includes(searchAdminQuery.toLowerCase())
+                    )
+                    .map((admin) => {
+                      const isSelected = selectedAdminEmail === admin.email;
+                      return (
+                        <button
+                          key={admin.email}
+                          type="button"
+                          onClick={() => handleSelectExistingAdmin(admin)}
+                          className={`w-full p-3 rounded-2xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-accent/20 border-accent text-text shadow-md"
+                              : "bg-surface-2/60 border-border/60 hover:bg-accent/10 text-text"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                                isSelected
+                                  ? "bg-accent text-on-accent"
+                                  : "bg-surface border border-border text-text"
+                              }`}
+                            >
+                              <User size={16} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-bold text-text truncate">
+                                {admin.nombre}
+                              </span>
+                              <span className="text-[10px] font-mono text-text/70 truncate">
+                                {admin.email}
+                              </span>
+                              {admin.conjunto && (
+                                <span className="text-[9px] text-accent font-semibold truncate">
+                                  Administra: {admin.conjunto}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {isSelected && <CheckCircle2 size={18} className="text-accent shrink-0 ml-2" />}
+                        </button>
+                      );
+                    })}
+                </div>
+
+                <form onSubmit={handleAssignAdminSubmit} className="flex flex-col gap-4 mt-2">
+                  <div className="bg-surface-2 border border-border rounded-2xl p-4 text-xs text-text/80 leading-relaxed">
+                    <p>
+                      💡 <strong>Asignación Directa:</strong> Al vincular este administrador a{" "}
+                      <strong className="text-accent">{adminModalConjunto.nombre}</strong>, tendrá acceso de gestión tanto a esta copropiedad como a las demás que tenga asignadas.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setAdminModalConjunto(null)}
+                      className="py-3 px-5 rounded-2xl border border-border text-xs font-bold uppercase tracking-wider text-text bg-surface hover:bg-surface-2 transition-all cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isAssigningAdmin || !selectedAdminEmail}
+                      className="py-3 px-6 rounded-2xl bg-accent hover:bg-accent/90 text-on-accent text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-accent/20 flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isAssigningAdmin ? (
+                        <>Asignando...</>
+                      ) : (
+                        <>
+                          <UserPlus size={16} /> Vincular Administrador
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              <form onSubmit={handleAssignAdminSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                    Nombre Completo del Administrador *
+                  </label>
+                  <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
+                    <User size={16} className="text-text mr-2 shrink-0" />
+                    <input
+                      required
+                      type="text"
+                      value={adminForm.nombre}
+                      onChange={(e) => setAdminForm({ ...adminForm, nombre: e.target.value })}
+                      placeholder="Ej: Sergio Vásquez Meneses"
                       className="bg-transparent border-none outline-none text-sm text-text flex-1"
                     />
                   </div>
@@ -1036,54 +1176,89 @@ export default function SuperAdminPage() {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
-                    Contraseña Temporal *
+                    Correo Electrónico (Login de Acceso) *
                   </label>
                   <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
-                    <Key size={16} className="text-accent mr-2 shrink-0" />
+                    <Mail size={16} className="text-text mr-2 shrink-0" />
                     <input
                       required
-                      type="text"
-                      value={adminForm.password}
-                      onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                      placeholder="Contraseña"
-                      className="bg-transparent border-none outline-none text-sm text-text flex-1 font-mono font-bold"
+                      type="email"
+                      value={adminForm.email}
+                      onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+                      placeholder="admin@conjunto.com"
+                      className="bg-transparent border-none outline-none text-sm text-text flex-1"
                     />
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-surface-2 border border-border rounded-2xl p-4 text-xs text-text/80 leading-relaxed mt-1">
-                <p>
-                  💡 <strong>Nota del Sistema:</strong> Se registrará una cuenta con rol{" "}
-                  <strong className="text-accent">ADMINISTRADOR</strong> vinculada al Tenant ID{" "}
-                  <strong className="font-mono text-text">{adminModalConjunto.subdominio}</strong>.
-                  El administrador podrá acceder a través del portal con este correo y clave temporal.
-                </p>
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                      Teléfono Móvil
+                    </label>
+                    <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
+                      <Phone size={16} className="text-text mr-2 shrink-0" />
+                      <input
+                        type="text"
+                        value={adminForm.telefono}
+                        onChange={(e) => setAdminForm({ ...adminForm, telefono: e.target.value })}
+                        placeholder="Ej: 300 123 4567"
+                        className="bg-transparent border-none outline-none text-sm text-text flex-1"
+                      />
+                    </div>
+                  </div>
 
-              <div className="flex gap-3 justify-end mt-2">
-                <button
-                  type="button"
-                  onClick={() => setAdminModalConjunto(null)}
-                  className="py-3 px-5 rounded-2xl border border-border text-xs font-bold uppercase tracking-wider text-text bg-surface hover:bg-surface-2 transition-all cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isAssigningAdmin}
-                  className="py-3 px-6 rounded-2xl bg-accent hover:bg-accent/90 text-on-accent text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-accent/20 flex items-center gap-2 disabled:opacity-50"
-                >
-                  {isAssigningAdmin ? (
-                    <>Asignando...</>
-                  ) : (
-                    <>
-                      <UserPlus size={16} /> Crear Acceso de Administrador
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                      Contraseña Temporal *
+                    </label>
+                    <div className="flex items-center bg-surface-2 border border-border rounded-xl px-4 py-3">
+                      <Key size={16} className="text-accent mr-2 shrink-0" />
+                      <input
+                        required
+                        type="text"
+                        value={adminForm.password}
+                        onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                        placeholder="Contraseña"
+                        className="bg-transparent border-none outline-none text-sm text-text flex-1 font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-surface-2 border border-border rounded-2xl p-4 text-xs text-text/80 leading-relaxed mt-1">
+                  <p>
+                    💡 <strong>Nota del Sistema:</strong> Se registrará una cuenta con rol{" "}
+                    <strong className="text-accent">ADMINISTRADOR</strong> vinculada al Tenant ID{" "}
+                    <strong className="font-mono text-text">{adminModalConjunto.subdominio}</strong>.
+                    El administrador podrá acceder a través del portal con este correo y clave temporal.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdminModalConjunto(null)}
+                    className="py-3 px-5 rounded-2xl border border-border text-xs font-bold uppercase tracking-wider text-text bg-surface hover:bg-surface-2 transition-all cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isAssigningAdmin}
+                    className="py-3 px-6 rounded-2xl bg-accent hover:bg-accent/90 text-on-accent text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-accent/20 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isAssigningAdmin ? (
+                      <>Asignando...</>
+                    ) : (
+                      <>
+                        <UserPlus size={16} /> Crear Acceso de Administrador
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
