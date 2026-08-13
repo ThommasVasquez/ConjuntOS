@@ -63,33 +63,44 @@ export default function RoleSwitcher() {
   };
 
   return (
-    <div className="relative w-full mb-4 z-[50]">
+    <div className="fixed bottom-20 left-4 md:bottom-6 md:left-6 z-[999]">
+      {/* Floating trigger button */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={busy}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-primary-light border border-border text-text shadow-md hover:border-blue-500/30 transition-all active:scale-[0.99] disabled:opacity-60"
+        className="flex items-center gap-2 px-3 py-2.5 rounded-full bg-surface-2/90 backdrop-blur-xl border border-blue-500/40 text-text shadow-2xl hover:bg-blue-500/10 hover:border-blue-500 transition-all active:scale-95 cursor-pointer disabled:opacity-60 group"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-500">
-            <FlaskConical size={18} />
-          </div>
-          <div className="flex flex-col items-start leading-tight">
-            <span className="text-[9px] text-text-muted font-black uppercase tracking-widest">
-              Modo Tester · Cuenta activa
-            </span>
-            <span className="text-sm font-bold text-text">{currentLabel}</span>
-          </div>
+        <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+          <FlaskConical size={14} />
+        </div>
+        <div className="flex flex-col items-start leading-none pr-1">
+          <span className="text-[8px] text-blue-400 font-black uppercase tracking-widest block">
+            Tester
+          </span>
+          <span className="text-xs font-bold text-text truncate max-w-[110px] sm:max-w-[140px]">
+            {currentLabel}
+          </span>
         </div>
         <ChevronDown
-          size={18}
-          className={`text-blue-500 transition-transform ${open ? "rotate-180" : ""}`}
+          size={14}
+          className={`text-blue-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
+      {/* Floating popup menu */}
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 liquid-glass backdrop-blur-3xl rounded-2xl border border-border shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-          <div className="max-h-[400px] overflow-y-auto hide-scrollbar">
+        <div className="absolute bottom-full left-0 mb-3 w-72 max-w-[calc(100vw-2rem)] bg-surface border border-border rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-[1000]">
+          <div className="p-3 border-b border-border/40 bg-surface-2/80">
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 block">
+              Modo Tester · Cambiar Rol
+            </span>
+            <p className="text-[11px] text-text/70 mt-0.5">
+              Alterna instantáneamente entre perfiles demo:
+            </p>
+          </div>
+
+          <div className="max-h-[320px] overflow-y-auto hide-scrollbar">
             {ACCOUNTS.map((a) => {
               const active = a.email === user.email;
               return (
@@ -98,18 +109,18 @@ export default function RoleSwitcher() {
                   type="button"
                   onClick={() => handleSelect(a.email)}
                   disabled={busy}
-                  className={`w-full px-4 py-3 flex items-center justify-between text-left text-sm transition-colors border-b border-border last:border-0 hover:bg-text/5 disabled:opacity-50 ${
-                    active ? "text-text font-bold" : "text-text"
+                  className={`w-full px-3.5 py-2.5 flex items-center justify-between text-left text-xs transition-colors border-b border-border/40 last:border-0 hover:bg-blue-500/10 cursor-pointer disabled:opacity-50 ${
+                    active ? "bg-blue-500/15 text-text font-bold" : "text-text"
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{a.icon}</span>
-                    <div className="flex flex-col">
-                      <span>{a.label}</span>
-                      <span className="text-[10px] text-text-muted">{a.email}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-base shrink-0">{a.icon}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate">{a.label}</span>
+                      <span className="text-[9px] text-text-muted font-mono truncate">{a.email}</span>
                     </div>
                   </div>
-                  {active && <Check size={16} className="text-text" />}
+                  {active && <Check size={15} className="text-blue-400 shrink-0 ml-1" />}
                 </button>
               );
             })}
@@ -120,10 +131,10 @@ export default function RoleSwitcher() {
                 window.location.href = "/login";
               }}
               disabled={busy}
-              className="w-full px-4 py-3 flex items-center gap-2 text-left text-sm text-blue-500 font-semibold hover:bg-blue-500/5 transition-colors disabled:opacity-50"
+              className="w-full px-3.5 py-2.5 flex items-center gap-2 text-left text-xs text-blue-400 font-bold hover:bg-blue-500/10 transition-colors cursor-pointer border-t border-border/40"
             >
-              <Plus size={16} />
-              <span>Añadir cuenta</span>
+              <Plus size={14} />
+              <span>Añadir otra cuenta</span>
             </button>
           </div>
         </div>
