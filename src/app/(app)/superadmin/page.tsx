@@ -131,23 +131,9 @@ export default function SuperAdminPage() {
 
     setIsAssigningAdmin(true);
     try {
-      // 1. Primary persistence: update representanteLegal on target conjunto
+      // Update representanteLegal directly on target conjunto
       await api.put(`/superadmin/conjuntos/${adminModalConjunto.id}`, {
         representanteLegal: adminForm.nombre.trim(),
-      });
-
-      // 2. Secondary assignment payload
-      const payload = {
-        conjuntoId: adminModalConjunto.id,
-        nombre: adminForm.nombre.trim(),
-        email: adminForm.email.trim().toLowerCase(),
-        telefono: adminForm.telefono.trim() || undefined,
-        password: adminForm.password.trim(),
-        rol: "ADMINISTRADOR",
-      };
-
-      await api.post(`/superadmin/conjuntos/${adminModalConjunto.id}/administrador`, payload).catch(() => {
-        // Quiet catch: representanteLegal is already updated cleanly above
       });
 
       toast.success(
