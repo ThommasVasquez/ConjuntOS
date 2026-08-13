@@ -852,93 +852,102 @@ export default function SuperAdminPage() {
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl pointer-events-none translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/15 transition-all"></div>
 
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div className="flex gap-3 items-center min-w-0 flex-1">
-                    {c.logoUrl && (
-                      <div className="w-10 h-10 rounded-lg bg-white border border-border overflow-hidden p-0.5 flex items-center justify-center shrink-0">
-                        <Image
-                          src={c.logoUrl}
-                          alt="Logotipo de la copropiedad"
-                          width={40}
-                          height={40}
-                          unoptimized
-                          className="w-full h-full object-contain"
-                        />
+                <div className="flex flex-col gap-3.5 w-full">
+                  {/* Header row: Logo + Nombre + Subdominio */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                    <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto flex-1">
+                      {c.logoUrl && (
+                        <div className="w-12 h-12 rounded-xl bg-white border border-border overflow-hidden p-1 flex items-center justify-center shrink-0 shadow-sm">
+                          <Image
+                            src={c.logoUrl}
+                            alt="Logotipo de la copropiedad"
+                            width={48}
+                            height={48}
+                            unoptimized
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-base sm:text-lg font-bold text-text leading-snug break-words">
+                          {c.nombre}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-accent font-mono text-[10px] tracking-widest uppercase font-black">
+                            NIT: {c.nit}
+                          </span>
+                          <span className="bg-surface-2 px-2.5 py-0.5 rounded-full border border-border text-[10px] font-black text-text font-mono">
+                            {c.subdominio}.conjuntos.app
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Acciones: Botones */}
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40 shrink-0">
+                      <button
+                        onClick={() => handleOpenAssignAdminModal(c)}
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl border border-accent/40 text-[11px] font-black uppercase tracking-wider text-on-accent bg-accent hover:bg-accent/90 active:scale-95 transition-all cursor-pointer shadow-md shadow-accent/20"
+                      >
+                        <UserPlus size={14} /> Asignar Administrador
+                      </button>
+                      <button
+                        onClick={() => handleEditClick(c)}
+                        className="inline-flex items-center justify-center gap-1 py-2 px-3 rounded-xl border border-border text-[11px] font-black uppercase tracking-wider text-text bg-surface-2 hover:bg-surface-2/80 active:scale-95 transition-all cursor-pointer"
+                      >
+                        <Edit3 size={12} /> Editar
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Detalle e información */}
+                  <div className="flex flex-col gap-2 text-xs text-text border-t border-border/40 pt-3 w-full">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <MapPin size={14} className="text-accent shrink-0 mt-0.5" />
+                      <span className="break-words font-medium">
+                        {c.direccion}, {c.ciudad}
+                      </span>
+                    </div>
+                    {c.representanteLegal ? (
+                      <div className="flex items-center gap-2 min-w-0 text-accent">
+                        <CheckCircle2 size={14} className="text-accent shrink-0" />
+                        <span className="break-words">
+                          Administrador Asignado: <strong>{c.representanteLegal}</strong>
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 min-w-0 text-text/60 italic">
+                        <User size={14} className="text-text/50 shrink-0" />
+                        <span>Sin administrador asignado en sistema</span>
                       </div>
                     )}
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-lg font-bold text-text leading-tight break-words">{c.nombre}</h3>
-                      <p className="text-accent font-mono text-[10px] tracking-widest uppercase font-black">
-                        {c.nit}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap shrink-0">
-                    <span className="bg-surface-2 px-3 py-1.5 rounded-full border border-border text-[10px] font-black text-text font-mono">
-                      {c.subdominio}.conjuntos.app
-                    </span>
-                    <button
-                      onClick={() => handleOpenAssignAdminModal(c)}
-                      className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border border-accent/40 text-[10px] font-black uppercase tracking-wider text-on-accent bg-accent hover:bg-accent/90 active:scale-95 transition-all cursor-pointer shadow-md shadow-accent/20"
-                    >
-                      <UserPlus size={13} /> Asignar Administrador
-                    </button>
-                    <button
-                      onClick={() => handleEditClick(c)}
-                      className="inline-flex items-center gap-1 py-1.5 px-3 rounded-xl border border-border text-[10px] font-black uppercase tracking-wider text-text bg-surface-2 hover:bg-surface-2/80 active:scale-95 transition-all cursor-pointer"
-                    >
-                      <Edit3 size={10} /> Editar
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5 text-xs text-text border-t border-border/40 pt-3 mt-1 min-w-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <MapPin size={12} className="text-text shrink-0" />
-                    <span className="break-words">
-                      {c.direccion}, {c.ciudad}
-                    </span>
-                  </div>
-                  {c.representanteLegal ? (
-                    <div className="flex items-center gap-2 min-w-0 text-accent">
-                      <CheckCircle2 size={13} className="text-accent shrink-0" />
-                      <span className="break-words">
-                        Administrador Asignado: <strong>{c.representanteLegal}</strong>
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 min-w-0 text-text/60 italic">
-                      <User size={12} className="text-text/50 shrink-0" />
-                      <span>Sin administrador asignado en sistema</span>
-                    </div>
-                  )}
-                  {c.tipoAgrupacion && (
+                    {c.tipoAgrupacion && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Grid size={14} className="text-accent shrink-0" />
+                        <span className="break-words">
+                          Estructura:{" "}
+                          <strong>
+                            {c.tipoAgrupacion} / {c.tipoUnidadPrivada || "Apartamento"}
+                          </strong>{" "}
+                          ({c.tieneSubdominiosBloques ? "Con Subdominios de Bloque" : "Sin Bloque Directo"})
+                        </span>
+                      </div>
+                    )}
+                    {c.numeroEscritura && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ShieldCheck size={14} className="text-text shrink-0" />
+                        <span className="break-words">
+                          {c.notariaEscritura || "Notaría"}: {c.numeroEscritura} (
+                          {c.fechaEscritura ? new Date(c.fechaEscritura).toLocaleDateString() : "N/A"})
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 min-w-0">
-                      <Grid size={12} className="text-accent shrink-0" />
-                      <span className="break-words">
-                        Estructura:{" "}
-                        <strong>
-                          {c.tipoAgrupacion} / {c.tipoUnidadPrivada || "Apartamento"}
-                        </strong>{" "}
-                        ({c.tieneSubdominiosBloques ? "Con Subdominios de Bloque" : "Sin Bloque Directo"})
+                      <Layers size={14} className="text-text shrink-0" />
+                      <span>
+                        Unidades Totales: <strong>{c.totalUnidades || 1} celdas/unidades</strong>
                       </span>
                     </div>
-                  )}
-                  {c.numeroEscritura && (
-                    <div className="flex items-center gap-2 min-w-0">
-                      <ShieldCheck size={12} className="text-text shrink-0" />
-                      <span className="break-words">
-                        {c.notariaEscritura || "Notaría"}: {c.numeroEscritura} (
-                        {c.fechaEscritura ? new Date(c.fechaEscritura).toLocaleDateString() : "N/A"})
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Layers size={12} className="text-text shrink-0" />
-                    <span>
-                      Unidades Totales: <strong>{c.totalUnidades || 1} celdas/unidades</strong>
-                    </span>
                   </div>
                 </div>
               </div>
