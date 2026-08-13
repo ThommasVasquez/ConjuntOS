@@ -90,6 +90,17 @@ pub struct UpdateConjuntoRequest {
     pub total_unidades: Option<i32>,
 }
 
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AssignAdminRequest {
+    pub conjunto_id: Option<Uuid>,
+    pub nombre: String,
+    pub email: String,
+    pub telefono: Option<String>,
+    pub password: Option<String>,
+    pub rol: Option<String>,
+}
+
 /// Subdomain rule carried over from the legacy superadmin route:
 /// lowercase, `[a-z0-9-]` only, non-empty.
 pub fn sanitize_subdominio(raw: &str) -> Option<String> {

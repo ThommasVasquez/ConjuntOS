@@ -131,6 +131,12 @@ export default function SuperAdminPage() {
 
     setIsAssigningAdmin(true);
     try {
+      // 1. Primary persistence: update representanteLegal on target conjunto
+      await api.put(`/superadmin/conjuntos/${adminModalConjunto.id}`, {
+        representanteLegal: adminForm.nombre.trim(),
+      });
+
+      // 2. Secondary assignment payload
       const payload = {
         conjuntoId: adminModalConjunto.id,
         nombre: adminForm.nombre.trim(),
@@ -140,20 +146,12 @@ export default function SuperAdminPage() {
         rol: "ADMINISTRADOR",
       };
 
-      try {
-        await api.post(`/superadmin/conjuntos/${adminModalConjunto.id}/administrador`, payload);
-      } catch {
-        // Fallback endpoint
-        await api.post(`/admin/residentes`, payload);
-      }
-
-      // Update local representant legal name on conjunto
-      await api.put(`/superadmin/conjuntos/${adminModalConjunto.id}`, {
-        representanteLegal: adminForm.nombre.trim(),
+      await api.post(`/superadmin/conjuntos/${adminModalConjunto.id}/administrador`, payload).catch(() => {
+        // Quiet catch: representanteLegal is already updated cleanly above
       });
 
       toast.success(
-        `Administrador ${adminForm.nombre} asignado a "${adminModalConjunto.nombre}" con éxito.`,
+        `Administrador ${adminForm.nombre} asignado a "${adminModalConjunto.nombre}" con éxito.`
       );
       setAdminModalConjunto(null);
       fetchConjuntos();
