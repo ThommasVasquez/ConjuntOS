@@ -58,6 +58,8 @@ services:
       # Gemini: asistente legal (Ley 675) + copiloto. Valor real en el .env del servidor
       # (no se versiona). Sin esta clave, /ai/* responde error (require_gemini).
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
       REMINDER_TICK_SECS: "60"
       # Local dev only: use the instant-approve mock payment gateway. In prod,
       # leave this unset and configure NEQUI_* — otherwise charges are rejected
