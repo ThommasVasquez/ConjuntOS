@@ -22,6 +22,7 @@ const CAT_STYLES = [
 ];
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
+import ConjuntoSwitcher from "@/components/shell/ConjuntoSwitcher";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import ContentActionModal from "@/components/modals/ContentActionModal";
 import SearchModal from "@/components/search/SearchModal";
@@ -980,6 +981,7 @@ function HomeAdmin() {
 
   return (
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+      <ConjuntoSwitcher />
       <RoleSwitcher />
       <ProfileHeader />
       
