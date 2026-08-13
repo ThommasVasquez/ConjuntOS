@@ -1,12 +1,12 @@
 use axum::extract::{Path, State};
-use axum::routing::{get, put};
+use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
 use crate::domains::conjuntos::dto::{
-    sanitize_subdominio, ConjuntoDto, CreateConjuntoRequest, UpdateConjuntoRequest,
+    sanitize_subdominio, AssignAdminRequest, ConjuntoDto, CreateConjuntoRequest, UpdateConjuntoRequest,
 };
 use crate::domains::conjuntos::repo::{self, ConjuntoChanges, NuevoConjunto};
 use crate::error::{ApiError, ApiResult};
@@ -19,6 +19,10 @@ pub fn router() -> Router<AppState> {
             get(list_conjuntos).post(create_conjunto),
         )
         .route("/superadmin/conjuntos/{id}", put(update_conjunto))
+        .route(
+            "/superadmin/conjuntos/{id}/administrador",
+            post(assign_administrador),
+        )
 }
 
 #[utoipa::path(
@@ -122,6 +126,48 @@ pub async fn update_conjunto(
             fecha_escritura: req.fecha_escritura,
             matricula_inmobiliaria: req.matricula_inmobiliaria,
             total_unidades: req.total_unidades,
+        },
+    )
+    .await?;
+    Ok(Json(row.into()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/superadmin/conjuntos/{id}/administrador",
+    tag = "superadmin",
+    request_body = AssignAdminRequest,
+    responses(
+        (status = 200, description = "Assigned administrator to conjunto", body = ConjuntoDto),
+        (status = 404, description = "Unknown conjunto")
+    )
+)]
+pub async fn assign_administrador(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<AssignAdminRequest>,
+) -> ApiResult<Json<ConjuntoDto>> {
+    guard::require_superadmin(&user)?;
+    let mut conn = state.pool.get().await?;
+    let row = repo::update(
+        &mut conn,
+        id,
+        ConjuntoChanges {
+            nombre: None,
+            nit: None,
+            direccion: None,
+            ciudad: None,
+            logo_url: None,
+            color_primario: None,
+            plan: None,
+            activo: None,
+            representante_legal: Some(req.nombre),
+            notaria_escritura: None,
+            numero_escritura: None,
+            fecha_escritura: None,
+            matricula_inmobiliaria: None,
+            total_unidades: None,
         },
     )
     .await?;
