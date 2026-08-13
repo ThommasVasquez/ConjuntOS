@@ -1,3 +1,4 @@
+pub mod email;
 pub mod gemini;
 pub mod livekit;
 pub mod payments;
