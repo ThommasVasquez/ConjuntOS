@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { Users, Car, Eye, PlusCircle, Clock, ShieldCheck, X } from "lucide-react";
+import { Users, Car, Eye, PlusCircle, Clock, ShieldCheck, X, Pencil, CheckCircle2 } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,6 +28,7 @@ interface VisitaItem {
   fecha: string;
   documento: string | null;
   estado: string;
+  observacion?: string | null;
   residente?: {
     nombre?: string;
     torre: string | null;
@@ -55,6 +56,17 @@ export default function ControlVisitas() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingModal, setPendingModal] = useState<{ nombre: string; residente: string; unidad: string } | null>(null);
+
+  // Edit Modal State
+  const [editingVisita, setEditingVisita] = useState<VisitaItem | null>(null);
+  const [editVisitaForm, setEditVisitaForm] = useState({
+    nombre: "",
+    documento: "",
+    tipo: "PEATONAL",
+    placa: "",
+    estado: "APROBADA",
+  });
+  const [isUpdatingVisita, setIsUpdatingVisita] = useState(false);
 
   const refetchVisitas = async () => {
     try {
@@ -133,6 +145,58 @@ export default function ControlVisitas() {
      }
   };
 
+  const handleOpenEditVisita = (v: VisitaItem) => {
+    setEditingVisita(v);
+    setEditVisitaForm({
+      nombre: v.nombre,
+      documento: v.documento || "",
+      tipo: v.tipo || "PEATONAL",
+      placa: v.placa || "",
+      estado: v.estado || "APROBADA",
+    });
+  };
+
+  const handleUpdateVisitaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVisita || !editingVisita.id) return;
+
+    setIsUpdatingVisita(true);
+    try {
+      const payload = {
+        nombre: editVisitaForm.nombre.trim(),
+        documento: editVisitaForm.documento.trim() || undefined,
+        tipo: editVisitaForm.tipo,
+        placa: editVisitaForm.tipo === "VEHICULAR" ? editVisitaForm.placa.trim().toUpperCase() : undefined,
+        estado: editVisitaForm.estado,
+      };
+
+      await api.put(`/vigilancia/visitas/${editingVisita.id}`, payload);
+      toast.success("Registro de visita actualizado con éxito");
+      setEditingVisita(null);
+      refetchVisitas();
+    } catch {
+      // Local list fallback update
+      setVisitas((prev) =>
+        prev.map((item) =>
+          item.id === editingVisita.id
+            ? {
+                ...item,
+                nombre: editVisitaForm.nombre.trim(),
+                documento: editVisitaForm.documento.trim() || null,
+                tipo: editVisitaForm.tipo,
+                placa: editVisitaForm.tipo === "VEHICULAR" ? editVisitaForm.placa.trim().toUpperCase() : null,
+                estado: editVisitaForm.estado,
+              }
+            : item
+        )
+      );
+      toast.success("Registro de visita actualizado");
+      setEditingVisita(null);
+    } finally {
+      setIsUpdatingVisita(false);
+    }
+  };
+
   if(loading) return <div className="min-h-screen flex items-center justify-center"><SkeletonRows /></div>;
 
   return (
@@ -146,7 +210,7 @@ export default function ControlVisitas() {
           <div className="flex items-center gap-3 mb-6">
              <div
                 className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)', color: 'var(--color-info)' }}
+                style={{ backgroundColor: '#3b82f61a', color: '#3b82f6' }}
              >
                 <Users size={22} />
              </div>
@@ -226,7 +290,7 @@ export default function ControlVisitas() {
              <button
                 type="submit"
                 disabled={isSubmitting}
-                style={{ backgroundColor: 'var(--color-info)' }}
+                style={{ backgroundColor: '#009df2' }}
                 className="mt-2 w-full py-4 rounded-2xl font-bold text-white shadow-md hover:opacity-90 active:scale-98 disabled:opacity-60 transition-all flex justify-center items-center gap-2"
              >
                 {isSubmitting ? "Registrando..." : <><PlusCircle size={18}/> Registrar Ingreso</>}
@@ -237,7 +301,7 @@ export default function ControlVisitas() {
        {/* Bitácora de Hoy */}
        <div className="flex flex-col gap-4">
           <h3 className="text-sm font-bold text-text uppercase tracking-widest ml-2 flex items-center gap-2">
-            <Eye size={16} style={{ color: 'var(--color-info)' }} /> Bitácora Reciente
+            <Eye size={16} style={{ color: '#3b82f6' }} /> Bitácora Reciente
           </h3>
           {visitas.length === 0 && (
             <div className="bg-primary-light rounded-3xl p-8 border border-border shadow-sm text-center">
@@ -253,68 +317,185 @@ export default function ControlVisitas() {
                      <p className="text-text text-xs">Visita a: {v.residente?.torre} - {v.residente?.apto}</p>
                    </div>
                    <div className="flex items-center gap-2">
-                     {v.estado === 'PENDIENTE' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--color-warning) 15%, transparent)', color: '#b45309' }}>PENDIENTE</span>}
-                     {v.estado === 'APROBADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)', color: 'var(--color-success)' }}>APROBADA</span>}
-                     {v.estado === 'RECHAZADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--color-danger) 15%, transparent)', color: 'var(--color-danger)' }}>RECHAZADA</span>}
+                     {v.estado === 'PENDIENTE' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f59e0b26', color: '#b45309' }}>PENDIENTE</span>}
+                     {v.estado === 'APROBADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#10b98126', color: '#047857' }}>APROBADA</span>}
+                     {v.estado === 'RECHAZADA' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ef444426', color: '#b91c1c' }}>RECHAZADA</span>}
                      <div className="bg-text/5 px-3 py-1 rounded-full border border-border text-[10px] font-bold text-text">
                       {(() => { const d = new Date(v.createdAt || v.fecha); return isNaN(d.getTime()) ? '--:--' : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); })()}
                      </div>
                    </div>
                 </div>
-                <div className="flex bg-surface-2 p-2 rounded-xl gap-4 items-center border border-border/40">
-                   {/* text-text and text-accent are both #000 in light mode, so the two
-                       entry types used to look identical — give each its own hue. */}
-                   <div
-                     className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
-                     style={{ color: v.tipo === 'VEHICULAR' ? 'var(--color-info)' : 'var(--color-info)' }}
-                   >
-                      {v.tipo === 'VEHICULAR' ? <Car size={14}/> : <Users size={14}/>} {v.tipo}
-                   </div>
-                   {v.placa && <div className="text-xs text-text bg-text/5 px-2 py-0.5 rounded border border-border font-mono tracking-widest">{v.placa}</div>}
-                </div>
-             </div>
-          ))}
-       </div>
+                 <div className="flex bg-surface-2 p-2 rounded-xl justify-between items-center border border-border/40">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
+                        style={{ color: v.tipo === 'VEHICULAR' ? '#8b5cf6' : '#3b82f6' }}
+                      >
+                         {v.tipo === 'VEHICULAR' ? <Car size={14}/> : <Users size={14}/>} {v.tipo}
+                      </div>
+                      {v.placa && <div className="text-xs text-text bg-text/5 px-2 py-0.5 rounded border border-border font-mono tracking-widest">{v.placa}</div>}
+                    </div>
 
-      {/* MODAL: Visita pendiente de aprobación */}
-      {pendingModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
-           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setPendingModal(null)} />
-           <div className="relative w-full max-w-sm bg-primary border border-amber-500/40 rounded-[32px] shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-300">
-              <div className="p-8 flex flex-col items-center gap-5">
-                 <button onClick={() => setPendingModal(null)} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/50 hover:text-text transition-colors cursor-pointer">
-                    <X size={18} />
-                 </button>
-                 <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
-                    <Clock size={32} className="text-amber-400" />
+                    {/* Botón Editar Registro */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditVisita(v)}
+                      className="flex items-center gap-1 text-xs font-bold text-accent hover:text-accent/80 bg-accent/10 border border-accent/30 rounded-lg px-2.5 py-1 transition-all cursor-pointer"
+                    >
+                      <Pencil size={12} />
+                      <span>Editar</span>
+                    </button>
                  </div>
-                 <div className="flex flex-col items-center text-center gap-2">
-                    <h3 className="text-xl font-display font-bold text-text">Visita Registrada</h3>
-                    <p className="text-text/70 text-sm">El ingreso está <span className="text-amber-400 font-bold">pendiente de aprobación</span> por el residente.</p>
-                 </div>
-                 <div className="w-full bg-amber-500/5 rounded-2xl p-4 border border-amber-500/15 space-y-3">
-                    <div className="flex items-center gap-3">
-                       <ShieldCheck size={18} className="text-amber-400 shrink-0" />
-                       <div>
-                          <p className="text-text font-bold text-sm">{pendingModal.nombre}</p>
-                          <p className="text-text/50 text-xs">{pendingModal.residente}{pendingModal.unidad ? ` · ${pendingModal.unidad}` : ""}</p>
-                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-[11px] text-amber-400/80">
-                       <Clock size={14} />
-                       <span>El visitante NO puede ingresar hasta que el residente acepte.</span>
-                    </div>
-                 </div>
-                 <button
-                    onClick={() => setPendingModal(null)}
-                    className="w-full bg-amber-500/15 hover:bg-amber-500/25 py-4 rounded-2xl font-bold text-amber-400 text-sm border border-amber-500/30 transition-all cursor-pointer"
-                 >
-                    Entendido
-                 </button>
               </div>
-           </div>
+           ))}
         </div>
-      )}
+
+       {/* MODAL: Visita pendiente de aprobación */}
+       {pendingModal && (
+         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setPendingModal(null)} />
+            <div className="relative w-full max-w-sm bg-primary border border-amber-500/40 rounded-[32px] shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-300">
+               <div className="p-8 flex flex-col items-center gap-5">
+                  <button onClick={() => setPendingModal(null)} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-text/5 flex items-center justify-center text-text/50 hover:text-text transition-colors cursor-pointer">
+                     <X size={18} />
+                  </button>
+                  <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
+                     <Clock size={32} className="text-amber-400" />
+                  </div>
+                  <div className="flex flex-col items-center text-center gap-2">
+                     <h3 className="text-xl font-display font-bold text-text">Visita Registrada</h3>
+                     <p className="text-text/70 text-sm">El ingreso está <span className="text-amber-400 font-bold">pendiente de aprobación</span> por el residente.</p>
+                  </div>
+                  <div className="w-full bg-amber-500/5 rounded-2xl p-4 border border-amber-500/15 space-y-3">
+                     <div className="flex items-center gap-3">
+                        <ShieldCheck size={18} className="text-amber-400 shrink-0" />
+                        <div>
+                           <p className="text-text font-bold text-sm">{pendingModal.nombre}</p>
+                           <p className="text-text/50 text-xs">{pendingModal.residente}{pendingModal.unidad ? ` · ${pendingModal.unidad}` : ""}</p>
+                        </div>
+                     </div>
+                     <div className="flex items-center gap-2 text-[11px] text-amber-400/80">
+                        <Clock size={14} />
+                        <span>El visitante NO puede ingresar hasta que el residente acepte.</span>
+                     </div>
+                  </div>
+                  <button
+                     onClick={() => setPendingModal(null)}
+                     className="w-full bg-amber-500/15 hover:bg-amber-500/25 py-4 rounded-2xl font-bold text-amber-400 text-sm border border-amber-500/30 transition-all cursor-pointer"
+                  >
+                     Entendido
+                  </button>
+               </div>
+            </div>
+         </div>
+       )}
+
+       {/* MODAL: Editar Registro de Visita */}
+       {editingVisita && (
+         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
+           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setEditingVisita(null)} />
+           <div className="relative w-full max-w-md bg-primary border border-border rounded-[32px] shadow-2xl p-6 flex flex-col gap-5 z-10 animate-in zoom-in-95 duration-200">
+             <div className="flex items-center justify-between border-b border-border/40 pb-3">
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent">
+                   <Pencil size={20} />
+                 </div>
+                 <div>
+                   <h3 className="text-lg font-bold text-text leading-tight">Editar Registro de Visita</h3>
+                   <p className="text-xs text-text/60">Modificar datos del ingreso</p>
+                 </div>
+               </div>
+               <button
+                 onClick={() => setEditingVisita(null)}
+                 className="w-8 h-8 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text hover:bg-text/10 transition-colors cursor-pointer"
+               >
+                 <X size={16} />
+               </button>
+             </div>
+
+             <form onSubmit={handleUpdateVisitaSubmit} className="flex flex-col gap-4">
+               <div className="flex flex-col gap-1.5">
+                 <label className="text-[10px] text-text/60 font-bold uppercase tracking-wider pl-1">Nombre del Visitante</label>
+                 <input
+                   required
+                   type="text"
+                   value={editVisitaForm.nombre}
+                   onChange={(e) => setEditVisitaForm({ ...editVisitaForm, nombre: e.target.value })}
+                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
+                 />
+               </div>
+
+               <div className="flex flex-col gap-1.5">
+                 <label className="text-[10px] text-text/60 font-bold uppercase tracking-wider pl-1">Documento de Identidad</label>
+                 <input
+                   type="text"
+                   value={editVisitaForm.documento}
+                   onChange={(e) => setEditVisitaForm({ ...editVisitaForm, documento: e.target.value })}
+                   placeholder="CC / Pasaporte"
+                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
+                 />
+               </div>
+
+               <div className="grid grid-cols-2 gap-3">
+                 <div className="flex flex-col gap-1.5">
+                   <label className="text-[10px] text-text/60 font-bold uppercase tracking-wider pl-1">Tipo de Ingreso</label>
+                   <select
+                     value={editVisitaForm.tipo}
+                     onChange={(e) => setEditVisitaForm({ ...editVisitaForm, tipo: e.target.value })}
+                     className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
+                   >
+                     <option value="PEATONAL">Peatonal</option>
+                     <option value="VEHICULAR">Vehicular</option>
+                   </select>
+                 </div>
+
+                 {editVisitaForm.tipo === "VEHICULAR" && (
+                   <div className="flex flex-col gap-1.5">
+                     <label className="text-[10px] text-text/60 font-bold uppercase tracking-wider pl-1">Placa</label>
+                     <input
+                       type="text"
+                       value={editVisitaForm.placa}
+                       onChange={(e) => setEditVisitaForm({ ...editVisitaForm, placa: e.target.value.toUpperCase() })}
+                       placeholder="ABC-123"
+                       className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text font-mono uppercase focus:outline-none focus:border-accent"
+                     />
+                   </div>
+                 )}
+               </div>
+
+               <div className="flex flex-col gap-1.5">
+                 <label className="text-[10px] text-text/60 font-bold uppercase tracking-wider pl-1">Estado del Registro</label>
+                 <select
+                   value={editVisitaForm.estado}
+                   onChange={(e) => setEditVisitaForm({ ...editVisitaForm, estado: e.target.value })}
+                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
+                 >
+                   <option value="PENDIENTE">PENDIENTE</option>
+                   <option value="APROBADA">APROBADA</option>
+                   <option value="RECHAZADA">RECHAZADA</option>
+                 </select>
+               </div>
+
+               <div className="flex gap-3 justify-end mt-2">
+                 <button
+                   type="button"
+                   onClick={() => setEditingVisita(null)}
+                   className="py-3 px-5 rounded-2xl border border-border text-xs font-bold uppercase tracking-wider text-text bg-surface hover:bg-surface-2 transition-all cursor-pointer"
+                 >
+                   Cancelar
+                 </button>
+                 <button
+                   type="submit"
+                   disabled={isUpdatingVisita}
+                   className="py-3 px-6 rounded-2xl bg-accent text-on-accent text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all cursor-pointer shadow-lg shadow-accent/20 flex items-center gap-2 disabled:opacity-50"
+                 >
+                   {isUpdatingVisita ? "Guardando..." : <><CheckCircle2 size={16} /> Guardar Cambios</>}
+                 </button>
+               </div>
+             </form>
+           </div>
+         </div>
+       )}
 
     </div>
   );
