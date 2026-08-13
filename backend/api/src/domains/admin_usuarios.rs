@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
 use crate::db::enums::{EstadoPago, Rol};
-use crate::db::schema::{mascotas, pagos, unidades, usuarios, vehiculos};
+use crate::db::schema::{conjuntos, mascotas, pagos, unidades, usuarios, vehiculos};
 use crate::db::DbConn;
 use crate::domains::conjuntos::models::Unidad;
 use crate::domains::pagos::models::Pago;
@@ -478,6 +478,24 @@ pub async fn invitar_residente(
         &numero_interno,
     )
     .await?;
+
+    // Dispatch invitation email asynchronously in background
+    let conjunto_nombre: String = conjuntos::table
+        .find(user.conjunto_id)
+        .select(conjuntos::nombre)
+        .first(&mut conn)
+        .await
+        .unwrap_or_else(|_| "ConjuntOS".to_string());
+
+    tokio::spawn(crate::services::email::send_invitation_email(
+        crate::services::email::InvitationEmailParams {
+            to_email: email.clone(),
+            nombre: nombre.clone(),
+            conjunto_nombre,
+            rol: req.rol.clone(),
+            temp_password: temp_password.clone(),
+        },
+    ));
 
     Ok((
         axum::http::StatusCode::CREATED,

@@ -56,6 +56,7 @@ printpdf = { version = "0.7", default-features = false }
 # QR generation (visitor passes), pure-Rust. image is PNG-only to stay lean.
 qrcode = { version = "0.14", default-features = false, features = ["image"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "builder", "smtp-transport"] }
 
 [dev-dependencies]
 http-body-util = "0.1"
