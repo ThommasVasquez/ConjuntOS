@@ -47,7 +47,7 @@ export default function ConjuntoSwitcher() {
     loadConjuntos();
   }, [user, isEligibleRole]);
 
-  if (!user || !isEligibleRole || conjuntos.length === 0) return null;
+  if (!user || !isEligibleRole || conjuntos.length <= 1) return null;
 
   const handleSelectConjunto = (c: ConjuntoDto) => {
     if (activeConjunto?.id === c.id) {
