@@ -318,6 +318,7 @@ export default function AdminResidentesPage() {
     setIsProcessingImport(true);
     setImportProgress(0);
     let successCount = 0;
+    let conflictCount = 0;
 
     for (let i = 0; i < validItems.length; i++) {
       const item = validItems[i];
@@ -330,16 +331,31 @@ export default function AdminResidentesPage() {
           apto: item.apto || undefined,
         });
         successCount++;
-      } catch {
-        // Continue processing batch
+      } catch (err: unknown) {
+        if (err instanceof ApiError && err.status === 409) {
+          conflictCount++;
+        } else {
+          conflictCount++;
+        }
       }
       setImportProgress(Math.round(((i + 1) / validItems.length) * 100));
     }
 
     setIsProcessingImport(false);
-    toast.success(
-      `Importación completada: ${successCount} de ${validItems.length} invitaciones enviadas.`
-    );
+    if (conflictCount > 0 && successCount === 0) {
+      toast.error(
+        `Los ${conflictCount} correos ingresados ya estaban registrados previamente en la base de datos.`
+      );
+    } else if (conflictCount > 0) {
+      toast.info(
+        `Importación completada: ${successCount} invitaciones nuevas enviadas. ${conflictCount} correo(s) ya existían previamente.`,
+        { duration: 6000 }
+      );
+    } else {
+      toast.success(
+        `Importación completada: ${successCount} de ${validItems.length} invitaciones enviadas con éxito.`
+      );
+    }
     setShowImport(false);
     setParsedImportItems([]);
     setImportFile(null);
