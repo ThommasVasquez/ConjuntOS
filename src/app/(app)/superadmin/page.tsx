@@ -49,6 +49,7 @@ export default function SuperAdminPage() {
     const seen = new Set<string>();
 
     const defaults = [
+      { nombre: "Erika (Administradora)", email: "erika@conjuntos.app", conjunto: "Copropiedad Principal" },
       { nombre: "Sergio Vásquez (Admin Principal)", email: "admin@demo.conjuntos.app", conjunto: "Demo Copropiedades" },
       { nombre: "SuperAdmin Demo", email: "superadmin@demo.conjuntos.app", conjunto: "Plataforma" },
     ];
