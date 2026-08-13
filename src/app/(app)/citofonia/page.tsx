@@ -7,12 +7,21 @@ import {
   MapPin, Clock, 
   Plus, Info, 
   ShieldCheck,
-  X, Car, Bike, Search
+  X, Car, Bike, Search, Lock
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
 import { gsap } from "gsap";
 import ProfileHeader from "@/components/shell/ProfileHeader";
+
+const ALLOWED_DIALER_ROLES = [
+  'SUPER_ADMIN',
+  'ADMINISTRADOR',
+  'VIGILANTE',
+  'SUPERVISOR_VIGILANCIA',
+  'ENCARGADO_PARQUEADERO',
+  'ENCARGADO_ESTACIONAMIENTO',
+];
 
 type Tab = "CITOFONIA" | "VISITAS" | "RECEPCION";
 
@@ -224,18 +233,33 @@ export default function CitofoniaPage() {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
+  const canUseDialer = !!user?.rol && ALLOWED_DIALER_ROLES.includes(user.rol);
+
   const callDirectorioUser = (u: DirectorioUser) => {
+    if (!canUseDialer) {
+      toast.info("La marcación hacia otros residentes está habilitada para personal autorizado.");
+      return;
+    }
     if (callState !== "IDLE") return;
     setDialNum(u.numeroInterno);
     startCall(`user-${u.id}`, u.nombre);
   };
 
   const handleDial = (num: string) => {
+    if (!canUseDialer) {
+      toast.info("La marcación manual está disponible únicamente para administración y seguridad.");
+      return;
+    }
     if (dialNum.length < 8) setDialNum(dialNum + num);
   };
 
   const handleCall = (targetNum?: string) => {
     const num = targetNum !== undefined ? targetNum : dialNum;
+    const isDirectContact = num === "P" || num === "A" || num === "E";
+    if (!isDirectContact && !canUseDialer) {
+      toast.info("La marcación manual está habilitada solo para personal autorizado.");
+      return;
+    }
     if (callState === "IDLE") {
       startCall(num || "P");
     } else {
@@ -411,51 +435,66 @@ export default function CitofoniaPage() {
           <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-500">
              {/* SEARCH RESIDENTS — oculto para huéspedes */}
              {!isGuest && (
-             <div className="bg-primary-light shadow-sm rounded-[28px] p-4 border border-border text-text">
-                <div className="flex items-center gap-2 bg-text/5 rounded-2xl px-4 py-3 border border-border">
-                   <Search size={18} className="text-text/50" />
-                   <input
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     placeholder="Buscar residente por nombre…"
-                     className="flex-1 bg-transparent outline-none text-sm text-text placeholder:text-text/40"
-                   />
-                   {searchLoading && <Skeleton className="w-4 h-4 rounded-full" />}
-                   {searchQuery && !searchLoading && (
-                     <button onClick={() => setSearchQuery("")} className="text-text/50 cursor-pointer">
-                       <X size={16} />
-                     </button>
-                   )}
-                </div>
-                {searchResults.length > 0 && (
-                   <div className="mt-3 flex flex-col gap-2 max-h-72 overflow-y-auto">
-                      {searchResults.map((u) => (
-                        <button
-                          key={u.id}
-                          onClick={() => callDirectorioUser(u)}
-                          disabled={callState !== "IDLE"}
-                          className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-text/5 hover:bg-text/10 border border-border active:scale-[0.98] transition-all cursor-pointer text-left disabled:opacity-50"
-                        >
-                          <div className="flex flex-col min-w-0">
-                             <span className="text-sm font-bold text-text truncate">{u.nombre}</span>
-                             <span className="text-[11px] text-text/50">
-                               {u.apto ? `${u.torre ? `${u.torre}-` : ""}${u.apto} · ` : ""}N° {u.numeroInterno}
-                             </span>
-                          </div>
-                          <span
-                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: '#57bf001a', color: '#57bf00' }}
-                          >
-                             <Phone size={16} />
-                          </span>
-                        </button>
-                      ))}
+              <div className="bg-primary-light shadow-sm rounded-[28px] p-4 border border-border text-text flex flex-col gap-2">
+                 {!canUseDialer && (
+                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-500 uppercase tracking-wider px-1">
+                     <Lock size={12} />
+                     <span>Buscador restringido a personal autorizado</span>
                    </div>
-                )}
-                {searchQuery.trim().length >= 1 && !searchLoading && searchResults.length === 0 && (
-                   <p className="mt-3 text-center text-xs text-text/40">Sin resultados</p>
-                )}
-             </div>
+                 )}
+                 <div 
+                   onClick={() => {
+                     if (!canUseDialer) {
+                       toast.info("La búsqueda de residentes por nombre está habilitada únicamente para administración y seguridad.");
+                     }
+                   }}
+                   className={`flex items-center gap-2 bg-text/5 rounded-2xl px-4 py-3 border border-border ${!canUseDialer ? 'opacity-60 cursor-not-allowed' : ''}`}
+                 >
+                    <Search size={18} className="text-text/50" />
+                    <input
+                      disabled={!canUseDialer}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={canUseDialer ? "Buscar residente por nombre…" : "Buscador habilitado para seguridad y administración"}
+                      className={`flex-1 bg-transparent outline-none text-sm text-text placeholder:text-text/40 ${!canUseDialer ? 'cursor-not-allowed' : ''}`}
+                    />
+                    {!canUseDialer && <Lock size={16} className="text-text/40 shrink-0" />}
+                    {searchLoading && <Skeleton className="w-4 h-4 rounded-full" />}
+                    {searchQuery && !searchLoading && canUseDialer && (
+                      <button onClick={() => setSearchQuery("")} className="text-text/50 cursor-pointer">
+                        <X size={16} />
+                      </button>
+                    )}
+                 </div>
+                 {canUseDialer && searchResults.length > 0 && (
+                    <div className="mt-3 flex flex-col gap-2 max-h-72 overflow-y-auto">
+                       {searchResults.map((u) => (
+                         <button
+                           key={u.id}
+                           onClick={() => callDirectorioUser(u)}
+                           disabled={callState !== "IDLE"}
+                           className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-text/5 hover:bg-text/10 border border-border active:scale-[0.98] transition-all cursor-pointer text-left disabled:opacity-50"
+                         >
+                           <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-bold text-text truncate">{u.nombre}</span>
+                              <span className="text-[11px] text-text/50">
+                                {u.apto ? `${u.torre ? `${u.torre}-` : ""}${u.apto} · ` : ""}N° {u.numeroInterno}
+                              </span>
+                           </div>
+                           <span
+                             className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                             style={{ backgroundColor: '#57bf001a', color: '#57bf00' }}
+                           >
+                              <Phone size={16} />
+                           </span>
+                         </button>
+                       ))}
+                    </div>
+                 )}
+                 {canUseDialer && searchQuery.trim().length >= 1 && !searchLoading && searchResults.length === 0 && (
+                    <p className="mt-3 text-center text-xs text-text/40">Sin resultados</p>
+                 )}
+              </div>
              )}
 
              {/* QUICK CONTACTS */}
@@ -506,6 +545,13 @@ export default function CitofoniaPage() {
              <div className="bg-primary-light shadow-sm rounded-[40px] p-8 border border-border flex flex-col items-center gap-8 relative overflow-hidden">
                 <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-transparent via-accent to-transparent opacity-30" />
                 
+                {!canUseDialer && (
+                   <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-500 text-[10px] font-bold uppercase tracking-wider">
+                     <Lock size={12} />
+                     <span>Marcación manual habilitada solo para personal autorizado</span>
+                   </div>
+                 )}
+
                 <div className="w-full flex flex-col items-center gap-2">
                    <div className="h-12 flex items-center justify-center">
                       <span className="text-4xl font-display font-bold text-text tracking-[0.2em]">
@@ -520,7 +566,7 @@ export default function CitofoniaPage() {
                      <button 
                        key={n}
                        onClick={() => handleDial(n)}
-                       className="w-14 h-14 rounded-full bg-text/5 hover:bg-text/10 border border-border flex items-center justify-center text-xl font-bold text-text active:scale-90 transition-all cursor-pointer"
+                       className={`w-14 h-14 rounded-full bg-text/5 border border-border flex items-center justify-center text-xl font-bold text-text active:scale-90 transition-all ${!canUseDialer ? 'opacity-50 cursor-not-allowed hover:bg-text/5' : 'hover:bg-text/10 cursor-pointer'}`}
                      >
                        {n}
                      </button>
@@ -529,18 +575,26 @@ export default function CitofoniaPage() {
 
                 <div className="flex gap-6 w-full px-4">
                    <button 
-                     onClick={() => setDialNum("")}
-                     className="flex-1 py-4 rounded-2xl bg-text/5 border border-border text-text font-bold text-xs cursor-pointer"
+                     onClick={() => {
+                        if (!canUseDialer) {
+                          toast.info("La marcación manual está disponible únicamente para administración y seguridad.");
+                          return;
+                        }
+                        setDialNum("");
+                      }}
+                     className={`flex-1 py-4 rounded-2xl bg-text/5 border border-border text-text font-bold text-xs ${!canUseDialer ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                    >
                      Limpiar
                    </button>
                    <button 
                       onClick={() => handleCall()}
-                      className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black cursor-pointer ${
-                        callState !== "IDLE"
-                          ? 'bg-[#EF4444] hover:bg-[#d32f2f] shadow-[#EF4444]/20'
-                          : 'bg-[#57bf00] hover:bg-[#4ca600] shadow-[#57bf00]/20'
-                      }`}
+                      className={`flex-2 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 text-white font-black ${
+                         !canUseDialer 
+                           ? 'bg-text/20 text-text/40 cursor-not-allowed opacity-60 shadow-none'
+                           : callState !== "IDLE"
+                           ? 'bg-[#EF4444] hover:bg-[#d32f2f] shadow-[#EF4444]/20 cursor-pointer'
+                           : 'bg-[#57bf00] hover:bg-[#4ca600] shadow-[#57bf00]/20 cursor-pointer'
+                       }`}
                     >
                       {callState !== "IDLE" ? <PhoneOff size={18} /> : <Phone size={18} />}
                       {callState !== "IDLE" ? 'COLGAR' : 'LLAMAR'}
