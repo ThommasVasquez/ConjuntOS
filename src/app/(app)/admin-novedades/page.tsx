@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText, Upload, Trash2, Megaphone, RefreshCw, Pencil, X, Map } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText, Upload, Trash2, Megaphone, RefreshCw, Pencil, X, Map, Truck, ArrowRight, ShieldCheck } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -431,6 +431,27 @@ export default function AdminNovedadesPage() {
           </div>
        )}
 
+       {/* Acceso Rápido a Mudanzas & Paz y Salvo (Stage 47) */}
+       <div 
+         onClick={() => router.push('/mudanzas')} 
+         className="liquid-glass-card rounded-[24px] p-4 border border-[#57bf00]/40 hover:border-[#57bf00] transition-all cursor-pointer flex items-center justify-between group shadow-lg shadow-[#57bf00]/5"
+       >
+         <div className="flex items-center gap-3">
+           <div className="w-10 h-10 rounded-2xl bg-[#57bf00]/15 flex items-center justify-center text-[#57bf00] shrink-0">
+             <Truck size={20} />
+           </div>
+           <div>
+             <h4 className="text-sm font-bold text-text group-hover:text-[#57bf00] transition-colors flex items-center gap-1.5">
+               Solicitudes de Mudanza & Paz y Salvo <span className="text-[#57bf00] text-[10px] font-black uppercase">ConjuntOS®</span>
+             </h4>
+             <p className="text-[10px] text-text/60">
+               Verificación de cartera, expedición de paz y salvo y control en portería/estacionamientos
+             </p>
+           </div>
+         </div>
+         <ArrowRight size={18} className="text-[#57bf00] group-hover:translate-x-1 transition-transform shrink-0" />
+       </div>
+
        {/* Tabs */}
        <div className="flex bg-surface-2 rounded-full p-1 border border-border">
             <button 
@@ -438,6 +459,13 @@ export default function AdminNovedadesPage() {
               className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'PENDIENTE' ? 'bg-info text-on-accent shadow-md' : 'text-text hover:text-text'}`}
             >
                Pendientes
+            </button>
+            <button 
+              onClick={() => router.push('/mudanzas')} 
+              className="flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all text-[#57bf00] hover:bg-[#57bf00]/10 flex items-center justify-center gap-1"
+            >
+               <Truck size={12} />
+               Mudanzas
             </button>
             <button 
               onClick={() => setTab('HISTORIAL')} 
