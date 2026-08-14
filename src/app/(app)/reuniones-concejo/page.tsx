@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Users,
   Calendar,
@@ -9,31 +9,20 @@ import {
   Video,
   Globe,
   Plus,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
   FileText,
   Building2,
   RefreshCw,
   X,
   MessageSquare,
-  Check,
-  Ban,
   Shield,
-  Mic,
-  MicOff,
-  VideoOff,
-  PhoneOff,
   Sparkles,
   BarChart3,
   Vote,
   FileCheck,
-  Award,
-  ChevronRight,
   Send,
   Download,
-  Info,
-  Maximize2,
+  ArrowLeft,
+  CheckCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,7 +34,7 @@ import dynamic from 'next/dynamic';
 const LiveRoom = dynamic(() => import('@/components/asamblea/LiveRoom'), {
   ssr: false,
   loading: () => (
-    <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-text">
+    <div className="flex flex-col items-center justify-center h-full min-h-[350px] text-text">
       <div className="w-8 h-8 border-4 border-[#57bf00] border-t-transparent rounded-full animate-spin mb-2" />
       <span className="text-xs font-bold text-text/70">Conectando a la Sala de Concejo LiveKit...</span>
     </div>
@@ -109,8 +98,8 @@ export default function ReunionesConcejoPage() {
   const [loading, setLoading] = useState(true);
   const [activeReunion, setActiveReunion] = useState<ReunionConcejoItem | null>(null);
 
-  // Active Tab in Live Meeting View: "video" | "votaciones" | "transcripcion" | "acta"
-  const [activeTab, setActiveTab] = useState<'video' | 'votaciones' | 'transcripcion' | 'acta'>('video');
+  // Active Tab in Live Meeting View: "video" | "votaciones" | "transcripcion" | "acta" | "orden_dia"
+  const [activeTab, setActiveTab] = useState<'video' | 'votaciones' | 'transcripcion' | 'acta' | 'orden_dia'>('video');
 
   // Form State for Summoning New Meeting (Admin only)
   const [showModalCrear, setShowModalCrear] = useState(false);
@@ -343,7 +332,6 @@ export default function ReunionesConcejoPage() {
   const handleGenerarActaIA = async (r: ReunionConcejoItem) => {
     setIsGeneratingIA(true);
     try {
-      // Build summary using discussion items and votes tally
       const votacionesSummary = r.votaciones
         .map((v) => {
           const tallyText = v.opciones
@@ -433,323 +421,350 @@ ${votacionesSummary || '   - Se trataron temas del orden del día por consenso s
       {/* SALA EN VIVO / GOOGLE MEET INTEGRATED INTERFACE */}
       {activeReunion ? (
         <div className="flex flex-col gap-4 w-full">
-          {/* Top Bar with Live Indicator & Quorum Bar */}
-          <div className="liquid-glass-card rounded-[28px] p-4 border border-border flex flex-wrap items-center justify-between gap-3 shadow-xl">
-            <div className="flex items-center gap-3">
+          {/* Top Meeting Header Bar */}
+          <div className="liquid-glass-card rounded-[24px] p-3 border border-border flex flex-wrap items-center justify-between gap-3 shadow-xl">
+            <div className="flex items-center gap-2.5 min-w-0">
               <button
                 onClick={() => setActiveReunion(null)}
-                className="px-3 py-1.5 rounded-xl bg-surface-2 border border-border text-xs font-bold text-text hover:bg-primary-light/40 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-2 border border-border text-xs font-bold text-text hover:bg-surface-3 transition-all shrink-0"
               >
-                ← Salir de la Sala
+                <ArrowLeft size={14} />
+                <span>Salir</span>
               </button>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping" />
-                <h2 className="text-sm font-bold text-text truncate max-w-xs">{activeReunion.titulo}</h2>
+
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                <h2 className="text-xs sm:text-sm font-bold text-text truncate max-w-[200px] sm:max-w-md">
+                  {activeReunion.titulo}
+                </h2>
               </div>
             </div>
 
-            {/* Quorum Metric */}
-            <div className="flex items-center gap-3 text-xs bg-surface-2/60 px-3.5 py-1.5 rounded-2xl border border-border">
-              <Users size={14} className="text-[#57bf00]" />
-              <span className="font-bold text-text">
-                Quórum Concejo:{' '}
-                <strong className="text-[#57bf00]">
-                  {activeReunion.asistencias.filter((a) => a.confirmacion !== 'EXCUSA_INASISTENCIA').length} / 5
-                </strong>
-              </span>
-            </div>
-
-            {/* Admin Controls */}
-            {isStaff && (
-              <div className="flex items-center gap-2">
-                {activeReunion.estado === 'CONVOCADA' && (
-                  <button
-                    onClick={() => handleCambiarEstado(activeReunion.id, 'EN_CURSO')}
-                    className="px-4 py-2 rounded-xl bg-[#57bf00] text-black font-bold text-xs uppercase tracking-wider hover:brightness-110"
-                  >
-                    ▶ Iniciar Sesión Oficial
-                  </button>
-                )}
-                {activeReunion.estado === 'EN_CURSO' && (
-                  <button
-                    onClick={() => handleGenerarActaIA(activeReunion)}
-                    disabled={isGeneratingIA}
-                    className="px-4 py-2 rounded-xl bg-purple-500 text-white font-bold text-xs uppercase tracking-wider hover:brightness-110 flex items-center gap-1.5"
-                  >
-                    <Sparkles size={14} />
-                    {isGeneratingIA ? 'Generando Acta IA...' : 'Finalizar y Generar Acta IA'}
-                  </button>
-                )}
+            {/* Quorum Badge & Admin Actions */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 text-xs bg-[#57bf00]/10 border border-[#57bf00]/30 px-3 py-1.5 rounded-xl">
+                <Users size={14} className="text-[#57bf00]" />
+                <span className="text-[11px] font-bold text-text">
+                  Quórum:{' '}
+                  <strong className="text-[#57bf00]">
+                    {activeReunion.asistencias.filter((a) => a.confirmacion !== 'EXCUSA_INASISTENCIA').length} / 5
+                  </strong>
+                </span>
               </div>
-            )}
+
+              {isStaff && (
+                <>
+                  {activeReunion.estado === 'CONVOCADA' && (
+                    <button
+                      onClick={() => handleCambiarEstado(activeReunion.id, 'EN_CURSO')}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#57bf00] text-black font-bold text-xs uppercase tracking-wider hover:brightness-110"
+                    >
+                      ▶ Iniciar
+                    </button>
+                  )}
+                  {activeReunion.estado === 'EN_CURSO' && (
+                    <button
+                      onClick={() => handleGenerarActaIA(activeReunion)}
+                      disabled={isGeneratingIA}
+                      className="px-3.5 py-1.5 rounded-xl bg-purple-500 text-white font-bold text-xs uppercase tracking-wider hover:brightness-110 flex items-center gap-1"
+                    >
+                      <Sparkles size={13} />
+                      {isGeneratingIA ? 'IA...' : 'Acta IA'}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
-          {/* Main Layout Split: Left Video Room, Right Sidebar (Tabs: Video, Votaciones, Transcripción, Acta) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[550px]">
-            {/* Left Main Screen */}
-            <div className="lg:col-span-2 flex flex-col gap-3">
-              {activeTab === 'video' && (
-                <div className="w-full h-[480px] sm:h-[550px] liquid-glass rounded-[32px] border border-border overflow-hidden relative shadow-2xl bg-black">
-                  <LiveRoom
-                    asambleaId={activeReunion.id}
-                    tokenEndpoint={`/reuniones-concejo/${activeReunion.id}/livekit-token`}
-                    titulo={activeReunion.titulo}
-                    onDisconnect={() => {
-                      toast.info('Te has desconectado de la videollamada de concejo');
-                    }}
-                  />
+          {/* HORIZONTAL SEGMENTED TAB SWITCHER */}
+          <div className="flex items-center gap-1.5 p-1.5 bg-surface-2/80 backdrop-blur-xl border border-border rounded-2xl overflow-x-auto no-scrollbar scroll-smooth w-full">
+            <button
+              onClick={() => setActiveTab('video')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                activeTab === 'video'
+                  ? 'bg-[#57bf00] text-black font-extrabold shadow-md shadow-[#57bf00]/20'
+                  : 'text-text/70 hover:text-text hover:bg-surface-3'
+              }`}
+            >
+              <Video size={15} />
+              <span>Videollamada LiveKit</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('votaciones')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                activeTab === 'votaciones'
+                  ? 'bg-[#57bf00] text-black font-extrabold shadow-md shadow-[#57bf00]/20'
+                  : 'text-text/70 hover:text-text hover:bg-surface-3'
+              }`}
+            >
+              <Vote size={15} />
+              <span>Votaciones ({activeReunion.votaciones.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('transcripcion')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                activeTab === 'transcripcion'
+                  ? 'bg-[#57bf00] text-black font-extrabold shadow-md shadow-[#57bf00]/20'
+                  : 'text-text/70 hover:text-text hover:bg-surface-3'
+              }`}
+            >
+              <MessageSquare size={15} />
+              <span>Transcripción</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('acta')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                activeTab === 'acta'
+                  ? 'bg-[#57bf00] text-black font-extrabold shadow-md shadow-[#57bf00]/20'
+                  : 'text-text/70 hover:text-text hover:bg-surface-3'
+              }`}
+            >
+              <FileCheck size={15} />
+              <span>Resumen Gemini & Acta</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('orden_dia')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                activeTab === 'orden_dia'
+                  ? 'bg-[#57bf00] text-black font-extrabold shadow-md shadow-[#57bf00]/20'
+                  : 'text-text/70 hover:text-text hover:bg-surface-3'
+              }`}
+            >
+              <FileText size={15} />
+              <span>Orden del Día</span>
+            </button>
+          </div>
+
+          {/* ACTIVE TAB CONTAINER PANEL */}
+          <div className="w-full min-h-[520px]">
+            {activeTab === 'video' && (
+              <div className="w-full h-[520px] sm:h-[580px] liquid-glass rounded-[32px] border border-border overflow-hidden relative shadow-2xl bg-black">
+                <LiveRoom
+                  asambleaId={activeReunion.id}
+                  tokenEndpoint={`/reuniones-concejo/${activeReunion.id}/livekit-token`}
+                  titulo={activeReunion.titulo}
+                  onDisconnect={() => {
+                    toast.info('Te has desconectado de la videollamada de concejo');
+                  }}
+                />
+              </div>
+            )}
+
+            {activeTab === 'votaciones' && (
+              <div className="w-full h-[520px] sm:h-[580px] liquid-glass rounded-[32px] p-6 border border-border overflow-y-auto flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <h3 className="text-base font-bold text-text flex items-center gap-2">
+                    <Vote className="w-5 h-5 text-[#57bf00]" />
+                    Votaciones Auditadas del Concejo en Vivo
+                  </h3>
+                  {isStaff && (
+                    <button
+                      onClick={() => setShowModalVotacion(true)}
+                      className="px-4 py-2 rounded-xl bg-[#57bf00] text-black font-bold text-xs uppercase tracking-wider flex items-center gap-1.5"
+                    >
+                      <Plus size={14} /> Crear Votación
+                    </button>
+                  )}
                 </div>
-              )}
 
-              {activeTab === 'votaciones' && (
-                <div className="w-full h-[550px] liquid-glass rounded-[32px] p-6 border border-border overflow-y-auto flex flex-col gap-4">
-                  <div className="flex items-center justify-between border-b border-border pb-3">
-                    <h3 className="text-base font-bold text-text flex items-center gap-2">
-                      <Vote className="w-5 h-5 text-[#57bf00]" />
-                      Votaciones Auditadas del Concejo en Vivo
-                    </h3>
-                    {isStaff && (
-                      <button
-                        onClick={() => setShowModalVotacion(true)}
-                        className="px-4 py-2 rounded-xl bg-[#57bf00] text-black font-bold text-xs uppercase tracking-wider flex items-center gap-1.5"
-                      >
-                        <Plus size={14} /> Crear Votación
-                      </button>
-                    )}
+                {activeReunion.votaciones.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center gap-2 text-text/60">
+                    <BarChart3 size={32} className="text-[#57bf00]" />
+                    <p className="text-xs font-bold">No hay votaciones activas en este momento.</p>
                   </div>
+                ) : (
+                  activeReunion.votaciones.map((v) => {
+                    const totalVotos = v.votos.length;
+                    const myVote = v.votos.find((vote) => vote.usuario_id === user?.id);
 
-                  {activeReunion.votaciones.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center gap-2 text-text/60">
-                      <BarChart3 size={32} className="text-[#57bf00]" />
-                      <p className="text-xs font-bold">No hay votaciones activas en este momento.</p>
-                    </div>
-                  ) : (
-                    activeReunion.votaciones.map((v) => {
-                      const totalVotos = v.votos.length;
-                      const myVote = v.votos.find((vote) => vote.usuario_id === user?.id);
-
-                      return (
-                        <div
-                          key={v.id}
-                          className="bg-surface-2 rounded-2xl p-4 border border-border/50 flex flex-col gap-3"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <h4 className="text-sm font-bold text-text">{v.titulo}</h4>
-                              {v.descripcion && <p className="text-xs text-text/70">{v.descripcion}</p>}
-                              <span className="text-[10px] font-bold text-[#57bf00] uppercase mt-1 block">
-                                {v.es_multiple ? '☑️ Selección Múltiple' : '🔘 Opción Única'} • Total Votos: {totalVotos}
-                              </span>
-                            </div>
-
-                            {isStaff && v.activa && (
-                              <button
-                                onClick={() => handleCerrarVotacion(v.id)}
-                                className="px-3 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase"
-                              >
-                                Cerrar Votación
-                              </button>
-                            )}
+                    return (
+                      <div
+                        key={v.id}
+                        className="bg-surface-2 rounded-2xl p-4 border border-border/50 flex flex-col gap-3"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-bold text-text">{v.titulo}</h4>
+                            {v.descripcion && <p className="text-xs text-text/70">{v.descripcion}</p>}
+                            <span className="text-[10px] font-bold text-[#57bf00] uppercase mt-1 block">
+                              {v.es_multiple ? '☑️ Selección Múltiple' : '🔘 Opción Única'} • Total Votos: {totalVotos}
+                            </span>
                           </div>
 
-                          {/* Options Grid */}
-                          <div className="flex flex-col gap-2 pt-2">
-                            {v.opciones.map((opcion) => {
-                              const optionVotes = v.votos.filter((vote) => vote.respuestas.includes(opcion));
-                              const isSelected = selectedRespuestas[v.id]?.includes(opcion) || myVote?.respuestas.includes(opcion);
-                              const pct = totalVotos > 0 ? Math.round((optionVotes.length / totalVotos) * 100) : 0;
-
-                              return (
-                                <div
-                                  key={opcion}
-                                  onClick={() => {
-                                    if (!v.activa) return;
-                                    const current = selectedRespuestas[v.id] || [];
-                                    if (v.es_multiple) {
-                                      const next = current.includes(opcion)
-                                        ? current.filter((item) => item !== opcion)
-                                        : [...current, opcion];
-                                      setSelectedRespuestas({ ...selectedRespuestas, [v.id]: next });
-                                    } else {
-                                      setSelectedRespuestas({ ...selectedRespuestas, [v.id]: [opcion] });
-                                    }
-                                  }}
-                                  className={`p-3 rounded-xl border flex flex-col gap-1 cursor-pointer transition-all ${
-                                    isSelected
-                                      ? 'bg-[#57bf00]/20 border-[#57bf00] text-text'
-                                      : 'bg-primary-light/30 border-border text-text hover:bg-primary-light/60'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between text-xs font-bold">
-                                    <span className="flex items-center gap-2">
-                                      {isSelected ? '✅' : '⚪'} {opcion}
-                                    </span>
-                                    <span className="text-[11px] font-black text-[#57bf00]">{pct}% ({optionVotes.length})</span>
-                                  </div>
-                                  <div className="w-full bg-black/30 h-1.5 rounded-full overflow-hidden">
-                                    <div
-                                      className="bg-[#57bf00] h-full transition-all duration-300"
-                                      style={{ width: `${pct}%` }}
-                                    />
-                                  </div>
-
-                                  {/* Audited nominative votes list */}
-                                  {optionVotes.length > 0 && (
-                                    <div className="text-[10px] text-text/50 pt-1 flex flex-wrap gap-1">
-                                      Votaron: {optionVotes.map((ov) => ov.usuario_nombre).join(', ')}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {v.activa && (
+                          {isStaff && v.activa && (
                             <button
-                              onClick={() => handleEmitirVoto(v.id)}
-                              className="mt-2 py-2.5 px-4 rounded-xl bg-[#57bf00] text-black font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95"
+                              onClick={() => handleCerrarVotacion(v.id)}
+                              className="px-3 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase"
                             >
-                              Confirmar y Transmitir Mi Voto
+                              Cerrar Votación
                             </button>
                           )}
                         </div>
-                      );
-                    })
+
+                        {/* Options Grid */}
+                        <div className="flex flex-col gap-2 pt-2">
+                          {v.opciones.map((opcion) => {
+                            const optionVotes = v.votos.filter((vote) => vote.respuestas.includes(opcion));
+                            const isSelected = selectedRespuestas[v.id]?.includes(opcion) || myVote?.respuestas.includes(opcion);
+                            const pct = totalVotos > 0 ? Math.round((optionVotes.length / totalVotos) * 100) : 0;
+
+                            return (
+                              <div
+                                key={opcion}
+                                onClick={() => {
+                                  if (!v.activa) return;
+                                  const current = selectedRespuestas[v.id] || [];
+                                  if (v.es_multiple) {
+                                    const next = current.includes(opcion)
+                                      ? current.filter((item) => item !== opcion)
+                                      : [...current, opcion];
+                                    setSelectedRespuestas({ ...selectedRespuestas, [v.id]: next });
+                                  } else {
+                                    setSelectedRespuestas({ ...selectedRespuestas, [v.id]: [opcion] });
+                                  }
+                                }}
+                                className={`p-3 rounded-xl border flex flex-col gap-1 cursor-pointer transition-all ${
+                                  isSelected
+                                    ? 'bg-[#57bf00]/20 border-[#57bf00] text-text'
+                                    : 'bg-primary-light/30 border-border text-text hover:bg-primary-light/60'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between text-xs font-bold">
+                                  <span className="flex items-center gap-2">
+                                    {isSelected ? '✅' : '⚪'} {opcion}
+                                  </span>
+                                  <span className="text-[11px] font-black text-[#57bf00]">{pct}% ({optionVotes.length})</span>
+                                </div>
+                                <div className="w-full bg-black/30 h-1.5 rounded-full overflow-hidden">
+                                  <div
+                                    className="bg-[#57bf00] h-full transition-all duration-300"
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+
+                                {optionVotes.length > 0 && (
+                                  <div className="text-[10px] text-text/50 pt-1 flex flex-wrap gap-1">
+                                    Votaron: {optionVotes.map((ov) => ov.usuario_nombre).join(', ')}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {v.activa && (
+                          <button
+                            onClick={() => handleEmitirVoto(v.id)}
+                            className="mt-2 py-2.5 px-4 rounded-xl bg-[#57bf00] text-black font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95"
+                          >
+                            Confirmar y Transmitir Mi Voto
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {activeTab === 'transcripcion' && (
+              <div className="w-full h-[520px] sm:h-[580px] liquid-glass rounded-[32px] p-6 border border-border flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <h3 className="text-base font-bold text-text flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-[#57bf00]" />
+                    Transcripción en Vivo de la Sesión (Quién Dijo Qué)
+                  </h3>
+                </div>
+
+                <div className="flex-1 bg-surface-2/60 rounded-2xl p-4 border border-border font-mono text-xs text-text overflow-y-auto whitespace-pre-wrap">
+                  {activeReunion.transcripcion_detallada ||
+                    `[${new Date().toLocaleTimeString('es-CO')}] Sistema: Transcripción oficial iniciada...\n[Esperando intervenciones de los miembros del concejo]`}
+                </div>
+
+                <form onSubmit={handleAgregarTranscripcion} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Registrar intervención verbal del hablante..."
+                    value={transcripcionTexto}
+                    onChange={(e) => setTranscripcionTexto(e.target.value)}
+                    className="flex-1 bg-primary-light/40 border border-border rounded-xl p-3 text-xs text-text focus:outline-none focus:border-[#57bf00]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isAddingTranscript}
+                    className="px-4 py-3 bg-[#57bf00] text-black font-bold rounded-xl text-xs flex items-center gap-1 hover:brightness-110"
+                  >
+                    <Send size={14} /> Registrar
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {activeTab === 'acta' && (
+              <div className="w-full h-[520px] sm:h-[580px] liquid-glass rounded-[32px] p-6 border border-border flex flex-col gap-4 overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <h3 className="text-base font-bold text-text flex items-center gap-2">
+                    <FileCheck className="w-5 h-5 text-purple-400" />
+                    Acta Oficial y Resumen de Gemini IA
+                  </h3>
+
+                  {activeReunion.resumen_ia && (
+                    <button
+                      onClick={() => {
+                        const blob = new Blob([activeReunion.resumen_ia || ''], { type: 'text/plain;charset=utf-8' });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `Acta_Concejo_${activeReunion.titulo.replace(/\s+/g, '_')}.txt`;
+                        link.click();
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-500/30"
+                    >
+                      <Download size={14} /> Descargar Acta
+                    </button>
                   )}
                 </div>
-              )}
 
-              {activeTab === 'transcripcion' && (
-                <div className="w-full h-[550px] liquid-glass rounded-[32px] p-6 border border-border flex flex-col gap-4">
-                  <div className="flex items-center justify-between border-b border-border pb-3">
-                    <h3 className="text-base font-bold text-text flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5 text-[#57bf00]" />
-                      Transcripción en Vivo de la Sesión (Quién Dijo Qué)
-                    </h3>
-                  </div>
-
-                  <div className="flex-1 bg-surface-2/60 rounded-2xl p-4 border border-border font-mono text-xs text-text overflow-y-auto whitespace-pre-wrap">
-                    {activeReunion.transcripcion_detallada ||
-                      `[${new Date().toLocaleTimeString('es-CO')}] Sistema: Transcripción oficial iniciada...\n[Esperando intervenciones de los miembros del concejo]`}
-                  </div>
-
-                  <form onSubmit={handleAgregarTranscripcion} className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Registrar intervención verbal del hablante..."
-                      value={transcripcionTexto}
-                      onChange={(e) => setTranscripcionTexto(e.target.value)}
-                      className="flex-1 bg-primary-light/40 border border-border rounded-xl p-3 text-xs text-text focus:outline-none focus:border-[#57bf00]"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isAddingTranscript}
-                      className="px-4 py-3 bg-[#57bf00] text-black font-bold rounded-xl text-xs flex items-center gap-1 hover:brightness-110"
-                    >
-                      <Send size={14} /> Registrar
-                    </button>
-                  </form>
+                <div className="bg-surface-2 p-5 rounded-2xl border border-border text-xs font-mono text-text whitespace-pre-wrap">
+                  {activeReunion.resumen_ia || activeReunion.acta_resumen || 'El acta oficial y el resumen ejecutivo redactado por Gemini IA estarán disponibles al finalizar la reunión.'}
                 </div>
-              )}
-
-              {activeTab === 'acta' && (
-                <div className="w-full h-[550px] liquid-glass rounded-[32px] p-6 border border-border flex flex-col gap-4 overflow-y-auto">
-                  <div className="flex items-center justify-between border-b border-border pb-3">
-                    <h3 className="text-base font-bold text-text flex items-center gap-2">
-                      <FileCheck className="w-5 h-5 text-purple-400" />
-                      Acta Oficial y Resumen de Gemini IA
-                    </h3>
-
-                    {activeReunion.resumen_ia && (
-                      <button
-                        onClick={() => {
-                          const blob = new Blob([activeReunion.resumen_ia || ''], { type: 'text/plain;charset=utf-8' });
-                          const link = document.createElement('a');
-                          link.href = URL.createObjectURL(blob);
-                          link.download = `Acta_Concejo_${activeReunion.titulo.replace(/\s+/g, '_')}.txt`;
-                          link.click();
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-500/30"
-                      >
-                        <Download size={14} /> Descargar Acta
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="bg-surface-2 p-5 rounded-2xl border border-border text-xs font-mono text-text whitespace-pre-wrap">
-                    {activeReunion.resumen_ia || activeReunion.acta_resumen || 'El acta oficial y el resumen ejecutivo redactado por Gemini IA estarán disponibles al finalizar la reunión.'}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right Control Navigation Panel */}
-            <div className="flex flex-col gap-3 bg-surface-2/40 p-4 rounded-[32px] border border-border">
-              <h3 className="text-xs font-bold text-text uppercase tracking-wider px-2">Navegación de la Sesión</h3>
-
-              <button
-                onClick={() => setActiveTab('video')}
-                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-xs font-bold transition-all ${
-                  activeTab === 'video'
-                    ? 'bg-[#57bf00]/20 border-[#57bf00] text-[#57bf00]'
-                    : 'bg-primary-light/40 border-border text-text hover:bg-primary-light/60'
-                }`}
-              >
-                <span className="flex items-center gap-2">📹 Videollamada LiveKit</span>
-                <ChevronRight size={16} />
-              </button>
-
-              <button
-                onClick={() => setActiveTab('votaciones')}
-                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-xs font-bold transition-all ${
-                  activeTab === 'votaciones'
-                    ? 'bg-[#57bf00]/20 border-[#57bf00] text-[#57bf00]'
-                    : 'bg-primary-light/40 border-border text-text hover:bg-primary-light/60'
-                }`}
-              >
-                <span className="flex items-center gap-2">📊 Votaciones en Vivo ({activeReunion.votaciones.length})</span>
-                <ChevronRight size={16} />
-              </button>
-
-              <button
-                onClick={() => setActiveTab('transcripcion')}
-                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-xs font-bold transition-all ${
-                  activeTab === 'transcripcion'
-                    ? 'bg-[#57bf00]/20 border-[#57bf00] text-[#57bf00]'
-                    : 'bg-primary-light/40 border-border text-text hover:bg-primary-light/60'
-                }`}
-              >
-                <span className="flex items-center gap-2">📝 Transcripción Quién Dijo Qué</span>
-                <ChevronRight size={16} />
-              </button>
-
-              <button
-                onClick={() => setActiveTab('acta')}
-                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-xs font-bold transition-all ${
-                  activeTab === 'acta'
-                    ? 'bg-[#57bf00]/20 border-[#57bf00] text-[#57bf00]'
-                    : 'bg-primary-light/40 border-border text-text hover:bg-primary-light/60'
-                }`}
-              >
-                <span className="flex items-center gap-2">🤖 Resumen Gemini & Acta</span>
-                <ChevronRight size={16} />
-              </button>
-
-              {/* Orden del día list */}
-              <div className="mt-4 p-4 rounded-2xl bg-primary-light/20 border border-border flex flex-col gap-2">
-                <h4 className="text-[11px] font-bold text-text uppercase tracking-wider flex items-center gap-1">
-                  <FileText size={14} className="text-[#57bf00]" /> Orden del Día
-                </h4>
-                <ul className="flex flex-col gap-1.5 text-xs text-text/80">
-                  {activeReunion.orden_dia.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-1.5">
-                      <span className="text-[#57bf00] font-bold">{idx + 1}.</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
-            </div>
+            )}
+
+            {activeTab === 'orden_dia' && (
+              <div className="w-full h-[520px] sm:h-[580px] liquid-glass rounded-[32px] p-6 border border-border flex flex-col gap-4 overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <h3 className="text-base font-bold text-text flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-[#57bf00]" />
+                    Orden del Día Oficial
+                  </h3>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {activeReunion.orden_dia.length === 0 ? (
+                    <p className="text-xs text-text/60">No se definieron puntos específicos en el orden del día.</p>
+                  ) : (
+                    activeReunion.orden_dia.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-2xl bg-surface-2 border border-border flex items-start gap-3 text-xs"
+                      >
+                        <div className="w-7 h-7 rounded-xl bg-[#57bf00]/20 text-[#57bf00] font-black flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="font-semibold text-text leading-relaxed">{item}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
