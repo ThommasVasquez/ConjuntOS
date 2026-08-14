@@ -114,3 +114,17 @@ pub async fn get_user_info(
         .optional()?;
     Ok(res)
 }
+
+/// Helper: deactivate resident user and unlink unit on outgoing move completion
+pub async fn deactivate_user(conn: &mut DbConn, uid: Uuid) -> anyhow::Result<()> {
+    diesel::update(usuarios::table.filter(usuarios::id.eq(uid)))
+        .set((
+            usuarios::activo.eq(false),
+            usuarios::unidad_id.eq(Option::<Uuid>::None),
+            usuarios::torre.eq(Option::<String>::None),
+            usuarios::apto.eq(Option::<String>::None),
+        ))
+        .execute(conn)
+        .await?;
+    Ok(())
+}
