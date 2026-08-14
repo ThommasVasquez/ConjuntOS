@@ -7,6 +7,8 @@ use super::models::Mudanza;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateMudanzaReq {
+    pub torre: Option<String>,
+    pub apto: Option<String>,
     pub tipo: String, // "ENTRANTE" | "SALIENTE"
     pub fecha_mudanza: NaiveDate,
     pub hora_inicio: String, // "08:00 AM"

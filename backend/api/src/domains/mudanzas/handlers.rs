@@ -33,11 +33,19 @@ pub async fn crear_mudanza(
     user: AuthUser,
     Json(req): Json<CreateMudanzaReq>,
 ) -> ApiResult<Json<MudanzaResp>> {
+    let mut conn = state.pool.get().await?;
+
+    let (u_nombre, u_email, u_torre, u_apto) =
+        repo::get_user_info(&mut conn, user.id).await?.unwrap_or_default();
+
+    let torre = req.torre.or(u_torre);
+    let apto = req.apto.or(u_apto);
+
     let new_m = NewMudanza {
         conjunto_id: user.conjunto_id,
         usuario_id: user.id,
-        torre: None,
-        apto: None,
+        torre,
+        apto,
         tipo: req.tipo.to_uppercase(),
         fecha_mudanza: req.fecha_mudanza,
         hora_inicio: req.hora_inicio,
@@ -51,11 +59,11 @@ pub async fn crear_mudanza(
         estado: "PENDIENTE_PAZ_Y_SALVO".to_string(),
     };
 
-    let mut conn = state.pool.get().await?;
     let m = repo::create(&mut conn, new_m).await?;
 
     let mut resp = MudanzaResp::from(m);
-    resp.usuario_nombre = Some(user.nombre.clone());
+    resp.usuario_nombre = Some(u_nombre);
+    resp.usuario_email = Some(u_email);
 
     Ok(Json(resp))
 }
@@ -84,12 +92,14 @@ pub async fn listar_mudanzas(
     let mut list = Vec::new();
     for m in mudanzas {
         let mut dto = MudanzaResp::from(m);
-        if let Ok(Some((u_nombre, u_email))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
+        if let Ok(Some((u_nombre, u_email, u_torre, u_apto))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
             dto.usuario_nombre = Some(u_nombre);
             dto.usuario_email = Some(u_email);
+            if dto.torre.is_none() { dto.torre = u_torre; }
+            if dto.apto.is_none() { dto.apto = u_apto; }
         }
         if let Some(admin_uid) = dto.aprobado_por_usuario_id {
-            if let Ok(Some((adm_nombre, _))) = repo::get_user_info(&mut conn, admin_uid).await {
+            if let Ok(Some((adm_nombre, _, _, _))) = repo::get_user_info(&mut conn, admin_uid).await {
                 dto.aprobado_por_nombre = Some(adm_nombre);
             }
         }
@@ -110,12 +120,14 @@ pub async fn obtener_mudanza(
         .ok_or_else(|| crate::error::ApiError::NotFound("Solicitud de mudanza no encontrada".to_string()))?;
 
     let mut dto = MudanzaResp::from(m);
-    if let Ok(Some((u_nombre, u_email))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
+    if let Ok(Some((u_nombre, u_email, u_torre, u_apto))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
         dto.usuario_nombre = Some(u_nombre);
         dto.usuario_email = Some(u_email);
+        if dto.torre.is_none() { dto.torre = u_torre; }
+        if dto.apto.is_none() { dto.apto = u_apto; }
     }
     if let Some(admin_uid) = dto.aprobado_por_usuario_id {
-        if let Ok(Some((adm_nombre, _))) = repo::get_user_info(&mut conn, admin_uid).await {
+        if let Ok(Some((adm_nombre, _, _, _))) = repo::get_user_info(&mut conn, admin_uid).await {
             dto.aprobado_por_nombre = Some(adm_nombre);
         }
     }
@@ -140,9 +152,11 @@ pub async fn aprobar_mudanza(
     let m = repo::aprobar(&mut conn, id, &paz_y_salvo_code, user.id).await?;
 
     let mut dto = MudanzaResp::from(m);
-    if let Ok(Some((u_nombre, u_email))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
+    if let Ok(Some((u_nombre, u_email, u_torre, u_apto))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
         dto.usuario_nombre = Some(u_nombre);
         dto.usuario_email = Some(u_email);
+        if dto.torre.is_none() { dto.torre = u_torre; }
+        if dto.apto.is_none() { dto.apto = u_apto; }
     }
     dto.aprobado_por_nombre = Some(user.nombre.clone());
 
@@ -161,9 +175,11 @@ pub async fn rechazar_mudanza(
     let m = repo::rechazar(&mut conn, id, &req.motivo, user.id).await?;
 
     let mut dto = MudanzaResp::from(m);
-    if let Ok(Some((u_nombre, u_email))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
+    if let Ok(Some((u_nombre, u_email, u_torre, u_apto))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
         dto.usuario_nombre = Some(u_nombre);
         dto.usuario_email = Some(u_email);
+        if dto.torre.is_none() { dto.torre = u_torre; }
+        if dto.apto.is_none() { dto.apto = u_apto; }
     }
     dto.aprobado_por_nombre = Some(user.nombre.clone());
 
@@ -188,9 +204,11 @@ pub async fn actualizar_estado_mudanza(
     let m = repo::update_estado(&mut conn, id, &req.estado).await?;
 
     let mut dto = MudanzaResp::from(m);
-    if let Ok(Some((u_nombre, u_email))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
+    if let Ok(Some((u_nombre, u_email, u_torre, u_apto))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
         dto.usuario_nombre = Some(u_nombre);
         dto.usuario_email = Some(u_email);
+        if dto.torre.is_none() { dto.torre = u_torre; }
+        if dto.apto.is_none() { dto.apto = u_apto; }
     }
 
     Ok(Json(dto))
