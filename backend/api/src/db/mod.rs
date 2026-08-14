@@ -41,7 +41,11 @@ fn establish_tls_connection(
             .with_no_client_auth();
         let tls = tokio_postgres_rustls::MakeRustlsConnect::new(tls_config);
 
-        let (client, connection) = tokio_postgres::connect(url, tls)
+        if let Ok((client, connection)) = tokio_postgres::connect(url, tls).await {
+            return AsyncPgConnection::try_from_client_and_connection(client, connection).await;
+        }
+
+        let (client, connection) = tokio_postgres::connect(url, tokio_postgres::NoTls)
             .await
             .map_err(|e| ConnectionError::BadConnection(e.to_string()))?;
         AsyncPgConnection::try_from_client_and_connection(client, connection).await
