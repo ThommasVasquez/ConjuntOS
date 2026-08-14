@@ -96,12 +96,20 @@ pub async fn update_estado(
     Ok(m)
 }
 
-/// Helper: fetch user details (name, email)
-pub async fn get_user_info(conn: &mut DbConn, uid: Uuid) -> anyhow::Result<Option<(String, String)>> {
+/// Helper: fetch user details (name, email, torre, apto)
+pub async fn get_user_info(
+    conn: &mut DbConn,
+    uid: Uuid,
+) -> anyhow::Result<Option<(String, String, Option<String>, Option<String>)>> {
     let res = usuarios::table
         .filter(usuarios::id.eq(uid))
-        .select((usuarios::nombre, usuarios::email))
-        .first::<(String, String)>(conn)
+        .select((
+            usuarios::nombre,
+            usuarios::email,
+            usuarios::torre,
+            usuarios::apto,
+        ))
+        .first::<(String, String, Option<String>, Option<String>)>(conn)
         .await
         .optional()?;
     Ok(res)
