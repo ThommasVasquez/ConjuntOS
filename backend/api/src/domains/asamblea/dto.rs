@@ -339,4 +339,6 @@ pub struct UpdatePoderRequest {
 pub struct LiveKitTokenDto {
     pub token: String,
     pub url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub can_publish: Option<bool>,
 }
