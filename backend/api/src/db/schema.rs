@@ -1032,6 +1032,34 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    mudanzas (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        usuario_id -> Uuid,
+        torre -> Nullable<Text>,
+        apto -> Nullable<Text>,
+        tipo -> Text,
+        fecha_mudanza -> Date,
+        hora_inicio -> Text,
+        hora_fin -> Text,
+        tiene_vehiculo -> Bool,
+        vehiculo_placa -> Nullable<Text>,
+        vehiculo_tipo -> Nullable<Text>,
+        conductor_nombre -> Nullable<Text>,
+        conductor_documento -> Nullable<Text>,
+        observaciones -> Nullable<Text>,
+        estado -> Text,
+        paz_y_salvo_codigo -> Nullable<Text>,
+        motivo_rechazo -> Nullable<Text>,
+        saldo_pendiente_monto -> Nullable<Numeric>,
+        aprobado_por_usuario_id -> Nullable<Uuid>,
+        aprobado_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     ad_spaces,
     anuncios,
@@ -1059,6 +1087,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     locales,
     mascotas,
     mascotas_vacunas,
+    mudanzas,
     multas,
     native_push_tokens,
     notificaciones,

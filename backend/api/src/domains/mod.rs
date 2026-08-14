@@ -19,6 +19,7 @@ pub mod encuestas;
 pub mod gestion_documental;
 pub mod inmuebles;
 pub mod multas;
+pub mod mudanzas;
 pub mod notificaciones;
 pub mod pagos;
 pub mod parqueadero;
