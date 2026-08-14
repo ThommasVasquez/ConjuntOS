@@ -11,6 +11,8 @@ import {
   Search,
   Activity,
   Eye,
+  Truck,
+  CheckCircle2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,11 +21,13 @@ import { gsap } from "gsap";
 import { api } from "@/lib/api/client";
 import SosConsole from "@/components/sos/SosConsole";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
+import { MudanzaItem } from "@/components/mudanzas/PazYSalvoModal";
 
 interface VigilanciaStats {
   visitasHoy: number;
   paquetesPendientes: number;
   totalResidentes: number;
+  mudanzasHoy?: number;
 }
 
 const statCards = [
@@ -100,6 +104,15 @@ const navCards = [
     iconColor: "text-red-400",
   },
   {
+    title: "Mudanzas Habilitadas",
+    subtitle: "Paz y Salvo y permisos de trasteo",
+    icon: <Truck size={26} />,
+    path: "/mudanzas",
+    color: "from-emerald-500/20 to-emerald-600/5",
+    borderColor: "border-[#57bf00]/40",
+    iconColor: "text-[#57bf00]",
+  },
+  {
     title: "Directorio",
     subtitle: "Buscar residentes y unidades",
     icon: <Search size={26} />,
@@ -121,6 +134,7 @@ export default function VigilanciaDashboard() {
     totalResidentes: 0,
   });
   const [statsLoading, setStatsLoading] = useState(true);
+  const [mudanzasHabilitadas, setMudanzasHabilitadas] = useState<MudanzaItem[]>([]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -142,8 +156,13 @@ export default function VigilanciaDashboard() {
 
     async function fetchStats() {
       try {
-        const data = await api.get<VigilanciaStats>("/vigilancia/stats");
-        setStats(data);
+        const [data, mudanzasData] = await Promise.all([
+          api.get<VigilanciaStats>("/vigilancia/stats"),
+          api.get<MudanzaItem[]>("/mudanzas").catch(() => []),
+        ]);
+        const apr = mudanzasData.filter(m => m.estado === 'APROBADO' || m.estado === 'EN_PROCESO');
+        setStats({ ...data, mudanzasHoy: apr.length });
+        setMudanzasHabilitadas(apr);
       } catch {
         toast.error("Error al cargar estadísticas");
       } finally {
@@ -201,6 +220,113 @@ export default function VigilanciaDashboard() {
 
       {/* LIVE SOS ALERTS (renders only when the queue is non-empty) */}
       <SosConsole />
+
+      {/* MUDANZAS HABILITADAS (VIGILANCIA REALTIME BANNER) */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-[#57bf00] flex items-center gap-1.5">
+            <Truck size={16} />
+            Mudanzas Habilitadas ({mudanzasHabilitadas.length})
+          </h3>
+          <button
+            onClick={() => router.push('/mudanzas')}
+            className="text-[10px] text-[#57bf00] font-black uppercase tracking-wider hover:underline"
+          >
+            Ver Todas &rarr;
+          </button>
+        </div>
+
+        {mudanzasHabilitadas.length === 0 ? (
+          <div className="liquid-glass rounded-2xl p-4 border border-border/40 text-center">
+            <p className="text-xs text-text/60">No hay mudanzas programadas para hoy.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {mudanzasHabilitadas.map((m) => (
+              <div
+                key={m.id}
+                className="liquid-glass-card rounded-[24px] p-4 border border-[#57bf00]/40 bg-[#57bf00]/5 flex flex-col gap-2.5"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="bg-[#57bf00] text-black text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider">
+                    ✓ PAZ Y SALVO {m.paz_y_salvo_codigo || 'APROBADO'}
+                  </span>
+                  <span className="text-[10px] font-bold text-text uppercase tracking-wider">
+                    {m.tipo === 'SALIENTE' ? '📤 MUDANZA SALIENTE' : '📥 MUDANZA ENTRANTE'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    <h4 className="text-sm font-bold text-text">
+                      {m.usuario_nombre || 'Residente'}
+                    </h4>
+                    <p className="text-xs font-semibold text-[#57bf00]">
+                      Torre {m.torre || '?'} - Apto {m.apto || '?'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-mono font-bold text-text">
+                      {m.hora_inicio} - {m.hora_fin}
+                    </p>
+                    <p className="text-[10px] text-text/60">
+                      Fecha: {m.fecha_mudanza}
+                    </p>
+                  </div>
+                </div>
+
+                {m.tiene_vehiculo && (
+                  <div className="bg-primary-light/40 rounded-xl p-2.5 border border-border/30 text-[11px] text-text flex items-center justify-between">
+                    <div>
+                      <span className="font-bold">Vehículo:</span> {m.vehiculo_tipo || 'Camión'} ({m.vehiculo_placa || 'Sin placa'})
+                    </div>
+                    {m.conductor_nombre && (
+                      <div className="text-[10px] text-text/70">
+                        Conductor: {m.conductor_nombre} {m.conductor_documento ? `(CC ${m.conductor_documento})` : ''}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-1 border-t border-border/30">
+                  {m.estado === 'APROBADO' && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.put(`/mudanzas/${m.id}/estado`, { estado: 'EN_PROCESO' });
+                          toast.success('Estado actualizado: Mudanza en proceso de ingreso/salida');
+                          router.push('/mudanzas');
+                        } catch (e: any) {
+                          toast.error(e?.message || 'Error actualizando estado');
+                        }
+                      }}
+                      className="flex-1 py-2 rounded-xl bg-[#57bf00] text-black font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all text-center"
+                    >
+                      🚚 Registrar Ingreso Trasteo
+                    </button>
+                  )}
+                  {m.estado === 'EN_PROCESO' && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.put(`/mudanzas/${m.id}/estado`, { estado: 'FINALIZADO' });
+                          toast.success('Mudanza finalizada. Permiso completado.');
+                          router.push('/mudanzas');
+                        } catch (e: any) {
+                          toast.error(e?.message || 'Error al finalizar mudanza');
+                        }
+                      }}
+                      className="flex-1 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all text-center"
+                    >
+                      🏁 Marcar Salida / Finalizar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* QUICK-ACCESS NAVIGATION GRID */}
       <div className="flex flex-col gap-3">
