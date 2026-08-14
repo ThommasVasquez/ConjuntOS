@@ -12,7 +12,6 @@ import {
   FileText,
   Building2,
   Search,
-  Filter,
   Check,
   Ban,
   PlusCircle,
@@ -183,17 +182,17 @@ export default function MudanzasPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 pt-16 pb-32 min-h-screen w-full max-w-full overflow-x-hidden">
       {/* Shell Top Navigation & Profile Banner */}
       <ProfileHeader />
 
       {/* Main Section Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
         <div>
-          <h1 className="text-2xl font-display font-medium text-text tracking-wide">
+          <h1 className="text-xl sm:text-2xl font-display font-medium text-text tracking-wide">
             Mudanzas & Paz y Salvo
           </h1>
-          <p className="text-xs sm:text-sm text-text mt-1">
+          <p className="text-xs sm:text-sm text-text/70 mt-0.5">
             Gestión de trasteos, expedición de paz y salvo y control en portería/estacionamientos
           </p>
         </div>
@@ -201,7 +200,7 @@ export default function MudanzasPage() {
         {!isStaff && !isVigilancia && (
           <button
             onClick={() => setActiveTab(activeTab === 'solicitar' ? 'mis_solicitudes' : 'solicitar')}
-            className="flex items-center gap-2 bg-accent text-on-accent px-5 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-accent/20 active:scale-95 transition-all shrink-0"
+            className="flex items-center justify-center gap-2 bg-accent text-on-accent px-4 py-2.5 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-accent/20 active:scale-95 transition-all self-start sm:self-auto shrink-0"
           >
             {activeTab === 'solicitar' ? <XCircle size={16} /> : <PlusCircle size={16} />}
             {activeTab === 'solicitar' ? 'Cancelar' : 'Solicitar Mudanza'}
@@ -270,7 +269,7 @@ export default function MudanzasPage() {
 
       {/* Tab Content 1: Formulario Solicitar Mudanza */}
       {activeTab === 'solicitar' && (
-        <form onSubmit={handleCrearMudanza} className="liquid-glass-card rounded-[28px] p-6 border border-border flex flex-col gap-5 w-full">
+        <form onSubmit={handleCrearMudanza} className="liquid-glass-card rounded-[28px] p-5 sm:p-6 border border-border flex flex-col gap-5 w-full">
           <div className="border-b border-border pb-3">
             <h2 className="text-base font-bold text-text flex items-center gap-2">
               <Truck className="w-5 h-5 text-[#57bf00]" />
@@ -290,7 +289,7 @@ export default function MudanzasPage() {
                 placeholder="ej. Torre B"
                 value={torre}
                 onChange={(e) => setTorre(e.target.value)}
-                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs text-text focus:outline-none focus:border-accent/40"
+                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -300,7 +299,7 @@ export default function MudanzasPage() {
                 placeholder="ej. 202"
                 value={apto}
                 onChange={(e) => setApto(e.target.value)}
-                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs text-text focus:outline-none focus:border-accent/40"
+                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
               />
             </div>
           </div>
@@ -310,7 +309,7 @@ export default function MudanzasPage() {
             <button
               type="button"
               onClick={() => setTipo('ENTRANTE')}
-              className={`p-4 rounded-2xl border text-center font-bold text-xs uppercase tracking-wider transition-all ${
+              className={`p-3.5 rounded-2xl border text-center font-bold text-xs uppercase tracking-wider transition-all ${
                 tipo === 'ENTRANTE'
                   ? 'border-[#57bf00] bg-[#57bf00]/10 text-text shadow-md'
                   : 'border-border bg-primary-light/30 text-text/60 hover:bg-primary-light/50'
@@ -321,7 +320,7 @@ export default function MudanzasPage() {
             <button
               type="button"
               onClick={() => setTipo('SALIENTE')}
-              className={`p-4 rounded-2xl border text-center font-bold text-xs uppercase tracking-wider transition-all ${
+              className={`p-3.5 rounded-2xl border text-center font-bold text-xs uppercase tracking-wider transition-all ${
                 tipo === 'SALIENTE'
                   ? 'border-[#57bf00] bg-[#57bf00]/10 text-text shadow-md'
                   : 'border-border bg-primary-light/30 text-text/60 hover:bg-primary-light/50'
@@ -340,7 +339,7 @@ export default function MudanzasPage() {
                 required
                 value={fechaMudanza}
                 onChange={(e) => setFechaMudanza(e.target.value)}
-                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs text-text focus:outline-none focus:border-accent/40"
+                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -351,7 +350,7 @@ export default function MudanzasPage() {
                 value={horaInicio}
                 onChange={(e) => setHoraInicio(e.target.value)}
                 placeholder="ej. 08:00 AM"
-                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs text-text focus:outline-none focus:border-accent/40"
+                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -362,13 +361,13 @@ export default function MudanzasPage() {
                 value={horaFin}
                 onChange={(e) => setHoraFin(e.target.value)}
                 placeholder="ej. 02:00 PM"
-                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs text-text focus:outline-none focus:border-accent/40"
+                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
               />
             </div>
           </div>
 
           {/* Vehicle Checkbox */}
-          <div className="flex items-center gap-3 p-4 bg-primary-light/30 border border-border rounded-2xl">
+          <div className="flex items-center gap-3 p-3.5 bg-primary-light/30 border border-border rounded-2xl">
             <input
               type="checkbox"
               id="tiene_vehiculo"
@@ -383,7 +382,7 @@ export default function MudanzasPage() {
 
           {/* Vehicle Fields */}
           {tieneVehiculo && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-primary-light/20 border border-border rounded-2xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-primary-light/20 border border-border rounded-2xl">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Placa Camión / Vehículo</label>
                 <input
@@ -391,7 +390,7 @@ export default function MudanzasPage() {
                   value={vehiculoPlaca}
                   onChange={(e) => setVehiculoPlaca(e.target.value)}
                   placeholder="ej. ABC-123"
-                  className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs font-mono text-text focus:outline-none focus:border-accent/40 uppercase"
+                  className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs font-mono text-text focus:outline-none focus:border-accent/40 uppercase"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -401,7 +400,7 @@ export default function MudanzasPage() {
                   value={vehiculoTipo}
                   onChange={(e) => setVehiculoTipo(e.target.value)}
                   placeholder="Camión Furgón / Camioneta"
-                  className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs text-text focus:outline-none focus:border-accent/40"
+                  className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -411,7 +410,7 @@ export default function MudanzasPage() {
                   value={conductorNombre}
                   onChange={(e) => setConductorNombre(e.target.value)}
                   placeholder="Nombre completo"
-                  className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs text-text focus:outline-none focus:border-accent/40"
+                  className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -421,7 +420,7 @@ export default function MudanzasPage() {
                   value={conductorDocumento}
                   onChange={(e) => setConductorDocumento(e.target.value)}
                   placeholder="Documento de identidad"
-                  className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs text-text focus:outline-none focus:border-accent/40"
+                  className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
                 />
               </div>
             </div>
@@ -435,7 +434,7 @@ export default function MudanzasPage() {
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
               placeholder="Notas sobre ascensor o cajas..."
-              className="w-full bg-primary-light/50 border border-border rounded-[20px] p-4 text-xs text-text focus:outline-none focus:border-accent/40"
+              className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
             />
           </div>
 
@@ -453,9 +452,9 @@ export default function MudanzasPage() {
       {(activeTab === 'mis_solicitudes' || activeTab === 'gestion_admin' || activeTab === 'vigilancia') && (
         <div className="flex flex-col gap-4 w-full">
           
-          {/* Search Bar */}
-          <div className="flex items-center gap-3 w-full">
-            <div className="relative flex-1">
+          {/* Search & Filter Controls */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+            <div className="relative w-full sm:flex-1">
               <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-text/40" />
               <input
                 type="text"
@@ -469,7 +468,7 @@ export default function MudanzasPage() {
             <select
               value={filterEstado}
               onChange={(e) => setFilterEstado(e.target.value)}
-              className="bg-primary-light/50 border border-border rounded-full px-4 py-3 text-xs text-text focus:outline-none focus:border-accent/40 shrink-0"
+              className="w-full sm:w-auto bg-primary-light/50 border border-border rounded-full px-4 py-3 text-xs text-text focus:outline-none focus:border-accent/40 shrink-0"
             >
               <option value="TODOS">Todos los Estados</option>
               <option value="PENDIENTE_PAZ_Y_SALVO">Pendientes de Paz y Salvo</option>
@@ -491,133 +490,120 @@ export default function MudanzasPage() {
             </div>
           )}
 
-          {/* Cards List (Full Width 100%) */}
+          {/* Cards List (Full Width Stack) */}
           <div className="flex flex-col gap-4 w-full">
             {filteredMudanzas.map((m) => (
               <div
                 key={m.id}
-                className="liquid-glass-card rounded-[28px] p-5 sm:p-6 border border-border hover:border-accent/30 transition-all shadow-xl flex flex-col gap-4 w-full"
+                className="liquid-glass-card rounded-[28px] p-4 sm:p-6 border border-border hover:border-accent/30 transition-all shadow-xl flex flex-col gap-4 w-full overflow-hidden relative"
               >
-                {/* Header Row: Unit info & Status Badges */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-[#57bf00]/15 flex items-center justify-center text-[#57bf00] shrink-0">
-                      <Building2 size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-text leading-snug">
-                        Torre {m.torre || user?.torre || 'A'} &middot; Apto {m.apto || user?.apto || 'N/A'}
-                      </h3>
-                      <p className="text-xs text-text/70 flex items-center gap-1.5 mt-0.5">
-                        <User size={12} className="text-accent" />
-                        {m.usuario_nombre || 'Residente'} ({m.usuario_email || 'Sin correo'})
-                      </p>
-                    </div>
-                  </div>
+                {/* 1. Status Badges Bar (Floats inside top-left, never overlaps card boundary) */}
+                <div className="flex flex-wrap items-center gap-1.5 w-full">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                      m.tipo === 'ENTRANTE' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    }`}
+                  >
+                    Mudanza {m.tipo}
+                  </span>
 
-                  {/* Status Badges */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                        m.tipo === 'ENTRANTE' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      }`}
-                    >
-                      Mudanza {m.tipo}
+                  {m.estado === 'PENDIENTE_PAZ_Y_SALVO' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] font-bold uppercase">
+                      <Clock size={12} />
+                      En Revisión Paz y Salvo
                     </span>
+                  )}
 
-                    {m.estado === 'APROBADO' && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#57bf00]/15 text-[#57bf00] border border-[#57bf00]/30 text-[10px] font-black uppercase">
-                        <CheckCircle2 size={12} />
-                        Paz y Salvo Aprobado
-                      </span>
-                    )}
+                  {m.estado === 'APROBADO' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#57bf00]/15 text-[#57bf00] border border-[#57bf00]/30 text-[9px] font-black uppercase">
+                      <CheckCircle2 size={12} />
+                      Paz y Salvo Aprobado
+                    </span>
+                  )}
 
-                    {m.estado === 'PENDIENTE_PAZ_Y_SALVO' && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold uppercase">
-                        <Clock size={12} />
-                        En Revisión Paz y Salvo
-                      </span>
-                    )}
+                  {m.estado === 'RECHAZADO' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px] font-bold uppercase">
+                      <XCircle size={12} />
+                      Rechazado
+                    </span>
+                  )}
 
-                    {m.estado === 'RECHAZADO' && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase">
-                        <XCircle size={12} />
-                        Rechazado
-                      </span>
-                    )}
+                  {m.estado === 'EN_PROCESO' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[9px] font-bold uppercase animate-pulse">
+                      <Truck size={12} />
+                      En Proceso (Portería)
+                    </span>
+                  )}
 
-                    {m.estado === 'EN_PROCESO' && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold uppercase animate-pulse">
-                        <Truck size={12} />
-                        En Proceso (Portería)
-                      </span>
-                    )}
+                  {m.estado === 'FINALIZADO' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-text/10 text-text/60 border border-border text-[9px] font-bold uppercase">
+                      <Check size={12} />
+                      Finalizada
+                    </span>
+                  )}
+                </div>
 
-                    {m.estado === 'FINALIZADO' && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-text/10 text-text/60 border border-border text-[10px] font-bold uppercase">
-                        <Check size={12} />
-                        Finalizada
-                      </span>
-                    )}
+                {/* 2. Unit & Resident Info Row */}
+                <div className="flex items-center gap-3 pt-1 border-t border-border/40 w-full">
+                  <div className="w-10 h-10 rounded-2xl bg-[#57bf00]/15 flex items-center justify-center text-[#57bf00] shrink-0">
+                    <Building2 size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-text truncate">
+                      Torre {m.torre || user?.torre || 'A'} &middot; Apto {m.apto || user?.apto || 'N/A'}
+                    </h3>
+                    <p className="text-xs text-text/70 truncate flex items-center gap-1 mt-0.5">
+                      <User size={12} className="text-accent shrink-0" />
+                      <span className="truncate">{m.usuario_nombre || 'Residente'} ({m.usuario_email || 'Sin correo'})</span>
+                    </p>
                   </div>
                 </div>
 
-                {/* Details Section */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  {/* Schedule */}
-                  <div className="p-3.5 rounded-2xl bg-primary-light/40 border border-border space-y-1.5">
-                    <div className="flex items-center justify-between text-text/80">
-                      <span className="flex items-center gap-1.5 font-bold text-text/70">
-                        <Calendar size={14} className="text-[#57bf00]" />
-                        Fecha Programada:
-                      </span>
-                      <span className="font-bold text-text">
-                        {new Date(m.fecha_mudanza + 'T00:00:00').toLocaleDateString('es-CO', {
-                          weekday: 'short',
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-text/80">
-                      <span className="flex items-center gap-1.5 font-bold text-text/70">
-                        <Clock size={14} className="text-[#57bf00]" />
-                        Horario Permiso:
-                      </span>
-                      <span className="font-black text-[#57bf00]">
-                        {m.hora_inicio} - {m.hora_fin}
-                      </span>
-                    </div>
+                {/* 3. Schedule & Details Unified Box */}
+                <div className="p-3.5 rounded-2xl bg-primary-light/40 border border-border flex flex-col gap-2.5 text-xs w-full">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 pb-2 border-b border-border/50">
+                    <span className="flex items-center gap-1.5 font-bold text-text/70 shrink-0">
+                      <Calendar size={14} className="text-[#57bf00]" />
+                      Fecha Programada:
+                    </span>
+                    <span className="font-bold text-text text-right">
+                      {new Date(m.fecha_mudanza + 'T00:00:00').toLocaleDateString('es-CO', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </span>
                   </div>
 
-                  {/* Vehicle Details */}
-                  <div className="p-3.5 rounded-2xl bg-primary-light/40 border border-border flex flex-col justify-center gap-1">
-                    <div className="flex items-center justify-between text-text/80">
-                      <span className="flex items-center gap-1.5 font-bold text-text/70">
-                        <Truck size={14} className="text-blue-400" />
-                        Vehículo / Camión:
-                      </span>
-                      <span className="font-bold text-text">
-                        {m.tiene_vehiculo ? (m.vehiculo_tipo || 'Camión') : 'Sin vehículo'}
-                      </span>
-                    </div>
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <span className="flex items-center gap-1.5 font-bold text-text/70 shrink-0">
+                      <Clock size={14} className="text-[#57bf00]" />
+                      Horario Permiso:
+                    </span>
+                    <span className="font-black text-[#57bf00] text-right">
+                      {m.hora_inicio} - {m.hora_fin}
+                    </span>
+                  </div>
 
-                    {m.tiene_vehiculo && m.vehiculo_placa && (
-                      <div className="flex items-center justify-between text-text/80 mt-1">
-                        <span className="text-text/60">Placa:</span>
-                        <span className="font-mono font-bold text-text px-2 py-0.5 rounded bg-primary-light/80 text-xs">
-                          {m.vehiculo_placa}
-                        </span>
-                      </div>
-                    )}
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 pt-2 border-t border-border/50">
+                    <span className="flex items-center gap-1.5 font-bold text-text/70 shrink-0">
+                      <Truck size={14} className="text-blue-400" />
+                      Vehículo / Camión:
+                    </span>
+                    <span className="font-bold text-text text-right">
+                      {m.tiene_vehiculo ? (
+                        <span>{m.vehiculo_tipo || 'Camión'} {m.vehiculo_placa ? `(${m.vehiculo_placa})` : ''}</span>
+                      ) : (
+                        <span className="text-text/50 italic">Sin vehículo</span>
+                      )}
+                    </span>
                   </div>
                 </div>
 
-                {/* Code Paz y Salvo Banner */}
+                {/* 4. Code Paz y Salvo Banner */}
                 {m.paz_y_salvo_codigo && (
-                  <div className="p-3 rounded-2xl bg-[#57bf00]/10 border border-[#57bf00]/30 flex items-center justify-between text-xs">
+                  <div className="p-3 rounded-2xl bg-[#57bf00]/10 border border-[#57bf00]/30 flex items-center justify-between text-xs w-full">
                     <span className="text-text/80 font-bold flex items-center gap-2">
                       <ShieldCheck size={16} className="text-[#57bf00]" />
                       Código Paz y Salvo ConjuntOS®:
@@ -626,14 +612,14 @@ export default function MudanzasPage() {
                   </div>
                 )}
 
-                {/* Rejection Motivo */}
+                {/* 5. Rejection Motivo */}
                 {m.motivo_rechazo && (
-                  <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
+                  <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 w-full">
                     <strong>Motivo de rechazo:</strong> {m.motivo_rechazo}
                   </div>
                 )}
 
-                {/* Card Action Buttons */}
+                {/* 6. Card Action Buttons */}
                 <div className="pt-2 flex flex-col sm:flex-row items-center gap-2 w-full">
                   
                   {/* View Certificate */}
