@@ -144,6 +144,21 @@ pub async fn aprobar_mudanza(
 
     let mut conn = state.pool.get().await?;
 
+    // 1. Strict Debt & Penalty Audit: Check if resident has any pending debts/fines
+    let m_check = repo::find_by_id(&mut conn, id).await?.ok_or_else(|| {
+        crate::error::ApiError::NotFound("Solicitud de mudanza no encontrada".to_string())
+    })?;
+
+    let (total_deuda, detalles_deuda) = repo::check_resident_debt(&mut conn, m_check.usuario_id).await.unwrap_or((0.0, vec![]));
+
+    if total_deuda > 0.0 || !detalles_deuda.is_empty() {
+        return Err(crate::error::ApiError::BadRequest(format!(
+            "IMPOSIBLE EXPEDIR PAZ Y SALVO: El residente registra deudas pendientes por un total de ${:.0} COP. Motivos: {}. Se debe estar al día para autorizar mudanzas.",
+            total_deuda,
+            detalles_deuda.join(" | ")
+        )));
+    }
+
     let year = chrono::Utc::now().format("%Y");
     let random_num: u32 = rand::thread_rng().gen_range(1000..9999);
     let paz_y_salvo_code = format!("PZ-{year}-{random_num}");
@@ -161,7 +176,7 @@ pub async fn aprobar_mudanza(
             to_email: u_email,
             nombre: u_nombre,
             conjunto_nombre: "ConjuntOS® Copropiedad".to_string(),
-            paz_y_salvo_codigo: paz_y_salvo_code,
+            paz_y_salvo_codigo: paz_y_salvo_code.clone(),
             tipo_mudanza: dto.tipo.clone(),
             fecha_mudanza: dto.fecha_mudanza.to_string(),
             hora_inicio: dto.hora_inicio.clone(),
@@ -172,6 +187,9 @@ pub async fn aprobar_mudanza(
         });
     }
     dto.aprobado_por_nombre = Some(user.nombre.clone());
+
+    // 2. Notify Security Guards (Portería) and Parking Guards (Estacionamientos)
+    let _ = repo::notify_guards_mudanza_autorizada(&mut conn, &state, dto.conjunto_id, &dto, &paz_y_salvo_code, user.id).await;
 
     Ok(Json(dto))
 }
