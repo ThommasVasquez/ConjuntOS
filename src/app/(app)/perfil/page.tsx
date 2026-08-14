@@ -10,7 +10,7 @@ import {
   Edit, Camera, Car, PawPrint, ShieldCheck, Mail, Phone,
   CheckCircle2, X, Plus, FileText, Info, ClipboardList, Lock, 
   HelpCircle, CreditCard, Calendar, Package, User as UserIcon, QrCode,
-  Sun, Moon, Clock, Trash2
+  Sun, Moon, Clock, Trash2, Truck
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
 import QRCode from "react-qr-code";
@@ -1327,6 +1327,28 @@ function ProfileContent() {
                 </div>
              </div>
              <ArrowRight className="text-text-muted group-hover:text-accent group-hover:translate-x-2 transition-all" size={18} />
+          </button>
+
+          {/* Solicitud de Mudanza / Arrendamiento & Paz y Salvo (Stage 47) */}
+          <button 
+            type="button"
+            onClick={() => router.push('/mudanzas')} 
+            className="w-full p-6 liquid-glass rounded-[32px] flex items-center justify-between group border border-border hover:border-[#57bf00]/30 active:scale-95 shadow-xl shadow-[#57bf00]/5 transition-all"
+          >
+             <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-[#57bf00]/15 flex items-center justify-center text-[#57bf00] transition-colors">
+                  <Truck size={20} />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-bold text-text leading-none group-hover:text-[#57bf00] transition-colors">
+                    Solicitud de Mudanza & Paz y Salvo
+                  </span>
+                  <span className="text-[10px] text-text-muted mt-1 uppercase tracking-widest font-black">
+                    Certificado de Paz y Salvo ConjuntOS® y permiso de trasteo
+                  </span>
+                </div>
+             </div>
+             <ArrowRight className="text-text-muted group-hover:text-[#57bf00] group-hover:translate-x-2 transition-all" size={18} />
           </button>
 
           <button onClick={handleLogout} className="w-full p-6 liquid-glass rounded-[32px] flex items-center justify-between group border border-text/10 active:scale-95 shadow-xl shadow-black/5">
