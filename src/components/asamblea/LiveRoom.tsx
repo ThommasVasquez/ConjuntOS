@@ -14,13 +14,14 @@ import { ReactionOverlay, useReactions } from './Reactions';
 
 interface LiveRoomProps {
   asambleaId: string;
-  titulo: string;
+  tokenEndpoint?: string;
+  titulo?: string;
   onDisconnect?: () => void;
-  onRequestFloor: () => void;
-  handRaised: boolean;
-  onOpenPanel: (panel: 'chat' | 'personas') => void;
+  onRequestFloor?: () => void;
+  handRaised?: boolean;
+  onOpenPanel?: (panel: 'chat' | 'personas') => void;
   chatBadge?: number;
-  participantCount: number;
+  participantCount?: number;
 }
 
 /** Connection state banner — mirrors what users expect from Meet/Zoom. */
@@ -48,15 +49,21 @@ function ConnectionBanner() {
 
 /** Everything that needs to live inside the LiveKitRoom context. */
 function RoomInterior({
-  canPublish, onDisconnect, onRequestFloor, handRaised, onOpenPanel, chatBadge, participantCount,
+  canPublish,
+  onDisconnect,
+  onRequestFloor = () => {},
+  handRaised = false,
+  onOpenPanel = () => {},
+  chatBadge = 0,
+  participantCount = 1,
 }: {
   canPublish: boolean;
   onDisconnect?: () => void;
-  onRequestFloor: () => void;
-  handRaised: boolean;
-  onOpenPanel: (panel: 'chat' | 'personas') => void;
-  chatBadge: number;
-  participantCount: number;
+  onRequestFloor?: () => void;
+  handRaised?: boolean;
+  onOpenPanel?: (panel: 'chat' | 'personas') => void;
+  chatBadge?: number;
+  participantCount?: number;
 }) {
   const [view, setView] = useState<StageView>('speaker');
   const [pinnedIdentity, setPinnedIdentity] = useState<string | null>(null);
@@ -91,13 +98,14 @@ function RoomInterior({
 
 export default function LiveRoom({
   asambleaId,
-  titulo,
+  tokenEndpoint,
+  titulo = 'Videollamada LiveKit',
   onDisconnect,
-  onRequestFloor,
-  handRaised,
-  onOpenPanel,
+  onRequestFloor = () => {},
+  handRaised = false,
+  onOpenPanel = () => {},
   chatBadge = 0,
-  participantCount,
+  participantCount = 1,
 }: LiveRoomProps) {
   const [grant, setGrant] = useState<LiveKitTokenDto | null>(null);
   const [error, setError] = useState<string>('');
@@ -105,9 +113,11 @@ export default function LiveRoom({
   // Read inside the WS handler without making the callback depend on it.
   const canPublishRef = useRef<boolean | null>(null);
 
+  const endpoint = tokenEndpoint || `/asambleas/${asambleaId}/livekit-token`;
+
   const fetchToken = useCallback(
-    () => api.get<LiveKitTokenDto>(`/asambleas/${asambleaId}/livekit-token`),
-    [asambleaId],
+    () => api.get<LiveKitTokenDto>(endpoint),
+    [endpoint],
   );
 
   useEffect(() => {
@@ -128,86 +138,57 @@ export default function LiveRoom({
   }, [fetchToken]);
 
   /**
-   * The publish grant is baked into the token, so being given (or losing) the
-   * floor only takes effect on a new one. Re-fetch when the assembly changes
-   * and swap tokens only if the grant actually flipped — swapping remounts the
-   * room, and reconnecting on every unrelated event would be disruptive.
+   * Listen for "floor_granted" so users upgrade permissions on the fly.
    */
-  useWsSubscription('asamblea', (event) => {
-    if (event.action !== 'turno_updated' && event.action !== 'session_updated') return;
+  useWsSubscription('asambleas', (event) => {
+    if (event.action !== 'floor_granted') return;
+    if (canPublishRef.current === true) return; // already publishing
     fetchToken()
       .then((data) => {
-        if (data.canPublish === canPublishRef.current) return;
         canPublishRef.current = data.canPublish;
         setGrant(data);
-        // Someone just got the floor: turn their mic on so they can speak
-        // without hunting for the button. Only for people already IN the room —
-        // `choices === null` means they are still in the green room, and
-        // filling it in would throw them straight into the live assembly with a
-        // camera they never checked and a mic that goes hot unannounced.
-        if (data.canPublish) {
-          setChoices((c) => (c === null ? null : { ...c, audioEnabled: true }));
-        }
       })
-      .catch(() => {
-        /* keep the current session; the next event retries */
-      });
+      .catch(() => {});
   });
 
   if (error) {
     return (
-      <div className="h-full w-full grid place-items-center p-8">
-        <div className="text-center max-w-sm">
-          <p className="text-white font-semibold mb-1">No pudimos conectarte a la sala</p>
-          <p className="text-white/50 text-sm">{error}</p>
-        </div>
+      <div className="flex flex-col items-center justify-center h-full min-h-[300px] p-6 text-center text-text">
+        <p className="text-sm font-semibold text-[#f43f5e] mb-1">No se pudo cargar la sala</p>
+        <p className="text-xs text-text/60">{error}</p>
       </div>
     );
   }
 
-  if (!grant?.token || !grant?.url) {
+  if (!grant) {
     return (
-      <div className="h-full w-full grid place-items-center">
-        <div className="flex flex-col items-center gap-3">
-          <span className="w-9 h-9 rounded-full border-2 border-white/15 border-t-white animate-spin" />
-          <p className="text-white/50 text-xs tracking-wide">Preparando la sala…</p>
-        </div>
+      <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-text">
+        <div className="w-8 h-8 border-4 border-[#57bf00] border-t-transparent rounded-full animate-spin mb-2" />
+        <span className="text-xs font-bold text-text/70">Conectando a LiveKit...</span>
       </div>
     );
   }
 
-  // Green room first — nobody should land in an assembly mid-sentence with a
-  // camera they did not check.
+  // Mandatory PreJoin check before connecting to LiveKit
   if (!choices) {
     return (
       <PreJoin
         titulo={titulo}
         canPublish={grant.canPublish}
-        onJoin={setChoices}
+        onJoin={(ch) => setChoices(ch)}
       />
     );
   }
 
   return (
     <LiveKitRoom
-      // Remount on a new token so the room reconnects with the new grant.
-      key={grant.token}
       serverUrl={grant.url}
       token={grant.token}
-      connect={true}
-      // Only ask for devices we are allowed to send, and only the ones chosen in
-      // the green room. Requesting them without the grant lights the camera for
-      // a moment before LiveKit drops the track, which reads as a broken camera.
-      video={grant.canPublish && choices.videoEnabled
-        ? (choices.videoDeviceId ? { deviceId: choices.videoDeviceId } : true)
-        : false}
-      audio={grant.canPublish && choices.audioEnabled
-        ? (choices.audioDeviceId ? { deviceId: choices.audioDeviceId } : true)
-        : false}
+      connect
+      audio={choices.audioEnabled}
+      video={choices.videoEnabled}
       onDisconnected={onDisconnect}
-      data-lk-theme="default"
-      className="h-full w-full"
-      style={{ height: '100%', width: '100%' }}
+      className="relative flex flex-col h-full w-full bg-[#0a0f0d] overflow-hidden"
     >
       <RoomInterior
         canPublish={grant.canPublish}

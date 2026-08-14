@@ -492,6 +492,8 @@ ${votacionesSummary || '   - Se trataron temas del orden del día por consenso s
                 <div className="w-full h-[480px] sm:h-[550px] liquid-glass rounded-[32px] border border-border overflow-hidden relative shadow-2xl bg-black">
                   <LiveRoom
                     asambleaId={activeReunion.id}
+                    tokenEndpoint={`/reuniones-concejo/${activeReunion.id}/livekit-token`}
+                    titulo={activeReunion.titulo}
                     onDisconnect={() => {
                       toast.info('Te has desconectado de la videollamada de concejo');
                     }}
