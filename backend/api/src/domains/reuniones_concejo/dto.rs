@@ -25,6 +25,29 @@ pub struct ConfirmarAsistenciaReq {
 pub struct UpdateEstadoReunionReq {
     pub estado: String, // "EN_CURSO" | "FINALIZADA" | "CANCELADA"
     pub acta_resumen: Option<String>,
+    pub resumen_ia: Option<String>,
+    pub transcripcion_detallada: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CrearVotacionConcejoReq {
+    pub titulo: String,
+    pub descripcion: Option<String>,
+    pub es_multiple: bool,
+    pub opciones: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct EmitirVotoReq {
+    pub votacion_id: Uuid,
+    pub respuestas: Vec<String>, // Option values selected
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AgregarTranscripcionReq {
+    pub hablante_nombre: String,
+    pub texto: String,
+    pub timestamp_str: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -35,6 +58,26 @@ pub struct AsistenciaItemDto {
     pub motivo_excusa: Option<String>,
     pub asistio_real: Option<bool>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct VotoNominalItemDto {
+    pub usuario_id: Uuid,
+    pub usuario_nombre: String,
+    pub respuestas: Vec<String>,
+    pub timestamp: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct VotacionConcejoItemDto {
+    pub id: Uuid,
+    pub titulo: String,
+    pub descripcion: Option<String>,
+    pub es_multiple: bool,
+    pub opciones: Vec<String>,
+    pub activa: bool,
+    pub votos: Vec<VotoNominalItemDto>,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize)]
@@ -52,6 +95,9 @@ pub struct ReunionConcejoResp {
     pub orden_dia: Vec<String>,
     pub estado: String,
     pub asistencias: Vec<AsistenciaItemDto>,
+    pub votaciones: Vec<VotacionConcejoItemDto>,
+    pub transcripcion_detallada: Option<String>,
+    pub resumen_ia: Option<String>,
     pub acta_resumen: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -61,6 +107,7 @@ impl From<ReunionConcejo> for ReunionConcejoResp {
     fn from(r: ReunionConcejo) -> Self {
         let orden_dia_vec: Vec<String> = serde_json::from_value(r.orden_dia).unwrap_or_default();
         let asistencias_vec: Vec<AsistenciaItemDto> = serde_json::from_value(r.asistencias).unwrap_or_default();
+        let votaciones_vec: Vec<VotacionConcejoItemDto> = serde_json::from_value(r.votaciones).unwrap_or_default();
 
         Self {
             id: r.id,
@@ -76,6 +123,9 @@ impl From<ReunionConcejo> for ReunionConcejoResp {
             orden_dia: orden_dia_vec,
             estado: r.estado,
             asistencias: asistencias_vec,
+            votaciones: votaciones_vec,
+            transcripcion_detallada: r.transcripcion_detallada,
+            resumen_ia: r.resumen_ia,
             acta_resumen: r.acta_resumen,
             created_at: r.created_at,
             updated_at: r.updated_at,

@@ -21,6 +21,9 @@ pub struct ReunionConcejo {
     pub estado: String, // "CONVOCADA" | "EN_CURSO" | "FINALIZADA" | "CANCELADA"
     pub asistencias: serde_json::Value,
     pub acta_resumen: Option<String>,
+    pub votaciones: serde_json::Value,
+    pub transcripcion_detallada: Option<String>,
+    pub resumen_ia: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -40,6 +43,9 @@ pub struct NewReunionConcejo {
     pub orden_dia: serde_json::Value,
     pub estado: String,
     pub asistencias: serde_json::Value,
+    pub votaciones: serde_json::Value,
+    pub transcripcion_detallada: Option<String>,
+    pub resumen_ia: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

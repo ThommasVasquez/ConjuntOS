@@ -1141,6 +1141,9 @@ diesel::table! {
         estado -> Text,
         asistencias -> Jsonb,
         acta_resumen -> Nullable<Text>,
+        votaciones -> Jsonb,
+        transcripcion_detallada -> Nullable<Text>,
+        resumen_ia -> Nullable<Text>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
