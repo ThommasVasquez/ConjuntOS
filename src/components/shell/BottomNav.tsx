@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DollarSign, Building2, Home, Map, Package, Phone, Ticket, User, Users, MessageCircle, Scale } from "lucide-react";
+import { DollarSign, Building2, Home, Map, Package, Phone, Ticket, User, Users, MessageCircle, Scale, Calendar } from "lucide-react";
+
 import { useAuth } from "@/hooks/useAuth";
 import { canAccess } from "@/lib/permissions";
 
-// BUILD_REVISION: 1.2.0 - MANDATORY ICON: Building2 (Buildings)
+// BUILD_REVISION: 1.3.0 - Citador de Concejo
 export default function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -29,12 +30,20 @@ export default function BottomNav() {
       { name: "Mapa", path: "/mapa-parqueadero", icon: Map },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
-   } else if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN' || role === 'CONCEJO') {
+   } else if (role === 'CONCEJO') {
+    tabs = [
+      { name: "Inicio", path: "/inicio", icon: Home },
+      { name: "Reuniones", path: "/reuniones-concejo", icon: Calendar },
+      { name: "Comité", path: "/comite-convivencia", icon: Scale },
+      { name: "Finanzas", path: "/admin-finanzas", icon: DollarSign },
+      { name: "Perfil", path: "/perfil", icon: User },
+    ];
+   } else if (role === 'ADMINISTRADOR' || role === 'SUPER_ADMIN') {
     tabs = [
       { name: "Panel", path: "/inicio", icon: Home },
+      { name: "Reuniones", path: "/reuniones-concejo", icon: Calendar },
       { name: "Mensajes", path: "/admin-mensajes", icon: MessageCircle },
       { name: "Novedades", path: "/admin-novedades", icon: Building2 },
-      { name: "Comité", path: "/comite-convivencia", icon: Scale },
       { name: "Finanzas", path: "/admin-finanzas", icon: DollarSign },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
