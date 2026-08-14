@@ -62,9 +62,13 @@ pub async fn run_pending_migrations(database_url: &str) -> anyhow::Result<()> {
     use diesel_async::async_connection_wrapper::AsyncConnectionWrapper;
     use diesel_migrations::MigrationHarness;
 
-    let conn = establish_tls_connection(database_url)
-        .await
-        .map_err(|e| anyhow::anyhow!("migration connection failed: {e}"))?;
+    let conn = match establish_tls_connection(database_url).await {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!("Migration connection error detail: {:?}", e);
+            return Err(anyhow::anyhow!("migration connection failed: {:?}", e));
+        }
+    };
     tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
         let mut wrapper: AsyncConnectionWrapper<AsyncPgConnection> =
             AsyncConnectionWrapper::from(conn);
