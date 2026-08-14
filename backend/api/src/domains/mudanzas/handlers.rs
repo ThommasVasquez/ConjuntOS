@@ -18,14 +18,11 @@ use super::repo;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/mudanzas", post(crear_mudanza).get(listar_mudanzas))
-        .route(
-            "/api/v1/mudanzas/{id}",
-            get(obtener_mudanza),
-        )
-        .route("/api/v1/mudanzas/{id}/aprobar", put(aprobar_mudanza))
-        .route("/api/v1/mudanzas/{id}/rechazar", put(rechazar_mudanza))
-        .route("/api/v1/mudanzas/{id}/estado", put(actualizar_estado_mudanza))
+        .route("/mudanzas", post(crear_mudanza).get(listar_mudanzas))
+        .route("/mudanzas/{id}", get(obtener_mudanza))
+        .route("/mudanzas/{id}/aprobar", put(aprobar_mudanza))
+        .route("/mudanzas/{id}/rechazar", put(rechazar_mudanza))
+        .route("/mudanzas/{id}/estado", put(actualizar_estado_mudanza))
 }
 
 pub async fn crear_mudanza(
