@@ -132,6 +132,8 @@ pub async fn obtener_mudanza(
     Ok(Json(dto))
 }
 
+use crate::services::email::{self, PazYSalvoEmailParams};
+
 pub async fn aprobar_mudanza(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
@@ -150,10 +152,24 @@ pub async fn aprobar_mudanza(
 
     let mut dto = MudanzaResp::from(m);
     if let Ok(Some((u_nombre, u_email, u_torre, u_apto))) = repo::get_user_info(&mut conn, dto.usuario_id).await {
-        dto.usuario_nombre = Some(u_nombre);
-        dto.usuario_email = Some(u_email);
+        dto.usuario_nombre = Some(u_nombre.clone());
+        dto.usuario_email = Some(u_email.clone());
         if dto.torre.is_none() { dto.torre = u_torre; }
         if dto.apto.is_none() { dto.apto = u_apto; }
+
+        let params = PazYSalvoEmailParams {
+            to_email: u_email,
+            nombre: u_nombre,
+            conjunto_nombre: "ConjuntOS® Copropiedad".to_string(),
+            paz_y_salvo_codigo: paz_y_salvo_code,
+            tipo_mudanza: dto.tipo.clone(),
+            fecha_mudanza: dto.fecha_mudanza.to_string(),
+            hora_inicio: dto.hora_inicio.clone(),
+            hora_fin: dto.hora_fin.clone(),
+        };
+        tokio::spawn(async move {
+            email::send_paz_y_salvo_email(params).await;
+        });
     }
     dto.aprobado_por_nombre = Some(user.nombre.clone());
 
@@ -199,6 +215,11 @@ pub async fn actualizar_estado_mudanza(
 
     let mut conn = state.pool.get().await?;
     let m = repo::update_estado(&mut conn, id, &req.estado).await?;
+
+    // Deactivate user account and unlink unit on outgoing move completion
+    if req.estado == "FINALIZADO" && m.tipo == "SALIENTE" {
+        let _ = repo::deactivate_user(&mut conn, m.usuario_id).await;
+    }
 
     let mut dto = MudanzaResp::from(m);
     if let Ok(Some((u_nombre, u_email, u_torre, u_apto))) = repo::get_user_info(&mut conn, dto.usuario_id).await {

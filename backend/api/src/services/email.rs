@@ -207,3 +207,141 @@ pub async fn send_invitation_email(params: InvitationEmailParams) {
         "📧 [INVITATION EMAIL LOGGED] To: {to_email} | Temp Password: {temp_password} | Subject: {subject}"
     );
 }
+
+pub struct PazYSalvoEmailParams {
+    pub to_email: String,
+    pub nombre: String,
+    pub conjunto_nombre: String,
+    pub paz_y_salvo_codigo: String,
+    pub tipo_mudanza: String,
+    pub fecha_mudanza: String,
+    pub hora_inicio: String,
+    pub hora_fin: String,
+}
+
+pub async fn send_paz_y_salvo_email(params: PazYSalvoEmailParams) {
+    let to_email = params.to_email.trim().to_string();
+    let nombre = params.nombre.trim().to_string();
+    let conjunto_nombre = if params.conjunto_nombre.is_empty() {
+        "ConjuntOS®".to_string()
+    } else {
+        params.conjunto_nombre.trim().to_string()
+    };
+    let codigo = params.paz_y_salvo_codigo;
+    let tipo = params.tipo_mudanza;
+    let fecha = params.fecha_mudanza;
+    let horario = format!("{} a {}", params.hora_inicio, params.hora_fin);
+
+    let subject = format!("Certificado de Paz y Salvo ConjuntOS® - Mudanza {codigo}");
+
+    let html_body = format!(
+        r#"<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificado de Paz y Salvo ConjuntOS®</title>
+</head>
+<body style="margin:0; padding:0; background-color:#0b1324; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#f8fafc;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#0b1324; padding:40px 12px;">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:580px; background-color:#131f37; border:1px solid #1e2d4a; border-radius:28px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+          <!-- Header Branding -->
+          <tr>
+            <td style="padding:40px 32px 28px; text-align:center; background:linear-gradient(180deg, #182846 0%, #131f37 100%); border-bottom:1px solid #1e2d4a;">
+              <img src="https://app.conjuntos.app/ConjuntOS_Horizontal.png" alt="ConjuntOS®" height="48" style="display:block; margin:0 auto; max-width:240px; height:auto; border:0;" />
+              <div style="margin-top:12px; font-size:13px; color:#57bf00; font-weight:800; text-transform:uppercase; letter-spacing:1.5px;">
+                {conjunto_nombre}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body Content -->
+          <tr>
+            <td style="padding:36px 32px;">
+              <div style="text-align:center; margin-bottom:24px;">
+                <span style="display:inline-block; padding:8px 18px; border-radius:20px; background-color:rgba(87,191,0,0.15); border:1px solid #57bf00; color:#57bf00; font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:1px;">
+                  ✓ PAZ Y SALVO APROBADO &bull; {codigo}
+                </span>
+              </div>
+
+              <h2 style="margin:0 0 16px; font-size:20px; font-weight:800; color:#ffffff; text-align:center;">
+                Certificado de Paz y Salvo y Permiso de Mudanza
+              </h2>
+              <p style="margin:0 0 24px; font-size:14px; line-height:1.65; color:#94a3b8; text-align:center;">
+                Estimado(a) <strong style="color:#ffffff;">{nombre}</strong>, su solicitud de mudanza ha sido verificada y aprobada por la administración de <strong style="color:#ffffff;">{conjunto_nombre}</strong> a través de <strong style="color:#57bf00;">ConjuntOS®</strong>.
+              </p>
+
+              <!-- Details Box -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#182846; border:1px solid #1e2d4a; border-radius:20px; padding:20px; margin-bottom:24px;">
+                <tr>
+                  <td style="font-size:13px; color:#94a3b8; padding-bottom:8px;">
+                    <strong style="color:#ffffff;">Tipo de Mudanza:</strong> {tipo}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-size:13px; color:#94a3b8; padding-bottom:8px;">
+                    <strong style="color:#ffffff;">Fecha Habilitada:</strong> {fecha}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-size:13px; color:#94a3b8; padding-bottom:8px;">
+                    <strong style="color:#57bf00;">Horario de Permiso:</strong> {horario}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-size:13px; color:#94a3b8;">
+                    <strong style="color:#ffffff;">Código Único Paz y Salvo:</strong> <span style="color:#57bf00; font-family:monospace; font-weight:bold;">{codigo}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b; text-align:center;">
+                Este permiso ha sido transmitido a la portería y al personal de vigilancia de estacionamientos para autorizar el ingreso y la movilidad en la fecha indicada.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 32px; background-color:#0f182c; border-top:1px solid #1e2d4a; text-align:center;">
+              <p style="margin:0; font-size:11px; color:#64748b;">
+                &copy; {conjunto_nombre} &bull; Expedido vía <strong style="color:#57bf00;">ConjuntOS®</strong>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"#
+    );
+
+    if let Ok(resend_key) = env::var("RESEND_API_KEY") {
+        if !resend_key.trim().is_empty() {
+            let from_email = env::var("RESEND_FROM_EMAIL")
+                .unwrap_or_else(|_| "ConjuntOS <onboarding@resend.dev>".to_string());
+
+            let client = reqwest::Client::new();
+            let payload = serde_json::json!({
+                "from": from_email,
+                "to": [to_email],
+                "subject": subject,
+                "html": html_body,
+            });
+
+            let _ = client
+                .post("https://api.resend.com/emails")
+                .header("Authorization", format!("Bearer {}", resend_key.trim()))
+                .header("Content-Type", "application/json")
+                .json(&payload)
+                .send()
+                .await;
+            info!("✅ [EMAIL] Sent Paz y Salvo certificate email to {to_email}");
+            return;
+        }
+    }
+    info!("📧 [PAZ Y SALVO EMAIL LOGGED] To: {to_email} | Code: {codigo}");
+}

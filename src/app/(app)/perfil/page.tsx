@@ -1315,10 +1315,10 @@ function ProfileContent() {
                 </div>
                 <div className="flex flex-col text-left">
                   <span className="text-sm font-bold text-text leading-none group-hover:text-[#57bf00] transition-colors">
-                    Solicitud de Mudanza & Paz y Salvo
+                    {user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPER_ADMIN' ? 'Gestión de Mudanzas & Paz y Salvo' : 'Solicitud de Mudanza & Paz y Salvo'}
                   </span>
                   <span className="text-[10px] text-text-muted mt-1 uppercase tracking-widest font-black">
-                    Certificado de Paz y Salvo ConjuntOS® y permiso de trasteo
+                    {user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPER_ADMIN' ? 'Aprobación de Paz y Salvo y Permisos ConjuntOS®' : 'Certificado de Paz y Salvo ConjuntOS® y permiso de trasteo'}
                   </span>
                 </div>
              </div>
