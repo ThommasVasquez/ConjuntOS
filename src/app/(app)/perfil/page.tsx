@@ -10,7 +10,7 @@ import {
   Edit, Camera, Car, PawPrint, ShieldCheck, Mail, Phone,
   CheckCircle2, X, Plus, FileText, Info, ClipboardList, Lock, 
   HelpCircle, CreditCard, Calendar, Package, User as UserIcon, QrCode,
-  Sun, Moon, Clock, Trash2, Truck
+  Sun, Moon, Clock, Trash2, Truck, Building2
 } from "lucide-react";
 import { useState, useEffect, useRef, Suspense } from "react";
 import QRCode from "react-qr-code";
