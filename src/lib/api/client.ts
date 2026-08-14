@@ -96,7 +96,8 @@ export async function apiFetch<T = unknown>(
     signal,
   } = options;
 
-  const url = `${API_BASE}/api/v1${path}`;
+  const cleanPath = path.startsWith('/api/v1') ? path : `/api/v1${path}`;
+  const url = `${API_BASE}${cleanPath}`;
 
   const fetchHeaders: Record<string, string> = { ...headers };
 
