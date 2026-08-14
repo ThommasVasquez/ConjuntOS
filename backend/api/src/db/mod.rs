@@ -45,10 +45,24 @@ fn establish_tls_connection(
             return AsyncPgConnection::try_from_client_and_connection(client, connection).await;
         }
 
-        let (client, connection) = tokio_postgres::connect(url, tokio_postgres::NoTls)
-            .await
-            .map_err(|e| ConnectionError::BadConnection(e.to_string()))?;
-        AsyncPgConnection::try_from_client_and_connection(client, connection).await
+        match tokio_postgres::connect(url, tokio_postgres::NoTls).await {
+            Ok((client, connection)) => {
+                AsyncPgConnection::try_from_client_and_connection(client, connection).await
+            }
+            Err(e) => {
+                let msg = if let Some(db_err) = e.as_db_error() {
+                    format!(
+                        "DB FATAL [code={}]: {} ({:?})",
+                        db_err.code().code(),
+                        db_err.message(),
+                        db_err.detail()
+                    )
+                } else {
+                    e.to_string()
+                };
+                Err(ConnectionError::BadConnection(msg))
+            }
+        }
     }
     .boxed()
 }
