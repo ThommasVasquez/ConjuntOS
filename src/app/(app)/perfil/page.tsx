@@ -951,6 +951,7 @@ function ProfileContent() {
                {/* ACCIONES RÁPIDAS (Stage 46) */}
                <div className="grid grid-cols-2 gap-3 mb-6">
                   {[
+                    { label: "Solicitud Mudanza", type: "MUDANZA", icon: <Truck size={16}/> },
                     { label: "Cambiar Celular", type: "CELULAR", icon: <Phone size={16}/> },
                     { label: "Cambiar Correo", type: "EMAIL", icon: <Mail size={16}/> },
                     { label: "Cambiar Clave", type: "PASSWORD", icon: <Lock size={16}/> },
@@ -959,7 +960,9 @@ function ProfileContent() {
                     <button 
                       key={i}
                       onClick={() => {
-                        if (btn.type === "OTRO") {
+                        if (btn.type === "MUDANZA") {
+                          router.push('/mudanzas');
+                        } else if (btn.type === "OTRO") {
                           setRegType("VEHICULO"); // Fallback to a valid registration type for the modal
                           setShowRegModal(true);
                         } else {
