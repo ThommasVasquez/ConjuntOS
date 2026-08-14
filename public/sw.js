@@ -1,5 +1,5 @@
 // ─── ConjuntOS Service Worker ─────────────────────────────────────────────────
-// Version: 1.1.0
+// Version: 1.2.0
 // Always builds absolute URLs using the SW's own scope to prevent cross-origin
 // navigation errors when the app is accessed from preview/staging domains.
 
