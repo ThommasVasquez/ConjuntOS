@@ -11,11 +11,7 @@ echo "▶ git pull --ff-only origin main"
 git pull --ff-only origin main
 
 echo "▶ rebuild + restart backend + minio (this compiles the Rust image, can take a few min)"
-# docker-compose.deploy.yml is NOT optional: it supplies DATABASE_URL with the
-# real POSTGRES_PASSWORD and pins db/minio to loopback. Deploying without it
-# recreates the backend with the local-dev password (crash loop) and republishes
-# Postgres on 0.0.0.0.
-docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.deploy.yml up -d --build backend minio minio-init
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.deploy.yml up -d --build backend minio minio-init caddy cloudflared
 
 echo "▶ status"
 sleep 5
