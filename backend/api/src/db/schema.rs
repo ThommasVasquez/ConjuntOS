@@ -1125,3 +1125,23 @@ diesel::allow_tables_to_appear_in_same_query!(
     ticket_comentarios,
     ticket_transiciones,
 );
+
+diesel::table! {
+    reuniones_concejo (id) {
+        id -> Uuid,
+        conjunto_id -> Uuid,
+        creado_por -> Uuid,
+        titulo -> Text,
+        descripcion -> Nullable<Text>,
+        modalidad -> Text,
+        lugar -> Nullable<Text>,
+        link_videollamada -> Nullable<Text>,
+        fecha_reunion -> Timestamptz,
+        orden_dia -> Jsonb,
+        estado -> Text,
+        asistencias -> Jsonb,
+        acta_resumen -> Nullable<Text>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}

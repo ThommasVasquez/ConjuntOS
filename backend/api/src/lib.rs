@@ -69,6 +69,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(domains::multas::router())
         .merge(domains::mudanzas::router())
         .merge(domains::documentos::router())
+        .merge(domains::reuniones_concejo::router())
         .merge(domains::gestion_documental::router());
 
     Router::new()
