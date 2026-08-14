@@ -361,8 +361,5 @@ pub struct UpdatePoderRequest {
 pub struct LiveKitTokenDto {
     pub token: String,
     pub url: String,
-    /// Whether this token may publish camera/mic. The client uses it to avoid
-    /// requesting devices it is not allowed to send, and to know when a new
-    /// token (e.g. after being given the floor) actually changes anything.
     pub can_publish: bool,
 }

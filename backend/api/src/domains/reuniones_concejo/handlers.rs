@@ -445,5 +445,6 @@ pub async fn livekit_token(
     Ok(Json(LiveKitTokenDto {
         token,
         url: livekit_url,
+        can_publish,
     }))
 }
