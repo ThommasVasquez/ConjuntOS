@@ -9,6 +9,6 @@
 #
 # El landing es `output: "export"` en next.config.ts, así que su salida es
 # `landing/out` (relativa a este archivo: "out").
-name = "conjuntos-landing"
+name = "conjuntos"
 pages_build_output_dir = "out"
 compatibility_date = "2026-03-31"
