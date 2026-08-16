@@ -99,6 +99,11 @@ const config = {
     // ships no app.plugin.js, so we use the community @config-plugins variant to
     // wire the iOS/Android native build (permissions, podspec, gradle).
     '@config-plugins/react-native-webrtc',
+    // Enables @livekit/react-native-webrtc's mediaProjection foreground service
+    // (WebRTCModuleOptions.enableMediaProjectionService). Required for screen
+    // share on Android 14+: getMediaProjection() throws SecurityException unless
+    // a mediaProjection FGS is running within 5s of the capture consent.
+    './plugins/withMediaProjectionService',
     'expo-image-picker',
     'expo-font',
     'expo-image',
