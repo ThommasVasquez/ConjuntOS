@@ -27,7 +27,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react-native';
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Info,
+  Lock,
+  Mail,
+  ShieldCheck,
+} from 'lucide-react-native';
 
 import { ApiError } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -445,9 +453,36 @@ export default function Login() {
                   />
                 </View>
 
+                {/* Non-official status disclaimer — Play Store requires a
+                    clear, easy-to-see statement that the app does not represent
+                    a government entity. */}
+                <View
+                  className="mt-6 flex-row items-start"
+                  style={{
+                    gap: 12,
+                    backgroundColor: tokens.surface2,
+                    borderWidth: 1,
+                    borderColor: tokens.border,
+                    borderRadius: 16,
+                    padding: 16,
+                  }}
+                >
+                  <Info color={BLUE_500} size={20} style={{ marginTop: 1 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text className="text-xs font-bold text-text">
+                      Aviso legal
+                    </Text>
+                    <Text className="mt-1 text-xs leading-4 text-textMuted">
+                      ConjuntOS es una aplicación privada de gestión comunitaria.
+                      No representa ni está afiliada a ninguna entidad
+                      gubernamental, pública u oficial.
+                    </Text>
+                  </View>
+                </View>
+
                 {/* ---------------- Secure-connection card ---------------- */}
                 <View
-                  className="mt-6 flex-row items-center"
+                  className="mt-4 flex-row items-center"
                   style={{
                     gap: 16,
                     backgroundColor: tokens.surface2,
