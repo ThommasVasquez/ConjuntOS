@@ -100,6 +100,11 @@ const config = {
     // wire the iOS/Android native build (permissions, podspec, gradle).
     '@config-plugins/react-native-webrtc',
     'expo-image-picker',
+    'expo-font',
+    'expo-image',
+    'expo-sharing',
+    'expo-status-bar',
+    'expo-web-browser',
     // Background playback is DISABLED (enableBackgroundPlayback: false) on
     // purpose: the app only plays short foreground audio (chat voice notes via
     // createAudioPlayer, call ring tones), never lock-screen/background
