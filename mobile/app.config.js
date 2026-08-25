@@ -62,21 +62,19 @@ const config = {
     // BLUETOOTH_ADMIN entries added by @config-plugins/react-native-webrtc are
     // inert on 31+ and are left alone.
     //
-    // FOREGROUND_SERVICE_MEDIA_PROJECTION: required from Android 14 (API 34)
-    // to run the mediaProjection foreground service that @livekit/react-native-
-    // webrtc's MediaProjectionService starts when a moderator shares their
-    // screen in the asamblea (ControlBar "Compartir pantalla"). The base
-    // FOREGROUND_SERVICE permission comes from @livekit/react-native's library
-    // manifest; FOREGROUND_SERVICE_MEDIA_PROJECTION is NOT declared by any
-    // dependency, so it must be added here or screen share throws
-    // SecurityException on API 34+.
+    // ponytail: screen share (FOREGROUND_SERVICE_MEDIA_PROJECTION + LiveKit's
+    // MediaProjectionService) is disabled on Android. Any FOREGROUND_SERVICE_*
+    // permission forces Play's "Foreground service permissions" declaration
+    // (demo video + review), which blocked release. To re-enable: move
+    // FOREGROUND_SERVICE_MEDIA_PROJECTION back into `permissions`, drop both
+    // from `blockedPermissions`, un-gate the button in
+    // src/components/asamblea/ControlBar.tsx, and complete the Play declaration.
     permissions: [
       'RECORD_AUDIO',
       'CAMERA',
       'POST_NOTIFICATIONS',
       'INTERNET',
       'BLUETOOTH_CONNECT',
-      'FOREGROUND_SERVICE_MEDIA_PROJECTION',
     ],
     // @config-plugins/react-native-webrtc adds SYSTEM_ALERT_WINDOW for
     // draw-over-other-apps incoming-call UIs. We surface calls through
@@ -85,7 +83,11 @@ const config = {
     // Play review. Debug builds keep it: android/app/src/debug/AndroidManifest.xml
     // declares it and the debug source set outranks main's tools:node="remove",
     // so the RN dev-menu overlay is unaffected. Verified in the merged manifests.
-    blockedPermissions: ['android.permission.SYSTEM_ALERT_WINDOW'],
+    blockedPermissions: [
+      'android.permission.SYSTEM_ALERT_WINDOW',
+      'android.permission.FOREGROUND_SERVICE',
+      'android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION',
+    ],
   },
   web: {
     output: 'static',
@@ -99,6 +101,11 @@ const config = {
     // ships no app.plugin.js, so we use the community @config-plugins variant to
     // wire the iOS/Android native build (permissions, podspec, gradle).
     '@config-plugins/react-native-webrtc',
+    // Enables @livekit/react-native-webrtc's mediaProjection foreground service
+    // (WebRTCModuleOptions.enableMediaProjectionService). Required for screen
+    // share on Android 14+: getMediaProjection() throws SecurityException unless
+    // a mediaProjection FGS is running within 5s of the capture consent.
+    './plugins/withMediaProjectionService',
     'expo-image-picker',
     'expo-font',
     'expo-image',
