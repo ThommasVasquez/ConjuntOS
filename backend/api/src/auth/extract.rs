@@ -41,9 +41,15 @@ impl FromRequestParts<AppState> for AuthUser {
         // password change (set on password change / unknown user → 401). One indexed
         // PK lookup per authenticated request.
         let mut conn = state.pool.get().await?;
-        let (changed_at, activo): (DateTime<Utc>, bool) = usuarios::table
+        let (changed_at, activo, conjunto_id, rol, nombre): (DateTime<Utc>, bool, Uuid, Rol, String) = usuarios::table
             .find(claims.sub)
-            .select((usuarios::password_changed_at, usuarios::activo))
+            .select((
+                usuarios::password_changed_at,
+                usuarios::activo,
+                usuarios::conjunto_id,
+                usuarios::rol,
+                usuarios::nombre,
+            ))
             .first(&mut conn)
             .await
             .map_err(|_| ApiError::Unauthorized)?;
@@ -60,9 +66,9 @@ impl FromRequestParts<AppState> for AuthUser {
 
         Ok(AuthUser {
             id: claims.sub,
-            conjunto_id: claims.conjunto_id,
-            rol: claims.rol,
-            nombre: claims.nombre,
+            conjunto_id,
+            rol,
+            nombre,
         })
     }
 }
