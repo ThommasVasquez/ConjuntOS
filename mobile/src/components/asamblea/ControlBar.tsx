@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -242,6 +242,10 @@ export default function ControlBar({
       await localParticipant.setCameraEnabled(!isCameraEnabled);
     }, 'No se pudo cambiar la cámara');
 
+  // ponytail: screen share off on Android — needs FOREGROUND_SERVICE_MEDIA_PROJECTION,
+  // which forces Play's foreground-service declaration. See app.config.js.
+  const canScreenShare = canPublish && Platform.OS !== 'android';
+
   const toggleShare = () =>
     guard(
       () => localParticipant.setScreenShareEnabled(!isScreenShareEnabled),
@@ -318,7 +322,7 @@ export default function ControlBar({
           )}
         </CtrlButton>
 
-        {canPublish ? (
+        {canScreenShare ? (
           <CtrlButton
             label={isScreenShareEnabled ? 'Dejar de compartir' : 'Compartir pantalla'}
             active={isScreenShareEnabled}
@@ -331,7 +335,7 @@ export default function ControlBar({
               <ScreenShare size={19} color={chrome.text} />
             )}
           </CtrlButton>
-        ) : (
+        ) : !canPublish ? (
           <CtrlButton
             label={handRaised ? 'Mano levantada' : 'Pedir la palabra'}
             active={handRaised}
@@ -343,7 +347,7 @@ export default function ControlBar({
               <Hand size={19} color={chrome.text} />
             )}
           </CtrlButton>
-        )}
+        ) : null}
 
         <ReactionPicker onPick={onReaction} />
 

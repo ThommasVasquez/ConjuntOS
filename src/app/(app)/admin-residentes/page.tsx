@@ -103,11 +103,13 @@ interface InvitarResidenteRequest {
 
 interface EditarResidenteRequest {
   nombre: string;
+  email?: string;
   telefono?: string;
   torre?: string;
   apto?: string;
   rol: Rol;
   activo: boolean;
+  newPassword?: string;
 }
 
 // Role badge helper
@@ -156,13 +158,17 @@ export default function AdminResidentesPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState<EditarResidenteRequest>({
     nombre: "",
+    email: "",
     telefono: "",
     torre: "",
     apto: "",
     rol: "PROPIETARIO",
     activo: true,
+    newPassword: "",
   });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [customNewPassword, setCustomNewPassword] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Invite modal
   const [showInvite, setShowInvite] = useState(false);
@@ -460,12 +466,15 @@ export default function AdminResidentesPage() {
     if (!detalle) return;
     setEditForm({
       nombre: detalle.nombre,
+      email: detalle.email,
       telefono: detalle.telefono || "",
       torre: detalle.torre || "",
       apto: detalle.apto || "",
       rol: detalle.rol,
       activo: detalle.activo,
+      newPassword: "",
     });
+    setCustomNewPassword("");
     setShowEdit(true);
   };
 
@@ -476,9 +485,11 @@ export default function AdminResidentesPage() {
     try {
       const body: EditarResidenteRequest = {
         ...editForm,
+        email: editForm.email || undefined,
         telefono: editForm.telefono || undefined,
         torre: editForm.torre || undefined,
         apto: editForm.apto || undefined,
+        newPassword: editForm.newPassword?.trim() ? editForm.newPassword : undefined,
       };
       await api.put(`/admin/usuarios/${selectedId}`, body);
       toast.success("Residente actualizado exitosamente");
@@ -492,6 +503,64 @@ export default function AdminResidentesPage() {
     } finally {
       setSavingEdit(false);
     }
+  };
+
+  const handleResetPassword = async (targetId: string) => {
+    setIsResettingPassword(true);
+    try {
+      const res = await api.post<{ tempPassword: string; message: string }>(
+        `/admin/usuarios/${targetId}/reset-password`,
+        { customPassword: customNewPassword.trim() || undefined }
+      );
+      toast.success(
+        `Contraseña restablecida exitosamente. Clave temporal asignada: ${res.tempPassword}`,
+        { duration: 9000 }
+      );
+      setCustomNewPassword("");
+      fetchDetalle(targetId);
+    } catch (e: unknown) {
+      toast.error(
+        e instanceof ApiError ? e.detail : "Error al restablecer contraseña"
+      );
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const handleResendInvite = async (targetId: string) => {
+    try {
+      const res = await api.post<{ tempPassword: string; message: string }>(
+        `/admin/usuarios/${targetId}/reenviar-invitacion`,
+        {}
+      );
+      toast.success(
+        `Invitación reenviada a su correo. Clave temporal: ${res.tempPassword}`,
+        { duration: 8000 }
+      );
+    } catch (e: unknown) {
+      toast.error(
+        e instanceof ApiError ? e.detail : "Error al reenviar invitación"
+      );
+    }
+  };
+
+  const handleExportCensus = () => {
+    if (residentes.length === 0) {
+      toast.error("No hay residentes para exportar");
+      return;
+    }
+    let csv = "Nombre,Email,Telefono,Torre,Apto,Rol,Estado,Citofonia\n";
+    filteredResidentes.forEach((r) => {
+      csv += `"${r.nombre.replace(/"/g, '""')}","${r.email}","${r.telefono || ""}","${r.torre || ""}","${r.apto || ""}","${r.rol}","${r.activo ? "ACTIVO" : "INACTIVO"}","${r.numeroInterno}"\n`;
+    });
+    const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csv);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `censo_residentes_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Censo de residentes exportado exitosamente en formato CSV");
   };
 
   const handleSendInvite = async (e: React.FormEvent) => {
@@ -558,17 +627,26 @@ export default function AdminResidentesPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 bg-surface-2 border border-border text-text hover:bg-accent/10 hover:border-accent/40 rounded-full px-4 py-2.5 text-sm font-bold active:scale-95 transition-all cursor-pointer shadow-md"
+            type="button"
+            onClick={handleExportCensus}
+            className="flex items-center gap-2 bg-surface-2 border border-border text-text hover:bg-accent/10 hover:border-accent/40 rounded-full px-3.5 py-2.5 text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-md"
+            title="Exportar censo de residentes a CSV"
           >
-            <Upload size={17} className="text-accent" />
+            <Download size={16} className="text-accent" />
+            <span className="hidden sm:inline">Exportar Censo</span>
+          </button>
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 bg-surface-2 border border-border text-text hover:bg-accent/10 hover:border-accent/40 rounded-full px-4 py-2.5 text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-md"
+          >
+            <Upload size={16} className="text-accent" />
             <span>Importar</span>
           </button>
           <button
             onClick={() => setShowInvite(true)}
-            className="flex items-center gap-2 bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-5 py-2.5 text-sm font-bold active:scale-95 transition-transform cursor-pointer"
+            className="flex items-center gap-2 bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-4 py-2.5 text-xs font-bold active:scale-95 transition-transform cursor-pointer"
           >
-            <UserPlus size={18} />
+            <UserPlus size={16} />
             <span>Invitar</span>
           </button>
         </div>
@@ -910,14 +988,36 @@ export default function AdminResidentesPage() {
                   )}
                 </div>
 
-                {/* Edit button */}
-                <button
-                  onClick={openEdit}
-                  className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mt-2"
-                >
-                  <Pencil size={18} />
-                  Editar Residente
-                </button>
+                {/* Action buttons */}
+                <div className="flex flex-col gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={openEdit}
+                    className="w-full py-3.5 rounded-full bg-[#57bf00] text-white font-bold text-sm shadow-lg shadow-[#57bf00]/30 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Pencil size={18} />
+                    Editar Residente
+                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleResetPassword(detalle.id)}
+                      disabled={isResettingPassword}
+                      className="py-2.5 px-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500/20 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw size={14} className={isResettingPassword ? "animate-spin" : ""} />
+                      <span>Reset Clave</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleResendInvite(detalle.id)}
+                      className="py-2.5 px-3 rounded-2xl bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Mail size={14} />
+                      <span>Reenviar Email</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="py-12 text-center">
@@ -966,10 +1066,26 @@ export default function AdminResidentesPage() {
                 />
               </div>
 
+              {/* Email */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
+                  Correo Electrónico (Email) *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={editForm.email || ""}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({ ...prev, email: e.target.value }))
+                  }
+                  className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm font-mono text-text focus:outline-none focus:border-accent"
+                />
+              </div>
+
               {/* Teléfono */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
-                  Teléfono
+                  Teléfono / WhatsApp
                 </label>
                 <input
                   type="text"
@@ -982,6 +1098,29 @@ export default function AdminResidentesPage() {
                   }
                   className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                 />
+              </div>
+
+              {/* Nueva Contraseña Opcional */}
+              <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+                <label className="text-[10px] text-amber-500 uppercase tracking-[0.2em] font-black flex items-center gap-1">
+                  <ShieldCheck size={13} />
+                  Nueva Contraseña Inicial (Opcional)
+                </label>
+                <input
+                  type="text"
+                  value={editForm.newPassword || ""}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      newPassword: e.target.value,
+                    }))
+                  }
+                  placeholder="Dejar vacío para mantener la actual"
+                  className="w-full bg-surface-2/80 border border-border rounded-xl py-2.5 px-3.5 text-xs text-text focus:outline-none focus:border-amber-500 font-mono placeholder:text-text/50"
+                />
+                <span className="text-[10px] text-text/70">
+                  Si asignas una nueva clave, se forzará al usuario a cambiarla en su próximo ingreso.
+                </span>
               </div>
 
               {/* Torre + Apto */}

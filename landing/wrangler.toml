@@ -1,0 +1,14 @@
+# Configuración de Cloudflare Pages para el LANDING (proyecto aparte del app).
+#
+# El proyecto de Pages del landing tiene "Root directory" = `landing`. Sin este
+# archivo, Cloudflare caía al wrangler.toml de la raíz del repo (el del app,
+# `en-conjunto`, con pages_build_output_dir = ".vercel/output/static") y lo
+# reescribía relativo al root directory → "../.vercel/output/static", que el
+# build rechaza con:
+#   Failed: build output directory is outside of the repository
+#
+# El landing es `output: "export"` en next.config.ts, así que su salida es
+# `landing/out` (relativa a este archivo: "out").
+name = "conjuntos"
+pages_build_output_dir = "out"
+compatibility_date = "2026-03-31"
