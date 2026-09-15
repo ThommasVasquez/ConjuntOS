@@ -616,38 +616,38 @@ export default function AdminResidentesPage() {
       <ProfileHeader />
 
       {/* Header + buttons */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-medium text-text tracking-wide">
             Residentes
           </h1>
-          <p className="text-sm text-text" style={{ opacity: 0.6 }}>
+          <p className="text-sm text-text/60">
             Gestión de unidades y usuarios
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={handleExportCensus}
-            className="flex items-center gap-2 bg-surface-2 border border-border text-text hover:bg-accent/10 hover:border-accent/40 rounded-full px-3.5 py-2.5 text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-md"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-surface-2 border border-border text-text hover:bg-accent/10 hover:border-accent/40 rounded-full px-3 py-2.5 text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-md whitespace-nowrap"
             title="Exportar censo de residentes a CSV"
           >
-            <Download size={16} className="text-accent" />
-            <span className="hidden sm:inline">Exportar Censo</span>
+            <Download size={15} className="text-accent shrink-0" />
+            <span>Exportar</span>
           </button>
           <button
             onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 bg-surface-2 border border-border text-text hover:bg-accent/10 hover:border-accent/40 rounded-full px-4 py-2.5 text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-md"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-surface-2 border border-border text-text hover:bg-accent/10 hover:border-accent/40 rounded-full px-3 py-2.5 text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-md whitespace-nowrap"
           >
-            <Upload size={16} className="text-accent" />
+            <Upload size={15} className="text-accent shrink-0" />
             <span>Importar</span>
           </button>
           <button
             onClick={() => setShowInvite(true)}
-            className="flex items-center gap-2 bg-[#57bf00] text-white rounded-full shadow-lg shadow-[#57bf00]/30 px-4 py-2.5 text-xs font-bold active:scale-95 transition-transform cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#2dd4bf] hover:bg-[#26b8a5] text-gray-950 rounded-full shadow-lg shadow-[#2dd4bf]/25 px-3.5 py-2.5 text-xs font-black active:scale-95 transition-all cursor-pointer whitespace-nowrap"
           >
-            <UserPlus size={16} />
-            <span>Invitar</span>
+            <UserPlus size={15} className="shrink-0" />
+            <span>+ Invitar</span>
           </button>
         </div>
       </div>
