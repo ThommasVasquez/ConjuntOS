@@ -32,31 +32,32 @@ pub async fn send_invitation_email(params: InvitationEmailParams) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invitación a ConjuntOS®</title>
 </head>
-<body style="margin:0; padding:0; background-color:#050914; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; color:#f8fafc; -webkit-font-smoothing:antialiased;">
+<body style="margin:0; padding:0; background-color:#050d0c; font-family:'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; color:#f0fdfa; -webkit-font-smoothing:antialiased;">
   <!-- Outer Wrapper Table -->
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#050914; padding:48px 12px;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#050d0c; padding:48px 12px;">
     <tr>
       <td align="center">
         
-        <!-- Main Card Container -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:600px; background-color:#0e172a; border:1px solid #1e293b; border-radius:28px; overflow:hidden; box-shadow:0 30px 70px rgba(0,0,0,0.85);">
+        <!-- Main Card Container (Trust Teal + Deep Dark Glass) -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:580px; background-color:#0b1614; border:1px solid rgba(45, 212, 191, 0.22); border-radius:28px; overflow:hidden; box-shadow:0 25px 65px rgba(0,0,0,0.85);">
           
-          <!-- Top Neon Glow Line -->
+          <!-- Top Brand Accent Bar (Trust Teal + Ocean Blue) -->
           <tr>
-            <td style="height:6px; background:linear-gradient(90deg, #57bf00 0%, #38bdf8 50%, #818cf8 100%); font-size:0; line-height:0;">&nbsp;</td>
+            <td style="height:6px; background:linear-gradient(90deg, #2dd4bf 0%, #009df1 50%, #38bdf8 100%); font-size:0; line-height:0;">&nbsp;</td>
           </tr>
 
-          <!-- Header Section with Soft Gradient -->
+          <!-- Header Section with Official Brand Logo -->
           <tr>
-            <td style="padding:48px 40px 32px; text-align:center; background:linear-gradient(180deg, #162238 0%, #0e172a 100%); border-bottom:1px solid #1e293b;">
-              <!-- Logo Image -->
+            <td style="padding:44px 40px 32px; text-align:center; background:linear-gradient(180deg, #0e1e1b 0%, #0b1614 100%); border-bottom:1px solid rgba(45, 212, 191, 0.16);">
+              
+              <!-- Official ConjuntOS® Logo -->
               <a href="{login_url}" target="_blank" style="text-decoration:none; display:inline-block;">
-                <img src="https://app.conjuntos.app/ConjuntOS_Horizontal.png" alt="ConjuntOS®" height="56" style="display:block; margin:0 auto; max-width:280px; height:auto; border:0;" />
+                <img src="https://app.conjuntos.app/logo-verticalW.svg" alt="ConjuntOS®" height="85" style="display:block; margin:0 auto; max-width:240px; height:auto; border:0;" />
               </a>
               
-              <!-- Residential Complex Tag -->
-              <div style="margin-top:18px; display:inline-block; padding:6px 18px; background:rgba(87,191,0,0.08); border:1px solid rgba(87,191,0,0.25); border-radius:100px;">
-                <span style="font-size:12px; color:#57bf00; font-weight:800; text-transform:uppercase; letter-spacing:1.8px;">
+              <!-- Residential Complex Badge -->
+              <div style="margin-top:20px; display:inline-block; padding:6px 18px; background:rgba(45, 212, 191, 0.1); border:1px solid rgba(45, 212, 191, 0.3); border-radius:100px;">
+                <span style="font-size:12px; color:#2dd4bf; font-weight:800; text-transform:uppercase; letter-spacing:1.8px;">
                   🏢 {conjunto_nombre}
                 </span>
               </div>
@@ -65,39 +66,39 @@ pub async fn send_invitation_email(params: InvitationEmailParams) {
 
           <!-- Body Content -->
           <tr>
-            <td style="padding:40px 40px 32px;">
+            <td style="padding:40px 36px 32px;">
               
               <!-- Salutation -->
-              <h1 style="margin:0 0 14px; font-size:25px; font-weight:800; color:#ffffff; letter-spacing:-0.5px; line-height:1.3; text-align:left;">
+              <h1 style="margin:0 0 14px; font-size:24px; font-weight:800; color:#f0fdfa; letter-spacing:-0.5px; line-height:1.3; text-align:left;">
                 ¡Te damos la bienvenida, {nombre}! 👋
               </h1>
               
-              <p style="margin:0 0 28px; font-size:15px; line-height:1.7; color:#94a3b8; text-align:left;">
-                La administración de <strong style="color:#ffffff;">{conjunto_nombre}</strong> te invita a ingresar a <strong style="color:#57bf00;">ConjuntOS®</strong>, la plataforma donde gestionarás tus accesos, comunicados y pagos de forma 100% digital.
+              <p style="margin:0 0 28px; font-size:15px; line-height:1.7; color:#93b5b0; text-align:left;">
+                La administración de <strong style="color:#f0fdfa;">{conjunto_nombre}</strong> te invita a ingresar a <strong style="color:#2dd4bf;">ConjuntOS®</strong>, la plataforma donde gestionarás tus accesos, comunicados y pagos de forma 100% digital.
               </p>
 
               <!-- Role Tag Container -->
-              <div style="text-align:center; margin-bottom:36px;">
-                <div style="display:inline-block; background:linear-gradient(135deg, rgba(56,189,248,0.12) 0%, rgba(2,132,199,0.12) 100%); border:1px solid rgba(56,189,248,0.3); padding:10px 24px; border-radius:100px; box-shadow:0 6px 20px rgba(2,132,199,0.15);">
+              <div style="text-align:center; margin-bottom:34px;">
+                <div style="display:inline-block; background:linear-gradient(135deg, rgba(0,157,241,0.15) 0%, rgba(45,212,191,0.15) 100%); border:1px solid rgba(45, 212, 191, 0.35); padding:10px 24px; border-radius:100px; box-shadow:0 6px 20px rgba(0,157,241,0.18);">
                   <span style="font-size:12px; color:#38bdf8; font-weight:800; text-transform:uppercase; letter-spacing:1.5px;">
-                    ✨ ROL REGISTRADO: <span style="color:#ffffff;">{rol}</span>
+                    ✨ ROL REGISTRADO: <span style="color:#f0fdfa;">{rol}</span>
                   </span>
                 </div>
               </div>
 
-              <!-- Credentials Box -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#060b17; border:1px solid #1e293b; border-radius:24px; margin:28px 0; padding:28px; box-shadow:inset 0 2px 6px rgba(0,0,0,0.5);">
+              <!-- Credentials Box (Official Liquid Glass Style) -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#050d0c; border:1px solid rgba(45, 212, 191, 0.2); border-radius:22px; margin:28px 0; padding:26px; box-shadow:inset 0 2px 6px rgba(0,0,0,0.5);">
                 <tr>
-                  <td style="padding-bottom:16px; font-size:12px; text-transform:uppercase; letter-spacing:1.5px; font-weight:800; color:#64748b; border-bottom:1px solid #1e293b;">
+                  <td style="padding-bottom:16px; font-size:12px; text-transform:uppercase; letter-spacing:1.5px; font-weight:800; color:#93b5b0; border-bottom:1px solid rgba(45, 212, 191, 0.15);">
                     🔑 Tus Credenciales de Acceso
                   </td>
                 </tr>
                 
                 <!-- User Email Row -->
                 <tr>
-                  <td style="padding:18px 0 14px; border-bottom:1px solid #1e293b;">
-                    <div style="font-size:12px; color:#94a3b8; margin-bottom:6px; font-weight:600;">Correo Electrónico:</div>
-                    <div style="background-color:#0e172a; border:1px solid #334155; padding:10px 16px; border-radius:12px; display:block;">
+                  <td style="padding:16px 0 14px; border-bottom:1px solid rgba(45, 212, 191, 0.15);">
+                    <div style="font-size:12px; color:#93b5b0; margin-bottom:6px; font-weight:600;">Correo Electrónico:</div>
+                    <div style="background-color:#0b1614; border:1px solid rgba(45, 212, 191, 0.25); padding:10px 16px; border-radius:12px; display:block;">
                       <span style="font-family:'Courier New', Consolas, monospace; color:#38bdf8; font-weight:700; font-size:16px; word-break:break-all;">{to_email}</span>
                     </div>
                   </td>
@@ -106,17 +107,17 @@ pub async fn send_invitation_email(params: InvitationEmailParams) {
                 <!-- Temp Password Row -->
                 <tr>
                   <td style="padding:16px 0 4px;">
-                    <div style="font-size:12px; color:#94a3b8; margin-bottom:8px; font-weight:600;">Contraseña Temporal de Primer Ingreso:</div>
-                    <div style="background:linear-gradient(135deg, rgba(87,191,0,0.15) 0%, rgba(87,191,0,0.05) 100%); border:1.5px dashed #57bf00; padding:12px 20px; border-radius:14px; text-align:center;">
-                      <span style="font-family:'Courier New', Consolas, monospace; color:#57bf00; font-weight:900; font-size:20px; letter-spacing:3px;">{temp_password}</span>
+                    <div style="font-size:12px; color:#93b5b0; margin-bottom:8px; font-weight:600;">Contraseña Temporal de Primer Ingreso:</div>
+                    <div style="background:rgba(45, 212, 191, 0.12); border:1.5px dashed #2dd4bf; padding:12px 20px; border-radius:14px; text-align:center;">
+                      <span style="font-family:'Courier New', Consolas, monospace; color:#2dd4bf; font-weight:900; font-size:20px; letter-spacing:3px;">{temp_password}</span>
                     </div>
                   </td>
                 </tr>
               </table>
 
               <!-- Step by Step Cards Section -->
-              <div style="margin:36px 0 28px;">
-                <div style="font-size:13px; font-weight:800; color:#ffffff; margin-bottom:16px; text-transform:uppercase; letter-spacing:1px; text-align:left;">
+              <div style="margin:34px 0 28px;">
+                <div style="font-size:13px; font-weight:800; color:#f0fdfa; margin-bottom:16px; text-transform:uppercase; letter-spacing:1px; text-align:left;">
                   🚀 Pasos para Iniciar Sesión:
                 </div>
                 
@@ -124,51 +125,51 @@ pub async fn send_invitation_email(params: InvitationEmailParams) {
                 <table width="100%" border="0" cellspacing="0" cellpadding="0">
                   <!-- Step 1 -->
                   <tr>
-                    <td width="44" valign="top" style="padding-bottom:14px;">
-                      <div style="width:32px; height:32px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border-radius:50%; text-align:center; line-height:32px; font-weight:800; font-size:14px; box-shadow:0 4px 10px rgba(2,132,199,0.3);">1</div>
+                    <td width="42" valign="top" style="padding-bottom:14px;">
+                      <div style="width:30px; height:30px; background:linear-gradient(135deg, #009df1 0%, #0284c7 100%); color:#ffffff; border-radius:50%; text-align:center; line-height:30px; font-weight:800; font-size:13px; box-shadow:0 4px 10px rgba(0,157,241,0.35);">1</div>
                     </td>
-                    <td valign="middle" style="padding-bottom:14px; font-size:14px; color:#cbd5e1; line-height:1.5;">
-                      Haz clic en el botón verde <strong style="color:#ffffff;">"Ingresar a ConjuntOS®"</strong>.
+                    <td valign="middle" style="padding-bottom:14px; font-size:14px; color:#93b5b0; line-height:1.5;">
+                      Haz clic en el botón <strong style="color:#f0fdfa;">"Ingresar a ConjuntOS®"</strong>.
                     </td>
                   </tr>
                   
                   <!-- Step 2 -->
                   <tr>
-                    <td width="44" valign="top" style="padding-bottom:14px;">
-                      <div style="width:32px; height:32px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border-radius:50%; text-align:center; line-height:32px; font-weight:800; font-size:14px; box-shadow:0 4px 10px rgba(2,132,199,0.3);">2</div>
+                    <td width="42" valign="top" style="padding-bottom:14px;">
+                      <div style="width:30px; height:30px; background:linear-gradient(135deg, #009df1 0%, #0284c7 100%); color:#ffffff; border-radius:50%; text-align:center; line-height:30px; font-weight:800; font-size:13px; box-shadow:0 4px 10px rgba(0,157,241,0.35);">2</div>
                     </td>
-                    <td valign="middle" style="padding-bottom:14px; font-size:14px; color:#cbd5e1; line-height:1.5;">
-                      Digita tu correo registrado y pega la <strong style="color:#57bf00;">Contraseña Temporal</strong>.
+                    <td valign="middle" style="padding-bottom:14px; font-size:14px; color:#93b5b0; line-height:1.5;">
+                      Digita tu correo registrado y pega la <strong style="color:#2dd4bf;">Contraseña Temporal</strong>.
                     </td>
                   </tr>
                   
                   <!-- Step 3 -->
                   <tr>
-                    <td width="44" valign="top" style="padding-bottom:14px;">
-                      <div style="width:32px; height:32px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border-radius:50%; text-align:center; line-height:32px; font-weight:800; font-size:14px; box-shadow:0 4px 10px rgba(2,132,199,0.3);">3</div>
+                    <td width="42" valign="top" style="padding-bottom:14px;">
+                      <div style="width:30px; height:30px; background:linear-gradient(135deg, #009df1 0%, #0284c7 100%); color:#ffffff; border-radius:50%; text-align:center; line-height:30px; font-weight:800; font-size:13px; box-shadow:0 4px 10px rgba(0,157,241,0.35);">3</div>
                     </td>
-                    <td valign="middle" style="padding-bottom:14px; font-size:14px; color:#cbd5e1; line-height:1.5;">
-                      El sistema te solicitará <strong style="color:#ffffff;">crear tu contraseña personal</strong> definitiva.
+                    <td valign="middle" style="padding-bottom:14px; font-size:14px; color:#93b5b0; line-height:1.5;">
+                      El sistema te solicitará <strong style="color:#f0fdfa;">crear tu contraseña personal</strong> definitiva.
                     </td>
                   </tr>
                   
                   <!-- Step 4 -->
                   <tr>
-                    <td width="44" valign="top">
-                      <div style="width:32px; height:32px; background:linear-gradient(135deg, #57bf00 0%, #46a000 100%); color:#ffffff; border-radius:50%; text-align:center; line-height:32px; font-weight:800; font-size:14px; box-shadow:0 4px 10px rgba(87,191,0,0.35);">✓</div>
+                    <td width="42" valign="top">
+                      <div style="width:30px; height:30px; background:linear-gradient(135deg, #2dd4bf 0%, #0f766e 100%); color:#04211d; border-radius:50%; text-align:center; line-height:30px; font-weight:900; font-size:14px; box-shadow:0 4px 10px rgba(45,212,191,0.35);">✓</div>
                     </td>
-                    <td valign="middle" style="font-size:14px; color:#cbd5e1; line-height:1.5;">
+                    <td valign="middle" style="font-size:14px; color:#93b5b0; line-height:1.5;">
                       ¡Listo! Ya tendrás acceso completo a tu conjunto residencial.
                     </td>
                   </tr>
                 </table>
               </div>
 
-              <!-- CTA Button Section -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin:40px 0 28px;">
+              <!-- CTA Button Section (Trust Teal Gradient) -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin:38px 0 26px;">
                 <tr>
                   <td align="center">
-                    <a href="{login_url}" target="_blank" style="display:inline-block; background:linear-gradient(135deg, #57bf00 0%, #46a000 100%); color:#ffffff; font-weight:900; font-size:16px; text-decoration:none; padding:20px 48px; border-radius:20px; box-shadow:0 16px 36px rgba(87,191,0,0.45); text-transform:uppercase; letter-spacing:1px; transition:all 0.2s;">
+                    <a href="{login_url}" target="_blank" style="display:inline-block; background:linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%); color:#04211d; font-weight:900; font-size:16px; text-decoration:none; padding:18px 46px; border-radius:18px; box-shadow:0 14px 32px rgba(45,212,191,0.4); text-transform:uppercase; letter-spacing:1px; transition:all 0.2s;">
                       Ingresar a ConjuntOS® &nbsp;&rarr;
                     </a>
                   </td>
@@ -176,7 +177,7 @@ pub async fn send_invitation_email(params: InvitationEmailParams) {
               </table>
 
               <!-- Security Notice -->
-              <p style="margin:28px 0 0; font-size:12px; line-height:1.6; color:#64748b; text-align:center;">
+              <p style="margin:26px 0 0; font-size:12px; line-height:1.6; color:#93b5b0; text-align:center;">
                 🔒 <em>Nota de seguridad: Esta clave temporal caducará una vez crees tu clave personal en tu primer ingreso.</em>
               </p>
             </td>
@@ -184,10 +185,10 @@ pub async fn send_invitation_email(params: InvitationEmailParams) {
 
           <!-- Footer -->
           <tr>
-            <td style="padding:32px 40px; background-color:#050914; border-top:1px solid #1e293b; text-align:center; font-size:12px; color:#64748b; line-height:1.8;">
-              <strong style="color:#94a3b8;">{conjunto_nombre}</strong> &middot; Administración Digital Residencial<br/>
-              Plataforma tecnológica por <strong style="color:#57bf00;">ConjuntOS®</strong><br/>
-              <span style="font-size:11px; color:#475569; display:inline-block; margin-top:8px;">
+            <td style="padding:30px 36px; background-color:#050d0c; border-top:1px solid rgba(45, 212, 191, 0.16); text-align:center; font-size:12px; color:#93b5b0; line-height:1.8;">
+              <strong style="color:#f0fdfa;">{conjunto_nombre}</strong> &middot; Administración Digital Residencial<br/>
+              Plataforma tecnológica por <strong style="color:#2dd4bf;">ConjuntOS®</strong><br/>
+              <span style="font-size:11px; color:#6b8b86; display:inline-block; margin-top:8px;">
                 © 2026 ConjuntOS®. Todos los derechos reservados. Marca registrada.
               </span>
             </td>
