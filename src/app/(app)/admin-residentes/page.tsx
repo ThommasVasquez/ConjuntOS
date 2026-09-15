@@ -551,7 +551,7 @@ export default function AdminResidentesPage() {
     }
     let csv = "Nombre,Email,Telefono,Torre,Apto,Rol,Estado,Citofonia\n";
     filteredResidentes.forEach((r) => {
-      csv += `"${r.nombre.replace(/"/g, '""')}","${r.email}","${r.telefono || ""}","${r.torre || ""}","${r.apto || ""}","${r.rol}","${r.activo ? "ACTIVO" : "INACTIVO"}","${r.numeroInterno}"\n`;
+      csv += `"${r.nombre.replace(/"/g, '""')}","${r.email}","${r.telefono || ""}","${r.torre || ""}","${r.apto || ""}","${r.rol}","${r.activo ? "ACTIVO" : "INACTIVO"}","${r.interno || ""}"\n`;
     });
     const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csv);
     const link = document.createElement("a");
