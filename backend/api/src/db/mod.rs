@@ -183,6 +183,36 @@ pub async fn ensure_energysoftmedia_user(database_url: &str) -> anyhow::Result<(
         .await
         .map_err(|e| anyhow::anyhow!("ensure_energysoftmedia_user connection failed: {e}"))?;
 
+    // 1. Ensure "Conjunta Sinergia group" exists as a separate test conjunto.
+    let sinergia_id: Option<uuid::Uuid> = schema::conjuntos::table
+        .filter(schema::conjuntos::subdominio.eq("sinergiagroup"))
+        .select(schema::conjuntos::id)
+        .first(&mut conn)
+        .await
+        .optional()?;
+
+    let conjunto_id = match sinergia_id {
+        Some(id) => id,
+        None => {
+            let new_id = uuid::Uuid::new_v4();
+            diesel::insert_into(schema::conjuntos::table)
+                .values((
+                    schema::conjuntos::id.eq(new_id),
+                    schema::conjuntos::nombre.eq("Conjunta Sinergia group"),
+                    schema::conjuntos::subdominio.eq("sinergiagroup"),
+                    schema::conjuntos::direccion.eq("Calle 100 # 15-20"),
+                    schema::conjuntos::ciudad.eq("Bogotá"),
+                    schema::conjuntos::color_primario.eq("#2dd4bf"),
+                    schema::conjuntos::plan.eq("PRO"),
+                    schema::conjuntos::activo.eq(true),
+                    schema::conjuntos::total_unidades.eq(0),
+                ))
+                .execute(&mut conn)
+                .await?;
+            new_id
+        }
+    };
+
     let count: i64 = schema::usuarios::table
         .filter(schema::usuarios::email.eq("energysoftmedia@gmail.com"))
         .count()
@@ -194,43 +224,39 @@ pub async fn ensure_energysoftmedia_user(database_url: &str) -> anyhow::Result<(
         .map_err(|e| anyhow::anyhow!("password hashing failed: {e}"))?;
 
     if !exists {
-        let first_conjunto: Option<uuid::Uuid> = schema::conjuntos::table
-            .select(schema::conjuntos::id)
-            .first(&mut conn)
-            .await
-            .optional()?;
+        let numero_interno = format!("{:04}", (uuid::Uuid::new_v4().as_u128() % 10000) as u16);
 
-        if let Some(conj_id) = first_conjunto {
-            let numero_interno = format!("{:04}", (uuid::Uuid::new_v4().as_u128() % 10000) as u16);
-
-            diesel::insert_into(schema::usuarios::table)
-                .values((
-                    schema::usuarios::conjunto_id.eq(conj_id),
-                    schema::usuarios::nombre.eq("EnergySoft Media"),
-                    schema::usuarios::email.eq("energysoftmedia@gmail.com"),
-                    schema::usuarios::password_hash.eq(password_hash),
-                    schema::usuarios::must_change_password.eq(false),
-                    schema::usuarios::rol.eq("ADMINISTRADOR"),
-                    schema::usuarios::activo.eq(true),
-                    schema::usuarios::numero_interno.eq(numero_interno),
-                ))
-                .execute(&mut conn)
-                .await?;
-
-            tracing::info!("Startup hook: Created EnergySoft Media administrator user");
-        }
-    } else {
-        diesel::update(schema::usuarios::table.filter(schema::usuarios::email.eq("energysoftmedia@gmail.com")))
-            .set((
+        diesel::insert_into(schema::usuarios::table)
+            .values((
+                schema::usuarios::conjunto_id.eq(conjunto_id),
+                schema::usuarios::nombre.eq("EnergySoft Media"),
+                schema::usuarios::email.eq("energysoftmedia@gmail.com"),
                 schema::usuarios::password_hash.eq(password_hash),
+                schema::usuarios::must_change_password.eq(false),
                 schema::usuarios::rol.eq("ADMINISTRADOR"),
                 schema::usuarios::activo.eq(true),
-                schema::usuarios::must_change_password.eq(false),
+                schema::usuarios::numero_interno.eq(numero_interno),
             ))
             .execute(&mut conn)
             .await?;
 
-        tracing::info!("Startup hook: Updated EnergySoft Media admin user and password");
+        tracing::info!("Startup hook: Created EnergySoft Media administrator user in Conjunta Sinergia group");
+    } else {
+        diesel::update(schema::usuarios::table.filter(schema::usuarios::email.eq("energysoftmedia@gmail.com")))
+            .set((
+                schema::usuarios::conjunto_id.eq(conjunto_id),
+                schema::usuarios::password_hash.eq(password_hash),
+                schema::usuarios::rol.eq("ADMINISTRADOR"),
+                schema::usuarios::activo.eq(true),
+                schema::usuarios::must_change_password.eq(false),
+                schema::usuarios::torre.eq(None::<String>),
+                schema::usuarios::apto.eq(None::<String>),
+                schema::usuarios::unidad_id.eq(None::<uuid::Uuid>),
+            ))
+            .execute(&mut conn)
+            .await?;
+
+        tracing::info!("Startup hook: Updated EnergySoft Media admin user and Conjunta Sinergia group");
     }
 
     Ok(())
