@@ -30,6 +30,8 @@ pub fn router() -> Router<AppState> {
         .route("/admin/usuarios/invitar", post(invitar_residente))
         .route("/admin/usuarios", get(listar_usuarios))
         .route("/admin/usuarios/{id}", get(detalle_usuario).put(editar_usuario))
+        .route("/admin/usuarios/{id}/reset-password", post(reset_password_residente))
+        .route("/admin/usuarios/{id}/reenviar-invitacion", post(reenviar_invitacion_residente))
 }
 
 // ── DTOs ────────────────────────────────────────────────────────────────────
@@ -174,11 +176,26 @@ impl From<Pago> for AdminPagoDto {
 #[serde(rename_all = "camelCase")]
 pub struct AdminUpdateUsuarioRequest {
     pub nombre: Option<String>,
+    pub email: Option<String>,
     pub telefono: Option<String>,
     pub rol: Option<String>,
     pub torre: Option<String>,
     pub apto: Option<String>,
     pub activo: Option<bool>,
+    pub new_password: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminResetPasswordRequest {
+    pub custom_password: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminResetPasswordResponse {
+    pub temp_password: String,
+    pub message: String,
 }
 
 /// Payload to invite a new resident.
@@ -377,6 +394,28 @@ pub async fn editar_usuario(
         }
     }
 
+    // Validate email if provided.
+    let email_to_update = match req.email.as_deref() {
+        Some(s) if !s.trim().is_empty() => {
+            let e = s.trim().to_lowercase();
+            if !e.contains('@') {
+                return Err(ApiError::BadRequest("correo electrónico inválido".into()));
+            }
+            Some(e)
+        }
+        _ => None,
+    };
+
+    // Hash new password if provided.
+    let password_hash = if let Some(ref new_pwd) = req.new_password {
+        if new_pwd.trim().len() < 6 {
+            return Err(ApiError::BadRequest("la contraseña debe tener al menos 6 caracteres".into()));
+        }
+        Some(crate::auth::password::hash_password_blocking(new_pwd.trim().to_string()).await?)
+    } else {
+        None
+    };
+
     // Parse rol if provided.
     let rol: Option<Rol> = match req.rol.as_deref() {
         Some(s) if !s.trim().is_empty() => {
@@ -396,11 +435,13 @@ pub async fn editar_usuario(
         target_id,
         user.conjunto_id,
         req.nombre,
+        email_to_update,
         req.telefono,
         rol,
         req.torre,
         req.apto,
         req.activo,
+        password_hash,
     )
     .await?;
 
@@ -416,6 +457,77 @@ pub async fn editar_usuario(
         numero_interno: updated.numero_interno,
         created_at: updated.created_at,
     }))
+}
+
+/// POST /admin/usuarios/{id}/reset-password
+pub async fn reset_password_residente(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(target_id): Path<Uuid>,
+    Json(req): Json<AdminResetPasswordRequest>,
+) -> ApiResult<Json<AdminResetPasswordResponse>> {
+    guard::require_admin(&user)?;
+    let mut conn = state.pool.get().await?;
+
+    let target = find_user_in_conjunto(&mut conn, target_id, user.conjunto_id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("usuario no encontrado".into()))?;
+
+    let temp_password = match req.custom_password {
+        Some(p) if !p.trim().is_empty() => p.trim().to_string(),
+        _ => format!("temp_{}", &Uuid::new_v4().to_string()[..8]),
+    };
+
+    let temp_password_hash = crate::auth::password::hash_password_blocking(temp_password.clone()).await?;
+
+    diesel::update(
+        usuarios::table
+            .filter(usuarios::id.eq(target_id))
+            .filter(usuarios::conjunto_id.eq(user.conjunto_id)),
+    )
+    .set((
+        usuarios::password_hash.eq(temp_password_hash),
+        usuarios::must_change_password.eq(true),
+    ))
+    .execute(&mut conn)
+    .await?;
+
+    let conjunto_nombre: String = conjuntos::table
+        .find(user.conjunto_id)
+        .select(conjuntos::nombre)
+        .first(&mut conn)
+        .await
+        .unwrap_or_else(|_| "ConjuntOS".to_string());
+
+    tokio::spawn(crate::services::email::send_invitation_email(
+        crate::services::email::InvitationEmailParams {
+            to_email: target.email.clone(),
+            nombre: target.nombre.clone(),
+            conjunto_nombre,
+            rol: target.rol.to_string(),
+            temp_password: temp_password.clone(),
+        },
+    ));
+
+    Ok(Json(AdminResetPasswordResponse {
+        temp_password,
+        message: format!("Contraseña restablecida exitosamente para {}", target.email),
+    }))
+}
+
+/// POST /admin/usuarios/{id}/reenviar-invitacion
+pub async fn reenviar_invitacion_residente(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(target_id): Path<Uuid>,
+) -> ApiResult<Json<AdminResetPasswordResponse>> {
+    reset_password_residente(
+        State(state),
+        user,
+        Path(target_id),
+        Json(AdminResetPasswordRequest { custom_password: None }),
+    )
+    .await
 }
 
 /// POST /admin/usuarios/invitar
@@ -606,12 +718,15 @@ async fn update_user(
     target_id: Uuid,
     conjunto_id: Uuid,
     nombre: Option<String>,
+    email: Option<String>,
     telefono: Option<String>,
     rol: Option<Rol>,
     torre: Option<String>,
     apto: Option<String>,
     activo: Option<bool>,
+    password_hash: Option<String>,
 ) -> ApiResult<crate::domains::usuarios::models::Usuario> {
+    let must_change = if password_hash.is_some() { Some(true) } else { None };
     let updated = diesel::update(
         usuarios::table
             .filter(usuarios::id.eq(target_id))
@@ -619,11 +734,14 @@ async fn update_user(
     )
     .set((
         nombre.map(|n| usuarios::nombre.eq(n)),
+        email.map(|e| usuarios::email.eq(e)),
         telefono.map(|t| usuarios::telefono.eq(Some(t))),
         rol.map(|r| usuarios::rol.eq(r)),
         torre.map(|t| usuarios::torre.eq(Some(t))),
         apto.map(|a| usuarios::apto.eq(Some(a))),
         activo.map(|a| usuarios::activo.eq(a)),
+        password_hash.map(|ph| usuarios::password_hash.eq(ph)),
+        must_change.map(|mc| usuarios::must_change_password.eq(mc)),
     ))
     .returning(crate::domains::usuarios::models::Usuario::as_returning())
     .get_result(conn)
