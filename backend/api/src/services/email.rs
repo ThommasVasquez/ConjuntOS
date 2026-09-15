@@ -50,9 +50,9 @@ pub async fn send_invitation_email(params: InvitationEmailParams) {
           <tr>
             <td style="padding:44px 40px 32px; text-align:center; background:linear-gradient(180deg, #0e1e1b 0%, #0b1614 100%); border-bottom:1px solid rgba(45, 212, 191, 0.16);">
               
-              <!-- Official ConjuntOS® Logo -->
+              <!-- Official ConjuntOS® Logo (PNG for 100% email client rendering) -->
               <a href="{login_url}" target="_blank" style="text-decoration:none; display:inline-block;">
-                <img src="https://app.conjuntos.app/logo-verticalW.svg" alt="ConjuntOS®" height="85" style="display:block; margin:0 auto; max-width:240px; height:auto; border:0;" />
+                <img src="https://app.conjuntos.app/logo.png" alt="ConjuntOS®" width="220" style="display:block; margin:0 auto; width:220px; max-width:260px; height:auto; border:0;" />
               </a>
               
               <!-- Residential Complex Badge -->
