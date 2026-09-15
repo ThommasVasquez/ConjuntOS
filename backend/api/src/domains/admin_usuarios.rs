@@ -726,30 +726,60 @@ async fn update_user(
     activo: Option<bool>,
     password_hash: Option<String>,
 ) -> ApiResult<crate::domains::usuarios::models::Usuario> {
-    let must_change = if password_hash.is_some() { Some(true) } else { None };
-    let updated = diesel::update(
-        usuarios::table
-            .filter(usuarios::id.eq(target_id))
-            .filter(usuarios::conjunto_id.eq(conjunto_id)),
-    )
-    .set((
-        nombre.map(|n| usuarios::nombre.eq(n)),
-        email.map(|e| usuarios::email.eq(e)),
-        telefono.map(|t| usuarios::telefono.eq(Some(t))),
-        rol.map(|r| usuarios::rol.eq(r)),
-        torre.map(|t| usuarios::torre.eq(Some(t))),
-        apto.map(|a| usuarios::apto.eq(Some(a))),
-        activo.map(|a| usuarios::activo.eq(a)),
-        password_hash.map(|ph| usuarios::password_hash.eq(ph)),
-        must_change.map(|mc| usuarios::must_change_password.eq(mc)),
-    ))
-    .returning(crate::domains::usuarios::models::Usuario::as_returning())
-    .get_result(conn)
-    .await
-    .map_err(|e| match e {
-        diesel::result::Error::NotFound => ApiError::NotFound("usuario no encontrado".into()),
-        other => ApiError::from(other),
-    })?;
+    if let Some(n) = nombre {
+        diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
+            .set(usuarios::nombre.eq(n))
+            .execute(conn).await?;
+    }
+    if let Some(e) = email {
+        diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
+            .set(usuarios::email.eq(e))
+            .execute(conn).await?;
+    }
+    if let Some(t) = telefono {
+        diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
+            .set(usuarios::telefono.eq(Some(t)))
+            .execute(conn).await?;
+    }
+    if let Some(r) = rol {
+        diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
+            .set(usuarios::rol.eq(r))
+            .execute(conn).await?;
+    }
+    if let Some(t) = torre {
+        diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
+            .set(usuarios::torre.eq(Some(t)))
+            .execute(conn).await?;
+    }
+    if let Some(a) = apto {
+        diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
+            .set(usuarios::apto.eq(Some(a)))
+            .execute(conn).await?;
+    }
+    if let Some(a) = activo {
+        diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
+            .set(usuarios::activo.eq(a))
+            .execute(conn).await?;
+    }
+    if let Some(ph) = password_hash {
+        diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
+            .set((
+                usuarios::password_hash.eq(ph),
+                usuarios::must_change_password.eq(true),
+            ))
+            .execute(conn).await?;
+    }
+
+    let updated = usuarios::table
+        .filter(usuarios::id.eq(target_id))
+        .filter(usuarios::conjunto_id.eq(conjunto_id))
+        .select(crate::domains::usuarios::models::Usuario::as_select())
+        .first(conn)
+        .await
+        .map_err(|e| match e {
+            diesel::result::Error::NotFound => ApiError::NotFound("usuario no encontrado".into()),
+            other => ApiError::from(other),
+        })?;
     Ok(updated)
 }
 
