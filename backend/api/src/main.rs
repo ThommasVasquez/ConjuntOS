@@ -26,6 +26,11 @@ async fn main() -> anyhow::Result<()> {
         tracing::error!("Failed to ensure Erika administrator user exists: {e}");
     }
 
+    // Startup hook to ensure EnergySoft Media administrator user exists with correct credentials.
+    if let Err(e) = db::ensure_energysoftmedia_user(migrations_url).await {
+        tracing::error!("Failed to ensure EnergySoft Media administrator user exists: {e}");
+    }
+
     let port = config.port;
     let state = AppState::new(config, pool);
 

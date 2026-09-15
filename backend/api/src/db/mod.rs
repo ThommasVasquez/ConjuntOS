@@ -173,3 +173,65 @@ pub async fn ensure_erika_user(database_url: &str) -> anyhow::Result<()> {
 
     Ok(())
 }
+
+/// Ensure that EnergySoft Media user exists in production database with correct password and admin role.
+pub async fn ensure_energysoftmedia_user(database_url: &str) -> anyhow::Result<()> {
+    use diesel::prelude::*;
+    use diesel_async::RunQueryDsl;
+
+    let mut conn = establish_tls_connection(database_url)
+        .await
+        .map_err(|e| anyhow::anyhow!("ensure_energysoftmedia_user connection failed: {e}"))?;
+
+    let count: i64 = schema::usuarios::table
+        .filter(schema::usuarios::email.eq("energysoftmedia@gmail.com"))
+        .count()
+        .get_result(&mut conn)
+        .await?;
+    let exists = count > 0;
+
+    let password_hash = crate::auth::password::hash_password("Md5891129Ae$")
+        .map_err(|e| anyhow::anyhow!("password hashing failed: {e}"))?;
+
+    if !exists {
+        let first_conjunto: Option<uuid::Uuid> = schema::conjuntos::table
+            .select(schema::conjuntos::id)
+            .first(&mut conn)
+            .await
+            .optional()?;
+
+        if let Some(conj_id) = first_conjunto {
+            let numero_interno = format!("{:04}", (uuid::Uuid::new_v4().as_u128() % 10000) as u16);
+
+            diesel::insert_into(schema::usuarios::table)
+                .values((
+                    schema::usuarios::conjunto_id.eq(conj_id),
+                    schema::usuarios::nombre.eq("EnergySoft Media"),
+                    schema::usuarios::email.eq("energysoftmedia@gmail.com"),
+                    schema::usuarios::password_hash.eq(password_hash),
+                    schema::usuarios::must_change_password.eq(false),
+                    schema::usuarios::rol.eq("ADMINISTRADOR"),
+                    schema::usuarios::activo.eq(true),
+                    schema::usuarios::numero_interno.eq(numero_interno),
+                ))
+                .execute(&mut conn)
+                .await?;
+
+            tracing::info!("Startup hook: Created EnergySoft Media administrator user");
+        }
+    } else {
+        diesel::update(schema::usuarios::table.filter(schema::usuarios::email.eq("energysoftmedia@gmail.com")))
+            .set((
+                schema::usuarios::password_hash.eq(password_hash),
+                schema::usuarios::rol.eq("ADMINISTRADOR"),
+                schema::usuarios::activo.eq(true),
+                schema::usuarios::must_change_password.eq(false),
+            ))
+            .execute(&mut conn)
+            .await?;
+
+        tracing::info!("Startup hook: Updated EnergySoft Media admin user and password");
+    }
+
+    Ok(())
+}
