@@ -74,7 +74,7 @@ export const useAuth = create<AuthState>((set) => ({
       }
       const res = await api.post<LoginResponse>('/auth/login', {
         email: finalEmail,
-        password,
+        password: password.trim(),
       });
       // The Rust backend also sets an httpOnly ec_session cookie, but its
       // Domain=conjuntos.app only works on that origin — mirror the token
