@@ -580,42 +580,61 @@ function ProfileContent() {
 
           {/* DROPDOWN MENU - MAX PRIORITY */}
           {showMenu && hasMounted && (
-            <div
-              className="absolute top-14 right-0 w-52 rounded-3xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 z-[9999]"
-              style={{
-                pointerEvents: 'auto',
-                background: 'rgba(0, 157, 242, 0.12)',
-                backdropFilter: 'blur(32px) saturate(200%)',
-                WebkitBackdropFilter: 'blur(32px) saturate(200%)',
-                border: '1px solid rgba(0, 157, 242, 0.25)',
-                boxShadow: '0 20px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)',
-              }}
-            >
-              <button 
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowEditModal(true);
-                  setShowMenu(false);
+            <>
+              {/* Invisible backdrop to dismiss menu on tap outside */}
+              <div 
+                className="fixed inset-0 z-[9998] pointer-events-auto"
+                onClick={() => setShowMenu(false)}
+              />
+              <div
+                className="absolute top-14 right-0 w-56 rounded-3xl overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200 z-[9999] bg-primary-light/95 dark:bg-[#0b1614]/95 backdrop-blur-2xl border border-border shadow-2xl shadow-black/25 pointer-events-auto"
+                style={{
+                  boxShadow: '0 20px 50px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
                 }}
-                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-text hover:bg-info/10 transition-colors text-left border-b border-info/15 cursor-pointer"
               >
-                <Edit size={18} className="text-info"/> Editar Perfil
-              </button>
-              <button className="w-full p-5 flex items-center gap-3 text-[15px] font-medium text-text hover:bg-success/10 transition-colors text-left border-b border-info/15">
-                <ShieldCheck size={18} className="text-success"/> Privacidad
-              </button>
-              <button 
-                type="button"
-                onClick={() => {
-                  handleLogout();
-                  setShowMenu(false);
-                }}
-                className="w-full p-5 flex items-center gap-3 text-[15px] font-bold text-text hover:bg-red-500/10 transition-colors text-left cursor-pointer"
-              >
-                <LogOut size={18} className="text-red-400"/> Cerrar Sesión
-              </button>
-            </div>
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowEditModal(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-5 py-4 flex items-center gap-3.5 text-[15px] font-bold text-text hover:bg-accent-soft transition-colors text-left border-b border-border cursor-pointer active:scale-[0.98]"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-info/15 flex items-center justify-center text-info shrink-0">
+                    <Edit size={17} />
+                  </div>
+                  <span className="tracking-tight">Editar Perfil</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    toast.info("Configuración de privacidad disponible próximamente.");
+                  }}
+                  className="w-full px-5 py-4 flex items-center gap-3.5 text-[15px] font-semibold text-text hover:bg-accent-soft transition-colors text-left border-b border-border cursor-pointer active:scale-[0.98]"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-success/15 flex items-center justify-center text-success shrink-0">
+                    <ShieldCheck size={17} />
+                  </div>
+                  <span className="tracking-tight">Privacidad</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    handleLogout();
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-5 py-4 flex items-center gap-3.5 text-[15px] font-bold text-danger hover:bg-danger/10 transition-colors text-left cursor-pointer active:scale-[0.98]"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-danger/15 flex items-center justify-center text-danger shrink-0">
+                    <LogOut size={17} />
+                  </div>
+                  <span className="tracking-tight">Cerrar Sesión</span>
+                </button>
+              </div>
+            </>
           )}
         </div>
       </header>
