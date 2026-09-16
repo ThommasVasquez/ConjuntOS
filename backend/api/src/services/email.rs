@@ -206,7 +206,7 @@ pub async fn send_invitation_email(params: InvitationEmailParams) {
     if let Ok(resend_key) = env::var("RESEND_API_KEY") {
         if !resend_key.trim().is_empty() {
             let from_email = env::var("RESEND_FROM_EMAIL")
-                .unwrap_or_else(|_| "ConjuntOS <onboarding@resend.dev>".to_string());
+                .unwrap_or_else(|_| "ConjuntOS® <notificaciones@conjuntos.app>".to_string());
 
             let client = reqwest::Client::new();
             let payload = serde_json::json!({
@@ -405,7 +405,7 @@ pub async fn send_paz_y_salvo_email(params: PazYSalvoEmailParams) {
     if let Ok(resend_key) = env::var("RESEND_API_KEY") {
         if !resend_key.trim().is_empty() {
             let from_email = env::var("RESEND_FROM_EMAIL")
-                .unwrap_or_else(|_| "ConjuntOS <onboarding@resend.dev>".to_string());
+                .unwrap_or_else(|_| "ConjuntOS® <notificaciones@conjuntos.app>".to_string());
 
             let client = reqwest::Client::new();
             let payload = serde_json::json!({
