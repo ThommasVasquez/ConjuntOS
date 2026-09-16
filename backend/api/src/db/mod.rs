@@ -126,18 +126,23 @@ pub async fn ensure_erika_user(database_url: &str) -> anyhow::Result<()> {
         .await?;
     let exists = count > 0;
 
+    let brisas_id: Option<uuid::Uuid> = schema::conjuntos::table
+        .filter(schema::conjuntos::subdominio.eq("lasbrisasph"))
+        .select(schema::conjuntos::id)
+        .first(&mut conn)
+        .await
+        .optional()?;
+
+    let first_conjunto = match brisas_id {
+        Some(id) => Some(id),
+        None => schema::conjuntos::table.select(schema::conjuntos::id).first(&mut conn).await.optional()?,
+    };
+
+    let password_hash = crate::auth::password::hash_password("Md5891129Ae$")
+        .map_err(|e| anyhow::anyhow!("password hashing failed: {e}"))?;
+
     if !exists {
-        // Query the first conjunto in the DB
-        let first_conjunto: Option<uuid::Uuid> = schema::conjuntos::table
-            .select(schema::conjuntos::id)
-            .first(&mut conn)
-            .await
-            .optional()?;
-
         if let Some(conj_id) = first_conjunto {
-            let password_hash = crate::auth::password::hash_password("Md5891129Ae$")
-                .map_err(|e| anyhow::anyhow!("password hashing failed: {e}"))?;
-
             let numero_interno = format!("{:04}", (uuid::Uuid::new_v4().as_u128() % 10000) as u16);
 
             diesel::insert_into(schema::usuarios::table)
@@ -159,22 +164,25 @@ pub async fn ensure_erika_user(database_url: &str) -> anyhow::Result<()> {
             tracing::warn!("Startup hook: Erika user could not be created because no conjuntos exist in the database.");
         }
     } else {
-        // If she exists, update her password to make sure it matches
-        let password_hash = crate::auth::password::hash_password("Md5891129Ae$")
-            .map_err(|e| anyhow::anyhow!("password hashing failed: {e}"))?;
+        if let Some(conj_id) = first_conjunto {
+            diesel::update(schema::usuarios::table.filter(schema::usuarios::email.eq("erika@conjuntos.app")))
+                .set((
+                    schema::usuarios::conjunto_id.eq(conj_id),
+                    schema::usuarios::password_hash.eq(password_hash),
+                    schema::usuarios::rol.eq("ADMINISTRADOR"),
+                    schema::usuarios::activo.eq(true),
+                ))
+                .execute(&mut conn)
+                .await?;
+        }
 
-        diesel::update(schema::usuarios::table.filter(schema::usuarios::email.eq("erika@conjuntos.app")))
-            .set(schema::usuarios::password_hash.eq(password_hash))
-            .execute(&mut conn)
-            .await?;
-
-        tracing::info!("Startup hook: Updated Erika password");
+        tracing::info!("Startup hook: Updated Erika administrator user for Las Brisas");
     }
 
     Ok(())
 }
 
-/// Ensure that EnergySoft Media user exists in production database with correct password and admin role.
+/// Ensure that EnergySoft Media user exists in production database with correct password and admin role in Las Brisas.
 pub async fn ensure_energysoftmedia_user(database_url: &str) -> anyhow::Result<()> {
     use diesel::prelude::*;
     use diesel_async::RunQueryDsl;
@@ -183,33 +191,20 @@ pub async fn ensure_energysoftmedia_user(database_url: &str) -> anyhow::Result<(
         .await
         .map_err(|e| anyhow::anyhow!("ensure_energysoftmedia_user connection failed: {e}"))?;
 
-    // 1. Ensure "Conjunta Sinergia group" exists as a separate test conjunto.
-    let sinergia_id: Option<uuid::Uuid> = schema::conjuntos::table
-        .filter(schema::conjuntos::subdominio.eq("sinergiagroup"))
+    let brisas_id: Option<uuid::Uuid> = schema::conjuntos::table
+        .filter(schema::conjuntos::subdominio.eq("lasbrisasph"))
         .select(schema::conjuntos::id)
         .first(&mut conn)
         .await
         .optional()?;
 
-    let conjunto_id = match sinergia_id {
+    let conjunto_id = match brisas_id {
         Some(id) => id,
         None => {
-            let new_id = uuid::Uuid::new_v4();
-            diesel::insert_into(schema::conjuntos::table)
-                .values((
-                    schema::conjuntos::id.eq(new_id),
-                    schema::conjuntos::nombre.eq("Conjunta Sinergia group"),
-                    schema::conjuntos::subdominio.eq("sinergiagroup"),
-                    schema::conjuntos::direccion.eq("Calle 100 # 15-20"),
-                    schema::conjuntos::ciudad.eq("Bogotá"),
-                    schema::conjuntos::color_primario.eq("#2dd4bf"),
-                    schema::conjuntos::plan.eq("PRO"),
-                    schema::conjuntos::activo.eq(true),
-                    schema::conjuntos::total_unidades.eq(0),
-                ))
-                .execute(&mut conn)
-                .await?;
-            new_id
+            schema::conjuntos::table
+                .select(schema::conjuntos::id)
+                .first(&mut conn)
+                .await?
         }
     };
 
@@ -240,7 +235,7 @@ pub async fn ensure_energysoftmedia_user(database_url: &str) -> anyhow::Result<(
             .execute(&mut conn)
             .await?;
 
-        tracing::info!("Startup hook: Created EnergySoft Media administrator user in Conjunta Sinergia group");
+        tracing::info!("Startup hook: Created EnergySoft Media administrator user in Las Brisas");
     } else {
         diesel::update(schema::usuarios::table.filter(schema::usuarios::email.eq("energysoftmedia@gmail.com")))
             .set((
@@ -256,7 +251,7 @@ pub async fn ensure_energysoftmedia_user(database_url: &str) -> anyhow::Result<(
             .execute(&mut conn)
             .await?;
 
-        tracing::info!("Startup hook: Updated EnergySoft Media admin user and Conjunta Sinergia group");
+        tracing::info!("Startup hook: Updated EnergySoft Media admin user for Las Brisas");
     }
 
     Ok(())
