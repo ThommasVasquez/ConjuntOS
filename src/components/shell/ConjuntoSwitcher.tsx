@@ -15,11 +15,8 @@ export default function ConjuntoSwitcher() {
   const [conjuntos, setConjuntos] = useState<ConjuntoDto[]>([]);
   const [activeConjunto, setActiveConjunto] = useState<ConjuntoDto | null>(null);
 
-  // Only render for Administrators, SuperAdmins or Council members
-  const isEligibleRole =
-    user?.rol === "ADMINISTRADOR" ||
-    user?.rol === "SUPER_ADMIN" ||
-    user?.rol === "CONCEJO";
+  // Only render for SuperAdmins who have platform-wide access
+  const isEligibleRole = user?.rol === "SUPER_ADMIN";
 
   useEffect(() => {
     if (!user || !isEligibleRole) return;

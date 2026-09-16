@@ -88,9 +88,10 @@ interface AdminResidenteDetalle {
     piso: number | null;
     tipo: string;
   } | null;
-  vehiculos: VehiculoResumen[];
-  mascotas: MascotaResumen[];
-  ultimosPagos: PagoAdminResumen[];
+  vehiculos?: VehiculoResumen[];
+  mascotas?: MascotaResumen[];
+  ultimosPagos?: PagoAdminResumen[];
+  pagosRecientes?: PagoAdminResumen[];
 }
 
 interface InvitarResidenteRequest {
@@ -392,9 +393,16 @@ export default function AdminResidentesPage() {
       const data = await api.get<AdminResidenteDetalle>(
         `/admin/usuarios/${id}`
       );
-      setDetalle(data);
+      setDetalle({
+        ...data,
+        vehiculos: data.vehiculos ?? [],
+        mascotas: data.mascotas ?? [],
+        ultimosPagos: data.ultimosPagos ?? data.pagosRecientes ?? [],
+      });
     } catch {
       toast.error("Error al cargar detalle del residente");
+      setSelectedId(null);
+      setDetalle(null);
     } finally {
       setLoadingDetalle(false);
     }
@@ -867,17 +875,17 @@ export default function AdminResidentesPage() {
                   <div className="flex items-center gap-2 opacity-70">
                     <Car size={16} className="text-text" />
                     <h5 className="text-[11px] text-text font-black uppercase tracking-[0.2em]">
-                      Vehículos ({detalle.vehiculos.length})
+                      Vehículos ({(detalle.vehiculos || []).length})
                     </h5>
                   </div>
-                  {detalle.vehiculos.length === 0 ? (
+                  {(detalle.vehiculos || []).length === 0 ? (
                     <div className="p-4 rounded-xl bg-surface-2 border border-dashed border-border text-center">
                       <span className="text-[10px] text-text font-bold uppercase tracking-wider">
                         Sin vehículos registrados
                       </span>
                     </div>
                   ) : (
-                    detalle.vehiculos.map((v, i) => (
+                    (detalle.vehiculos || []).map((v, i) => (
                       <div
                         key={i}
                         className="p-3 rounded-xl bg-surface-2 border border-border flex justify-between items-center"
@@ -908,17 +916,17 @@ export default function AdminResidentesPage() {
                   <div className="flex items-center gap-2 opacity-70">
                     <Dog size={16} className="text-text" />
                     <h5 className="text-[11px] text-text font-black uppercase tracking-[0.2em]">
-                      Mascotas ({detalle.mascotas.length})
+                      Mascotas ({(detalle.mascotas || []).length})
                     </h5>
                   </div>
-                  {detalle.mascotas.length === 0 ? (
+                  {(detalle.mascotas || []).length === 0 ? (
                     <div className="p-4 rounded-xl bg-surface-2 border border-dashed border-border text-center">
                       <span className="text-[10px] text-text font-bold uppercase tracking-wider">
                         Sin mascotas registradas
                       </span>
                     </div>
                   ) : (
-                    detalle.mascotas.map((m, i) => (
+                    (detalle.mascotas || []).map((m, i) => (
                       <div
                         key={i}
                         className="p-3 rounded-xl bg-surface-2 border border-border flex items-center gap-3"
@@ -944,17 +952,17 @@ export default function AdminResidentesPage() {
                   <div className="flex items-center gap-2 opacity-70">
                     <ShieldCheck size={16} className="text-text" />
                     <h5 className="text-[11px] text-text font-black uppercase tracking-[0.2em]">
-                      Últimos Pagos ({detalle.ultimosPagos.length})
+                      Últimos Pagos ({(detalle.ultimosPagos || detalle.pagosRecientes || []).length})
                     </h5>
                   </div>
-                  {detalle.ultimosPagos.length === 0 ? (
+                  {(detalle.ultimosPagos || detalle.pagosRecientes || []).length === 0 ? (
                     <div className="p-4 rounded-xl bg-surface-2 border border-dashed border-border text-center">
                       <span className="text-[10px] text-text font-bold uppercase tracking-wider">
                         Sin pagos recientes
                       </span>
                     </div>
                   ) : (
-                    detalle.ultimosPagos.map((p, i) => (
+                    (detalle.ultimosPagos || detalle.pagosRecientes || []).map((p, i) => (
                       <div
                         key={i}
                         className="p-3 rounded-xl bg-surface-2 border border-border flex justify-between items-center"
