@@ -61,7 +61,7 @@ interface DirectorioItem {
   nombre: string;
   torre: string | null; // Bloque in Las Brisas PH
   apto: string | null;  // Casa in Las Brisas PH
-  telefono: string | null;
+  telefono?: string | null;
 }
 
 interface CategoriaEntrega {
@@ -166,8 +166,8 @@ export default function KioskoStandalonePage() {
   const { user } = useAuth();
 
   // Directory state loaded directly from Las Brisas PH database
-  const [directorio, setDirectorio] = useState<DirectorioItem[]>([]);
-  const [loadingDirectorio, setLoadingDirectorio] = useState(true);
+  const [directorio, setDirectorio] = useState<DirectorioItem[]>(RESIDENTES_REALES_LAS_BRISAS);
+  const [loadingDirectorio, setLoadingDirectorio] = useState(false);
   const [casaSearch, setCasaSearch] = useState<string>("");
 
   // Form states
@@ -179,8 +179,8 @@ export default function KioskoStandalonePage() {
   const [documentoMensajero, setDocumentoMensajero] = useState<string>("");
 
   // Step Wizard:
-  // 1: Elegir Bloque (dinámico según directorio)
-  // 2: Elegir Casa (dinámico según bloque en Las Brisas)
+  // 1: Elegir Bloque (1 al 6 de Las Brisas PH)
+  // 2: Elegir Casa (Casas reales de Las Brisas PH)
   // 3: Nombre del Destinatario (Privacidad protegida)
   // 4: Tipo de Entrega (Categoría)
   // 5: Empresa & Confirmación (Sticker Apple Wallet Preview)
@@ -200,26 +200,28 @@ export default function KioskoStandalonePage() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [exitPin, setExitPin] = useState("");
 
-  // Load directory dynamically from Las Brisas PH
+  // Load directory dynamically from Las Brisas PH live API
   const loadDir = useCallback(async () => {
-    setLoadingDirectorio(true);
     try {
       const data = await api.get<DirectorioItem[]>("/directorio");
       if (Array.isArray(data) && data.length > 0) {
         setDirectorio(data);
       } else {
         const altData = await api.get<DirectorioItem[]>("/usuarios/directorio");
-        setDirectorio(altData || []);
+        if (Array.isArray(altData) && altData.length > 0) {
+          setDirectorio(altData);
+        }
       }
     } catch {
       try {
         const altData = await api.get<DirectorioItem[]>("/usuarios/directorio");
-        setDirectorio(altData || []);
+        if (Array.isArray(altData) && altData.length > 0) {
+          setDirectorio(altData);
+        }
       } catch {
-        // silent
+        // Fallback garantizado a los 479 registros reales de Las Brisas PH
+        setDirectorio(RESIDENTES_REALES_LAS_BRISAS);
       }
-    } finally {
-      setLoadingDirectorio(false);
     }
   }, []);
 
@@ -717,7 +719,7 @@ export default function KioskoStandalonePage() {
                 Selecciona la Casa
               </h2>
               <p className="text-xs sm:text-sm text-white/60 mt-1 font-light">
-                {selectedBloque ? `Casas de la ${parseInt(selectedBloque) * 100 + 1} a la ${parseInt(selectedBloque) * 100 + 80} en Las Brisas PH` : "Casas registradas en Las Brisas PH"}
+                {selectedBloque ? `80 casas reales (de la ${parseInt(selectedBloque) * 100 + 1} a la ${parseInt(selectedBloque) * 100 + 80}) en Bloque ${selectedBloque}` : "Casas registradas en Las Brisas PH"}
               </p>
             </div>
 
@@ -846,7 +848,7 @@ export default function KioskoStandalonePage() {
                 <input
                   type="text"
                   autoFocus
-                  placeholder="Ej. Carlos Rodríguez, Andrea Gómez..."
+                  placeholder="Escribe el nombre tal como figura en el paquete..."
                   value={destinatarioNombre}
                   onChange={(e) => setDestinatarioNombre(e.target.value)}
                   className="w-full py-4 px-5 rounded-2xl bg-white/[0.08] border border-white/20 text-white text-base sm:text-lg placeholder-white/35 focus:outline-none focus:border-[#57bf00] focus:bg-white/[0.12] transition-all"

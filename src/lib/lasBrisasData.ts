@@ -32,6 +32,18 @@ export const CASAS_REALES_POR_BLOQUE: Record<string, string[]> =
     return acc;
   }, {} as Record<string, string[]>);
 
+// Asegurar que todas las 80 casas físicas reales de cada bloque estén disponibles (1-80 por bloque)
+["1", "2", "3", "4", "5", "6"].forEach((b) => {
+  if (!CASAS_REALES_POR_BLOQUE[b]) CASAS_REALES_POR_BLOQUE[b] = [];
+  const baseNum = Number(b) * 100;
+  for (let n = 1; n <= 80; n++) {
+    const casaStr = String(baseNum + n);
+    if (!CASAS_REALES_POR_BLOQUE[b].includes(casaStr)) {
+      CASAS_REALES_POR_BLOQUE[b].push(casaStr);
+    }
+  }
+});
+
 // Ordenar numéricamente las casas de cada bloque
 Object.keys(CASAS_REALES_POR_BLOQUE).forEach((bloque) => {
   CASAS_REALES_POR_BLOQUE[bloque].sort((a, b) => Number(a) - Number(b));
