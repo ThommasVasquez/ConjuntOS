@@ -57,6 +57,30 @@ interface DirectorioItem {
   telefono: string | null;
 }
 
+// Catálogo canónico real de unidades de Las Brisas PH:
+// 6 Bloques residenciales (Bloques 1 al 6), exactamente 80 casas por bloque (480 unidades totales).
+// Bloque 1: Casas 101 a 180
+// Bloque 2: Casas 201 a 280
+// Bloque 3: Casas 301 a 380
+// Bloque 4: Casas 401 a 480
+// Bloque 5: Casas 501 a 580
+// Bloque 6: Casas 601 a 680
+const BLOQUES_REALES_LAS_BRISAS = ["1", "2", "3", "4", "5", "6"];
+
+const getCasasRealesPorBloque = (bloque: string): string[] => {
+  const b = parseInt(bloque, 10);
+  if (b >= 1 && b <= 6) {
+    const start = b * 100 + 1;
+    const end = b * 100 + 80;
+    const list: string[] = [];
+    for (let i = start; i <= end; i++) {
+      list.push(String(i));
+    }
+    return list;
+  }
+  return [];
+};
+
 interface CategoriaEntrega {
   id: string;
   label: string;
@@ -152,17 +176,16 @@ const EMPRESAS_RAPIDAS = [
   { name: "Familiar / Particular", icon: "👤" },
 ];
 
-const BLOQUES_LAS_BRISAS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
-
 const IDLE_TIMEOUT_MS = 50000; // 50 seconds inactivity triggers Apple screensaver
 
 export default function KioskoStandalonePage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  // Directory state
+  // Directory state loaded directly from Las Brisas PH database
   const [directorio, setDirectorio] = useState<DirectorioItem[]>([]);
   const [loadingDirectorio, setLoadingDirectorio] = useState(true);
+  const [casaSearch, setCasaSearch] = useState<string>("");
 
   // Form states
   const [selectedBloque, setSelectedBloque] = useState<string>("");
@@ -173,8 +196,8 @@ export default function KioskoStandalonePage() {
   const [documentoMensajero, setDocumentoMensajero] = useState<string>("");
 
   // Step Wizard:
-  // 1: Elegir Bloque
-  // 2: Marcar Casa (Numpad táctil)
+  // 1: Elegir Bloque (dinámico según directorio)
+  // 2: Elegir Casa (dinámico según bloque en Las Brisas)
   // 3: Nombre del Destinatario (Privacidad protegida)
   // 4: Tipo de Entrega (Categoría)
   // 5: Empresa & Confirmación (Sticker Apple Wallet Preview)
@@ -194,20 +217,94 @@ export default function KioskoStandalonePage() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [exitPin, setExitPin] = useState("");
 
-  // Load directory silently for resident ID resolution
-  useEffect(() => {
-    async function loadDir() {
-      try {
-        const data = await api.get<DirectorioItem[]>("/directorio");
+  // Load directory dynamically from Las Brisas PH
+  const loadDir = useCallback(async () => {
+    setLoadingDirectorio(true);
+    try {
+      const data = await api.get<DirectorioItem[]>("/directorio");
+      if (Array.isArray(data) && data.length > 0) {
         setDirectorio(data);
+      } else {
+        const altData = await api.get<DirectorioItem[]>("/usuarios/directorio");
+        setDirectorio(altData || []);
+      }
+    } catch {
+      try {
+        const altData = await api.get<DirectorioItem[]>("/usuarios/directorio");
+        setDirectorio(altData || []);
       } catch {
-        // Silent fallback in dev
-      } finally {
-        setLoadingDirectorio(false);
+        // silent
+      }
+    } finally {
+      setLoadingDirectorio(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDir();
+  }, [loadDir]);
+
+  useEffect(() => {
+    if (user && directorio.length === 0) {
+      loadDir();
+    }
+  }, [user, directorio.length, loadDir]);
+
+  // Extract REAL Bloques of Las Brisas PH (Bloques 1 al 6)
+  const bloquesDisponibles = useMemo(() => {
+    if (directorio.length > 0) {
+      const fromDb = new Set<string>();
+      directorio.forEach((d) => {
+        const raw = d.torre?.trim();
+        if (raw) {
+          const clean = raw.replace(/^(bloque|torre)\s*/i, "").trim();
+          if (BLOQUES_REALES_LAS_BRISAS.includes(clean)) {
+            fromDb.add(clean);
+          }
+        }
+      });
+      if (fromDb.size > 0) {
+        return Array.from(fromDb).sort((a, b) => Number(a) - Number(b));
       }
     }
-    loadDir();
-  }, []);
+    return BLOQUES_REALES_LAS_BRISAS;
+  }, [directorio]);
+
+  // Extract REAL Casas for the selected Bloque (exactly 80 real houses per block)
+  const casasDisponibles = useMemo(() => {
+    if (!selectedBloque) return [];
+    const casasCanonicas = getCasasRealesPorBloque(selectedBloque);
+    if (directorio.length > 0) {
+      const set = new Set<string>();
+      directorio.forEach((d) => {
+        const rawTorre = d.torre?.trim() || "";
+        const cleanTorre = rawTorre.replace(/^(bloque|torre)\s*/i, "").trim();
+        if (cleanTorre === selectedBloque && d.apto?.trim()) {
+          const cleanCasa = d.apto.replace(/^(casa|apto)\s*/i, "").trim();
+          if (cleanCasa && cleanCasa !== "S/N" && cleanCasa !== "S/T") {
+            set.add(cleanCasa);
+          }
+        }
+      });
+      if (set.size > 0) {
+        casasCanonicas.forEach((c) => set.add(c));
+        return Array.from(set).sort((a, b) => Number(a) - Number(b));
+      }
+    }
+    return casasCanonicas;
+  }, [directorio, selectedBloque]);
+
+  // Filtered Casas based on search: allows matching e.g. "15" -> "215" in Bloque 2, or full "215"
+  const casasFiltradas = useMemo(() => {
+    const q = casaSearch.trim().toLowerCase();
+    if (!q) return casasDisponibles;
+    return casasDisponibles.filter((c) => {
+      if (c.toLowerCase().includes(q)) return true;
+      // If courier types 2 digits like "15", also match "X15"
+      if (q.length === 2 && c.endsWith(q)) return true;
+      return false;
+    });
+  }, [casasDisponibles, casaSearch]);
 
   // Idle Activity Detector
   const resetIdleTimer = useCallback(() => {
@@ -585,7 +682,7 @@ export default function KioskoStandalonePage() {
         </header>
 
         {/* ============================================================== */}
-        {/* STEP 1: ELEGIR BLOQUE (Bloques 1 al 12)                        */}
+        {/* STEP 1: ELEGIR BLOQUE (Dinámico desde base de datos)           */}
         {/* ============================================================== */}
         {step === 1 && (
           <main className="flex-1 flex flex-col justify-center py-6 animate-in fade-in duration-300">
@@ -597,44 +694,66 @@ export default function KioskoStandalonePage() {
                 ¿A qué Bloque vas?
               </h2>
               <p className="text-sm sm:text-base text-white/60 mt-2 font-light">
-                Toca el número de bloque en Las Brisas PH
+                Selecciona el bloque de Las Brisas PH
               </p>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 max-w-2xl mx-auto w-full">
-              {BLOQUES_LAS_BRISAS.map((bloque) => {
-                const isSelected = selectedBloque === bloque;
-                return (
-                  <button
-                    key={bloque}
-                    type="button"
-                    onClick={() => {
-                      setSelectedBloque(bloque);
-                      setSelectedCasa("");
-                      setDestinatarioNombre("");
-                      setStep(2); // Advance to Casa numpad
-                    }}
-                    className={`group relative p-5 rounded-3xl backdrop-blur-2xl border transition-all duration-200 active:scale-95 flex flex-col items-center text-center cursor-pointer ${
-                      isSelected
-                        ? "bg-white text-black border-white shadow-2xl scale-105"
-                        : "bg-white/[0.05] border-white/10 hover:border-white/30 text-white hover:bg-white/[0.09]"
-                    }`}
-                  >
-                    <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60">
-                      Bloque
-                    </span>
-                    <span className="text-2xl sm:text-3xl font-display font-extrabold mt-0.5">
-                      {bloque}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            {loadingDirectorio ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-white/50">
+                <RefreshCw size={28} className="animate-spin text-[#57bf00]" />
+                <span className="text-sm font-medium">Cargando bloques de Las Brisas PH...</span>
+              </div>
+            ) : bloquesDisponibles.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 max-w-2xl mx-auto w-full">
+                {bloquesDisponibles.map((bloque) => {
+                  const isSelected = selectedBloque === bloque;
+                  return (
+                    <button
+                      key={bloque}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBloque(bloque);
+                        setSelectedCasa("");
+                        setDestinatarioNombre("");
+                        setStep(2); // Advance to Casa selection
+                      }}
+                      className={`group relative p-6 rounded-3xl backdrop-blur-2xl border transition-all duration-200 active:scale-95 flex flex-col items-center text-center cursor-pointer ${
+                        isSelected
+                          ? "bg-white text-black border-white shadow-2xl scale-105"
+                          : "bg-white/[0.05] border-white/10 hover:border-white/30 text-white hover:bg-white/[0.09]"
+                      }`}
+                    >
+                      <span className="text-[11px] uppercase tracking-wider font-semibold opacity-60">
+                        Bloque
+                      </span>
+                      <span className="text-2xl sm:text-3xl font-display font-extrabold mt-0.5">
+                        {bloque}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 px-6 text-center max-w-md mx-auto bg-white/[0.03] border border-white/10 rounded-3xl">
+                <Building2 size={36} className="text-[#57bf00] mb-2 opacity-80" />
+                <h3 className="text-base font-bold text-white">Unidades de Las Brisas PH</h3>
+                <p className="text-xs text-white/60 mt-1">
+                  No se detectaron bloques en el directorio activo o la sesión de portería está cargando.
+                </p>
+                <button
+                  type="button"
+                  onClick={loadDir}
+                  className="mt-4 px-5 py-2.5 rounded-full bg-white text-black text-xs font-bold shadow-md hover:bg-white/90 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <RefreshCw size={14} /> Reintentar sincronización
+                </button>
+              </div>
+            )}
           </main>
         )}
 
         {/* ============================================================== */}
-        {/* STEP 2: MARCAR CASA (Apple Numpad Táctil)                      */}
+        {/* STEP 2: ELEGIR CASA (Casas reales de ese Bloque en Las Brisas) */}
         {/* ============================================================== */}
         {step === 2 && (
           <main className="flex-1 flex flex-col justify-between py-4 animate-in fade-in duration-300">
@@ -661,58 +780,70 @@ export default function KioskoStandalonePage() {
 
             <div className="text-center max-w-lg mx-auto mb-2">
               <h2 className="text-2xl sm:text-4xl font-display font-extrabold text-white tracking-tight">
-                Marca el número de Casa
+                Selecciona la Casa
               </h2>
               <p className="text-xs sm:text-sm text-white/60 mt-1 font-light">
-                Usa el teclado numérico para indicar la casa del Bloque {selectedBloque}
+                {selectedBloque ? `Casas de la ${parseInt(selectedBloque) * 100 + 1} a la ${parseInt(selectedBloque) * 100 + 80} en Las Brisas PH` : "Casas registradas en Las Brisas PH"}
               </p>
             </div>
 
-            {/* Apple Numpad Display & Controls */}
-            <div className="flex flex-col items-center my-auto">
-              <div className="py-3 px-8 rounded-3xl bg-white/[0.06] border border-white/15 text-center min-w-[260px] mb-4">
-                <span className="text-[11px] uppercase tracking-widest text-[#57bf00] font-bold block">
-                  Bloque {selectedBloque}
-                </span>
-                <span className="text-4xl sm:text-5xl font-mono font-black tracking-tight text-white">
-                  {selectedCasa ? `CASA ${selectedCasa}` : "CASA ___"}
-                </span>
+            {/* Real Houses from Database */}
+            <div className="flex-1 max-w-2xl mx-auto w-full my-auto flex flex-col justify-center gap-3">
+              {/* Search filter for houses */}
+              <div className="relative">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                <input
+                  type="text"
+                  placeholder="Buscar o escribir número de casa (ej: 15 o 315)..."
+                  value={casaSearch}
+                  onChange={(e) => setCasaSearch(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/[0.06] border border-white/15 text-white placeholder-white/40 text-sm focus:outline-none focus:border-[#57bf00]"
+                />
               </div>
 
-              {/* Numeric keypad */}
-              <div className="grid grid-cols-3 gap-3 w-full max-w-[280px]">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => handleNumpadPress(String(num))}
-                    className="h-16 rounded-2xl bg-white/[0.08] hover:bg-white/20 active:scale-90 text-2xl font-bold font-mono text-white transition-all cursor-pointer flex items-center justify-center border border-white/10 shadow-sm"
-                  >
-                    {num}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={handleNumpadClear}
-                  className="h-16 rounded-2xl bg-white/[0.04] hover:bg-white/10 active:scale-95 text-xs font-bold uppercase text-white/50 transition-all cursor-pointer flex items-center justify-center border border-white/5"
-                >
-                  Limpiar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNumpadPress("0")}
-                  className="h-16 rounded-2xl bg-white/[0.08] hover:bg-white/20 active:scale-90 text-2xl font-bold font-mono text-white transition-all cursor-pointer flex items-center justify-center border border-white/10 shadow-sm"
-                >
-                  0
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNumpadBackspace}
-                  className="h-16 rounded-2xl bg-white/[0.04] hover:bg-white/10 active:scale-95 text-lg font-bold text-white/70 transition-all cursor-pointer flex items-center justify-center border border-white/5"
-                >
-                  ⌫
-                </button>
+              {/* Grid of Real Houses */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 max-h-[320px] overflow-y-auto p-2 rounded-3xl bg-white/[0.03] border border-white/10">
+                {casasFiltradas.map((casa) => {
+                  const isSelected = selectedCasa === casa;
+                  return (
+                    <button
+                      key={casa}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCasa(casa);
+                        setDestinatarioNombre("");
+                      }}
+                      className={`py-3.5 px-2.5 rounded-2xl font-mono text-base font-bold transition-all duration-200 active:scale-95 flex flex-col items-center justify-center cursor-pointer ${
+                        isSelected
+                          ? "bg-[#57bf00] text-white shadow-lg shadow-[#57bf00]/30 scale-105"
+                          : "bg-white/[0.06] hover:bg-white/[0.12] text-white/90 border border-white/10"
+                      }`}
+                    >
+                      <span className="text-[10px] text-white/60 font-sans uppercase">Casa</span>
+                      <span className="text-lg">{casa}</span>
+                    </button>
+                  );
+                })}
               </div>
+
+              {selectedCasa && (
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/[0.06] border border-[#57bf00]/40 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#57bf00] animate-pulse" />
+                    <span className="text-xs font-mono font-bold text-white">
+                      Bloque {selectedBloque} • Casa {selectedCasa} seleccionada
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="px-4 py-1.5 rounded-full bg-[#57bf00] text-white text-xs font-bold shadow hover:bg-[#57bf00]/90 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Continuar</span>
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Next Button */}
