@@ -280,7 +280,7 @@ export default function KioskoStandalonePage() {
   // -------------------------------------------------------------
   const handleRegistrarEImprimir = async () => {
     if (!selectedApto) {
-      toast.error("Selecciona la casa o apartamento de destino.");
+      toast.error("Selecciona la casa de destino.");
       return;
     }
     if (!destinatarioNombre.trim()) {
@@ -314,6 +314,8 @@ export default function KioskoStandalonePage() {
 
       const stickerInfo: StickerData = {
         id: res.id,
+        bloque: selectedTorre || null,
+        casa: selectedApto,
         torre: selectedTorre || null,
         apto: selectedApto,
         destinatario: destinatarioNombre.trim(),
@@ -461,7 +463,7 @@ export default function KioskoStandalonePage() {
                 <div className="grid grid-cols-3 gap-3 max-w-xl text-left mt-2">
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
                     <span className="text-2xl font-black text-accent">1</span>
-                    <p className="text-xs font-bold text-white mt-1">Elige Torre y Casa</p>
+                    <p className="text-xs font-bold text-white mt-1">Elige Bloque y Casa</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
                     <span className="text-2xl font-black text-[#57bf00]">2</span>
@@ -560,19 +562,19 @@ export default function KioskoStandalonePage() {
                   Paso 1 de 2 • Destino
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-display font-black text-white mt-1">
-                  ¿A qué casa o apartamento va dirigido?
+                  ¿A qué casa va dirigido el envío?
                 </h2>
                 <p className="text-xs sm:text-sm text-white/70 mt-1">
-                  Selecciona la torre o bloque y luego el número de inmueble.
+                  Selecciona el bloque y luego el número de casa.
                 </p>
               </div>
 
-              {/* Tower / Block selector */}
+              {/* Bloque selector */}
               {torresDisponibles.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-white/70 flex items-center gap-1.5">
                     <Building2 size={14} className="text-accent" />
-                    1. Selecciona la Torre / Bloque:
+                    1. Selecciona el Bloque:
                   </label>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {torresDisponibles.map((t) => (
@@ -589,18 +591,18 @@ export default function KioskoStandalonePage() {
                             : "bg-white/5 border border-white/10 text-white hover:border-accent/40"
                         }`}
                       >
-                        Torre {t}
+                        Bloque {t}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Apartment / House selector */}
+              {/* Casa selector */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-white/70 flex items-center gap-1.5">
                   <Building2 size={14} className="text-accent" />
-                  2. Selecciona la Casa o Apartamento:
+                  2. Selecciona el número de Casa:
                 </label>
 
                 {loadingDirectorio ? (
@@ -699,7 +701,7 @@ export default function KioskoStandalonePage() {
                     Paso 2 de 2 • Detalles
                   </span>
                   <p className="text-xs font-bold text-white">
-                    Destino: {selectedTorre ? `Torre ${selectedTorre} - ` : ""}Casa {selectedApto} • {destinatarioNombre}
+                    Destino: {selectedTorre ? `Bloque ${selectedTorre} - ` : ""}Casa {selectedApto} • {destinatarioNombre}
                   </p>
                 </div>
               </div>

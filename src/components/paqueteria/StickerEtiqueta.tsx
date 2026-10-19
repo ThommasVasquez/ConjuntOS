@@ -7,6 +7,8 @@ import { Printer, X } from "lucide-react";
 
 export interface StickerData {
   id: string;
+  bloque?: string | null;
+  casa?: string | null;
   torre?: string | null;
   apto?: string | null;
   destinatario: string;
@@ -59,6 +61,9 @@ export default function StickerEtiqueta({ data, onClose, autoPrint = false }: St
   const printRef = useRef<HTMLDivElement>(null);
   const badge = formatTipoBadge(data.tipo);
 
+  const bloqueTexto = data.bloque || data.torre;
+  const casaTexto = data.casa || data.apto;
+
   const handlePrint = () => {
     window.print();
   };
@@ -93,7 +98,7 @@ export default function StickerEtiqueta({ data, onClose, autoPrint = false }: St
           </div>
           <div>
             <h4 className="text-sm font-bold text-text">Sticker Térmico Adhesivo</h4>
-            <p className="text-[11px] text-text/60">Formato estándar 60mm × 40mm</p>
+            <p className="text-[11px] text-text/60">Formato estándar 60mm × 40mm • Las Brisas PH</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -158,11 +163,11 @@ export default function StickerEtiqueta({ data, onClose, autoPrint = false }: St
           </div>
         </div>
 
-        {/* Big Destination Label (Giant font) */}
+        {/* Big Destination Label (Giant font: BLOQUE y CASA para Las Brisas PH) */}
         <div className="my-1 text-center bg-black/5 py-1 rounded border border-black/10">
           <div className="text-[22px] font-black tracking-tight leading-none text-black uppercase font-mono">
-            {data.torre ? `TORRE ${data.torre} - ` : ""}
-            {data.apto ? `CASA ${data.apto}` : "PORTERÍA"}
+            {bloqueTexto ? `BLOQUE ${bloqueTexto} - ` : ""}
+            {casaTexto ? `CASA ${casaTexto}` : "PORTERÍA"}
           </div>
         </div>
 

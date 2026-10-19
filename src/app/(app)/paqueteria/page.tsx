@@ -189,9 +189,9 @@ export default function PaqueteriaPage() {
               onChange={e => setFormData({ ...formData, usuarioId: e.target.value })}
               className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-border"
             >
-              <option value="" className="bg-primary text-text">Seleccione apartamento/residente...</option>
+              <option value="" className="bg-primary text-text">Seleccione casa / residente...</option>
               {residentes.map(r => (
-                <option key={r.id} value={r.id} className="bg-primary text-text">{r.torre} - Apto {r.apto} ({r.nombre})</option>
+                <option key={r.id} value={r.id} className="bg-primary text-text">{r.torre ? `Bloque ${r.torre} - ` : ""}Casa {r.apto} ({r.nombre})</option>
               ))}
             </select>
           </div>
@@ -265,13 +265,15 @@ export default function PaqueteriaPage() {
               </div>
               <div className="flex items-center justify-between pt-1 relative z-10">
                 <div className="flex items-center gap-2 text-text/70 text-xs font-semibold">
-                  <MapPin size={14} /> {p.residente?.torre} - Apto {p.residente?.apto} ({p.residente?.nombre})
+                  <MapPin size={14} /> {p.residente?.torre ? `Bloque ${p.residente.torre} - ` : ""}Casa {p.residente?.apto} ({p.residente?.nombre})
                 </div>
                 <button
                   type="button"
                   onClick={() =>
                     setSelectedSticker({
                       id: p.id,
+                      bloque: p.residente?.torre || null,
+                      casa: p.residente?.apto || null,
                       torre: p.residente?.torre || null,
                       apto: p.residente?.apto || null,
                       destinatario: p.residente?.nombre || "Residente",
@@ -318,7 +320,7 @@ export default function PaqueteriaPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 text-text/70 text-xs font-semibold">
-                <MapPin size={14} /> {p.residente?.torre} - Apto {p.residente?.apto} ({p.residente?.nombre})
+                <MapPin size={14} /> {p.residente?.torre ? `Bloque ${p.residente.torre} - ` : ""}Casa {p.residente?.apto} ({p.residente?.nombre})
               </div>
               {p.entregadoEn && (
                 <span className="text-[9px] text-text/50 uppercase tracking-widest">
