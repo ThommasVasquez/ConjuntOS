@@ -49,6 +49,13 @@ function getValidBackendTipo(tipo: string): string {
   }
 }
 
+import {
+  BLOQUES_REALES_LAS_BRISAS,
+  getCasasRealesDeBloque,
+  findResidenteReal,
+  RESIDENTES_REALES_LAS_BRISAS,
+} from "@/lib/lasBrisasData";
+
 interface DirectorioItem {
   id: string;
   nombre: string;
@@ -56,30 +63,6 @@ interface DirectorioItem {
   apto: string | null;  // Casa in Las Brisas PH
   telefono: string | null;
 }
-
-// Catálogo canónico real de unidades de Las Brisas PH:
-// 6 Bloques residenciales (Bloques 1 al 6), exactamente 80 casas por bloque (480 unidades totales).
-// Bloque 1: Casas 101 a 180
-// Bloque 2: Casas 201 a 280
-// Bloque 3: Casas 301 a 380
-// Bloque 4: Casas 401 a 480
-// Bloque 5: Casas 501 a 580
-// Bloque 6: Casas 601 a 680
-const BLOQUES_REALES_LAS_BRISAS = ["1", "2", "3", "4", "5", "6"];
-
-const getCasasRealesPorBloque = (bloque: string): string[] => {
-  const b = parseInt(bloque, 10);
-  if (b >= 1 && b <= 6) {
-    const start = b * 100 + 1;
-    const end = b * 100 + 80;
-    const list: string[] = [];
-    for (let i = start; i <= end; i++) {
-      list.push(String(i));
-    }
-    return list;
-  }
-  return [];
-};
 
 interface CategoriaEntrega {
   id: string;
@@ -255,10 +238,10 @@ export default function KioskoStandalonePage() {
     return BLOQUES_REALES_LAS_BRISAS;
   }, []);
 
-  // Extract REAL Casas for the selected Bloque (exactly 80 real houses per block: X01 a X80)
+  // Casas reales registradas en Las Brisas PH para el bloque seleccionado
   const casasDisponibles = useMemo(() => {
     if (!selectedBloque) return [];
-    return getCasasRealesPorBloque(selectedBloque);
+    return getCasasRealesDeBloque(selectedBloque);
   }, [selectedBloque]);
 
   // Filtered Casas based on search: allows matching e.g. "15" -> "215" in Bloque 2, or full "215"
@@ -352,12 +335,18 @@ export default function KioskoStandalonePage() {
     }
 
     // Resolve matching resident silently in background for notification
-    const matchedResident = directorio.find((d) => {
-      const matchBloque = selectedBloque ? d.torre === selectedBloque : true;
-      return matchBloque && d.apto === selectedCasa;
-    });
+    const matchedResident =
+      directorio.find((d) => {
+        const cleanTorre = d.torre?.replace(/^(bloque|torre)\s*/i, "").trim() || "";
+        const cleanApto = d.apto?.replace(/^(casa|apto)\s*/i, "").trim() || "";
+        return cleanTorre === selectedBloque && cleanApto === selectedCasa;
+      }) || findResidenteReal(selectedBloque, selectedCasa);
 
-    const targetUserId = matchedResident?.id ?? directorio[0]?.id ?? user?.id;
+    const targetUserId =
+      matchedResident?.id ??
+      directorio[0]?.id ??
+      RESIDENTES_REALES_LAS_BRISAS[0]?.id ??
+      user?.id;
     if (!targetUserId) {
       toast.error("Debes iniciar sesión con tu cuenta de portería en la tablet.");
       return;
