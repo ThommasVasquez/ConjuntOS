@@ -218,14 +218,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Web Push (which is per-browser and blocked/unreliable in some browsers). The
   // service-worker handler above remains the fallback for a closed/backgrounded app.
   useWsSubscription("citofonia", (event) => {
-    if (event.action !== "incoming_call") return;
-    const data = event.payload as { room?: string; callerName?: string } | undefined;
-    if (!data?.room) return;
-    if (callStateRef.current !== "IDLE") return;
-    pendingRoomRef.current = data.room;
-    setCallerName(data.callerName || "Llamada entrante");
-    setCallState("RINGING");
-    playRingtone();
+    if (event.action === "incoming_call") {
+      const data = event.payload as { room?: string; callerName?: string } | undefined;
+      if (!data?.room) return;
+      if (callStateRef.current !== "IDLE") return;
+      pendingRoomRef.current = data.room;
+      setCallerName(data.callerName || "Llamada entrante");
+      setCallState("RINGING");
+      playRingtone();
+    } else if (event.action === "call_cancelled") {
+      const data = event.payload as { room?: string } | undefined;
+      if (data?.room && (pendingRoomRef.current === data.room || roomRef.current?.name === data.room)) {
+        if (activeToneRef.current) activeToneRef.current.stop();
+        pendingRoomRef.current = null;
+        if (callStateRef.current === "RINGING") {
+          setCallState("IDLE");
+          toast.info("Llamada cancelada por el emisor.");
+        }
+      }
+    }
   });
 
   // Handle deep-link from a notification opened in a fresh tab:
@@ -513,6 +524,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         { targetPeerId, callerName: callerRoleName }
       );
       pushSentRef.current = res.sent ?? 0;
+      pendingRoomRef.current = res.room;
 
       await connectToRoom(res.room, res.token, res.url);
 
@@ -588,6 +600,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     stopSpeech();
 
     if (noAnswerTimerRef.current) { clearTimeout(noAnswerTimerRef.current); noAnswerTimerRef.current = null; }
+
+    const roomToCancel = pendingRoomRef.current || roomRef.current?.name;
+    const wasOutgoing = callStateRef.current === "OUTGOING";
+    if (wasOutgoing && roomToCancel) {
+      api.post('/citofonia/cancel', { room: roomToCancel }).catch(() => {});
+    }
 
     // Disconnect LiveKit (this stops the published mic track too).
     if (roomRef.current) {

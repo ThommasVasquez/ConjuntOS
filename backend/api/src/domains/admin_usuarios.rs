@@ -15,7 +15,10 @@ use uuid::Uuid;
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
 use crate::db::enums::{EstadoPago, Rol};
-use crate::db::schema::{conjuntos, mascotas, pagos, unidades, usuarios, vehiculos};
+use crate::db::schema::{
+    conjuntos, mascotas, native_push_tokens, pagos, push_subscriptions, unidades, usuarios,
+    vehiculos,
+};
 use crate::db::DbConn;
 use crate::domains::conjuntos::models::Unidad;
 use crate::domains::pagos::models::Pago;
@@ -29,7 +32,12 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/admin/usuarios/invitar", post(invitar_residente))
         .route("/admin/usuarios", get(listar_usuarios))
-        .route("/admin/usuarios/{id}", get(detalle_usuario).put(editar_usuario))
+        .route(
+            "/admin/usuarios/{id}",
+            get(detalle_usuario)
+                .put(editar_usuario)
+                .delete(eliminar_usuario),
+        )
         .route("/admin/usuarios/{id}/reset-password", post(reset_password_residente))
         .route("/admin/usuarios/{id}/reenviar-invitacion", post(reenviar_invitacion_residente))
 }
@@ -430,6 +438,16 @@ pub async fn editar_usuario(
     }
 
     let mut conn = state.pool.get().await?;
+
+    // If apto or torre changed, synchronize or create the unidad
+    let unidad_id_to_update = match req.apto.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        Some(apto) => {
+            let torre = req.torre.as_deref().map(str::trim).filter(|s| !s.is_empty());
+            Some(find_or_create_unidad(&mut conn, user.conjunto_id, torre, apto).await?)
+        }
+        None => None,
+    };
+
     let updated = update_user(
         &mut conn,
         target_id,
@@ -440,6 +458,7 @@ pub async fn editar_usuario(
         rol,
         req.torre,
         req.apto,
+        unidad_id_to_update,
         req.activo,
         password_hash,
     )
@@ -457,6 +476,54 @@ pub async fn editar_usuario(
         numero_interno: updated.numero_interno,
         created_at: updated.created_at,
     }))
+}
+
+/// DELETE /admin/usuarios/{id}
+///
+/// Remove a member from the admin's conjunto:
+/// - Target must belong to caller's conjunto
+/// - Caller cannot delete their own account
+/// - SuperAdmin cannot be removed by conjunto admin
+/// - Cleans up active push tokens, pets, vehicles
+/// - Deactivates user and anonymizes email to free it up for reuse
+#[utoipa::path(
+    delete,
+    path = "/api/v1/admin/usuarios/{id}",
+    tag = "admin",
+    params(
+        ("id" = Uuid, Path, description = "User ID to remove")
+    ),
+    responses(
+        (status = 204, description = "Member removed"),
+        (status = 400, description = "Cannot remove self"),
+        (status = 403, description = "Forbidden (SuperAdmin or not admin)"),
+        (status = 404, description = "User not found in this conjunto")
+    )
+)]
+pub async fn eliminar_usuario(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(target_id): Path<Uuid>,
+) -> ApiResult<axum::http::StatusCode> {
+    guard::require_admin(&user)?;
+    if target_id == user.id {
+        return Err(ApiError::BadRequest(
+            "no puedes eliminar tu propia cuenta de administrador".into(),
+        ));
+    }
+
+    let mut conn = state.pool.get().await?;
+    let target = find_user_in_conjunto(&mut conn, target_id, user.conjunto_id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("usuario no encontrado".into()))?;
+
+    if matches!(target.rol, Rol::SuperAdmin) {
+        return Err(ApiError::Forbidden);
+    }
+
+    delete_user_from_conjunto(&mut conn, target_id, user.conjunto_id).await?;
+
+    Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
 /// POST /admin/usuarios/{id}/reset-password
@@ -575,6 +642,15 @@ pub async fn invitar_residente(
 
     let mut conn = state.pool.get().await?;
 
+    // If apto is provided, find or bootstrap the unidad
+    let unidad_id = match req.apto.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        Some(apto) => {
+            let torre = req.torre.as_deref().map(str::trim).filter(|s| !s.is_empty());
+            Some(find_or_create_unidad(&mut conn, user.conjunto_id, torre, apto).await?)
+        }
+        None => None,
+    };
+
     // Generate a unique 4-digit numero_interno for the conjunto.
     let numero_interno = generate_numero_interno(&mut conn, user.conjunto_id).await?;
 
@@ -587,6 +663,7 @@ pub async fn invitar_residente(
         rol,
         req.torre.as_deref(),
         req.apto.as_deref(),
+        unidad_id,
         &numero_interno,
     )
     .await?;
@@ -711,6 +788,48 @@ async fn find_unidad_by_id(conn: &mut DbConn, unidad_id: Uuid) -> ApiResult<Opti
     Ok(u)
 }
 
+async fn find_or_create_unidad(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+    torre: Option<&str>,
+    numero: &str,
+) -> ApiResult<Uuid> {
+    let mut q = unidades::table
+        .filter(unidades::conjunto_id.eq(conjunto_id))
+        .filter(unidades::numero.eq(numero))
+        .into_boxed();
+
+    if let Some(t) = torre {
+        q = q.filter(unidades::torre.eq(t));
+    } else {
+        q = q.filter(unidades::torre.is_null());
+    }
+
+    let existing: Option<Uuid> = q
+        .select(unidades::id)
+        .first(conn)
+        .await
+        .optional()?;
+
+    if let Some(uid) = existing {
+        return Ok(uid);
+    }
+
+    let created: Uuid = diesel::insert_into(unidades::table)
+        .values((
+            unidades::conjunto_id.eq(conjunto_id),
+            unidades::numero.eq(numero),
+            unidades::torre.eq(torre),
+            unidades::tipo.eq(crate::db::enums::TipoUnidad::Apartamento),
+            unidades::coeficiente.eq(BigDecimal::from(0)),
+        ))
+        .returning(unidades::id)
+        .get_result(conn)
+        .await?;
+
+    Ok(created)
+}
+
 /// Update editable fields on a user scoped to the admin's conjunto.
 /// Returns the updated Usuario row, or 404 if not found.
 async fn update_user(
@@ -723,6 +842,7 @@ async fn update_user(
     rol: Option<Rol>,
     torre: Option<String>,
     apto: Option<String>,
+    unidad_id: Option<Uuid>,
     activo: Option<bool>,
     password_hash: Option<String>,
 ) -> ApiResult<crate::domains::usuarios::models::Usuario> {
@@ -754,6 +874,11 @@ async fn update_user(
     if let Some(a) = apto {
         diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
             .set(usuarios::apto.eq(Some(a)))
+            .execute(conn).await?;
+    }
+    if let Some(uid) = unidad_id {
+        diesel::update(usuarios::table.filter(usuarios::id.eq(target_id)).filter(usuarios::conjunto_id.eq(conjunto_id)))
+            .set(usuarios::unidad_id.eq(Some(uid)))
             .execute(conn).await?;
     }
     if let Some(a) = activo {
@@ -793,6 +918,7 @@ async fn insert_user(
     rol: Rol,
     torre: Option<&str>,
     apto: Option<&str>,
+    unidad_id: Option<Uuid>,
     numero_interno: &str,
 ) -> ApiResult<crate::domains::usuarios::models::Usuario> {
     let created = diesel::insert_into(usuarios::table)
@@ -805,6 +931,7 @@ async fn insert_user(
             usuarios::rol.eq(rol),
             usuarios::torre.eq(torre),
             usuarios::apto.eq(apto),
+            usuarios::unidad_id.eq(unidad_id),
             usuarios::activo.eq(true),
             usuarios::numero_interno.eq(numero_interno),
         ))
@@ -812,6 +939,50 @@ async fn insert_user(
         .get_result(conn)
         .await?;
     Ok(created)
+}
+
+async fn delete_user_from_conjunto(
+    conn: &mut DbConn,
+    user_id: Uuid,
+    conjunto_id: Uuid,
+) -> ApiResult<()> {
+    let lapida = format!("eliminado-{user_id}@conjuntos.invalid");
+
+    diesel::update(
+        usuarios::table
+            .filter(usuarios::id.eq(user_id))
+            .filter(usuarios::conjunto_id.eq(conjunto_id)),
+    )
+    .set((
+        usuarios::nombre.eq("Usuario eliminado"),
+        usuarios::email.eq(lapida),
+        usuarios::password_hash.eq(""),
+        usuarios::telefono.eq(None::<String>),
+        usuarios::avatar.eq(None::<String>),
+        usuarios::genero.eq(None::<String>),
+        usuarios::unidad_id.eq(None::<Uuid>),
+        usuarios::torre.eq(None::<String>),
+        usuarios::apto.eq(None::<String>),
+        usuarios::activo.eq(false),
+        usuarios::password_changed_at.eq(chrono::Utc::now()),
+    ))
+    .execute(conn)
+    .await?;
+
+    let _ = diesel::delete(native_push_tokens::table.filter(native_push_tokens::usuario_id.eq(user_id)))
+        .execute(conn)
+        .await;
+    let _ = diesel::delete(push_subscriptions::table.filter(push_subscriptions::usuario_id.eq(user_id)))
+        .execute(conn)
+        .await;
+    let _ = diesel::delete(mascotas::table.filter(mascotas::usuario_id.eq(user_id)))
+        .execute(conn)
+        .await;
+    let _ = diesel::delete(vehiculos::table.filter(vehiculos::usuario_id.eq(user_id)))
+        .execute(conn)
+        .await;
+
+    Ok(())
 }
 
 /// Generate a unique 4-digit citofonía code for a given conjunto.

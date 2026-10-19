@@ -354,6 +354,7 @@ pub async fn entregar_paquete(
     let paquete = repo::entregar_paquete(&mut conn, user.conjunto_id, id)
         .await?
         .ok_or_else(|| ApiError::NotFound("paquete no encontrado".into()))?;
+    let destinatario_id = paquete.usuario_id;
     let dto = PaqueteDto::from(paquete);
     state
         .ws_hub
@@ -363,7 +364,7 @@ pub async fn entregar_paquete(
                 domain: "paquete".into(),
                 action: "delivered".into(),
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-                target_user_id: None,
+                target_user_id: Some(destinatario_id),
             },
         )
         .await;
@@ -604,6 +605,7 @@ async fn entregar_correspondencia_handler(
     let corr = repo::entregar_correspondencia(&mut conn, user.conjunto_id, id)
         .await?
         .ok_or_else(|| ApiError::NotFound("correspondencia no encontrada".into()))?;
+    let destinatario_id = corr.usuario_id;
     let dto = CorrespondenciaDto::from(corr);
     state
         .ws_hub
@@ -613,7 +615,7 @@ async fn entregar_correspondencia_handler(
                 domain: "correspondencia".into(),
                 action: "delivered".into(),
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-                target_user_id: None,
+                target_user_id: Some(destinatario_id),
             },
         )
         .await;

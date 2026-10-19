@@ -136,6 +136,7 @@ export interface ProfileResponse extends UserDto {
   unidad: UnidadDto | null;
   /** Nombre legible del conjunto (included since backend M4). */
   conjuntoNombre?: string | null;
+  conjuntoSubdominio?: string | null;
 }
 
 export interface UnidadDto {

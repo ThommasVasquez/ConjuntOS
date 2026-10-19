@@ -312,19 +312,79 @@ pub async fn crear_correspondencia_con_notificacion(
                 .get_result(conn)
                 .await?;
 
-            let es_recibo = matches!(tipo, TipoCorrespondencia::Energia | TipoCorrespondencia::Agua | TipoCorrespondencia::Gas);
-            let notif_tipo = if es_recibo { "RECIBO" } else { "CORRESPONDENCIA" };
-            let notif_titulo = if es_recibo {
-                "Recibo de servicios públicos en portería"
-            } else {
-                "Correspondencia en portería"
-            };
-            let notif_mensaje = if es_recibo {
-                format!("Llegó un recibo de {tipo} de {remitente} a tu nombre{}",
-                    descripcion.map_or(String::new(), |d| format!(": {d}")))
-            } else {
-                format!("Tienes {tipo} de {remitente} en portería{}",
-                    descripcion.map_or(String::new(), |d| format!(": {d}")))
+            let (notif_tipo, notif_titulo, notif_mensaje) = match tipo {
+                TipoCorrespondencia::Comida => (
+                    "DOMICILIO_COMIDA",
+                    "🍔 Domicilio de comida en portería",
+                    format!(
+                        "¡Tu pedido de comida de {remitente} llegó a portería! Por favor recógelo pronto.{}",
+                        descripcion.map_or(String::new(), |d| format!(" ({d})"))
+                    ),
+                ),
+                TipoCorrespondencia::CadenaFrio | TipoCorrespondencia::Medicamentos => (
+                    "CADENA_FRIO",
+                    "❄️ Medicamentos / Cadena de Frío en portería",
+                    format!(
+                        "Ha llegado un pedido de {remitente} que requiere atención o refrigeración inmediata.{}",
+                        descripcion.map_or(String::new(), |d| format!(" ({d})"))
+                    ),
+                ),
+                TipoCorrespondencia::Energia => (
+                    "RECIBO",
+                    "⚡ Factura de Energía (Enel) en portería",
+                    format!(
+                        "Llegó el recibo de energía de {remitente} para tu inmueble.{}",
+                        descripcion.map_or(String::new(), |d| format!(" ({d})"))
+                    ),
+                ),
+                TipoCorrespondencia::Agua => (
+                    "RECIBO",
+                    "💧 Factura de Acueducto (Agua) en portería",
+                    format!(
+                        "Llegó el recibo de agua de {remitente} para tu inmueble.{}",
+                        descripcion.map_or(String::new(), |d| format!(" ({d})"))
+                    ),
+                ),
+                TipoCorrespondencia::Gas => (
+                    "RECIBO",
+                    "🔥 Factura de Gas Natural en portería",
+                    format!(
+                        "Llegó el recibo de gas de {remitente} para tu inmueble.{}",
+                        descripcion.map_or(String::new(), |d| format!(" ({d})"))
+                    ),
+                ),
+                TipoCorrespondencia::Telecomunicaciones => (
+                    "RECIBO",
+                    "🌐 Factura de Telecomunicaciones / Internet en portería",
+                    format!(
+                        "Llegó una factura de servicios de {remitente} para tu inmueble.{}",
+                        descripcion.map_or(String::new(), |d| format!(" ({d})"))
+                    ),
+                ),
+                TipoCorrespondencia::CartaBanco => (
+                    "CARTA_BANCO",
+                    "✉️ Correspondencia Bancaria en portería",
+                    format!(
+                        "Tienes un sobre o correspondencia bancaria de {remitente} en portería.{}",
+                        descripcion.map_or(String::new(), |d| format!(" ({d})"))
+                    ),
+                ),
+                TipoCorrespondencia::Paquete | TipoCorrespondencia::PaqueteGrande => (
+                    "PAQUETE",
+                    "📦 Paquetería / Encomienda en portería",
+                    format!(
+                        "Tienes un paquete de {remitente} en portería.{}",
+                        descripcion.map_or(String::new(), |d| format!(" ({d})"))
+                    ),
+                ),
+                _ => (
+                    "CORRESPONDENCIA",
+                    "📄 Correspondencia en portería",
+                    format!(
+                        "Tienes correspondencia de {remitente} en portería.{}",
+                        descripcion.map_or(String::new(), |d| format!(" ({d})"))
+                    ),
+                ),
             };
 
             create_notificacion(
