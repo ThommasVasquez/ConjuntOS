@@ -26,7 +26,28 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
+import { useAuth } from "@/hooks/useAuth";
 import StickerEtiqueta, { StickerData } from "@/components/paqueteria/StickerEtiqueta";
+
+function getValidBackendTipo(tipo: string): string {
+  switch (tipo) {
+    case "ENERGIA":
+      return "ENERGIA";
+    case "AGUA":
+      return "AGUA";
+    case "GAS":
+      return "GAS";
+    case "CARTA":
+    case "CARTA_BANCO":
+      return "CARTA";
+    case "DOCUMENTO":
+      return "DOCUMENTO";
+    case "REVISTA":
+      return "REVISTA";
+    default:
+      return "OTRO"; // For COMIDA, PAQUETE, CADENA_FRIO, TELECOMUNICACIONES, OTRO
+  }
+}
 
 interface DirectorioItem {
   id: string;
@@ -137,6 +158,7 @@ const IDLE_TIMEOUT_MS = 50000; // 50 seconds inactivity triggers Apple screensav
 
 export default function KioskoStandalonePage() {
   const router = useRouter();
+  const { user } = useAuth();
 
   // Directory state
   const [directorio, setDirectorio] = useState<DirectorioItem[]>([]);
@@ -271,28 +293,49 @@ export default function KioskoStandalonePage() {
       return matchBloque && d.apto === selectedCasa;
     });
 
-    const targetUserId = matchedResident?.id ?? directorio[0]?.id;
+    const targetUserId = matchedResident?.id ?? directorio[0]?.id ?? user?.id;
     if (!targetUserId) {
-      toast.error("No se pudo identificar la unidad de destino.");
+      toast.error("Debes iniciar sesión con tu cuenta de portería en la tablet.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await api.post<{
-        id: string;
-        fechaLlegada: string;
-        tipo: string;
-        remitente: string;
-      }>("/vigilancia/correspondencia", {
-        usuarioId: targetUserId,
-        tipo: selectedCategoria.tipoBackend,
-        remitente: remitente.trim(),
-        descripcion: `Entrega Kiosko • Bloque ${selectedBloque} Casa ${selectedCasa} • Para: ${destinatarioNombre.trim()}`,
-      });
+      const validTipo = getValidBackendTipo(selectedCategoria.tipoBackend);
+      let resId = "";
+      let resFecha = new Date().toISOString();
+
+      try {
+        const res = await api.post<{
+          id: string;
+          fechaLlegada: string;
+          tipo: string;
+          remitente: string;
+        }>("/vigilancia/correspondencia", {
+          usuarioId: targetUserId,
+          tipo: validTipo,
+          remitente: remitente.trim(),
+          descripcion: `[${selectedCategoria.label.toUpperCase()}] Bloque ${selectedBloque} Casa ${selectedCasa} • Destinatario: ${destinatarioNombre.trim()}${documentoMensajero.trim() ? ` • C.C. Mensajero: ${documentoMensajero.trim()}` : ""}`,
+        });
+        resId = res.id;
+        resFecha = res.fechaLlegada;
+      } catch (postError) {
+        console.warn("Fallo /vigilancia/correspondencia, intentando /vigilancia/paquetes...", postError);
+        const resPaquete = await api.post<{
+          id: string;
+          fechaLlegada?: string;
+          createdAt?: string;
+        }>("/vigilancia/paquetes", {
+          usuarioId: targetUserId,
+          remitente: remitente.trim(),
+          descripcion: `[${selectedCategoria.label.toUpperCase()}] Bloque ${selectedBloque} Casa ${selectedCasa} • Destinatario: ${destinatarioNombre.trim()}`,
+        });
+        resId = resPaquete.id;
+        resFecha = resPaquete.fechaLlegada || resPaquete.createdAt || new Date().toISOString();
+      }
 
       const stickerInfo: StickerData = {
-        id: res.id,
+        id: resId,
         bloque: selectedBloque,
         casa: selectedCasa,
         torre: selectedBloque,
@@ -300,7 +343,7 @@ export default function KioskoStandalonePage() {
         destinatario: destinatarioNombre.trim(),
         tipo: selectedCategoria.tipoBackend,
         remitente: remitente.trim(),
-        fecha: new Date(res.fechaLlegada).toLocaleString("es-CO", {
+        fecha: new Date(resFecha).toLocaleString("es-CO", {
           day: "2-digit",
           month: "short",
           year: "numeric",
@@ -1083,33 +1126,41 @@ export default function KioskoStandalonePage() {
               <h3 className="text-base font-bold text-white">Seguridad de Portería</h3>
               <p className="text-xs text-white/50 mt-0.5">Ingresa el PIN para salir del modo Kiosko</p>
             </div>
-            <input
-              type="password"
-              maxLength={6}
-              placeholder="••••"
-              value={exitPin}
-              onChange={(e) => setExitPin(e.target.value)}
-              className="w-full py-3 px-4 text-center text-2xl tracking-[0.3em] font-mono bg-black/40 border border-white/15 rounded-2xl text-white focus:outline-none focus:border-[#57bf00]"
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowExitModal(false);
-                  setExitPin("");
-                }}
-                className="flex-1 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleVerifyExitPin}
-                className="flex-1 py-3 rounded-2xl bg-[#57bf00] hover:bg-[#57bf00]/90 text-white text-xs font-bold transition-colors"
-              >
-                Acceder
-              </button>
-            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleVerifyExitPin();
+              }}
+              className="flex flex-col gap-4"
+            >
+              <input
+                type="password"
+                autoComplete="current-password"
+                maxLength={6}
+                placeholder="••••"
+                value={exitPin}
+                onChange={(e) => setExitPin(e.target.value)}
+                className="w-full py-3 px-4 text-center text-2xl tracking-[0.3em] font-mono bg-black/40 border border-white/15 rounded-2xl text-white focus:outline-none focus:border-[#57bf00]"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExitModal(false);
+                    setExitPin("");
+                  }}
+                  className="flex-1 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 rounded-2xl bg-[#57bf00] hover:bg-[#57bf00]/90 text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Acceder
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
