@@ -27,8 +27,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Asamblea uses device-pairing auth; let client handle
-  if (pathname.startsWith("/asamblea")) {
+  // Asamblea uses device-pairing auth; kiosko is a dedicated reception tablet
+  if (pathname.startsWith("/asamblea") || pathname.startsWith("/kiosko")) {
     return NextResponse.next();
   }
 

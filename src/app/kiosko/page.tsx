@@ -250,49 +250,16 @@ export default function KioskoStandalonePage() {
     }
   }, [user, directorio.length, loadDir]);
 
-  // Extract REAL Bloques of Las Brisas PH (Bloques 1 al 6)
+  // Bloques reales de Las Brisas PH: Bloques 1 al 6 (Siempre garantizados, incluido Bloque 3)
   const bloquesDisponibles = useMemo(() => {
-    if (directorio.length > 0) {
-      const fromDb = new Set<string>();
-      directorio.forEach((d) => {
-        const raw = d.torre?.trim();
-        if (raw) {
-          const clean = raw.replace(/^(bloque|torre)\s*/i, "").trim();
-          if (BLOQUES_REALES_LAS_BRISAS.includes(clean)) {
-            fromDb.add(clean);
-          }
-        }
-      });
-      if (fromDb.size > 0) {
-        return Array.from(fromDb).sort((a, b) => Number(a) - Number(b));
-      }
-    }
     return BLOQUES_REALES_LAS_BRISAS;
-  }, [directorio]);
+  }, []);
 
-  // Extract REAL Casas for the selected Bloque (exactly 80 real houses per block)
+  // Extract REAL Casas for the selected Bloque (exactly 80 real houses per block: X01 a X80)
   const casasDisponibles = useMemo(() => {
     if (!selectedBloque) return [];
-    const casasCanonicas = getCasasRealesPorBloque(selectedBloque);
-    if (directorio.length > 0) {
-      const set = new Set<string>();
-      directorio.forEach((d) => {
-        const rawTorre = d.torre?.trim() || "";
-        const cleanTorre = rawTorre.replace(/^(bloque|torre)\s*/i, "").trim();
-        if (cleanTorre === selectedBloque && d.apto?.trim()) {
-          const cleanCasa = d.apto.replace(/^(casa|apto)\s*/i, "").trim();
-          if (cleanCasa && cleanCasa !== "S/N" && cleanCasa !== "S/T") {
-            set.add(cleanCasa);
-          }
-        }
-      });
-      if (set.size > 0) {
-        casasCanonicas.forEach((c) => set.add(c));
-        return Array.from(set).sort((a, b) => Number(a) - Number(b));
-      }
-    }
-    return casasCanonicas;
-  }, [directorio, selectedBloque]);
+    return getCasasRealesPorBloque(selectedBloque);
+  }, [selectedBloque]);
 
   // Filtered Casas based on search: allows matching e.g. "15" -> "215" in Bloque 2, or full "215"
   const casasFiltradas = useMemo(() => {
@@ -698,57 +665,35 @@ export default function KioskoStandalonePage() {
               </p>
             </div>
 
-            {loadingDirectorio ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3 text-white/50">
-                <RefreshCw size={28} className="animate-spin text-[#57bf00]" />
-                <span className="text-sm font-medium">Cargando bloques de Las Brisas PH...</span>
-              </div>
-            ) : bloquesDisponibles.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 max-w-2xl mx-auto w-full">
-                {bloquesDisponibles.map((bloque) => {
-                  const isSelected = selectedBloque === bloque;
-                  return (
-                    <button
-                      key={bloque}
-                      type="button"
-                      onClick={() => {
-                        setSelectedBloque(bloque);
-                        setSelectedCasa("");
-                        setDestinatarioNombre("");
-                        setStep(2); // Advance to Casa selection
-                      }}
-                      className={`group relative p-6 rounded-3xl backdrop-blur-2xl border transition-all duration-200 active:scale-95 flex flex-col items-center text-center cursor-pointer ${
-                        isSelected
-                          ? "bg-white text-black border-white shadow-2xl scale-105"
-                          : "bg-white/[0.05] border-white/10 hover:border-white/30 text-white hover:bg-white/[0.09]"
-                      }`}
-                    >
-                      <span className="text-[11px] uppercase tracking-wider font-semibold opacity-60">
-                        Bloque
-                      </span>
-                      <span className="text-2xl sm:text-3xl font-display font-extrabold mt-0.5">
-                        {bloque}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 px-6 text-center max-w-md mx-auto bg-white/[0.03] border border-white/10 rounded-3xl">
-                <Building2 size={36} className="text-[#57bf00] mb-2 opacity-80" />
-                <h3 className="text-base font-bold text-white">Unidades de Las Brisas PH</h3>
-                <p className="text-xs text-white/60 mt-1">
-                  No se detectaron bloques en el directorio activo o la sesión de portería está cargando.
-                </p>
-                <button
-                  type="button"
-                  onClick={loadDir}
-                  className="mt-4 px-5 py-2.5 rounded-full bg-white text-black text-xs font-bold shadow-md hover:bg-white/90 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  <RefreshCw size={14} /> Reintentar sincronización
-                </button>
-              </div>
-            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-xl mx-auto w-full">
+              {bloquesDisponibles.map((bloque) => {
+                const isSelected = selectedBloque === bloque;
+                return (
+                  <button
+                    key={bloque}
+                    type="button"
+                    onClick={() => {
+                      setSelectedBloque(bloque);
+                      setSelectedCasa("");
+                      setDestinatarioNombre("");
+                      setStep(2); // Advance to Casa selection
+                    }}
+                    className={`group relative p-6 rounded-3xl backdrop-blur-2xl border transition-all duration-200 active:scale-95 flex flex-col items-center text-center cursor-pointer ${
+                      isSelected
+                        ? "bg-white text-black border-white shadow-2xl scale-105"
+                        : "bg-white/[0.05] border-white/10 hover:border-white/30 text-white hover:bg-white/[0.09]"
+                    }`}
+                  >
+                    <span className="text-[11px] uppercase tracking-wider font-semibold opacity-60">
+                      Bloque
+                    </span>
+                    <span className="text-3xl sm:text-4xl font-display font-extrabold mt-0.5">
+                      {bloque}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </main>
         )}
 
