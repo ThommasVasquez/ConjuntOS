@@ -141,11 +141,11 @@ const EMPRESAS_RAPIDAS = [
 ];
 
 /**
- * Las 4 columnas del acordeón exactamente idénticas al video de Dribbble:
- * 1. Galleries  -> Ubicación (Bloque & Casa) [Textura Azul Zafiro]
- * 2. Calendar   -> Destinatario [Textura Oro Líquido]
- * 3. Explore    -> Categoría [Textura Humo Plateado]
- * 4. Contact    -> Confirmar & Imprimir [Textura Seda Violeta]
+ * Las 4 columnas del acordeón adaptadas con fotografía de Paquetería de alta gama:
+ * 1. Ubicación    -> Recepción y casilleros inteligentes de paquetes
+ * 2. Destinatario -> Residente recibiendo paquete de mensajería
+ * 3. Categoría    -> Surtido de cajas, sobres y paquetes organizados
+ * 4. Confirmar    -> Escaneo de código de barras y sticker de entrega
  */
 const DRIBBLE_COLUMNS = [
   {
@@ -153,28 +153,28 @@ const DRIBBLE_COLUMNS = [
     num: "01",
     label: "Ubicación",
     dribbbleLabel: "Galleries",
-    imageTexture: "/images/textures/fluid-blue.jpg",
+    imageTexture: "/images/kiosko/parcel-ubicacion.jpg",
   },
   {
     id: 2,
     num: "02",
     label: "Destinatario",
     dribbbleLabel: "Calendar",
-    imageTexture: "/images/textures/fluid-gold.jpg",
+    imageTexture: "/images/kiosko/parcel-destinatario.jpg",
   },
   {
     id: 3,
     num: "03",
     label: "Categoría",
     dribbbleLabel: "Explore",
-    imageTexture: "/images/textures/fluid-silver.jpg",
+    imageTexture: "/images/kiosko/parcel-categoria.jpg",
   },
   {
     id: 4,
     num: "04",
     label: "Confirmar",
     dribbbleLabel: "Contact",
-    imageTexture: "/images/textures/fluid-violet.jpg",
+    imageTexture: "/images/kiosko/parcel-confirmar.jpg",
   },
 ];
 
@@ -460,13 +460,19 @@ export default function KioskoPage() {
             <div className="absolute -left-6 -bottom-6 w-28 h-28 rounded-full border border-neutral-200 pointer-events-none" />
             <div className="absolute -left-10 -bottom-10 w-36 h-36 rounded-full border border-neutral-100 pointer-events-none" />
 
-            {/* Thumbnail con el logo de Las Brisas */}
-            <div className="relative w-24 h-16 rounded-xl overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 flex-none z-10">
+            {/* Thumbnail dinámico: preview de paquetería o logo de Las Brisas */}
+            <div className="relative w-24 h-16 rounded-xl overflow-hidden shadow-sm border border-neutral-200 bg-neutral-900 flex-none z-10 transition-all">
               <Image
-                src="/images/las-brisas-logo.jpg"
+                src={
+                  hoveredColumn
+                    ? DRIBBLE_COLUMNS.find((c) => c.id === hoveredColumn)?.imageTexture || "/images/las-brisas-logo.jpg"
+                    : activeColumn
+                    ? DRIBBLE_COLUMNS.find((c) => c.id === activeColumn)?.imageTexture || "/images/las-brisas-logo.jpg"
+                    : "/images/las-brisas-logo.jpg"
+                }
                 alt="Las Brisas"
                 fill
-                className="object-cover"
+                className="object-cover transition-opacity duration-300"
               />
             </div>
 
@@ -500,6 +506,15 @@ export default function KioskoPage() {
             <div className="w-full h-full flex flex-row animate-in fade-in duration-500">
               {DRIBBLE_COLUMNS.map((col) => {
                 const isHovered = hoveredColumn === col.id;
+                const anyHovered = hoveredColumn !== null;
+
+                // Ancho dinámico tipo acordeón idéntico al video de Dribbble:
+                // Al pasar el cursor, la columna se expande suavemente y las demás se comprimen
+                const flexClass = isHovered
+                  ? "flex-[2] sm:flex-[2.4]"
+                  : anyHovered
+                  ? "flex-[0.6] sm:flex-[0.55]"
+                  : "flex-1";
 
                 // Resumen de valor elegido para mostrar en la base
                 let valueSelected = "";
@@ -521,18 +536,20 @@ export default function KioskoPage() {
                     onMouseEnter={() => setHoveredColumn(col.id)}
                     onMouseLeave={() => setHoveredColumn(null)}
                     onClick={() => setActiveColumn(col.id)}
-                    className="flex-1 h-full relative cursor-pointer overflow-hidden border-l border-black/40 group transition-all duration-300"
+                    className={`${flexClass} h-full relative cursor-pointer overflow-hidden border-l border-white/10 group transition-all duration-500 ease-out`}
                   >
-                    {/* Imagen de Textura Fluida de Alta Resolución (exacta al video) */}
-                    <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-110">
+                    {/* Fotografía Vertical de Paquetería de Alta Resolución (9:16) */}
+                    <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-105">
                       <Image
                         src={col.imageTexture}
                         alt={col.label}
                         fill
-                        className="object-cover"
+                        sizes="(max-width: 1024px) 25vw, 20vw"
+                        className="object-cover object-center"
                         priority
                       />
-                      <div className="absolute inset-0 bg-black/25 group-hover:bg-black/10 transition-colors" />
+                      {/* Gradiente oscuro para máxima legibilidad de tipografía vertical */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/30 group-hover:from-black/70 group-hover:via-black/20 group-hover:to-black/20 transition-all duration-500" />
                     </div>
 
                     {/* Contenido Vertical de la Columna */}
@@ -553,7 +570,7 @@ export default function KioskoPage() {
                       {/* Texto Vertical al Pie (Exacto al Video de Dribbble) */}
                       <div className="flex flex-col items-start pb-4">
                         <span
-                          className="font-display font-extrabold text-3xl sm:text-4xl text-white tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] whitespace-nowrap select-none"
+                          className="font-display font-black text-2xl sm:text-3xl lg:text-4xl text-white tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] whitespace-nowrap select-none transition-transform duration-300"
                           style={{
                             writingMode: "vertical-rl",
                             transform: "rotate(180deg)",
