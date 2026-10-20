@@ -222,8 +222,8 @@ export default function KioskoPage() {
   const [countdown, setCountdown] = useState<number>(10);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Screensaver ambiental
-  const [isIdle, setIsIdle] = useState(true);
+  // Screensaver ambiental (inicia desactivado para mostrar el kiosko de inmediato)
+  const [isIdle, setIsIdle] = useState(false);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // PIN de seguridad del Guarda
@@ -489,44 +489,50 @@ export default function KioskoPage() {
       {isIdle && (
         <div
           onClick={() => setIsIdle(false)}
-          className="fixed inset-0 z-[150] bg-white flex flex-col justify-between p-8 sm:p-16 cursor-pointer animate-in fade-in duration-500 overflow-hidden"
+          className="fixed inset-0 z-[150] bg-[#07090e]/95 backdrop-blur-2xl text-white flex flex-col justify-between p-8 sm:p-16 cursor-pointer animate-in fade-in duration-500 overflow-hidden"
         >
-          {/* Top Bar: Logo Oficial ConjuntOS® */}
-          <div className="flex items-center justify-between w-full max-w-6xl mx-auto">
-            <div className="relative w-56 h-16">
+          {/* Luces de fondo */}
+          <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#57bf00]/15 rounded-full blur-[160px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#009df1]/15 rounded-full blur-[160px] pointer-events-none" />
+
+          {/* Top Bar: Logo Oficial ConjuntOS® en tarjeta blanca limpia */}
+          <div className="flex items-center justify-between w-full max-w-6xl mx-auto relative z-10">
+            <div className="relative w-52 h-14 bg-white px-3 py-1.5 rounded-2xl shadow-lg">
               <Image
                 src="/images/conjuntos-logo-horizontal.jpg"
                 alt="ConjuntOS®"
                 fill
-                className="object-contain object-left"
+                className="object-contain p-1"
                 priority
               />
             </div>
 
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 bg-black/[0.02]">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/[0.04]">
               <span className="w-2 h-2 rounded-full bg-[#57bf00] animate-ping" />
-              <span className="text-xs font-mono font-bold text-black tracking-wider">
+              <span className="text-xs font-mono font-bold text-white tracking-wider">
                 {currentTime || "PORTERÍA ACTIVA"}
               </span>
             </div>
           </div>
 
           {/* Editorial Headline */}
-          <div className="flex flex-col items-center text-center max-w-3xl mx-auto my-auto gap-6">
-            <span className="text-xs font-black uppercase tracking-[0.25em] text-black/50">
+          <div className="flex flex-col items-center text-center max-w-3xl mx-auto my-auto gap-6 relative z-10">
+            <span className="text-xs font-black uppercase tracking-[0.25em] text-[#57bf00]">
               Conjunto Residencial Las Brisas P.H.
             </span>
-            <h1 className="text-5xl sm:text-7xl font-display font-black tracking-tight text-black leading-[0.95]">
+            <h1 className="text-5xl sm:text-7xl font-display font-black tracking-tight text-white leading-[0.95]">
               RECEPCIÓN <br />
-              EXPRESS
+              <span className="bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
+                EXPRESS
+              </span>
             </h1>
-            <p className="text-base sm:text-xl text-black/60 max-w-md font-light leading-relaxed">
+            <p className="text-base sm:text-xl text-white/60 max-w-md font-light leading-relaxed">
               Autoservicio para domiciliarios. Registra tu entrega en segundos e imprime la etiqueta oficial de portería.
             </p>
 
             {/* Pill Touch Prompt */}
             <div className="mt-4">
-              <div className="px-10 py-5 rounded-full bg-black text-white font-extrabold text-base tracking-tight shadow-2xl flex items-center gap-3">
+              <div className="px-10 py-5 rounded-full bg-white text-black font-extrabold text-base tracking-tight shadow-2xl flex items-center gap-3 active:scale-95 transition-transform">
                 <span>Toca la pantalla para iniciar</span>
                 <ArrowRight size={18} />
               </div>
@@ -534,7 +540,7 @@ export default function KioskoPage() {
           </div>
 
           {/* Bottom Info */}
-          <div className="flex items-center justify-between text-xs text-black/40 pt-6 border-t border-black/10 max-w-6xl mx-auto w-full font-mono">
+          <div className="flex items-center justify-between text-xs text-white/40 pt-6 border-t border-white/10 max-w-6xl mx-auto w-full font-mono relative z-10">
             <span>Las Brisas PH &bull; Bogotá</span>
             <span>Impresión Térmica 60×40mm</span>
           </div>
