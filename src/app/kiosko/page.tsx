@@ -440,16 +440,28 @@ export default function KioskoPage() {
         ref={leftPanelRef}
         className="w-full lg:w-[46%] xl:w-[44%] h-full bg-white text-black p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative z-10 overflow-hidden"
       >
-          {/* Top-Left: Logo Oficial de ConjuntOS® de la imagen adjunta */}
+          {/* Top-Left: Logos Oficiales de ConjuntOS® y Las Brisas La Felicidad */}
           <div className="flex items-center justify-between">
-            <div className="relative w-44 sm:w-52 h-12">
-              <Image
-                src="/images/conjuntos-logo-horizontal.jpg"
-                alt="ConjuntOS®"
-                fill
-                className="object-contain object-left"
-                priority
-              />
+            <div className="flex items-center gap-3 sm:gap-5">
+              <div className="relative w-36 sm:w-44 h-11">
+                <Image
+                  src="/images/conjuntos-logo-horizontal.jpg"
+                  alt="ConjuntOS®"
+                  fill
+                  className="object-contain object-left"
+                  priority
+                />
+              </div>
+              <div className="h-6 w-px bg-neutral-300" />
+              <div className="relative w-28 sm:w-36 h-9">
+                <Image
+                  src="/images/las-brisas-logo.png"
+                  alt="Las Brisas La Felicidad"
+                  fill
+                  className="object-contain object-left"
+                  priority
+                />
+              </div>
             </div>
 
             {/* Botón sutil de menú de 2 líneas (como el "=" en el video de Dribbble) */}
@@ -482,25 +494,25 @@ export default function KioskoPage() {
             <div className="absolute -left-6 -bottom-6 w-28 h-28 rounded-full border border-neutral-200 pointer-events-none" />
             <div className="absolute -left-10 -bottom-10 w-36 h-36 rounded-full border border-neutral-100 pointer-events-none" />
 
-            {/* Thumbnail dinámico: preview de paquetería o logo de Las Brisas */}
-            <div className="relative w-24 h-16 rounded-xl overflow-hidden shadow-sm border border-neutral-200 bg-neutral-900 flex-none z-10 transition-all">
+            {/* Thumbnail dinámico: preview de paquetería o logo oficial de Las Brisas */}
+            <div className="relative w-28 h-16 rounded-xl overflow-hidden shadow-sm border border-neutral-200 bg-white flex-none z-10 transition-all flex items-center justify-center p-1.5">
               <Image
                 src={
                   hoveredColumn
-                    ? DRIBBLE_COLUMNS.find((c) => c.id === hoveredColumn)?.imageTexture || "/images/las-brisas-logo.jpg"
+                    ? DRIBBLE_COLUMNS.find((c) => c.id === hoveredColumn)?.imageTexture || "/images/las-brisas-logo.png"
                     : activeColumn
-                    ? DRIBBLE_COLUMNS.find((c) => c.id === activeColumn)?.imageTexture || "/images/las-brisas-logo.jpg"
-                    : "/images/las-brisas-logo.jpg"
+                    ? DRIBBLE_COLUMNS.find((c) => c.id === activeColumn)?.imageTexture || "/images/las-brisas-logo.png"
+                    : "/images/las-brisas-logo.png"
                 }
-                alt="Las Brisas"
+                alt="Las Brisas La Felicidad"
                 fill
-                className="object-cover transition-opacity duration-300"
+                className={hoveredColumn || activeColumn ? "object-cover" : "object-contain p-1"}
               />
             </div>
 
             <div className="flex flex-col z-10">
               <span className="font-mono text-[10px] text-neutral-400 tracking-wider uppercase">
-                LAS BRISAS PH &bull; BOGOTÁ
+                LAS BRISAS PH &bull; LA FELICIDAD
               </span>
               <span className="text-xs font-extrabold text-black uppercase tracking-tight mt-0.5">
                 {selectedBloque && selectedCasa

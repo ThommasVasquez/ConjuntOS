@@ -138,9 +138,9 @@ export default function StickerEtiqueta({ data, onClose, autoPrint = false }: St
         <div className="flex items-center justify-between border-b border-black/20 pb-1 w-full">
           {/* Las Brisas Logo */}
           <div className="flex items-center gap-1.5">
-            <div className="relative w-28 h-7">
+            <div className="relative w-32 h-8">
               <Image
-                src="/images/las-brisas-logo.jpg"
+                src="/images/las-brisas-logo.png"
                 alt="Las Brisas La Felicidad"
                 fill
                 className="object-contain object-left"
