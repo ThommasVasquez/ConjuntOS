@@ -410,17 +410,14 @@ export default function KioskoPage() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#e5e5e5] p-3 sm:p-6 lg:p-10 flex items-center justify-center font-sans select-none antialiased">
-      {/* Contenedor tipo tablet redondeado idéntico al dispositivo del video de Dribbble */}
-      <div className="w-full h-full max-w-[1400px] max-h-[880px] bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_25px_70px_rgba(0,0,0,0.25)] border-[8px] sm:border-[12px] border-black overflow-hidden flex flex-col lg:flex-row relative">
-
-        {/* ------------------------------------------------------------ */}
-        {/* LADO IZQUIERDO (BLANCO PURO - EXACTO AL VIDEO DRIBBBLE)      */}
-        {/* ------------------------------------------------------------ */}
-        <aside
-          ref={leftPanelRef}
-          className="w-full lg:w-[48%] h-full bg-white text-black p-8 sm:p-12 lg:p-14 flex flex-col justify-between relative z-10 overflow-hidden"
-        >
+    <div className="fixed inset-0 z-[100] w-screen h-screen bg-black overflow-hidden flex flex-col lg:flex-row font-sans select-none antialiased">
+      {/* ------------------------------------------------------------ */}
+      {/* LADO IZQUIERDO (BLANCO PURO - EXACTO AL VIDEO DRIBBBLE)      */}
+      {/* ------------------------------------------------------------ */}
+      <aside
+        ref={leftPanelRef}
+        className="w-full lg:w-[46%] xl:w-[44%] h-full bg-white text-black p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative z-10 overflow-hidden"
+      >
           {/* Top-Left: Logo Oficial de ConjuntOS® de la imagen adjunta */}
           <div className="flex items-center justify-between">
             <div className="relative w-44 sm:w-52 h-12">
@@ -494,7 +491,7 @@ export default function KioskoPage() {
         {/* ------------------------------------------------------------ */}
         {/* LADO DERECHO (LAS 4 COLUMNAS FLUIDAS O EL PANEL EXPANDIDO)   */}
         {/* ------------------------------------------------------------ */}
-        <section className="w-full lg:w-[52%] h-full bg-black relative flex flex-row overflow-hidden">
+        <section className="w-full lg:w-[54%] xl:w-[56%] h-full bg-black relative flex flex-row overflow-hidden">
 
           {/* ========================================================== */}
           {/* CASO A: VISTA STANDBY (LAS 4 COLUMNAS VISIBLES - FRAME 1)   */}
@@ -984,7 +981,6 @@ export default function KioskoPage() {
             </div>
           )}
         </section>
-      </div>
 
       {/* ============================================================== */}
       {/* MODAL PIN DE SEGURIDAD (GUARDA)                                 */}
