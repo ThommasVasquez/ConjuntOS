@@ -12,12 +12,9 @@ import {
   ArrowUpRight,
   RefreshCw,
   Lock,
-  QrCode,
   Check,
   Search,
-  Truck,
-  Clock,
-  Sparkles,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
@@ -144,58 +141,42 @@ const EMPRESAS_RAPIDAS = [
 ];
 
 /**
- * Los 5 pasos con las texturas y gradientes fluidos exactamente inspirados
- * en las columnas cinemáticas del video de Dribbble:
- * 1. Azul Zafiro Profundo (Galleries)
- * 2. Oro / Ámbar Solar (Calendar)
- * 3. Humo Plateado / Monocromo (Explore)
- * 4. Lavanda / Seda Violeta (Contact)
- * 5. Verde Esmeralda / Lima ConjuntOS®
+ * Las 4 columnas del acordeón exactamente idénticas al video de Dribbble:
+ * 1. Galleries  -> Ubicación (Bloque & Casa) [Textura Azul Zafiro]
+ * 2. Calendar   -> Destinatario [Textura Oro Líquido]
+ * 3. Explore    -> Categoría [Textura Humo Plateado]
+ * 4. Contact    -> Confirmar & Imprimir [Textura Seda Violeta]
  */
-const COLUMNAS_CONFIG = [
+const DRIBBLE_COLUMNS = [
   {
     id: 1,
     num: "01",
-    label: "Bloques",
-    gradientClass:
-      "bg-gradient-to-b from-[#1030e0] via-[#091763] to-[#04081c] border-blue-500/30",
-    activeAccent: "#009df1",
+    label: "Ubicación",
+    dribbbleLabel: "Galleries",
+    imageTexture: "/images/textures/fluid-blue.jpg",
   },
   {
     id: 2,
     num: "02",
-    label: "Casas",
-    gradientClass:
-      "bg-gradient-to-b from-[#eab308] via-[#a16207] to-[#1c1202] border-amber-500/30",
-    activeAccent: "#f59e0b",
+    label: "Destinatario",
+    dribbbleLabel: "Calendar",
+    imageTexture: "/images/textures/fluid-gold.jpg",
   },
   {
     id: 3,
     num: "03",
-    label: "Destinatario",
-    gradientClass:
-      "bg-gradient-to-b from-[#94a3b8] via-[#475569] to-[#0a0f18] border-slate-400/30",
-    activeAccent: "#cbd5e1",
+    label: "Categoría",
+    dribbbleLabel: "Explore",
+    imageTexture: "/images/textures/fluid-silver.jpg",
   },
   {
     id: 4,
     num: "04",
-    label: "Categoría",
-    gradientClass:
-      "bg-gradient-to-b from-[#a855f7] via-[#581c87] to-[#160424] border-purple-500/30",
-    activeAccent: "#c084fc",
-  },
-  {
-    id: 5,
-    num: "05",
     label: "Confirmar",
-    gradientClass:
-      "bg-gradient-to-b from-[#57bf00] via-[#1e5c00] to-[#050f00] border-[#57bf00]/40",
-    activeAccent: "#57bf00",
+    dribbbleLabel: "Contact",
+    imageTexture: "/images/textures/fluid-violet.jpg",
   },
 ];
-
-const IDLE_TIMEOUT_MS = 60000;
 
 export default function KioskoPage() {
   const router = useRouter();
@@ -205,7 +186,7 @@ export default function KioskoPage() {
   const [directorio, setDirectorio] = useState<DirectorioItem[]>(RESIDENTES_REALES_LAS_BRISAS);
   const [casaSearch, setCasaSearch] = useState<string>("");
 
-  // Estado del flujo
+  // Estados del flujo
   const [selectedBloque, setSelectedBloque] = useState<string>("");
   const [selectedCasa, setSelectedCasa] = useState<string>("");
   const [destinatarioNombre, setDestinatarioNombre] = useState<string>("");
@@ -213,44 +194,26 @@ export default function KioskoPage() {
   const [remitente, setRemitente] = useState<string>("Rappi");
   const [documentoMensajero, setDocumentoMensajero] = useState<string>("");
 
-  // Pasos: 1 a 5 (Columnas), 6 (Éxito & Impresión)
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+  // activeColumn: null si todas las 4 columnas están visibles en standby (como en frame 1 de Dribbble),
+  // o 1, 2, 3, 4 si una columna está abierta (como Contact en frame 9 de Dribbble).
+  const [activeColumn, setActiveColumn] = useState<number | null>(null);
   const [hoveredColumn, setHoveredColumn] = useState<number | null>(null);
+
+  // Sub-paso dentro de Ubicación: "bloque" o "casa"
+  const [ubicacionSubStep, setUbicacionSubStep] = useState<"bloque" | "casa">("bloque");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [printedSticker, setPrintedSticker] = useState<StickerData | null>(null);
   const [countdown, setCountdown] = useState<number>(10);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Screensaver ambiental (inicia desactivado para mostrar el kiosko de inmediato)
-  const [isIdle, setIsIdle] = useState(false);
-  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // PIN de seguridad del Guarda
+  // Modal PIN del Guarda
   const [showExitModal, setShowExitModal] = useState(false);
   const [exitPin, setExitPin] = useState("");
 
-  // GSAP Refs
-  const stageContentRef = useRef<HTMLDivElement | null>(null);
-  const leftCanvasRef = useRef<HTMLDivElement | null>(null);
-
-  // Reloj de portería
-  const [currentTime, setCurrentTime] = useState<string>("");
-  useEffect(() => {
-    const update = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString("es-CO", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })
-      );
-    };
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  // Refs de GSAP
+  const activePanelRef = useRef<HTMLDivElement | null>(null);
+  const leftPanelRef = useRef<HTMLDivElement | null>(null);
 
   // Cargar directorio dinámico de Las Brisas PH
   const loadDir = useCallback(async () => {
@@ -260,7 +223,6 @@ export default function KioskoPage() {
         setDirectorio(data);
       }
     } catch {
-      // Fallback a los 479 registros reales
       setDirectorio(RESIDENTES_REALES_LAS_BRISAS);
     }
   }, []);
@@ -291,51 +253,24 @@ export default function KioskoPage() {
     });
   }, [casasDisponibles, casaSearch]);
 
-  // Transiciones fluidas con GSAP cada vez que cambia el paso activo
+  // Animación GSAP al abrir o cambiar de columna
   useEffect(() => {
-    if (stageContentRef.current && step <= 5) {
+    if (activeColumn !== null && activePanelRef.current) {
       gsap.fromTo(
-        stageContentRef.current,
+        activePanelRef.current,
         {
           opacity: 0,
-          x: 20,
+          x: 40,
         },
         {
           opacity: 1,
           x: 0,
-          duration: 0.45,
+          duration: 0.5,
           ease: "power3.out",
         }
       );
     }
-  }, [step]);
-
-  // Detector de Inactividad (Screensaver)
-  const resetIdleTimer = useCallback(() => {
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    if (step === 6) return;
-
-    idleTimerRef.current = setTimeout(() => {
-      setIsIdle(true);
-      handleResetForm();
-    }, IDLE_TIMEOUT_MS);
-  }, [step]);
-
-  useEffect(() => {
-    const events = ["mousedown", "mousemove", "touchstart", "pointerdown", "keydown"];
-    const handleActivity = () => {
-      if (isIdle) setIsIdle(false);
-      resetIdleTimer();
-    };
-
-    events.forEach((evt) => window.addEventListener(evt, handleActivity));
-    resetIdleTimer();
-
-    return () => {
-      events.forEach((evt) => window.removeEventListener(evt, handleActivity));
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    };
-  }, [isIdle, resetIdleTimer]);
+  }, [activeColumn]);
 
   const handleResetForm = () => {
     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
@@ -347,26 +282,21 @@ export default function KioskoPage() {
     setDocumentoMensajero("");
     setPrintedSticker(null);
     setCasaSearch("");
-    setStep(1);
-  };
-
-  const canNavigateToStep = (targetStep: number): boolean => {
-    if (targetStep === 1) return true;
-    if (targetStep === 2) return Boolean(selectedBloque);
-    if (targetStep === 3) return Boolean(selectedBloque && selectedCasa);
-    if (targetStep === 4) return Boolean(selectedBloque && selectedCasa && destinatarioNombre.trim());
-    if (targetStep === 5) return Boolean(selectedBloque && selectedCasa && destinatarioNombre.trim());
-    return false;
+    setActiveColumn(null);
+    setUbicacionSubStep("bloque");
   };
 
   // Registrar e imprimir sticker térmico
   const handleRegistrarEImprimir = async () => {
     if (!selectedCasa) {
       toast.error("Selecciona la casa de destino.");
+      setActiveColumn(1);
+      setUbicacionSubStep("casa");
       return;
     }
     if (!destinatarioNombre.trim()) {
-      toast.error("Escribe el nombre del destinatario del paquete.");
+      toast.error("Escribe el nombre del destinatario.");
+      setActiveColumn(2);
       return;
     }
     if (!remitente.trim()) {
@@ -388,7 +318,7 @@ export default function KioskoPage() {
       user?.id;
 
     if (!targetUserId) {
-      toast.error("Debes iniciar sesión con tu cuenta de portería en la tablet.");
+      toast.error("Debes iniciar sesión con tu cuenta de portería.");
       return;
     }
 
@@ -448,7 +378,7 @@ export default function KioskoPage() {
       };
 
       setPrintedSticker(stickerInfo);
-      setStep(6);
+      setActiveColumn(5); // Pantalla de éxito
       toast.success("¡Entrega registrada y sticker enviado a impresión!");
 
       setCountdown(10);
@@ -458,7 +388,6 @@ export default function KioskoPage() {
           if (prev <= 1) {
             clearInterval(countdownIntervalRef.current!);
             handleResetForm();
-            setIsIdle(true);
             return 10;
           }
           return prev - 1;
@@ -475,93 +404,26 @@ export default function KioskoPage() {
     if (exitPin === "1234" || exitPin === "2026") {
       router.push("/paqueteria");
     } else {
-      toast.error("PIN de seguridad incorrecto");
+      toast.error("PIN incorrecto");
       setExitPin("");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black text-black overflow-hidden flex flex-col select-none font-sans antialiased">
-
-      {/* ============================================================== */}
-      {/* 1. SCREENSAVER AMBIENTAL MINIMALISTA (STANDBY)                 */}
-      {/* ============================================================== */}
-      {isIdle && (
-        <div
-          onClick={() => setIsIdle(false)}
-          className="fixed inset-0 z-[150] bg-[#07090e]/95 backdrop-blur-2xl text-white flex flex-col justify-between p-8 sm:p-16 cursor-pointer animate-in fade-in duration-500 overflow-hidden"
-        >
-          {/* Luces de fondo */}
-          <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#57bf00]/15 rounded-full blur-[160px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#009df1]/15 rounded-full blur-[160px] pointer-events-none" />
-
-          {/* Top Bar: Logo Oficial ConjuntOS® en tarjeta blanca limpia */}
-          <div className="flex items-center justify-between w-full max-w-6xl mx-auto relative z-10">
-            <div className="relative w-52 h-14 bg-white px-3 py-1.5 rounded-2xl shadow-lg">
-              <Image
-                src="/images/conjuntos-logo-horizontal.jpg"
-                alt="ConjuntOS®"
-                fill
-                className="object-contain p-1"
-                priority
-              />
-            </div>
-
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/[0.04]">
-              <span className="w-2 h-2 rounded-full bg-[#57bf00] animate-ping" />
-              <span className="text-xs font-mono font-bold text-white tracking-wider">
-                {currentTime || "PORTERÍA ACTIVA"}
-              </span>
-            </div>
-          </div>
-
-          {/* Editorial Headline */}
-          <div className="flex flex-col items-center text-center max-w-3xl mx-auto my-auto gap-6 relative z-10">
-            <span className="text-xs font-black uppercase tracking-[0.25em] text-[#57bf00]">
-              Conjunto Residencial Las Brisas P.H.
-            </span>
-            <h1 className="text-5xl sm:text-7xl font-display font-black tracking-tight text-white leading-[0.95]">
-              RECEPCIÓN <br />
-              <span className="bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
-                EXPRESS
-              </span>
-            </h1>
-            <p className="text-base sm:text-xl text-white/60 max-w-md font-light leading-relaxed">
-              Autoservicio para domiciliarios. Registra tu entrega en segundos e imprime la etiqueta oficial de portería.
-            </p>
-
-            {/* Pill Touch Prompt */}
-            <div className="mt-4">
-              <div className="px-10 py-5 rounded-full bg-white text-black font-extrabold text-base tracking-tight shadow-2xl flex items-center gap-3 active:scale-95 transition-transform">
-                <span>Toca la pantalla para iniciar</span>
-                <ArrowRight size={18} />
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Info */}
-          <div className="flex items-center justify-between text-xs text-white/40 pt-6 border-t border-white/10 max-w-6xl mx-auto w-full font-mono relative z-10">
-            <span>Las Brisas PH &bull; Bogotá</span>
-            <span>Impresión Térmica 60×40mm</span>
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================== */}
-      {/* 2. LAYOUT EXACTO DE DRIBBBLE: IZQUIERDA BLANCA, DERECHA ACORDEÓN*/}
-      {/* ============================================================== */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 h-screen w-screen overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-[#e5e5e5] p-3 sm:p-6 lg:p-10 flex items-center justify-center font-sans select-none antialiased">
+      {/* Contenedor tipo tablet redondeado idéntico al dispositivo del video de Dribbble */}
+      <div className="w-full h-full max-w-[1400px] max-h-[880px] bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_25px_70px_rgba(0,0,0,0.25)] border-[8px] sm:border-[12px] border-black overflow-hidden flex flex-col lg:flex-row relative">
 
         {/* ------------------------------------------------------------ */}
-        {/* LADO IZQUIERDO: EDITORIAL BLANCO IMPECABLE (art.gal style)   */}
+        {/* LADO IZQUIERDO (BLANCO PURO - EXACTO AL VIDEO DRIBBBLE)      */}
         {/* ------------------------------------------------------------ */}
         <aside
-          ref={leftCanvasRef}
-          className="lg:col-span-5 xl:col-span-5 flex flex-col justify-between p-6 sm:p-10 lg:p-12 bg-white text-black z-20 overflow-y-auto"
+          ref={leftPanelRef}
+          className="w-full lg:w-[48%] h-full bg-white text-black p-8 sm:p-12 lg:p-14 flex flex-col justify-between relative z-10 overflow-hidden"
         >
-          {/* Top: Logo Oficial ConjuntOS® de la imagen adjunta */}
+          {/* Top-Left: Logo Oficial de ConjuntOS® de la imagen adjunta */}
           <div className="flex items-center justify-between">
-            <div className="relative w-48 sm:w-56 h-14">
+            <div className="relative w-44 sm:w-52 h-12">
               <Image
                 src="/images/conjuntos-logo-horizontal.jpg"
                 alt="ConjuntOS®"
@@ -571,203 +433,189 @@ export default function KioskoPage() {
               />
             </div>
 
+            {/* Botón sutil de menú de 2 líneas (como el "=" en el video de Dribbble) */}
             <button
               type="button"
               onClick={() => setShowExitModal(true)}
-              className="p-2.5 rounded-full hover:bg-black/5 text-black/40 hover:text-black transition-colors cursor-pointer"
-              title="Seguridad de Portería"
+              className="w-8 h-8 flex flex-col justify-center items-end gap-1.5 cursor-pointer hover:opacity-70 transition-opacity"
+              title="Menú de Portería"
             >
-              <Lock size={16} />
+              <span className="w-6 h-[2px] bg-black block" />
+              <span className="w-4 h-[2px] bg-black block" />
             </button>
           </div>
 
           {/* Gran Tipografía Editorial: FOLLOW THE ART -> RECEPCIÓN EXPRESS */}
           <div className="my-auto py-6 flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-black/40">
-                Las Brisas P.H. &bull; Autoservicio
-              </span>
-              <h1 className="text-4xl sm:text-6xl font-display font-black tracking-tight text-black leading-[0.92]">
-                RECEPCIÓN <br />
-                EXPRESS
-              </h1>
-            </div>
+            <h1 className="text-5xl sm:text-7xl font-display font-black tracking-tighter text-black leading-[0.88] uppercase">
+              RECEPCIÓN <br />
+              EXPRESS
+            </h1>
 
-            <p className="text-xs sm:text-sm text-black/60 max-w-sm font-normal leading-relaxed">
-              Módulo de entrega autónoma para domiciliarios y correspondencia en portería. Completa cada columna para generar el sticker térmico oficial.
+            <p className="font-mono text-xs sm:text-[13px] text-neutral-600 max-w-xs leading-relaxed">
+              No dejes que los domicilios esperen en portería. Selecciona la columna correspondiente para registrar la entrega e imprimir la etiqueta oficial.
             </p>
-
-            {/* Thumbnail artístico en la esquina inferior izquierda (como en Dribbble) */}
-            <div className="mt-4 pt-6 border-t border-black/10 flex items-center gap-4">
-              <div className="relative w-24 h-16 rounded-xl overflow-hidden bg-black/5 border border-black/10 shadow-sm flex-none">
-                <Image
-                  src="/images/las-brisas-logo.jpg"
-                  alt="Las Brisas"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-black/40">
-                  Estado de la Entrega
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-black mt-0.5">
-                  {selectedBloque && selectedCasa
-                    ? `Bloque ${selectedBloque} • Casa ${selectedCasa}`
-                    : "Seleccionando destino..."}
-                </span>
-                {destinatarioNombre.trim() && (
-                  <span className="text-[11px] text-black/60 truncate max-w-[200px]">
-                    Para: {destinatarioNombre}
-                  </span>
-                )}
-              </div>
-            </div>
           </div>
 
-          {/* Footer Izquierdo */}
-          <div className="pt-4 border-t border-black/10 flex items-center justify-between text-[11px] text-black/50 font-mono">
-            <span>LAS BRISAS &bull; PORTERÍA</span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#57bf00]" />
-              <span>{currentTime}</span>
+          {/* Bottom-Left: Thumbnail artístico con líneas decorativas circulares (exacto a Dribbble) */}
+          <div className="relative flex items-center gap-4 pt-4 border-t border-neutral-100">
+            {/* Líneas decorativas circulares como en el video */}
+            <div className="absolute -left-6 -bottom-6 w-28 h-28 rounded-full border border-neutral-200 pointer-events-none" />
+            <div className="absolute -left-10 -bottom-10 w-36 h-36 rounded-full border border-neutral-100 pointer-events-none" />
+
+            {/* Thumbnail con el logo de Las Brisas */}
+            <div className="relative w-24 h-16 rounded-xl overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 flex-none z-10">
+              <Image
+                src="/images/las-brisas-logo.jpg"
+                alt="Las Brisas"
+                fill
+                className="object-cover"
+              />
+            </div>
+
+            <div className="flex flex-col z-10">
+              <span className="font-mono text-[10px] text-neutral-400 tracking-wider uppercase">
+                LAS BRISAS PH &bull; BOGOTÁ
+              </span>
+              <span className="text-xs font-extrabold text-black uppercase tracking-tight mt-0.5">
+                {selectedBloque && selectedCasa
+                  ? `Bloque ${selectedBloque} • Casa ${selectedCasa}`
+                  : "PORTERÍA INTELIGENTE"}
+              </span>
+              {destinatarioNombre.trim() && (
+                <span className="text-[11px] text-neutral-600 font-mono truncate max-w-[200px]">
+                  Para: {destinatarioNombre}
+                </span>
+              )}
             </div>
           </div>
         </aside>
 
         {/* ------------------------------------------------------------ */}
-        {/* LADO DERECHO: ACORDEÓN CINEMÁTICO (Galleries / Calendar / ...) */}
+        {/* LADO DERECHO (LAS 4 COLUMNAS FLUIDAS O EL PANEL EXPANDIDO)   */}
         {/* ------------------------------------------------------------ */}
-        <section className="lg:col-span-7 xl:col-span-7 flex flex-col lg:flex-row h-full w-full bg-[#07080c] text-white overflow-hidden relative">
-          
-          {/* Renderizado de las 5 Columnas del Acordeón */}
-          {COLUMNAS_CONFIG.map((col) => {
-            const isActive = step === col.id;
-            const isCompleted = step > col.id;
-            const isClickable = canNavigateToStep(col.id);
+        <section className="w-full lg:w-[52%] h-full bg-black relative flex flex-row overflow-hidden">
 
-            // Resumen de valor elegido para mostrar en la pestaña
-            let valueSummary = "";
-            if (col.id === 1 && selectedBloque) valueSummary = `B.${selectedBloque}`;
-            if (col.id === 2 && selectedCasa) valueSummary = `C.${selectedCasa}`;
-            if (col.id === 3 && destinatarioNombre) valueSummary = destinatarioNombre.slice(0, 10);
-            if (col.id === 4 && selectedCategoria) valueSummary = selectedCategoria.emoji;
-            if (col.id === 5) valueSummary = "FINAL";
+          {/* ========================================================== */}
+          {/* CASO A: VISTA STANDBY (LAS 4 COLUMNAS VISIBLES - FRAME 1)   */}
+          {/* ========================================================== */}
+          {activeColumn === null && (
+            <div className="w-full h-full flex flex-row animate-in fade-in duration-500">
+              {DRIBBLE_COLUMNS.map((col) => {
+                const isHovered = hoveredColumn === col.id;
 
-            return (
-              <div
-                key={col.id}
-                onMouseEnter={() => setHoveredColumn(col.id)}
-                onMouseLeave={() => setHoveredColumn(null)}
-                onClick={() => {
-                  if (!isActive && isClickable && col.id <= 5) {
-                    setStep(col.id as 1 | 2 | 3 | 4 | 5);
-                  }
-                }}
-                className={`relative h-full flex flex-col transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden border-r border-white/10 ${
-                  isActive
-                    ? "flex-1 min-w-0 bg-[#090b10] z-10"
-                    : `w-14 sm:w-16 lg:w-20 xl:w-24 flex-none ${col.gradientClass} ${
-                        isClickable ? "cursor-pointer hover:brightness-125" : "cursor-not-allowed opacity-40"
-                      }`
-                }`}
-              >
-                {/* -------------------------------------------------- */}
-                {/* PESTAÑA VERTICAL CONTRAÍDA (DRIBBBLE EXACT STYLE) */}
-                {/* -------------------------------------------------- */}
-                {!isActive && (
-                  <div className="h-full w-full flex flex-col justify-between items-center py-8 px-2 select-none">
-                    {/* Flecha Diagonal Superior (↗) que rota al hover */}
-                    <div className="flex flex-col items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-white/50">
-                        {col.num}
-                      </span>
-                      <ArrowUpRight
-                        size={18}
-                        className={`text-white transition-transform duration-300 ${
-                          hoveredColumn === col.id ? "rotate-45 scale-125" : "text-white/60"
-                        }`}
-                      />
-                    </div>
+                // Resumen de valor elegido para mostrar en la base
+                let valueSelected = "";
+                if (col.id === 1 && selectedBloque && selectedCasa) {
+                  valueSelected = `B.${selectedBloque} - C.${selectedCasa}`;
+                } else if (col.id === 1 && selectedBloque) {
+                  valueSelected = `Bloque ${selectedBloque}`;
+                } else if (col.id === 2 && destinatarioNombre) {
+                  valueSelected = destinatarioNombre.slice(0, 12);
+                } else if (col.id === 3 && selectedCategoria) {
+                  valueSelected = selectedCategoria.label;
+                } else if (col.id === 4 && remitente) {
+                  valueSelected = remitente;
+                }
 
-                    {/* Título Vertical Rotado al Pie de la Columna */}
-                    <div className="my-auto flex flex-col items-center">
-                      {isCompleted && (
-                        <div className="w-5 h-5 rounded-full bg-white text-black flex items-center justify-center text-[10px] font-black mb-3 shadow">
-                          <Check size={12} />
-                        </div>
-                      )}
-                      <span
-                        className="text-sm xl:text-base font-display font-extrabold tracking-widest uppercase text-white drop-shadow-md whitespace-nowrap"
-                        style={{
-                          writingMode: "vertical-rl",
-                          transform: "rotate(180deg)",
-                        }}
-                      >
-                        {valueSummary ? `${col.label}: ${valueSummary}` : col.label}
-                      </span>
-                    </div>
-
-                    {/* Punto de estado inferior */}
-                    <div
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{
-                        backgroundColor: isCompleted ? col.activeAccent : "rgba(255,255,255,0.3)",
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* -------------------------------------------------- */}
-                {/* ESCENARIO ACTIVO EXPANDIDO (DRIBBBLE FORM STYLE)   */}
-                {/* -------------------------------------------------- */}
-                {isActive && (
+                return (
                   <div
-                    ref={stageContentRef}
-                    className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-12 h-full overflow-y-auto bg-[#07090e]"
+                    key={col.id}
+                    onMouseEnter={() => setHoveredColumn(col.id)}
+                    onMouseLeave={() => setHoveredColumn(null)}
+                    onClick={() => setActiveColumn(col.id)}
+                    className="flex-1 h-full relative cursor-pointer overflow-hidden border-l border-black/40 group transition-all duration-300"
                   >
-                    {/* Top Bar del Paso Activo */}
-                    <div className="flex items-center justify-between pb-6 border-b border-white/10">
-                      <div className="flex items-center gap-3">
-                        {step > 1 && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4 | 5);
-                            }}
-                            className="px-3.5 py-1.5 rounded-full border border-white/20 hover:border-white text-xs font-mono text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-                          >
-                            <ArrowLeft size={13} />
-                            <span>Atrás</span>
-                          </button>
-                        )}
-                        <span className="text-xs font-mono tracking-widest uppercase text-white/50">
-                          Paso {col.num} / 05 &bull; {col.label}
-                        </span>
+                    {/* Imagen de Textura Fluida de Alta Resolución (exacta al video) */}
+                    <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-110">
+                      <Image
+                        src={col.imageTexture}
+                        alt={col.label}
+                        fill
+                        className="object-cover"
+                        priority
+                      />
+                      <div className="absolute inset-0 bg-black/25 group-hover:bg-black/10 transition-colors" />
+                    </div>
+
+                    {/* Contenido Vertical de la Columna */}
+                    <div className="relative z-10 h-full w-full flex flex-col justify-between p-6 sm:p-8">
+                      {/* Flecha Superior Diagonal (↗) */}
+                      <div className="flex justify-end">
+                        <div
+                          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
+                            isHovered
+                              ? "bg-white text-black scale-110 shadow-lg"
+                              : "text-white/80"
+                          }`}
+                        >
+                          <ArrowUpRight size={22} />
+                        </div>
                       </div>
 
-                      <span className="text-xs font-mono text-white/30 hidden sm:inline">
-                        Las Brisas P.H.
-                      </span>
+                      {/* Texto Vertical al Pie (Exacto al Video de Dribbble) */}
+                      <div className="flex flex-col items-start pb-4">
+                        <span
+                          className="font-display font-extrabold text-3xl sm:text-4xl text-white tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] whitespace-nowrap select-none"
+                          style={{
+                            writingMode: "vertical-rl",
+                            transform: "rotate(180deg)",
+                          }}
+                        >
+                          {valueSelected ? valueSelected : col.label}
+                        </span>
+                      </div>
                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-                    {/* ============================================== */}
-                    {/* PASO 1: ELEGIR BLOQUE (1 al 6)                 */}
-                    {/* ============================================== */}
-                    {step === 1 && (
-                      <div className="my-auto py-6 flex flex-col justify-center max-w-xl mx-auto w-full gap-6">
+          {/* ========================================================== */}
+          {/* CASO B: PANEL ACTIVO EXPANDIDO (EXACTO AL FRAME 9 DRIBBLE) */}
+          {/* ========================================================== */}
+          {activeColumn !== null && activeColumn <= 4 && (
+            <div className="w-full h-full flex flex-row">
+              {/* Contenido Principal de la Columna Activa (Fondo Negro Puro) */}
+              <div
+                ref={activePanelRef}
+                className="flex-1 h-full bg-[#08090d] text-white p-8 sm:p-12 lg:p-14 flex flex-col justify-between overflow-y-auto"
+              >
+                {/* Header Superior del Formulario Activo */}
+                <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setActiveColumn(null)}
+                    className="flex items-center gap-2 text-xs font-mono text-white/50 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft size={14} />
+                    <span>Ver todas las columnas</span>
+                  </button>
+
+                  <span className="text-xs font-mono tracking-widest uppercase text-white/40">
+                    Columna 0{activeColumn} / 04
+                  </span>
+                </div>
+
+                {/* ---------------------------------------------------- */}
+                {/* 01. UBICACIÓN (BLOQUE & CASA)                        */}
+                {/* ---------------------------------------------------- */}
+                {activeColumn === 1 && (
+                  <div className="my-auto py-6 flex flex-col gap-6 max-w-md w-full">
+                    {ubicacionSubStep === "bloque" ? (
+                      <>
                         <div>
-                          <h2 className="text-3xl sm:text-5xl font-display font-black text-white tracking-tight">
+                          <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
                             ¿A qué Bloque vas?
                           </h2>
-                          <p className="text-sm text-white/50 mt-1 font-light">
-                            Selecciona el bloque de destino en Las Brisas PH
+                          <p className="text-xs font-mono text-white/50 mt-1">
+                            Selecciona el bloque de Las Brisas PH
                           </p>
                         </div>
 
-                        {/* Cuadrícula Elegante de los 6 Bloques */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {/* Cuadrícula de los 6 Bloques */}
+                        <div className="grid grid-cols-3 gap-3">
                           {bloquesDisponibles.map((bloque) => {
                             const isSelected = selectedBloque === bloque;
                             return (
@@ -777,62 +625,59 @@ export default function KioskoPage() {
                                 onClick={() => {
                                   setSelectedBloque(bloque);
                                   setSelectedCasa("");
-                                  setStep(2);
+                                  setUbicacionSubStep("casa");
                                 }}
-                                className={`p-8 rounded-2xl border transition-all duration-200 active:scale-95 flex flex-col items-center justify-center cursor-pointer ${
+                                className={`py-6 rounded-2xl border text-center transition-all cursor-pointer ${
                                   isSelected
-                                    ? "bg-white text-black border-white shadow-2xl scale-105"
-                                    : "bg-white/[0.03] border-white/10 hover:border-white/40 hover:bg-white/[0.08] text-white"
+                                    ? "bg-white text-black border-white shadow-xl scale-105"
+                                    : "bg-white/[0.04] border-white/15 hover:border-white/50 text-white"
                                 }`}
                               >
-                                <span className="text-[10px] uppercase font-mono tracking-widest opacity-50">
+                                <span className="text-[10px] font-mono uppercase opacity-50 block">
                                   Bloque
                                 </span>
-                                <span className="text-4xl sm:text-5xl font-display font-black mt-1">
+                                <span className="text-3xl font-display font-black">
                                   {bloque}
-                                </span>
-                                <span className="text-[10px] font-mono text-white/40 mt-1">
-                                  80 casas
                                 </span>
                               </button>
                             );
                           })}
                         </div>
-                      </div>
-                    )}
-
-                    {/* ============================================== */}
-                    {/* PASO 2: ELEGIR CASA (80 casas reales)          */}
-                    {/* ============================================== */}
-                    {step === 2 && (
-                      <div className="my-auto py-4 flex flex-col justify-center max-w-2xl mx-auto w-full gap-4">
-                        <div>
-                          <h2 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight">
-                            Selecciona la Casa (Bloque {selectedBloque})
-                          </h2>
-                          <p className="text-xs sm:text-sm text-white/50 mt-1 font-light">
-                            Casas de la {parseInt(selectedBloque || "1") * 100 + 1} a la{" "}
-                            {parseInt(selectedBloque || "1") * 100 + 80} en Las Brisas PH
-                          </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+                              Selecciona la Casa
+                            </h2>
+                            <p className="text-xs font-mono text-white/50 mt-1">
+                              Bloque {selectedBloque} &bull; Casas {parseInt(selectedBloque || "1") * 100 + 1} a {parseInt(selectedBloque || "1") * 100 + 80}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setUbicacionSubStep("bloque")}
+                            className="text-xs font-mono text-white/50 hover:text-white underline"
+                          >
+                            Cambiar Bloque
+                          </button>
                         </div>
 
-                        {/* Underline Search Input (estilo Dribbble) */}
+                        {/* Buscador de Casa Underline */}
                         <div className="relative py-2 border-b border-white/20 focus-within:border-white transition-colors">
-                          <Search
-                            size={16}
-                            className="absolute left-0 top-1/2 -translate-y-1/2 text-white/40"
-                          />
+                          <Search size={15} className="absolute left-0 top-1/2 -translate-y-1/2 text-white/40" />
                           <input
                             type="text"
-                            placeholder="Buscar o teclear número de casa (ej: 15 o 315)..."
+                            placeholder="Buscar casa (ej: 15 o 315)..."
                             value={casaSearch}
                             onChange={(e) => setCasaSearch(e.target.value)}
-                            className="w-full pl-7 pr-4 py-2 bg-transparent text-white placeholder-white/30 text-sm focus:outline-none font-mono"
+                            className="w-full pl-6 bg-transparent text-white text-sm focus:outline-none font-mono placeholder-white/30"
                           />
                         </div>
 
-                        {/* Cuadrícula de Casas */}
-                        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[300px] overflow-y-auto p-2 rounded-2xl bg-white/[0.02] border border-white/10">
+                        {/* Grid de 80 Casas */}
+                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[240px] overflow-y-auto p-1">
                           {casasFiltradas.map((casa) => {
                             const isSelected = selectedCasa === casa;
                             return (
@@ -840,309 +685,319 @@ export default function KioskoPage() {
                                 key={casa}
                                 type="button"
                                 onClick={() => setSelectedCasa(casa)}
-                                className={`py-3 px-2 rounded-xl font-mono font-bold text-sm transition-all active:scale-95 flex flex-col items-center justify-center cursor-pointer ${
+                                className={`py-2.5 rounded-xl font-mono text-xs font-bold border transition-all cursor-pointer ${
                                   isSelected
-                                    ? "bg-white text-black shadow-lg scale-105"
-                                    : "bg-white/[0.04] hover:bg-white/10 text-white border border-white/10"
-                                }`}
-                              >
-                                <span className="text-[9px] uppercase opacity-50">Casa</span>
-                                <span className="text-base sm:text-lg">{casa}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* Botón de Continuar */}
-                        <div className="flex items-center justify-between pt-2">
-                          <span className="text-xs font-mono text-white/50">
-                            {selectedCasa
-                              ? `Casa ${selectedCasa} seleccionada`
-                              : "Selecciona una casa para avanzar"}
-                          </span>
-
-                          <button
-                            type="button"
-                            disabled={!selectedCasa}
-                            onClick={() => setStep(3)}
-                            className={`py-3.5 px-8 rounded-full font-mono text-xs uppercase tracking-widest font-bold flex items-center gap-2 transition-all cursor-pointer ${
-                              selectedCasa
-                                ? "bg-white text-black shadow-xl hover:bg-white/90 active:scale-95"
-                                : "bg-white/10 text-white/30 cursor-not-allowed"
-                            }`}
-                          >
-                            <span>Continuar</span>
-                            <ArrowRight size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ============================================== */}
-                    {/* PASO 3: DESTINATARIO (Underline Form Dribbble) */}
-                    {/* ============================================== */}
-                    {step === 3 && (
-                      <div className="my-auto py-6 flex flex-col justify-center max-w-lg mx-auto w-full gap-8">
-                        <div>
-                          <span className="text-xs font-mono uppercase tracking-widest text-white/40">
-                            Bloque {selectedBloque} &bull; Casa {selectedCasa}
-                          </span>
-                          <h2 className="text-3xl sm:text-4xl font-display font-black text-white mt-1">
-                            ¿Para quién es el paquete?
-                          </h2>
-                          <p className="text-sm text-white/50 mt-1 font-light">
-                            Escribe el nombre del destinatario tal como aparece en la guía o paquete
-                          </p>
-                        </div>
-
-                        {/* Campo con línea inferior exactamente como en frame 9 de Dribbble */}
-                        <div className="flex flex-col gap-3">
-                          <label className="text-xs font-mono uppercase tracking-wider text-white/60">
-                            Nombre en la etiqueta:
-                          </label>
-                          <input
-                            type="text"
-                            autoFocus
-                            placeholder="Ej. Andrea Gómez, Carlos Rodríguez..."
-                            value={destinatarioNombre}
-                            onChange={(e) => setDestinatarioNombre(e.target.value)}
-                            className="w-full py-4 bg-transparent border-b-2 border-white/30 focus:border-white text-white text-xl sm:text-2xl placeholder-white/20 focus:outline-none transition-colors font-display"
-                          />
-                        </div>
-
-                        {/* Botón Elíptico estilo Dribbble (SUBMIT) */}
-                        <div className="flex flex-col gap-4">
-                          <button
-                            type="button"
-                            disabled={!destinatarioNombre.trim()}
-                            onClick={() => setStep(4)}
-                            className={`w-full py-4 rounded-full font-mono text-xs uppercase tracking-[0.2em] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                              destinatarioNombre.trim()
-                                ? "border-2 border-white bg-white text-black hover:bg-white/90 active:scale-95 shadow-xl"
-                                : "border border-white/20 text-white/30 cursor-not-allowed"
-                            }`}
-                          >
-                            <span>Continuar a Tipo de Envío</span>
-                            <ArrowRight size={14} />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDestinatarioNombre("Destinatario General");
-                              setStep(4);
-                            }}
-                            className="text-xs text-center text-white/40 hover:text-white underline decoration-white/20 transition-colors cursor-pointer font-light"
-                          >
-                            ¿Sin nombre de persona? Marcar como Destinatario General
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ============================================== */}
-                    {/* PASO 4: CATEGORÍA DE ENTREGA                   */}
-                    {/* ============================================== */}
-                    {step === 4 && (
-                      <div className="my-auto py-4 flex flex-col justify-center max-w-2xl mx-auto w-full gap-5">
-                        <div>
-                          <h2 className="text-2xl sm:text-4xl font-display font-black text-white">
-                            ¿Qué tipo de paquete es?
-                          </h2>
-                          <p className="text-xs sm:text-sm text-white/50 mt-1 font-light">
-                            Selecciona la categoría para la prioridad de aviso en portería
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {CATEGORIAS.map((cat) => {
-                            const isSelected = selectedCategoria.id === cat.id;
-                            return (
-                              <button
-                                key={cat.id}
-                                type="button"
-                                onClick={() => setSelectedCategoria(cat)}
-                                className={`p-4 rounded-2xl border text-left transition-all active:scale-95 cursor-pointer flex flex-col justify-between ${
-                                  isSelected
-                                    ? "bg-white text-black border-white shadow-xl scale-[1.02]"
+                                    ? "bg-white text-black border-white shadow-md scale-105"
                                     : "bg-white/[0.04] border-white/10 hover:border-white/30 text-white"
                                 }`}
                               >
-                                <span className="text-3xl mb-3">{cat.emoji}</span>
-                                <div>
-                                  <h4 className="text-sm font-bold">{cat.label}</h4>
-                                  <p
-                                    className={`text-[10px] mt-0.5 ${
-                                      isSelected ? "text-black/70" : "text-white/50"
-                                    }`}
-                                  >
-                                    {cat.sublabel}
-                                  </p>
-                                </div>
+                                {casa}
                               </button>
                             );
                           })}
                         </div>
 
-                        <div className="flex justify-center pt-2">
-                          <button
-                            type="button"
-                            onClick={() => setStep(5)}
-                            className="py-3.5 px-10 rounded-full bg-white text-black font-mono text-xs uppercase tracking-widest font-bold flex items-center gap-2 shadow-xl active:scale-95 cursor-pointer"
-                          >
-                            <span>Continuar a Confirmación</span>
-                            <ArrowRight size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ============================================== */}
-                    {/* PASO 5: EMPRESA & BOTÓN DE IMPRESIÓN           */}
-                    {/* ============================================== */}
-                    {step === 5 && (
-                      <div className="my-auto py-4 flex flex-col justify-center max-w-xl mx-auto w-full gap-6">
-                        <div>
-                          <h2 className="text-2xl sm:text-4xl font-display font-black text-white">
-                            ¿De qué empresa vienes?
-                          </h2>
-                          <p className="text-xs sm:text-sm text-white/50 mt-1 font-light">
-                            Selecciona o escribe el remitente de la entrega
-                          </p>
-                        </div>
-
-                        {/* Chips de Empresas */}
-                        <div className="flex flex-wrap gap-2">
-                          {EMPRESAS_RAPIDAS.map((emp) => {
-                            const isSelected = remitente === emp.name;
-                            return (
-                              <button
-                                key={emp.name}
-                                type="button"
-                                onClick={() => setRemitente(emp.name)}
-                                className={`py-2 px-3.5 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 ${
-                                  isSelected
-                                    ? "bg-white text-black shadow-md"
-                                    : "bg-white/[0.06] hover:bg-white/10 text-white border border-white/10"
-                                }`}
-                              >
-                                <span>{emp.icon}</span>
-                                <span>{emp.name}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* Inputs Underline */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="border-b border-white/20 focus-within:border-white py-1">
-                            <label className="text-[10px] font-mono uppercase text-white/50 block">
-                              Otra Empresa:
-                            </label>
-                            <input
-                              type="text"
-                              value={remitente}
-                              onChange={(e) => setRemitente(e.target.value)}
-                              placeholder="Nombre empresa"
-                              className="w-full bg-transparent text-white text-sm focus:outline-none py-1"
-                            />
-                          </div>
-
-                          <div className="border-b border-white/20 focus-within:border-white py-1">
-                            <label className="text-[10px] font-mono uppercase text-white/50 block">
-                              C.C. Mensajero (Opcional):
-                            </label>
-                            <input
-                              type="text"
-                              value={documentoMensajero}
-                              onChange={(e) => setDocumentoMensajero(e.target.value)}
-                              placeholder="Cédula"
-                              className="w-full bg-transparent text-white text-sm focus:outline-none py-1"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Botón Elíptico Gigante de Impresión Térmica */}
+                        {/* Botón Elíptico estilo Dribbble */}
                         <button
                           type="button"
-                          disabled={isSubmitting || !remitente.trim()}
-                          onClick={handleRegistrarEImprimir}
-                          className="w-full py-5 rounded-full bg-white text-black hover:bg-white/90 font-mono text-xs uppercase tracking-[0.2em] font-black flex items-center justify-center gap-3 shadow-[0_15px_40px_rgba(255,255,255,0.2)] active:scale-95 transition-all cursor-pointer mt-2"
+                          disabled={!selectedCasa}
+                          onClick={() => setActiveColumn(2)}
+                          className={`mt-2 py-3 px-8 rounded-full border text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer ${
+                            selectedCasa
+                              ? "border-white bg-white text-black hover:bg-white/90 shadow-lg active:scale-95"
+                              : "border-white/20 text-white/30 cursor-not-allowed"
+                          }`}
                         >
-                          {isSubmitting ? (
-                            <>
-                              <RefreshCw size={18} className="animate-spin" />
-                              <span>GENERANDO STICKER...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Printer size={20} />
-                              <span>IMPRIMIR STICKER TÉRMICO (60×40MM)</span>
-                            </>
-                          )}
+                          Siguiente: Destinatario &rarr;
                         </button>
-                      </div>
+                      </>
                     )}
                   </div>
                 )}
+
+                {/* ---------------------------------------------------- */}
+                {/* 02. DESTINATARIO (UNDERLINE FORM DRIBBBLE EXACT)     */}
+                {/* ---------------------------------------------------- */}
+                {activeColumn === 2 && (
+                  <div className="my-auto py-6 flex flex-col gap-8 max-w-md w-full">
+                    <div>
+                      <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+                        ¿Para quién es el paquete?
+                      </h2>
+                      <p className="text-xs font-mono text-white/50 mt-1">
+                        Escribe el nombre tal como figura en la guía o etiqueta
+                      </p>
+                    </div>
+
+                    {/* Underline Form Field (exacto al frame 9 de Dribbble) */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-mono text-white/50 uppercase tracking-wider">
+                        Nombre completo
+                      </label>
+                      <input
+                        type="text"
+                        autoFocus
+                        placeholder="Ej. Andrea Gómez, Carlos Rodríguez..."
+                        value={destinatarioNombre}
+                        onChange={(e) => setDestinatarioNombre(e.target.value)}
+                        className="w-full py-3 bg-transparent border-b border-white/30 focus:border-white text-white text-xl placeholder-white/20 focus:outline-none transition-colors font-sans"
+                      />
+                    </div>
+
+                    {/* Botón Elíptico estilo SUBMIT del video de Dribbble */}
+                    <div className="flex flex-col gap-3 pt-2">
+                      <button
+                        type="button"
+                        disabled={!destinatarioNombre.trim()}
+                        onClick={() => setActiveColumn(3)}
+                        className={`w-full py-3.5 rounded-full border text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer ${
+                          destinatarioNombre.trim()
+                            ? "border-white bg-white text-black hover:bg-white/90 shadow-xl active:scale-95"
+                            : "border-white/20 text-white/30 cursor-not-allowed"
+                        }`}
+                      >
+                        Siguiente: Categoría &rarr;
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDestinatarioNombre("Destinatario General");
+                          setActiveColumn(3);
+                        }}
+                        className="text-[11px] font-mono text-center text-white/40 hover:text-white underline decoration-white/20"
+                      >
+                        ¿Sin nombre particular? Marcar como Destinatario General
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ---------------------------------------------------- */}
+                {/* 03. CATEGORÍA DE ENTREGA                             */}
+                {/* ---------------------------------------------------- */}
+                {activeColumn === 3 && (
+                  <div className="my-auto py-6 flex flex-col gap-6 max-w-md w-full">
+                    <div>
+                      <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+                        ¿Qué tipo de paquete es?
+                      </h2>
+                      <p className="text-xs font-mono text-white/50 mt-1">
+                        Determina la prioridad de aviso al residente
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5 max-h-[300px] overflow-y-auto p-1">
+                      {CATEGORIAS.map((cat) => {
+                        const isSelected = selectedCategoria.id === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setSelectedCategoria(cat)}
+                            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                              isSelected
+                                ? "bg-white text-black border-white shadow-lg scale-[1.02]"
+                                : "bg-white/[0.04] border-white/10 hover:border-white/30 text-white"
+                            }`}
+                          >
+                            <span className="text-2xl mb-1">{cat.emoji}</span>
+                            <div>
+                              <h4 className="text-xs font-bold leading-tight">{cat.label}</h4>
+                              <p className={`text-[9px] mt-0.5 ${isSelected ? "text-black/60" : "text-white/40"}`}>
+                                {cat.sublabel}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Botón Elíptico */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveColumn(4)}
+                      className="w-full py-3.5 rounded-full border border-white bg-white text-black hover:bg-white/90 text-xs font-mono uppercase tracking-[0.2em] shadow-xl active:scale-95 cursor-pointer"
+                    >
+                      Siguiente: Confirmar &rarr;
+                    </button>
+                  </div>
+                )}
+
+                {/* ---------------------------------------------------- */}
+                {/* 04. CONFIRMAR & IMPRIMIR STICKER TÉRMICO             */}
+                {/* ---------------------------------------------------- */}
+                {activeColumn === 4 && (
+                  <div className="my-auto py-6 flex flex-col gap-6 max-w-md w-full">
+                    <div>
+                      <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+                        ¿De qué empresa vienes?
+                      </h2>
+                      <p className="text-xs font-mono text-white/50 mt-1">
+                        Selecciona o escribe el remitente del envío
+                      </p>
+                    </div>
+
+                    {/* Chips de Empresas */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {EMPRESAS_RAPIDAS.map((emp) => {
+                        const isSelected = remitente === emp.name;
+                        return (
+                          <button
+                            key={emp.name}
+                            type="button"
+                            onClick={() => setRemitente(emp.name)}
+                            className={`py-1.5 px-3 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? "bg-white text-black shadow-md"
+                                : "bg-white/[0.06] hover:bg-white/10 text-white border border-white/10"
+                            }`}
+                          >
+                            <span>{emp.icon}</span>
+                            <span>{emp.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Inputs Underline */}
+                    <div className="flex flex-col gap-3">
+                      <div className="border-b border-white/20 focus-within:border-white py-1">
+                        <label className="text-[10px] font-mono uppercase text-white/50 block">
+                          Otra Empresa:
+                        </label>
+                        <input
+                          type="text"
+                          value={remitente}
+                          onChange={(e) => setRemitente(e.target.value)}
+                          placeholder="Nombre empresa"
+                          className="w-full bg-transparent text-white text-sm focus:outline-none py-1"
+                        />
+                      </div>
+
+                      <div className="border-b border-white/20 focus-within:border-white py-1">
+                        <label className="text-[10px] font-mono uppercase text-white/50 block">
+                          C.C. Mensajero (Opcional):
+                        </label>
+                        <input
+                          type="text"
+                          value={documentoMensajero}
+                          onChange={(e) => setDocumentoMensajero(e.target.value)}
+                          placeholder="Cédula"
+                          className="w-full bg-transparent text-white text-sm focus:outline-none py-1"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Botón Elíptico Gigante estilo SUBMIT */}
+                    <button
+                      type="button"
+                      disabled={isSubmitting || !remitente.trim()}
+                      onClick={handleRegistrarEImprimir}
+                      className="w-full py-4 rounded-full border border-white bg-white text-black hover:bg-white/90 font-mono text-xs uppercase tracking-[0.2em] font-black flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(255,255,255,0.2)] active:scale-95 transition-all cursor-pointer"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <RefreshCw size={16} className="animate-spin" />
+                          <span>REGISTRANDO...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Printer size={16} />
+                          <span>IMPRIMIR STICKER TÉRMICO</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
-            );
-          })}
+
+              {/* Tiras comprimidas a la derecha de las otras 3 columnas */}
+              <div className="w-14 sm:w-16 h-full flex flex-col border-l border-white/10 flex-none">
+                {DRIBBLE_COLUMNS.filter((c) => c.id !== activeColumn).map((col) => {
+                  return (
+                    <div
+                      key={col.id}
+                      onClick={() => setActiveColumn(col.id)}
+                      className="flex-1 w-full relative cursor-pointer overflow-hidden border-b border-black/40 group hover:brightness-125 transition-all"
+                    >
+                      <Image
+                        src={col.imageTexture}
+                        alt={col.label}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-colors" />
+
+                      <div className="relative z-10 h-full w-full flex flex-col justify-between items-center py-4">
+                        <span className="text-[10px] font-mono text-white/60">
+                          {col.num}
+                        </span>
+                        <span
+                          className="font-display font-bold text-xs text-white uppercase tracking-wider select-none"
+                          style={{
+                            writingMode: "vertical-rl",
+                            transform: "rotate(180deg)",
+                          }}
+                        >
+                          {col.label}
+                        </span>
+                        <ArrowUpRight size={14} className="text-white/60 group-hover:rotate-45 transition-transform" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================== */}
+          {/* CASO C: PANTALLA DE ÉXITO & STICKER IMPRESO (COLUMNA 5)    */}
+          {/* ========================================================== */}
+          {activeColumn === 5 && printedSticker && (
+            <div className="w-full h-full bg-[#08090d] text-white p-8 sm:p-12 flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-400">
+              <div className="w-16 h-16 rounded-full border border-white flex items-center justify-center text-white mb-4">
+                <CheckCircle2 size={36} />
+              </div>
+
+              <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-white/50">
+                REGISTRO EXITOSO
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-display font-bold text-white mt-1">
+                Pega el sticker en el paquete
+              </h2>
+              <p className="text-xs text-white/50 mt-1 max-w-sm">
+                Bloque {selectedBloque} &bull; Casa {selectedCasa} &bull; Residente notificado
+              </p>
+
+              <div className="my-5 p-3 rounded-2xl bg-white/[0.04] border border-white/10 shadow-2xl">
+                <StickerEtiqueta data={printedSticker} autoPrint={true} />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleResetForm}
+                className="py-3 px-8 rounded-full border border-white bg-white text-black font-mono text-xs uppercase tracking-widest font-black shadow-xl active:scale-95 cursor-pointer"
+              >
+                Nueva Entrega ({countdown}s)
+              </button>
+            </div>
+          )}
         </section>
       </div>
 
       {/* ============================================================== */}
-      {/* 3. PANTALLA DE ÉXITO & SALIDA DE STICKER TÉRMICO (PASO 6)      */}
-      {/* ============================================================== */}
-      {step === 6 && printedSticker && (
-        <div className="fixed inset-0 z-[180] bg-black text-white flex flex-col items-center justify-center p-6 text-center animate-in zoom-in-95 duration-400">
-          <div className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center text-white mb-4">
-            <CheckCircle2 size={46} />
-          </div>
-
-          <span className="text-xs font-mono uppercase tracking-[0.25em] text-white/60">
-            ENTREGA REGISTRADA
-          </span>
-          <h2 className="text-3xl sm:text-5xl font-display font-black text-white mt-1">
-            Pega el sticker en el paquete y entrégalo al guarda
-          </h2>
-          <p className="text-sm text-white/60 mt-2 max-w-md mx-auto font-light">
-            El residente de la{" "}
-            <span className="text-white font-bold">
-              Bloque {selectedBloque} Casa {selectedCasa}
-            </span>{" "}
-            ha sido notificado.
-          </p>
-
-          <div className="my-6 p-4 rounded-3xl bg-white/[0.05] border border-white/15 shadow-2xl">
-            <StickerEtiqueta data={printedSticker} autoPrint={true} />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              handleResetForm();
-              setIsIdle(true);
-            }}
-            className="py-4 px-10 rounded-full bg-white text-black font-mono text-xs uppercase tracking-widest font-black shadow-2xl active:scale-95 transition-transform cursor-pointer"
-          >
-            Finalizar / Nueva Entrega ({countdown}s)
-          </button>
-        </div>
-      )}
-
-      {/* ============================================================== */}
-      {/* 4. MODAL PIN DE SEGURIDAD (GUARDA)                             */}
+      {/* MODAL PIN DE SEGURIDAD (GUARDA)                                 */}
       {/* ============================================================== */}
       {showExitModal && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-[#121622] border border-white/15 rounded-3xl p-6 max-w-xs w-full flex flex-col gap-4 text-center shadow-2xl animate-in zoom-in-95 duration-200 text-white">
-            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white mx-auto">
-              <Lock size={20} />
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white mx-auto">
+              <Lock size={18} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Seguridad de Portería</h3>
-              <p className="text-xs text-white/50 mt-0.5">Ingresa el PIN para salir del modo Kiosko</p>
+              <h3 className="text-sm font-bold text-white">Seguridad de Portería</h3>
+              <p className="text-[11px] text-white/50 mt-0.5">PIN para salir a Paquetería</p>
             </div>
             <form
               onSubmit={(e) => {
@@ -1158,7 +1013,7 @@ export default function KioskoPage() {
                 placeholder="••••"
                 value={exitPin}
                 onChange={(e) => setExitPin(e.target.value)}
-                className="w-full py-3 px-4 text-center text-2xl tracking-[0.3em] font-mono bg-black/40 border border-white/15 rounded-2xl text-white focus:outline-none focus:border-white"
+                className="w-full py-2.5 px-4 text-center text-xl tracking-[0.3em] font-mono bg-black/40 border border-white/15 rounded-xl text-white focus:outline-none focus:border-white"
               />
               <div className="flex gap-2">
                 <button
@@ -1167,13 +1022,13 @@ export default function KioskoPage() {
                     setShowExitModal(false);
                     setExitPin("");
                   }}
-                  className="flex-1 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 rounded-2xl bg-white text-black text-xs font-bold transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl bg-white text-black text-xs font-bold transition-colors cursor-pointer"
                 >
                   Acceder
                 </button>
