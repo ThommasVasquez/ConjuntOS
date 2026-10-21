@@ -40,14 +40,14 @@ const pinyonScript = Pinyon_Script({
 });
 
 export const metadata: Metadata = {
-  title: "ConjuntOS - Tu comunidad sincronizada",
+  title: "ConjuntOS® - Tu comunidad sincronizada",
   description: "Plataforma de gestión residencial inteligente para copropiedades modernas.",
-  // icons se manejan manualmente en el <head> con <link media>
-  // para que el favicon cambie automáticamente con modo oscuro/claro
+  applicationName: "ConjuntOS®",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "ConjuntOS",
+    statusBarStyle: "black-translucent",
+    title: "ConjuntOS®",
   },
   formatDetection: {
     telephone: false,
@@ -63,7 +63,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   viewportFit: "cover",
-  themeColor: "#050d0c",
+  themeColor: "#08090d",
 };
 
 import { Providers } from "@/components/Providers";
@@ -77,10 +77,18 @@ export default function RootLayout({
   return (
     <html lang="es" className={`light ${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} ${montserrat.variable} ${tinos.variable} ${pinyonScript.variable}`}>
       <head>
+        {/* PWA Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* PWA & Home Screen Icons para iPad / iOS / Android */}
+        <meta name="apple-mobile-web-app-title" content="ConjuntOS®" />
+        <meta name="application-name" content="ConjuntOS®" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+
         {/* Favicon con detección automática de modo oscuro/claro */}
         <link rel="icon" type="image/svg+xml" href="/solo-light.svg" media="(prefers-color-scheme: light)" />
         <link rel="icon" type="image/svg+xml" href="/solo-dark.svg"  media="(prefers-color-scheme: dark)" />
-        <link rel="apple-touch-icon" href="/solo-light.svg" />
       </head>
       <body className="antialiased selection:bg-primary/20 min-h-dvh">
         <Providers>
