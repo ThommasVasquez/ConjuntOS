@@ -171,6 +171,10 @@ export default function AdminResidentesPage() {
   const [customNewPassword, setCustomNewPassword] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
+  // Delete confirmation
+  const [userToDelete, setUserToDelete] = useState<AdminResidenteItem | AdminResidenteDetalle | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+
   // Invite modal
   const [showInvite, setShowInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState<InvitarResidenteRequest>({
@@ -604,6 +608,26 @@ export default function AdminResidentesPage() {
     }
   };
 
+  const handleEliminarResidente = async () => {
+    if (!userToDelete) return;
+    setIsDeletingUser(true);
+    try {
+      await api.delete(`/admin/usuarios/${userToDelete.id}`);
+      toast.success("Usuario eliminado exitosamente del conjunto");
+      setUserToDelete(null);
+      if (selectedId === userToDelete.id) {
+        closeDetalle();
+      }
+      fetchResidentes();
+    } catch (e: unknown) {
+      toast.error(
+        e instanceof ApiError ? e.detail : "Error al eliminar usuario"
+      );
+    } finally {
+      setIsDeletingUser(false);
+    }
+  };
+
   // -------- Loading state --------
 
   if (authLoading) {
@@ -743,9 +767,22 @@ export default function AdminResidentesPage() {
                     </div>
                   </div>
                 </div>
-                <span className="bg-text/10 text-text border border-text/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
-                  {ROL_LABELS[r.rol] || r.rol}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="bg-text/10 text-text border border-text/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
+                    {ROL_LABELS[r.rol] || r.rol}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setUserToDelete(r);
+                    }}
+                    className="p-1 rounded-lg hover:bg-red-500/10 text-text/40 hover:text-red-500 transition-colors"
+                    title="Eliminar residente"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
 
               {/* Contact info */}
@@ -1025,6 +1062,14 @@ export default function AdminResidentesPage() {
                       <span>Reenviar Email</span>
                     </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setUserToDelete(detalle)}
+                    className="w-full py-2.5 px-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-1"
+                  >
+                    <Trash2 size={14} />
+                    <span>Eliminar Residente</span>
+                  </button>
                 </div>
               </div>
             ) : (
@@ -1630,6 +1675,47 @@ export default function AdminResidentesPage() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* DELETE CONFIRMATION MODAL */}
+      {/* ============================================================ */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0"
+            onClick={() => !isDeletingUser && setUserToDelete(null)}
+          />
+          <div className="liquid-glass rounded-[28px] w-full max-w-[400px] p-6 relative z-10 shadow-2xl border border-red-500/30 animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-text">¿Eliminar miembro?</h3>
+              <p className="text-xs text-text/70">
+                ¿Estás seguro de que deseas eliminar a <span className="font-bold text-text">{userToDelete.nombre}</span> ({userToDelete.email}) de este conjunto residencial? Esta acción liberará la cuenta y no se puede deshacer.
+              </p>
+              <div className="flex w-full gap-2 mt-3">
+                <button
+                  type="button"
+                  disabled={isDeletingUser}
+                  onClick={() => setUserToDelete(null)}
+                  className="flex-1 py-2.5 rounded-full bg-surface-2 border border-border text-xs font-bold text-text hover:bg-text/10 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeletingUser}
+                  onClick={handleEliminarResidente}
+                  className="flex-1 py-2.5 rounded-full bg-red-500 text-white text-xs font-bold shadow-lg shadow-red-500/30 hover:bg-red-600 transition-colors flex items-center justify-center gap-1"
+                >
+                  {isDeletingUser ? "Eliminando..." : "Sí, Eliminar"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

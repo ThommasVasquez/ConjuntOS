@@ -19,6 +19,7 @@ use crate::state::AppState;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/citofonia/call", post(call))
+        .route("/citofonia/cancel", post(cancel_call))
         .route("/citofonia/token", get(citofonia_token))
         .route("/citofonia/status", get(vigilante_status))
 }
@@ -33,6 +34,12 @@ pub struct CallRequest {
     /// authenticated user's name.
     #[serde(default)]
     pub caller_name: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CancelCallRequest {
+    pub room: String,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -101,6 +108,7 @@ pub enum PeerTarget {
     Numero(String),
     Role(Uuid, Rol),
     Apto(Uuid, String, String),
+    AptoSinTorre(Uuid, String),
     Invalid,
 }
 
@@ -122,6 +130,7 @@ pub fn parse_peer_id(peer_id: &str) -> PeerTarget {
     }
 
     // {conjuntoId}-APTO-{torre}-{numero}
+    // {conjuntoId}-APTO-{numero}
     // {conjuntoId}-VIGILANTE
     // {conjuntoId}-ADMINISTRADOR
     // UUIDs are 36 chars (8-4-4-4-12), so extract the first 36 chars as UUID
@@ -154,6 +163,11 @@ pub fn parse_peer_id(peer_id: &str) -> PeerTarget {
                 apto_parts[0].to_string(),
                 apto_parts[1].to_string(),
             );
+        } else if apto_parts.len() == 1 && !apto_parts[0].is_empty() {
+            return PeerTarget::AptoSinTorre(
+                conjunto_id,
+                apto_parts[0].to_string(),
+            );
         }
         return PeerTarget::Invalid;
     }
@@ -183,13 +197,46 @@ async fn resolve_targets(
             Ok(ids)
         }
         PeerTarget::Numero(code) => {
-            let ids: Vec<Uuid> = usuarios::table
+            // 1. Try matching usuarios::numero_interno first.
+            let mut ids: Vec<Uuid> = usuarios::table
                 .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
                 .filter(usuarios::numero_interno.eq(code))
                 .filter(usuarios::activo.eq(true))
                 .select(usuarios::id)
                 .load(conn)
                 .await?;
+
+            // 2. Fallback: match apartment directly in usuarios table
+            if ids.is_empty() {
+                ids = usuarios::table
+                    .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                    .filter(usuarios::apto.eq(code))
+                    .filter(usuarios::activo.eq(true))
+                    .select(usuarios::id)
+                    .load(conn)
+                    .await?;
+            }
+
+            // 3. Fallback: match apartment in unidades table
+            if ids.is_empty() {
+                let unidad_ids: Vec<Uuid> = unidades::table
+                    .filter(unidades::conjunto_id.eq(caller_conjunto_id))
+                    .filter(unidades::numero.eq(code))
+                    .select(unidades::id)
+                    .load(conn)
+                    .await?;
+
+                if !unidad_ids.is_empty() {
+                    ids = usuarios::table
+                        .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                        .filter(usuarios::unidad_id.eq_any(&unidad_ids))
+                        .filter(usuarios::activo.eq(true))
+                        .select(usuarios::id)
+                        .load(conn)
+                        .await?;
+                }
+            }
+
             Ok(ids)
         }
         PeerTarget::Role(conjunto_id, rol) => {
@@ -209,24 +256,68 @@ async fn resolve_targets(
             if *conjunto_id != caller_conjunto_id {
                 return Ok(Vec::new());
             }
-            // Find the unidad, then users linked to it.
-            let unidad_ids: Vec<Uuid> = unidades::table
-                .filter(unidades::conjunto_id.eq(caller_conjunto_id))
-                .filter(unidades::torre.eq(torre))
-                .filter(unidades::numero.eq(numero))
-                .select(unidades::id)
-                .load(conn)
-                .await?;
-            if unidad_ids.is_empty() {
-                return Ok(Vec::new());
-            }
-            let ids: Vec<Uuid> = usuarios::table
+            // 1. Check direct usuarios match by torre and apto
+            let mut ids: Vec<Uuid> = usuarios::table
                 .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
-                .filter(usuarios::unidad_id.eq_any(&unidad_ids))
+                .filter(usuarios::torre.eq(torre))
+                .filter(usuarios::apto.eq(numero))
                 .filter(usuarios::activo.eq(true))
                 .select(usuarios::id)
                 .load(conn)
                 .await?;
+
+            // 2. Fallback to unidad_id linkage
+            if ids.is_empty() {
+                let unidad_ids: Vec<Uuid> = unidades::table
+                    .filter(unidades::conjunto_id.eq(caller_conjunto_id))
+                    .filter(unidades::torre.eq(torre))
+                    .filter(unidades::numero.eq(numero))
+                    .select(unidades::id)
+                    .load(conn)
+                    .await?;
+                if !unidad_ids.is_empty() {
+                    ids = usuarios::table
+                        .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                        .filter(usuarios::unidad_id.eq_any(&unidad_ids))
+                        .filter(usuarios::activo.eq(true))
+                        .select(usuarios::id)
+                        .load(conn)
+                        .await?;
+                }
+            }
+            Ok(ids)
+        }
+        PeerTarget::AptoSinTorre(conjunto_id, numero) => {
+            if *conjunto_id != caller_conjunto_id {
+                return Ok(Vec::new());
+            }
+            // 1. Check direct usuarios match by apto
+            let mut ids: Vec<Uuid> = usuarios::table
+                .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                .filter(usuarios::apto.eq(numero))
+                .filter(usuarios::activo.eq(true))
+                .select(usuarios::id)
+                .load(conn)
+                .await?;
+
+            // 2. Fallback to unidad_id linkage
+            if ids.is_empty() {
+                let unidad_ids: Vec<Uuid> = unidades::table
+                    .filter(unidades::conjunto_id.eq(caller_conjunto_id))
+                    .filter(unidades::numero.eq(numero))
+                    .select(unidades::id)
+                    .load(conn)
+                    .await?;
+                if !unidad_ids.is_empty() {
+                    ids = usuarios::table
+                        .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                        .filter(usuarios::unidad_id.eq_any(&unidad_ids))
+                        .filter(usuarios::activo.eq(true))
+                        .select(usuarios::id)
+                        .load(conn)
+                        .await?;
+                }
+            }
             Ok(ids)
         }
         PeerTarget::Invalid => Ok(Vec::new()),
@@ -458,6 +549,52 @@ async fn citofonia_token(
     Ok(Json(CitofoniaTokenDto { token, url }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/citofonia/cancel",
+    tag = "citofonia",
+    request_body = CancelCallRequest,
+    responses(
+        (status = 200, description = "Call cancelled event broadcasted"),
+        (status = 401, description = "Not authenticated"),
+        (status = 403, description = "Room belongs to another tenant")
+    )
+)]
+pub async fn cancel_call(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<CancelCallRequest>,
+) -> ApiResult<Json<serde_json::Value>> {
+    // Room format: citofonia-{conjuntoId}-{uuid}. Verify the embedded conjunto.
+    let embedded = req
+        .room
+        .strip_prefix("citofonia-")
+        .and_then(|rest| rest.get(0..36))
+        .and_then(|id| Uuid::parse_str(id).ok());
+    match embedded {
+        Some(cid) if cid == user.conjunto_id => {}
+        _ => return Err(ApiError::Forbidden),
+    }
+
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "citofonia".to_string(),
+                action: "call_cancelled".to_string(),
+                payload: Some(serde_json::json!({
+                    "room": req.room,
+                    "cancelledBy": user.id,
+                })),
+                target_user_id: None,
+            },
+        )
+        .await;
+
+    Ok(Json(serde_json::json!({ "status": "ok" })))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -496,6 +633,10 @@ mod tests {
             parse_peer_id("550e8400-e29b-41d4-a716-446655440000-APTO-A-101"),
             PeerTarget::Apto(cid, "A".into(), "101".into()),
         );
+        assert_eq!(
+            parse_peer_id("550e8400-e29b-41d4-a716-446655440000-APTO-302"),
+            PeerTarget::AptoSinTorre(cid, "302".into()),
+        );
     }
 
     #[test]
@@ -515,9 +656,6 @@ mod tests {
             parse_peer_id("550e8400-e29b-41d4-a716-446655440000-APTO-"),
             PeerTarget::Invalid,
         );
-        assert_eq!(
-            parse_peer_id("550e8400-e29b-41d4-a716-446655440000-APTO-A"),
-            PeerTarget::Invalid,
-        );
     }
 }
+

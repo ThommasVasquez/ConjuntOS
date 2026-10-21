@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { Package, CheckCircle2, ScanLine, Clock, MapPin, History } from "lucide-react";
+import { Package, CheckCircle2, ScanLine, Clock, MapPin, History, Printer, ArrowRight } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { SkeletonRows } from "@/components/ui/Skeleton";
+import StickerEtiqueta, { StickerData } from "@/components/paqueteria/StickerEtiqueta";
 
 interface ResidenteDirectorio {
   id: string;
@@ -44,6 +45,7 @@ export default function PaqueteriaPage() {
   const [entregados, setEntregados] = useState<PaqueteItem[]>([]);
   const [residentes, setResidentes] = useState<ResidenteDirectorio[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSticker, setSelectedSticker] = useState<StickerData | null>(null);
 
   const [formData, setFormData] = useState({
     usuarioId: "",
@@ -140,6 +142,31 @@ export default function PaqueteriaPage() {
     <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
       <ProfileHeader />
 
+      {/* KIOSK PROMOTION BANNER */}
+      <div className="bg-gradient-to-r from-accent/20 to-[#57bf00]/20 rounded-3xl p-5 border border-accent/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-accent text-on-accent flex items-center justify-center shrink-0 shadow-md">
+            <Printer size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-accent">Exclusivo Brisas PH</span>
+              <span className="text-[10px] bg-accent/20 text-accent font-bold px-2 py-0.5 rounded-full">Stickers 60×40mm</span>
+            </div>
+            <h3 className="text-base font-black text-text leading-tight mt-0.5">Kiosko Autoservicio en Tablet</h3>
+            <p className="text-xs text-text/70 mt-0.5">El domiciliario registra el paquete e imprime su sticker adhesivo en 15 segundos.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/kiosko")}
+          className="w-full sm:w-auto py-3 px-5 rounded-2xl bg-accent hover:bg-accent/90 text-on-accent text-xs font-black uppercase tracking-wider shadow-lg shadow-accent/20 transition-transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+        >
+          <span>Abrir Kiosko Tablet</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
+
       <div className="bg-primary-light rounded-3xl p-6 border border-border shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div
@@ -162,9 +189,9 @@ export default function PaqueteriaPage() {
               onChange={e => setFormData({ ...formData, usuarioId: e.target.value })}
               className="w-full bg-surface-2 border border-border rounded-2xl py-3 px-4 text-sm text-text focus:outline-none focus:border-border"
             >
-              <option value="" className="bg-primary text-text">Seleccione apartamento/residente...</option>
+              <option value="" className="bg-primary text-text">Seleccione casa / residente...</option>
               {residentes.map(r => (
-                <option key={r.id} value={r.id} className="bg-primary text-text">{r.torre} - Apto {r.apto} ({r.nombre})</option>
+                <option key={r.id} value={r.id} className="bg-primary text-text">{r.torre ? `Bloque ${r.torre} - ` : ""}Casa {r.apto} ({r.nombre})</option>
               ))}
             </select>
           </div>
@@ -236,10 +263,37 @@ export default function PaqueteriaPage() {
                   Hace {Math.floor((new Date().getTime() - new Date(p.fechaLlegada).getTime()) / 60000)} min
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-text/70 text-xs font-semibold relative z-10">
-                <MapPin size={14} /> {p.residente?.torre} - Apto {p.residente?.apto} ({p.residente?.nombre})
+              <div className="flex items-center justify-between pt-1 relative z-10">
+                <div className="flex items-center gap-2 text-text/70 text-xs font-semibold">
+                  <MapPin size={14} /> {p.residente?.torre ? `Bloque ${p.residente.torre} - ` : ""}Casa {p.residente?.apto} ({p.residente?.nombre})
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedSticker({
+                      id: p.id,
+                      bloque: p.residente?.torre || null,
+                      casa: p.residente?.apto || null,
+                      torre: p.residente?.torre || null,
+                      apto: p.residente?.apto || null,
+                      destinatario: p.residente?.nombre || "Residente",
+                      tipo: "PAQUETE",
+                      remitente: p.remitente,
+                      fecha: new Date(p.fechaLlegada).toLocaleString("es-CO", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      }),
+                    })
+                  }
+                  className="py-1.5 px-3 rounded-xl bg-surface-2 hover:bg-accent/20 hover:text-accent border border-border text-[11px] font-bold text-text flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Printer size={13} /> Imprimir Sticker
+                </button>
               </div>
-              <button onClick={() => markAsDelivered(p.id)} className="w-full mt-2 py-3 bg-surface-2 border border-border hover:bg-text/10 hover:border-text/40 hover:text-text transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest relative z-10 text-text">
+              <button onClick={() => markAsDelivered(p.id)} className="w-full mt-1 py-3 bg-surface-2 border border-border hover:bg-text/10 hover:border-text/40 hover:text-text transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest relative z-10 text-text">
                 <CheckCircle2 size={16} /> Marcar como Entregado
               </button>
             </div>
@@ -266,7 +320,7 @@ export default function PaqueteriaPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 text-text/70 text-xs font-semibold">
-                <MapPin size={14} /> {p.residente?.torre} - Apto {p.residente?.apto} ({p.residente?.nombre})
+                <MapPin size={14} /> {p.residente?.torre ? `Bloque ${p.residente.torre} - ` : ""}Casa {p.residente?.apto} ({p.residente?.nombre})
               </div>
               {p.entregadoEn && (
                 <span className="text-[9px] text-text/50 uppercase tracking-widest">
@@ -275,6 +329,16 @@ export default function PaqueteriaPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* STICKER MODAL */}
+      {selectedSticker && (
+        <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => setSelectedSticker(null)} />
+          <div className="liquid-glass rounded-3xl p-6 relative z-10 shadow-2xl border border-border max-w-md w-full animate-in zoom-in-95 duration-200">
+            <StickerEtiqueta data={selectedSticker} onClose={() => setSelectedSticker(null)} autoPrint={false} />
+          </div>
         </div>
       )}
     </div>

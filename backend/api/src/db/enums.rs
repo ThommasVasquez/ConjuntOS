@@ -318,10 +318,18 @@ text_enum!(TipoCorrespondencia {
     Carta => "CARTA",
     Documento => "DOCUMENTO",
     Revista => "REVISTA",
+    Periodico => "PERIODICO",
     Otro => "OTRO",
     Energia => "ENERGIA",
     Agua => "AGUA",
     Gas => "GAS",
+    Telecomunicaciones => "TELECOMUNICACIONES",
+    Comida => "COMIDA",
+    Medicamentos => "MEDICAMENTOS",
+    CadenaFrio => "CADENA_FRIO",
+    Paquete => "PAQUETE",
+    PaqueteGrande => "PAQUETE_GRANDE",
+    CartaBanco => "CARTA_BANCO",
 });
 
 text_enum!(EstadoCorrespondencia {

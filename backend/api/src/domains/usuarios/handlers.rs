@@ -140,16 +140,18 @@ pub async fn get_profile(
         .into_iter()
         .map(crate::domains::tramites::dto::TramiteDto::from)
         .collect();
-    // Fetch the conjunto name for display in the app header.
-    let conjunto_nombre = crate::domains::conjuntos::repo::find_by_id(&mut conn, usuario.conjunto_id)
+    // Fetch the conjunto name and subdomain for display and feature scoping.
+    let conjunto_opt = crate::domains::conjuntos::repo::find_by_id(&mut conn, usuario.conjunto_id)
         .await
         .ok()
-        .flatten()
-        .map(|c| c.nombre);
+        .flatten();
+    let conjunto_nombre = conjunto_opt.as_ref().map(|c| c.nombre.clone());
+    let conjunto_subdominio = conjunto_opt.as_ref().map(|c| c.subdominio.clone());
     Ok(Json(ProfileResponse {
         user: UserDto::from(usuario),
         unidad,
         conjunto_nombre,
+        conjunto_subdominio,
         vehiculos,
         mascotas,
         tramites_solicitados,
@@ -236,13 +238,14 @@ pub async fn update_profile(
         .into_iter()
         .map(crate::domains::tramites::dto::TramiteDto::from)
         .collect();
-    let conjunto_nombre = crate::domains::conjuntos::repo::find_by_id(&mut conn, user.conjunto_id)
-        .await?
-        .map(|c| c.nombre);
+    let conjunto_opt = crate::domains::conjuntos::repo::find_by_id(&mut conn, user.conjunto_id).await?;
+    let conjunto_nombre = conjunto_opt.as_ref().map(|c| c.nombre.clone());
+    let conjunto_subdominio = conjunto_opt.as_ref().map(|c| c.subdominio.clone());
     Ok(Json(ProfileResponse {
         user: UserDto::from(updated),
         unidad,
         conjunto_nombre,
+        conjunto_subdominio,
         vehiculos,
         mascotas,
         tramites_solicitados,
