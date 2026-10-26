@@ -330,18 +330,28 @@ pub async fn crear_paquete(
             },
         )
         .await;
-    state
-        .ws_hub
-        .publish(
-            user.conjunto_id,
-            WsEvent {
-                domain: "notification".into(),
-                action: "created".into(),
-                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-                target_user_id: Some(req.usuario_id),
-            },
-        )
-        .await;
+    let notif_titulo = "📦 Paquete en portería";
+    let notif_mensaje = format!(
+        "Tienes un paquete de {} en portería: {}",
+        req.remitente.trim(),
+        req.descripcion.trim()
+    );
+    let _ = crate::domains::notificaciones::repo::create_notificacion_with_push(
+        &mut conn,
+        &state,
+        user.conjunto_id,
+        req.usuario_id,
+        "PAQUETE",
+        notif_titulo,
+        &notif_mensaje,
+        serde_json::json!({
+            "url": "/citofonia?tab=RECEPCION",
+            "tipo": "PAQUETE",
+            "titulo": notif_titulo,
+            "paqueteId": dto.id
+        }),
+    )
+    .await;
     Ok(Json(dto))
 }
 
@@ -510,18 +520,27 @@ async fn crear_correspondencia(
             },
         )
         .await;
-    state
-        .ws_hub
-        .publish(
-            user.conjunto_id,
-            WsEvent {
-                domain: "notification".into(),
-                action: "created".into(),
-                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
-                target_user_id: Some(req.usuario_id),
-            },
-        )
-        .await;
+    let notif_titulo = "📬 Correspondencia en portería";
+    let notif_mensaje = format!(
+        "Tienes correspondencia de {} en portería",
+        req.remitente.trim()
+    );
+    let _ = crate::domains::notificaciones::repo::create_notificacion_with_push(
+        &mut conn,
+        &state,
+        user.conjunto_id,
+        req.usuario_id,
+        "CORRESPONDENCIA",
+        notif_titulo,
+        &notif_mensaje,
+        serde_json::json!({
+            "url": "/citofonia?tab=RECEPCION",
+            "tipo": "CORRESPONDENCIA",
+            "titulo": notif_titulo,
+            "correspondenciaId": dto.id
+        }),
+    )
+    .await;
     Ok(Json(dto))
 }
 

@@ -252,6 +252,56 @@ function HomeResidente() {
     }
   }, []);
 
+  // Estado y activación de notificaciones de escritorio / navegador
+  const [notifPermission, setNotifPermission] = useState<string>("granted");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotifPermission(Notification.permission);
+    }
+  }, []);
+
+  const activarNotificaciones = async () => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      try {
+        const p = await Notification.requestPermission();
+        setNotifPermission(p);
+        if (p === "granted") {
+          toast.success("🔔 ¡Notificaciones de escritorio activadas!");
+          try {
+            new Notification("ConjuntOS", {
+              body: "Notificaciones activadas. Recibirás avisos de paquetería y portería en tu pantalla.",
+              icon: "/icon-192.png",
+            });
+          } catch {}
+          if ("serviceWorker" in navigator) {
+            const reg = await navigator.serviceWorker.ready;
+            const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (vapid && "pushManager" in reg) {
+              const urlBase64ToUint8Array = (base64String: string) => {
+                const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+                const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+                const rawData = window.atob(base64);
+                const outputArray = new Uint8Array(rawData.length);
+                for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+                return outputArray;
+              };
+              const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapid),
+              });
+              await api.post('/usuarios/me/push-subscriptions', sub);
+            }
+          }
+        } else if (p === "denied") {
+          toast.error("Las notificaciones están bloqueadas en tu navegador. Puedes activarlas desde el candado de la barra de direcciones.");
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
   // Real-time WebSocket subscriptions
   useWsSubscription('notification', () => {
     fetchNotificaciones();
@@ -269,6 +319,14 @@ function HomeResidente() {
       description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes un paquete esperando en portería.",
       duration: 8000,
     });
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+      try {
+        new Notification("📦 ¡Paquete en Portería!", {
+          body: payload?.remitente ? `De: ${payload.remitente}` : "Tienes un paquete esperando en portería.",
+          icon: "/icon-192.png",
+        });
+      } catch {}
+    }
   });
   useWsSubscription('correspondencia', (e) => {
     fetchComunicaciones();
@@ -278,6 +336,14 @@ function HomeResidente() {
       description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes correspondencia esperando en portería.",
       duration: 8000,
     });
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+      try {
+        new Notification("📬 ¡Correspondencia en Portería!", {
+          body: payload?.remitente ? `De: ${payload.remitente}` : "Tienes correspondencia esperando en portería.",
+          icon: "/icon-192.png",
+        });
+      } catch {}
+    }
   });
 
   const fetchActiveAsamblea = useCallback(async () => {
@@ -563,12 +629,23 @@ function HomeResidente() {
                 <Package size={14} className="text-emerald-400" /> Entregas en Portería ({paquetesPendientes.length + correspondenciaPendiente.length})
               </h2>
             </div>
-            <button
-              onClick={() => router.push('/citofonia?tab=RECEPCION')}
-              className="text-xs text-emerald-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-            >
-              Ver todas <ArrowRight size={12} />
-            </button>
+            <div className="flex items-center gap-2">
+              {notifPermission !== "granted" && (
+                <button
+                  type="button"
+                  onClick={activarNotificaciones}
+                  className="px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-[10px] hover:bg-amber-500/25 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <Bell size={11} /> Activar alertas
+                </button>
+              )}
+              <button
+                onClick={() => router.push('/citofonia?tab=RECEPCION')}
+                className="text-xs text-emerald-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+              >
+                Ver todas <ArrowRight size={12} />
+              </button>
+            </div>
           </div>
           <p className="text-[11px] text-text/70 px-1 -mt-1">
             Tienes paquetes o correspondencia esperando ser retirados en la portería principal.

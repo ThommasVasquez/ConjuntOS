@@ -134,11 +134,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         const registration = await navigator.serviceWorker.register("/sw.js");
 
         let permission = Notification.permission;
-        if (permission === "default") {
-          permission = await Notification.requestPermission();
-        }
         if (permission !== "granted") {
-          console.warn("Citofonía: sin permiso de notificaciones — no se recibirán llamadas en segundo plano.");
           return;
         }
 
