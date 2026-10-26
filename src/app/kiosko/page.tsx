@@ -29,12 +29,6 @@ import {
 
 function getValidBackendTipo(tipo: string): string {
   switch (tipo) {
-    case "ENERGIA":
-      return "ENERGIA";
-    case "AGUA":
-      return "AGUA";
-    case "GAS":
-      return "GAS";
     case "CARTA":
     case "CARTA_BANCO":
       return "CARTA";
@@ -43,6 +37,10 @@ function getValidBackendTipo(tipo: string): string {
     case "REVISTA":
       return "REVISTA";
     default:
+      // En la base de datos de producción, correspondencia_tipo_check permite
+      // estrictamente ['CARTA', 'DOCUMENTO', 'REVISTA', 'OTRO'].
+      // Las categorías específicas (COMIDA, PAQUETE, ENERGIA, AGUA, GAS, etc.)
+      // se registran como OTRO con la etiqueta exacta en la descripción.
       return "OTRO";
   }
 }
@@ -304,12 +302,30 @@ export default function KioskoPage() {
       return;
     }
 
-    const matchedResident =
-      directorio.find((d) => {
-        const cleanTorre = d.torre?.replace(/^(bloque|torre)\s*/i, "").trim() || "";
-        const cleanApto = d.apto?.replace(/^(casa|apto)\s*/i, "").trim() || "";
-        return cleanTorre === selectedBloque && cleanApto === selectedCasa;
-      }) || findResidenteReal(selectedBloque, selectedCasa);
+    // 1. Buscar todos los residentes de esta unidad en el directorio de la base de datos
+    const residentsOfUnit = directorio.filter((d) => {
+      const cleanTorre = d.torre?.replace(/^(bloque|torre)\s*/i, "").trim() || "";
+      const cleanApto = d.apto?.replace(/^(casa|apto)\s*/i, "").trim() || "";
+      return cleanTorre === selectedBloque && cleanApto === selectedCasa;
+    });
+
+    const destLower = destinatarioNombre.trim().toLowerCase();
+    const specificResident = residentsOfUnit.find((d) => {
+      if (!destLower || destLower === "destinatario general") return false;
+      const nomLower = d.nombre.toLowerCase();
+      return nomLower.includes(destLower) || destLower.includes(nomLower);
+    });
+
+    // 2. Buscar en el catálogo canónico de Las Brisas PH
+    const catalogResident = findResidenteReal(selectedBloque, selectedCasa);
+
+    // 3. Determinar el nombre final del destinatario para el sticker y la descripción
+    const nombreDestinatarioFinal =
+      destinatarioNombre.trim() ||
+      specificResident?.nombre ||
+      residentsOfUnit[0]?.nombre ||
+      catalogResident?.nombre ||
+      `Residente Bloque ${selectedBloque} Casa ${selectedCasa}`;
 
     setIsSubmitting(true);
     try {
@@ -317,36 +333,66 @@ export default function KioskoPage() {
       let resId = "";
       let resFecha = new Date().toISOString();
 
-      // Candidatos a usuarioId: 1) Residente coincidente, 2) Primer usuario de directorio, 3) Guarda en sesión
-      const candidateUserIds = [
-        matchedResident?.id,
-        directorio[0]?.id,
-        user?.id,
-      ].filter(Boolean) as string[];
+      // Destinatarios prioritarios:
+      // Si coincide con un residente específico por nombre, se envía a él.
+      // Si es general o no especifica, se envía a TODOS los residentes de la casa en la BD.
+      const targetResidents = specificResident
+        ? [specificResident]
+        : residentsOfUnit.length > 0
+        ? residentsOfUnit
+        : [];
 
-      const uniqueUserIds = Array.from(new Set(candidateUserIds));
       let apiSuccess = false;
 
-      // Intentar registrar en el backend con los candidatos
-      for (const candId of uniqueUserIds) {
-        try {
-          const res = await api.post<{
-            id: string;
-            fechaLlegada: string;
-            tipo: string;
-            remitente: string;
-          }>("/vigilancia/correspondencia", {
-            usuarioId: candId,
-            tipo: validTipo,
-            remitente: remitente.trim(),
-            descripcion: `[${selectedCategoria.label.toUpperCase()}] Bloque ${selectedBloque} Casa ${selectedCasa} • Destinatario: ${destinatarioNombre.trim()}${documentoMensajero.trim() ? ` • C.C. Mensajero: ${documentoMensajero.trim()}` : ""}`,
-          });
-          resId = res.id;
-          resFecha = res.fechaLlegada;
-          apiSuccess = true;
-          break;
-        } catch (candErr) {
-          console.warn(`Intento con usuarioId ${candId} en correspondencia falló:`, candErr);
+      // Registrar para los residentes de la casa en la base de datos
+      if (targetResidents.length > 0) {
+        for (const resident of targetResidents) {
+          try {
+            const res = await api.post<{
+              id: string;
+              fechaLlegada: string;
+              tipo: string;
+              remitente: string;
+            }>("/vigilancia/correspondencia", {
+              usuarioId: resident.id,
+              tipo: validTipo,
+              remitente: remitente.trim(),
+              descripcion: `[${selectedCategoria.label.toUpperCase()}] Bloque ${selectedBloque} Casa ${selectedCasa} • Destinatario: ${nombreDestinatarioFinal}${documentoMensajero.trim() ? ` • C.C. Mensajero: ${documentoMensajero.trim()}` : ""}`,
+            });
+            if (!resId) {
+              resId = res.id;
+              resFecha = res.fechaLlegada;
+            }
+            apiSuccess = true;
+          } catch (candErr) {
+            console.warn(`Intento con usuarioId ${resident.id} en correspondencia falló:`, candErr);
+          }
+        }
+      }
+
+      // Si no hubo residentes en la unidad o fallaron, intentar con el guarda en sesión o el primer usuario del directorio
+      if (!apiSuccess) {
+        const fallbackIds = [user?.id, directorio[0]?.id].filter(Boolean) as string[];
+        for (const candId of fallbackIds) {
+          try {
+            const res = await api.post<{
+              id: string;
+              fechaLlegada: string;
+              tipo: string;
+              remitente: string;
+            }>("/vigilancia/correspondencia", {
+              usuarioId: candId,
+              tipo: validTipo,
+              remitente: remitente.trim(),
+              descripcion: `[${selectedCategoria.label.toUpperCase()}] Bloque ${selectedBloque} Casa ${selectedCasa} • Destinatario: ${nombreDestinatarioFinal}${documentoMensajero.trim() ? ` • C.C. Mensajero: ${documentoMensajero.trim()}` : ""}`,
+            });
+            resId = res.id;
+            resFecha = res.fechaLlegada;
+            apiSuccess = true;
+            break;
+          } catch (candErr) {
+            console.warn(`Intento fallback con usuarioId ${candId} falló:`, candErr);
+          }
         }
       }
 
@@ -384,7 +430,7 @@ export default function KioskoPage() {
         casa: selectedCasa,
         torre: selectedBloque,
         apto: selectedCasa,
-        destinatario: destinatarioNombre.trim(),
+        destinatario: nombreDestinatarioFinal,
         tipo: selectedCategoria.tipoBackend,
         remitente: remitente.trim(),
         fecha: new Date(resFecha).toLocaleString("es-CO", {

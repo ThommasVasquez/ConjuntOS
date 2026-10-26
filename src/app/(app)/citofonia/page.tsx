@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Phone, PhoneOff, Users, Package, 
   MapPin, Clock, 
   Plus, Info, 
   ShieldCheck,
-  X, Car, Bike, Search, Lock
+  X, Car, Bike, Search, Lock,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
@@ -43,6 +44,8 @@ interface IPaquete {
   descripcion: string;
   remitente: string;
   fechaLlegada: string;
+  tipo?: string;
+  esCorrespondencia?: boolean;
 }
 
 interface DirectorioUser {
@@ -57,14 +60,23 @@ interface DirectorioUser {
 import { useAuth } from "@/hooks/useAuth";
 import { useCall } from "@/components/providers/CallContext";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useWsSubscription } from "@/hooks/useWebSocket";
 
 export default function CitofoniaPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const isGuest = user?.rol === 'HUESPED_TEMPORAL';
   const [activeTab, setActiveTab] = useState<Tab>("CITOFONIA");
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const prevCallStateRef = useRef<string>("IDLE");
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')?.toUpperCase();
+    if (tabParam === 'CITOFONIA' || tabParam === 'VISITAS' || tabParam === 'RECEPCION') {
+      setActiveTab(tabParam as Tab);
+    }
+  }, [searchParams]);
   
   const {
     callState,
@@ -201,15 +213,49 @@ export default function CitofoniaPage() {
   async function fetchData() {
     setIsLoading(true);
     try {
-      const json = await api.get<{ visitas: IVisita[]; paquetes: IPaquete[] }>('/comunicaciones');
+      const json = await api.get<{
+        visitas: IVisita[];
+        paquetes: IPaquete[];
+        correspondencia?: { id: string; remitente: string; tipo: string; descripcion?: string | null; fechaLlegada: string }[];
+      }>('/comunicaciones');
       setVisitas(json.visitas ?? []);
-      setPaquetes(json.paquetes ?? []);
+      const pkgs = (json.paquetes ?? []).map(p => ({ ...p, esCorrespondencia: false }));
+      const corrs = (json.correspondencia ?? []).map(c => ({
+        id: c.id,
+        descripcion: c.descripcion || c.tipo || 'Correspondencia',
+        remitente: c.remitente,
+        fechaLlegada: c.fechaLlegada,
+        tipo: c.tipo,
+        esCorrespondencia: true,
+      }));
+      setPaquetes([...pkgs, ...corrs]);
     } catch (err) {
       console.error("Error fetching communications:", err);
     } finally {
       setIsLoading(false);
     }
   }
+
+  // Real-time WebSocket subscriptions
+  useWsSubscription('visita', () => {
+    fetchData();
+  });
+  useWsSubscription('paquete', (e) => {
+    fetchData();
+    const payload = e.payload as { remitente?: string; descripcion?: string } | undefined;
+    toast.success("📦 ¡Llegó un paquete a portería!", {
+      description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes un paquete esperando en portería.",
+      duration: 8000,
+    });
+  });
+  useWsSubscription('correspondencia', (e) => {
+    fetchData();
+    const payload = e.payload as { remitente?: string; tipo?: string } | undefined;
+    toast.success("📬 ¡Llegó correspondencia a portería!", {
+      description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes correspondencia esperando en portería.",
+      duration: 8000,
+    });
+  });
 
   // Buscar residentes por nombre (o número) con debounce.
   useEffect(() => {
@@ -701,9 +747,14 @@ export default function CitofoniaPage() {
                         <div className="flex flex-col">
                            <span className="text-text font-bold text-base">{p.descripcion}</span>
                            <span className="text-text text-[10px] uppercase tracking-widest font-bold">De: {p.remitente}</span>
+                           {p.tipo && (
+                             <span className="mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 w-fit">
+                               {p.tipo}
+                             </span>
+                           )}
                         </div>
-                        <div className="p-2 rounded-xl bg-accent/10 border border-accent/20 text-accent">
-                           <Package size={18} />
+                        <div className={`p-2 rounded-xl ${p.esCorrespondencia ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400' : 'bg-accent/10 border border-accent/20 text-accent'}`}>
+                           {p.esCorrespondencia ? <FileText size={18} /> : <Package size={18} />}
                         </div>
                      </div>
                      <div className="flex items-center gap-6 pt-2 border-t border-border">

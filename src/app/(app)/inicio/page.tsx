@@ -58,6 +58,9 @@ import type {
   PagosResponse,
   AdSpaceFeedDto,
   VisitaDto,
+  PaqueteDto,
+  CorrespondenciaDto,
+  ComunicacionesVigilanciaDto,
 } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { getNotifTarget } from "@/lib/notif-routing";
@@ -183,12 +186,20 @@ function HomeResidente() {
   // Visitas PENDIENTES de aprobación: visitas no programadas registradas por vigilancia
   // que el residente debe aprobar o rechazar para que el visitante pueda ingresar.
   const [visitasPendientes, setVisitasPendientes] = useState<VisitaDto[]>([]);
+  const [paquetesPendientes, setPaquetesPendientes] = useState<PaqueteDto[]>([]);
+  const [correspondenciaPendiente, setCorrespondenciaPendiente] = useState<CorrespondenciaDto[]>([]);
 
-  const fetchVisitasPendientes = useCallback(async () => {
+  const fetchComunicaciones = useCallback(async () => {
     try {
-      const data = await api.get<{ visitas: VisitaDto[]; paquetes: unknown[] }>("/comunicaciones");
+      const data = await api.get<ComunicacionesVigilanciaDto>("/comunicaciones");
       const pendientes = (data.visitas || []).filter(v => v.estado === 'PENDIENTE');
       setVisitasPendientes(pendientes);
+
+      const pkgs = (data.paquetes || []).filter(p => p.estado === 'EN_PORTERIA');
+      setPaquetesPendientes(pkgs);
+
+      const corrs = (data.correspondencia || []).filter(c => c.estado === 'RECIBIDO' || c.estado === 'EN_PORTERIA');
+      setCorrespondenciaPendiente(corrs);
     } catch { /* no aplica / sin datos */ }
   }, []);
 
@@ -197,7 +208,7 @@ function HomeResidente() {
     try {
       await api.put(`/visitas/${id}/aprobar`, { aprobada });
       toast.success(aprobada ? "Visita aprobada. El visitante puede ingresar." : "Visita rechazada.");
-      fetchVisitasPendientes();
+      fetchComunicaciones();
     } catch (e: unknown) {
       toast.error((e instanceof Error ? e.message : String(e)) || "No se pudo procesar");
     } finally {
@@ -242,11 +253,32 @@ function HomeResidente() {
   }, []);
 
   // Real-time WebSocket subscriptions
-  useWsSubscription('notification', () => fetchNotificaciones());
+  useWsSubscription('notification', () => {
+    fetchNotificaciones();
+    fetchComunicaciones();
+  });
   useWsSubscription('pago', () => fetchFinance());
   useWsSubscription('anuncio', () => fetchAnuncios());
   useWsSubscription('parqueadero', () => { fetchSolicitudesParqueadero(); fetchCargosRetenidos(); });
-  useWsSubscription('visita', () => fetchVisitasPendientes());
+  useWsSubscription('visita', () => fetchComunicaciones());
+  useWsSubscription('paquete', (e) => {
+    fetchComunicaciones();
+    fetchNotificaciones();
+    const payload = e.payload as { remitente?: string; descripcion?: string } | undefined;
+    toast.success("📦 ¡Llegó un paquete a portería!", {
+      description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes un paquete esperando en portería.",
+      duration: 8000,
+    });
+  });
+  useWsSubscription('correspondencia', (e) => {
+    fetchComunicaciones();
+    fetchNotificaciones();
+    const payload = e.payload as { remitente?: string; tipo?: string } | undefined;
+    toast.success("📬 ¡Llegó correspondencia a portería!", {
+      description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes correspondencia esperando en portería.",
+      duration: 8000,
+    });
+  });
 
   const fetchActiveAsamblea = useCallback(async () => {
     try {
@@ -275,7 +307,7 @@ function HomeResidente() {
       fetchActiveAsamblea();
       fetchSolicitudesParqueadero();
       fetchCargosRetenidos();
-      fetchVisitasPendientes();
+      fetchComunicaciones();
     }
     // Animate only once when user loads. Do NOT use ctx.revert() on cleanup —
     // conditional React renders may have moved DOM nodes since the animation
@@ -510,6 +542,88 @@ function HomeResidente() {
                     className="flex-1 py-2.5 rounded-2xl bg-success text-on-accent font-bold text-xs shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                   >
                     {busyAprob === v.id ? "Procesando..." : "Aprobar ingreso"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 📦 ENTREGAS Y CORRESPONDENCIA EN PORTERÍA */}
+      {(paquetesPendientes.length > 0 || correspondenciaPendiente.length > 0) && (
+        <section className="fade-up-home flex flex-col gap-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+              </span>
+              <h2 className="text-text font-display text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                <Package size={14} className="text-emerald-400" /> Entregas en Portería ({paquetesPendientes.length + correspondenciaPendiente.length})
+              </h2>
+            </div>
+            <button
+              onClick={() => router.push('/citofonia?tab=RECEPCION')}
+              className="text-xs text-emerald-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+            >
+              Ver todas <ArrowRight size={12} />
+            </button>
+          </div>
+          <p className="text-[11px] text-text/70 px-1 -mt-1">
+            Tienes paquetes o correspondencia esperando ser retirados en la portería principal.
+          </p>
+          <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap items-stretch">
+            {paquetesPendientes.map((p) => (
+              <div key={p.id} className="min-w-[280px] max-w-[320px] liquid-glass-card rounded-[28px] p-5 border border-emerald-500/40 flex flex-col gap-3 shrink-0">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/30 shrink-0 mt-0.5">
+                    <Package size={20} className="text-emerald-400" />
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                    <span className="text-base font-bold text-text truncate">{p.descripcion}</span>
+                    <span className="text-[11px] font-semibold text-text/80 truncate">De: {p.remitente}</span>
+                    <span className="text-[10px] text-text/50 flex items-center gap-1 mt-1">
+                      <Clock size={10} /> {new Date(p.fechaLlegada).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    EN PORTERÍA
+                  </span>
+                  <button
+                    onClick={() => router.push('/citofonia?tab=RECEPCION')}
+                    className="text-text/70 hover:text-text transition-colors cursor-pointer"
+                  >
+                    Detalles →
+                  </button>
+                </div>
+              </div>
+            ))}
+            {correspondenciaPendiente.map((c) => (
+              <div key={c.id} className="min-w-[280px] max-w-[320px] liquid-glass-card rounded-[28px] p-5 border border-blue-500/40 flex flex-col gap-3 shrink-0">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-500/15 flex items-center justify-center border border-blue-500/30 shrink-0 mt-0.5">
+                    <FileText size={20} className="text-blue-400" />
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                    <span className="text-base font-bold text-text truncate">{c.descripcion || c.tipo}</span>
+                    <span className="text-[11px] font-semibold text-text/80 truncate">De: {c.remitente}</span>
+                    <span className="text-[10px] text-text/50 flex items-center gap-1 mt-1">
+                      <Clock size={10} /> {new Date(c.fechaLlegada).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                    {c.tipo}
+                  </span>
+                  <button
+                    onClick={() => router.push('/citofonia?tab=RECEPCION')}
+                    className="text-text/70 hover:text-text transition-colors cursor-pointer"
+                  >
+                    Detalles →
                   </button>
                 </div>
               </div>

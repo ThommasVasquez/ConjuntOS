@@ -40,12 +40,21 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     function scheduleReconnect() {
       if (cancelled) return;
+      if (reconnectTimer.current) {
+        clearTimeout(reconnectTimer.current);
+        reconnectTimer.current = undefined;
+      }
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return;
+      }
       const delay = Math.min(
         WS_RECONNECT_BASE * 2 ** attemptRef.current,
         WS_RECONNECT_MAX,
       );
       attemptRef.current += 1;
-      reconnectTimer.current = setTimeout(connect, delay);
+      reconnectTimer.current = setTimeout(() => {
+        void connect();
+      }, delay);
     }
 
     async function connect() {
@@ -132,12 +141,42 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    connect();
+    const handleOnline = () => {
+      if (cancelled) return;
+      if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+        attemptRef.current = 0;
+        void connect();
+      }
+    };
+
+    const handleOffline = () => {
+      if (reconnectTimer.current) {
+        clearTimeout(reconnectTimer.current);
+        reconnectTimer.current = undefined;
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
+
+    void connect();
 
     return () => {
       cancelled = true;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      }
       abortRef.current?.abort();
-      clearTimeout(reconnectTimer.current);
+      if (reconnectTimer.current) {
+        clearTimeout(reconnectTimer.current);
+        reconnectTimer.current = undefined;
+      }
       if (wsRef.current) {
         wsRef.current.onclose = null;
         wsRef.current.close();

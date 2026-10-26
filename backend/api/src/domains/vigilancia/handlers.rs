@@ -330,6 +330,18 @@ pub async fn crear_paquete(
             },
         )
         .await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "notification".into(),
+                action: "created".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: Some(req.usuario_id),
+            },
+        )
+        .await;
     Ok(Json(dto))
 }
 
@@ -492,6 +504,18 @@ async fn crear_correspondencia(
             user.conjunto_id,
             WsEvent {
                 domain: "correspondencia".into(),
+                action: "created".into(),
+                payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                target_user_id: Some(req.usuario_id),
+            },
+        )
+        .await;
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "notification".into(),
                 action: "created".into(),
                 payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
                 target_user_id: Some(req.usuario_id),
