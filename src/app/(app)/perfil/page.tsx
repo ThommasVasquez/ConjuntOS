@@ -122,8 +122,8 @@ function ProfileContent() {
     if (hasMounted && user) loadData();
   }, [userId, hasMounted, user]);
   const [financialTab, setFinancialTab] = useState<"pendientes" | "historial">("pendientes");
-  const [visitasTab, setVisitasTab] = useState<"pendientes" | "historial">("pendientes");
-  const [paquetesTab, setPaquetesTab] = useState<"pendientes" | "historial">("pendientes");
+  const [visitasTab, setVisitasTab] = useState<"visitas" | "reservas" | "historial">("visitas");
+  const [paquetesTab, setPaquetesTab] = useState<"paquetes" | "correspondencia" | "historial">("paquetes");
   const [financialData, setFinancialData] = useState<{pagos: Pago[], recibos: Recibo[], totalDebt: number}>({ pagos: [], recibos: [], totalDebt: 0 });
   const [isPaying, setIsPaying] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -545,17 +545,15 @@ function ProfileContent() {
   // `${hex}1a` is the same 10% alpha as a `/10` class.
   const allStatusIcons = [
     // { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, hex: 'var(--color-success)', icon: <CreditCard size={18}/>, view: 'deuda' }, // TEMPORALMENTE DESHABILITADO
-    { label: 'Trámites', val: tramites.length.toString(), hex: 'var(--color-info)', icon: <ClipboardList size={18}/>, view: 'requests' },
+    // { label: 'Trámites', val: tramites.length.toString(), hex: 'var(--color-info)', icon: <ClipboardList size={18}/>, view: 'requests' }, // TEMPORALMENTE DESHABILITADO
     { label: 'Mascotas', val: mascotas.length.toString(), hex: 'var(--color-warning)', icon: <PawPrint size={18}/>, view: 'pets' },
     { label: 'Vehículos', val: vehiculos.length.toString(), hex: 'var(--color-info)', icon: <Car size={18}/>, view: 'vehicles' },
-    { label: 'Reservas', val: activeReservas.length.toString(), hex: 'var(--color-info)', icon: <Calendar size={18}/>, view: 'reservas' },
-    { label: 'Visitas', val: visitasHistorial.filter(v => v.estado === 'PENDIENTE').length.toString(), hex: '#14b8a6', icon: <UserIcon size={18}/>, view: 'visitas' },
-    { label: 'Paquetes', val: activePaquetes.length.toString(), hex: 'var(--color-warning)', icon: <Package size={18}/>, view: 'paquetes' },
-    { label: 'Corresp.', val: correspondenciaPendiente.length.toString(), hex: '#f43f5e', icon: <Mail size={18}/>, view: 'correspondencia' }
+    { label: 'Visitas y Reservas', val: (visitasHistorial.filter(v => v.estado === 'PENDIENTE').length + activeReservas.length).toString(), hex: '#14b8a6', icon: <UserIcon size={18}/>, view: 'visitas' },
+    { label: 'Paquetes y Corresp.', val: (activePaquetes.length + correspondenciaPendiente.length).toString(), hex: 'var(--color-warning)', icon: <Package size={18}/>, view: 'paquetes' },
   ];
 
   const statusIcons = isGuest
-    ? allStatusIcons.filter(s => s.view === 'reservas' || s.view === 'paquetes')
+    ? allStatusIcons.filter(s => s.view === 'visitas' || s.view === 'paquetes')
     : allStatusIcons;
 
   return (
@@ -840,79 +838,7 @@ function ProfileContent() {
             </div>
           )}
 
-          {viewMode === "reservas" && (
-            <div className="space-y-4">
-               <div className="flex justify-between items-center px-2">
-                 <h3 className="text-text text-lg font-bold flex items-center gap-2">Mis Reservas Activas <Calendar size={18} className="text-accent" /></h3>
-                 <button onClick={() => router.push('/reservas')} className="text-[10px] font-black uppercase text-accent/80 hover:text-accent tracking-tighter transition-colors">Solicitar Nueva</button>
-               </div>
-               
-               <div className="space-y-3">
-                  {activeReservas.length === 0 ? (
-                    <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
-                       <Calendar className="mx-auto text-text mb-3" size={40} />
-                       <p className="text-text text-xs italic">No tienes reservas activas en este momento.</p>
-                    </div>
-                  ) : (
-                     activeReservas.map((res, i) => (
-                       <div key={i} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/30 cursor-pointer active:scale-[0.98] transition-all" onClick={() => {
-                         setQrReservaId(res.id);
-                         setQrReservaNombre(res.areaNombre || "Área");
-                         setQrReservaInicio(res.fechaInicio);
-                         setQrReservaFin(res.fechaFin);
-                         setQrReservaEstado(res.estado || "");
-                         setShowQrModal(true);
-                       }}>
-                        <div className="flex">
-                           <div className="relative w-24 h-24 shrink-0">
-                             {res.areaImagenUrl ? (
-                               <Image src={res.areaImagenUrl} alt="" fill className="object-cover" unoptimized />
-                             ) : (
-                               <div className="w-full h-full bg-text/5 flex items-center justify-center opacity-20"><Calendar size={24} /></div>
-                             )}
-                           </div>
-                           <div className="p-4 flex flex-col justify-between flex-1">
-                              <div>
-                                <div className="flex justify-between items-start mb-1">
-                                  <span className="text-[10px] font-black text-accent uppercase tracking-widest">{res.areaNombre || "Cargando..."}</span>
-                                  <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                                    res.estado === "CONFIRMADA" ? "bg-success/20 text-success" :
-                                    res.estado === "PENDIENTE" ? "bg-warning/20 text-warning" :
-                                    res.estado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
-                                    "bg-text/20 text-text"
-                                  }`}>
-                                    {res.estado === "PENDIENTE" ? "En Proceso" : res.estado}
-                                  </div>
-                                </div>
-                                <h4 className="text-sm font-bold text-text leading-tight">
-                                  {new Date(res.fechaInicio).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
-                                </h4>
-                              </div>
-                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] text-text font-mono tracking-tighter">
-                                  {new Date(res.fechaInicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} • {new Date(res.fechaFin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                                {res.estado !== "CANCELADA" && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleCancelarReserva(res.id);
-                                    }}
-                                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
-                                    title="Cancelar reserva"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                )}
-                              </div>
-                           </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-               </div>
-            </div>
-          )}
+          {/* Reservas unificadas con Visitas en la sección de Visitas y Reservas */}
 
           {viewMode === "vehicles" && (
             <div className="space-y-4">
@@ -1138,33 +1064,37 @@ function ProfileContent() {
             </div>
           )}
 
-          {viewMode === "paquetes" && (
+          {/* PAQUETES Y CORRESPONDENCIA (UNIFICADOS EN PERFIL) */}
+          {(viewMode === "paquetes" || viewMode === "correspondencia") && (
             <div className="space-y-4">
               <div className="flex justify-between items-center px-2 mb-2">
-                <h3 className="text-text text-lg font-bold flex items-center gap-2">Paquetería <Package size={18} className="text-accent" /></h3>
-                <div className="flex gap-2 liquid-glass p-1 rounded-full border border-border">
-                  {["pendientes", "historial"].map((tab) => (
+                <h3 className="text-text text-lg font-bold flex items-center gap-2">Paquetes y Correspondencia <Package size={18} className="text-accent" /></h3>
+                <div className="flex gap-1.5 liquid-glass p-1 rounded-full border border-border">
+                  {[
+                    { id: "paquetes", label: `Paquetes (${activePaquetes.length})` },
+                    { id: "correspondencia", label: `Cartas (${correspondenciaPendiente.length})` },
+                    { id: "historial", label: "Historial" }
+                  ].map(({ id, label }) => (
                     <button 
-                       key={tab}
-                       onClick={() => setPaquetesTab(tab as "pendientes" | "historial")}
-                       className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${paquetesTab === tab ? "bg-accent text-primary shadow-lg" : "text-text"}`}
+                       key={id}
+                       onClick={() => setPaquetesTab(id as "paquetes" | "correspondencia" | "historial")}
+                       className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${paquetesTab === id ? "bg-accent text-primary shadow-lg" : "text-text"}`}
                     >
-                       {tab}
+                       {label}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="space-y-3">
-                {(() => {
-                  if (paquetesTab === "pendientes") {
-                    if (activePaquetes.length === 0) return (
+                {paquetesTab === "paquetes" && (
+                  <>
+                    {activePaquetes.length === 0 ? (
                       <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
                         <Package className="mx-auto text-text mb-3" size={40} />
                         <p className="text-text text-xs italic text-pretty">No hay paquetes pendientes en portería.</p>
                       </div>
-                    );
-                    return (
+                    ) : (
                       <>
                         {activePaquetes.map((pkg, i) => (
                           <div key={i} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/50 p-5 flex items-center gap-4">
@@ -1190,171 +1120,299 @@ function ProfileContent() {
                            <p className="text-[10px] text-text leading-relaxed uppercase tracking-tighter italic">Recuerda presentar tu identificación o el número de guía para retirar tus paquetes en la portería principal.</p>
                         </div>
                       </>
-                    );
-                  }
-                  // Historial de paquetes
-                  return (
-                    <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
-                      <Package className="mx-auto text-text mb-3" size={40} />
-                      <p className="text-text text-xs italic text-pretty">El historial de paquetes retirados estará disponible próximamente.</p>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
-
-          {viewMode === "correspondencia" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center px-2 mb-2">
-                <h3 className="text-text text-lg font-bold flex items-center gap-2">Correspondencia <Mail size={18} className="text-accent" /></h3>
-                <span className="text-[10px] font-black text-text uppercase tracking-widest bg-surface-2 px-3 py-1 rounded-full">{correspondenciaPendiente.length} en portería</span>
-              </div>
-
-              <div className="space-y-3">
-                {correspondenciaPendiente.length === 0 ? (
-                  <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
-                    <Mail className="mx-auto text-text mb-3" size={40} />
-                    <p className="text-text text-xs italic text-pretty">No tienes correspondencia pendiente en portería.</p>
-                  </div>
-                ) : (
-                  correspondenciaPendiente.map((corr, i) => {
-                    const tipoLabel: Record<string, string> = {
-                      CARTA: "Carta",
-                      DOCUMENTO: "Documento",
-                      REVISTA: "Revista",
-                      ENERGIA: "Recibo Energía",
-                      AGUA: "Recibo Agua",
-                      GAS: "Recibo Gas",
-                      OTRO: "Otro"
-                    };
-                    const tipoLogo: Record<string, string> = {
-                      ENERGIA: "/recibo-servicios-logo.jpg",
-                      AGUA: "/recibo-agua-logo.jpg",
-                      GAS: "/recibo-gas-logo.jpg"
-                    };
-                    const esRecibo = ['ENERGIA', 'AGUA', 'GAS'].includes(corr.tipo);
-                    return (
-                      <div key={i} className={`liquid-glass-card rounded-[28px] overflow-hidden border p-5 flex items-center gap-4 ${esRecibo ? 'border-accent/40 bg-accent/5' : 'border-border bg-primary-light/50'}`}>
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg overflow-hidden ${esRecibo ? '' : 'bg-text/10 text-text shadow-text/5'}`}>
-                          {esRecibo ? (
-                            <img src={tipoLogo[corr.tipo]} alt={tipoLabel[corr.tipo]} className="w-full h-full object-cover" />
-                          ) : (
-                            <Mail size={24} />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-1">
-                            <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${esRecibo ? 'text-accent' : 'text-text'}`}>
-                              {tipoLabel[corr.tipo] || corr.tipo}
-                            </span>
-                            <span className="text-[8px] font-black text-text uppercase bg-surface-2 px-2 py-0.5 rounded-full">{corr.remitente}</span>
-                          </div>
-                          <h4 className="text-sm font-bold text-text mb-1">{corr.descripcion || "Sin descripción"}</h4>
-                          <p className="text-[10px] text-text uppercase tracking-tighter">
-                            Recibido: {new Date(corr.fechaLlegada).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                           <div className={`w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_rgba(137,137,137,0.5)] ${esRecibo ? 'bg-accent' : 'bg-text/10'}`}></div>
-                           <span className="text-[8px] font-black text-text uppercase tracking-tighter">Portería</span>
-                        </div>
-                      </div>
-                    );
-                  })
+                    )}
+                  </>
                 )}
-                <div className="mt-8 p-4 rounded-3xl bg-text/5 border border-text/20 flex gap-3 items-center">
-                   <Info size={16} className="text-text shrink-0" />
-                   <p className="text-[10px] text-text leading-relaxed uppercase tracking-tighter italic">Presenta tu identificación en la portería para reclamar tu correspondencia.</p>
-                </div>
+
+                {paquetesTab === "correspondencia" && (
+                  <>
+                    {correspondenciaPendiente.length === 0 ? (
+                      <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
+                        <Mail className="mx-auto text-text mb-3" size={40} />
+                        <p className="text-text text-xs italic text-pretty">No tienes correspondencia pendiente en portería.</p>
+                      </div>
+                    ) : (
+                      <>
+                        {correspondenciaPendiente.map((corr, i) => {
+                          const tipoLabel: Record<string, string> = {
+                            CARTA: "Carta",
+                            DOCUMENTO: "Documento",
+                            REVISTA: "Revista",
+                            ENERGIA: "Recibo Energía",
+                            AGUA: "Recibo Agua",
+                            GAS: "Recibo Gas",
+                            OTRO: "Otro"
+                          };
+                          const tipoLogo: Record<string, string> = {
+                            ENERGIA: "/recibo-servicios-logo.jpg",
+                            AGUA: "/recibo-agua-logo.jpg",
+                            GAS: "/recibo-gas-logo.jpg"
+                          };
+                          const esRecibo = ['ENERGIA', 'AGUA', 'GAS'].includes(corr.tipo);
+                          return (
+                            <div key={i} className={`liquid-glass-card rounded-[28px] overflow-hidden border p-5 flex items-center gap-4 ${esRecibo ? 'border-accent/40 bg-accent/5' : 'border-border bg-primary-light/50'}`}>
+                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg overflow-hidden ${esRecibo ? '' : 'bg-text/10 text-text shadow-text/5'}`}>
+                                {esRecibo ? (
+                                  <img src={tipoLogo[corr.tipo]} alt={tipoLabel[corr.tipo]} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Mail size={24} />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex justify-between items-start mb-1">
+                                  <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${esRecibo ? 'text-accent' : 'text-text'}`}>
+                                    {tipoLabel[corr.tipo] || corr.tipo}
+                                  </span>
+                                  <span className="text-[8px] font-black text-text uppercase bg-surface-2 px-2 py-0.5 rounded-full">{corr.remitente}</span>
+                                </div>
+                                <h4 className="text-sm font-bold text-text mb-1">{corr.descripcion || "Sin descripción"}</h4>
+                                <p className="text-[10px] text-text uppercase tracking-tighter">
+                                  Recibido: {new Date(corr.fechaLlegada).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-center gap-1">
+                                 <div className={`w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_rgba(137,137,137,0.5)] ${esRecibo ? 'bg-accent' : 'bg-text/10'}`}></div>
+                                 <span className="text-[8px] font-black text-text uppercase tracking-tighter">Portería</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div className="mt-8 p-4 rounded-3xl bg-text/5 border border-text/20 flex gap-3 items-center">
+                           <Info size={16} className="text-text shrink-0" />
+                           <p className="text-[10px] text-text leading-relaxed uppercase tracking-tighter italic">Presenta tu identificación en la portería para reclamar tu correspondencia.</p>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {paquetesTab === "historial" && (
+                  <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
+                    <Package className="mx-auto text-text mb-3" size={40} />
+                    <p className="text-text text-xs italic text-pretty">El historial de paquetes y correspondencia retirada estará disponible próximamente.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {viewMode === "visitas" && (
+          {/* VISITAS Y RESERVAS (UNIFICADAS EN PERFIL) */}
+          {(viewMode === "visitas" || viewMode === "reservas") && (
             <div className="space-y-4">
               <div className="flex justify-between items-center px-2 mb-2">
-                <h3 className="text-text text-lg font-bold flex items-center gap-2">Visitas <UserIcon size={18} className="text-accent" /></h3>
-                <div className="flex gap-2 liquid-glass p-1 rounded-full border border-border">
-                  {["pendientes", "historial"].map((tab) => (
+                <h3 className="text-text text-lg font-bold flex items-center gap-2">Visitas y Reservas <UserIcon size={18} className="text-accent" /></h3>
+                <div className="flex gap-1.5 liquid-glass p-1 rounded-full border border-border">
+                  {[
+                    { id: "visitas", label: `Visitas (${visitasHistorial.filter(v => v.estado === 'PENDIENTE').length})` },
+                    { id: "reservas", label: `Reservas (${activeReservas.length})` },
+                    { id: "historial", label: "Historial" }
+                  ].map(({ id, label }) => (
                     <button 
-                       key={tab}
-                       onClick={() => setVisitasTab(tab as "pendientes" | "historial")}
-                       className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${visitasTab === tab ? "bg-accent text-primary shadow-lg" : "text-text"}`}
+                       key={id}
+                       onClick={() => setVisitasTab(id as "visitas" | "reservas" | "historial")}
+                       className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${visitasTab === id ? "bg-accent text-primary shadow-lg" : "text-text"}`}
                     >
-                       {tab}
+                       {label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Botón directo para Agendar / Pre-autorizar Visita */}
-              <button
-                type="button"
-                onClick={() => router.push('/visitantes')}
-                className="w-full py-4 px-5 rounded-2xl bg-accent text-on-accent text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-accent/20 active:scale-98 transition-all hover:brightness-110 cursor-pointer"
-              >
-                <Plus size={18} /> Agendar o Autorizar Visita (Pase QR)
-              </button>
+              {visitasTab === "visitas" && (
+                <div className="space-y-3">
+                  {/* Botón directo para Agendar / Pre-autorizar Visita */}
+                  <button
+                    type="button"
+                    onClick={() => router.push('/visitantes')}
+                    className="w-full py-4 px-5 rounded-2xl bg-accent text-on-accent text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-accent/20 active:scale-98 transition-all hover:brightness-110 cursor-pointer"
+                  >
+                    <Plus size={18} /> Agendar o Autorizar Visita (Pase QR)
+                  </button>
 
-              <div className="space-y-3">
-                {(() => {
-                  const filtered = visitasTab === "pendientes"
-                    ? visitasHistorial.filter(v => v.estado === 'PENDIENTE')
-                    : visitasHistorial.filter(v => v.estado !== 'PENDIENTE');
-                  
-                  if (filtered.length === 0) return (
+                  {(() => {
+                    const filtered = visitasHistorial.filter(v => v.estado === 'PENDIENTE');
+                    if (filtered.length === 0) return (
+                      <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px] flex flex-col items-center">
+                        <UserIcon className="mx-auto text-text mb-3" size={40} />
+                        <p className="text-text text-xs italic text-pretty">
+                          No hay visitas pendientes de aprobación.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => router.push('/visitantes')}
+                          className="mt-4 px-5 py-2.5 rounded-full bg-accent text-on-accent text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all"
+                        >
+                          Agendar Visita Ahora
+                        </button>
+                      </div>
+                    );
+
+                    return filtered.map((v) => (
+                      <div key={v.id} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/50 p-5 flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                          v.estado === 'PENDIENTE' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                          v.estado === 'APROBADA' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                          v.estado === 'RECHAZADA' ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
+                          'bg-text/10 text-text'
+                        }`}>
+                          <UserIcon size={22} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="text-sm font-bold text-text truncate">{v.nombre}</span>
+                            <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ${
+                              v.estado === 'PENDIENTE' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                              v.estado === 'APROBADA' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              v.estado === 'RECHAZADA' ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
+                              'bg-text/10 text-text border border-border'
+                            }`}>
+                              {v.estado}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {v.documento && <span className="text-[10px] text-text/50 font-mono">{v.documento}</span>}
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-text/10 text-text border border-text/20">
+                              {v.tipo}
+                            </span>
+                            <span className="text-[10px] text-text/50 flex items-center gap-1">
+                              <Clock size={10} /> {new Date(v.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+
+              {visitasTab === "reservas" && (
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/reservas')}
+                    className="w-full py-4 px-5 rounded-2xl bg-accent text-on-accent text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-accent/20 active:scale-98 transition-all hover:brightness-110 cursor-pointer"
+                  >
+                    <Plus size={18} /> Solicitar Nueva Reserva de Área
+                  </button>
+
+                  {activeReservas.length === 0 ? (
                     <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px] flex flex-col items-center">
-                      <UserIcon className="mx-auto text-text mb-3" size={40} />
-                      <p className="text-text text-xs italic text-pretty">
-                        {visitasTab === "pendientes" ? "No hay visitas pendientes de aprobación." : "No hay visitas en el historial."}
-                      </p>
+                      <Calendar className="mx-auto text-text mb-3" size={40} />
+                      <p className="text-text text-xs italic">No tienes reservas activas en este momento.</p>
                       <button
                         type="button"
-                        onClick={() => router.push('/visitantes')}
+                        onClick={() => router.push('/reservas')}
                         className="mt-4 px-5 py-2.5 rounded-full bg-accent text-on-accent text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all"
                       >
-                        Agendar Visita Ahora
+                        Explorar Áreas Comunes
                       </button>
                     </div>
-                  );
+                  ) : (
+                    activeReservas.map((res, i) => (
+                      <div key={i} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/30 cursor-pointer active:scale-[0.98] transition-all" onClick={() => {
+                        setQrReservaId(res.id);
+                        setQrReservaNombre(res.areaNombre || "Área");
+                        setQrReservaInicio(res.fechaInicio);
+                        setQrReservaFin(res.fechaFin);
+                        setQrReservaEstado(res.estado || "");
+                        setShowQrModal(true);
+                      }}>
+                        <div className="flex">
+                          <div className="relative w-24 h-24 shrink-0">
+                            {res.areaImagenUrl ? (
+                              <Image src={res.areaImagenUrl} alt="" fill className="object-cover" unoptimized />
+                            ) : (
+                              <div className="w-full h-full bg-text/5 flex items-center justify-center opacity-20"><Calendar size={24} /></div>
+                            )}
+                          </div>
+                          <div className="p-4 flex flex-col justify-between flex-1">
+                            <div>
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="text-[10px] font-black text-accent uppercase tracking-widest">{res.areaNombre || "Cargando..."}</span>
+                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                                  res.estado === "CONFIRMADA" ? "bg-success/20 text-success" :
+                                  res.estado === "PENDIENTE" ? "bg-warning/20 text-warning" :
+                                  res.estado === "CANCELADA" ? "bg-red-500/20 text-red-400" :
+                                  "bg-text/20 text-text"
+                                }`}>
+                                  {res.estado === "PENDIENTE" ? "En Proceso" : res.estado}
+                                </div>
+                              </div>
+                              <h4 className="text-sm font-bold text-text leading-tight">
+                                {new Date(res.fechaInicio).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                              </h4>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-text font-mono tracking-tighter">
+                                {new Date(res.fechaInicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} • {new Date(res.fechaFin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {res.estado !== "CANCELADA" && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCancelarReserva(res.id);
+                                  }}
+                                  className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
+                                  title="Cancelar reserva"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
 
-                  return filtered.map((v) => (
-                    <div key={v.id} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/50 p-5 flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                        v.estado === 'PENDIENTE' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                        v.estado === 'APROBADA' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                        v.estado === 'RECHAZADA' ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
-                        'bg-text/10 text-text'
-                      }`}>
-                        <UserIcon size={22} />
+              {visitasTab === "historial" && (
+                <div className="space-y-3">
+                  {(() => {
+                    const filtered = visitasHistorial.filter(v => v.estado !== 'PENDIENTE');
+                    if (filtered.length === 0) return (
+                      <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
+                        <UserIcon className="mx-auto text-text mb-3" size={40} />
+                        <p className="text-text text-xs italic text-pretty">No hay visitas en el historial.</p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-sm font-bold text-text truncate">{v.nombre}</span>
-                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ${
-                            v.estado === 'PENDIENTE' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                            v.estado === 'APROBADA' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                            v.estado === 'RECHAZADA' ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
-                            'bg-text/10 text-text border border-border'
-                          }`}>
-                            {v.estado}
-                          </span>
+                    );
+
+                    return filtered.map((v) => (
+                      <div key={v.id} className="liquid-glass-card rounded-[28px] overflow-hidden border border-border bg-primary-light/50 p-5 flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                          v.estado === 'APROBADA' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                          v.estado === 'RECHAZADA' ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
+                          'bg-text/10 text-text'
+                        }`}>
+                          <UserIcon size={22} />
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {v.documento && <span className="text-[10px] text-text/50 font-mono">{v.documento}</span>}
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-text/10 text-text border border-text/20">
-                            {v.tipo}
-                          </span>
-                          <span className="text-[10px] text-text/50 flex items-center gap-1">
-                            <Clock size={10} /> {new Date(v.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="text-sm font-bold text-text truncate">{v.nombre}</span>
+                            <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ${
+                              v.estado === 'APROBADA' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              v.estado === 'RECHAZADA' ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
+                              'bg-text/10 text-text border border-border'
+                            }`}>
+                              {v.estado}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {v.documento && <span className="text-[10px] text-text/50 font-mono">{v.documento}</span>}
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-text/10 text-text border border-text/20">
+                              {v.tipo}
+                            </span>
+                            <span className="text-[10px] text-text/50 flex items-center gap-1">
+                              <Clock size={10} /> {new Date(v.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ));
-                })()}
-              </div>
+                    ));
+                  })()}
+                </div>
+              )}
             </div>
           )}
         </main>
