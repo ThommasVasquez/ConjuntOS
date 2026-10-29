@@ -86,6 +86,7 @@ function HomeResidente() {
 
   const categories = [
     { title: "Citofonía", icon: <UserIcon size={20}/>, desc: "Comunicación", path: "/citofonia" },
+    { title: "Visitas", icon: <Users size={20}/>, desc: "Pases y accesos", path: "/visitantes" },
     // { title: "Pagos", icon: <CreditCard size={20}/>, desc: "Mis pagos", path: "/pagos" }, // TEMPORALMENTE DESHABILITADO
     // { title: "Parqueo", icon: <Car size={20}/>, desc: "Mis vehículos", path: "/parqueadero" }, // TEMPORALMENTE DESHABILITADO
     { title: "Reservas", icon: <Calendar size={20}/>, desc: "Áreas comunes", path: "/reservas" },

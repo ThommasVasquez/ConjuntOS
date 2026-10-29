@@ -544,7 +544,7 @@ function ProfileContent() {
   // tint regardless of which utilities the CSS build happens to have generated.
   // `${hex}1a` is the same 10% alpha as a `/10` class.
   const allStatusIcons = [
-    { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, hex: 'var(--color-success)', icon: <CreditCard size={18}/>, view: 'deuda' },
+    // { label: 'Deuda', val: `$${financialData.totalDebt?.toLocaleString() || '0'}`, hex: 'var(--color-success)', icon: <CreditCard size={18}/>, view: 'deuda' }, // TEMPORALMENTE DESHABILITADO
     { label: 'Trámites', val: tramites.length.toString(), hex: 'var(--color-info)', icon: <ClipboardList size={18}/>, view: 'requests' },
     { label: 'Mascotas', val: mascotas.length.toString(), hex: 'var(--color-warning)', icon: <PawPrint size={18}/>, view: 'pets' },
     { label: 'Vehículos', val: vehiculos.length.toString(), hex: 'var(--color-info)', icon: <Car size={18}/>, view: 'vehicles' },
@@ -1288,6 +1288,15 @@ function ProfileContent() {
                 </div>
               </div>
 
+              {/* Botón directo para Agendar / Pre-autorizar Visita */}
+              <button
+                type="button"
+                onClick={() => router.push('/visitantes')}
+                className="w-full py-4 px-5 rounded-2xl bg-accent text-on-accent text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-accent/20 active:scale-98 transition-all hover:brightness-110 cursor-pointer"
+              >
+                <Plus size={18} /> Agendar o Autorizar Visita (Pase QR)
+              </button>
+
               <div className="space-y-3">
                 {(() => {
                   const filtered = visitasTab === "pendientes"
@@ -1295,11 +1304,18 @@ function ProfileContent() {
                     : visitasHistorial.filter(v => v.estado !== 'PENDIENTE');
                   
                   if (filtered.length === 0) return (
-                    <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px]">
+                    <div className="text-center py-12 px-6 border-2 border-dashed border-border rounded-[32px] flex flex-col items-center">
                       <UserIcon className="mx-auto text-text mb-3" size={40} />
                       <p className="text-text text-xs italic text-pretty">
                         {visitasTab === "pendientes" ? "No hay visitas pendientes de aprobación." : "No hay visitas en el historial."}
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => router.push('/visitantes')}
+                        className="mt-4 px-5 py-2.5 rounded-full bg-accent text-on-accent text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all"
+                      >
+                        Agendar Visita Ahora
+                      </button>
                     </div>
                   );
 
