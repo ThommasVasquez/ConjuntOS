@@ -54,7 +54,7 @@ export default function TopBar() {
   const isHideTopBar = true; // All screens now use their own dedicated header layout (like ProfileHeader) directly.
 
   return (
-    <header className={`fixed top-0 w-full max-w-[430px] z-100 flex items-start justify-between px-6 pt-10 pb-4 bg-gradient-to-b from-primary/90 to-transparent transition-all duration-500 ${isHideTopBar ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
+    <header className={`fixed top-0 w-full max-w-[430px] z-100 flex items-start justify-between px-6 pt-[calc(env(safe-area-inset-top,0px)+2.5rem)] pb-4 bg-gradient-to-b from-primary/90 to-transparent transition-all duration-500 ${isHideTopBar ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
       
       {/* Título en la Izquierda (Glass Style) */}
       <div className="flex flex-col">

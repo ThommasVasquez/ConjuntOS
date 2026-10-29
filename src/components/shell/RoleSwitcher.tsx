@@ -63,82 +63,95 @@ export default function RoleSwitcher() {
   };
 
   return (
-    <div className="fixed bottom-20 left-4 md:bottom-6 md:left-6 z-[999]">
-      {/* Floating trigger button */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        disabled={busy}
-        className="flex items-center gap-2 px-3 py-2.5 rounded-full bg-surface-2/90 backdrop-blur-xl border border-blue-500/40 text-text shadow-2xl hover:bg-blue-500/10 hover:border-blue-500 transition-all active:scale-95 cursor-pointer disabled:opacity-60 group"
-      >
-        <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
-          <FlaskConical size={14} />
-        </div>
-        <div className="flex flex-col items-start leading-none pr-1">
-          <span className="text-[8px] text-blue-400 font-black uppercase tracking-widest block">
-            Tester
-          </span>
-          <span className="text-xs font-bold text-text truncate max-w-[110px] sm:max-w-[140px]">
-            {currentLabel}
-          </span>
-        </div>
-        <ChevronDown
-          size={14}
-          className={`text-blue-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {/* Floating popup menu */}
+    <>
+      {/* Backdrop para cerrar al hacer clic afuera */}
       {open && (
-        <div className="absolute bottom-full left-0 mb-3 w-72 max-w-[calc(100vw-2rem)] bg-surface border border-border rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-[1000]">
-          <div className="p-3 border-b border-border/40 bg-surface-2/80">
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 block">
-              Modo Tester · Cambiar Rol
-            </span>
-            <p className="text-[11px] text-text/70 mt-0.5">
-              Alterna instantáneamente entre perfiles demo:
-            </p>
-          </div>
-
-          <div className="max-h-[320px] overflow-y-auto hide-scrollbar">
-            {ACCOUNTS.map((a) => {
-              const active = a.email === user.email;
-              return (
-                <button
-                  key={a.email}
-                  type="button"
-                  onClick={() => handleSelect(a.email)}
-                  disabled={busy}
-                  className={`w-full px-3.5 py-2.5 flex items-center justify-between text-left text-xs transition-colors border-b border-border/40 last:border-0 hover:bg-blue-500/10 cursor-pointer disabled:opacity-50 ${
-                    active ? "bg-blue-500/15 text-text font-bold" : "text-text"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="text-base shrink-0">{a.icon}</span>
-                    <div className="flex flex-col min-w-0">
-                      <span className="truncate">{a.label}</span>
-                      <span className="text-[9px] text-text-muted font-mono truncate">{a.email}</span>
-                    </div>
-                  </div>
-                  {active && <Check size={15} className="text-blue-400 shrink-0 ml-1" />}
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                window.location.href = "/login";
-              }}
-              disabled={busy}
-              className="w-full px-3.5 py-2.5 flex items-center gap-2 text-left text-xs text-blue-400 font-bold hover:bg-blue-500/10 transition-colors cursor-pointer border-t border-border/40"
-            >
-              <Plus size={14} />
-              <span>Añadir otra cuenta</span>
-            </button>
-          </div>
-        </div>
+        <div
+          className="fixed inset-0 z-[998]"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
       )}
-    </div>
+
+      <div className="fixed bottom-20 left-4 md:bottom-6 md:left-6 z-[999]">
+        {/* Floating trigger button */}
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          disabled={busy}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-full bg-primary-light border border-blue-500/50 text-text shadow-2xl hover:border-blue-400 hover:bg-blue-500/10 transition-all active:scale-95 cursor-pointer disabled:opacity-60 group"
+        >
+          <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+            <FlaskConical size={14} />
+          </div>
+          <div className="flex flex-col items-start leading-none pr-1">
+            <span className="text-[8px] text-blue-400 font-black uppercase tracking-widest block">
+              Tester
+            </span>
+            <span className="text-xs font-bold text-text truncate max-w-[110px] sm:max-w-[140px]">
+              {currentLabel}
+            </span>
+          </div>
+          <ChevronDown
+            size={14}
+            className={`text-blue-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {/* Floating popup menu - Fondo 100% sólido, sin transparencia */}
+        {open && (
+          <div className="absolute bottom-full left-0 mb-3 w-72 max-w-[calc(100vw-2rem)] bg-primary-light border border-blue-500/40 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.95)] overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-[1000]">
+            <div className="p-3 border-b border-border/60 bg-blue-500/10">
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 block">
+                Modo Tester · Cambiar Rol
+              </span>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                Alterna instantáneamente entre perfiles demo:
+              </p>
+            </div>
+
+            <div className="max-h-[320px] overflow-y-auto hide-scrollbar bg-primary-light">
+              {ACCOUNTS.map((a) => {
+                const active = a.email === user.email;
+                return (
+                  <button
+                    key={a.email}
+                    type="button"
+                    onClick={() => handleSelect(a.email)}
+                    disabled={busy}
+                    className={`w-full px-3.5 py-2.5 flex items-center justify-between text-left text-xs transition-colors border-b border-border/40 last:border-0 cursor-pointer disabled:opacity-50 ${
+                      active
+                        ? "bg-blue-500/20 text-text font-bold"
+                        : "text-text hover:bg-blue-500/10"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-base shrink-0">{a.icon}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate font-medium">{a.label}</span>
+                        <span className="text-[9px] text-text-muted font-mono truncate">{a.email}</span>
+                      </div>
+                    </div>
+                    {active && <Check size={15} className="text-blue-400 shrink-0 ml-1" />}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  window.location.href = "/login";
+                }}
+                disabled={busy}
+                className="w-full px-3.5 py-2.5 flex items-center gap-2 text-left text-xs text-blue-400 font-bold hover:bg-blue-500/15 transition-colors cursor-pointer border-t border-border/50 bg-blue-500/5"
+              >
+                <Plus size={14} />
+                <span>Añadir otra cuenta</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

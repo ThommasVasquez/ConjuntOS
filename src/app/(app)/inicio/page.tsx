@@ -769,7 +769,8 @@ function HomeResidente() {
           </section>
       )}
 
-      {/* WALLET HERO */}
+      {/* WALLET HERO (Aviso de cuotas pendientes) - TEMPORALMENTE OCULTO */}
+      {/*
       <section
         className="fade-up-home w-full rounded-[28px] relative overflow-hidden h-[120px] shadow-xl shadow-[#0F2137]/25 group overflow-hidden transition-all"
       >
@@ -808,6 +809,7 @@ function HomeResidente() {
           </div>
         </div>
       </section>
+      */}
 
       {/* SOCIAL FEED */}
       <section className="flex flex-col gap-6">

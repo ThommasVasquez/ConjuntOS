@@ -113,6 +113,9 @@ body {
 .safe-pt {
   padding-top: env(safe-area-inset-top);
 }
+.page-content {
+  padding-top: env(safe-area-inset-top, 0px);
+}
 .safe-pb {
   padding-bottom: calc(env(safe-area-inset-bottom) + 120px);
 } /* Extra space for floating pill */

@@ -562,7 +562,7 @@ function ProfileContent() {
     <div ref={containerRef} className="flex flex-col min-h-screen relative overflow-x-hidden pb-32">
 
       {/* TOP NAV - MOBILE VIEWPORT SYNC (max-w-[430px] + Centered) */}
-      <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[9999] px-6 pt-10 pb-4 flex justify-between items-center bg-gradient-to-b from-primary/60 to-transparent transition-all duration-300 pointer-events-none">
+      <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[9999] px-6 pt-[calc(env(safe-area-inset-top,0px)+2.5rem)] pb-4 flex justify-between items-center bg-gradient-to-b from-primary/60 to-transparent transition-all duration-300 pointer-events-none">
         <button 
           onClick={() => router.back()} 
           className="w-12 h-12 rounded-full liquid-glass flex items-center justify-center text-text hover:text-text transition-all active:scale-95 pointer-events-auto shadow-2xl"

@@ -63,10 +63,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
       <TopBar />
       
-      {/* Contenido principal con padding safe area top and bottom */}
+      {/* Contenido principal con padding safe area top and bottom para iPhone / PWA */}
       <main 
         ref={containerRef}
-        className="flex-1 overflow-y-auto page-content text-text mb-[80px] relative" 
+        className="flex-1 overflow-y-auto page-content text-text mb-[80px] relative pt-[env(safe-area-inset-top,0px)]" 
       >
         {children}
       </main>
