@@ -12,17 +12,35 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#08090d",
     icons: [
       {
-        src: "/icons/icon-192.png",
+        src: "/icons/icon-192-dark.png",
         sizes: "192x192",
         type: "image/png",
+        // @ts-expect-error — `media` not in MetadataRoute.Manifest type yet but valid in W3C spec
+        media: "(prefers-color-scheme: dark)",
       },
       {
-        src: "/icons/icon-512.png",
+        src: "/icons/icon-512-dark.png",
         sizes: "512x512",
         type: "image/png",
+        // @ts-expect-error — `media` not in MetadataRoute.Manifest type yet but valid in W3C spec
+        media: "(prefers-color-scheme: dark)",
       },
       {
-        src: "/icons/icon-512.png",
+        src: "/icons/icon-192-light.png",
+        sizes: "192x192",
+        type: "image/png",
+        // @ts-expect-error — `media` not in MetadataRoute.Manifest type yet but valid in W3C spec
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        src: "/icons/icon-512-light.png",
+        sizes: "512x512",
+        type: "image/png",
+        // @ts-expect-error — `media` not in MetadataRoute.Manifest type yet but valid in W3C spec
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        src: "/icons/icon-512-dark.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
