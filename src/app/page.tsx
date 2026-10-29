@@ -13,6 +13,7 @@ import Footer from '@/components/landing/Footer';
 import SmoothScroll from '@/components/landing/SmoothScroll';
 import CookieConsent from '@/components/landing/CookieConsent';
 import CinematicLogoPortal from '@/components/landing/CinematicLogoPortal';
+import PwaAutoRedirect from '@/components/pwa/PwaAutoRedirect';
 
 export const metadata: Metadata = {
   title: 'ConjuntOS - Gestión Residencial Inteligente',
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
 export default function LandingPage() {
   return (
     <>
+      <PwaAutoRedirect />
       <CinematicLogoPortal />
       <SmoothScroll>
         <main className="min-h-screen bg-primary text-text selection:bg-text/20 selection:text-primary overflow-hidden">
