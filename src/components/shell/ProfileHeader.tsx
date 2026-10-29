@@ -293,12 +293,12 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
           </button>
 
           {isNotificationsOpen && (
-            <div className="absolute top-14 right-0 w-[280px] liquid-glass backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-border overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
-               <div className="p-4 border-b border-border bg-surface/50 flex justify-between items-center">
+            <div className="absolute top-14 right-0 w-[280px] bg-primary-light border border-border rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
+               <div className="p-4 border-b border-border bg-primary-light flex justify-between items-center">
                   <span className="text-sm font-bold text-text tracking-wide">Notificaciones</span>
                   <button onClick={clearAllNotifications} className="text-[10px] text-accent font-bold uppercase hover:underline">Limpiar</button>
                </div>
-               <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar">
+               <div className="flex flex-col max-h-[300px] overflow-y-auto hide-scrollbar bg-primary-light">
                   {notifications.length === 0 ? (
                     <div className="p-6 text-center text-xs text-text">
                       No tienes notificaciones
@@ -310,7 +310,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
                         <div 
                           key={notif.id} 
                           onClick={() => handleNotifClick(notif)}
-                          className={`w-full px-5 py-3.5 flex items-start gap-4 hover:bg-text/5 transition-colors border-b border-border last:border-0 relative cursor-pointer ${notif.leida ? 'opacity-60' : ''}`}
+                          className={`w-full px-5 py-3.5 flex items-start gap-4 hover:bg-text/5 transition-colors border-b border-border last:border-0 relative cursor-pointer bg-primary-light ${notif.leida ? 'opacity-60' : ''}`}
                         >
                           {!notif.leida && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-danger shadow-[0_0_6px_rgba(239,68,68,0.7)]"></span>}
                           <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center ${iconStyle.color}`}>

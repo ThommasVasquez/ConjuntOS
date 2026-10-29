@@ -1,7 +1,6 @@
 "use client";
 
 import React, { ReactNode, useEffect, useRef } from "react";
-import TopBar from "./TopBar";
 import BottomNav from "./BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { useHasInternet } from "@/hooks/useHasInternet";
@@ -61,12 +60,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <TopBar />
-      
-      {/* Contenido principal con padding safe area top and bottom para iPhone / PWA */}
+      {/* Sin TopBar global — cada pantalla maneja su propio header */}
+
+      {/* Contenido principal */}
       <main 
         ref={containerRef}
-        className="flex-1 overflow-y-auto page-content text-text mb-[80px] relative pt-[env(safe-area-inset-top,0px)]" 
+        className="flex-1 overflow-y-auto page-content text-text mb-[80px] relative" 
       >
         {children}
       </main>
