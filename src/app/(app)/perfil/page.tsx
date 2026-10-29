@@ -626,12 +626,27 @@ function ProfileContent() {
                     handleLogout();
                     setShowMenu(false);
                   }}
-                  className="w-full px-5 py-4 flex items-center gap-3.5 text-[15px] font-bold text-danger hover:bg-danger/10 transition-colors text-left cursor-pointer active:scale-[0.98]"
+                  className="w-full px-5 py-4 flex items-center gap-3.5 text-[15px] font-bold text-danger hover:bg-danger/10 transition-colors text-left cursor-pointer active:scale-[0.98] border-t border-border"
                 >
                   <div className="w-8 h-8 rounded-xl bg-danger/15 flex items-center justify-center text-danger shrink-0">
                     <LogOut size={17} />
                   </div>
                   <span className="tracking-tight">Cerrar Sesión</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeletePassword("");
+                    setShowDeleteModal(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-5 py-4 flex items-center gap-3.5 text-[15px] font-bold text-danger/70 hover:bg-danger/10 transition-colors text-left cursor-pointer active:scale-[0.98] border-t border-danger/20"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-danger/10 flex items-center justify-center text-danger/60 shrink-0">
+                    <Trash2 size={17} />
+                  </div>
+                  <span className="tracking-tight">Eliminar Cuenta</span>
                 </button>
               </div>
             </>
@@ -1410,6 +1425,8 @@ function ProfileContent() {
              <ArrowRight className="text-text/20 group-hover:text-text group-hover:translate-x-2 transition-all" size={18} />
           </button>
 
+          {/* Eliminar cuenta movida al menú de 3 puntos (⋯) arriba — queda aquí comentada temporalmente */}
+          {/*
           <button onClick={() => { setDeletePassword(""); setShowDeleteModal(true); }} className="w-full p-6 liquid-glass rounded-[32px] flex items-center justify-between group border border-red-500/20 active:scale-95 shadow-xl shadow-black/5">
              <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500/70 group-hover:text-red-500 transition-colors">
@@ -1422,6 +1439,7 @@ function ProfileContent() {
              </div>
              <ArrowRight className="text-red-500/20 group-hover:text-red-500 group-hover:translate-x-2 transition-all" size={18} />
           </button>
+          */}
         </section>
 
         {/* GLOBAL BRANDING - Stage 29 */}

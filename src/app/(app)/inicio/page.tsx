@@ -86,8 +86,8 @@ function HomeResidente() {
 
   const categories = [
     { title: "Citofonía", icon: <UserIcon size={20}/>, desc: "Comunicación", path: "/citofonia" },
-    { title: "Pagos", icon: <CreditCard size={20}/>, desc: "Mis pagos", path: "/pagos" },
-    { title: "Parqueo", icon: <Car size={20}/>, desc: "Mis vehículos", path: "/parqueadero" },
+    // { title: "Pagos", icon: <CreditCard size={20}/>, desc: "Mis pagos", path: "/pagos" }, // TEMPORALMENTE DESHABILITADO
+    // { title: "Parqueo", icon: <Car size={20}/>, desc: "Mis vehículos", path: "/parqueadero" }, // TEMPORALMENTE DESHABILITADO
     { title: "Reservas", icon: <Calendar size={20}/>, desc: "Áreas comunes", path: "/reservas" },
     { title: "Cartelera", icon: <Megaphone size={20}/>, desc: "Anuncios", path: "/cartelera" },
     { title: "Encuestas", icon: <BarChart3 size={20}/>, desc: "Participa", path: "/encuestas" },
@@ -465,7 +465,7 @@ function HomeResidente() {
         }}
       />
 
-      {/* 🚨 COBROS RETENIDOS: el vehículo de la visita NO sale hasta aprobar */}
+      {/* 🚨 COBROS RETENIDOS: TEMPORALMENTE DESHABILITADO
       {cargosRetenidos.length > 0 && (
         <section className="fade-up-home flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
@@ -517,8 +517,9 @@ function HomeResidente() {
           ))}
         </section>
       )}
+      */}
 
-      {/* 🅿️ APROBACIONES DE PARQUEADERO DE VISITANTE (acción del inquilino) */}
+      {/* 🅿️ APROBACIONES DE PARQUEADERO DE VISITANTE: TEMPORALMENTE DESHABILITADO
       {solicitudesParqueadero.length > 0 && (
         <section className="fade-up-home flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
@@ -553,13 +554,14 @@ function HomeResidente() {
                   onClick={() => resolverSolicitudParqueadero(s.id, 'aprobar')}
                   className="flex-1 py-3 rounded-2xl bg-success text-on-accent font-bold text-sm shadow-xl shadow-success/20 active:scale-95 transition-all disabled:opacity-50"
                 >
-                  {busyAprob === s.id ? "Procesando..." : "Aprobar"}
+                  {busyAprob === s.id ? "Procesando..." : "Aprobar solicitud"}
                 </button>
               </div>
             </div>
           ))}
         </section>
       )}
+      */}
 
       {/* 🚪 VISITAS PENDIENTES DE APROBACIÓN — visitas no programadas que requieren acción del residente */}
       {visitasPendientes.length > 0 && (
@@ -1054,7 +1056,7 @@ function HomeEstacionamiento() {
 
 // Same inline-style approach as ADMIN_TILES below — see the note there.
 const CONSEJO_TILES = [
-  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas', desc: 'Cobros y reportes consolidados', hex: 'var(--color-success)' },
+  // { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas', desc: 'Cobros y reportes consolidados', hex: 'var(--color-success)' }, // TEMPORALMENTE DESHABILITADO
   { href: '/cartelera', icon: Building2, title: 'Cartelera', desc: 'Circulares y anuncios generales', hex: 'var(--color-info)' },
   { href: '/encuestas', icon: BarChart3, title: 'Encuestas', desc: 'Crear y ver resultados en vivo', hex: '#14b8a6' },
 ] as const;
@@ -1155,8 +1157,8 @@ const ADMIN_TILES = [
 ] as const;
 
 const ADMIN_SHORTCUTS = [
-  { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas y Cartera', desc: 'Facturación, pagos y cartera', hex: 'var(--color-success)' },
-  { href: '/admin-parqueadero', icon: Car, title: 'Control de Parqueaderos', desc: 'Asignación y control de espacios', hex: 'var(--color-info)' },
+  // { href: '/admin-finanzas', icon: DollarSign, title: 'Finanzas y Cartera', desc: 'Facturación, pagos y cartera', hex: 'var(--color-success)' }, // TEMPORALMENTE DESHABILITADO
+  // { href: '/admin-parqueadero', icon: Car, title: 'Control de Parqueaderos', desc: 'Asignación y control de espacios', hex: 'var(--color-info)' }, // TEMPORALMENTE DESHABILITADO
 ] as const;
 
 function HomeAdmin() {
@@ -1279,7 +1281,8 @@ function HomeAdmin() {
         ))}
       </div>
 
-      {/* GESTIÓN GENERAL CARD */}
+      {/* GESTIÓN GENERAL CARD (Finanzas y Parqueaderos) - TEMPORALMENTE DESHABILITADO */}
+      {/*
       <div className="rounded-[28px] p-6 bg-primary-light border border-border shadow-sm text-text">
         <h2 className="text-base font-bold mb-1.5">Gestión del Conjunto</h2>
         <p className="text-[11px] text-text/55 leading-relaxed mb-5">
@@ -1314,6 +1317,7 @@ function HomeAdmin() {
           ))}
         </div>
       </div>
+      */}
     </div>
   );
 }
