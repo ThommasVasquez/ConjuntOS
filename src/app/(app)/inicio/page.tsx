@@ -272,7 +272,7 @@ function HomeResidente() {
           try {
             new Notification("ConjuntOS", {
               body: "Notificaciones activadas. Recibirás avisos de paquetería y portería en tu pantalla.",
-              icon: "/icon-192.png",
+              icon: "/icons/icon-192.png",
             });
           } catch {}
           if ("serviceWorker" in navigator) {
@@ -324,7 +324,7 @@ function HomeResidente() {
       try {
         new Notification("📦 ¡Paquete en Portería!", {
           body: payload?.remitente ? `De: ${payload.remitente}` : "Tienes un paquete esperando en portería.",
-          icon: "/icon-192.png",
+          icon: "/icons/icon-192.png",
         });
       } catch {}
     }
@@ -341,7 +341,7 @@ function HomeResidente() {
       try {
         new Notification("📬 ¡Correspondencia en Portería!", {
           body: payload?.remitente ? `De: ${payload.remitente}` : "Tienes correspondencia esperando en portería.",
-          icon: "/icon-192.png",
+          icon: "/icons/icon-192.png",
         });
       } catch {}
     }
