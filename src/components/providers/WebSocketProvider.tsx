@@ -143,10 +143,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     const handleOnline = () => {
       if (cancelled) return;
-      if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
-        attemptRef.current = 0;
-        void connect();
-      }
+      // Allow the OS network stack and routing tables 500ms to settle after reconnection
+      // before hammering the server with ticket requests.
+      setTimeout(() => {
+        if (cancelled) return;
+        if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+          attemptRef.current = 0;
+          void connect();
+        }
+      }, 500);
     };
 
     const handleOffline = () => {

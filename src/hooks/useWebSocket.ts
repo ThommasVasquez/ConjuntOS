@@ -64,22 +64,35 @@ export const useWsStore = create<WsState>((set, get) => ({
    * Events that arrive while the socket is down are gone for good — the hub
    * does not replay them. So on every RE-connect we synthesise one `resync`
    * event per subscribed domain, which lands in the same handlers that already
-   * refetch on any event. Without this a client that briefly lost the network
-   * (screen lock, wifi handover) keeps showing stale state indefinitely: an
-   * assembly that has already been finalised still looks live to them.
+   * refetch on any event.
+   *
+   * We deduplicate handlers and stagger them slightly (50ms) to avoid CPU lockup
+   * (forced reflow violations) and network congestion when the client regains connectivity.
    */
   resyncAll: () => {
     const { handlers } = get();
+    const seen = new Set<EventHandler>();
+    const tasks: Array<{ domain: string; handler: EventHandler }> = [];
+
     for (const domain of Array.from(handlers.keys())) {
       const snapshot = Array.from(handlers.get(domain) ?? []);
       for (const h of snapshot) {
-        try {
-          h({ domain, action: 'resync' });
-        } catch {
-          /* swallow handler error */
+        if (!seen.has(h)) {
+          seen.add(h);
+          tasks.push({ domain, handler: h });
         }
       }
     }
+
+    tasks.forEach(({ domain, handler }, idx) => {
+      setTimeout(() => {
+        try {
+          handler({ domain, action: 'resync' });
+        } catch {
+          /* swallow handler error */
+        }
+      }, idx * 40);
+    });
   },
 
   reset: () => set({ connected: false, currentUserId: null }),

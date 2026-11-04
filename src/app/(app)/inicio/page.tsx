@@ -306,7 +306,6 @@ function HomeResidente() {
   // Real-time WebSocket subscriptions
   useWsSubscription('notification', () => {
     fetchNotificaciones();
-    fetchComunicaciones();
   });
   useWsSubscription('pago', () => fetchFinance());
   useWsSubscription('anuncio', () => fetchAnuncios());
@@ -314,7 +313,7 @@ function HomeResidente() {
   useWsSubscription('visita', () => fetchComunicaciones());
   useWsSubscription('paquete', (e) => {
     fetchComunicaciones();
-    fetchNotificaciones();
+    if (e.action === 'resync') return;
     const payload = e.payload as { remitente?: string; descripcion?: string } | undefined;
     toast.success("📦 ¡Llegó un paquete a portería!", {
       description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes un paquete esperando en portería.",
@@ -331,7 +330,7 @@ function HomeResidente() {
   });
   useWsSubscription('correspondencia', (e) => {
     fetchComunicaciones();
-    fetchNotificaciones();
+    if (e.action === 'resync') return;
     const payload = e.payload as { remitente?: string; tipo?: string } | undefined;
     toast.success("📬 ¡Llegó correspondencia a portería!", {
       description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes correspondencia esperando en portería.",
