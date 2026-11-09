@@ -221,22 +221,26 @@ body {
   }
 }
 
-/* Sonner Overrides with ULTRALIQUID transparency */
+/* Sonner Overrides with ULTRALIQUID transparency & Safe Area */
+[data-sonner-toaster][data-y-position="top"] {
+  top: calc(env(safe-area-inset-top, 0px) + 16px) !important;
+}
+
 .liquid-glass-toast {
-  background: rgba(5, 13, 12, 0.72) !important; /* Contraste máximo para lectura */
-  backdrop-filter: blur(250px) saturate(180%) !important; /* Blur total cinematográfico */
-  -webkit-backdrop-filter: blur(250px) saturate(180%) !important;
+  background: rgba(5, 13, 12, 0.88) !important; /* Contraste máximo para lectura */
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 32px !important;
+  border-radius: 28px !important;
   color: white !important;
   font-weight: 600 !important;
-  padding: 22px 26px !important;
+  padding: 16px 22px !important;
   font-family: inherit !important;
   display: flex !important;
   align-items: center !important;
   gap: 12px !important;
-  min-width: 320px !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  min-width: 300px !important;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.45) !important;
   letter-spacing: -0.01em !important;
   transition:
     background-color 0.3s ease,
@@ -245,10 +249,12 @@ body {
 }
 
 .light .liquid-glass-toast {
-  background: rgba(255, 255, 255, 0.85) !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
   color: #0f2e2a !important;
-  box-shadow: 0 25px 50px -12px rgba(15, 118, 110, 0.14) !important;
+  box-shadow: 0 20px 40px -10px rgba(15, 118, 110, 0.12) !important;
 }
 
 [data-type="success"].liquid-glass-toast {

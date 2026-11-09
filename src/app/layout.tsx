@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "ConjuntOS®",
   },
   formatDetection: {
@@ -83,6 +83,8 @@ export default function RootLayout({
         {/* PWA & Home Screen Icons para iPad / iOS / Android */}
         <meta name="apple-mobile-web-app-title" content="ConjuntOS®" />
         <meta name="application-name" content="ConjuntOS®" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
 
@@ -96,6 +98,12 @@ export default function RootLayout({
           <Toaster 
             position="top-center" 
             theme="dark"
+            offset="calc(env(safe-area-inset-top, 0px) + 16px)"
+            mobileOffset={{
+              top: "calc(env(safe-area-inset-top, 0px) + 16px)",
+              left: "16px",
+              right: "16px",
+            }}
             toastOptions={{
               unstyled: true,
               classNames: {

@@ -560,7 +560,7 @@ function ProfileContent() {
     <div ref={containerRef} className="flex flex-col min-h-screen relative overflow-x-hidden pb-32">
 
       {/* TOP NAV - MOBILE VIEWPORT SYNC (max-w-[430px] + Centered) */}
-      <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[9999] px-6 pt-[calc(env(safe-area-inset-top,0px)+2.5rem)] pb-4 flex justify-between items-center bg-gradient-to-b from-primary/60 to-transparent transition-all duration-300 pointer-events-none">
+      <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[9999] px-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 flex justify-between items-center transition-all duration-300 pointer-events-none">
         <button 
           onClick={() => router.back()} 
           className="w-12 h-12 rounded-full liquid-glass flex items-center justify-center text-text hover:text-text transition-all active:scale-95 pointer-events-auto shadow-2xl"
@@ -652,42 +652,20 @@ function ProfileContent() {
         </div>
       </header>
  
-      {/* HERO IMAGE - PERFECT CINEMATIC BLUR ARCHITECTURE (Stage 74) */}
-      <div 
-        className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden bg-primary transition-colors duration-300"
-        style={{ 
-          maskImage: 'linear-gradient(to bottom, black 40%, black 70%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, black 40%, black 70%, transparent 100%)'
-        }}
-      >
-        
-        {/* Layer 1: Base Ambient Blur (Bokeh backdrop) */}
-        <div className="absolute inset-0 z-0 blur-[60px] opacity-60 scale-125">
-           <Image src={profilePic} alt="" fill className="object-cover object-top" unoptimized />
-        </div>
-        
-        {/* Layer 2: Transition Sharp-to-Blur (Masked Sharp Image) */}
-        <div 
-          className="absolute inset-0 z-10 w-full h-full"
-          style={{ 
-            maskImage: 'linear-gradient(to bottom, black 0%, black 40%, rgba(0,0,0,0.6) 65%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 40%, rgba(0,0,0,0.6) 65%, transparent 100%)'
-          }}
-        >
-          <Image src={profilePic} alt="" fill className="object-cover object-top scale-105" unoptimized />
-        </div>
- 
-        {/* Layer 2.1: Progressive Blur HUD (Stage 74.5) - Blurs the edge of Layer 2 */}
-        <div 
-          className="absolute inset-0 z-11 w-full h-full backdrop-blur-[20px]"
-          style={{ 
-            maskImage: 'linear-gradient(to top, black 0%, black 20%, transparent 60%)',
-            WebkitMaskImage: 'linear-gradient(to top, black 0%, black 20%, transparent 60%)'
-          }}
+      {/* HERO IMAGE - MÁXIMA NITIDEZ & DIFUMINADO SUAVE INFERIOR */}
+      <div className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden bg-primary">
+        {/* Imagen 100% nítida, sin capas de distorsión ni blur superpuesto */}
+        <Image 
+          src={profilePic} 
+          alt={userData.name} 
+          fill 
+          className="object-cover object-top" 
+          priority
+          unoptimized 
         />
         
-        {/* Layer 3: HUD Contrast Gradient & Base Shadow — gradiente extendido y suave */}
-        <div className="absolute inset-x-0 bottom-0 h-[550px] bg-linear-to-t from-primary via-primary/95 via-primary/70 via-primary/30 to-transparent transition-all duration-300 z-20" />
+        {/* Difuminado suave ubicado en la base sin tapar el pecho ni el rostro */}
+        <div className="absolute inset-x-0 bottom-0 h-64 sm:h-72 bg-gradient-to-t from-primary via-primary/85 via-primary/30 to-transparent transition-all duration-300 z-10" />
       </div>
 
       <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
