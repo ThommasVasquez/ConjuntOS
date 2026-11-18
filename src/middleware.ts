@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { QR_BANNER_TARGET_URL } from "@/lib/qr-config";
 
 /**
  * Simplified middleware for Rust-backend auth.
@@ -7,7 +8,7 @@ import type { NextRequest } from "next/server";
  * Public paths are allowed without auth; everything else redirects to /login.
  */
 
-const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos"];
+const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos", "/qr"];
 
 // Landing page moved to separate project (landing/).
 // Root "/" now redirects to /login.
@@ -15,6 +16,13 @@ const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/protecc
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const session = req.cookies.get("ec_session")?.value;
+
+  // Dynamic QR banner redirect — 302 with no-store so reprogramming takes effect immediately
+  if (pathname === "/qr" || pathname === "/qr/") {
+    const res = NextResponse.redirect(QR_BANNER_TARGET_URL, 302);
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    return res;
+  }
 
   // Authenticated user on "/login" → redirect to dashboard.
   // "/" stays the public landing page for everyone, logged in or not.
