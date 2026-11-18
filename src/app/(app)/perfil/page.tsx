@@ -45,6 +45,11 @@ function ProfileContent() {
   
   const defaultPlaceholder = "/placeholder.svg";
   const [profilePic, setProfilePic] = useState<string>(defaultPlaceholder);
+  const [topPhotoColors, setTopPhotoColors] = useState<{ left: string; center: string; right: string }>({
+    left: "5, 13, 12",
+    center: "5, 13, 12",
+    right: "5, 13, 12",
+  });
   const [hasMounted, setHasMounted] = useState(false);
   
   // 🏗️ INITIAL STATE: Pure static defaults to avoid Hydration Mismatch
@@ -154,6 +159,58 @@ function ProfileContent() {
       }
     }
   }, [userId, hasMounted]);
+
+  // 🎨 Extrae los colores reales del borde superior de la foto (izquierda, centro y derecha)
+  // para fundirlos en degradado continuo hacia arriba sin corte brusco.
+  useEffect(() => {
+    if (!profilePic || typeof window === "undefined") return;
+    const img = new window.Image();
+    if (!profilePic.startsWith("data:")) {
+      img.crossOrigin = "anonymous";
+    }
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 30;
+        canvas.height = 10;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(
+          img,
+          0,
+          0,
+          img.width,
+          Math.max(1, Math.floor(img.height * 0.14)),
+          0,
+          0,
+          30,
+          10
+        );
+        const data = ctx.getImageData(0, 0, 30, 10).data;
+        const sampleRegion = (xStart: number, xEnd: number) => {
+          let r = 0, g = 0, b = 0, count = 0;
+          for (let y = 0; y < 10; y++) {
+            for (let x = xStart; x < xEnd; x++) {
+              const i = (y * 30 + x) * 4;
+              r += data[i];
+              g += data[i + 1];
+              b += data[i + 2];
+              count++;
+            }
+          }
+          return `${Math.round(r / count)}, ${Math.round(g / count)}, ${Math.round(b / count)}`;
+        };
+        setTopPhotoColors({
+          left: sampleRegion(0, 10),
+          center: sampleRegion(10, 20),
+          right: sampleRegion(20, 30),
+        });
+      } catch {
+        // Fallback silencioso si la imagen externa no permite lectura de canvas
+      }
+    };
+    img.src = profilePic;
+  }, [profilePic]);
 
   const searchParams = useSearchParams();
   const modalParam = searchParams.get("modal");
@@ -623,7 +680,7 @@ function ProfileContent() {
         </div>
       </header>
  
-      {/* HERO IMAGE - MÁXIMA NITIDEZ & DIFUMINADO SUAVE INFERIOR */}
+      {/* HERO IMAGE - MÁXIMA NITIDEZ & CONTINUIDAD DE COLOR SUPERIOR E INFERIOR */}
       <div className="absolute top-0 left-0 w-full h-[65vh] z-0 overflow-hidden bg-primary">
         {/* Imagen 100% nítida, sin capas de distorsión ni blur superpuesto */}
         <Image 
@@ -633,6 +690,18 @@ function ProfileContent() {
           className="object-cover object-top" 
           priority
           unoptimized 
+        />
+
+        {/* Continuidad cromática superior: toma los colores de la foto de perfil y los funde en degradado hacia arriba */}
+        <div
+          className="absolute inset-x-0 top-0 h-24 pointer-events-none z-10 transition-all duration-500"
+          style={{
+            background: `
+              linear-gradient(to bottom, var(--color-primary) 0%, rgba(${topPhotoColors.center}, 0.55) 28%, rgba(${topPhotoColors.center}, 0.18) 62%, transparent 100%),
+              radial-gradient(ellipse 60% 90% at 18% 0%, rgba(${topPhotoColors.left}, 0.65) 0%, transparent 75%),
+              radial-gradient(ellipse 60% 90% at 82% 0%, rgba(${topPhotoColors.right}, 0.65) 0%, transparent 75%)
+            `,
+          }}
         />
         
         {/* Difuminado suave ubicado en la base sin tapar el pecho ni el rostro */}
