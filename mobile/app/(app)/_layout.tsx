@@ -67,16 +67,15 @@ function tabsForRole(role: string | undefined): TabDef[] {
     tabs = [
       { name: 'Inicio', route: 'inicio', icon: Home },
       { name: 'Citofonía', route: 'citofonia', icon: Phone },
-      { name: 'Inmobiliaria', route: 'inmobiliaria', icon: Building2 },
-      { name: 'Pases', route: 'pases-temporales', icon: Ticket },
+      { name: 'Visitas', route: 'visitantes', icon: Users },
+      // { name: 'Pases', route: 'pases-temporales', icon: Ticket }, // TEMPORALMENTE DESHABILITADO
       { name: 'Perfil', route: 'perfil', icon: User },
     ];
   } else if (role === 'ARRENDATARIO') {
-    // Tenants don't get the Inmobiliaria (real-estate marketplace) tab — that
-    // is for owners listing/finding properties.
     tabs = [
       { name: 'Inicio', route: 'inicio', icon: Home },
       { name: 'Citofonía', route: 'citofonia', icon: Phone },
+      { name: 'Visitas', route: 'visitantes', icon: Users },
       { name: 'Perfil', route: 'perfil', icon: User },
     ];
   } else if (role === 'HUESPED_TEMPORAL') {
@@ -101,7 +100,7 @@ function tabsForRole(role: string | undefined): TabDef[] {
     tabs = [
       { name: 'Inicio', route: 'inicio', icon: Home },
       { name: 'Citofonía', route: 'citofonia', icon: Phone },
-      { name: 'Inmobiliaria', route: 'inmobiliaria', icon: Building2 },
+      { name: 'Visitas', route: 'visitantes', icon: Users },
       { name: 'Perfil', route: 'perfil', icon: User },
     ];
   }

@@ -89,13 +89,13 @@ function HomeResidente() {
     { title: "Visitas", icon: <Users size={20}/>, desc: "Pases y accesos", path: "/visitantes" },
     // { title: "Pagos", icon: <CreditCard size={20}/>, desc: "Mis pagos", path: "/pagos" }, // TEMPORALMENTE DESHABILITADO
     // { title: "Parqueo", icon: <Car size={20}/>, desc: "Mis vehículos", path: "/parqueadero" }, // TEMPORALMENTE DESHABILITADO
-    { title: "Reservas", icon: <Calendar size={20}/>, desc: "Áreas comunes", path: "/reservas" },
-    { title: "Cartelera", icon: <Megaphone size={20}/>, desc: "Anuncios", path: "/cartelera" },
+    // { title: "Reservas", icon: <Calendar size={20}/>, desc: "Áreas comunes", path: "/reservas" }, // TEMPORALMENTE DESHABILITADO
+    // { title: "Cartelera", icon: <Megaphone size={20}/>, desc: "Anuncios", path: "/cartelera" }, // TEMPORALMENTE DESHABILITADO
     { title: "Encuestas", icon: <BarChart3 size={20}/>, desc: "Participa", path: "/encuestas" },
     { title: "Documentos", icon: <FileText size={20}/>, desc: "Gestión documental", path: "/documentos" },
     { title: "PQRS", icon: <MessageSquare size={20}/>, desc: "Solicitudes", path: "/pqrs" },
     { title: "Inmuebles", icon: <Building2 size={20}/>, desc: "Propiedades", path: "/inmobiliaria" },
-    { title: "Clasificados", icon: <ShoppingBag size={20}/>, desc: "Compra y venta", path: "/clasificados" },
+    // { title: "Clasificados", icon: <ShoppingBag size={20}/>, desc: "Compra y venta", path: "/clasificados" }, // TEMPORALMENTE DESHABILITADO
     { title: "Asistente", icon: <Scale size={20}/>, desc: "Normativa", path: "/asistente" },
   ];
 

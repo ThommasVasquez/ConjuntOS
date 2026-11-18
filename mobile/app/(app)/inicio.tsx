@@ -236,15 +236,16 @@ function buildCategories(): { title: string; icon: ReactNode; path: string }[] {
   const ink = COLORS.green;
   return [
     { title: 'Citofonía', icon: <UserIcon size={20} color={ink} />, path: '/citofonia' },
-    { title: 'Pagos', icon: <CreditCard size={20} color={ink} />, path: '/pagos' },
-    { title: 'Parqueo', icon: <Car size={20} color={ink} />, path: '/parqueadero' },
-    { title: 'Reservas', icon: <Calendar size={20} color={ink} />, path: '/reservas' },
-    { title: 'Cartelera', icon: <Megaphone size={20} color={ink} />, path: '/cartelera' },
+    { title: 'Visitas', icon: <Users size={20} color={ink} />, path: '/visitantes' },
+    // { title: 'Pagos', icon: <CreditCard size={20} color={ink} />, path: '/pagos' }, // TEMPORALMENTE DESHABILITADO
+    // { title: 'Parqueo', icon: <Car size={20} color={ink} />, path: '/parqueadero' }, // TEMPORALMENTE DESHABILITADO
+    // { title: 'Reservas', icon: <Calendar size={20} color={ink} />, path: '/reservas' }, // TEMPORALMENTE DESHABILITADO
+    // { title: 'Cartelera', icon: <Megaphone size={20} color={ink} />, path: '/cartelera' }, // TEMPORALMENTE DESHABILITADO
     { title: 'Encuestas', icon: <BarChart3 size={20} color={ink} />, path: '/encuestas' },
     { title: 'Asistente', icon: <Scale size={20} color={ink} />, path: '/asistente' },
     { title: 'PQRS', icon: <MessageSquare size={20} color={ink} />, path: '/pqrs' },
     { title: 'Inmuebles', icon: <Building2 size={20} color={ink} />, path: '/inmobiliaria' },
-    { title: 'Clasificados', icon: <ShoppingBag size={20} color={ink} />, path: '/clasificados' },
+    // { title: 'Clasificados', icon: <ShoppingBag size={20} color={ink} />, path: '/clasificados' }, // TEMPORALMENTE DESHABILITADO
   ];
 }
 

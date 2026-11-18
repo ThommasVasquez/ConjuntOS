@@ -51,16 +51,15 @@ export default function BottomNav() {
     tabs = [
       { name: "Inicio", path: "/inicio", icon: Home },
       { name: "Citofonía", path: "/citofonia", icon: Phone }, 
-      { name: "Inmobiliaria", path: "/inmobiliaria", icon: Building2 },
+      { name: "Visitas", path: "/visitantes", icon: Users },
       // { name: "Pases", path: "/pases-temporales", icon: Ticket }, // TEMPORALMENTE DESHABILITADO
       { name: "Perfil", path: "/perfil", icon: User },
     ];
   } else if (role === 'ARRENDATARIO') {
-    // Tenants don't get the Inmobiliaria (real-estate marketplace) tab — that is
-    // for owners listing/finding properties.
     tabs = [
       { name: "Inicio", path: "/inicio", icon: Home },
       { name: "Citofonía", path: "/citofonia", icon: Phone },
+      { name: "Visitas", path: "/visitantes", icon: Users },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
   } else if (role === 'HUESPED_TEMPORAL') {
@@ -80,7 +79,7 @@ export default function BottomNav() {
     tabs = [
       { name: "Inicio", path: "/inicio", icon: Home },
       { name: "Citofonía", path: "/citofonia", icon: Phone }, 
-      { name: "Inmobiliaria", path: "/inmobiliaria", icon: Building2 },
+      { name: "Visitas", path: "/visitantes", icon: Users },
       { name: "Perfil", path: "/perfil", icon: User },
     ];
   }
