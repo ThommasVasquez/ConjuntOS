@@ -643,7 +643,7 @@ export default function AdminResidentesPage() {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden"
+      className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen relative overflow-x-hidden"
     >
       <ProfileHeader />
 

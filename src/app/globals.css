@@ -111,7 +111,7 @@ body {
 
 /* Utilities for safe areas */
 .safe-pt {
-  padding-top: env(safe-area-inset-top);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1rem) !important;
 }
 .safe-pb {
   padding-bottom: calc(env(safe-area-inset-bottom) + 120px);

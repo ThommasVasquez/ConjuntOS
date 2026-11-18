@@ -116,7 +116,7 @@ export default function InmobiliariaPage() {
   return (
     <div ref={containerRef} className="min-h-screen pb-32">
       <div className="max-w-[430px] mx-auto w-full">
-        <ProfileHeader className="pt-16 px-6" />
+        <ProfileHeader className="pt-[calc(env(safe-area-inset-top,0px)+1rem)] px-6" />
       </div>
 
       <div className="max-w-[430px] mx-auto w-full pt-8 pb-14 px-4 relative overflow-hidden">

@@ -390,7 +390,7 @@ export default function SuperAdminPage() {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col gap-6 p-4 md:p-6 pt-16 pb-32 min-h-screen relative overflow-x-hidden max-w-7xl mx-auto w-full"
+      className="flex flex-col gap-6 p-4 md:p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen relative overflow-x-hidden max-w-7xl mx-auto w-full"
     >
       <ProfileHeader />
 

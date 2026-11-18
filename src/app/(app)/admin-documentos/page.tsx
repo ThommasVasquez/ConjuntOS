@@ -222,7 +222,7 @@ export default function AdminDocumentosPage() {
   const totalOcultos = docs.filter((d) => !d.visibleResidentes).length;
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 pt-16 pb-32 min-h-screen w-full max-w-full overflow-x-hidden relative">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen w-full max-w-full overflow-x-hidden relative">
       <ProfileHeader />
 
       {/* HEADER SECTION */}

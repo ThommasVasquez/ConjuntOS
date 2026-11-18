@@ -386,7 +386,7 @@ function HomeResidente() {
   }, [user]);
 
   return (
-    <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-16 pb-32">
+    <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32">
       <RoleSwitcher />
       {showCelebration && (
         <CelebrationModal 
@@ -965,7 +965,7 @@ function BannerAdCard({ ad }: { ad: AdSpaceFeedDto }) {
 function HomeVigilante() {
   const router = useRouter();
   return (
-    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
       <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
@@ -1007,7 +1007,7 @@ function HomeEstacionamiento() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
       <button
@@ -1072,7 +1072,7 @@ function HomeConsejo() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
       
@@ -1188,7 +1188,7 @@ function HomeAdmin() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-16 pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
       <ConjuntoSwitcher />
       <RoleSwitcher />
       <ProfileHeader />
@@ -1373,7 +1373,7 @@ function HomeOperativo() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6 gap-6 pt-16 pb-32">
+      <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6 gap-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32">
         <ProfileHeader />
         <RoleSwitcher />
         <Clock className="text-accent animate-pulse" size={32} />
@@ -1383,7 +1383,7 @@ function HomeOperativo() {
   }
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col p-4 pt-16 pb-32 gap-4">
+    <div className="min-h-screen bg-primary flex flex-col p-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 gap-4">
       <ProfileHeader />
       <RoleSwitcher />
 

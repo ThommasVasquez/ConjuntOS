@@ -30,14 +30,14 @@ export default function AdminAnalyticsPage() {
 
   if (!user || (user.rol !== "ADMINISTRADOR" && user.rol !== "SUPER_ADMIN")) {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center pt-16">
+      <div className="min-h-screen bg-primary flex items-center justify-center pt-[calc(env(safe-area-inset-top,0px)+1rem)]">
         <p className="text-text text-sm">Acceso restringido</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col pt-16 pb-32">
+    <div className="min-h-screen bg-primary flex flex-col pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32">
       <ProfileHeader className="px-4" />
 
       <div className="px-4 py-6 flex flex-col gap-6">

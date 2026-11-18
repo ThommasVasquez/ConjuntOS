@@ -85,7 +85,7 @@ export default function ClasificadosPage() {
   });
 
   return (
-    <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-40 gap-8 overflow-x-hidden relative">
+    <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-40 gap-8 overflow-x-hidden relative">
       
       {/* HEADER */}
       <div className="flex flex-col gap-4">

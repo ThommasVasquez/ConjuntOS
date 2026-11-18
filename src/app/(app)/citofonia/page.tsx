@@ -320,7 +320,7 @@ export default function CitofoniaPage() {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-16 pb-32 overflow-x-hidden relative gap-6">
+    <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 overflow-x-hidden relative gap-6">
       <ProfileHeader className="" />
 
       {/* CALL SCREEN OVERLAY */}
