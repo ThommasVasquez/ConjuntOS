@@ -95,7 +95,7 @@ export default function AsistentePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
       <ProfileHeader />
 
       <div className="flex items-center gap-3">

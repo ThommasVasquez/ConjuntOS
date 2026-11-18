@@ -26,8 +26,28 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.conjuntos.app";
  */
 let authToken: string | null = null;
 
+// ---------------------------------------------------------------------------
+// Fast In-Memory SWR Cache & In-Flight GET Deduplication for instant tab navigation
+// ---------------------------------------------------------------------------
+interface CacheEntry {
+  data: unknown;
+  timestamp: number;
+}
+
+const responseCache = new Map<string, CacheEntry>();
+const inFlightGets = new Map<string, Promise<unknown>>();
+
+const CACHE_FRESH_MS = 12_000; // 12s fresh
+const CACHE_MAX_STALE_MS = 120_000; // 2m stale-while-revalidate
+const NO_CACHE_PATHS = new Set(['/api/v1/auth/ws-ticket', '/api/v1/auth/me']);
+
+export function invalidateApiCache(): void {
+  responseCache.clear();
+}
+
 export function setAuthToken(token: string | null): void {
   authToken = token;
+  responseCache.clear();
 }
 
 export function getAuthToken(): string | null {
@@ -99,57 +119,106 @@ export async function apiFetch<T = unknown>(
   const cleanPath = path.startsWith('/api/v1') ? path : `/api/v1${path}`;
   const url = `${API_BASE}${cleanPath}`;
 
-  const fetchHeaders: Record<string, string> = { ...headers };
+  const isCacheableGet =
+    method === 'GET' &&
+    !raw &&
+    !signal &&
+    cachePolicy !== 'reload' &&
+    !NO_CACHE_PATHS.has(cleanPath);
 
-  // Auto-set JSON content-type when there is a body
-  if (body && !fetchHeaders['Content-Type']) {
-    fetchHeaders['Content-Type'] = 'application/json';
+  if (method !== 'GET') {
+    responseCache.clear();
   }
 
-  // Bearer fallback (in-memory only) for environments where the httpOnly cookie
-  // is blocked. The cookie remains the primary, reload-surviving credential.
-  if (authToken && !fetchHeaders['Authorization']) {
-    fetchHeaders['Authorization'] = `Bearer ${authToken}`;
-  }
+  const performNetworkFetch = async (): Promise<T> => {
+    const fetchHeaders: Record<string, string> = { ...headers };
 
-  const response = await fetch(url, {
-    method,
-    headers: fetchHeaders,
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: 'include', // always send ec_session cookie
-    cache: cachePolicy,
-    signal,
-  });
-
-  if (!response.ok) {
-    if (
-      response.status === 401 &&
-      !_loggingOut &&
-      path !== '/auth/login' &&
-      path !== '/auth/logout' &&
-      path !== '/auth/me'
-    ) {
-      onUnauthorized?.();
+    // Auto-set JSON content-type when there is a body
+    if (body && !fetchHeaders['Content-Type']) {
+      fetchHeaders['Content-Type'] = 'application/json';
     }
-    const contentType = response.headers.get('content-type') || '';
-    if (
-      contentType.includes('application/problem+json') ||
-      contentType.includes('application/json')
-    ) {
-      const problem = await response.json();
-      throw new ApiError(
-        response.status,
-        problem.detail || problem.message || response.statusText,
-        problem.type,
-      );
+
+    // Bearer fallback (in-memory only) for environments where the httpOnly cookie
+    // is blocked. The cookie remains the primary, reload-surviving credential.
+    if (authToken && !fetchHeaders['Authorization']) {
+      fetchHeaders['Authorization'] = `Bearer ${authToken}`;
     }
-    throw new ApiError(response.status, response.statusText);
+
+    const response = await fetch(url, {
+      method,
+      headers: fetchHeaders,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'include', // always send ec_session cookie
+      cache: cachePolicy,
+      signal,
+    });
+
+    if (!response.ok) {
+      if (
+        response.status === 401 &&
+        !_loggingOut &&
+        path !== '/auth/login' &&
+        path !== '/auth/logout' &&
+        path !== '/auth/me'
+      ) {
+        onUnauthorized?.();
+      }
+      const contentType = response.headers.get('content-type') || '';
+      if (
+        contentType.includes('application/problem+json') ||
+        contentType.includes('application/json')
+      ) {
+        const problem = await response.json();
+        throw new ApiError(
+          response.status,
+          problem.detail || problem.message || response.statusText,
+          problem.type,
+        );
+      }
+      throw new ApiError(response.status, response.statusText);
+    }
+
+    if (raw) return response as unknown as T;
+    if (response.status === 204) return undefined as T;
+
+    const json = (await response.json()) as T;
+    if (isCacheableGet) {
+      responseCache.set(cleanPath, { data: json, timestamp: Date.now() });
+    }
+    return json;
+  };
+
+  if (isCacheableGet) {
+    const now = Date.now();
+    const cached = responseCache.get(cleanPath);
+
+    if (cached && now - cached.timestamp < CACHE_MAX_STALE_MS) {
+      // If older than CACHE_FRESH_MS, revalidate quietly in the background
+      if (now - cached.timestamp >= CACHE_FRESH_MS && !inFlightGets.has(cleanPath)) {
+        const bgPromise = performNetworkFetch()
+          .catch(() => {})
+          .finally(() => {
+            inFlightGets.delete(cleanPath);
+          });
+        inFlightGets.set(cleanPath, bgPromise);
+      }
+      return cached.data as T;
+    }
+
+    // Deduplicate concurrent identical GET requests
+    const existingInFlight = inFlightGets.get(cleanPath);
+    if (existingInFlight) {
+      return existingInFlight as Promise<T>;
+    }
+
+    const reqPromise = performNetworkFetch().finally(() => {
+      inFlightGets.delete(cleanPath);
+    });
+    inFlightGets.set(cleanPath, reqPromise);
+    return reqPromise;
   }
 
-  if (raw) return response as unknown as T;
-  if (response.status === 204) return undefined as T;
-
-  return response.json();
+  return performNetworkFetch();
 }
 
 // ---------------------------------------------------------------------------

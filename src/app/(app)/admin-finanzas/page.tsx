@@ -488,7 +488,7 @@ export default function AdminFinanzasPage() {
 
   if (authLoading || initialLoading) {
     return (
-      <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
+      <div className="flex flex-col gap-6 px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-3 w-56" />
@@ -506,7 +506,7 @@ export default function AdminFinanzasPage() {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen relative overflow-x-hidden"
+      className="flex flex-col gap-6 px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen relative overflow-x-hidden"
     >
       <ProfileHeader />
 

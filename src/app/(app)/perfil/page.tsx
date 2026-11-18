@@ -95,32 +95,6 @@ function ProfileContent() {
   const [activePaquetes, setActivePaquetes] = useState<PaqueteActivo[]>([]);
   const [visitasHistorial, setVisitasHistorial] = useState<VisitaPerfil[]>([]);
   const [correspondenciaPendiente, setCorrespondenciaPendiente] = useState<CorrespondenciaDto[]>([]);
-  
-  // ... rest of the component state ...
-
-  // 🏗️ HYDRATION SYNC & FETCHING
-  useEffect(() => {
-    async function loadData() {
-      if (!userId) return;
-      try {
-        const apiPackages = await api.get<PaqueteActivo[]>('/paquetes/mios');
-        setActivePaquetes(apiPackages);
-      } catch (e) {
-        console.error("Error loading packages", e);
-        setActivePaquetes([]);
-      }
-      try {
-        const data = await api.get<{ visitas: VisitaPerfil[]; correspondencia: CorrespondenciaDto[] }>('/comunicaciones');
-        setVisitasHistorial(data.visitas || []);
-        setCorrespondenciaPendiente((data.correspondencia || []).filter(c => c.estado === 'EN_PORTERIA'));
-      } catch (e) {
-        console.error("Error loading visitas/correspondencia", e);
-        setVisitasHistorial([]);
-        setCorrespondenciaPendiente([]);
-      }
-    }
-    if (hasMounted && user) loadData();
-  }, [userId, hasMounted, user]);
   const [financialTab, setFinancialTab] = useState<"pendientes" | "historial">("pendientes");
   const [visitasTab, setVisitasTab] = useState<"visitas" | "reservas" | "historial">("visitas");
   const [paquetesTab, setPaquetesTab] = useState<"paquetes" | "correspondencia" | "historial">("paquetes");
@@ -193,15 +167,16 @@ function ProfileContent() {
     }
   }, [modalParam, userData]);
 
-  // 🌍 FETCH DATA (With timeout and fallback logic)
+  // 🌍 FETCH DATA (Single parallel batch with in-memory SWR cache)
   useEffect(() => {
     async function loadData() {
       try {
-        const [profileData, financeData, reservasData, paquetesData] = await Promise.all([
+        const [profileData, financeData, reservasData, paquetesData, comData] = await Promise.all([
           api.get<ProfileFetch>('/usuarios/me/profile').catch(() => null),
           api.get<FinanceFetch>('/pagos').catch(() => null),
           api.get<ReservaActiva[]>('/reservas?filter=future').catch(() => null),
           api.get<PaqueteActivo[]>('/paquetes/mios').catch(() => null),
+          api.get<{ visitas: VisitaPerfil[]; correspondencia: CorrespondenciaDto[] }>('/comunicaciones').catch(() => null),
         ]);
         
         if (profileData) {
@@ -237,8 +212,11 @@ function ProfileContent() {
         }
 
         if (reservasData) setActiveReservas(reservasData);
-
         setActivePaquetes(paquetesData || []);
+        if (comData) {
+          setVisitasHistorial(comData.visitas || []);
+          setCorrespondenciaPendiente((comData.correspondencia || []).filter(c => c.estado === 'EN_PORTERIA'));
+        }
       } catch {
         // Non-critical: API unavailable, using cached data
       }
@@ -247,15 +225,8 @@ function ProfileContent() {
     if (!authLoading && !!user) {
       loadData();
     }
-
-    const ctx = gsap.context(() => {
-      
-}, containerRef);
-    return () => {
-        ctx.revert();
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, userId, hasMounted]); 
+  }, [authLoading, userId]); 
 
   /**
    * 🖼️ COMPRESOR DE IMÁGENES
@@ -559,8 +530,8 @@ function ProfileContent() {
   return (
     <div ref={containerRef} className="flex flex-col min-h-screen relative overflow-x-hidden pb-32">
 
-      {/* TOP NAV - MOBILE VIEWPORT SYNC (max-w-[430px] + Centered) */}
-      <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[9999] px-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 flex justify-between items-center transition-all duration-300 pointer-events-none">
+      {/* TOP NAV - MOBILE VIEWPORT SYNC (max-w-[480px] + Centered) */}
+      <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-[9999] px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 flex justify-between items-center transition-all duration-300 pointer-events-none">
         <button 
           onClick={() => router.back()} 
           className="w-12 h-12 rounded-full liquid-glass flex items-center justify-center text-text hover:text-text transition-all active:scale-95 pointer-events-auto shadow-2xl"
@@ -668,7 +639,7 @@ function ProfileContent() {
         <div className="absolute inset-x-0 bottom-0 h-64 sm:h-72 bg-gradient-to-t from-primary via-primary/85 via-primary/30 to-transparent transition-all duration-300 z-10" />
       </div>
 
-      <div className="pt-[45vh] px-6 flex flex-col w-full relative z-10">
+      <div className="pt-[45vh] px-4 flex flex-col w-full relative z-10">
         <section className="text-center mb-8 relative flex flex-col items-center">
           <h1 className="text-4xl font-display font-bold tracking-tight text-text mb-1 drop-shadow-2xl">{userData.name}</h1>
           <p className="text-lg text-text font-light capitalize tracking-wide mb-4">{userRole.toLowerCase()}</p>

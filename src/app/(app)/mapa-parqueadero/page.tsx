@@ -371,7 +371,7 @@ export default function MapaParqueaderoPage() {
   if(loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-text/10 animate-pulse" /></div>;
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
        <ProfileHeader />
        
        <section className="bg-primary-light shadow-sm rounded-3xl p-5 border border-border flex items-center justify-between gap-3 mb-2">

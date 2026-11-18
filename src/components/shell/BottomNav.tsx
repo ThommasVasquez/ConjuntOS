@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { DollarSign, Building2, Home, Map, Package, Phone, Ticket, User, Users, MessageCircle, Scale, Calendar } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +11,7 @@ import { canAccess } from "@/lib/permissions";
 // BUILD_REVISION: 1.3.0 - Citador de Concejo
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
   const role = user?.rol;
 
@@ -88,8 +90,16 @@ export default function BottomNav() {
   // "No tienes permisos" redirect (e.g. CONCEJO's admin-only Mensajes/Novedades).
   tabs = tabs.filter((tab) => canAccess(role, tab.path));
 
+  // Eagerly prefetch all navbar destinations so tab switches are instantaneous
+  useEffect(() => {
+    for (const tab of tabs) {
+      router.prefetch(tab.path);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, router]);
+
   return (
-    <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-[80] w-[92%] max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-[80] w-[calc(100%-2rem)] max-w-[448px] animate-in fade-in slide-in-from-bottom-4 duration-300">
       <div 
         className="liquid-glass rounded-[35px] w-full flex justify-between items-center p-2.5 relative shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-2xl"
       >
@@ -101,7 +111,9 @@ export default function BottomNav() {
             <Link 
               key={tab.path} 
               href={tab.path}
-              className={`relative flex items-center justify-center transition-all duration-300 rounded-full h-[52px] group
+              prefetch={true}
+              onTouchStart={() => router.prefetch(tab.path)}
+              className={`relative flex items-center justify-center transition-all duration-200 rounded-full h-[52px] group
                 ${isActive ? 'w-[120px] nav-active-glass px-4' : 'w-[52px] bg-text/5 border border-border/30 hover:bg-text/10 mx-1'}
               `}
             >

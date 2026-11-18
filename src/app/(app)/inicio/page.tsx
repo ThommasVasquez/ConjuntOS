@@ -49,7 +49,7 @@ interface CargoParqueaderoRetenido {
   montoActual?: number | string | null;
 }
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/lib/api/client";
+import { api, invalidateApiCache } from "@/lib/api/client";
 import type {
   AnuncioDto,
   NotificacionDto,
@@ -376,17 +376,21 @@ function HomeResidente() {
       fetchCargosRetenidos();
       fetchComunicaciones();
     }
-    // Animate only once when user loads. Do NOT use ctx.revert() on cleanup —
-    // conditional React renders may have moved DOM nodes since the animation
-    // started, causing "removeChild" errors. Just kill the tweens instead.
-    if (!user) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(".fade-up-home", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 });
-    }, containerRef);
-    return () => { gsap.killTweensOf(".fade-up-home"); };
-  }, [user]);
+  }, [
+    user,
+    fetchNotificaciones,
+    fetchFinance,
+    fetchUserData,
+    fetchAnuncios,
+    fetchAds,
+    fetchActiveAsamblea,
+    fetchSolicitudesParqueadero,
+    fetchComunicaciones,
+    fetchCargosRetenidos,
+  ]);
 
   const handlePullRefresh = useCallback(async () => {
+    invalidateApiCache();
     await Promise.allSettled([
       fetchAnuncios(),
       fetchAds(),
@@ -408,7 +412,7 @@ function HomeResidente() {
 
   return (
     <PullToRefreshLogo onRefresh={handlePullRefresh}>
-    <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32">
+    <div ref={containerRef} className="flex flex-col gap-7 px-4 overflow-x-hidden pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32">
       <RoleSwitcher />
       {showCelebration && (
         <CelebrationModal 
@@ -600,7 +604,7 @@ function HomeResidente() {
           <p className="text-[11px] text-text/70 px-1 -mt-1">
             Estas visitas fueron registradas por el vigilante. El visitante <b>NO puede ingresar</b> hasta que las apruebes.
           </p>
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap items-stretch">
+          <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar flex-nowrap items-stretch">
             {visitasPendientes.map((v) => (
               <div key={v.id} className="min-w-[290px] max-w-[320px] liquid-glass-card rounded-[28px] p-5 border border-amber-500/40 flex flex-col gap-3 shrink-0">
                 <div className="flex items-start gap-3">
@@ -674,7 +678,7 @@ function HomeResidente() {
           <p className="text-[11px] text-text/70 px-1 -mt-1">
             Tienes paquetes o correspondencia esperando ser retirados en la portería principal.
           </p>
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap items-stretch">
+          <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar flex-nowrap items-stretch">
             {paquetesPendientes.map((p) => (
               <div key={p.id} className="min-w-[280px] max-w-[320px] liquid-glass-card rounded-[28px] p-5 border border-emerald-500/40 flex flex-col gap-3 shrink-0">
                 <div className="flex items-start gap-3">
@@ -769,7 +773,7 @@ function HomeResidente() {
                   </h2>
                   <span className="text-blue-500 text-[10px] font-bold">{notificaciones.length} nuevos</span>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 hide-scrollbar flex-nowrap">
+              <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar flex-nowrap">
                   {notificaciones.map((n) => (
                       <div
                         key={n.id}
@@ -988,7 +992,7 @@ function BannerAdCard({ ad }: { ad: AdSpaceFeedDto }) {
 function HomeVigilante() {
   const router = useRouter();
   return (
-    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
       <div className="liquid-glass rounded-3xl p-6 border border-border shadow-2xl">
@@ -1030,7 +1034,7 @@ function HomeEstacionamiento() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
       <button
@@ -1095,7 +1099,7 @@ function HomeConsejo() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
       <RoleSwitcher />
       <ProfileHeader />
       
@@ -1211,7 +1215,7 @@ function HomeAdmin() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
       <ConjuntoSwitcher />
       <RoleSwitcher />
       <ProfileHeader />

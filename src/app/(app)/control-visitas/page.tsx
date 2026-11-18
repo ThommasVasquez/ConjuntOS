@@ -200,7 +200,7 @@ export default function ControlVisitas() {
   if(loading) return <div className="min-h-screen flex items-center justify-center"><SkeletonRows /></div>;
 
   return (
-    <div className="flex flex-col gap-6 p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
+    <div className="flex flex-col gap-6 px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 min-h-screen">
        <ProfileHeader />
 
        {/* QR pass scanner — validates a pre-registered visitor in one tap */}

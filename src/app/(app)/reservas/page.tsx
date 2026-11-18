@@ -405,7 +405,7 @@ export default function ReservasPage() {
  if(loading) return <div className="min-h-screen flex items-center justify-center text-text"><div className="animate-pulse bg-text/10 w-8 h-8 rounded-full"></div></div>;
 
   return (
-    <div ref={containerRef} className="min-h-screen flex flex-col p-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 overflow-x-hidden relative gap-10">
+    <div ref={containerRef} className="min-h-screen flex flex-col px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 overflow-x-hidden relative gap-10">
       <ProfileHeader className="" />
 
       <section className="flex gap-3">
