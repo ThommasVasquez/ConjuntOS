@@ -197,14 +197,6 @@ export default function VisitantesPage() {
   const pastVisitors = visitors.filter(v => getVisitStatus(v) === 'HISTORIAL');
   const nonActiveVisitors = [...scheduledVisitors, ...pastVisitors];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Skeleton className="w-8 h-8 rounded-full" />
-      </div>
-    );
-  }
-
   return (
     <div ref={containerRef} className="min-h-screen flex flex-col px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32 overflow-x-hidden relative gap-8">
       
