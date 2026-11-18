@@ -21,6 +21,7 @@ const CAT_STYLES = [
   { chip: "bg-orange-500/15 text-orange-500", bar: "bg-orange-500" },
 ];
 import ProfileHeader from "@/components/shell/ProfileHeader";
+import PullToRefreshLogo from "@/components/shell/PullToRefreshLogo";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
 import ConjuntoSwitcher from "@/components/shell/ConjuntoSwitcher";
 import CelebrationModal from "@/components/modals/CelebrationModal";
@@ -385,7 +386,28 @@ function HomeResidente() {
     return () => { gsap.killTweensOf(".fade-up-home"); };
   }, [user]);
 
+  const handlePullRefresh = useCallback(async () => {
+    await Promise.allSettled([
+      fetchAnuncios(),
+      fetchAds(),
+      fetchNotificaciones(),
+      fetchComunicaciones(),
+      fetchActiveAsamblea(),
+      fetchSolicitudesParqueadero(),
+      fetchCargosRetenidos(),
+    ]);
+  }, [
+    fetchAnuncios,
+    fetchAds,
+    fetchNotificaciones,
+    fetchComunicaciones,
+    fetchActiveAsamblea,
+    fetchSolicitudesParqueadero,
+    fetchCargosRetenidos,
+  ]);
+
   return (
+    <PullToRefreshLogo onRefresh={handlePullRefresh}>
     <div ref={containerRef} className="flex flex-col gap-8 p-6 overflow-x-hidden pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32">
       <RoleSwitcher />
       {showCelebration && (
@@ -866,6 +888,7 @@ function HomeResidente() {
           />
        )}
     </div>
+    </PullToRefreshLogo>
   );
 }
 
