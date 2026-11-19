@@ -326,9 +326,10 @@ function HomeResidente() {
   useWsSubscription('visita', () => fetchComunicaciones());
   useWsSubscription('paquete', (e) => {
     fetchComunicaciones();
-    if (e.action === 'resync') return;
-    const payload = e.payload as { remitente?: string; descripcion?: string } | undefined;
+    if (e.action !== 'created') return;
+    const payload = e.payload as { id?: string; remitente?: string; descripcion?: string } | undefined;
     toast.success("📦 ¡Llegó un paquete a portería!", {
+      id: `paquete-${payload?.id ?? 'new'}`,
       description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes un paquete esperando en portería.",
       duration: 8000,
     });
@@ -343,9 +344,10 @@ function HomeResidente() {
   });
   useWsSubscription('correspondencia', (e) => {
     fetchComunicaciones();
-    if (e.action === 'resync') return;
-    const payload = e.payload as { remitente?: string; tipo?: string } | undefined;
+    if (e.action !== 'created') return;
+    const payload = e.payload as { id?: string; remitente?: string; tipo?: string } | undefined;
     toast.success("📬 ¡Llegó correspondencia a portería!", {
+      id: `correspondencia-${payload?.id ?? 'new'}`,
       description: payload?.remitente ? `Remitente: ${payload.remitente}` : "Tienes correspondencia esperando en portería.",
       duration: 8000,
     });
