@@ -33,6 +33,15 @@ export default function PullToRefreshLogo({ onRefresh, children }: PullToRefresh
   const refreshingRef = useRef(false);
   const lastHapticStepRef = useRef(0);
   const hapticLabelRef = useRef<HTMLLabelElement | null>(null);
+  const hapticInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Set raw HTML `switch` attribute directly on the DOM node so iOS 17.4+/18 WebKit
+  // treats it as a native UISwitch control wired to the Taptic Engine.
+  useEffect(() => {
+    if (hapticInputRef.current) {
+      hapticInputRef.current.setAttribute("switch", "");
+    }
+  }, []);
 
   const triggerHaptic = useCallback((step: number, isThresholdSnap = false) => {
     try {
@@ -127,6 +136,8 @@ export default function PullToRefreshLogo({ onRefresh, children }: PullToRefresh
 
       const finalPull = pullRef.current;
       if (finalPull >= PULL_THRESHOLD) {
+        // Direct user-activation gesture on touchend for iOS Taptic Engine
+        triggerHaptic(8, true);
         refreshingRef.current = true;
         setIsRefreshing(true);
         pullRef.current = 76;
@@ -201,16 +212,20 @@ export default function PullToRefreshLogo({ onRefresh, children }: PullToRefresh
 
   return (
     <div ref={wrapperRef} className="relative w-full overscroll-y-contain">
-      {/* Hidden iOS 17.4+/18 WebKit Taptic Engine switch actuator */}
+      {/* iOS 17.4+/18 WebKit Taptic Engine switch actuator (must stay in viewport with non-zero box & opacity > 0) */}
       <label
         ref={hapticLabelRef}
+        htmlFor="ptr-haptic-switch"
         aria-hidden="true"
-        className="sr-only pointer-events-none fixed -top-10 -left-10 opacity-0"
+        className="fixed top-0 left-0 w-10 h-6 opacity-[0.001] pointer-events-none -z-10"
       >
         <input
+          id="ptr-haptic-switch"
+          ref={hapticInputRef}
           type="checkbox"
           tabIndex={-1}
-          {...({ switch: "" } as React.InputHTMLAttributes<HTMLInputElement>)}
+          readOnly
+          className="w-10 h-6"
         />
       </label>
       <style>{`
