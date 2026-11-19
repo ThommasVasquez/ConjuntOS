@@ -31,6 +31,32 @@ export default function PullToRefreshLogo({ onRefresh, children }: PullToRefresh
   const startXRef = useRef<number | null>(null);
   const pullRef = useRef(0);
   const refreshingRef = useRef(false);
+  const lastHapticStepRef = useRef(0);
+  const hapticLabelRef = useRef<HTMLLabelElement | null>(null);
+
+  const triggerHaptic = useCallback((step: number, isThresholdSnap = false) => {
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+        if (isThresholdSnap) {
+          navigator.vibrate([16, 26, 22]);
+        } else {
+          // Progressive micro-pulse: 4ms up to 14ms as you pull deeper
+          const duration = Math.min(15, Math.round(3 + step * 1.6));
+          navigator.vibrate(duration);
+        }
+        return;
+      }
+      // iOS 17.4+ / iOS 18 WebKit Taptic Engine switch fallback
+      if (hapticLabelRef.current) {
+        hapticLabelRef.current.click();
+        if (isThresholdSnap) {
+          setTimeout(() => hapticLabelRef.current?.click(), 55);
+        }
+      }
+    } catch {
+      // Ignore on unsupported devices
+    }
+  }, []);
 
   const getScrollTop = useCallback(() => {
     if (typeof window === "undefined") return 0;
@@ -50,6 +76,7 @@ export default function PullToRefreshLogo({ onRefresh, children }: PullToRefresh
       }
       startYRef.current = e.touches[0].clientY;
       startXRef.current = e.touches[0].clientX;
+      lastHapticStepRef.current = 0;
       setIsDragging(true);
     };
 
@@ -71,11 +98,23 @@ export default function PullToRefreshLogo({ onRefresh, children }: PullToRefresh
         const damped = Math.min(MAX_PULL, Math.pow(dy, 0.82) * 1.32);
         pullRef.current = damped;
         setPullDistance(damped);
+
+        // Progressive haptic ticks across 8 stages as the logo traces itself
+        const norm = Math.min(1, Math.max(0, (damped - 6) / (PULL_THRESHOLD - 6)));
+        const currentStep = Math.floor(norm * 8);
+        if (currentStep > lastHapticStepRef.current) {
+          lastHapticStepRef.current = currentStep;
+          triggerHaptic(currentStep, currentStep >= 8);
+        } else if (currentStep < lastHapticStepRef.current) {
+          lastHapticStepRef.current = currentStep;
+        }
+
         if (damped > 8 && e.cancelable) {
           e.preventDefault();
         }
       } else if (pullRef.current > 0) {
         pullRef.current = 0;
+        lastHapticStepRef.current = 0;
         setPullDistance(0);
       }
     };
@@ -121,7 +160,7 @@ export default function PullToRefreshLogo({ onRefresh, children }: PullToRefresh
       el.removeEventListener("touchend", handleTouchEnd);
       el.removeEventListener("touchcancel", handleTouchEnd);
     };
-  }, [getScrollTop, onRefresh]);
+  }, [getScrollTop, onRefresh, triggerHaptic]);
 
   // Normalized pull progress [0..1]
   const progress = isRefreshing
@@ -162,6 +201,18 @@ export default function PullToRefreshLogo({ onRefresh, children }: PullToRefresh
 
   return (
     <div ref={wrapperRef} className="relative w-full overscroll-y-contain">
+      {/* Hidden iOS 17.4+/18 WebKit Taptic Engine switch actuator */}
+      <label
+        ref={hapticLabelRef}
+        aria-hidden="true"
+        className="sr-only pointer-events-none fixed -top-10 -left-10 opacity-0"
+      >
+        <input
+          type="checkbox"
+          tabIndex={-1}
+          {...({ switch: "" } as React.InputHTMLAttributes<HTMLInputElement>)}
+        />
+      </label>
       <style>{`
         @keyframes threads-wave {
           0% { stroke-dashoffset: 100; }
