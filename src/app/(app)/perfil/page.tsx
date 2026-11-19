@@ -24,6 +24,7 @@ import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
 import DocsVacunas from "@/components/docs/DocsVacunas";
 import { useTheme } from "@/components/providers/ThemeContext";
+import { switchKeepAliveTab } from "@/components/shell/AppShell";
 import type { CorrespondenciaDto } from "@/lib/api/types";
 
 export default function PerfilPage() {
@@ -590,7 +591,7 @@ function ProfileContent() {
       {/* TOP NAV - MOBILE VIEWPORT SYNC (max-w-[480px] + Centered) */}
       <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-[9999] px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 flex justify-between items-center transition-all duration-300 pointer-events-none">
         <button 
-          onClick={() => router.back()} 
+          onClick={() => switchKeepAliveTab("/inicio")} 
           className="w-12 h-12 rounded-full liquid-glass flex items-center justify-center text-text hover:text-text transition-all active:scale-95 pointer-events-auto shadow-2xl"
         >
           <ChevronLeft size={24} />

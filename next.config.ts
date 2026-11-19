@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: [],
   experimental: {
+    staleTimes: {
+      dynamic: 180,
+      static: 300,
+    },
     serverActions: {
       allowedOrigins: [
         "https://en-conjunto.pages.dev",

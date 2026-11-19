@@ -23,6 +23,7 @@ const CAT_STYLES = [
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import PullToRefreshLogo from "@/components/shell/PullToRefreshLogo";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
+import { isKeepAliveTab, switchKeepAliveTab } from "@/components/shell/AppShell";
 import ConjuntoSwitcher from "@/components/shell/ConjuntoSwitcher";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import ContentActionModal from "@/components/modals/ContentActionModal";
@@ -749,7 +750,13 @@ function HomeResidente() {
             return (
               <div
                 key={idx}
-                onClick={() => router.push(cat.path)}
+                onClick={() => {
+                  if (isKeepAliveTab(cat.path)) {
+                    switchKeepAliveTab(cat.path);
+                  } else {
+                    router.push(cat.path);
+                  }
+                }}
                 className="min-w-[116px] p-4 rounded-[24px] bg-primary-light border border-border shadow-sm flex flex-col items-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${s.chip}`}>{cat.icon}</div>

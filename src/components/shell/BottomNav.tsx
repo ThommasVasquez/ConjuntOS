@@ -7,6 +7,7 @@ import { DollarSign, Building2, Home, Map, Package, Phone, Ticket, User, Users, 
 
 import { useAuth } from "@/hooks/useAuth";
 import { canAccess } from "@/lib/permissions";
+import { isKeepAliveTab, switchKeepAliveTab } from "./AppShell";
 
 // BUILD_REVISION: 1.3.0 - Citador de Concejo
 export default function BottomNav() {
@@ -113,6 +114,12 @@ export default function BottomNav() {
               href={tab.path}
               prefetch={true}
               onTouchStart={() => router.prefetch(tab.path)}
+              onClick={(e) => {
+                if (isKeepAliveTab(tab.path)) {
+                  e.preventDefault();
+                  switchKeepAliveTab(tab.path);
+                }
+              }}
               className={`relative flex items-center justify-center transition-all duration-200 rounded-full h-[52px] group
                 ${isActive ? 'w-[120px] nav-active-glass px-4' : 'w-[52px] bg-text/5 border border-border/30 hover:bg-text/10 mx-1'}
               `}

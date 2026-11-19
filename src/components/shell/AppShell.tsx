@@ -1,9 +1,30 @@
 "use client";
 
-import React, { ReactNode, useEffect, useRef } from "react";
+import React, { ReactNode, Suspense, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import BottomNav from "./BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { useHasInternet } from "@/hooks/useHasInternet";
+import InicioDashboard from "@/app/(app)/inicio/page";
+import CitofoniaPage from "@/app/(app)/citofonia/page";
+import VisitantesPage from "@/app/(app)/visitantes/page";
+import PerfilPage from "@/app/(app)/perfil/page";
+
+export const KEEP_ALIVE_TAB_PATHS = ["/inicio", "/citofonia", "/visitantes", "/perfil"] as const;
+
+export function isKeepAliveTab(path: string): boolean {
+  const clean = path.split("?")[0];
+  return (KEEP_ALIVE_TAB_PATHS as readonly string[]).includes(clean);
+}
+
+export function switchKeepAliveTab(path: string): void {
+  if (typeof window === "undefined") return;
+  if (window.location.pathname + window.location.search === path) return;
+  window.history.pushState(null, "", path);
+  const scroller = document.querySelector(".page-content") as HTMLElement | null;
+  if (scroller) scroller.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
 
 /**
  * Every page gates its data fetches on `user`, so when /auth/me fails for a
@@ -41,10 +62,41 @@ function OfflineScreen({ online }: { online: boolean }) {
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const user = useAuth((s) => s.user);
   const authOffline = useAuth((s) => s.authOffline);
   const online = useHasInternet();
 
+  // Track which primary tabs have been mounted so they stay alive in memory
+  // for 0ms instant tab switching.
+  const [mountedTabs, setMountedTabs] = useState<Record<string, boolean>>(() => ({
+    [pathname]: true,
+  }));
+
+  useEffect(() => {
+    if (isKeepAliveTab(pathname) && !mountedTabs[pathname]) {
+      setMountedTabs((prev) => ({ ...prev, [pathname]: true }));
+    }
+  }, [pathname, mountedTabs]);
+
+  // Pre-warm the 4 core navbar tabs in the background once the user is authenticated
+  useEffect(() => {
+    if (!user) return;
+    const t = setTimeout(() => {
+      setMountedTabs((prev) => ({
+        ...prev,
+        "/inicio": true,
+        "/citofonia": true,
+        "/visitantes": true,
+        "/perfil": true,
+      }));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [user]);
+
   if (authOffline || !online) return <OfflineScreen online={online} />;
+
+  const activeIsKeepAlive = isKeepAliveTab(pathname);
 
   return (
     <div className="app-shell flex flex-col relative overflow-hidden">
@@ -60,14 +112,41 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {/* Sin TopBar global — cada pantalla maneja su propio header */}
-
-      {/* Contenido principal */}
+      {/* Contenido principal con Keep-Alive Tab Deck para cambio instantáneo (0ms) */}
       <main 
         ref={containerRef}
         className="flex-1 overflow-y-auto page-content text-text mb-[80px] relative" 
       >
-        {children}
+        {mountedTabs["/inicio"] && (
+          <div className={pathname === "/inicio" ? "block" : "hidden"}>
+            <Suspense fallback={null}>
+              <InicioDashboard />
+            </Suspense>
+          </div>
+        )}
+        {mountedTabs["/citofonia"] && (
+          <div className={pathname === "/citofonia" ? "block" : "hidden"}>
+            <Suspense fallback={null}>
+              <CitofoniaPage />
+            </Suspense>
+          </div>
+        )}
+        {mountedTabs["/visitantes"] && (
+          <div className={pathname === "/visitantes" ? "block" : "hidden"}>
+            <Suspense fallback={null}>
+              <VisitantesPage />
+            </Suspense>
+          </div>
+        )}
+        {mountedTabs["/perfil"] && (
+          <div className={pathname === "/perfil" ? "block" : "hidden"}>
+            <Suspense fallback={null}>
+              <PerfilPage />
+            </Suspense>
+          </div>
+        )}
+
+        {!activeIsKeepAlive && children}
       </main>
 
       <BottomNav />

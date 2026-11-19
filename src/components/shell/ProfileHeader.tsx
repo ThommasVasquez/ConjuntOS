@@ -11,6 +11,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { getNotifTarget } from "@/lib/notif-routing";
 import SosPanicButton from "@/components/sos/SosPanicButton";
+import { switchKeepAliveTab } from "./AppShell";
 
 /* ── Wave keyframe injected once ───────────────────────────────────────────── */
 const WAVE_STYLE = `
@@ -238,7 +239,7 @@ export default function ProfileHeader({ className = "", showWelcome = true }: Pr
   return (
     <header className={`flex justify-between items-center relative z-50 ${className}`}>
       <div 
-        onClick={() => !isProfilePage && router.push("/perfil")}
+        onClick={() => !isProfilePage && switchKeepAliveTab("/perfil")}
         className={`flex items-center gap-4 transition-transform ${isProfilePage ? 'cursor-default transition-none' : 'group cursor-pointer active:scale-95'}`}
       >
         <div className={`w-14 h-14 rounded-full p-[3px] transition-all duration-500 relative liquid-status-halo`}>
