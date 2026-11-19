@@ -354,16 +354,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
       activeToneRef.current.stop();
     }
 
-    // Continuous repeating vibration while ringing (Android / supported PWAs)
+    // iOS 17+ WebKit: switch audioSession to "playback" so the incoming ringtone
+    // plays loudly even when the iPhone hardware mute switch is on.
+    try {
+      const nav = navigator as Navigator & { audioSession?: { type: string } };
+      if (nav.audioSession) {
+        nav.audioSession.type = "playback";
+      }
+    } catch {}
+
+    // Continuous repeating phone-like vibration while ringing (Android / supported PWAs)
     const pulseVibrate = () => {
       try {
         if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-          navigator.vibrate([450, 180, 450]);
+          navigator.vibrate([550, 200, 550]);
         }
       } catch {}
     };
     pulseVibrate();
-    const vibInterval = setInterval(pulseVibrate, 2400);
+    const vibInterval = setInterval(pulseVibrate, 2200);
 
     const ctx = startAudioContext();
     let osc1: OscillatorNode | null = null;
@@ -375,8 +384,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
         osc1 = ctx.createOscillator();
         osc2 = ctx.createOscillator();
         gain = ctx.createGain();
-        osc1.frequency.value = 523.25; // C5
-        osc2.frequency.value = 659.25; // E5 harmonious dual-tone intercom ring
+        osc1.frequency.value = 659.25; // E5
+        osc2.frequency.value = 880.0;  // A5 — bright, unmistakable intercom ring
         osc1.type = "triangle";
         osc2.type = "sine";
         osc1.connect(gain);
@@ -385,13 +394,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
         gain.gain.setValueAtTime(0, ctx.currentTime);
 
         let t = ctx.currentTime;
-        for (let i = 0; i < 15; i++) {
-          // Ring-ring cadence with clear audible volume
-          gain.gain.setValueAtTime(0.32, t);
-          gain.gain.setValueAtTime(0, t + 0.48);
-          gain.gain.setValueAtTime(0.32, t + 0.65);
-          gain.gain.setValueAtTime(0, t + 1.15);
-          t += 2.4;
+        for (let i = 0; i < 20; i++) {
+          // Crisp phone ring-ring cadence
+          gain.gain.setValueAtTime(0.42, t);
+          gain.gain.setValueAtTime(0, t + 0.45);
+          gain.gain.setValueAtTime(0.42, t + 0.62);
+          gain.gain.setValueAtTime(0, t + 1.12);
+          t += 2.2;
         }
         osc1.start();
         osc2.start();
@@ -803,31 +812,58 @@ export function CallProvider({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* GLOBAL FLOATING INCOMING CALL HUD OVERLAY */}
-      {callState === "RINGING" && !isCitofoniaPage && (
-        <div className="fixed top-6 inset-x-6 z-50 p-6 liquid-glass-card rounded-[32px] border border-accent/40 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-top-12 duration-500 max-w-sm mx-auto">
-          <div className="flex items-center gap-3">
-             <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center text-accent animate-bounce">
-                <Phone size={24} />
-             </div>
-             <div>
-                <span className="text-[10px] font-black text-accent uppercase tracking-widest block animate-pulse">Llamada Entrante</span>
-                <h4 className="text-base font-display font-black text-text">{callerName}</h4>
-             </div>
+      {/* FULL-SCREEN WHATSAPP-STYLE INCOMING CALL OVERLAY */}
+      {callState === "RINGING" && (
+        <div className="fixed inset-0 z-[9999] bg-[#08090d]/95 backdrop-blur-2xl flex flex-col items-center justify-between px-8 pt-[calc(env(safe-area-inset-top,0px)+3.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+3rem)] animate-in fade-in duration-300 text-white">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-400">
+              Citofonía ConjuntOS®
+            </span>
+            <p className="text-sm text-white/60 font-medium animate-pulse">
+              Llamada entrante…
+            </p>
           </div>
-          <div className="flex gap-3">
-             <button
+
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative flex items-center justify-center">
+              <span className="absolute w-44 h-44 rounded-full bg-emerald-500/15 animate-ping" />
+              <span className="absolute w-36 h-36 rounded-full bg-emerald-500/20 animate-pulse" />
+              <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.45)] border-2 border-white/20">
+                <Phone size={44} className="text-white animate-bounce" />
+              </div>
+            </div>
+            <div className="text-center space-y-1 max-w-xs">
+              <h2 className="text-3xl font-display font-black tracking-tight text-white">
+                {callerName || "Portería"}
+              </h2>
+              <p className="text-xs text-white/50 font-medium">
+                Audio en vivo cifrado · Toca para contestar
+              </p>
+            </div>
+          </div>
+
+          <div className="w-full max-w-xs flex items-center justify-around gap-8">
+            <div className="flex flex-col items-center gap-2">
+              <button
                 onClick={rejectCall}
-                className="flex-1 py-3 bg-text/10 hover:bg-text/25 border border-text/35 text-text rounded-2xl font-bold text-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
-             >
-                <PhoneOff size={14} /> Rechazar
-             </button>
-             <button
+                aria-label="Rechazar llamada"
+                className="w-18 h-18 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-[0_10px_30px_rgba(239,68,68,0.45)] active:scale-90 transition-all cursor-pointer"
+              >
+                <PhoneOff size={28} />
+              </button>
+              <span className="text-xs font-bold text-white/75">Rechazar</span>
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <button
                 onClick={answerCall}
-                className="flex-1 py-3 bg-accent hover:brightness-110 text-on-accent rounded-2xl font-black text-xs shadow-xl shadow-black/20 cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
-             >
-                <Check size={14} /> Contestar
-             </button>
+                aria-label="Contestar llamada"
+                className="w-18 h-18 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-[0_10px_35px_rgba(16,185,129,0.55)] active:scale-90 transition-all cursor-pointer animate-pulse"
+              >
+                <Phone size={28} />
+              </button>
+              <span className="text-xs font-bold text-white">Contestar</span>
+            </div>
           </div>
         </div>
       )}

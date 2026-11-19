@@ -22,6 +22,7 @@ pub fn router() -> Router<AppState> {
         .route("/citofonia/cancel", post(cancel_call))
         .route("/citofonia/token", get(citofonia_token))
         .route("/citofonia/status", get(vigilante_status))
+        .route("/citofonia/test-push", post(test_push))
 }
 
 // ── DTOs ──
@@ -509,7 +510,7 @@ async fn call(
 
         // Multi-pulse PWA ringing: iOS PWAs fire one system haptic/alert per
         // Web Push (Apple does not expose CallKit or `vibrate` patterns to PWAs).
-        // Send 5 follow-up pulses every 2.5s (6 total over ~12.5s) so the locked
+        // Send 7 follow-up pulses every 2s (8 total over ~14s) so the locked
         // phone vibrates rhythmically like an incoming call until the recipient
         // answers (GET /citofonia/token) or the caller cancels (POST /citofonia/cancel).
         if count > 0 {
@@ -518,12 +519,12 @@ async fn call(
             let bg_room = room.clone();
             let bg_caller = caller_name.clone();
             tokio::spawn(async move {
-                for pulse in 2u8..=6u8 {
+                for pulse in 2u8..=8u8 {
                     tokio::select! {
                         _ = &mut cancel_rx => {
                             break;
                         }
-                        _ = tokio::time::sleep(std::time::Duration::from_millis(2500)) => {}
+                        _ = tokio::time::sleep(std::time::Duration::from_secs(2)) => {}
                     }
 
                     let pulse_msg = PushMessage {
@@ -690,6 +691,86 @@ pub async fn cancel_call(
         .await;
 
     Ok(Json(serde_json::json!({ "status": "ok" })))
+}
+
+/// POST /api/v1/citofonia/test-push — sends a 3-pulse test call notification to
+/// the caller's own registered devices after 4 seconds so they can lock their
+/// screen and verify sound & vibration.
+pub async fn test_push(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<serde_json::Value>> {
+    let mut conn = state.pool.get().await?;
+
+    let subs: Vec<(String, String, String)> = push_subscriptions::table
+        .filter(push_subscriptions::conjunto_id.eq(user.conjunto_id))
+        .filter(push_subscriptions::usuario_id.eq(user.id))
+        .select((
+            push_subscriptions::endpoint,
+            push_subscriptions::p256dh,
+            push_subscriptions::auth,
+        ))
+        .load(&mut conn)
+        .await?;
+
+    let native_tokens: Vec<(String, String)> = native_push_tokens::table
+        .filter(native_push_tokens::conjunto_id.eq(user.conjunto_id))
+        .filter(native_push_tokens::usuario_id.eq(user.id))
+        .select((native_push_tokens::platform, native_push_tokens::token))
+        .load(&mut conn)
+        .await?;
+
+    if subs.is_empty() && native_tokens.is_empty() {
+        return Ok(Json(serde_json::json!({
+            "scheduled": false,
+            "message": "Este dispositivo aún no tiene notificaciones push activadas. Actívalas en Inicio primero."
+        })));
+    }
+
+    let web_subs: Vec<PushSubscriptionInfo> = subs
+        .into_iter()
+        .map(|(endpoint, p256dh, auth)| PushSubscriptionInfo {
+            endpoint,
+            p256dh,
+            auth,
+        })
+        .collect();
+    let native_list: Vec<NativePushTokenInfo> = native_tokens
+        .into_iter()
+        .map(|(platform, token)| NativePushTokenInfo { platform, token })
+        .collect();
+
+    let bg_state = state.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+        for pulse in 1u8..=3u8 {
+            if pulse > 1 {
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            }
+            let msg = PushMessage {
+                title: "🔔 Prueba de Timbre — Citofonía".to_string(),
+                body: format!("Pulso {pulse}/3 · Así sonarán y vibrarán tus llamadas de portería."),
+                data: serde_json::json!({
+                    "url": "/citofonia",
+                    "tipo": "TEST_CALL",
+                    "tag": format!("test-call-{pulse}-{}", Uuid::new_v4()),
+                }),
+            };
+            let bytes = msg.to_web_json_bytes();
+            for sub in &web_subs {
+                let _ = bg_state.push_sender.send(sub, &bytes).await;
+            }
+            for nat in &native_list {
+                let _ = bg_state.native_push_sender.send(nat, &msg).await;
+            }
+        }
+    });
+
+    Ok(Json(serde_json::json!({
+        "scheduled": true,
+        "delaySeconds": 4,
+        "message": "Bloquea tu pantalla ahora — recibirás 3 pulsos de prueba en 4 segundos."
+    })))
 }
 
 #[cfg(test)]

@@ -8,7 +8,7 @@ import {
   Plus, Info, 
   ShieldCheck,
   X, Car, Bike, Search, Lock,
-  FileText
+  FileText, BellRing, Sun
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
@@ -157,6 +157,80 @@ export default function CitofoniaPage() {
   const [searchResults, setSearchResults] = useState<DirectorioUser[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [adminLlamadasActivo, setAdminLlamadasActivo] = useState(true);
+  const [wakeLockActive, setWakeLockActive] = useState(false);
+  const [testingRing, setTestingRing] = useState(false);
+  const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
+
+  // Screen Wake Lock (Modo Portería): keeps the screen awake on shift so
+  // incoming calls ring full-screen like WhatsApp.
+  const toggleWakeLock = async () => {
+    if (wakeLockActive) {
+      try {
+        await wakeLockRef.current?.release();
+      } catch {}
+      wakeLockRef.current = null;
+      setWakeLockActive(false);
+      toast.info("Modo pantalla activa desactivado.");
+      return;
+    }
+    try {
+      const nav = navigator as Navigator & {
+        wakeLock?: { request: (type: "screen") => Promise<{ release: () => Promise<void>; addEventListener?: (e: string, cb: () => void) => void }> };
+      };
+      if (!nav.wakeLock) {
+        toast.info("Tu navegador no soporta mantener la pantalla encendida automáticamente.");
+        return;
+      }
+      const sentinel = await nav.wakeLock.request("screen");
+      wakeLockRef.current = sentinel;
+      setWakeLockActive(true);
+      toast.success("☀️ Pantalla activa activada: las llamadas entrantes sonarán a pantalla completa.");
+      sentinel.addEventListener?.("release", () => {
+        setWakeLockActive(false);
+      });
+    } catch {
+      toast.error("No se pudo activar la pantalla siempre encendida.");
+    }
+  };
+
+  useEffect(() => {
+    const handleVisibility = async () => {
+      if (document.visibilityState === "visible" && wakeLockActive && !wakeLockRef.current) {
+        try {
+          const nav = navigator as Navigator & {
+            wakeLock?: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> };
+          };
+          if (nav.wakeLock) {
+            wakeLockRef.current = await nav.wakeLock.request("screen");
+          }
+        } catch {}
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      wakeLockRef.current?.release().catch(() => {});
+    };
+  }, [wakeLockActive]);
+
+  const handleTestRing = async () => {
+    if (testingRing) return;
+    setTestingRing(true);
+    try {
+      const res = await api.post<{ scheduled: boolean; message?: string }>("/citofonia/test-push", {});
+      if (res.scheduled) {
+        toast.success(res.message || "Bloquea tu pantalla ahora — recibirás 3 pulsos de prueba en 4 segundos.", {
+          duration: 6000,
+        });
+      } else {
+        toast.warning(res.message || "Activa primero las notificaciones push desde Inicio.");
+      }
+    } catch {
+      toast.error("No se pudo enviar la prueba de timbre.");
+    } finally {
+      setTimeout(() => setTestingRing(false), 5000);
+    }
+  };
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -552,6 +626,34 @@ export default function CitofoniaPage() {
                  )}
               </div>
              )}
+
+             {/* PWA CALL UTILITIES: TEST RING + PORTERÍA WAKE LOCK */}
+             <div className="flex items-center gap-2.5 flex-wrap">
+               <button
+                 type="button"
+                 onClick={handleTestRing}
+                 disabled={testingRing}
+                 className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-primary-light border border-border text-text text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+               >
+                 <BellRing size={15} className={testingRing ? "animate-bounce text-[#009df2]" : "text-[#009df2]"} />
+                 <span>{testingRing ? "Bloquea tu pantalla (4s)…" : "Probar timbre"}</span>
+               </button>
+
+               {canUseDialer && (
+                 <button
+                   type="button"
+                   onClick={toggleWakeLock}
+                   className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl border text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer ${
+                     wakeLockActive
+                       ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-500"
+                       : "bg-primary-light border-border text-text"
+                   }`}
+                 >
+                   <Sun size={15} className={wakeLockActive ? "animate-spin" : "text-amber-500"} style={wakeLockActive ? { animationDuration: "6s" } : undefined} />
+                   <span>{wakeLockActive ? "Pantalla activa ON" : "Pantalla activa"}</span>
+                 </button>
+               )}
+             </div>
 
              {/* QUICK CONTACTS */}
              <div className="grid grid-cols-2 gap-4 text-text">

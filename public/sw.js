@@ -43,6 +43,7 @@ self.addEventListener("push", (event) => {
   const room = payloadData.room;
   const callerName = payloadData.callerName;
   const isCall = Boolean(room);
+  const isTestCall = payloadData.tipo === "TEST_CALL";
 
   const title = data.title || (isCall ? "Llamada de Citofonía" : "ConjuntOS®");
   const body = data.body || (isCall ? "Tienes una llamada entrante de portería." : "Tienes una nueva notificación.");
@@ -59,7 +60,7 @@ self.addEventListener("push", (event) => {
     body,
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
-    vibrate: isCall
+    vibrate: isCall || isTestCall
       ? [700, 350, 700, 350, 700]
       : [220, 100, 220],
     tag: uniqueTag,
