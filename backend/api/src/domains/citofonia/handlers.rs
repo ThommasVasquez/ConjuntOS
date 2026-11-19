@@ -426,6 +426,7 @@ async fn call(
             .await?;
 
         let web_payload_bytes = message.to_web_json_bytes();
+        let mut delivered_web_subs: Vec<PushSubscriptionInfo> = Vec::new();
         for (endpoint, p256dh, auth) in subs {
             let sub_info = PushSubscriptionInfo {
                 endpoint: endpoint.clone(),
@@ -433,7 +434,10 @@ async fn call(
                 auth,
             };
             match state.push_sender.send(&sub_info, &web_payload_bytes).await {
-                Ok(()) => count += 1,
+                Ok(()) => {
+                    count += 1;
+                    delivered_web_subs.push(sub_info);
+                }
                 Err(e) => {
                     tracing::warn!(endpoint = %endpoint, error = ?e, "web-push send failed");
                 }
@@ -448,17 +452,66 @@ async fn call(
             .load(&mut conn)
             .await?;
 
+        let mut delivered_native: Vec<NativePushTokenInfo> = Vec::new();
         for (platform, token) in native_tokens {
             let info = NativePushTokenInfo {
                 platform: platform.clone(),
                 token: token.clone(),
             };
             match state.native_push_sender.send(&info, &message).await {
-                Ok(()) => count += 1,
+                Ok(()) => {
+                    count += 1;
+                    delivered_native.push(info);
+                }
                 Err(e) => {
                     tracing::warn!(platform = %platform, error = ?e, "native push send failed");
                 }
             }
+        }
+
+        // Multi-pulse PWA ringing: iOS PWAs play a single OS alert per Web Push
+        // (Apple does not expose CallKit to PWAs). Send 3 follow-up pulses at
+        // 5s / 10s / 15s so the locked phone rings & vibrates repeatedly until
+        // the recipient answers (GET /citofonia/token) or the caller cancels
+        // (POST /citofonia/cancel).
+        if count > 0 {
+            let mut cancel_rx = state.register_ringing_call(room.clone());
+            let bg_state = state.clone();
+            let bg_room = room.clone();
+            let bg_caller = caller_name.clone();
+            tokio::spawn(async move {
+                for pulse in 2u8..=4u8 {
+                    tokio::select! {
+                        _ = &mut cancel_rx => {
+                            break;
+                        }
+                        _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {}
+                    }
+
+                    let pulse_msg = PushMessage {
+                        title: "Llamada Entrante".to_string(),
+                        body: format!("Llamada de citofonía desde {bg_caller} (timbrando...)"),
+                        data: serde_json::json!({
+                            "url": "/citofonia",
+                            "room": bg_room,
+                            "callerName": bg_caller,
+                            "pulse": pulse,
+                        }),
+                    };
+                    let pulse_bytes = pulse_msg.to_web_json_bytes();
+                    for sub_info in &delivered_web_subs {
+                        if let Err(e) = bg_state.push_sender.send(sub_info, &pulse_bytes).await {
+                            tracing::warn!(endpoint = %sub_info.endpoint, pulse, error = ?e, "citofonia pulse web-push failed");
+                        }
+                    }
+                    for native_info in &delivered_native {
+                        if let Err(e) = bg_state.native_push_sender.send(native_info, &pulse_msg).await {
+                            tracing::warn!(platform = %native_info.platform, pulse, error = ?e, "citofonia pulse native-push failed");
+                        }
+                    }
+                }
+                bg_state.stop_ringing_call(&bg_room);
+            });
         }
 
         count
@@ -531,6 +584,9 @@ async fn citofonia_token(
         _ => return Err(ApiError::Forbidden),
     }
 
+    // Recipient is joining the call — stop any pending push ringing pulses.
+    state.stop_ringing_call(&q.room);
+
     let metadata = serde_json::json!({
         "nombre": user.nombre,
         "rol": user.rol.as_str(),
@@ -575,6 +631,9 @@ pub async fn cancel_call(
         Some(cid) if cid == user.conjunto_id => {}
         _ => return Err(ApiError::Forbidden),
     }
+
+    // Call was cancelled by caller — stop any pending push ringing pulses.
+    state.stop_ringing_call(&req.room);
 
     state
         .ws_hub

@@ -217,18 +217,25 @@ async fn emitir(
         .get_result(&mut conn)
         .await?;
 
-    let _ = crate::domains::notificaciones::repo::create_notificacion(
+    let multa_titulo = "⚠️ Nueva multa registrada";
+    let multa_mensaje = format!(
+        "Se te impuso una multa de ${}: {}",
+        req.monto,
+        req.motivo.trim()
+    );
+    let _ = crate::domains::notificaciones::repo::create_notificacion_with_push(
         &mut conn,
+        &state,
         user.conjunto_id,
         req.usuario_id,
         "multa",
-        "Nueva multa",
-        &format!(
-            "Se te impuso una multa de ${}: {}",
-            req.monto,
-            req.motivo.trim()
-        ),
-        None,
+        multa_titulo,
+        &multa_mensaje,
+        serde_json::json!({
+            "url": "/pagos",
+            "tipo": "MULTA",
+            "multaId": multa.id,
+        }),
     )
     .await;
 

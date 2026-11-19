@@ -315,5 +315,29 @@ async fn admin_send(
             },
         )
         .await;
+
+    // Wake resident via Web Push / Native Push when app is closed or screen is off.
+    let push_preview = if dto.mensaje == "[audio]" {
+        "Te enviaron una nota de voz de Administración.".to_string()
+    } else {
+        dto.mensaje.chars().take(120).collect::<String>()
+    };
+    let push_msg = crate::services::push::PushMessage {
+        title: "💬 Mensaje de Administración".to_string(),
+        body: push_preview,
+        data: serde_json::json!({
+            "url": "/inicio",
+            "tipo": "CHAT",
+        }),
+    };
+    let _ = crate::domains::notificaciones::repo::send_push_to_users(
+        &mut conn,
+        &state,
+        user.conjunto_id,
+        &[usuario_id],
+        &push_msg,
+    )
+    .await;
+
     Ok(Json(dto))
 }
