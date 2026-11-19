@@ -1,7 +1,7 @@
 // ─── ConjuntOS Service Worker ─────────────────────────────────────────────────
-// Version: 1.5.0
-// Background Web Push (app closed + screen locked) with sound, vibration and
-// immediate activation across iOS PWA (APNs Web Push) and Android (FCM).
+// Version: 1.6.0
+// Background Web Push (app closed + screen locked) with phone-like ring
+// vibration cadence and immediate activation across iOS PWA and Android.
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -60,7 +60,7 @@ self.addEventListener("push", (event) => {
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
     vibrate: isCall
-      ? [300, 120, 300, 120, 300, 120, 500]
+      ? [700, 350, 700, 350, 700]
       : [220, 100, 220],
     tag: uniqueTag,
     renotify: true,
@@ -108,6 +108,17 @@ self.addEventListener("notificationclick", (event) => {
   const data = event.notification.data || {};
   const urlToOpen = data.url || "/inicio";
   const room = data.room;
+
+  // Dismiss any remaining stacked pulses from the same call
+  if (room) {
+    event.waitUntil(
+      self.registration.getNotifications().then((notifs) => {
+        for (const n of notifs) {
+          if (n.data && n.data.room === room) n.close();
+        }
+      })
+    );
+  }
 
   if (event.action === "close") {
     return;

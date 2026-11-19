@@ -507,23 +507,23 @@ async fn call(
             }
         }
 
-        // Multi-pulse PWA ringing: iOS PWAs play a single OS alert per Web Push
-        // (Apple does not expose CallKit to PWAs). Send 3 follow-up pulses at
-        // 5s / 10s / 15s so the locked phone rings & vibrates repeatedly until
-        // the recipient answers (GET /citofonia/token) or the caller cancels
-        // (POST /citofonia/cancel).
+        // Multi-pulse PWA ringing: iOS PWAs fire one system haptic/alert per
+        // Web Push (Apple does not expose CallKit or `vibrate` patterns to PWAs).
+        // Send 5 follow-up pulses every 2.5s (6 total over ~12.5s) so the locked
+        // phone vibrates rhythmically like an incoming call until the recipient
+        // answers (GET /citofonia/token) or the caller cancels (POST /citofonia/cancel).
         if count > 0 {
             let mut cancel_rx = state.register_ringing_call(room.clone());
             let bg_state = state.clone();
             let bg_room = room.clone();
             let bg_caller = caller_name.clone();
             tokio::spawn(async move {
-                for pulse in 2u8..=4u8 {
+                for pulse in 2u8..=6u8 {
                     tokio::select! {
                         _ = &mut cancel_rx => {
                             break;
                         }
-                        _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {}
+                        _ = tokio::time::sleep(std::time::Duration::from_millis(2500)) => {}
                     }
 
                     let pulse_msg = PushMessage {
