@@ -279,10 +279,30 @@ export function CallProvider({ children }: { children: ReactNode }) {
       audioCtxRef.current = new AudioCtx();
     }
     if (audioCtxRef.current.state === "suspended") {
-      audioCtxRef.current.resume();
+      audioCtxRef.current.resume().catch(() => {});
     }
     return audioCtxRef.current;
   };
+
+  // Unlock Web Audio on the user's very first tap so incoming-call ringtones
+  // are never silently blocked by iOS/Android autoplay policies.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const unlock = () => {
+      const ctx = startAudioContext();
+      if (ctx && ctx.state === "running") {
+        window.removeEventListener("touchstart", unlock);
+        window.removeEventListener("pointerdown", unlock);
+      }
+    };
+    window.addEventListener("touchstart", unlock, { passive: true });
+    window.addEventListener("pointerdown", unlock, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("pointerdown", unlock);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const playRingback = () => {
     const ctx = startAudioContext();
@@ -313,31 +333,68 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const playRingtone = () => {
-    const ctx = startAudioContext();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 600;
-    osc.type = "triangle";
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-
-    let t = ctx.currentTime;
-    for (let i = 0; i < 15; i++) {
-      // Ring-ring ringtone
-      gain.gain.setValueAtTime(0.12, t);
-      gain.gain.setValueAtTime(0, t + 0.5);
-      gain.gain.setValueAtTime(0.12, t + 0.7);
-      gain.gain.setValueAtTime(0, t + 1.2);
-      t += 3.0;
+    if (activeToneRef.current) {
+      activeToneRef.current.stop();
     }
-    osc.start();
+
+    // Continuous repeating vibration while ringing (Android / supported PWAs)
+    const pulseVibrate = () => {
+      try {
+        if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+          navigator.vibrate([450, 180, 450]);
+        }
+      } catch {}
+    };
+    pulseVibrate();
+    const vibInterval = setInterval(pulseVibrate, 2400);
+
+    const ctx = startAudioContext();
+    let osc1: OscillatorNode | null = null;
+    let osc2: OscillatorNode | null = null;
+    let gain: GainNode | null = null;
+
+    if (ctx) {
+      try {
+        osc1 = ctx.createOscillator();
+        osc2 = ctx.createOscillator();
+        gain = ctx.createGain();
+        osc1.frequency.value = 523.25; // C5
+        osc2.frequency.value = 659.25; // E5 harmonious dual-tone intercom ring
+        osc1.type = "triangle";
+        osc2.type = "sine";
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+
+        let t = ctx.currentTime;
+        for (let i = 0; i < 15; i++) {
+          // Ring-ring cadence with clear audible volume
+          gain.gain.setValueAtTime(0.32, t);
+          gain.gain.setValueAtTime(0, t + 0.48);
+          gain.gain.setValueAtTime(0.32, t + 0.65);
+          gain.gain.setValueAtTime(0, t + 1.15);
+          t += 2.4;
+        }
+        osc1.start();
+        osc2.start();
+      } catch {}
+    }
+
     activeToneRef.current = {
       stop: () => {
+        clearInterval(vibInterval);
         try {
-          osc.stop();
-          osc.disconnect();
+          if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+            navigator.vibrate(0);
+          }
+        } catch {}
+        try {
+          osc1?.stop();
+          osc2?.stop();
+          osc1?.disconnect();
+          osc2?.disconnect();
+          gain?.disconnect();
         } catch {}
       },
     };
