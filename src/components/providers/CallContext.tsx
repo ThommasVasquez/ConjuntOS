@@ -131,7 +131,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     const registerPush = async () => {
       try {
-        await navigator.serviceWorker.register("/sw.js");
+        const reg = await navigator.serviceWorker.register("/sw.js", {
+          updateViaCache: "none",
+        });
+        reg.update().catch(() => {});
         const registration = await navigator.serviceWorker.ready;
 
         let permission = Notification.permission;
@@ -285,20 +288,34 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   // Unlock Web Audio on the user's very first tap so incoming-call ringtones
-  // are never silently blocked by iOS/Android autoplay policies.
+  // are never silently blocked by iOS/Android autoplay policies. iOS WebKit
+  // requires playing a 1-sample silent buffer synchronously inside a gesture.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const unlock = () => {
       const ctx = startAudioContext();
-      if (ctx && ctx.state === "running") {
-        window.removeEventListener("touchstart", unlock);
-        window.removeEventListener("pointerdown", unlock);
-      }
+      if (!ctx) return;
+      try {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+      } catch {}
+      ctx.resume().then(() => {
+        if (ctx.state === "running") {
+          window.removeEventListener("touchstart", unlock);
+          window.removeEventListener("touchend", unlock);
+          window.removeEventListener("pointerdown", unlock);
+        }
+      }).catch(() => {});
     };
     window.addEventListener("touchstart", unlock, { passive: true });
+    window.addEventListener("touchend", unlock, { passive: true });
     window.addEventListener("pointerdown", unlock, { passive: true });
     return () => {
       window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("touchend", unlock);
       window.removeEventListener("pointerdown", unlock);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,5 +1,5 @@
 // ─── ConjuntOS Service Worker ─────────────────────────────────────────────────
-// Version: 1.4.0
+// Version: 1.5.0
 // Background Web Push (app closed + screen locked) with sound, vibration and
 // immediate activation across iOS PWA (APNs Web Push) and Android (FCM).
 
@@ -47,17 +47,22 @@ self.addEventListener("push", (event) => {
   const title = data.title || (isCall ? "Llamada de Citofonía" : "ConjuntOS®");
   const body = data.body || (isCall ? "Tienes una llamada entrante de portería." : "Tienes una nueva notificación.");
 
+  // IMPORTANT (iOS Safari / WebKit): WebKit ignores `renotify: true` and
+  // silently replaces any existing notification with the same `tag` WITHOUT
+  // playing a sound or vibrating. Always use a unique `tag` per call/alert so
+  // iOS fires a brand-new UNNotificationRequest with sound & haptic every time.
+  const uniqueTag = isCall
+    ? `citofonia-${room}-${Date.now()}`
+    : (payloadData.tag || `conjuntos-${Date.now()}`);
+
   const options = {
     body,
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
-    silent: false, // Force OS notification sound & vibration when screen is locked
     vibrate: isCall
       ? [300, 120, 300, 120, 300, 120, 500]
       : [220, 100, 220],
-    tag: isCall
-      ? "citofonia-incoming-call"
-      : (payloadData.tag || `conjuntos-${Date.now()}`),
+    tag: uniqueTag,
     renotify: true,
     requireInteraction: isCall || payloadData.tipo === "EMERGENCIA",
     timestamp: Date.now(),
@@ -77,8 +82,12 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     (async () => {
-      // If a tab is already open (foreground push), ring in-app immediately so the
-      // user does not have to tap the notification to get the incoming-call HUD.
+      // Show the OS notification FIRST so iOS WebKit always registers the push
+      // as user-visible immediately (before any client lookup).
+      await self.registration.showNotification(title, options);
+
+      // If a tab is already open (foreground push), also ring in-app immediately
+      // so the user gets the incoming-call HUD without tapping the banner.
       if (isCall) {
         const windowClients = await self.clients.matchAll({
           type: "window",
@@ -88,7 +97,6 @@ self.addEventListener("push", (event) => {
           client.postMessage({ type: "INCOMING_CALL", room, callerName });
         }
       }
-      await self.registration.showNotification(title, options);
     })()
   );
 });

@@ -273,7 +273,10 @@ function HomeResidente() {
         if (p === "granted") {
           toast.success("🔔 ¡Alertas push activadas con sonido y vibración!");
           if ("serviceWorker" in navigator) {
-            await navigator.serviceWorker.register("/sw.js");
+            const registered = await navigator.serviceWorker.register("/sw.js", {
+              updateViaCache: "none",
+            });
+            registered.update().catch(() => {});
             const reg = await navigator.serviceWorker.ready;
             const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
             if (vapid && "pushManager" in reg) {
