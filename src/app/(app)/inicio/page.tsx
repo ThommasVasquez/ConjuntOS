@@ -107,6 +107,26 @@ function HomeResidente() {
   const [isLoadingAnuncios, setIsLoadingAnuncios] = useState(true);
   const [userData, setUserData] = useState<ProfileResponse | null>(null);
   const [activeAsamblea, setActiveAsamblea] = useState<{ id: string; titulo: string; descripcion?: string } | null>(null);
+  const [activeEncuestas, setActiveEncuestas] = useState<Array<{
+    id: string;
+    titulo: string;
+    descripcion: string | null;
+    multiple: boolean;
+    anonima: boolean;
+    cerrada: boolean;
+    yaVote: boolean;
+    total: number;
+    resultados: Array<{ opcionId: string; texto: string; votos: number }>;
+  }>>([]);
+
+  const fetchActiveEncuestas = useCallback(async () => {
+    try {
+      const data = await api.get<typeof activeEncuestas>('/encuestas');
+      setActiveEncuestas(Array.isArray(data) ? data.filter((e) => !e.cerrada) : []);
+    } catch {
+      /* silently ignore */
+    }
+  }, []);
 
   const fetchAnuncios = useCallback(async () => {
     try {
@@ -377,6 +397,22 @@ function HomeResidente() {
   }, []);
 
   useWsSubscription('asamblea', () => fetchActiveAsamblea());
+  useWsSubscription('encuesta', (event) => {
+    if (event.action === 'resync') {
+      fetchActiveEncuestas();
+      return;
+    }
+    const dto = event.payload as (typeof activeEncuestas)[number] | undefined;
+    if (!dto?.id) {
+      fetchActiveEncuestas();
+      return;
+    }
+    setActiveEncuestas((prev) => {
+      if (dto.cerrada) return prev.filter((e) => e.id !== dto.id);
+      const exists = prev.some((e) => e.id === dto.id);
+      return exists ? prev.map((e) => (e.id === dto.id ? dto : e)) : [dto, ...prev];
+    });
+  });
 
   useEffect(() => {
     if (user) {
@@ -386,6 +422,7 @@ function HomeResidente() {
       fetchAnuncios();
       fetchAds();
       fetchActiveAsamblea();
+      fetchActiveEncuestas();
       fetchSolicitudesParqueadero();
       fetchCargosRetenidos();
       fetchComunicaciones();
@@ -398,6 +435,7 @@ function HomeResidente() {
     fetchAnuncios,
     fetchAds,
     fetchActiveAsamblea,
+    fetchActiveEncuestas,
     fetchSolicitudesParqueadero,
     fetchComunicaciones,
     fetchCargosRetenidos,
@@ -411,6 +449,7 @@ function HomeResidente() {
       fetchNotificaciones(),
       fetchComunicaciones(),
       fetchActiveAsamblea(),
+      fetchActiveEncuestas(),
       fetchSolicitudesParqueadero(),
       fetchCargosRetenidos(),
     ]);
@@ -866,12 +905,89 @@ function HomeResidente() {
            <h3 className="text-text font-display text-lg font-bold tracking-tight">Novedades</h3>
            <span className="text-text text-[10px] font-bold uppercase tracking-widest">Hoy</span>
          </div>
+
+         {/* ENCUESTAS ACTIVAS EN NOVEDADES */}
+         {activeEncuestas.map((enc) => {
+           const sortedResults = [...(enc.resultados || [])].sort((a, b) => b.votos - a.votos);
+           const visibleOptions = sortedResults.slice(0, 4);
+           const remainingCount = Math.max(0, sortedResults.length - visibleOptions.length);
+           return (
+             <div
+               key={`encuesta-${enc.id}`}
+               className="liquid-glass-card rounded-[28px] p-5 border border-teal-500/30 shadow-sm flex flex-col gap-3.5"
+             >
+               <div className="flex items-start justify-between gap-3">
+                 <div className="flex items-center gap-2.5 min-w-0">
+                   <div className="w-9 h-9 rounded-2xl bg-teal-500/15 text-teal-500 flex items-center justify-center shrink-0">
+                     <BarChart3 size={18} />
+                   </div>
+                   <div className="min-w-0">
+                     <div className="flex items-center gap-1.5">
+                       <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-teal-500">
+                         Encuesta en vivo
+                       </span>
+                     </div>
+                     <h4 className="text-sm font-display font-bold text-text leading-snug mt-0.5">
+                       {enc.titulo}
+                     </h4>
+                   </div>
+                 </div>
+                 <span className="text-[10px] font-bold text-text/60 shrink-0 bg-text/5 px-2.5 py-1 rounded-full">
+                   {enc.total} {enc.total === 1 ? "voto" : "votos"}
+                 </span>
+               </div>
+
+               {visibleOptions.length > 0 && (
+                 <div className="flex flex-col gap-2">
+                   {visibleOptions.map((r, idx) => {
+                     const pct = enc.total > 0 ? Math.round((r.votos / enc.total) * 100) : 0;
+                     const isLeader = idx === 0 && r.votos > 0;
+                     return (
+                       <div key={r.opcionId} className="flex flex-col gap-1">
+                         <div className="flex items-center justify-between gap-2 text-xs">
+                           <span className={`truncate ${isLeader ? "font-bold text-text" : "text-text/80"}`}>
+                             {isLeader ? "🏆 " : ""}{r.texto}
+                           </span>
+                           <span className={`shrink-0 tabular-nums ${isLeader ? "font-black text-teal-500" : "font-bold text-text/70"}`}>
+                             {pct}% ({r.votos})
+                           </span>
+                         </div>
+                         <div className="h-2 rounded-full bg-text/10 overflow-hidden">
+                           <div
+                             className={`h-full rounded-full transition-all duration-500 ${isLeader ? "bg-teal-500" : "bg-accent/70"}`}
+                             style={{ width: `${pct}%` }}
+                           />
+                         </div>
+                       </div>
+                     );
+                   })}
+                   {remainingCount > 0 && (
+                     <p className="text-[10px] text-text/50 font-medium">
+                       +{remainingCount} {remainingCount === 1 ? "opción más" : "opciones más"} en la encuesta
+                     </p>
+                   )}
+                 </div>
+               )}
+
+               <button
+                 type="button"
+                 onClick={() => router.push('/encuestas')}
+                 className="w-full py-2.5 px-4 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
+               >
+                 <span>{enc.yaVote ? "Ver encuesta y resultados" : "Ir a votar en la encuesta"}</span>
+                 <ArrowRight size={14} />
+               </button>
+             </div>
+           );
+         })}
+
          {isLoadingAnuncios ? (
            <div className="py-10 flex flex-col items-center justify-center gap-3">
              <div className="w-8 h-8 rounded-full bg-text/10 animate-pulse" />
              <span className="text-[10px] font-bold text-text uppercase tracking-widest animate-pulse">Cargando novedades...</span>
            </div>
-         ) : anuncios.length === 0 ? (
+         ) : anuncios.length === 0 && activeEncuestas.length === 0 ? (
            <div className="py-10 flex flex-col items-center justify-center gap-3">
              <Megaphone size={32} className="text-text" />
              <span className="text-[10px] font-bold text-text uppercase tracking-widest">Sin novedades por ahora</span>

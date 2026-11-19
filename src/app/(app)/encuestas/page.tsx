@@ -166,13 +166,19 @@ export default function EncuestasPage() {
 
             {mostrarResultados ? (
               <div className="flex flex-col gap-2">
-                {e.resultados.map((r) => {
+                {[...e.resultados]
+                  .sort((a, b) => b.votos - a.votos)
+                  .map((r, idx) => {
                   const pct = e.total > 0 ? Math.round((r.votos / e.total) * 100) : 0;
+                  const isLeader = idx === 0 && r.votos > 0;
                   return (
                     <div key={r.opcionId} className="flex flex-col gap-1">
-                      <div className="flex justify-between text-xs text-text"><span>{r.texto}</span><span className="font-bold">{pct}% ({r.votos})</span></div>
+                      <div className="flex justify-between text-xs text-text">
+                        <span className={isLeader ? "font-bold" : ""}>{isLeader ? "🏆 " : ""}{r.texto}</span>
+                        <span className="font-bold">{pct}% ({r.votos})</span>
+                      </div>
                       <div className="h-2.5 rounded-full bg-text/10 overflow-hidden">
-                        <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                        <div className={`h-full rounded-full transition-all duration-500 ${isLeader ? "bg-teal-500" : "bg-accent"}`} style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   );
