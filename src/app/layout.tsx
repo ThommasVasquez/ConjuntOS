@@ -67,6 +67,7 @@ export const viewport: Viewport = {
 };
 
 import { Providers } from "@/components/Providers";
+import SplashScreen from "@/components/shell/SplashScreen";
 import { Toaster } from "sonner";
 
 export default function RootLayout({
@@ -87,12 +88,14 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-startup-image" href="/icons/splash-ios.png" />
 
         {/* Favicon con detección automática de modo oscuro/claro */}
         <link rel="icon" type="image/svg+xml" href="/solo-light.svg" media="(prefers-color-scheme: light)" />
         <link rel="icon" type="image/svg+xml" href="/solo-dark.svg"  media="(prefers-color-scheme: dark)" />
       </head>
       <body className="antialiased selection:bg-primary/20 min-h-dvh">
+        <SplashScreen />
         <Providers>
           {children}
           <Toaster 
