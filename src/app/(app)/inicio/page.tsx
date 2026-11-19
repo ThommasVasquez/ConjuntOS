@@ -24,6 +24,7 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import PullToRefreshLogo from "@/components/shell/PullToRefreshLogo";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
 import { isKeepAliveTab, switchKeepAliveTab } from "@/components/shell/AppShell";
+import { useNavFeedback } from "@/hooks/useNavFeedback";
 import ConjuntoSwitcher from "@/components/shell/ConjuntoSwitcher";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import ContentActionModal from "@/components/modals/ContentActionModal";
@@ -754,6 +755,7 @@ function HomeResidente() {
                   if (isKeepAliveTab(cat.path)) {
                     switchKeepAliveTab(cat.path);
                   } else {
+                    useNavFeedback.getState().setPendingPath(cat.path);
                     router.push(cat.path);
                   }
                 }}

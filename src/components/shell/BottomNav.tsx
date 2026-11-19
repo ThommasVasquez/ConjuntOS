@@ -7,6 +7,7 @@ import { DollarSign, Building2, Home, Map, Package, Phone, Ticket, User, Users, 
 
 import { useAuth } from "@/hooks/useAuth";
 import { canAccess } from "@/lib/permissions";
+import { useNavFeedback } from "@/hooks/useNavFeedback";
 import { isKeepAliveTab, switchKeepAliveTab } from "./AppShell";
 
 // BUILD_REVISION: 1.3.0 - Citador de Concejo
@@ -14,6 +15,8 @@ export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const pendingPath = useNavFeedback((s) => s.pendingPath);
+  const setPendingPath = useNavFeedback((s) => s.setPendingPath);
   const role = user?.rol;
 
   // Custom icons mapping based on the role
@@ -105,7 +108,8 @@ export default function BottomNav() {
         className="liquid-glass rounded-[35px] w-full flex justify-between items-center p-2.5 relative shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-2xl"
       >
         {tabs.map((tab) => {
-          const isActive = pathname.includes(tab.path);
+          const activeRoute = pendingPath ?? pathname;
+          const isActive = activeRoute.includes(tab.path);
           const Icon = tab.icon;
           
           return (
@@ -115,9 +119,16 @@ export default function BottomNav() {
               prefetch={true}
               onTouchStart={() => router.prefetch(tab.path)}
               onClick={(e) => {
+                if (pathname === tab.path) {
+                  e.preventDefault();
+                  return;
+                }
                 if (isKeepAliveTab(tab.path)) {
                   e.preventDefault();
                   switchKeepAliveTab(tab.path);
+                } else {
+                  // Immediate visual feedback + tailored skeleton while route loads
+                  setPendingPath(tab.path);
                 }
               }}
               className={`relative flex items-center justify-center transition-all duration-200 rounded-full h-[52px] group

@@ -3,8 +3,10 @@
 import React, { ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import BottomNav from "./BottomNav";
+import PageSkeleton from "./PageSkeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useHasInternet } from "@/hooks/useHasInternet";
+import { useNavFeedback } from "@/hooks/useNavFeedback";
 import InicioDashboard from "@/app/(app)/inicio/page";
 import CitofoniaPage from "@/app/(app)/citofonia/page";
 import VisitantesPage from "@/app/(app)/visitantes/page";
@@ -66,6 +68,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const user = useAuth((s) => s.user);
   const authOffline = useAuth((s) => s.authOffline);
   const online = useHasInternet();
+  const pendingPath = useNavFeedback((s) => s.pendingPath);
+  const setPendingPath = useNavFeedback((s) => s.setPendingPath);
+
+  // Clear optimistic skeleton the instant the destination route lands
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname, setPendingPath]);
 
   // Track which primary tabs have been mounted so they stay alive in memory
   // for 0ms instant tab switching.
@@ -97,6 +106,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   if (authOffline || !online) return <OfflineScreen online={online} />;
 
   const activeIsKeepAlive = isKeepAliveTab(pathname);
+  const isPending = Boolean(pendingPath && pendingPath !== pathname);
 
   return (
     <div className="app-shell flex flex-col relative overflow-hidden">
@@ -112,41 +122,43 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {/* Contenido principal con Keep-Alive Tab Deck para cambio instantáneo (0ms) */}
+      {/* Contenido principal con Keep-Alive Tab Deck + Skeleton inmediato en transiciones */}
       <main 
         ref={containerRef}
         className="flex-1 overflow-y-auto page-content text-text mb-[80px] relative" 
       >
+        {isPending && <PageSkeleton path={pendingPath} />}
+
         {mountedTabs["/inicio"] && (
-          <div className={pathname === "/inicio" ? "block" : "hidden"}>
-            <Suspense fallback={null}>
+          <div className={!isPending && pathname === "/inicio" ? "block" : "hidden"}>
+            <Suspense fallback={<PageSkeleton path="/inicio" />}>
               <InicioDashboard />
             </Suspense>
           </div>
         )}
         {mountedTabs["/citofonia"] && (
-          <div className={pathname === "/citofonia" ? "block" : "hidden"}>
-            <Suspense fallback={null}>
+          <div className={!isPending && pathname === "/citofonia" ? "block" : "hidden"}>
+            <Suspense fallback={<PageSkeleton path="/citofonia" />}>
               <CitofoniaPage />
             </Suspense>
           </div>
         )}
         {mountedTabs["/visitantes"] && (
-          <div className={pathname === "/visitantes" ? "block" : "hidden"}>
-            <Suspense fallback={null}>
+          <div className={!isPending && pathname === "/visitantes" ? "block" : "hidden"}>
+            <Suspense fallback={<PageSkeleton path="/visitantes" />}>
               <VisitantesPage />
             </Suspense>
           </div>
         )}
         {mountedTabs["/perfil"] && (
-          <div className={pathname === "/perfil" ? "block" : "hidden"}>
-            <Suspense fallback={null}>
+          <div className={!isPending && pathname === "/perfil" ? "block" : "hidden"}>
+            <Suspense fallback={<PageSkeleton path="/perfil" />}>
               <PerfilPage />
             </Suspense>
           </div>
         )}
 
-        {!activeIsKeepAlive && children}
+        {!isPending && !activeIsKeepAlive && children}
       </main>
 
       <BottomNav />
