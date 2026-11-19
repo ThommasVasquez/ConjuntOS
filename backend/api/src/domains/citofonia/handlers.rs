@@ -72,6 +72,8 @@ pub struct CitofoniaTokenDto {
 pub struct VigilanteStatusDto {
     /// True when at least one VIGILANTE in the conjunto has an active WebSocket connection.
     pub vigilante_online: bool,
+    /// True when Administración has incoming citofonía calls enabled.
+    pub admin_llamadas_activo: bool,
 }
 
 pub async fn vigilante_status(
@@ -96,7 +98,12 @@ pub async fn vigilante_status(
             break;
         }
     }
-    Ok(Json(VigilanteStatusDto { vigilante_online: any_online }))
+    let admin_llamadas_activo =
+        crate::domains::admin_stats::is_admin_llamadas_activo(user.conjunto_id);
+    Ok(Json(VigilanteStatusDto {
+        vigilante_online: any_online,
+        admin_llamadas_activo,
+    }))
 }
 
 // ── Peer-ID parsing ──
@@ -371,8 +378,39 @@ async fn call(
     let (api_key, api_secret, url) = livekit_creds(&state)?;
 
     let target = parse_peer_id(&req.target_peer_id);
+    let admin_llamadas_activo =
+        crate::domains::admin_stats::is_admin_llamadas_activo(user.conjunto_id);
+
+    if !admin_llamadas_activo && matches!(target, PeerTarget::Role(_, Rol::Administrador)) {
+        return Err(ApiError::BadRequest(
+            "La administración tiene desactivadas las llamadas entrantes (atención presencial)."
+                .into(),
+        ));
+    }
+
     let mut conn = state.pool.get().await?;
-    let user_ids = resolve_targets(&mut conn, &target, user.conjunto_id).await?;
+    let mut user_ids = resolve_targets(&mut conn, &target, user.conjunto_id).await?;
+
+    // Also block direct calls to an ADMINISTRADOR (by userId or internal extension)
+    // when the admin incoming-calls switch is turned off.
+    if !admin_llamadas_activo && !user_ids.is_empty() {
+        let admin_ids: Vec<Uuid> = usuarios::table
+            .filter(usuarios::conjunto_id.eq(user.conjunto_id))
+            .filter(usuarios::id.eq_any(&user_ids))
+            .filter(usuarios::rol.eq(Rol::Administrador))
+            .select(usuarios::id)
+            .load(&mut conn)
+            .await?;
+        if !admin_ids.is_empty() {
+            user_ids.retain(|id| !admin_ids.contains(id));
+            if user_ids.is_empty() {
+                return Err(ApiError::BadRequest(
+                    "La administración tiene desactivadas las llamadas entrantes (atención presencial)."
+                        .into(),
+                ));
+            }
+        }
+    }
 
     // Ephemeral per-call room; embeds conjunto_id so the callee's token request
     // can be verified against its tenant.

@@ -156,6 +156,7 @@ export default function CitofoniaPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<DirectorioUser[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [adminLlamadasActivo, setAdminLlamadasActivo] = useState(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -163,13 +164,16 @@ export default function CitofoniaPage() {
     fetchData();
   }, []);
 
-  // Poll vigilante online status every 30s while on the CITOFONIA tab
+  // Poll vigilante & admin call availability every 30s while on the CITOFONIA tab
   useEffect(() => {
     if (activeTab !== "CITOFONIA") return;
     const checkStatus = async () => {
       try {
-        const res = await api.get<{ vigilanteOnline: boolean }>('/citofonia/status');
+        const res = await api.get<{ vigilanteOnline: boolean; adminLlamadasActivo?: boolean }>('/citofonia/status');
         setVigilanteOnline(res.vigilanteOnline ?? false);
+        if (typeof res.adminLlamadasActivo === "boolean") {
+          setAdminLlamadasActivo(res.adminLlamadasActivo);
+        }
       } catch {
         setVigilanteOnline(false);
       }
@@ -237,6 +241,12 @@ export default function CitofoniaPage() {
   }
 
   // Real-time WebSocket subscriptions
+  useWsSubscription('admin_status', (e) => {
+    const payload = e.payload as { activoLlamadas?: boolean } | undefined;
+    if (typeof payload?.activoLlamadas === 'boolean') {
+      setAdminLlamadasActivo(payload.activoLlamadas);
+    }
+  });
   useWsSubscription('visita', () => {
     fetchData();
   });
@@ -572,16 +582,34 @@ export default function CitofoniaPage() {
                 </button>
                 ) : (
                 <button
-                  onClick={() => { setDialNum("A"); handleCall("A"); }}
-                  className="p-5 rounded-[28px] bg-primary-light border border-border shadow-sm hover:shadow-md flex flex-col items-center gap-3 active:scale-95 transition-all cursor-pointer"
+                  onClick={() => {
+                    if (!adminLlamadasActivo) {
+                      toast.info("La administración tiene desactivadas las llamadas (atención presencial).");
+                      return;
+                    }
+                    setDialNum("A");
+                    handleCall("A");
+                  }}
+                  className={`p-5 rounded-[28px] bg-primary-light border border-border shadow-sm flex flex-col items-center gap-3 transition-all cursor-pointer ${
+                    adminLlamadasActivo
+                      ? "hover:shadow-md active:scale-95"
+                      : "opacity-55"
+                  }`}
                 >
                    <span
                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                     style={{ backgroundColor: '#8b5cf61a', color: '#8b5cf6' }}
+                     style={{ backgroundColor: adminLlamadasActivo ? '#8b5cf61a' : '#71717a1a', color: adminLlamadasActivo ? '#8b5cf6' : '#71717a' }}
                    >
                      <Users size={24} />
                    </span>
-                   <span className="text-xs font-bold text-center leading-tight">Administración</span>
+                   <div className="flex flex-col items-center gap-0.5">
+                     <span className="text-xs font-bold text-center leading-tight">Administración</span>
+                     {!adminLlamadasActivo && (
+                       <span className="text-[10px] font-medium text-text-muted text-center leading-tight">
+                         Solo presencial
+                       </span>
+                     )}
+                   </div>
                 </button>
                 )}
              </div>

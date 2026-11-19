@@ -17,6 +17,7 @@ use crate::auth::guard;
 use crate::db::enums::Rol;
 use crate::domains::pagos::repo;
 use crate::error::ApiResult;
+use crate::services::ws_hub::WsEvent;
 use crate::state::AppState;
 
 // ── In-memory admin availability status ────────────────────────────────────
@@ -49,6 +50,11 @@ fn read_status(conjunto_id: Uuid) -> AdminStatus {
         .get(&conjunto_id)
         .cloned()
         .unwrap_or_default()
+}
+
+/// Whether Administración in `conjunto_id` currently accepts incoming citofonía calls.
+pub fn is_admin_llamadas_activo(conjunto_id: Uuid) -> bool {
+    read_status(conjunto_id).activo_llamadas
 }
 
 fn update_status(conjunto_id: Uuid, llamadas: Option<bool>, mensajes: Option<bool>) -> AdminStatus {
@@ -167,7 +173,7 @@ pub async fn get_status(
     )
 )]
 pub async fn update_status_handler(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     user: AuthUser,
     Json(payload): Json<StatusUpdate>,
 ) -> ApiResult<Json<StatusResponse>> {
@@ -177,5 +183,20 @@ pub async fn update_status_handler(
         payload.activo_llamadas,
         payload.activo_mensajes,
     );
+    state
+        .ws_hub
+        .publish(
+            user.conjunto_id,
+            WsEvent {
+                domain: "admin_status".into(),
+                action: "updated".into(),
+                payload: Some(serde_json::json!({
+                    "activoLlamadas": status.activo_llamadas,
+                    "activoMensajes": status.activo_mensajes,
+                })),
+                target_user_id: None,
+            },
+        )
+        .await;
     Ok(Json(status.into()))
 }

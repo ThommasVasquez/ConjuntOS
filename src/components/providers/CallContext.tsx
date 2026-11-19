@@ -612,7 +612,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }, 25000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "No se pudo iniciar la llamada.";
-      toast.error(msg.includes("LiveKit") ? "Servicio de voz no disponible." : "No se pudo iniciar la llamada.");
+      if (msg.includes("LiveKit")) {
+        toast.error("Servicio de voz no disponible.");
+      } else if (msg && msg !== "Failed to fetch") {
+        toast.error(msg);
+      } else {
+        toast.error("No se pudo iniciar la llamada.");
+      }
       endCall();
     }
   };
