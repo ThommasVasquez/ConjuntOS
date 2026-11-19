@@ -271,14 +271,9 @@ function HomeResidente() {
         const p = await Notification.requestPermission();
         setNotifPermission(p);
         if (p === "granted") {
-          toast.success("🔔 ¡Notificaciones de escritorio activadas!");
-          try {
-            new Notification("ConjuntOS", {
-              body: "Notificaciones activadas. Recibirás avisos de paquetería y portería en tu pantalla.",
-              icon: "/icons/icon-192.png",
-            });
-          } catch {}
+          toast.success("🔔 ¡Alertas push activadas con sonido y vibración!");
           if ("serviceWorker" in navigator) {
+            await navigator.serviceWorker.register("/sw.js");
             const reg = await navigator.serviceWorker.ready;
             const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
             if (vapid && "pushManager" in reg) {
@@ -290,15 +285,27 @@ function HomeResidente() {
                 for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
                 return outputArray;
               };
-              const sub = await reg.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(vapid),
-              });
-              await api.post('/usuarios/me/push-subscriptions', sub);
+              let sub = await reg.pushManager.getSubscription();
+              if (!sub) {
+                sub = await reg.pushManager.subscribe({
+                  userVisibleOnly: true,
+                  applicationServerKey: urlBase64ToUint8Array(vapid),
+                });
+              }
+              await api.post('/usuarios/me/push-subscriptions', sub.toJSON());
             }
+            try {
+              await reg.showNotification("ConjuntOS®", {
+                body: "Notificaciones activadas. Recibirás alertas con sonido y vibración incluso con la pantalla apagada.",
+                icon: "/icons/icon-192.png",
+                badge: "/icons/icon-192.png",
+                silent: false,
+                vibrate: [220, 100, 220],
+              } as NotificationOptions);
+            } catch {}
           }
         } else if (p === "denied") {
-          toast.error("Las notificaciones están bloqueadas en tu navegador. Puedes activarlas desde el candado de la barra de direcciones.");
+          toast.error("Las notificaciones están bloqueadas. Actívalas en los ajustes del navegador o del teléfono.");
         }
       } catch {
         /* ignore */

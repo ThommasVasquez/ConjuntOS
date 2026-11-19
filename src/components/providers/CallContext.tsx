@@ -131,7 +131,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     const registerPush = async () => {
       try {
-        const registration = await navigator.serviceWorker.register("/sw.js");
+        await navigator.serviceWorker.register("/sw.js");
+        const registration = await navigator.serviceWorker.ready;
 
         let permission = Notification.permission;
         if (permission !== "granted") {
@@ -168,7 +169,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         // while the browser keeps its subscription; without re-sending it the
         // backend has nobody to push and the incoming call never reaches the
         // resident. The endpoint upserts by endpoint, so this is idempotent.
-        await api.post('/usuarios/me/push-subscriptions', subscription);
+        await api.post('/usuarios/me/push-subscriptions', subscription.toJSON());
       } catch (err) {
         console.error("Error al registrar notificaciones push:", err);
       }

@@ -104,6 +104,15 @@ impl PushSender for WebPushSender {
             for (name, value) in parts.headers.iter() {
                 rb = rb.header(name.as_str(), value.as_bytes());
             }
+            // RFC 8030: `Urgency: high` + `TTL` instruct Apple APNs Web Push and
+            // Google FCM (Doze mode) to wake locked/closed devices immediately
+            // with sound and vibration instead of throttling until screen-on.
+            if !parts.headers.contains_key("urgency") {
+                rb = rb.header("Urgency", "high");
+            }
+            if !parts.headers.contains_key("ttl") {
+                rb = rb.header("TTL", "86400");
+            }
             let resp = rb
                 .body(body)
                 .send()

@@ -1,67 +1,89 @@
 // ─── ConjuntOS Service Worker ─────────────────────────────────────────────────
-// Version: 1.3.0
-// Always builds absolute URLs using the SW's own scope to prevent cross-origin
-// navigation errors when the app is accessed from preview/staging domains.
+// Version: 1.4.0
+// Background Web Push (app closed + screen locked) with sound, vibration and
+// immediate activation across iOS PWA (APNs Web Push) and Android (FCM).
+
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 /** Returns an absolute URL anchored to this SW's origin, regardless of input. */
 function sameOriginUrl(path) {
   const scope = new URL(self.registration.scope);
-  // If path is already an absolute URL on a different origin, strip to path only
   try {
-    const parsed = new URL(path, scope.origin);
+    const parsed = new URL(path || "/inicio", scope.origin);
     if (parsed.origin !== scope.origin) {
-      // Fallback to citofonia on this origin
-      return new URL("/citofonia", scope.origin).href;
+      return new URL("/inicio", scope.origin).href;
     }
     return parsed.href;
   } catch {
-    return new URL("/citofonia", scope.origin).href;
+    return new URL("/inicio", scope.origin).href;
   }
 }
 
-// ─── Push Handler ─────────────────────────────────────────────────────────────
+// ─── Push Handler (fires even when the PWA is closed and screen is off) ───────
 self.addEventListener("push", (event) => {
   let data = {};
   if (event.data) {
     try {
       data = event.data.json();
-    } catch (e) {
+    } catch {
       data = {
-        title: "Llamada Entrante",
-        body: event.data.text()
+        title: "ConjuntOS®",
+        body: event.data.text(),
       };
     }
   }
 
-  const title = data.title || "Llamada de Citofonía";
-  const room = data.data?.room;
-  const callerName = data.data?.callerName;
+  const payloadData = data.data || {};
+  const room = payloadData.room;
+  const callerName = payloadData.callerName;
+  const isCall = Boolean(room);
+
+  const title = data.title || (isCall ? "Llamada de Citofonía" : "ConjuntOS®");
+  const body = data.body || (isCall ? "Tienes una llamada entrante de portería." : "Tienes una nueva notificación.");
+
   const options = {
-    body: data.body || "Tienes una llamada entrante de citofonía.",
-    icon: "/logo.png",
-    badge: "/solo.svg",
-    vibrate: [200, 100, 200, 100, 200, 100, 400],
-    data: {
-      // Store only the pathname — resolved to correct origin at click time
-      url: data.data?.url || "/citofonia",
-      room: room,
-      callerName: callerName
-    },
-    actions: [
-      { action: "answer", title: "Contestar" },
-      { action: "close", title: "Ignorar" }
-    ],
-    tag: "citofonia-incoming-call",
+    body,
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    silent: false, // Force OS notification sound & vibration when screen is locked
+    vibrate: isCall
+      ? [300, 120, 300, 120, 300, 120, 500]
+      : [220, 100, 220],
+    tag: isCall
+      ? "citofonia-incoming-call"
+      : (payloadData.tag || `conjuntos-${Date.now()}`),
     renotify: true,
-    requireInteraction: true
+    requireInteraction: isCall || payloadData.tipo === "EMERGENCIA",
+    timestamp: Date.now(),
+    data: {
+      url: payloadData.url || (isCall ? "/citofonia" : "/inicio"),
+      room,
+      callerName,
+    },
   };
+
+  if (isCall) {
+    options.actions = [
+      { action: "answer", title: "Contestar" },
+      { action: "close", title: "Ignorar" },
+    ];
+  }
 
   event.waitUntil(
     (async () => {
       // If a tab is already open (foreground push), ring in-app immediately so the
       // user does not have to tap the notification to get the incoming-call HUD.
-      if (room) {
-        const windowClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      if (isCall) {
+        const windowClients = await self.clients.matchAll({
+          type: "window",
+          includeUncontrolled: true,
+        });
         for (const client of windowClients) {
           client.postMessage({ type: "INCOMING_CALL", room, callerName });
         }
@@ -76,52 +98,61 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   const data = event.notification.data || {};
-  const urlToOpen = data.url || "/citofonia";
+  const urlToOpen = data.url || "/inicio";
   const room = data.room;
 
   if (event.action === "close") {
-    return;  }
+    return;
+  }
 
-  const scopeOrigin = new URL(self.registration.scope).origin;
+  const targetHref = room
+    ? sameOriginUrl(
+        `${urlToOpen}?answerCall=true&room=${encodeURIComponent(room)}&callerName=${encodeURIComponent(data.callerName || "Portería")}`
+      )
+    : sameOriginUrl(urlToOpen);
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
-      // 1. Una pestaña de citofonía ya abierta
-      for (let client of windowClients) {
-        if (client.url.includes("/citofonia") && "focus" in client) {
-          if (room) {
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (windowClients) => {
+      const selfUrl = new URL(self.registration.scope);
+
+      // 1. Existing tab on /citofonia for calls
+      if (room) {
+        for (const client of windowClients) {
+          if (client.url.includes("/citofonia") && "focus" in client) {
             client.postMessage({
               type: "ANSWER_CALL",
               room,
-              callerName: data.callerName,              redirectToCallPage: true
+              callerName: data.callerName,
+              redirectToCallPage: true,
             });
+            return client.focus();
           }
-          return client.focus();
         }
       }
 
-      // 2. Cualquier pestaña de la aplicación abierta
-      const selfUrl = new URL(self.registration.scope);
-      for (let client of windowClients) {
+      // 2. Any open tab on the same origin
+      for (const client of windowClients) {
         const clientUrl = new URL(client.url);
         if (clientUrl.origin === selfUrl.origin && "focus" in client) {
           if (room) {
             client.postMessage({
               type: "ANSWER_CALL",
               room,
-              callerName: data.callerName,              redirectToCallPage: true
+              callerName: data.callerName,
+              redirectToCallPage: true,
             });
+          } else if ("navigate" in client && clientUrl.pathname !== new URL(targetHref).pathname) {
+            try {
+              await client.navigate(targetHref);
+            } catch {}
           }
           return client.focus();
         }
       }
 
-      // 3. Sin pestaña abierta: abrir una nueva con los datos de la sala
+      // 3. App was closed: open a new window at the destination
       if (clients.openWindow) {
-        let targetUrl = urlToOpen;
-        if (room) {
-          targetUrl = `${urlToOpen}?answerCall=true&room=${encodeURIComponent(room)}&callerName=${encodeURIComponent(data.callerName || "Portería")}`;
-        }        return clients.openWindow(targetUrl);
+        return clients.openWindow(targetHref);
       }
     })
   );
