@@ -8,7 +8,7 @@ import { QR_BANNER_TARGET_URL } from "@/lib/qr-config";
  * Public paths are allowed without auth; everything else redirects to /login.
  */
 
-const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos", "/qr", "/instalar"];
+const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos", "/qr"];
 
 // Landing page moved to separate project (landing/).
 // Root "/" now redirects to /login.
@@ -16,6 +16,11 @@ const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/protecc
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const session = req.cookies.get("ec_session")?.value;
+
+  // Redirect /instalar to the public landing install guide on conjuntos.app
+  if (pathname === "/instalar" || pathname === "/instalar/") {
+    return NextResponse.redirect("https://conjuntos.app/instalar", 302);
+  }
 
   // Dynamic QR banner redirect — 302 with no-store so reprogramming takes effect immediately
   if (pathname === "/qr" || pathname === "/qr/") {
