@@ -115,6 +115,7 @@ text_enum!(TipoAnuncio {
     Urgente => "URGENTE",
     Mantenimiento => "MANTENIMIENTO",
     Evento => "EVENTO",
+    Conjuntos => "CONJUNTOS",
 });
 
 text_enum!(CatDoc {

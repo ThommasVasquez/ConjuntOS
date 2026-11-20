@@ -5,7 +5,7 @@ import Image from "next/image";
 import {
   Building2, Plus, FileText, ShieldCheck, MapPin,
   User, Calendar, Layers, Upload, Edit3, Home, Grid, ToggleLeft, ToggleRight,
-  UserPlus, Key, Mail, Phone, CheckCircle2, X, Search, Check
+  UserPlus, Key, Mail, Phone, CheckCircle2, X, Search, Check, Megaphone, Trash2, Send
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,9 +26,81 @@ export default function SuperAdminPage() {
   const [conjuntos, setConjuntos] = useState<ConjuntoDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tab, setTab] = useState<"CREAR" | "LISTAR">("CREAR");
+  const [tab, setTab] = useState<"CREAR" | "LISTAR" | "ANUNCIOS">("CREAR");
   const [editingConjuntoId, setEditingConjuntoId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Global ConjuntOS® Announcements (SuperAdmin broadcast)
+  const [globalAnuncios, setGlobalAnuncios] = useState<Array<{
+    id: string;
+    titulo: string;
+    contenido: string;
+    imagenUrl?: string | null;
+    fijado: boolean;
+    publicadoEn: string;
+    conjuntosCount: number;
+  }>>([]);
+  const [loadingGlobalAnuncios, setLoadingGlobalAnuncios] = useState(false);
+  const [publishingGlobal, setPublishingGlobal] = useState(false);
+  const [globalForm, setGlobalForm] = useState({
+    titulo: "",
+    contenido: "",
+    imagenUrl: "",
+    fijado: true,
+  });
+
+  const fetchGlobalAnuncios = async () => {
+    setLoadingGlobalAnuncios(true);
+    try {
+      const data = await api.get<typeof globalAnuncios>("/superadmin/anuncios");
+      setGlobalAnuncios(Array.isArray(data) ? data : []);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoadingGlobalAnuncios(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === "ANUNCIOS" && role === "SUPER_ADMIN") {
+      fetchGlobalAnuncios();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, role]);
+
+  const handlePublishGlobalAnuncio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!globalForm.titulo.trim() || !globalForm.contenido.trim()) {
+      toast.error("Título y contenido son obligatorios");
+      return;
+    }
+    setPublishingGlobal(true);
+    try {
+      const created = await api.post<(typeof globalAnuncios)[number]>("/superadmin/anuncios", {
+        titulo: globalForm.titulo.trim(),
+        contenido: globalForm.contenido.trim(),
+        imagenUrl: globalForm.imagenUrl.trim() || undefined,
+        fijado: globalForm.fijado,
+      });
+      setGlobalAnuncios((prev) => [created, ...prev]);
+      setGlobalForm({ titulo: "", contenido: "", imagenUrl: "", fijado: true });
+      toast.success(`Anuncio oficial de ConjuntOS® publicado en ${created.conjuntosCount} conjunto(s).`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "No se pudo publicar el anuncio global");
+    } finally {
+      setPublishingGlobal(false);
+    }
+  };
+
+  const handleDeleteGlobalAnuncio = async (id: string) => {
+    try {
+      await api.delete(`/superadmin/anuncios/${id}`);
+      setGlobalAnuncios((prev) => prev.filter((a) => a.id !== id));
+      toast.success("Anuncio global eliminado de todos los conjuntos.");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "No se pudo eliminar el anuncio");
+    }
+  };
 
   // Modal State for Assigning Administrator
   const [adminModalConjunto, setAdminModalConjunto] = useState<ConjuntoDto | null>(null);
@@ -428,11 +500,137 @@ export default function SuperAdminPage() {
               : "text-text hover:text-text"
           }`}
         >
-          Ver Registrados ({conjuntos.length})
+          Registrados ({conjuntos.length})
+        </button>
+        <button
+          onClick={() => setTab("ANUNCIOS")}
+          className={`flex-1 py-3 px-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all text-center flex items-center justify-center gap-1.5 ${
+            tab === "ANUNCIOS"
+              ? "bg-[#009df2]/15 text-[#009df2] border border-[#009df2]/30 shadow-md"
+              : "text-text hover:text-text"
+          }`}
+        >
+          <Megaphone size={13} /> ConjuntOS®
         </button>
       </div>
 
-      {tab === "CREAR" ? (
+      {tab === "ANUNCIOS" ? (
+        <div className="flex flex-col gap-6 w-full">
+          <form onSubmit={handlePublishGlobalAnuncio} className="liquid-glass rounded-[32px] p-6 border border-[#009df2]/30 flex flex-col gap-5">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-[#08090d] border border-white/15 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-md">
+                <img src="/icons/conjuntos-post-icon.png" alt="ConjuntOS®" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-base font-display font-bold text-text">Anuncio General de ConjuntOS®</h3>
+                  <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#009df2]/15 text-[#009df2]">
+                    Oficial
+                  </span>
+                </div>
+                <p className="text-xs text-text/60">
+                  Se publicará en el inicio de Novedades de <strong>todos los conjuntos</strong> ({conjuntos.length}) a nombre de ConjuntOS®.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Título del anuncio *</label>
+              <input
+                required
+                type="text"
+                value={globalForm.titulo}
+                onChange={(e) => setGlobalForm({ ...globalForm, titulo: e.target.value })}
+                placeholder="Ej: Nueva actualización disponible en ConjuntOS®"
+                className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-[#009df2]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Contenido *</label>
+              <textarea
+                required
+                rows={4}
+                value={globalForm.contenido}
+                onChange={(e) => setGlobalForm({ ...globalForm, contenido: e.target.value })}
+                placeholder="Escribe el comunicado general para toda la comunidad de ConjuntOS®..."
+                className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-[#009df2] resize-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">URL de imagen (opcional)</label>
+              <input
+                type="url"
+                value={globalForm.imagenUrl}
+                onChange={(e) => setGlobalForm({ ...globalForm, imagenUrl: e.target.value })}
+                placeholder="https://..."
+                className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-[#009df2]"
+              />
+            </div>
+
+            <label className="flex items-center gap-2.5 text-xs font-semibold text-text cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={globalForm.fijado}
+                onChange={(e) => setGlobalForm({ ...globalForm, fijado: e.target.checked })}
+                className="w-4 h-4 accent-[#009df2]"
+              />
+              Fijar anuncio arriba en Novedades
+            </label>
+
+            <button
+              type="submit"
+              disabled={publishingGlobal}
+              className="w-full py-3.5 px-6 rounded-2xl bg-[#009df2] hover:bg-[#0086d1] text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Send size={15} />
+              <span>{publishingGlobal ? "Publicando en todos los conjuntos…" : "Publicar como ConjuntOS®"}</span>
+            </button>
+          </form>
+
+          <div className="flex flex-col gap-3">
+            <h4 className="text-xs font-black uppercase tracking-widest text-text/70 px-1">
+              Anuncios Oficiales Publicados ({globalAnuncios.length})
+            </h4>
+            {loadingGlobalAnuncios ? (
+              <SkeletonRows count={2} />
+            ) : globalAnuncios.length === 0 ? (
+              <div className="liquid-glass rounded-3xl p-8 border border-border text-center text-xs text-text/50">
+                Aún no has publicado anuncios generales de ConjuntOS®.
+              </div>
+            ) : (
+              globalAnuncios.map((a) => (
+                <div key={a.id} className="liquid-glass-card rounded-3xl p-4 border border-[#009df2]/25 flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-[#08090d] border border-white/15 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img src="/icons/conjuntos-post-icon.png" alt="ConjuntOS®" className="w-full h-full object-contain" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-text">ConjuntOS®</span>
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-[#009df2]/15 text-[#009df2]">
+                          {a.conjuntosCount} {a.conjuntosCount === 1 ? "conjunto" : "conjuntos"}
+                        </span>
+                      </div>
+                      <h5 className="text-sm font-bold text-text mt-0.5">{a.titulo}</h5>
+                      <p className="text-xs text-text/70 line-clamp-2 mt-0.5">{a.contenido}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteGlobalAnuncio(a.id)}
+                    className="p-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger shrink-0 cursor-pointer active:scale-95 transition-all"
+                    title="Eliminar de todos los conjuntos"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      ) : tab === "CREAR" ? (
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
           {editingConjuntoId && (
             <div className="flex items-center justify-between gap-2 bg-accent/15 border border-accent/20 rounded-2xl p-4 text-xs text-text shadow-lg">

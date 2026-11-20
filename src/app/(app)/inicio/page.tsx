@@ -1043,22 +1043,37 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
     return `Hace ${days}d`;
   };
 
+  const isConjuntosOfficial = anuncio.tipo === "CONJUNTOS";
+
   return (
-    <div className="fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t border-border/20 transition-all active:scale-[0.98] relative overflow-hidden">
+    <div className={`fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t transition-all active:scale-[0.98] relative overflow-hidden ${isConjuntosOfficial ? "border-[#009df2]/30" : "border-border/20"}`}>
       <div className="p-5 flex justify-between items-center relative z-10">
          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-border bg-white/95 shadow-sm p-1.5 shrink-0 overflow-hidden">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border shadow-sm shrink-0 overflow-hidden ${
+              isConjuntosOfficial
+                ? "bg-[#08090d] border-white/15 p-1"
+                : "bg-white/95 border-border p-1.5"
+            }`}>
                <Image
-                 src="/icons/admin-post-bird.png"
-                 alt="Administración"
-                 width={28}
-                 height={28}
+                 src={isConjuntosOfficial ? "/icons/conjuntos-post-icon.png" : "/icons/admin-post-bird.png"}
+                 alt={isConjuntosOfficial ? "ConjuntOS®" : "Administración"}
+                 width={32}
+                 height={32}
                  className="w-full h-full object-contain"
                  unoptimized
                />
             </div>
             <div>
-               <h4 className="text-sm font-bold text-text leading-none mb-1">{anuncio.tipo}</h4>
+               <div className="flex items-center gap-1.5 mb-1">
+                 <h4 className="text-sm font-bold text-text leading-none">
+                   {isConjuntosOfficial ? "ConjuntOS®" : anuncio.tipo}
+                 </h4>
+                 {isConjuntosOfficial && (
+                   <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#009df2]/15 text-[#009df2]">
+                     Oficial
+                   </span>
+                 )}
+               </div>
                <p className="text-[10px] text-text flex items-center gap-1 font-medium">
                   {timeAgo(anuncio.publicadoEn)} {anuncio.fijado && '• Fijado'}
                </p>
@@ -1081,7 +1096,7 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
 
       <div className="p-4 flex items-center justify-between border-t border-border bg-surface/40 backdrop-blur-xl mt-auto rounded-b-[32px]">
          <span className="text-text text-[11px] flex items-center gap-1.5 font-semibold uppercase tracking-wider">
-            <Megaphone size={12} /> {anuncio.tipo}
+            <Megaphone size={12} /> {isConjuntosOfficial ? "ConjuntOS®" : anuncio.tipo}
          </span>
          <span className="text-accent text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-widest">
             Ver más <ChevronLeft size={14} className="rotate-180" />

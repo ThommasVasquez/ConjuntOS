@@ -1,11 +1,15 @@
 use axum::extract::{Path, State};
-use axum::routing::{get, put};
+use axum::routing::{delete, get, put};
 use axum::{Json, Router};
+use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::auth::extract::AuthUser;
 use crate::auth::guard;
-use crate::db::enums::Rol;
+use crate::db::enums::{Rol, TipoAnuncio};
+use crate::db::schema::{anuncios, conjuntos};
 use crate::domains::comunicaciones::dto::{
     AnuncioDto, CreateAnuncioRequest, DeleteAnuncioResponse, DirectorioEntradaDto,
     UpdateAnuncioRequest,
@@ -34,6 +38,8 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/anuncios", get(listar_anuncios).post(crear_anuncio))
         .route("/anuncios/{id}", put(actualizar_anuncio).delete(eliminar_anuncio))
+        .route("/superadmin/anuncios", get(listar_anuncios_globales).post(crear_anuncio_global))
+        .route("/superadmin/anuncios/{id}", delete(eliminar_anuncio_global))
         .route("/directorio", get(directorio))
 }
 
@@ -72,6 +78,9 @@ pub async fn crear_anuncio(
     Json(req): Json<CreateAnuncioRequest>,
 ) -> ApiResult<Json<AnuncioDto>> {
     guard::require(&user, ROLES_PUBLICAR)?;
+    if matches!(req.tipo, TipoAnuncio::Conjuntos) && !matches!(user.rol, Rol::SuperAdmin) {
+        return Err(ApiError::Forbidden);
+    }
     if req.titulo.trim().is_empty() || req.contenido.trim().is_empty() {
         return Err(ApiError::BadRequest(
             "titulo y contenido son obligatorios".into(),
@@ -247,4 +256,201 @@ pub async fn directorio(
             })
             .collect(),
     ))
+}
+
+// ── SuperAdmin Global ConjuntOS® Announcements ───────────────────────────────
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateGlobalAnuncioRequest {
+    pub titulo: String,
+    pub contenido: String,
+    pub imagen_url: Option<String>,
+    pub fijado: Option<bool>,
+    /// Optional subset of conjunto IDs; when omitted/empty, publishes to ALL conjuntos.
+    pub conjunto_ids: Option<Vec<Uuid>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GlobalAnuncioSummaryDto {
+    pub id: Uuid,
+    pub titulo: String,
+    pub contenido: String,
+    pub imagen_url: Option<String>,
+    pub fijado: bool,
+    pub publicado_en: chrono::DateTime<chrono::Utc>,
+    pub conjuntos_count: usize,
+}
+
+/// GET /api/v1/superadmin/anuncios — list deduplicated global ConjuntOS® announcements.
+pub async fn listar_anuncios_globales(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> ApiResult<Json<Vec<GlobalAnuncioSummaryDto>>> {
+    guard::require(&user, &[Rol::SuperAdmin])?;
+    let mut conn = state.pool.get().await?;
+
+    let rows: Vec<crate::domains::comunicaciones::models::Anuncio> = anuncios::table
+        .filter(anuncios::tipo.eq(TipoAnuncio::Conjuntos))
+        .order(anuncios::publicado_en.desc())
+        .limit(200)
+        .select(crate::domains::comunicaciones::models::Anuncio::as_select())
+        .load(&mut conn)
+        .await?;
+
+    let mut out: Vec<GlobalAnuncioSummaryDto> = Vec::new();
+    for a in rows {
+        if let Some(existing) = out
+            .iter_mut()
+            .find(|g| g.titulo == a.titulo && g.contenido == a.contenido)
+        {
+            existing.conjuntos_count += 1;
+        } else {
+            out.push(GlobalAnuncioSummaryDto {
+                id: a.id,
+                titulo: a.titulo,
+                contenido: a.contenido,
+                imagen_url: a.imagen_url,
+                fijado: a.fijado,
+                publicado_en: a.publicado_en,
+                conjuntos_count: 1,
+            });
+        }
+    }
+
+    Ok(Json(out))
+}
+
+/// POST /api/v1/superadmin/anuncios — publish an official ConjuntOS® announcement
+/// to all conjuntos (or a specified list of conjuntos).
+pub async fn crear_anuncio_global(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<CreateGlobalAnuncioRequest>,
+) -> ApiResult<Json<GlobalAnuncioSummaryDto>> {
+    guard::require(&user, &[Rol::SuperAdmin])?;
+    let titulo = req.titulo.trim().to_string();
+    let contenido = req.contenido.trim().to_string();
+    if titulo.is_empty() || contenido.is_empty() {
+        return Err(ApiError::BadRequest(
+            "titulo y contenido son obligatorios".into(),
+        ));
+    }
+
+    let mut conn = state.pool.get().await?;
+    let target_conjuntos: Vec<Uuid> = match req.conjunto_ids {
+        Some(ids) if !ids.is_empty() => ids,
+        _ => conjuntos::table.select(conjuntos::id).load(&mut conn).await?,
+    };
+
+    let mut first_id: Option<Uuid> = None;
+    let mut first_pub = chrono::Utc::now();
+    let mut published = 0usize;
+    let imagen_url = req.imagen_url.filter(|u| !u.trim().is_empty());
+    let fijado = req.fijado.unwrap_or(true);
+
+    for cid in target_conjuntos {
+        let anuncio = repo::crear_anuncio_con_notificaciones(
+            &mut conn,
+            NuevoAnuncio {
+                conjunto_id: cid,
+                titulo: titulo.clone(),
+                contenido: contenido.clone(),
+                tipo: TipoAnuncio::Conjuntos,
+                imagen_url: imagen_url.clone(),
+                archivos_url: serde_json::json!([]),
+                fijado,
+                expires_en: None,
+            },
+        )
+        .await?;
+
+        if first_id.is_none() {
+            first_id = Some(anuncio.id);
+            first_pub = anuncio.publicado_en;
+        }
+        published += 1;
+
+        let dto = AnuncioDto::from(anuncio);
+        state
+            .ws_hub
+            .publish(
+                cid,
+                WsEvent {
+                    domain: "anuncio".into(),
+                    action: "created".into(),
+                    payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                    target_user_id: None,
+                },
+            )
+            .await;
+    }
+
+    Ok(Json(GlobalAnuncioSummaryDto {
+        id: first_id.unwrap_or_else(Uuid::new_v4),
+        titulo,
+        contenido,
+        imagen_url,
+        fijado,
+        publicado_en: first_pub,
+        conjuntos_count: published,
+    }))
+}
+
+/// DELETE /api/v1/superadmin/anuncios/{id} — remove a global ConjuntOS® announcement
+/// across every conjunto where it was published.
+pub async fn eliminar_anuncio_global(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<DeleteAnuncioResponse>> {
+    guard::require(&user, &[Rol::SuperAdmin])?;
+    let mut conn = state.pool.get().await?;
+
+    let sample: Option<crate::domains::comunicaciones::models::Anuncio> = anuncios::table
+        .filter(anuncios::id.eq(id))
+        .filter(anuncios::tipo.eq(TipoAnuncio::Conjuntos))
+        .select(crate::domains::comunicaciones::models::Anuncio::as_select())
+        .first(&mut conn)
+        .await
+        .optional()?;
+
+    let Some(sample) = sample else {
+        return Err(ApiError::NotFound("anuncio global no encontrado".into()));
+    };
+
+    let affected_conjuntos: Vec<Uuid> = anuncios::table
+        .filter(anuncios::tipo.eq(TipoAnuncio::Conjuntos))
+        .filter(anuncios::titulo.eq(&sample.titulo))
+        .filter(anuncios::contenido.eq(&sample.contenido))
+        .select(anuncios::conjunto_id)
+        .load(&mut conn)
+        .await?;
+
+    let deleted = diesel::delete(
+        anuncios::table
+            .filter(anuncios::tipo.eq(TipoAnuncio::Conjuntos))
+            .filter(anuncios::titulo.eq(&sample.titulo))
+            .filter(anuncios::contenido.eq(&sample.contenido)),
+    )
+    .execute(&mut conn)
+    .await?;
+
+    for cid in affected_conjuntos {
+        state
+            .ws_hub
+            .publish(
+                cid,
+                WsEvent {
+                    domain: "anuncio".into(),
+                    action: "deleted".into(),
+                    payload: Some(serde_json::json!({ "id": id })),
+                    target_user_id: None,
+                },
+            )
+            .await;
+    }
+
+    Ok(Json(DeleteAnuncioResponse { deleted }))
 }

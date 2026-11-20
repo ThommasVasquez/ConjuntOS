@@ -62,7 +62,7 @@ export default function CarteleraPage() {
           category: a.tipo,
           priority: a.tipo === 'URGENTE' ? 'ALTA' as const : (a.tipo === 'MANTENIMIENTO' ? 'MEDIA' as const : 'BAJA' as const),
           date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
-          author: "Administración",
+          author: a.tipo === "CONJUNTOS" ? "ConjuntOS®" : "Administración",
           image: a.imagenUrl || undefined,
           fijado: a.fijado,
           archivosUrl: a.archivosUrl || []
@@ -131,7 +131,7 @@ export default function CarteleraPage() {
             category: a.tipo,
             priority: a.tipo === 'URGENTE' ? 'ALTA' : (a.tipo === 'MANTENIMIENTO' ? 'MEDIA' : 'BAJA'),
             date: new Date(a.publicadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
-            author: "Administración",
+            author: a.tipo === "CONJUNTOS" ? "ConjuntOS®" : "Administración",
             image: a.imagenUrl || undefined,
             fijado: a.fijado,
             archivosUrl: a.archivosUrl || []
@@ -224,8 +224,8 @@ export default function CarteleraPage() {
                  </div>
                  <div className="flex justify-between items-center pt-2 border-t border-border">
                     <div className="flex items-center gap-2">
-                       <span className="w-5 h-5 rounded-full bg-white/95 border border-border p-0.5 flex items-center justify-center shrink-0">
-                         <img src="/icons/admin-post-bird.png" alt="Administración" className="w-full h-full object-contain" />
+                       <span className={`w-5 h-5 rounded-full border p-0.5 flex items-center justify-center shrink-0 ${notice.author === "ConjuntOS®" ? "bg-[#08090d] border-white/15" : "bg-white/95 border-border"}`}>
+                         <img src={notice.author === "ConjuntOS®" ? "/icons/conjuntos-post-icon.png" : "/icons/admin-post-bird.png"} alt={notice.author} className="w-full h-full object-contain" />
                        </span>
                        <span className="text-[10px] text-text">{notice.author}</span>
                     </div>
@@ -261,8 +261,8 @@ export default function CarteleraPage() {
                        <div className="flex items-center gap-4 text-text text-[10px] font-bold uppercase tracking-widest mt-2">
                           <div className="flex items-center gap-1.5"><Clock size={12} /> {selectedNotice.date}</div>
                           <div className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-white/95 border border-border p-0.5 flex items-center justify-center shrink-0">
-                              <img src="/icons/admin-post-bird.png" alt="Administración" className="w-full h-full object-contain" />
+                            <span className={`w-5 h-5 rounded-full border p-0.5 flex items-center justify-center shrink-0 ${selectedNotice.author === "ConjuntOS®" ? "bg-[#08090d] border-white/15" : "bg-white/95 border-border"}`}>
+                              <img src={selectedNotice.author === "ConjuntOS®" ? "/icons/conjuntos-post-icon.png" : "/icons/admin-post-bird.png"} alt={selectedNotice.author} className="w-full h-full object-contain" />
                             </span>
                             {selectedNotice.author}
                           </div>

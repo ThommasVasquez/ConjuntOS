@@ -31,7 +31,7 @@ export type TipoUnidad = 'APARTAMENTO' | 'CASA' | 'LOCAL' | 'PARQUEADERO';
 
 export type EstadoReserva = 'PENDIENTE' | 'CONFIRMADA' | 'CANCELADA' | 'COMPLETADA';
 
-export type TipoAnuncio = 'GENERAL' | 'URGENTE' | 'MANTENIMIENTO' | 'EVENTO';
+export type TipoAnuncio = 'GENERAL' | 'URGENTE' | 'MANTENIMIENTO' | 'EVENTO' | 'CONJUNTOS';
 
 export type CatDoc = 'REGLAMENTO' | 'CONVIVENCIA' | 'MASCOTAS' | 'PARQUEADERO' | 'INFORME_EMPRESA' | 'ACTA' | 'CONTRATO' | 'CUENTA_COBRO' | 'CIRCULAR' | 'OTRO';
 
