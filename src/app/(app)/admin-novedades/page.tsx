@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText, Upload, Trash2, Megaphone, RefreshCw, Pencil, X, Map, Truck, ArrowRight, ShieldCheck } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Info, User, Car, Briefcase, Dog, AlertCircle, FileText, Upload, Trash2, Megaphone, RefreshCw, Pencil, X, Map, Truck, ArrowRight, ShieldCheck, Search, Check } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +11,7 @@ import { api, ApiError } from "@/lib/api/client";
 import { ANUNCIO_CTA_DESTINOS, extractAnuncioCta, mergeAnuncioCta } from "@/lib/anuncio-cta";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
-import type { AnuncioDto, CeldaMapaDto } from "@/lib/api/types";
+import type { AnuncioDto, CeldaMapaDto, ConjuntoDto } from "@/lib/api/types";
 import { SkeletonRows } from "@/components/ui/Skeleton";
 
 /**
@@ -79,6 +79,26 @@ export default function AdminNovedadesPage() {
   const [ctaCustomPath, setCtaCustomPath] = useState("");
   const [ctaLabel, setCtaLabel] = useState("");
   const [editingArchivos, setEditingArchivos] = useState<string[]>([]);
+  // SuperAdmin multi-conjunto target selector
+  const isSuperAdmin = role === "SUPER_ADMIN";
+  const [superConjuntos, setSuperConjuntos] = useState<ConjuntoDto[]>([]);
+  const [superScope, setSuperScope] = useState<"ALL" | "SELECTED">("ALL");
+  const [selectedConjuntoIds, setSelectedConjuntoIds] = useState<string[]>([]);
+  const [conjuntoSearch, setConjuntoSearch] = useState("");
+
+  useEffect(() => {
+    if (isSuperAdmin && tab === "PUBLICAR_ANUNCIO" && superConjuntos.length === 0) {
+      api.get<ConjuntoDto[]>("/superadmin/conjuntos")
+        .then((data) => setSuperConjuntos(Array.isArray(data) ? data : []))
+        .catch(() => {});
+    }
+  }, [isSuperAdmin, tab, superConjuntos.length]);
+
+  const toggleConjuntoSelection = (id: string) => {
+    setSelectedConjuntoIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSubmittingAnuncio, setIsSubmittingAnuncio] = useState(false);
   const [editingAnuncioId, setEditingAnuncioId] = useState<string | null>(null);
@@ -202,6 +222,10 @@ export default function AdminNovedadesPage() {
       return toast.error("Por favor completa los campos obligatorios");
     }
 
+    if (isSuperAdmin && !editingAnuncioId && superScope === "SELECTED" && selectedConjuntoIds.length === 0) {
+      return toast.error("Selecciona al menos un conjunto para publicar el anuncio");
+    }
+
     setIsSubmittingAnuncio(true);
     try {
       const resolvedCtaPath = ctaDest === "__CUSTOM__" ? ctaCustomPath.trim() : ctaDest;
@@ -213,6 +237,17 @@ export default function AdminNovedadesPage() {
       if (editingAnuncioId) {
         await api.put(`/anuncios/${editingAnuncioId}`, payload);
         toast.success("Anuncio actualizado exitosamente");
+      } else if (isSuperAdmin) {
+        const created = await api.post<{ conjuntosCount: number }>("/superadmin/anuncios", {
+          titulo: anuncioForm.titulo.trim(),
+          contenido: anuncioForm.contenido.trim(),
+          imagenUrl: anuncioForm.imagenUrl.trim() || undefined,
+          archivosUrl: archivosUrl.length > 0 ? archivosUrl : undefined,
+          fijado: anuncioForm.fijado,
+          conjuntoIds: superScope === "SELECTED" ? selectedConjuntoIds : undefined,
+        });
+        toast.success(`Anuncio oficial de ConjuntOS® publicado en ${created.conjuntosCount} conjunto(s).`);
+        setSelectedConjuntoIds([]);
       } else {
         await api.post('/anuncios', payload);
         toast.success("Anuncio publicado exitosamente");
@@ -593,6 +628,125 @@ export default function AdminNovedadesPage() {
                         )}
                     </div>
                     
+                    {/* Selector de conjuntos destino (solo SUPER_ADMIN al crear) */}
+                    {isSuperAdmin && !editingAnuncioId && (
+                      <div className="flex flex-col gap-3 bg-surface-2/60 border border-[#009df2]/30 rounded-2xl p-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-[#08090d] border border-white/15 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                            <img src="/icons/conjuntos-post-icon.png" alt="ConjuntOS®" className="w-full h-full object-contain" />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#009df2] block">
+                              Publicación Oficial ConjuntOS®
+                            </span>
+                            <span className="text-[11px] text-text/70">
+                              Elige si va a todos los conjuntos o solo a los seleccionados
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 bg-surface p-1 rounded-xl border border-border">
+                          <button
+                            type="button"
+                            onClick={() => setSuperScope("ALL")}
+                            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              superScope === "ALL"
+                                ? "bg-[#009df2] text-white shadow-sm"
+                                : "text-text/70 hover:text-text"
+                            }`}
+                          >
+                            Todos ({superConjuntos.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSuperScope("SELECTED")}
+                            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              superScope === "SELECTED"
+                                ? "bg-[#009df2] text-white shadow-sm"
+                                : "text-text/70 hover:text-text"
+                            }`}
+                          >
+                            Seleccionados ({selectedConjuntoIds.length})
+                          </button>
+                        </div>
+
+                        {superScope === "SELECTED" && (
+                          <div className="flex flex-col gap-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-1 bg-surface border border-border rounded-xl px-3 py-2">
+                                <Search size={14} className="text-text/50 shrink-0" />
+                                <input
+                                  type="text"
+                                  value={conjuntoSearch}
+                                  onChange={(e) => setConjuntoSearch(e.target.value)}
+                                  placeholder="Buscar conjunto..."
+                                  className="w-full bg-transparent text-xs text-text outline-none placeholder:text-text/40"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedConjuntoIds(
+                                    selectedConjuntoIds.length === superConjuntos.length
+                                      ? []
+                                      : superConjuntos.map((c) => c.id)
+                                  )
+                                }
+                                className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-2 rounded-xl border border-border bg-surface text-text/80 hover:text-text shrink-0 cursor-pointer"
+                              >
+                                {selectedConjuntoIds.length === superConjuntos.length ? "Limpiar" : "Todos"}
+                              </button>
+                            </div>
+
+                            <div className="max-h-48 overflow-y-auto flex flex-col gap-1.5 pr-0.5">
+                              {superConjuntos
+                                .filter((c) => {
+                                  const q = conjuntoSearch.trim().toLowerCase();
+                                  if (!q) return true;
+                                  return (
+                                    c.nombre.toLowerCase().includes(q) ||
+                                    c.subdominio.toLowerCase().includes(q)
+                                  );
+                                })
+                                .map((c) => {
+                                  const checked = selectedConjuntoIds.includes(c.id);
+                                  return (
+                                    <button
+                                      key={c.id}
+                                      type="button"
+                                      onClick={() => toggleConjuntoSelection(c.id)}
+                                      className={`flex items-center justify-between gap-3 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
+                                        checked
+                                          ? "border-[#009df2] bg-[#009df2]/10"
+                                          : "border-border bg-surface/60 hover:bg-surface"
+                                      }`}
+                                    >
+                                      <div className="min-w-0">
+                                        <span className="text-xs font-bold text-text block truncate">
+                                          {c.nombre}
+                                        </span>
+                                        <span className="text-[10px] text-text/55 font-mono block truncate">
+                                          {c.subdominio}.conjuntos.app
+                                        </span>
+                                      </div>
+                                      <span
+                                        className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                                          checked
+                                            ? "bg-[#009df2] border-[#009df2] text-white"
+                                            : "border-text/30"
+                                        }`}
+                                      >
+                                        {checked && <Check size={12} />}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Título del Anuncio *</label>
                         <input 
