@@ -5,7 +5,7 @@ import Image from "next/image";
 import {
   Building2, Plus, FileText, ShieldCheck, MapPin,
   User, Calendar, Layers, Upload, Edit3, Home, Grid, ToggleLeft, ToggleRight,
-  UserPlus, Key, Mail, Phone, CheckCircle2, X, Search, Check, Megaphone, Trash2, Send, BarChart3, Eye, Users, MousePointerClick
+  UserPlus, Key, Mail, Phone, CheckCircle2, X, Search, Check, Megaphone, Trash2, Send, BarChart3, Eye, Users, MousePointerClick, Share2
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
@@ -113,6 +113,49 @@ export default function SuperAdminPage() {
       toast.error("No se pudieron cargar las estadísticas del anuncio");
     } finally {
       setLoadingAnuncioStatsId(null);
+    }
+  };
+
+  const shareAnuncioStats = async (m: NonNullable<typeof anuncioStatsModal>) => {
+    const fmtH = (h: number) => `${String(h).padStart(2, "0")}:00`;
+    const topHours = [...m.porHora]
+      .filter((h) => h.vistas > 0)
+      .sort((a, b) => b.vistas - a.vistas)
+      .slice(0, 3)
+      .map((h) => `${fmtH(h.hora)} (${h.vistas} vistas)`)
+      .join(", ");
+    const byConjunto = m.porConjunto
+      .map((c) => `• ${c.conjuntoNombre}: ${c.vistas} vistas · ${c.clicsCta} clics CTA`)
+      .join("\n");
+
+    const text = [
+      `📊 *Reporte de Estadísticas — ConjuntOS®*`,
+      `Anuncio: *${m.titulo}*`,
+      ``,
+      `👁️ Vistas totales: *${m.vistas}*`,
+      `👥 Personas únicas que lo vieron: *${m.usuariosUnicos}*`,
+      `🖱️ Clics en el botón (CTA): *${m.clicsCta}* (${m.usuariosCtaUnicos} personas)`,
+      `📈 Tasa de conversión (CTR): *${m.ctr}%*`,
+      m.horaPico !== null ? `⏰ Hora pico: *${fmtH(m.horaPico)}*` : "",
+      topHours ? `🔥 Mejores horas: ${topHours}` : "",
+      byConjunto ? `\n🏢 *Por conjunto:*\n${byConjunto}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: `Estadísticas — ${m.titulo}`, text });
+        return;
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Estadísticas copiadas — listas para compartir por WhatsApp o correo.");
+    } catch {
+      toast.error("No se pudo copiar el reporte");
     }
   };
 
@@ -1185,6 +1228,14 @@ export default function SuperAdminPage() {
                     </div>
                   </div>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => shareAnuncioStats(anuncioStatsModal)}
+                  className="w-full py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all shadow-md"
+                >
+                  <Share2 size={14} /> Compartir estadísticas
+                </button>
               </div>
             </div>
           )}

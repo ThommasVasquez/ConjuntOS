@@ -14,6 +14,7 @@ import {
   Pencil,
   Play,
   Search,
+  Share2,
   Sparkles,
   Trash2,
   Upload,
@@ -308,7 +309,7 @@ export default function SuperAdminAdPublisher({
     }
   };
 
-  const copyAdvertiserReport = (m: AdCampaignMetricsDto) => {
+  const copyAdvertiserReport = async (m: AdCampaignMetricsDto) => {
     const topHours = [...m.porHora]
       .filter((h) => h.impresiones > 0)
       .sort((a, b) => b.impresiones - a.impresiones)
@@ -337,8 +338,20 @@ export default function SuperAdminAdPublisher({
       .filter(Boolean)
       .join("\n");
 
-    navigator.clipboard?.writeText(report);
-    toast.success("Reporte copiado — listo para pegar por WhatsApp al anunciante.");
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: `Reporte de Pauta — ${m.nombre}`, text: report });
+        return;
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(report);
+      toast.success("Reporte copiado — listo para compartir por WhatsApp al anunciante.");
+    } catch {
+      toast.error("No se pudo copiar el reporte");
+    }
   };
 
   return (
@@ -1006,7 +1019,7 @@ export default function SuperAdminAdPublisher({
               onClick={() => copyAdvertiserReport(metricsModal)}
               className="w-full py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all"
             >
-              <Copy size={14} /> Copiar reporte para anunciante (WhatsApp)
+              <Share2 size={14} /> Compartir reporte de métricas
             </button>
           </div>
         </div>
