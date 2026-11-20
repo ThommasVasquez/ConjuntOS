@@ -8,7 +8,7 @@ import { QR_BANNER_TARGET_URL } from "@/lib/qr-config";
  * Public paths are allowed without auth; everything else redirects to /login.
  */
 
-const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos", "/qr"];
+const PUBLIC_PATHS = ["/about", "/pricing", "/contact", "/privacidad", "/proteccion-datos", "/qr", "/instalar"];
 
 // Landing page moved to separate project (landing/).
 // Root "/" now redirects to /login.
