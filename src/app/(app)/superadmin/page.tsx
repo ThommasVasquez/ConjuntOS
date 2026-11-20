@@ -10,7 +10,7 @@ import {
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
-import { ANUNCIO_CTA_DESTINOS, mergeAnuncioCta } from "@/lib/anuncio-cta";
+import { ANUNCIO_CTA_DESTINOS, extractAnuncioCta, mergeAnuncioCta } from "@/lib/anuncio-cta";
 import type { ConjuntoDto } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
@@ -38,10 +38,12 @@ export default function SuperAdminPage() {
     titulo: string;
     contenido: string;
     imagenUrl?: string | null;
+    archivosUrl?: string[];
     fijado: boolean;
     publicadoEn: string;
     conjuntosCount: number;
   }>>([]);
+  const [editingGlobalId, setEditingGlobalId] = useState<string | null>(null);
   const [loadingGlobalAnuncios, setLoadingGlobalAnuncios] = useState(false);
   const [publishingGlobal, setPublishingGlobal] = useState(false);
   const [globalForm, setGlobalForm] = useState({
@@ -111,13 +113,48 @@ export default function SuperAdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, role]);
 
+  const startEditGlobalAnuncio = (a: (typeof globalAnuncios)[number]) => {
+    setEditingGlobalId(a.id);
+    setGlobalForm({
+      titulo: a.titulo,
+      contenido: a.contenido,
+      imagenUrl: a.imagenUrl || "",
+      fijado: a.fijado,
+    });
+    const { cta } = extractAnuncioCta(a.archivosUrl);
+    if (cta) {
+      const preset = ANUNCIO_CTA_DESTINOS.find((d) => d.value === cta.path);
+      if (preset) {
+        setGlobalCtaDest(preset.value);
+        setGlobalCtaCustomPath("");
+      } else {
+        setGlobalCtaDest("__CUSTOM__");
+        setGlobalCtaCustomPath(cta.path);
+      }
+      setGlobalCtaLabel(cta.label);
+    } else {
+      setGlobalCtaDest("");
+      setGlobalCtaCustomPath("");
+      setGlobalCtaLabel("");
+    }
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEditGlobalAnuncio = () => {
+    setEditingGlobalId(null);
+    setGlobalForm({ titulo: "", contenido: "", imagenUrl: "", fijado: true });
+    setGlobalCtaDest("");
+    setGlobalCtaCustomPath("");
+    setGlobalCtaLabel("");
+  };
+
   const handlePublishGlobalAnuncio = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!globalForm.titulo.trim() || !globalForm.contenido.trim()) {
       toast.error("Título y contenido son obligatorios");
       return;
     }
-    if (globalScope === "SELECTED" && selectedConjuntoIds.length === 0) {
+    if (!editingGlobalId && globalScope === "SELECTED" && selectedConjuntoIds.length === 0) {
       toast.error("Selecciona al menos un conjunto para publicar el anuncio");
       return;
     }
@@ -128,25 +165,35 @@ export default function SuperAdminPage() {
         [],
         resolvedCtaPath ? { path: resolvedCtaPath, label: globalCtaLabel.trim() || "Ver sección" } : null
       );
-      const created = await api.post<(typeof globalAnuncios)[number]>("/superadmin/anuncios", {
-        titulo: globalForm.titulo.trim(),
-        contenido: globalForm.contenido.trim(),
-        imagenUrl: globalForm.imagenUrl.trim() || undefined,
-        archivosUrl: archivosUrl.length > 0 ? archivosUrl : undefined,
-        fijado: globalForm.fijado,
-        conjuntoIds: globalScope === "SELECTED" ? selectedConjuntoIds : undefined,
-      });
-      setGlobalAnuncios((prev) => [created, ...prev]);
-      setGlobalForm({ titulo: "", contenido: "", imagenUrl: "", fijado: true });
-      setGlobalCtaDest("");
-      setGlobalCtaCustomPath("");
-      setGlobalCtaLabel("");
-      if (globalScope === "SELECTED") {
-        setSelectedConjuntoIds([]);
+      if (editingGlobalId) {
+        const updated = await api.put<(typeof globalAnuncios)[number]>(`/superadmin/anuncios/${editingGlobalId}`, {
+          titulo: globalForm.titulo.trim(),
+          contenido: globalForm.contenido.trim(),
+          imagenUrl: globalForm.imagenUrl.trim() || undefined,
+          archivosUrl,
+          fijado: globalForm.fijado,
+        });
+        setGlobalAnuncios((prev) => prev.map((a) => (a.id === editingGlobalId ? updated : a)));
+        cancelEditGlobalAnuncio();
+        toast.success(`Anuncio actualizado en ${updated.conjuntosCount} conjunto(s).`);
+      } else {
+        const created = await api.post<(typeof globalAnuncios)[number]>("/superadmin/anuncios", {
+          titulo: globalForm.titulo.trim(),
+          contenido: globalForm.contenido.trim(),
+          imagenUrl: globalForm.imagenUrl.trim() || undefined,
+          archivosUrl: archivosUrl.length > 0 ? archivosUrl : undefined,
+          fijado: globalForm.fijado,
+          conjuntoIds: globalScope === "SELECTED" ? selectedConjuntoIds : undefined,
+        });
+        setGlobalAnuncios((prev) => [created, ...prev]);
+        cancelEditGlobalAnuncio();
+        if (globalScope === "SELECTED") {
+          setSelectedConjuntoIds([]);
+        }
+        toast.success(`Anuncio oficial de ConjuntOS® publicado en ${created.conjuntosCount} conjunto(s).`);
       }
-      toast.success(`Anuncio oficial de ConjuntOS® publicado en ${created.conjuntosCount} conjunto(s).`);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudo publicar el anuncio global");
+      toast.error(err instanceof ApiError ? err.message : "No se pudo guardar el anuncio global");
     } finally {
       setPublishingGlobal(false);
     }
@@ -589,21 +636,34 @@ export default function SuperAdminPage() {
       ) : tab === "ANUNCIOS" ? (
         <div className="flex flex-col gap-6 w-full">
           <form onSubmit={handlePublishGlobalAnuncio} className="liquid-glass rounded-[32px] p-6 border border-[#009df2]/30 flex flex-col gap-5">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-[#08090d] border border-white/15 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-md">
-                <img src="/icons/conjuntos-post-icon.png" alt="ConjuntOS®" className="w-full h-full object-contain" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-base font-display font-bold text-text">Anuncio General de ConjuntOS®</h3>
-                  <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#009df2]/15 text-[#009df2]">
-                    Oficial
-                  </span>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-[#08090d] border border-white/15 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-md">
+                  <img src="/icons/conjuntos-post-icon.png" alt="ConjuntOS®" className="w-full h-full object-contain" />
                 </div>
-                <p className="text-xs text-text/60">
-                  Elige si quieres publicar en <strong>todos los conjuntos</strong> ({conjuntos.length}) o solo en los que selecciones.
-                </p>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-base font-display font-bold text-text">
+                      {editingGlobalId ? "Editando Anuncio ConjuntOS®" : "Anuncio General de ConjuntOS®"}
+                    </h3>
+                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#009df2]/15 text-[#009df2]">
+                      Oficial
+                    </span>
+                  </div>
+                  <p className="text-xs text-text/60">
+                    Elige si quieres publicar en <strong>todos los conjuntos</strong> ({conjuntos.length}) o solo en los que selecciones.
+                  </p>
+                </div>
               </div>
+              {editingGlobalId && (
+                <button
+                  type="button"
+                  onClick={cancelEditGlobalAnuncio}
+                  className="px-3 py-1.5 rounded-full bg-surface-2 border border-border text-[10px] font-bold uppercase text-text flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <X size={12} /> Cancelar
+                </button>
+              )}
             </div>
 
             {/* Alcance: General vs Conjuntos Seleccionados */}
@@ -847,7 +907,9 @@ export default function SuperAdminPage() {
               <Send size={15} />
               <span>
                 {publishingGlobal
-                  ? "Publicando…"
+                  ? "Guardando…"
+                  : editingGlobalId
+                  ? "Guardar cambios del anuncio"
                   : globalScope === "SELECTED"
                   ? `Publicar en ${selectedConjuntoIds.length} conjunto(s) como ConjuntOS®`
                   : `Publicar en todos los conjuntos (${conjuntos.length})`}
@@ -883,14 +945,24 @@ export default function SuperAdminPage() {
                       <p className="text-xs text-text/70 line-clamp-2 mt-0.5">{a.contenido}</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteGlobalAnuncio(a.id)}
-                    className="p-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger shrink-0 cursor-pointer active:scale-95 transition-all"
-                    title="Eliminar de todos los conjuntos"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => startEditGlobalAnuncio(a)}
+                      className="p-2 rounded-xl bg-surface-2 border border-border text-text hover:text-[#009df2] cursor-pointer active:scale-95 transition-all"
+                      title="Editar anuncio"
+                    >
+                      <Edit3 size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteGlobalAnuncio(a.id)}
+                      className="p-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger shrink-0 cursor-pointer active:scale-95 transition-all"
+                      title="Eliminar de todos los conjuntos"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
               ))
             )}

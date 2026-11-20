@@ -1,5 +1,5 @@
 use axum::extract::{Path, State};
-use axum::routing::{delete, get, post, put};
+use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
@@ -26,7 +26,7 @@ pub fn router() -> Router<AppState> {
         .route("/superadmin/ad-spaces", get(list_campaigns).post(create_campaign))
         .route(
             "/superadmin/ad-spaces/{campana_id}",
-            delete(delete_campaign),
+            put(update_campaign).delete(delete_campaign),
         )
         .route(
             "/superadmin/ad-spaces/{campana_id}/toggle",
@@ -169,6 +169,38 @@ async fn create_campaign(
         clics: 0,
         ctr: 0.0,
     }))
+}
+
+/// PUT /api/v1/superadmin/ad-spaces/{campana_id} — update campaign metadata, schedule, CTA & caps across all conjuntos in the campaign.
+async fn update_campaign(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(campana_id): Path<Uuid>,
+    Json(req): Json<UpdateAdSpaceRequest>,
+) -> ApiResult<Json<AdCampaignSummaryDto>> {
+    guard::require(&user, SUPER_ADMIN_ONLY)?;
+    let mut conn = state.pool.get().await?;
+    let changes = AdSpaceChangeset {
+        nombre: req.nombre.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
+        posicion: req.posicion,
+        imagen_url: req.imagen_url.map(|v| if v.trim().is_empty() { None } else { Some(v.trim().to_string()) }),
+        link_url: req.link_url.map(|v| if v.trim().is_empty() { None } else { Some(v.trim().to_string()) }),
+        activo: req.activo,
+        empresa: req.empresa.map(|v| if v.trim().is_empty() { None } else { Some(v.trim().to_string()) }),
+        inicio_en: req.inicio_en,
+        fin_en: req.fin_en,
+        hora_inicio: req.hora_inicio.map(|h| h.clamp(0, 23)),
+        hora_fin: req.hora_fin.map(|h| h.clamp(0, 23)),
+        dias_semana: req.dias_semana.filter(|d| !d.trim().is_empty()),
+        cta_texto: req.cta_texto.map(|v| if v.trim().is_empty() { None } else { Some(v.trim().to_string()) }),
+        prioridad: req.prioridad.map(|p| p.clamp(1, 3)),
+        max_impresiones: req.max_impresiones.map(|v| if v > 0 { Some(v) } else { None }),
+        max_por_usuario_dia: req.max_por_usuario_dia.map(|v| if v > 0 { Some(v) } else { None }),
+    };
+    let updated = repo::update_campaign(&mut conn, campana_id, changes)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("campaña no encontrada".into()))?;
+    Ok(Json(updated))
 }
 
 /// PUT /api/v1/superadmin/ad-spaces/{campana_id}/toggle — pause/resume campaign.

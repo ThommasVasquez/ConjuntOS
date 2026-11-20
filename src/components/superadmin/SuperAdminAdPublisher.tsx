@@ -11,6 +11,7 @@ import {
   Megaphone,
   MousePointerClick,
   Pause,
+  Pencil,
   Play,
   Search,
   Sparkles,
@@ -55,6 +56,7 @@ export default function SuperAdminAdPublisher({
   const [campaigns, setCampaigns] = useState<AdCampaignSummaryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
+  const [editingCampanaId, setEditingCampanaId] = useState<string | null>(null);
 
   // Composer state
   const [nombre, setNombre] = useState("");
@@ -159,13 +161,56 @@ export default function SuperAdminAdPublisher({
     return linkUrl.trim() || undefined;
   };
 
+  const startEditCampaign = (c: AdCampaignSummaryDto) => {
+    setEditingCampanaId(c.campanaId);
+    setNombre(c.nombre);
+    setEmpresa(c.empresa || "");
+    setImagenUrl(c.imagenUrl || "");
+    if (c.linkUrl && c.linkUrl.startsWith("https://wa.me/")) {
+      setLinkMode("WHATSAPP");
+      try {
+        const u = new URL(c.linkUrl);
+        setWaNumber(u.pathname.replace(/\D/g, ""));
+        setWaMessage(u.searchParams.get("text") || "");
+      } catch {
+        setLinkMode("URL");
+        setLinkUrl(c.linkUrl);
+      }
+    } else {
+      setLinkMode("URL");
+      setLinkUrl(c.linkUrl || "");
+    }
+    setCtaTexto(c.ctaTexto || "Ver promoción");
+    setInicioEn(toLocalDatetimeInput(new Date(c.inicioEn)));
+    setFinEn(toLocalDatetimeInput(new Date(c.finEn)));
+    setHoraInicio(c.horaInicio);
+    setHoraFin(c.horaFin);
+    setDiasSemana(c.diasSemana.split(",").map((d) => d.trim()).filter(Boolean));
+    setPrioridad(c.prioridad);
+    setMaxImpresiones(c.maxImpresiones ? String(c.maxImpresiones) : "");
+    setMaxPorUsuarioDia(c.maxPorUsuarioDia ? String(c.maxPorUsuarioDia) : "");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEditCampaign = () => {
+    setEditingCampanaId(null);
+    setNombre("");
+    setEmpresa("");
+    setImagenUrl("");
+    setLinkUrl("");
+    setWaNumber("");
+    setCtaTexto("Ver promoción");
+    setMaxImpresiones("");
+    setMaxPorUsuarioDia("");
+  };
+
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) {
       toast.error("El título de la campaña es obligatorio");
       return;
     }
-    if (scope === "SELECTED" && selectedIds.length === 0) {
+    if (!editingCampanaId && scope === "SELECTED" && selectedIds.length === 0) {
       toast.error("Selecciona al menos un conjunto");
       return;
     }
@@ -178,35 +223,52 @@ export default function SuperAdminAdPublisher({
 
     setPublishing(true);
     try {
-      const created = await api.post<AdCampaignSummaryDto>("/superadmin/ad-spaces", {
-        nombre: nombre.trim(),
-        empresa: empresa.trim() || undefined,
-        posicion: "FEED",
-        imagenUrl: imagenUrl.trim() || undefined,
-        linkUrl: resolvedLink(),
-        ctaTexto: ctaTexto.trim() || undefined,
-        inicioEn: startIso,
-        finEn: endIso,
-        horaInicio,
-        horaFin,
-        diasSemana: diasSemana.join(","),
-        prioridad,
-        maxImpresiones: maxImpresiones ? parseInt(maxImpresiones, 10) : undefined,
-        maxPorUsuarioDia: maxPorUsuarioDia ? parseInt(maxPorUsuarioDia, 10) : undefined,
-        conjuntoIds: scope === "SELECTED" ? selectedIds : undefined,
-      });
-      setCampaigns((prev) => [created, ...prev]);
-      setNombre("");
-      setEmpresa("");
-      setImagenUrl("");
-      setLinkUrl("");
-      setWaNumber("");
-      setMaxImpresiones("");
-      setMaxPorUsuarioDia("");
-      if (scope === "SELECTED") setSelectedIds([]);
-      toast.success(`Campaña publicada en ${created.conjuntosCount} conjunto(s).`);
+      if (editingCampanaId) {
+        const updated = await api.put<AdCampaignSummaryDto>(`/superadmin/ad-spaces/${editingCampanaId}`, {
+          nombre: nombre.trim(),
+          empresa: empresa.trim(),
+          imagenUrl: imagenUrl.trim(),
+          linkUrl: resolvedLink() || "",
+          ctaTexto: ctaTexto.trim(),
+          inicioEn: startIso,
+          finEn: endIso,
+          horaInicio,
+          horaFin,
+          diasSemana: diasSemana.join(","),
+          prioridad,
+          maxImpresiones: maxImpresiones ? parseInt(maxImpresiones, 10) : 0,
+          maxPorUsuarioDia: maxPorUsuarioDia ? parseInt(maxPorUsuarioDia, 10) : 0,
+        });
+        setCampaigns((prev) =>
+          prev.map((c) => (c.campanaId === editingCampanaId ? updated : c))
+        );
+        cancelEditCampaign();
+        toast.success("Campaña actualizada correctamente.");
+      } else {
+        const created = await api.post<AdCampaignSummaryDto>("/superadmin/ad-spaces", {
+          nombre: nombre.trim(),
+          empresa: empresa.trim() || undefined,
+          posicion: "FEED",
+          imagenUrl: imagenUrl.trim() || undefined,
+          linkUrl: resolvedLink(),
+          ctaTexto: ctaTexto.trim() || undefined,
+          inicioEn: startIso,
+          finEn: endIso,
+          horaInicio,
+          horaFin,
+          diasSemana: diasSemana.join(","),
+          prioridad,
+          maxImpresiones: maxImpresiones ? parseInt(maxImpresiones, 10) : undefined,
+          maxPorUsuarioDia: maxPorUsuarioDia ? parseInt(maxPorUsuarioDia, 10) : undefined,
+          conjuntoIds: scope === "SELECTED" ? selectedIds : undefined,
+        });
+        setCampaigns((prev) => [created, ...prev]);
+        cancelEditCampaign();
+        if (scope === "SELECTED") setSelectedIds([]);
+        toast.success(`Campaña publicada en ${created.conjuntosCount} conjunto(s).`);
+      }
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudo publicar la campaña");
+      toast.error(err instanceof ApiError ? err.message : "No se pudo guardar la campaña");
     } finally {
       setPublishing(false);
     }
@@ -286,18 +348,29 @@ export default function SuperAdminAdPublisher({
         onSubmit={handlePublish}
         className="liquid-glass rounded-[32px] p-6 border border-amber-500/30 flex flex-col gap-5"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0">
-            <Sparkles size={20} />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0">
+              <Sparkles size={20} />
+            </div>
+            <div>
+              <h3 className="text-base font-display font-bold text-text">
+                {editingCampanaId ? "Editando Campaña Publicitaria" : "Publicador de Pauta Publicitaria"}
+              </h3>
+              <p className="text-xs text-text/60">
+                Segmenta por conjunto, fechas, días y franja horaria (hora Colombia) con métricas por hora.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-display font-bold text-text">
-              Publicador de Pauta Publicitaria
-            </h3>
-            <p className="text-xs text-text/60">
-              Segmenta por conjunto, fechas, días y franja horaria (hora Colombia) con métricas por hora.
-            </p>
-          </div>
+          {editingCampanaId && (
+            <button
+              type="button"
+              onClick={cancelEditCampaign}
+              className="px-3 py-1.5 rounded-full bg-surface-2 border border-border text-[10px] font-bold uppercase text-text flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <X size={12} /> Cancelar
+            </button>
+          )}
         </div>
 
         {/* Nombre + Empresa */}
@@ -693,7 +766,9 @@ export default function SuperAdminAdPublisher({
           <Megaphone size={15} />
           <span>
             {publishing
-              ? "Publicando campaña…"
+              ? "Guardando…"
+              : editingCampanaId
+              ? "Guardar cambios de la campaña"
               : scope === "SELECTED"
               ? `Lanzar campaña en ${selectedIds.length} conjunto(s)`
               : `Lanzar campaña en todos los conjuntos (${conjuntos.length})`}
@@ -752,6 +827,14 @@ export default function SuperAdminAdPublisher({
                     title="Ver métricas por hora"
                   >
                     <BarChart3 size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startEditCampaign(c)}
+                    className="p-2 rounded-xl bg-surface-2 border border-border text-text hover:text-[#009df2] cursor-pointer"
+                    title="Editar campaña"
+                  >
+                    <Pencil size={15} />
                   </button>
                   <button
                     type="button"

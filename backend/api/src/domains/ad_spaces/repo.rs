@@ -298,6 +298,27 @@ pub async fn list_campaigns(conn: &mut DbConn) -> ApiResult<Vec<AdCampaignSummar
     Ok(out)
 }
 
+pub async fn update_campaign(
+    conn: &mut DbConn,
+    campana_id: Uuid,
+    changes: AdSpaceChangeset,
+) -> ApiResult<Option<AdCampaignSummaryDto>> {
+    let updated_count = diesel::update(
+        ad_spaces::table
+            .filter(ad_spaces::campana_id.eq(campana_id).or(ad_spaces::id.eq(campana_id))),
+    )
+    .set(&changes)
+    .execute(conn)
+    .await?;
+
+    if updated_count == 0 {
+        return Ok(None);
+    }
+
+    let all = list_campaigns(conn).await?;
+    Ok(all.into_iter().find(|c| c.campana_id == campana_id))
+}
+
 pub async fn toggle_campaign(conn: &mut DbConn, campana_id: Uuid) -> ApiResult<Option<bool>> {
     let rows = ad_spaces::table
         .filter(ad_spaces::campana_id.eq(campana_id).or(ad_spaces::id.eq(campana_id)))

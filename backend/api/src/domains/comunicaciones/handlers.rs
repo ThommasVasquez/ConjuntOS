@@ -1,5 +1,5 @@
 use axum::extract::{Path, State};
-use axum::routing::{delete, get, put};
+use axum::routing::{get, put};
 use axum::{Json, Router};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
@@ -39,7 +39,10 @@ pub fn router() -> Router<AppState> {
         .route("/anuncios", get(listar_anuncios).post(crear_anuncio))
         .route("/anuncios/{id}", put(actualizar_anuncio).delete(eliminar_anuncio))
         .route("/superadmin/anuncios", get(listar_anuncios_globales).post(crear_anuncio_global))
-        .route("/superadmin/anuncios/{id}", delete(eliminar_anuncio_global))
+        .route(
+            "/superadmin/anuncios/{id}",
+            put(actualizar_anuncio_global).delete(eliminar_anuncio_global),
+        )
         .route("/directorio", get(directorio))
 }
 
@@ -86,7 +89,8 @@ pub async fn crear_anuncio(
             "titulo y contenido son obligatorios".into(),
         ));
     }
-    let archivos_url = serde_json::to_value(req.archivos_url.unwrap_or_default())
+    let archivos_vec = req.archivos_url.unwrap_or_default();
+    let archivos_url = serde_json::to_value(&archivos_vec)
         .map_err(|e| ApiError::BadRequest(format!("archivosUrl inválido: {e}")))?;
     let effective_tipo = if matches!(user.rol, Rol::SuperAdmin) {
         TipoAnuncio::Conjuntos
@@ -284,6 +288,7 @@ pub struct GlobalAnuncioSummaryDto {
     pub titulo: String,
     pub contenido: String,
     pub imagen_url: Option<String>,
+    pub archivos_url: Vec<String>,
     pub fijado: bool,
     pub publicado_en: chrono::DateTime<chrono::Utc>,
     pub conjuntos_count: usize,
@@ -313,11 +318,14 @@ pub async fn listar_anuncios_globales(
         {
             existing.conjuntos_count += 1;
         } else {
+            let archivos_url: Vec<String> =
+                serde_json::from_value(a.archivos_url).unwrap_or_default();
             out.push(GlobalAnuncioSummaryDto {
                 id: a.id,
                 titulo: a.titulo,
                 contenido: a.contenido,
                 imagen_url: a.imagen_url,
+                archivos_url,
                 fijado: a.fijado,
                 publicado_en: a.publicado_en,
                 conjuntos_count: 1,
@@ -354,7 +362,8 @@ pub async fn crear_anuncio_global(
     let mut first_pub = chrono::Utc::now();
     let mut published = 0usize;
     let imagen_url = req.imagen_url.filter(|u| !u.trim().is_empty());
-    let archivos_url = serde_json::to_value(req.archivos_url.unwrap_or_default())
+    let archivos_vec = req.archivos_url.unwrap_or_default();
+    let archivos_url = serde_json::to_value(&archivos_vec)
         .map_err(|e| ApiError::BadRequest(format!("archivosUrl inválido: {e}")))?;
     let fijado = req.fijado.unwrap_or(true);
 
@@ -400,9 +409,93 @@ pub async fn crear_anuncio_global(
         titulo,
         contenido,
         imagen_url,
+        archivos_url: archivos_vec,
         fijado,
         publicado_en: first_pub,
         conjuntos_count: published,
+    }))
+}
+
+/// PUT /api/v1/superadmin/anuncios/{id} — edit a global ConjuntOS® announcement
+/// across all conjuntos where it was published.
+pub async fn actualizar_anuncio_global(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<CreateGlobalAnuncioRequest>,
+) -> ApiResult<Json<GlobalAnuncioSummaryDto>> {
+    guard::require(&user, &[Rol::SuperAdmin])?;
+    let titulo = req.titulo.trim().to_string();
+    let contenido = req.contenido.trim().to_string();
+    if titulo.is_empty() || contenido.is_empty() {
+        return Err(ApiError::BadRequest(
+            "titulo y contenido son obligatorios".into(),
+        ));
+    }
+
+    let mut conn = state.pool.get().await?;
+    let sample: Option<crate::domains::comunicaciones::models::Anuncio> = anuncios::table
+        .filter(anuncios::id.eq(id))
+        .filter(anuncios::tipo.eq(TipoAnuncio::Conjuntos))
+        .select(crate::domains::comunicaciones::models::Anuncio::as_select())
+        .first(&mut conn)
+        .await
+        .optional()?;
+
+    let Some(sample) = sample else {
+        return Err(ApiError::NotFound("anuncio global no encontrado".into()));
+    };
+
+    let imagen_url = req.imagen_url.filter(|u| !u.trim().is_empty());
+    let archivos_vec = req.archivos_url.unwrap_or_default();
+    let archivos_url = serde_json::to_value(&archivos_vec)
+        .map_err(|e| ApiError::BadRequest(format!("archivosUrl inválido: {e}")))?;
+    let fijado = req.fijado.unwrap_or(sample.fijado);
+
+    let updated_rows: Vec<crate::domains::comunicaciones::models::Anuncio> = diesel::update(
+        anuncios::table
+            .filter(anuncios::tipo.eq(TipoAnuncio::Conjuntos))
+            .filter(anuncios::titulo.eq(&sample.titulo))
+            .filter(anuncios::contenido.eq(&sample.contenido)),
+    )
+    .set((
+        anuncios::titulo.eq(&titulo),
+        anuncios::contenido.eq(&contenido),
+        anuncios::imagen_url.eq(&imagen_url),
+        anuncios::archivos_url.eq(&archivos_url),
+        anuncios::fijado.eq(fijado),
+    ))
+    .returning(crate::domains::comunicaciones::models::Anuncio::as_returning())
+    .load(&mut conn)
+    .await?;
+
+    let count = updated_rows.len();
+    for a in updated_rows {
+        let cid = a.conjunto_id;
+        let dto = AnuncioDto::from(a);
+        state
+            .ws_hub
+            .publish(
+                cid,
+                WsEvent {
+                    domain: "anuncio".into(),
+                    action: "updated".into(),
+                    payload: Some(serde_json::to_value(&dto).unwrap_or_default()),
+                    target_user_id: None,
+                },
+            )
+            .await;
+    }
+
+    Ok(Json(GlobalAnuncioSummaryDto {
+        id: sample.id,
+        titulo,
+        contenido,
+        imagen_url,
+        archivos_url: archivos_vec,
+        fijado,
+        publicado_en: sample.publicado_en,
+        conjuntos_count: count,
     }))
 }
 
