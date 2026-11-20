@@ -1000,9 +1000,10 @@ function HomeResidente() {
                 <AnuncioCard anuncio={anuncio} onNavigate={(path) => router.push(path)} />
               </div>
             ];
-            // Insertar ad cada 3 anuncios
-            if ((idx + 1) % 3 === 0 && ads.length > 0) {
-              const ad = ads[Math.floor(idx / 3) % ads.length];
+            // Insertar ad después del 1er anuncio si hay pocos, y luego cada 3 anuncios
+            if (ads.length > 0 && ((anuncios.length < 3 && idx === 0) || (idx + 1) % 3 === 0)) {
+              const adIndex = anuncios.length < 3 ? 0 : Math.floor(idx / 3) % ads.length;
+              const ad = ads[adIndex];
               items.push(<BannerAdCard key={`ad-${ad.id}-${idx}`} ad={ad} />);
             }
             return items;
@@ -1128,7 +1129,7 @@ function AnuncioCard({ anuncio, onNavigate }: { anuncio: AnuncioDto; onNavigate?
 function BannerAdCard({ ad }: { ad: AdSpaceFeedDto }) {
   const handleClick = () => {
     api.post(`/ad-spaces/${ad.id}/click`, {}).catch(() => {});
-    if (ad.linkUrl) window.open(ad.linkUrl, "_blank");
+    if (ad.linkUrl) window.open(ad.linkUrl, "_blank", "noopener,noreferrer");
   };
 
   // Registrar impresión al montar
@@ -1139,30 +1140,44 @@ function BannerAdCard({ ad }: { ad: AdSpaceFeedDto }) {
   return (
     <div
       onClick={handleClick}
-      className="fade-up-home cursor-pointer rounded-[28px] overflow-hidden border border-accent/20 relative bg-surface-2"
+      className="fade-up-home cursor-pointer liquid-glass-card rounded-[28px] overflow-hidden border border-amber-500/25 shadow-lg relative active:scale-[0.98] transition-all"
     >
-      {ad.imagenUrl ? (
-        <Image
-          src={ad.imagenUrl}
-          alt={ad.nombre}
-          width={400}
-          height={200}
-          className="w-full h-48 object-cover"
-          unoptimized
-        />
-      ) : (
-        <div className="w-full h-32 bg-gradient-to-r from-accent/20 to-accent/5 flex items-center justify-center">
-          <span className="text-text/40 text-sm">{ad.nombre}</span>
+      <div className="relative">
+        {ad.imagenUrl ? (
+          <Image
+            src={ad.imagenUrl}
+            alt={ad.nombre}
+            width={400}
+            height={200}
+            className="w-full h-48 object-cover"
+            unoptimized
+          />
+        ) : (
+          <div className="w-full h-32 bg-gradient-to-br from-amber-500/20 via-[#009df2]/10 to-transparent flex items-center justify-center px-6 text-center">
+            <span className="text-text font-display font-bold text-base">{ad.nombre}</span>
+          </div>
+        )}
+        <div className="absolute top-3 right-3 bg-black/65 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest border border-white/15">
+          Patrocinado
         </div>
-      )}
-      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
-        Publicidad
       </div>
-      {ad.empresa && (
-        <div className="p-3 text-center text-[10px] text-text/60 bg-surface-2">
-          {ad.empresa}
+
+      <div className="p-4 flex items-center justify-between gap-3 bg-surface/60">
+        <div className="min-w-0">
+          {ad.empresa && (
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 block truncate">
+              {ad.empresa}
+            </span>
+          )}
+          <h4 className="text-sm font-bold text-text truncate">{ad.nombre}</h4>
         </div>
-      )}
+        {ad.linkUrl && (
+          <span className="shrink-0 px-3.5 py-2 rounded-xl bg-[#009df2] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
+            {ad.ctaTexto || "Ver más"}
+            <ArrowRight size={13} />
+          </span>
+        )}
+      </div>
     </div>
   );
 }

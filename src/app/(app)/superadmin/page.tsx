@@ -17,6 +17,7 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { SkeletonRows } from "@/components/ui/Skeleton";
+import SuperAdminAdPublisher from "@/components/superadmin/SuperAdminAdPublisher";
 
 export default function SuperAdminPage() {
   const { user, loading: authLoading } = useAuth();
@@ -27,7 +28,7 @@ export default function SuperAdminPage() {
   const [conjuntos, setConjuntos] = useState<ConjuntoDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tab, setTab] = useState<"CREAR" | "LISTAR" | "ANUNCIOS">("CREAR");
+  const [tab, setTab] = useState<"CREAR" | "LISTAR" | "ANUNCIOS" | "PAUTA">("CREAR");
   const [editingConjuntoId, setEditingConjuntoId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -534,7 +535,7 @@ export default function SuperAdminPage() {
         </button>
         <button
           onClick={() => setTab("ANUNCIOS")}
-          className={`flex-1 py-3 px-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all text-center flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-3 px-2.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all text-center flex items-center justify-center gap-1 ${
             tab === "ANUNCIOS"
               ? "bg-[#009df2]/15 text-[#009df2] border border-[#009df2]/30 shadow-md"
               : "text-text hover:text-text"
@@ -542,9 +543,21 @@ export default function SuperAdminPage() {
         >
           <Megaphone size={13} /> ConjuntOS®
         </button>
+        <button
+          onClick={() => setTab("PAUTA")}
+          className={`flex-1 py-3 px-2.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all text-center flex items-center justify-center gap-1 ${
+            tab === "PAUTA"
+              ? "bg-amber-500/15 text-amber-500 border border-amber-500/30 shadow-md"
+              : "text-text hover:text-text"
+          }`}
+        >
+          Pauta
+        </button>
       </div>
 
-      {tab === "ANUNCIOS" ? (
+      {tab === "PAUTA" ? (
+        <SuperAdminAdPublisher conjuntos={conjuntos} />
+      ) : tab === "ANUNCIOS" ? (
         <div className="flex flex-col gap-6 w-full">
           <form onSubmit={handlePublishGlobalAnuncio} className="liquid-glass rounded-[32px] p-6 border border-[#009df2]/30 flex flex-col gap-5">
             <div className="flex items-center gap-3">

@@ -14,6 +14,26 @@ diesel::table! {
         fin_en -> Timestamptz,
         impresiones -> Int4,
         clics -> Int4,
+        campana_id -> Nullable<Uuid>,
+        hora_inicio -> Int4,
+        hora_fin -> Int4,
+        dias_semana -> Text,
+        cta_texto -> Nullable<Text>,
+        prioridad -> Int4,
+        max_impresiones -> Nullable<Int4>,
+        max_por_usuario_dia -> Nullable<Int4>,
+    }
+}
+
+diesel::table! {
+    ad_events (id) {
+        id -> Uuid,
+        ad_space_id -> Uuid,
+        conjunto_id -> Uuid,
+        usuario_id -> Nullable<Uuid>,
+        tipo -> Text,
+        hora_local -> Int4,
+        created_at -> Timestamptz,
     }
 }
 
@@ -1061,6 +1081,7 @@ diesel::table! {
 }
 
 diesel::allow_tables_to_appear_in_same_query!(
+    ad_events,
     ad_spaces,
     anuncios,
     areas_comunes,

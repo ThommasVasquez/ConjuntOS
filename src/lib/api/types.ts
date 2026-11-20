@@ -1058,7 +1058,52 @@ export interface AdSpaceFeedDto {
   posicion: string;
   imagenUrl: string | null;
   linkUrl: string | null;
+  ctaTexto?: string | null;
   empresa: string | null;
+  prioridad?: number;
+}
+
+export interface AdCampaignSummaryDto {
+  campanaId: string;
+  nombre: string;
+  empresa: string | null;
+  posicion: string;
+  imagenUrl: string | null;
+  linkUrl: string | null;
+  ctaTexto: string | null;
+  activo: boolean;
+  inicioEn: string;
+  finEn: string;
+  horaInicio: number;
+  horaFin: number;
+  diasSemana: string;
+  prioridad: number;
+  maxImpresiones: number | null;
+  maxPorUsuarioDia: number | null;
+  conjuntosCount: number;
+  conjuntosNombres: string[];
+  impresiones: number;
+  clics: number;
+  ctr: number;
+}
+
+export interface AdCampaignMetricsDto {
+  campanaId: string;
+  nombre: string;
+  empresa: string | null;
+  impresiones: number;
+  clics: number;
+  ctr: number;
+  usuariosUnicos: number;
+  horaPico: number | null;
+  porHora: Array<{ hora: number; impresiones: number; clics: number }>;
+  porConjunto: Array<{
+    conjuntoId: string;
+    conjuntoNombre: string;
+    impresiones: number;
+    clics: number;
+    ctr: number;
+  }>;
 }
 
 export interface CreateAdSpaceRequest {
