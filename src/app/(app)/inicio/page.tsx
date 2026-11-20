@@ -988,27 +988,34 @@ function HomeResidente() {
              <div className="w-8 h-8 rounded-full bg-text/10 animate-pulse" />
              <span className="text-[10px] font-bold text-text uppercase tracking-widest animate-pulse">Cargando novedades...</span>
            </div>
-         ) : anuncios.length === 0 && activeEncuestas.length === 0 ? (
+         ) : anuncios.length === 0 && activeEncuestas.length === 0 && ads.length === 0 ? (
            <div className="py-10 flex flex-col items-center justify-center gap-3">
              <Megaphone size={32} className="text-text" />
              <span className="text-[10px] font-bold text-text uppercase tracking-widest">Sin novedades por ahora</span>
            </div>
-         ) : (
-          anuncios.map((anuncio, idx) => {
-            const items = [
-              <div key={anuncio.id} onClick={() => setSelectedFeedItem(anuncio)} className="cursor-pointer">
-                <AnuncioCard anuncio={anuncio} onNavigate={(path) => router.push(path)} />
-              </div>
-            ];
-            // Insertar ad después del 1er anuncio si hay pocos, y luego cada 3 anuncios
-            if (ads.length > 0 && ((anuncios.length < 3 && idx === 0) || (idx + 1) % 3 === 0)) {
-              const adIndex = anuncios.length < 3 ? 0 : Math.floor(idx / 3) % ads.length;
-              const ad = ads[adIndex];
-              items.push(<BannerAdCard key={`ad-${ad.id}-${idx}`} ad={ad} />);
-            }
-            return items;
-          })
-        )}
+         ) : (() => {
+          const { beforeFirst, afterPost } = buildAdSlots(anuncios.length, ads);
+          return (
+            <>
+              {beforeFirst.length > 0 && (
+                <BannerAdSlot key="ad-slot-before" ads={beforeFirst} />
+              )}
+              {anuncios.map((anuncio, idx) => {
+                const slotAds = afterPost.get(idx);
+                return (
+                  <div key={anuncio.id} className="flex flex-col gap-5">
+                    <div onClick={() => setSelectedFeedItem(anuncio)} className="cursor-pointer">
+                      <AnuncioCard anuncio={anuncio} onNavigate={(path) => router.push(path)} />
+                    </div>
+                    {slotAds && slotAds.length > 0 && (
+                      <BannerAdSlot key={`ad-slot-${idx}`} ads={slotAds} />
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          );
+        })()}
        </section>
 
        {/* FOOTER */}
@@ -1142,16 +1149,116 @@ function AnuncioCard({ anuncio, onNavigate }: { anuncio: AnuncioDto; onNavigate?
   );
 }
 
-function BannerAdCard({ ad }: { ad: AdSpaceFeedDto }) {
+/**
+ * Distribuye todas las pautas activas en el feed sin colocar nunca dos seguidas:
+ * - Si hay >= 3 publicaciones por pauta: intercala 1 pauta cada 3 publicaciones.
+ * - Si hay al menos 1 publicación por pauta: reparte todas uniformemente entre las publicaciones.
+ * - Si hay más pautas que publicaciones: usa también el espacio previo a la 1ª publicación
+ *   y, solo si aún sobran, agrupa en un slot rotativo para nunca apilar dos banners juntos.
+ */
+function buildAdSlots(
+  anunciosCount: number,
+  ads: AdSpaceFeedDto[]
+): { beforeFirst: AdSpaceFeedDto[]; afterPost: Map<number, AdSpaceFeedDto[]> } {
+  const beforeFirst: AdSpaceFeedDto[] = [];
+  const afterPost = new Map<number, AdSpaceFeedDto[]>();
+
+  if (ads.length === 0) return { beforeFirst, afterPost };
+
+  if (anunciosCount === 0) {
+    beforeFirst.push(...ads);
+    return { beforeFirst, afterPost };
+  }
+
+  if (anunciosCount >= ads.length * 3) {
+    let slot = 0;
+    for (let idx = 2; idx < anunciosCount; idx += 3) {
+      afterPost.set(idx, [ads[slot % ads.length]]);
+      slot++;
+    }
+    return { beforeFirst, afterPost };
+  }
+
+  if (anunciosCount >= ads.length) {
+    for (let k = 0; k < ads.length; k++) {
+      const postIdx = Math.floor(((k + 1) * anunciosCount) / ads.length) - 1;
+      afterPost.set(postIdx, [ads[k]]);
+    }
+    return { beforeFirst, afterPost };
+  }
+
+  // 0 < anunciosCount < ads.length: tenemos (anunciosCount + 1) espacios separados
+  const totalBuckets = anunciosCount + 1;
+  ads.forEach((ad, i) => {
+    const bucket = i % totalBuckets;
+    if (bucket === 0) {
+      beforeFirst.push(ad);
+    } else {
+      const postIdx = bucket - 1;
+      const existing = afterPost.get(postIdx) ?? [];
+      existing.push(ad);
+      afterPost.set(postIdx, existing);
+    }
+  });
+
+  return { beforeFirst, afterPost };
+}
+
+function BannerAdSlot({ ads }: { ads: AdSpaceFeedDto[] }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const impressedRef = useRef<Set<string>>(new Set());
+  const safeIdx = activeIdx % ads.length;
+  const currentAd = ads[safeIdx];
+
+  useEffect(() => {
+    if (ads.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % ads.length);
+    }, 6500);
+    return () => clearInterval(timer);
+  }, [ads.length]);
+
+  useEffect(() => {
+    if (!currentAd || impressedRef.current.has(currentAd.id)) return;
+    impressedRef.current.add(currentAd.id);
+    api.post(`/ad-spaces/${currentAd.id}/impress`, {}).catch(() => {});
+  }, [currentAd]);
+
+  if (!currentAd) return null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <BannerAdCard ad={currentAd} skipAutoImpress />
+      {ads.length > 1 && (
+        <div className="flex items-center justify-center gap-1.5">
+          {ads.map((item, idx) => (
+            <button
+              key={item.id}
+              type="button"
+              aria-label={`Ver pauta ${idx + 1}`}
+              onClick={() => setActiveIdx(idx)}
+              className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                idx === safeIdx ? "w-5 bg-amber-500" : "w-1.5 bg-text/25 hover:bg-text/40"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BannerAdCard({ ad, skipAutoImpress = false }: { ad: AdSpaceFeedDto; skipAutoImpress?: boolean }) {
   const handleClick = () => {
     api.post(`/ad-spaces/${ad.id}/click`, {}).catch(() => {});
     if (ad.linkUrl) window.open(ad.linkUrl, "_blank", "noopener,noreferrer");
   };
 
-  // Registrar impresión al montar
+  // Registrar impresión al montar (cuando no lo maneja BannerAdSlot)
   useEffect(() => {
+    if (skipAutoImpress) return;
     api.post(`/ad-spaces/${ad.id}/impress`, {}).catch(() => {});
-  }, [ad.id]);
+  }, [ad.id, skipAutoImpress]);
 
   return (
     <div
