@@ -54,6 +54,18 @@ diesel::table! {
 }
 
 diesel::table! {
+    anuncio_events (id) {
+        id -> Uuid,
+        anuncio_id -> Uuid,
+        conjunto_id -> Uuid,
+        usuario_id -> Nullable<Uuid>,
+        tipo -> Text,
+        hora_local -> Int4,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     areas_comunes (id) {
         id -> Uuid,
         conjunto_id -> Uuid,
@@ -1083,6 +1095,7 @@ diesel::table! {
 diesel::allow_tables_to_appear_in_same_query!(
     ad_events,
     ad_spaces,
+    anuncio_events,
     anuncios,
     areas_comunes,
     asamblea_actas,

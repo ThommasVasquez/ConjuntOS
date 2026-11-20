@@ -52,7 +52,7 @@ interface CargoParqueaderoRetenido {
 }
 import { useAuth } from "@/hooks/useAuth";
 import { api, invalidateApiCache } from "@/lib/api/client";
-import { extractAnuncioCta } from "@/lib/anuncio-cta";
+import { extractAnuncioMeta } from "@/lib/anuncio-cta";
 import type {
   AnuncioDto,
   NotificacionDto,
@@ -1046,7 +1046,16 @@ function AnuncioCard({ anuncio, onNavigate }: { anuncio: AnuncioDto; onNavigate?
   };
 
   const isConjuntosOfficial = anuncio.tipo === "CONJUNTOS";
-  const { cta } = extractAnuncioCta(anuncio.archivosUrl);
+  const { cta, brand } = extractAnuncioMeta(anuncio.archivosUrl);
+  const displayBrandName = brand?.name || "ConjuntOS®";
+  const displayBrandLogo = brand?.logoUrl || "/icons/conjuntos-post-icon.png";
+
+  // Registrar vista con hora local cuando es anuncio de SuperAdmin
+  useEffect(() => {
+    if (isConjuntosOfficial) {
+      api.post(`/anuncios/${anuncio.id}/view`, {}).catch(() => {});
+    }
+  }, [anuncio.id, isConjuntosOfficial]);
 
   return (
     <div className={`fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t transition-all active:scale-[0.98] relative overflow-hidden ${isConjuntosOfficial ? "border-[#009df2]/30" : "border-border/20"}`}>
@@ -1054,26 +1063,26 @@ function AnuncioCard({ anuncio, onNavigate }: { anuncio: AnuncioDto; onNavigate?
          <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center border shadow-sm shrink-0 overflow-hidden ${
               isConjuntosOfficial
-                ? "bg-[#08090d] border-white/15 p-1"
+                ? (brand?.logoUrl ? "bg-surface-2 border-border" : "bg-[#08090d] border-white/15 p-1")
                 : "bg-white/95 border-border p-1.5"
             }`}>
                <Image
-                 src={isConjuntosOfficial ? "/icons/conjuntos-post-icon.png" : "/icons/admin-post-bird.png"}
-                 alt={isConjuntosOfficial ? "ConjuntOS®" : "Administración"}
+                 src={isConjuntosOfficial ? displayBrandLogo : "/icons/admin-post-bird.png"}
+                 alt={isConjuntosOfficial ? displayBrandName : "Administración"}
                  width={32}
                  height={32}
-                 className="w-full h-full object-contain"
+                 className={isConjuntosOfficial && brand?.logoUrl ? "w-full h-full object-cover" : "w-full h-full object-contain"}
                  unoptimized
                />
             </div>
             <div>
                <div className="flex items-center gap-1.5 mb-1">
                  <h4 className="text-sm font-bold text-text leading-none">
-                   {isConjuntosOfficial ? "ConjuntOS®" : anuncio.tipo}
+                   {isConjuntosOfficial ? displayBrandName : anuncio.tipo}
                  </h4>
                  {isConjuntosOfficial && (
-                   <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#009df2]/15 text-[#009df2]">
-                     Oficial
+                   <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-text/10 text-text/70">
+                     Anuncio
                    </span>
                  )}
                </div>
@@ -1093,7 +1102,14 @@ function AnuncioCard({ anuncio, onNavigate }: { anuncio: AnuncioDto; onNavigate?
              type="button"
              onClick={(e) => {
                e.stopPropagation();
-               onNavigate(cta.path);
+               if (isConjuntosOfficial) {
+                 api.post(`/anuncios/${anuncio.id}/cta-click`, {}).catch(() => {});
+               }
+               if (/^https?:\/\//i.test(cta.path)) {
+                 window.open(cta.path, "_blank", "noopener,noreferrer");
+               } else {
+                 onNavigate(cta.path);
+               }
              }}
              className={`mb-4 w-full py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer shadow-sm ${
                isConjuntosOfficial
@@ -1115,8 +1131,8 @@ function AnuncioCard({ anuncio, onNavigate }: { anuncio: AnuncioDto; onNavigate?
       )}
 
       <div className="p-4 flex items-center justify-between border-t border-border bg-surface/40 backdrop-blur-xl mt-auto rounded-b-[32px]">
-         <span className="text-text text-[11px] flex items-center gap-1.5 font-semibold uppercase tracking-wider">
-            <Megaphone size={12} /> {isConjuntosOfficial ? "ConjuntOS®" : anuncio.tipo}
+         <span className="text-text/75 text-[11px] flex items-center gap-1.5 font-semibold uppercase tracking-wider">
+            <Megaphone size={12} /> {isConjuntosOfficial ? "Para la comunidad" : anuncio.tipo}
          </span>
          <span className="text-accent text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-widest">
             Ver más <ChevronLeft size={14} className="rotate-180" />

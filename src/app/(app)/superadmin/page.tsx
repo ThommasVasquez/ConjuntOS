@@ -5,12 +5,12 @@ import Image from "next/image";
 import {
   Building2, Plus, FileText, ShieldCheck, MapPin,
   User, Calendar, Layers, Upload, Edit3, Home, Grid, ToggleLeft, ToggleRight,
-  UserPlus, Key, Mail, Phone, CheckCircle2, X, Search, Check, Megaphone, Trash2, Send
+  UserPlus, Key, Mail, Phone, CheckCircle2, X, Search, Check, Megaphone, Trash2, Send, BarChart3, Eye, Users, MousePointerClick
 } from "lucide-react";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
-import { ANUNCIO_CTA_DESTINOS, extractAnuncioCta, mergeAnuncioCta } from "@/lib/anuncio-cta";
+import { ANUNCIO_CTA_DESTINOS, extractAnuncioMeta, mergeAnuncioMeta } from "@/lib/anuncio-cta";
 import type { ConjuntoDto } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
@@ -58,7 +58,63 @@ export default function SuperAdminPage() {
   const [globalCtaDest, setGlobalCtaDest] = useState("");
   const [globalCtaCustomPath, setGlobalCtaCustomPath] = useState("");
   const [globalCtaLabel, setGlobalCtaLabel] = useState("");
+  const [globalBrandName, setGlobalBrandName] = useState("ConjuntOS®");
+  const [globalBrandLogo, setGlobalBrandLogo] = useState("");
+  const [uploadingBrandLogo, setUploadingBrandLogo] = useState(false);
   const [uploadingGlobalImage, setUploadingGlobalImage] = useState(false);
+  const [anuncioStatsModal, setAnuncioStatsModal] = useState<{
+    id: string;
+    titulo: string;
+    vistas: number;
+    usuariosUnicos: number;
+    clicsCta: number;
+    usuariosCtaUnicos: number;
+    ctr: number;
+    horaPico: number | null;
+    porHora: Array<{ hora: number; vistas: number; clicsCta: number }>;
+    porConjunto: Array<{ conjuntoId: string; conjuntoNombre: string; vistas: number; clicsCta: number }>;
+  } | null>(null);
+  const [loadingAnuncioStatsId, setLoadingAnuncioStatsId] = useState<string | null>(null);
+
+  const handleBrandLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("El logo supera el límite de 3MB");
+      return;
+    }
+    setUploadingBrandLogo(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("No se pudo leer el logo"));
+        reader.readAsDataURL(file);
+      });
+      const res = await api.post<{ url: string }>("/uploads/imagen", {
+        data: dataUrl,
+        carpeta: "anuncios",
+      });
+      setGlobalBrandLogo(res.url);
+      toast.success("Logo de marca cargado");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.detail : "Error al subir logo");
+    } finally {
+      setUploadingBrandLogo(false);
+    }
+  };
+
+  const openGlobalAnuncioStats = async (id: string) => {
+    setLoadingAnuncioStatsId(id);
+    try {
+      const data = await api.get<NonNullable<typeof anuncioStatsModal>>(`/superadmin/anuncios/${id}/stats`);
+      setAnuncioStatsModal(data);
+    } catch {
+      toast.error("No se pudieron cargar las estadísticas del anuncio");
+    } finally {
+      setLoadingAnuncioStatsId(null);
+    }
+  };
 
   const handleGlobalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,7 +177,9 @@ export default function SuperAdminPage() {
       imagenUrl: a.imagenUrl || "",
       fijado: a.fijado,
     });
-    const { cta } = extractAnuncioCta(a.archivosUrl);
+    const { cta, brand } = extractAnuncioMeta(a.archivosUrl);
+    setGlobalBrandName(brand?.name || "ConjuntOS®");
+    setGlobalBrandLogo(brand?.logoUrl || "");
     if (cta) {
       const preset = ANUNCIO_CTA_DESTINOS.find((d) => d.value === cta.path);
       if (preset) {
@@ -146,6 +204,8 @@ export default function SuperAdminPage() {
     setGlobalCtaDest("");
     setGlobalCtaCustomPath("");
     setGlobalCtaLabel("");
+    setGlobalBrandName("ConjuntOS®");
+    setGlobalBrandLogo("");
   };
 
   const handlePublishGlobalAnuncio = async (e: React.FormEvent) => {
@@ -161,9 +221,12 @@ export default function SuperAdminPage() {
     setPublishingGlobal(true);
     try {
       const resolvedCtaPath = globalCtaDest === "__CUSTOM__" ? globalCtaCustomPath.trim() : globalCtaDest;
-      const archivosUrl = mergeAnuncioCta(
+      const archivosUrl = mergeAnuncioMeta(
         [],
-        resolvedCtaPath ? { path: resolvedCtaPath, label: globalCtaLabel.trim() || "Ver sección" } : null
+        resolvedCtaPath ? { path: resolvedCtaPath, label: globalCtaLabel.trim() || "Ver más" } : null,
+        globalBrandName.trim()
+          ? { name: globalBrandName.trim(), logoUrl: globalBrandLogo.trim() || undefined, badge: "Anuncio" }
+          : null
       );
       if (editingGlobalId) {
         const updated = await api.put<(typeof globalAnuncios)[number]>(`/superadmin/anuncios/${editingGlobalId}`, {
@@ -772,6 +835,53 @@ export default function SuperAdminPage() {
               )}
             </div>
 
+            {/* Marca anunciante + Logo opcional */}
+            <div className="bg-surface-2/60 border border-border rounded-2xl p-4 flex flex-col gap-3">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Marca que publica el anuncio *
+              </label>
+              <div className="flex items-center gap-3">
+                <label className="w-12 h-12 rounded-full border border-border bg-[#08090d] flex items-center justify-center shrink-0 overflow-hidden cursor-pointer relative group" title="Subir logo de la marca">
+                  <img
+                    src={globalBrandLogo || "/icons/conjuntos-post-icon.png"}
+                    alt={globalBrandName || "Marca"}
+                    className={globalBrandLogo ? "w-full h-full object-cover" : "w-full h-full object-contain p-1"}
+                  />
+                  <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <Upload size={14} className="text-white" />
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleBrandLogoUpload}
+                    disabled={uploadingBrandLogo}
+                  />
+                </label>
+                <div className="flex-1 flex flex-col gap-1">
+                  <input
+                    type="text"
+                    value={globalBrandName}
+                    onChange={(e) => setGlobalBrandName(e.target.value)}
+                    placeholder="Ej: Pizzería La Toscana, ConjuntOS®..."
+                    className="w-full bg-surface border border-border rounded-xl py-2.5 px-3 text-xs font-bold text-text outline-none focus:border-[#009df2]"
+                  />
+                  <div className="flex items-center gap-2 text-[10px] text-text/55">
+                    <span>{uploadingBrandLogo ? "Subiendo logo…" : "Toca el ícono circular para cambiar el logo de la marca"}</span>
+                    {globalBrandLogo && (
+                      <button
+                        type="button"
+                        onClick={() => setGlobalBrandLogo("")}
+                        className="text-danger font-bold cursor-pointer"
+                      >
+                        Quitar logo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">Título del anuncio *</label>
               <input
@@ -948,6 +1058,15 @@ export default function SuperAdminPage() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
+                      onClick={() => openGlobalAnuncioStats(a.id)}
+                      disabled={loadingAnuncioStatsId === a.id}
+                      className="p-2 rounded-xl bg-[#009df2]/15 text-[#009df2] hover:bg-[#009df2]/25 cursor-pointer active:scale-95 transition-all"
+                      title="Ver estadísticas del anuncio"
+                    >
+                      <BarChart3 size={15} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => startEditGlobalAnuncio(a)}
                       className="p-2 rounded-xl bg-surface-2 border border-border text-text hover:text-[#009df2] cursor-pointer active:scale-95 transition-all"
                       title="Editar anuncio"
@@ -967,6 +1086,108 @@ export default function SuperAdminPage() {
               ))
             )}
           </div>
+
+          {/* MODAL DE ESTADÍSTICAS DEL ANUNCIO */}
+          {anuncioStatsModal && (
+            <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="liquid-glass rounded-[32px] border border-border p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col gap-5 relative">
+                <button
+                  type="button"
+                  onClick={() => setAnuncioStatsModal(null)}
+                  className="absolute top-5 right-5 w-8 h-8 rounded-full bg-surface-2 border border-border flex items-center justify-center text-text cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#009df2]">
+                    Estadísticas del Anuncio
+                  </span>
+                  <h3 className="text-lg font-display font-bold text-text mt-0.5 pr-8">
+                    {anuncioStatsModal.titulo}
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="bg-surface-2 rounded-2xl p-3 border border-border">
+                    <span className="text-[9px] font-bold uppercase text-text/50 flex items-center gap-1">
+                      <Eye size={11} /> Vistas
+                    </span>
+                    <span className="text-lg font-black text-text tabular-nums">{anuncioStatsModal.vistas}</span>
+                  </div>
+                  <div className="bg-surface-2 rounded-2xl p-3 border border-border">
+                    <span className="text-[9px] font-bold uppercase text-text/50 flex items-center gap-1">
+                      <Users size={11} /> Personas
+                    </span>
+                    <span className="text-lg font-black text-text tabular-nums">{anuncioStatsModal.usuariosUnicos}</span>
+                  </div>
+                  <div className="bg-surface-2 rounded-2xl p-3 border border-border">
+                    <span className="text-[9px] font-bold uppercase text-text/50 flex items-center gap-1">
+                      <MousePointerClick size={11} /> Clics CTA
+                    </span>
+                    <span className="text-lg font-black text-[#009df2] tabular-nums">{anuncioStatsModal.clicsCta}</span>
+                    <span className="text-[9px] text-text/50 block">{anuncioStatsModal.usuariosCtaUnicos} pers.</span>
+                  </div>
+                  <div className="bg-surface-2 rounded-2xl p-3 border border-border">
+                    <span className="text-[9px] font-bold uppercase text-text/50">CTR</span>
+                    <span className="text-lg font-black text-emerald-500 tabular-nums">{anuncioStatsModal.ctr}%</span>
+                  </div>
+                </div>
+
+                <div className="bg-surface-2 rounded-2xl p-4 border border-border flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-text">Vistas por hora del día (Colombia)</span>
+                    {anuncioStatsModal.horaPico !== null && (
+                      <span className="text-[10px] font-black text-amber-500 bg-amber-500/15 px-2 py-0.5 rounded-full">
+                        Hora pico: {String(anuncioStatsModal.horaPico).padStart(2, "0")}:00
+                      </span>
+                    )}
+                  </div>
+                  {(() => {
+                    const maxVal = Math.max(1, ...anuncioStatsModal.porHora.map((h) => h.vistas));
+                    return (
+                      <div className="flex items-end gap-1 h-28 pt-2">
+                        {anuncioStatsModal.porHora.map((h) => {
+                          const pct = Math.round((h.vistas / maxVal) * 100);
+                          const isPeak = anuncioStatsModal.horaPico === h.hora && h.vistas > 0;
+                          return (
+                            <div key={h.hora} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                              <div
+                                title={`${String(h.hora).padStart(2, "0")}:00 — ${h.vistas} vistas · ${h.clicsCta} clics CTA`}
+                                className={`w-full rounded-t-sm transition-all ${
+                                  isPeak ? "bg-amber-500" : h.vistas > 0 ? "bg-[#009df2]" : "bg-text/10"
+                                }`}
+                                style={{ height: `${Math.max(h.vistas > 0 ? 12 : 4, pct)}%` }}
+                              />
+                              {h.hora % 4 === 0 && (
+                                <span className="text-[8px] text-text/50 tabular-nums">{h.hora}h</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {anuncioStatsModal.porConjunto.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-bold text-text">Rendimiento por conjunto</span>
+                    <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                      {anuncioStatsModal.porConjunto.map((cj) => (
+                        <div key={cj.conjuntoId} className="flex items-center justify-between text-xs bg-surface-2 px-3 py-2 rounded-xl border border-border">
+                          <span className="font-bold text-text truncate">{cj.conjuntoNombre}</span>
+                          <span className="text-text/70 shrink-0 tabular-nums">
+                            {cj.vistas} vistas · {cj.clicsCta} CTA
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       ) : tab === "CREAR" ? (
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
