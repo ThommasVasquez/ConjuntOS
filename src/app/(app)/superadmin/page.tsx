@@ -60,6 +60,7 @@ export default function SuperAdminPage() {
   const [globalCtaLabel, setGlobalCtaLabel] = useState("");
   const [globalBrandName, setGlobalBrandName] = useState("ConjuntOS®");
   const [globalBrandLogo, setGlobalBrandLogo] = useState("");
+  const [globalShowBadge, setGlobalShowBadge] = useState(true);
   const [uploadingBrandLogo, setUploadingBrandLogo] = useState(false);
   const [uploadingGlobalImage, setUploadingGlobalImage] = useState(false);
   const [anuncioStatsModal, setAnuncioStatsModal] = useState<{
@@ -223,6 +224,7 @@ export default function SuperAdminPage() {
     const { cta, brand } = extractAnuncioMeta(a.archivosUrl);
     setGlobalBrandName(brand?.name || "ConjuntOS®");
     setGlobalBrandLogo(brand?.logoUrl || "");
+    setGlobalShowBadge(brand ? brand.badge !== "" : true);
     if (cta) {
       const preset = ANUNCIO_CTA_DESTINOS.find((d) => d.value === cta.path);
       if (preset) {
@@ -249,6 +251,7 @@ export default function SuperAdminPage() {
     setGlobalCtaLabel("");
     setGlobalBrandName("ConjuntOS®");
     setGlobalBrandLogo("");
+    setGlobalShowBadge(true);
   };
 
   const handlePublishGlobalAnuncio = async (e: React.FormEvent) => {
@@ -268,7 +271,11 @@ export default function SuperAdminPage() {
         [],
         resolvedCtaPath ? { path: resolvedCtaPath, label: globalCtaLabel.trim() || "Ver más" } : null,
         globalBrandName.trim()
-          ? { name: globalBrandName.trim(), logoUrl: globalBrandLogo.trim() || undefined, badge: "Anuncio" }
+          ? {
+              name: globalBrandName.trim(),
+              logoUrl: globalBrandLogo.trim() || undefined,
+              badge: globalShowBadge ? "Anuncio" : "",
+            }
           : null
       );
       if (editingGlobalId) {
@@ -923,6 +930,15 @@ export default function SuperAdminPage() {
                   </div>
                 </div>
               </div>
+              <label className="flex items-center gap-2.5 text-xs font-semibold text-text cursor-pointer select-none pt-1">
+                <input
+                  type="checkbox"
+                  checked={globalShowBadge}
+                  onChange={(e) => setGlobalShowBadge(e.target.checked)}
+                  className="w-4 h-4 accent-[#009df2]"
+                />
+                Mostrar etiqueta &ldquo;Anuncio&rdquo; junto al nombre de la marca
+              </label>
             </div>
 
             <div className="flex flex-col gap-1.5">

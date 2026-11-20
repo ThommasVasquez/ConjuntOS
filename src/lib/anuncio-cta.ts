@@ -48,7 +48,7 @@ export function encodeAnuncioCta(path: string, label: string): string {
 export function encodeAnuncioBrand(brand: AnuncioBrand): string {
   const name = brand.name.trim();
   const logo = (brand.logoUrl || "").trim();
-  const badge = (brand.badge || "Anuncio").trim();
+  const badge = brand.badge === "" ? "__NONE__" : (brand.badge || "Anuncio").trim();
   return `${BRAND_PREFIX}${encodeURIComponent(name)}::${encodeURIComponent(logo)}::${encodeURIComponent(badge)}`;
 }
 
@@ -80,7 +80,8 @@ export function extractAnuncioMeta(archivosUrl?: string[] | null): {
       const parts = entry.slice(BRAND_PREFIX.length).split("::");
       const name = decodeURIComponent(parts[0] || "").trim();
       const logoUrl = decodeURIComponent(parts[1] || "").trim() || undefined;
-      const badge = decodeURIComponent(parts[2] || "").trim() || "Anuncio";
+      const rawBadge = decodeURIComponent(parts[2] || "").trim();
+      const badge = rawBadge === "__NONE__" ? "" : (rawBadge || "Anuncio");
       if (name) {
         brand = { name, logoUrl, badge };
       }

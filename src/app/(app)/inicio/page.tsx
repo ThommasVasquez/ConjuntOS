@@ -1080,9 +1080,9 @@ function AnuncioCard({ anuncio, onNavigate }: { anuncio: AnuncioDto; onNavigate?
                  <h4 className="text-sm font-bold text-text leading-none">
                    {isConjuntosOfficial ? displayBrandName : anuncio.tipo}
                  </h4>
-                 {isConjuntosOfficial && (
+                 {isConjuntosOfficial && (brand ? brand.badge !== "" : true) && (
                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-text/10 text-text/70">
-                     Anuncio
+                     {brand?.badge || "Anuncio"}
                    </span>
                  )}
                </div>
