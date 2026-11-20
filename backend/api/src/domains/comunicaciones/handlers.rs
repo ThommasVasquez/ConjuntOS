@@ -271,6 +271,7 @@ pub struct CreateGlobalAnuncioRequest {
     pub titulo: String,
     pub contenido: String,
     pub imagen_url: Option<String>,
+    pub archivos_url: Option<Vec<String>>,
     pub fijado: Option<bool>,
     /// Optional subset of conjunto IDs; when omitted/empty, publishes to ALL conjuntos.
     pub conjunto_ids: Option<Vec<Uuid>>,
@@ -353,6 +354,8 @@ pub async fn crear_anuncio_global(
     let mut first_pub = chrono::Utc::now();
     let mut published = 0usize;
     let imagen_url = req.imagen_url.filter(|u| !u.trim().is_empty());
+    let archivos_url = serde_json::to_value(req.archivos_url.unwrap_or_default())
+        .map_err(|e| ApiError::BadRequest(format!("archivosUrl inválido: {e}")))?;
     let fijado = req.fijado.unwrap_or(true);
 
     for cid in target_conjuntos {
@@ -364,7 +367,7 @@ pub async fn crear_anuncio_global(
                 contenido: contenido.clone(),
                 tipo: TipoAnuncio::Conjuntos,
                 imagen_url: imagen_url.clone(),
-                archivos_url: serde_json::json!([]),
+                archivos_url: archivos_url.clone(),
                 fijado,
                 expires_en: None,
             },

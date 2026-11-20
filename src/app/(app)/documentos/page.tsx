@@ -45,6 +45,13 @@ export default function DocumentosPage() {
   const [filterCat, setFilterCat] = useState<string>('TODOS');
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('categoria');
+      const q = params.get('q');
+      if (cat) setFilterCat(cat.toUpperCase());
+      if (q) setSearch(q);
+    }
     loadDocs();
   }, []);
 

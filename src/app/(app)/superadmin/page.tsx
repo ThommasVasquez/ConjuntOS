@@ -10,6 +10,7 @@ import {
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError } from "@/lib/api/client";
+import { ANUNCIO_CTA_DESTINOS, mergeAnuncioCta } from "@/lib/anuncio-cta";
 import type { ConjuntoDto } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
@@ -51,6 +52,9 @@ export default function SuperAdminPage() {
   const [globalScope, setGlobalScope] = useState<"ALL" | "SELECTED">("ALL");
   const [selectedConjuntoIds, setSelectedConjuntoIds] = useState<string[]>([]);
   const [conjuntoSearch, setConjuntoSearch] = useState("");
+  const [globalCtaDest, setGlobalCtaDest] = useState("");
+  const [globalCtaCustomPath, setGlobalCtaCustomPath] = useState("");
+  const [globalCtaLabel, setGlobalCtaLabel] = useState("");
 
   const toggleConjuntoSelection = (id: string) => {
     setSelectedConjuntoIds((prev) =>
@@ -89,15 +93,24 @@ export default function SuperAdminPage() {
     }
     setPublishingGlobal(true);
     try {
+      const resolvedCtaPath = globalCtaDest === "__CUSTOM__" ? globalCtaCustomPath.trim() : globalCtaDest;
+      const archivosUrl = mergeAnuncioCta(
+        [],
+        resolvedCtaPath ? { path: resolvedCtaPath, label: globalCtaLabel.trim() || "Ver sección" } : null
+      );
       const created = await api.post<(typeof globalAnuncios)[number]>("/superadmin/anuncios", {
         titulo: globalForm.titulo.trim(),
         contenido: globalForm.contenido.trim(),
         imagenUrl: globalForm.imagenUrl.trim() || undefined,
+        archivosUrl: archivosUrl.length > 0 ? archivosUrl : undefined,
         fijado: globalForm.fijado,
         conjuntoIds: globalScope === "SELECTED" ? selectedConjuntoIds : undefined,
       });
       setGlobalAnuncios((prev) => [created, ...prev]);
       setGlobalForm({ titulo: "", contenido: "", imagenUrl: "", fijado: true });
+      setGlobalCtaDest("");
+      setGlobalCtaCustomPath("");
+      setGlobalCtaLabel("");
       if (globalScope === "SELECTED") {
         setSelectedConjuntoIds([]);
       }
@@ -690,6 +703,49 @@ export default function SuperAdminPage() {
                 placeholder="https://..."
                 className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-[#009df2]"
               />
+            </div>
+
+            {/* Acceso directo opcional (botón CTA) */}
+            <div className="flex flex-col gap-2.5 bg-surface-2/60 border border-border rounded-2xl p-4">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Acceso directo en el anuncio (Opcional)
+              </label>
+              <select
+                value={globalCtaDest}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setGlobalCtaDest(val);
+                  const opt = ANUNCIO_CTA_DESTINOS.find((d) => d.value === val);
+                  if (opt && (!globalCtaLabel.trim() || ANUNCIO_CTA_DESTINOS.some((d) => d.defaultButtonText === globalCtaLabel))) {
+                    setGlobalCtaLabel(opt.defaultButtonText);
+                  }
+                }}
+                className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-xs text-text focus:outline-none focus:border-[#009df2] cursor-pointer"
+              >
+                {ANUNCIO_CTA_DESTINOS.map((opt) => (
+                  <option key={opt.value || "none"} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              {globalCtaDest === "__CUSTOM__" && (
+                <input
+                  type="text"
+                  value={globalCtaCustomPath}
+                  onChange={(e) => setGlobalCtaCustomPath(e.target.value)}
+                  placeholder="Ej: /documentos?categoria=CONVIVENCIA"
+                  className="w-full bg-surface border border-border rounded-xl py-2.5 px-4 text-xs text-text font-mono focus:outline-none focus:border-[#009df2]"
+                />
+              )}
+              {globalCtaDest && (
+                <input
+                  type="text"
+                  value={globalCtaLabel}
+                  onChange={(e) => setGlobalCtaLabel(e.target.value)}
+                  placeholder="Texto del botón (Ej: Ver manual de convivencia)"
+                  className="w-full bg-surface border border-border rounded-xl py-2.5 px-4 text-xs text-text focus:outline-none focus:border-[#009df2]"
+                />
+              )}
             </div>
 
             <label className="flex items-center gap-2.5 text-xs font-semibold text-text cursor-pointer select-none">

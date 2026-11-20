@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import Image from "next/image";
 import { api, ApiError } from "@/lib/api/client";
+import { ANUNCIO_CTA_DESTINOS, extractAnuncioCta, mergeAnuncioCta } from "@/lib/anuncio-cta";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { AnuncioDto, CeldaMapaDto } from "@/lib/api/types";
@@ -74,6 +75,10 @@ export default function AdminNovedadesPage() {
     fijado: false,
     imagenUrl: ""
   });
+  const [ctaDest, setCtaDest] = useState("");
+  const [ctaCustomPath, setCtaCustomPath] = useState("");
+  const [ctaLabel, setCtaLabel] = useState("");
+  const [editingArchivos, setEditingArchivos] = useState<string[]>([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSubmittingAnuncio, setIsSubmittingAnuncio] = useState(false);
   const [editingAnuncioId, setEditingAnuncioId] = useState<string | null>(null);
@@ -199,11 +204,17 @@ export default function AdminNovedadesPage() {
 
     setIsSubmittingAnuncio(true);
     try {
+      const resolvedCtaPath = ctaDest === "__CUSTOM__" ? ctaCustomPath.trim() : ctaDest;
+      const archivosUrl = mergeAnuncioCta(
+        editingAnuncioId ? editingArchivos : [],
+        resolvedCtaPath ? { path: resolvedCtaPath, label: ctaLabel.trim() || "Ver sección" } : null
+      );
+      const payload = { ...anuncioForm, archivosUrl };
       if (editingAnuncioId) {
-        await api.put(`/anuncios/${editingAnuncioId}`, anuncioForm);
+        await api.put(`/anuncios/${editingAnuncioId}`, payload);
         toast.success("Anuncio actualizado exitosamente");
       } else {
-        await api.post('/anuncios', anuncioForm);
+        await api.post('/anuncios', payload);
         toast.success("Anuncio publicado exitosamente");
       }
       setAnuncioForm({
@@ -213,6 +224,10 @@ export default function AdminNovedadesPage() {
         fijado: false,
         imagenUrl: ""
       });
+      setCtaDest("");
+      setCtaCustomPath("");
+      setCtaLabel("");
+      setEditingArchivos([]);
       setEditingAnuncioId(null);
       fetchAnuncios();
     } catch {
@@ -231,12 +246,33 @@ export default function AdminNovedadesPage() {
       fijado: !!anuncio.fijado,
       imagenUrl: anuncio.imagenUrl || ""
     });
+    const { cta, files } = extractAnuncioCta(anuncio.archivosUrl);
+    setEditingArchivos(files);
+    if (cta) {
+      const preset = ANUNCIO_CTA_DESTINOS.find((d) => d.value === cta.path);
+      if (preset) {
+        setCtaDest(preset.value);
+        setCtaCustomPath("");
+      } else {
+        setCtaDest("__CUSTOM__");
+        setCtaCustomPath(cta.path);
+      }
+      setCtaLabel(cta.label);
+    } else {
+      setCtaDest("");
+      setCtaCustomPath("");
+      setCtaLabel("");
+    }
     // Scroll to the form at the top of the panel.
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const cancelEditAnuncio = () => {
     setEditingAnuncioId(null);
+    setCtaDest("");
+    setCtaCustomPath("");
+    setCtaLabel("");
+    setEditingArchivos([]);
     setAnuncioForm({
       titulo: "",
       contenido: "",
@@ -605,6 +641,49 @@ export default function AdminNovedadesPage() {
                           placeholder="Redacta la información detallada para los copropietarios..."
                           className="w-full bg-surface-2 border border-border rounded-xl p-4 text-xs text-text focus:border-accent outline-none resize-none leading-relaxed"
                         />
+                    </div>
+
+                    {/* Acceso directo opcional (botón CTA en el anuncio) */}
+                    <div className="flex flex-col gap-2.5 bg-surface-2/60 border border-border rounded-2xl p-4">
+                        <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
+                          Acceso directo en el anuncio (Opcional)
+                        </label>
+                        <select
+                          value={ctaDest}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCtaDest(val);
+                            const opt = ANUNCIO_CTA_DESTINOS.find((d) => d.value === val);
+                            if (opt && (!ctaLabel.trim() || ANUNCIO_CTA_DESTINOS.some((d) => d.defaultButtonText === ctaLabel))) {
+                              setCtaLabel(opt.defaultButtonText);
+                            }
+                          }}
+                          className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-xs text-text focus:border-accent outline-none cursor-pointer"
+                        >
+                          {ANUNCIO_CTA_DESTINOS.map((opt) => (
+                            <option key={opt.value || "none"} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                        {ctaDest === "__CUSTOM__" && (
+                          <input
+                            type="text"
+                            value={ctaCustomPath}
+                            onChange={(e) => setCtaCustomPath(e.target.value)}
+                            placeholder="Ej: /documentos?categoria=CONVIVENCIA"
+                            className="w-full bg-surface border border-border rounded-xl px-4 py-2.5 text-xs text-text font-mono focus:border-accent outline-none"
+                          />
+                        )}
+                        {ctaDest && (
+                          <input
+                            type="text"
+                            value={ctaLabel}
+                            onChange={(e) => setCtaLabel(e.target.value)}
+                            placeholder="Texto del botón (Ej: Ver manual de convivencia)"
+                            className="w-full bg-surface border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:border-accent outline-none"
+                          />
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-2">

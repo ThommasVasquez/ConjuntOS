@@ -14,8 +14,10 @@ import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api/client";
+import { extractAnuncioCta } from "@/lib/anuncio-cta";
 import type { AnuncioDto } from "@/lib/api/types";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -33,9 +35,11 @@ interface Notice {
   image?: string;
   fijado?: boolean;
   archivosUrl?: string[];
+  cta?: { path: string; label: string } | null;
 }
 
 export default function CarteleraPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,7 +69,8 @@ export default function CarteleraPage() {
           author: a.tipo === "CONJUNTOS" ? "ConjuntOS®" : "Administración",
           image: a.imagenUrl || undefined,
           fijado: a.fijado,
-          archivosUrl: a.archivosUrl || []
+          archivosUrl: extractAnuncioCta(a.archivosUrl).files,
+          cta: extractAnuncioCta(a.archivosUrl).cta,
         }));
         setNotices(apiMapped);
       }
@@ -134,7 +139,8 @@ export default function CarteleraPage() {
             author: a.tipo === "CONJUNTOS" ? "ConjuntOS®" : "Administración",
             image: a.imagenUrl || undefined,
             fijado: a.fijado,
-            archivosUrl: a.archivosUrl || []
+            archivosUrl: extractAnuncioCta(a.archivosUrl).files,
+          cta: extractAnuncioCta(a.archivosUrl).cta,
           }));
         }
         setNotices(apiMapped);
@@ -269,6 +275,20 @@ export default function CarteleraPage() {
                        </div>
                     </div>
                      <p className="text-text text-base leading-relaxed">{selectedNotice.content}</p>
+                     {selectedNotice.cta && (
+                       <button
+                         type="button"
+                         onClick={() => {
+                           const target = selectedNotice.cta!.path;
+                           setSelectedNotice(null);
+                           router.push(target);
+                         }}
+                         className="w-full py-3 px-4 rounded-2xl bg-[#009df2] hover:bg-[#0086d1] text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer shadow-md"
+                       >
+                         <span>{selectedNotice.cta.label}</span>
+                         <ArrowRight size={14} />
+                       </button>
+                     )}
                      {selectedNotice.archivosUrl && selectedNotice.archivosUrl.length > 0 && (
                        <div className="flex flex-col gap-4 pt-6 border-t border-border">
                           <div className="flex items-center gap-2"><Info size={16} className="text-accent" /><span className="text-text text-[10px] font-bold uppercase tracking-widest">Documentos Adjuntos</span></div>

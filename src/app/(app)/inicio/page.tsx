@@ -52,6 +52,7 @@ interface CargoParqueaderoRetenido {
 }
 import { useAuth } from "@/hooks/useAuth";
 import { api, invalidateApiCache } from "@/lib/api/client";
+import { extractAnuncioCta } from "@/lib/anuncio-cta";
 import type {
   AnuncioDto,
   NotificacionDto,
@@ -996,7 +997,7 @@ function HomeResidente() {
           anuncios.map((anuncio, idx) => {
             const items = [
               <div key={anuncio.id} onClick={() => setSelectedFeedItem(anuncio)} className="cursor-pointer">
-                <AnuncioCard anuncio={anuncio} />
+                <AnuncioCard anuncio={anuncio} onNavigate={(path) => router.push(path)} />
               </div>
             ];
             // Insertar ad cada 3 anuncios
@@ -1033,7 +1034,7 @@ function HomeResidente() {
   );
 }
 
-function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
+function AnuncioCard({ anuncio, onNavigate }: { anuncio: AnuncioDto; onNavigate?: (path: string) => void }) {
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const hours = Math.floor(diff / 3600000);
@@ -1044,6 +1045,7 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
   };
 
   const isConjuntosOfficial = anuncio.tipo === "CONJUNTOS";
+  const { cta } = extractAnuncioCta(anuncio.archivosUrl);
 
   return (
     <div className={`fade-up-home liquid-glass-card rounded-[32px] flex flex-col shadow-2xl border-t transition-all active:scale-[0.98] relative overflow-hidden ${isConjuntosOfficial ? "border-[#009df2]/30" : "border-border/20"}`}>
@@ -1085,6 +1087,23 @@ function AnuncioCard({ anuncio }: { anuncio: AnuncioDto }) {
       <div className="px-5 pb-2">
          <h2 className="text-xl font-display font-semibold text-text mb-2 leading-tight">{anuncio.titulo}</h2>
          <p className="text-sm text-text leading-relaxed font-normal mb-4 line-clamp-3">{anuncio.contenido}</p>
+         {cta && onNavigate && (
+           <button
+             type="button"
+             onClick={(e) => {
+               e.stopPropagation();
+               onNavigate(cta.path);
+             }}
+             className={`mb-4 w-full py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer shadow-sm ${
+               isConjuntosOfficial
+                 ? "bg-[#009df2] hover:bg-[#0086d1] text-white"
+                 : "bg-accent hover:brightness-110 text-on-accent"
+             }`}
+           >
+             <span>{cta.label}</span>
+             <ArrowRight size={14} />
+           </button>
+         )}
       </div>
 
       {anuncio.imagenUrl && (
