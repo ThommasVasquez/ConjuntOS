@@ -675,8 +675,16 @@ export default function AdminNovedadesPage() {
                         anuncios.map((anuncio) => (
                             <div key={anuncio.id} className="liquid-glass-card rounded-2xl p-4 border border-border flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="w-10 h-10 rounded-xl bg-white/95 border border-border p-1.5 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-                                        <img src="/icons/admin-post-bird.png" alt="Administración" className="w-full h-full object-contain" />
+                                    <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 overflow-hidden shadow-sm ${
+                                        anuncio.tipo === "CONJUNTOS"
+                                            ? "bg-[#08090d] border-white/15 p-1"
+                                            : "bg-white/95 border-border p-1.5"
+                                    }`}>
+                                        <img
+                                            src={anuncio.tipo === "CONJUNTOS" ? "/icons/conjuntos-post-icon.png" : "/icons/admin-post-bird.png"}
+                                            alt={anuncio.tipo === "CONJUNTOS" ? "ConjuntOS®" : "Administración"}
+                                            className="w-full h-full object-contain"
+                                        />
                                     </div>
                                     <div className="flex flex-col overflow-hidden">
                                         <span className="text-xs font-bold text-text truncate">{anuncio.titulo}</span>

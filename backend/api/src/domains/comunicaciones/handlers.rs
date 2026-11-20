@@ -88,6 +88,11 @@ pub async fn crear_anuncio(
     }
     let archivos_url = serde_json::to_value(req.archivos_url.unwrap_or_default())
         .map_err(|e| ApiError::BadRequest(format!("archivosUrl inválido: {e}")))?;
+    let effective_tipo = if matches!(user.rol, Rol::SuperAdmin) {
+        TipoAnuncio::Conjuntos
+    } else {
+        req.tipo
+    };
     let mut conn = state.pool.get().await?;
     let anuncio = repo::crear_anuncio_con_notificaciones(
         &mut conn,
@@ -95,7 +100,7 @@ pub async fn crear_anuncio(
             conjunto_id: user.conjunto_id,
             titulo: req.titulo.trim().to_string(),
             contenido: req.contenido.trim().to_string(),
-            tipo: req.tipo,
+            tipo: effective_tipo,
             imagen_url: req.imagen_url,
             archivos_url,
             fijado: req.fijado.unwrap_or(false),
