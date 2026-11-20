@@ -48,6 +48,15 @@ export default function SuperAdminPage() {
     imagenUrl: "",
     fijado: true,
   });
+  const [globalScope, setGlobalScope] = useState<"ALL" | "SELECTED">("ALL");
+  const [selectedConjuntoIds, setSelectedConjuntoIds] = useState<string[]>([]);
+  const [conjuntoSearch, setConjuntoSearch] = useState("");
+
+  const toggleConjuntoSelection = (id: string) => {
+    setSelectedConjuntoIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   const fetchGlobalAnuncios = async () => {
     setLoadingGlobalAnuncios(true);
@@ -74,6 +83,10 @@ export default function SuperAdminPage() {
       toast.error("Título y contenido son obligatorios");
       return;
     }
+    if (globalScope === "SELECTED" && selectedConjuntoIds.length === 0) {
+      toast.error("Selecciona al menos un conjunto para publicar el anuncio");
+      return;
+    }
     setPublishingGlobal(true);
     try {
       const created = await api.post<(typeof globalAnuncios)[number]>("/superadmin/anuncios", {
@@ -81,9 +94,13 @@ export default function SuperAdminPage() {
         contenido: globalForm.contenido.trim(),
         imagenUrl: globalForm.imagenUrl.trim() || undefined,
         fijado: globalForm.fijado,
+        conjuntoIds: globalScope === "SELECTED" ? selectedConjuntoIds : undefined,
       });
       setGlobalAnuncios((prev) => [created, ...prev]);
       setGlobalForm({ titulo: "", contenido: "", imagenUrl: "", fijado: true });
+      if (globalScope === "SELECTED") {
+        setSelectedConjuntoIds([]);
+      }
       toast.success(`Anuncio oficial de ConjuntOS® publicado en ${created.conjuntosCount} conjunto(s).`);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "No se pudo publicar el anuncio global");
@@ -529,9 +546,115 @@ export default function SuperAdminPage() {
                   </span>
                 </div>
                 <p className="text-xs text-text/60">
-                  Se publicará en el inicio de Novedades de <strong>todos los conjuntos</strong> ({conjuntos.length}) a nombre de ConjuntOS®.
+                  Elige si quieres publicar en <strong>todos los conjuntos</strong> ({conjuntos.length}) o solo en los que selecciones.
                 </p>
               </div>
+            </div>
+
+            {/* Alcance: General vs Conjuntos Seleccionados */}
+            <div className="flex flex-col gap-3">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Destinatarios del anuncio *
+              </label>
+              <div className="grid grid-cols-2 gap-2 bg-surface-2 p-1.5 rounded-2xl border border-border">
+                <button
+                  type="button"
+                  onClick={() => setGlobalScope("ALL")}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    globalScope === "ALL"
+                      ? "bg-[#009df2] text-white shadow-sm"
+                      : "text-text/70 hover:text-text"
+                  }`}
+                >
+                  General (Todos · {conjuntos.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGlobalScope("SELECTED")}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    globalScope === "SELECTED"
+                      ? "bg-[#009df2] text-white shadow-sm"
+                      : "text-text/70 hover:text-text"
+                  }`}
+                >
+                  Seleccionados ({selectedConjuntoIds.length})
+                </button>
+              </div>
+
+              {globalScope === "SELECTED" && (
+                <div className="bg-surface-2 border border-border rounded-2xl p-3.5 flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 bg-surface border border-border rounded-xl px-3 py-2">
+                      <Search size={14} className="text-text/50 shrink-0" />
+                      <input
+                        type="text"
+                        value={conjuntoSearch}
+                        onChange={(e) => setConjuntoSearch(e.target.value)}
+                        placeholder="Buscar conjunto por nombre o subdominio..."
+                        className="w-full bg-transparent text-xs text-text outline-none placeholder:text-text/40"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedConjuntoIds(
+                          selectedConjuntoIds.length === conjuntos.length
+                            ? []
+                            : conjuntos.map((c) => c.id)
+                        )
+                      }
+                      className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-2 rounded-xl border border-border bg-surface text-text/80 hover:text-text shrink-0 cursor-pointer"
+                    >
+                      {selectedConjuntoIds.length === conjuntos.length ? "Limpiar" : "Todos"}
+                    </button>
+                  </div>
+
+                  <div className="max-h-52 overflow-y-auto flex flex-col gap-1.5 pr-0.5">
+                    {conjuntos
+                      .filter((c) => {
+                        const q = conjuntoSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        return (
+                          c.nombre.toLowerCase().includes(q) ||
+                          c.subdominio.toLowerCase().includes(q)
+                        );
+                      })
+                      .map((c) => {
+                        const checked = selectedConjuntoIds.includes(c.id);
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => toggleConjuntoSelection(c.id)}
+                            className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                              checked
+                                ? "border-[#009df2] bg-[#009df2]/10"
+                                : "border-border bg-surface/60 hover:bg-surface"
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <span className="text-xs font-bold text-text block truncate">
+                                {c.nombre}
+                              </span>
+                              <span className="text-[10px] text-text/55 font-mono block truncate">
+                                {c.subdominio}.conjuntos.app
+                              </span>
+                            </div>
+                            <span
+                              className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                                checked
+                                  ? "bg-[#009df2] border-[#009df2] text-white"
+                                  : "border-text/30"
+                              }`}
+                            >
+                              {checked && <Check size={12} />}
+                            </span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -585,7 +708,13 @@ export default function SuperAdminPage() {
               className="w-full py-3.5 px-6 rounded-2xl bg-[#009df2] hover:bg-[#0086d1] text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
             >
               <Send size={15} />
-              <span>{publishingGlobal ? "Publicando en todos los conjuntos…" : "Publicar como ConjuntOS®"}</span>
+              <span>
+                {publishingGlobal
+                  ? "Publicando…"
+                  : globalScope === "SELECTED"
+                  ? `Publicar en ${selectedConjuntoIds.length} conjunto(s) como ConjuntOS®`
+                  : `Publicar en todos los conjuntos (${conjuntos.length})`}
+              </span>
             </button>
           </form>
 
