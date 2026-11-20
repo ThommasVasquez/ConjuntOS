@@ -56,6 +56,35 @@ export default function SuperAdminPage() {
   const [globalCtaDest, setGlobalCtaDest] = useState("");
   const [globalCtaCustomPath, setGlobalCtaCustomPath] = useState("");
   const [globalCtaLabel, setGlobalCtaLabel] = useState("");
+  const [uploadingGlobalImage, setUploadingGlobalImage] = useState(false);
+
+  const handleGlobalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("La imagen supera el límite de 5MB");
+      return;
+    }
+    setUploadingGlobalImage(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("No se pudo leer la imagen"));
+        reader.readAsDataURL(file);
+      });
+      const res = await api.post<{ url: string }>("/uploads/imagen", {
+        data: dataUrl,
+        carpeta: "anuncios",
+      });
+      setGlobalForm((prev) => ({ ...prev, imagenUrl: res.url }));
+      toast.success("Imagen subida correctamente");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.detail : "Error al subir la imagen");
+    } finally {
+      setUploadingGlobalImage(false);
+    }
+  };
 
   const toggleConjuntoSelection = (id: string) => {
     setSelectedConjuntoIds((prev) =>
@@ -707,15 +736,54 @@ export default function SuperAdminPage() {
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">URL de imagen (opcional)</label>
-              <input
-                type="url"
-                value={globalForm.imagenUrl}
-                onChange={(e) => setGlobalForm({ ...globalForm, imagenUrl: e.target.value })}
-                placeholder="https://..."
-                className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-[#009df2]"
-              />
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] text-text font-bold uppercase tracking-widest pl-1">
+                Imagen del anuncio (opcional · máx. 5MB)
+              </label>
+              {globalForm.imagenUrl ? (
+                <div className="relative rounded-2xl overflow-hidden border border-border h-40">
+                  <img src={globalForm.imagenUrl} alt="Vista previa" className="w-full h-full object-cover" />
+                  <div className="absolute top-2.5 right-2.5 flex gap-2">
+                    <label className="bg-[#009df2] hover:bg-[#0086d1] text-white rounded-full p-2 cursor-pointer shadow-md active:scale-90 transition-all">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleGlobalImageUpload}
+                        disabled={uploadingGlobalImage}
+                      />
+                      <Upload size={14} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setGlobalForm((prev) => ({ ...prev, imagenUrl: "" }))}
+                      className="bg-black/70 hover:bg-black text-white rounded-full p-2 cursor-pointer shadow-md active:scale-90 transition-all"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  {uploadingGlobalImage && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs font-bold text-white">
+                      Subiendo imagen…
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <label className="border-2 border-dashed border-border hover:border-[#009df2]/50 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-surface-2/40 hover:bg-surface-2/70">
+                  <Upload size={22} className="text-[#009df2]" />
+                  <span className="text-xs font-bold text-text">
+                    {uploadingGlobalImage ? "Subiendo imagen…" : "Subir imagen (PNG, JPG, WebP)"}
+                  </span>
+                  <span className="text-[10px] text-text/50">Máximo 5MB</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleGlobalImageUpload}
+                    disabled={uploadingGlobalImage}
+                  />
+                </label>
+              )}
             </div>
 
             {/* Acceso directo opcional (botón CTA) */}

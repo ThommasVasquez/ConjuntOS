@@ -15,6 +15,7 @@ import {
   Search,
   Sparkles,
   Trash2,
+  Upload,
   Users,
   X,
 } from "lucide-react";
@@ -59,6 +60,35 @@ export default function SuperAdminAdPublisher({
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [imagenUrl, setImagenUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("La imagen supera el límite de 5MB");
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("No se pudo leer la imagen"));
+        reader.readAsDataURL(file);
+      });
+      const res = await api.post<{ url: string }>("/uploads/imagen", {
+        data: dataUrl,
+        carpeta: "pauta",
+      });
+      setImagenUrl(res.url);
+      toast.success("Imagen subida correctamente");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.detail : "Error al subir la imagen");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
   const [linkMode, setLinkMode] = useState<"URL" | "WHATSAPP">("URL");
   const [linkUrl, setLinkUrl] = useState("");
   const [waNumber, setWaNumber] = useState("");
@@ -532,15 +562,57 @@ export default function SuperAdminAdPublisher({
           />
         </div>
 
-        {/* Imagen + Prioridad + Topes */}
+        {/* Subir imagen del banner + Prioridad + Topes */}
         <div className="flex flex-col gap-3">
-          <input
-            type="url"
-            value={imagenUrl}
-            onChange={(e) => setImagenUrl(e.target.value)}
-            placeholder="URL de imagen del banner (opcional, recomendado 1200x600)"
-            className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-xs text-text outline-none focus:border-amber-500"
-          />
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-text pl-1">
+              Imagen del banner (opcional · máx. 5MB)
+            </label>
+            {imagenUrl ? (
+              <div className="relative rounded-2xl overflow-hidden border border-border h-40">
+                <img src={imagenUrl} alt="Banner" className="w-full h-full object-cover" />
+                <div className="absolute top-2.5 right-2.5 flex gap-2">
+                  <label className="bg-amber-500 hover:bg-amber-600 text-white rounded-full p-2 cursor-pointer shadow-md active:scale-90 transition-all">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleBannerUpload}
+                      disabled={uploadingImage}
+                    />
+                    <Upload size={14} />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setImagenUrl("")}
+                    className="bg-black/70 hover:bg-black text-white rounded-full p-2 cursor-pointer shadow-md active:scale-90 transition-all"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                {uploadingImage && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs font-bold text-white">
+                    Subiendo imagen…
+                  </div>
+                )}
+              </div>
+            ) : (
+              <label className="border-2 border-dashed border-border hover:border-amber-500/50 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-surface-2/40 hover:bg-surface-2/70">
+                <Upload size={22} className="text-amber-500" />
+                <span className="text-xs font-bold text-text">
+                  {uploadingImage ? "Subiendo imagen…" : "Subir imagen del banner (PNG, JPG, WebP)"}
+                </span>
+                <span className="text-[10px] text-text/50">Recomendado 1200×600 · máx. 5MB</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleBannerUpload}
+                  disabled={uploadingImage}
+                />
+              </label>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div className="flex flex-col gap-1">
