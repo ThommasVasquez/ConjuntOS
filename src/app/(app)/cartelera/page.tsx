@@ -224,7 +224,9 @@ export default function CarteleraPage() {
                  </div>
                  <div className="flex justify-between items-center pt-2 border-t border-border">
                     <div className="flex items-center gap-2">
-                       <Megaphone size={12} className="text-text" />
+                       <span className="w-5 h-5 rounded-full bg-white/95 border border-border p-0.5 flex items-center justify-center shrink-0">
+                         <img src="/icons/admin-post-bird.png" alt="Administración" className="w-full h-full object-contain" />
+                       </span>
                        <span className="text-[10px] text-text">{notice.author}</span>
                     </div>
                     <div className="flex items-center gap-1 text-accent text-[10px] font-bold uppercase group-hover:gap-2 transition-all">Leer más <ArrowRight size={14} /></div>
@@ -258,7 +260,12 @@ export default function CarteleraPage() {
                        </div>
                        <div className="flex items-center gap-4 text-text text-[10px] font-bold uppercase tracking-widest mt-2">
                           <div className="flex items-center gap-1.5"><Clock size={12} /> {selectedNotice.date}</div>
-                          <div className="flex items-center gap-1.5"><Megaphone size={12} /> {selectedNotice.author}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-white/95 border border-border p-0.5 flex items-center justify-center shrink-0">
+                              <img src="/icons/admin-post-bird.png" alt="Administración" className="w-full h-full object-contain" />
+                            </span>
+                            {selectedNotice.author}
+                          </div>
                        </div>
                     </div>
                      <p className="text-text text-base leading-relaxed">{selectedNotice.content}</p>

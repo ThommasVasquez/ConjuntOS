@@ -675,8 +675,8 @@ export default function AdminNovedadesPage() {
                         anuncios.map((anuncio) => (
                             <div key={anuncio.id} className="liquid-glass-card rounded-2xl p-4 border border-border flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 text-accent">
-                                        <Megaphone size={18} />
+                                    <div className="w-10 h-10 rounded-xl bg-white/95 border border-border p-1.5 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                                        <img src="/icons/admin-post-bird.png" alt="Administración" className="w-full h-full object-contain" />
                                     </div>
                                     <div className="flex flex-col overflow-hidden">
                                         <span className="text-xs font-bold text-text truncate">{anuncio.titulo}</span>
