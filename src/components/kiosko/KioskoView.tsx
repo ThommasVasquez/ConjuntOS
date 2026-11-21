@@ -1061,6 +1061,67 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                       </div>
                     </div>
 
+                    {/* Recap de verificación rápida + responsabilidad del domiciliario */}
+                    <div className="rounded-2xl border border-amber-400/35 bg-amber-500/[0.08] p-4 flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-amber-300">
+                          Verifique antes de imprimir
+                        </span>
+                        <span className="text-[10px] font-mono text-white/45">
+                          Toque un dato para corregir
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveColumn(1)}
+                          className="rounded-xl bg-black/40 border border-white/10 hover:border-amber-300/60 px-3 py-2 text-left transition-colors cursor-pointer"
+                        >
+                          <span className="text-[9px] font-mono uppercase text-white/45 block">
+                            {nomenclaturaSimple ? "Apartamento" : "Destino"}
+                          </span>
+                          <span className="text-base font-mono font-black text-white block truncate">
+                            {nomenclaturaSimple
+                              ? selectedCasa || "—"
+                              : selectedBloque && selectedCasa
+                              ? `B.${selectedBloque} · ${selectedCasa}`
+                              : "—"}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveColumn(2)}
+                          className="rounded-xl bg-black/40 border border-white/10 hover:border-amber-300/60 px-3 py-2 text-left transition-colors cursor-pointer"
+                        >
+                          <span className="text-[9px] font-mono uppercase text-white/45 block">
+                            Destinatario
+                          </span>
+                          <span className="text-xs font-bold text-white block truncate mt-0.5">
+                            {destinatarioNombre.trim() || "—"}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveColumn(3)}
+                          className="rounded-xl bg-black/40 border border-white/10 hover:border-amber-300/60 px-3 py-2 text-left transition-colors cursor-pointer"
+                        >
+                          <span className="text-[9px] font-mono uppercase text-white/45 block">
+                            Tipo
+                          </span>
+                          <span className="text-xs font-bold text-white block truncate mt-0.5">
+                            {selectedCategoria.emoji} {selectedCategoria.label}
+                          </span>
+                        </button>
+                      </div>
+
+                      <p className="text-[11px] leading-snug text-amber-100/80">
+                        Confirme que el paquete coincide con el apartamento y la persona indicados. Al imprimir el sticker, usted valida estos datos y asume la responsabilidad ante cualquier confusión en la entrega.
+                      </p>
+                    </div>
+
                     {/* Botón Elíptico Gigante estilo SUBMIT */}
                     <button
                       type="button"
@@ -1076,7 +1137,7 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                       ) : (
                         <>
                           <Printer size={16} />
-                          <span>IMPRIMIR STICKER TÉRMICO</span>
+                          <span>CONFIRMAR E IMPRIMIR STICKER</span>
                         </>
                       )}
                     </button>
