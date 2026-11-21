@@ -27,8 +27,12 @@ export default function FaqSection() {
       a: "Directamente desde la app con Nequi: el residente ingresa su celular, el sistema concilia el estado del pago en tiempo real y genera el recibo digital al instante. El administrador ve el recaudo, la morosidad y los gastos en un panel financiero.",
     },
     {
-      q: "¿Necesito instalar hardware o citófonos nuevos?",
-      a: "No. ConjuntOS es 100% software y funciona desde el celular, la tablet o el computador. La citofonía virtual (LiveKit) reemplaza al citófono físico, y los visitantes ingresan con pases QR de un solo uso.",
+      q: "¿Cómo controla ConjuntOS los huéspedes de Airbnb o estancias cortas?",
+      a: "Con el módulo de Pases Temporales: el propietario registra a sus huéspedes con fechas exactas de check-in y check-out, genera un QR con vencimiento automático para portería y le entrega al huésped acceso a su portal privado Mi Estancia (normas, Wi-Fi y QR) sin exponer información financiera ni personal del propietario.",
+    },
+    {
+      q: "¿Necesito instalar hardware, citófonos nuevos o descargar apps de tiendas?",
+      a: "No. ConjuntOS es una Web App instalable (PWA) 100% en la nube: funciona al instante desde el navegador en iOS, Android, tablet o computador desde conjuntos.app/instalar. La citofonía virtual por internet reemplaza al citófono físico y el Kiosko de Portería Express corre en cualquier tablet en recepción.",
     },
   ];
 

@@ -74,18 +74,18 @@ const slides = [
       "https://images.unsplash.com/photo-1563906267088-b029e7101114?auto=format&fit=crop&w=1920&q=80",
     features: [
       {
-        title: "Pases QR de Acceso",
-        desc: "Entrada rápida y segura para invitados previa autorización del propietario mediante escaneo de código QR.",
+        title: "Pases QR y Estancias Airbnb",
+        desc: "Autoriza invitados y huéspedes temporales con check-in/check-out exacto y códigos QR con vencimiento automático.",
         img: "https://images.unsplash.com/photo-1595079676339-1534801ad6cf?auto=format&fit=crop&w=600&q=80",
       },
       {
-        title: "Citofonía Virtual",
-        desc: "Llamadas inmediatas desde portería al celular del residente sin depender de cables obsoletos.",
+        title: "Citofonía Virtual sin Cables",
+        desc: "Llamadas inmediatas por internet desde portería al celular del residente sin depender de citófonos físicos ni cableado.",
         img: "https://images.unsplash.com/photo-1586105251261-72a756497a11?auto=format&fit=crop&w=600&q=80",
       },
       {
-        title: "Bitácora de Eventos",
-        desc: "Registro en tiempo real de novedades e ingresos con fotos y respaldo digital en la nube.",
+        title: "Kiosko Express & Paquetería",
+        desc: "Recepción táctil para domicilios y paquetes con impresión de etiqueta oficial, bitácora digital y aviso instantáneo.",
         img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80",
       },
     ],

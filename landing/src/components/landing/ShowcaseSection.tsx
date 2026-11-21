@@ -131,8 +131,8 @@ export default function ShowcaseSection() {
               />
             </div>
             <div>
-              <p className="font-bold text-white text-sm">Control de Accesos</p>
-              <p className="text-xs text-white/70">20+ Opciones configurables</p>
+              <p className="font-bold text-white text-sm">Accesos, QR & Airbnb</p>
+              <p className="text-xs text-white/70">Visitas, domicilios y estancias cortas</p>
             </div>
           </div>
         </div>

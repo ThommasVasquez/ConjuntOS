@@ -3,7 +3,15 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
-import { Vote, Sparkles, Siren, PhoneCall, Car, Scale, Grid } from "lucide-react";
+import {
+  Vote,
+  Sparkles,
+  Siren,
+  KeyRound,
+  MonitorSmartphone,
+  Scale,
+  Grid,
+} from "lucide-react";
 import RevealText from "./RevealText";
 
 if (typeof window !== "undefined") {
@@ -14,15 +22,32 @@ const features = [
   {
     title: "Asamblea 100% en Vivo",
     description:
-      "Video en tiempo real, voto ponderado por coeficiente de copropiedad (Ley 675), acta oficial redactada por IA y traducción simultánea. La asamblea, desde casa y sin papeleo.",
+      "Video en tiempo real, voto ponderado por coeficiente de copropiedad (Ley 675), control automático de quórum y poderes, acta oficial redactada por IA y traducción simultánea. La asamblea, desde casa y sin papeleo.",
     icon: Vote,
-    className: "md:col-span-2 md:row-span-2 bg-text/10 border-text/20 hover:border-accent/40 shadow-xl",
+    className:
+      "md:col-span-2 md:row-span-2 bg-text/10 border-text/20 hover:border-accent/40 shadow-xl",
     iconColor: "text-accent",
+  },
+  {
+    title: "Pases Temporales (Airbnb / Booking)",
+    description:
+      "Registra huéspedes de estancias cortas con fechas de check-in/check-out, QR con vencimiento automático y portal exclusivo Mi Estancia sin exponer datos del propietario.",
+    icon: KeyRound,
+    className: "bg-text/5 border-text/10 hover:border-accent/30",
+    iconColor: "text-accent",
+  },
+  {
+    title: "Kiosko Express & Pauta en Portería",
+    description:
+      "Registro táctil de domicilios y paquetería con impresión de etiqueta oficial, aviso inmediato al residente y modo espera con anuncios en video o imagen y QR.",
+    icon: MonitorSmartphone,
+    className: "bg-text/5 border-text/10 hover:border-accent/30",
+    iconColor: "text-text/80",
   },
   {
     title: "Capi, tu Asistente con IA",
     description:
-      "Resuelve dudas fundamentado en la Ley 675 de 2001 y te guía por cada módulo de la app.",
+      "Resuelve dudas fundamentado en la Ley 675 de 2001, redacta comunicados y te guía por cada módulo de la plataforma.",
     icon: Sparkles,
     className: "bg-text/5 border-text/10 hover:border-accent/30",
     iconColor: "text-text/80",
@@ -30,31 +55,15 @@ const features = [
   {
     title: "Botón de Pánico (SOS)",
     description:
-      "Alerta de emergencia con un toque; llega al instante a la seguridad de turno por push.",
+      "Alerta de emergencia en un toque que llega al instante a la seguridad de turno con tu unidad y ubicación.",
     icon: Siren,
     className: "bg-text/5 border-text/10 hover:border-accent/30",
     iconColor: "text-text/80",
   },
   {
-    title: "Portero en tu Celular",
+    title: "Cumplimiento Ley 675 & Operación Total",
     description:
-      "Recibe la llamada de portería y abre la puerta estés donde estés, sin citófono físico.",
-    icon: PhoneCall,
-    className: "bg-text/5 border-text/10 hover:border-accent/30",
-    iconColor: "text-text/80",
-  },
-  {
-    title: "Parqueadero Inteligente",
-    description:
-      "Cupos de visitante con 2 horas de cortesía, cobro prorrateado y aprobación del residente.",
-    icon: Car,
-    className: "bg-text/5 border-text/10 hover:border-accent/30",
-    iconColor: "text-text/80",
-  },
-  {
-    title: "Cumplimiento Ley 675 Nativo",
-    description:
-      "Multas con cobro automático, comité de convivencia, actas de mediación y quórum — todo conforme a la norma colombiana de propiedad horizontal.",
+      "Multas con cobro automático, comité de convivencia, actas de mediación, PQRS, mudanzas programadas, paquetería verificada, encuestas y parqueadero inteligente con cortesía y cobro prorrateado — 100% Web App instalable (PWA).",
     icon: Scale,
     className: "md:col-span-2 bg-text/5 border-text/10 hover:border-accent/30",
     iconColor: "text-text/80",
@@ -97,7 +106,7 @@ export default function BentoFeatures() {
           {/* Section Index Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold tracking-widest uppercase">
             <Grid className="w-3.5 h-3.5" />
-            05 • Ventajas Exclusivas Bento
+            05 • Ventajas Exclusivas
           </div>
 
           <RevealText
@@ -107,9 +116,9 @@ export default function BentoFeatures() {
             Lo que hace único a <span className="text-accent">ConjuntOS</span>
           </RevealText>
           <p className="text-text/80 max-w-xl font-medium leading-relaxed">
-            No es otra app de anuncios. Es la única plataforma que lleva la
-            asamblea, el cumplimiento de la Ley 675 y la inteligencia artificial
-            al día a día de tu copropiedad.
+            No es otra app de anuncios. Es el sistema operativo completo para tu
+            copropiedad: asambleas en vivo, control de Airbnb, kiosko de
+            portería, cumplimiento de la Ley 675 e inteligencia artificial.
           </p>
         </div>
 

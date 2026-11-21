@@ -14,28 +14,46 @@ export default function ProductsSection() {
 
   const products = [
     {
-      name: "Citofonía Digital",
-      badge: "En vivo",
+      name: "Citofonía Virtual sin Cables",
+      badge: "WebRTC en vivo",
       img: "/img/app/app-citofonia.webp",
-      desc: "Recibe llamadas de portería directamente en tu celular, autoriza ingresos y abre puertas con un toque.",
+      position: "object-top",
+      desc: "Recibe llamadas de portería directo en tu celular por internet, autoriza ingresos y comunícate con administración sin citófonos físicos ni cableado.",
+    },
+    {
+      name: "Pases Temporales (Airbnb)",
+      badge: "Estancias Cortas",
+      img: "/img/app/app-pases-temporales.webp",
+      position: "object-top",
+      desc: "Controla huéspedes de rentas cortas con check-in y check-out exactos, QR con vencimiento automático y portal privado Mi Estancia para el huésped.",
+    },
+    {
+      name: "Kiosko de Portería Express",
+      badge: "Recepción",
+      img: "/img/app/kiosko-home.webp",
+      position: "object-center",
+      desc: "Tablet táctil para domicilios, comida caliente y paquetería con impresión de etiqueta oficial, aviso inmediato al residente y modo espera con pauta QR.",
     },
     {
       name: "Pagos de Administración",
-      badge: "Al día",
+      badge: "Nequi",
       img: "/img/app/app-pagos.webp",
-      desc: "Consulta tu saldo, paga tu cuota con Nequi desde el celular y recibe el recibo digital al instante, conciliado en tiempo real.",
+      position: "object-top",
+      desc: "Consulta tu estado de cuenta, paga tu cuota con Nequi desde el celular y recibe tu recibo digital conciliado en tiempo real.",
     },
     {
-      name: "Reservas de Áreas",
+      name: "Reservas de Zonas Comunes",
       badge: "Sin filas",
       img: "/img/app/app-reservas.webp",
-      desc: "Agenda el salón comunal, gimnasio o zona de BBQ. Control de aforo y disponibilidad en tiempo real.",
+      position: "object-top",
+      desc: "Agenda piscina, gimnasio, salón social o zona BBQ con control de aforo, horarios y disponibilidad en tiempo real sin sobrecupos.",
     },
     {
       name: "Control de Acceso QR",
       badge: "Autorizado",
       img: "/img/app/app-visitantes.webp",
-      desc: "Genera códigos QR de acceso para tus invitados, domicilios y familiares autorizados con alertas inmediatas.",
+      position: "object-top",
+      desc: "Genera pases QR peatonales y vehiculares para invitados, familiares y domicilios con validación instantánea en portería.",
     },
   ];
 
@@ -48,7 +66,7 @@ export default function ProductsSection() {
           y: 0,
           opacity: 1,
           duration: 0.8,
-          stagger: 0.15,
+          stagger: 0.12,
           ease: "power3.out",
           scrollTrigger: { trigger: ".product-grid", start: "top 85%" },
         },
@@ -78,23 +96,23 @@ export default function ProductsSection() {
           {/* Section Index Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold tracking-widest uppercase mb-4">
             <Smartphone className="w-3.5 h-3.5" />
-            04 • Herramientas Web & Móvil
+            04 • Ecosistema Web App (PWA) & Kiosko
           </div>
 
           <RevealText
             as="h2"
             className="text-3xl md:text-5xl font-bold text-text tracking-tight font-[family-name:var(--font-serif)]"
           >
-            La potencia de la app web en tu celular
+            Todo tu conjunto en una sola app instalable
           </RevealText>
           <p className="text-text/80 text-sm md:text-base mt-4 leading-relaxed font-[family-name:var(--font-inter)]">
-            Cada sección de nuestra plataforma replica la robustez de las
-            herramientas de gestión del conjunto residencial para darte control
-            absoluto.
+            Sin tiendas de apps ni hardware propietario. Residentes, huéspedes
+            de estancias cortas, portería y administración conectados en tiempo
+            real desde cualquier celular, tablet o computador.
           </p>
         </div>
 
-        <div className="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((p, i) => (
             <div
               key={i}
@@ -105,8 +123,8 @@ export default function ProductsSection() {
                   src={p.img}
                   alt={p.name}
                   fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className={`object-cover ${p.position} transition-transform duration-700 group-hover:scale-105`}
                   unoptimized
                 />
                 <span className="absolute top-3 right-3 text-[10px] bg-black/75 backdrop-blur-md text-accent font-bold uppercase px-2.5 py-1 rounded-full border border-accent/30 tracking-wider">
