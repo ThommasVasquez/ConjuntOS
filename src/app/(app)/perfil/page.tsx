@@ -740,7 +740,7 @@ function ProfileContent() {
             >
               <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-info)' }} />
               <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--color-info)' }}>
-                Citofonía N° {userData.numeroInterno}
+                Citofonía N° {usaTorre ? userData.numeroInterno : (userData.apto && userData.apto !== "S/N" ? userData.apto : userData.numeroInterno)}
               </span>
             </div>
           )}

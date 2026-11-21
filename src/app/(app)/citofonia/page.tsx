@@ -58,6 +58,7 @@ interface DirectorioUser {
 }
 
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre } from "@/lib/unidad-format";
 import { useCall } from "@/components/providers/CallContext";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useWsSubscription } from "@/hooks/useWebSocket";
@@ -375,7 +376,7 @@ export default function CitofoniaPage() {
       return;
     }
     if (callState !== "IDLE") return;
-    setDialNum(u.numeroInterno);
+    setDialNum(usesTorre(user) ? u.numeroInterno : (u.apto || u.numeroInterno));
     startCall(`user-${u.id}`, u.nombre);
   };
 
@@ -589,7 +590,11 @@ export default function CitofoniaPage() {
                       disabled={!canUseDialer}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={canUseDialer ? "Buscar residente por nombre…" : "Buscador habilitado para seguridad y administración"}
+                      placeholder={
+                        canUseDialer
+                          ? (usesTorre(user) ? "Buscar residente por nombre…" : "Buscar por nombre o número (101–680)…")
+                          : "Buscador habilitado para seguridad y administración"
+                      }
                       className={`flex-1 bg-transparent outline-none text-sm text-text placeholder:text-text/40 ${!canUseDialer ? 'cursor-not-allowed' : ''}`}
                     />
                     {!canUseDialer && <Lock size={16} className="text-text/40 shrink-0" />}
@@ -612,7 +617,9 @@ export default function CitofoniaPage() {
                            <div className="flex flex-col min-w-0">
                               <span className="text-sm font-bold text-text truncate">{u.nombre}</span>
                               <span className="text-[11px] text-text/50">
-                                {u.apto ? `${u.torre ? `${u.torre}-` : ""}${u.apto} · ` : ""}N° {u.numeroInterno}
+                                {usesTorre(user)
+                                  ? `${u.apto ? `${u.torre ? `${u.torre}-` : ""}${u.apto} · ` : ""}N° ${u.numeroInterno}`
+                                  : (u.apto ? `Citofonía ${u.apto}` : `N° ${u.numeroInterno}`)}
                               </span>
                            </div>
                            <span

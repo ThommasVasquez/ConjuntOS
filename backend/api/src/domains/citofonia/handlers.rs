@@ -205,6 +205,55 @@ async fn resolve_targets(
             Ok(ids)
         }
         PeerTarget::Numero(code) => {
+            let usa_torre =
+                crate::domains::conjuntos::repo::usa_torre(conn, caller_conjunto_id).await;
+
+            if !usa_torre {
+                // Simple nomenclature (e.g. Las Brisas PH: 101..680):
+                // 1. Match apartment number directly first so dialing "101" rings all residents of 101.
+                let mut ids: Vec<Uuid> = usuarios::table
+                    .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                    .filter(usuarios::apto.eq(code))
+                    .filter(usuarios::activo.eq(true))
+                    .select(usuarios::id)
+                    .load(conn)
+                    .await?;
+
+                // 2. Fallback: match apartment in unidades table
+                if ids.is_empty() {
+                    let unidad_ids: Vec<Uuid> = unidades::table
+                        .filter(unidades::conjunto_id.eq(caller_conjunto_id))
+                        .filter(unidades::numero.eq(code))
+                        .select(unidades::id)
+                        .load(conn)
+                        .await?;
+
+                    if !unidad_ids.is_empty() {
+                        ids = usuarios::table
+                            .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                            .filter(usuarios::unidad_id.eq_any(&unidad_ids))
+                            .filter(usuarios::activo.eq(true))
+                            .select(usuarios::id)
+                            .load(conn)
+                            .await?;
+                    }
+                }
+
+                // 3. Fallback: match usuarios::numero_interno (for staff without apto, e.g. vigilancia)
+                if ids.is_empty() {
+                    ids = usuarios::table
+                        .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                        .filter(usuarios::numero_interno.eq(code))
+                        .filter(usuarios::activo.eq(true))
+                        .select(usuarios::id)
+                        .load(conn)
+                        .await?;
+                }
+
+                return Ok(ids);
+            }
+
+            // Standard nomenclature:
             // 1. Try matching usuarios::numero_interno first.
             let mut ids: Vec<Uuid> = usuarios::table
                 .filter(usuarios::conjunto_id.eq(caller_conjunto_id))

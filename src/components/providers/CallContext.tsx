@@ -572,9 +572,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       targetPeerId = `${conjuntoId}-ENCARGADO_PARQUEADERO`;
       if (!displayName) name = "Estacionamientos";
     } else {
-      // Plain dialed digits -> internal number (resolved to a user by the backend).
+      // Plain dialed digits -> resolved by backend (apto first when usaTorre === false, else numeroInterno).
       targetPeerId = `numero-${dialed}`;
-      if (!displayName) name = `Interno ${dialed}`;
+      if (!displayName) name = profile.usaTorre === false ? dialed : `Interno ${dialed}`;
     }
 
     targetPeerId = sanitizePeerId(targetPeerId);

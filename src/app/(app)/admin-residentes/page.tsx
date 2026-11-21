@@ -807,9 +807,9 @@ export default function AdminResidentesPage() {
                     {formatUnidad(r.torre, r.apto, usaTorre, { emptyFallback: "Sin unidad asignada" })}
                   </span>
                 </div>
-                {r.interno && (
+                {(usaTorre ? r.interno : (r.apto || r.interno)) && (
                   <span className="text-[10px] bg-surface-2 border border-border text-text rounded-lg px-2 py-0.5 font-mono">
-                    #{r.interno}
+                    #{usaTorre ? r.interno : (r.apto || r.interno)}
                   </span>
                 )}
               </div>
@@ -880,7 +880,7 @@ export default function AdminResidentesPage() {
                   {detalle.interno && (
                     <div className="flex items-center gap-2 text-sm text-text">
                       <Building2 size={14} style={{ opacity: 0.5 }} />
-                      <span>Interno #{detalle.interno}</span>
+                      <span>{usaTorre ? `Interno #${detalle.interno}` : `Citofonía #${detalle.apto || detalle.interno}`}</span>
                     </div>
                   )}
                 </div>
