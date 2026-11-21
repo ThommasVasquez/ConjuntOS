@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import StickerEtiqueta, { StickerData } from "@/components/paqueteria/StickerEtiqueta";
+import KioskoStandbyOverlay from "@/components/kiosko/KioskoStandbyOverlay";
+import type { AdSpaceFeedDto } from "@/lib/api/types";
 import {
   BLOQUES_REALES_LAS_BRISAS,
   getCasasRealesDeBloque,
@@ -216,6 +218,50 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
   // Modal PIN del Guarda
   const [showExitModal, setShowExitModal] = useState(false);
   const [exitPin, setExitPin] = useState("");
+
+  // Modo reposo / protector de pantalla (publicidad + capacitación tras 45s de inactividad)
+  const [isStandby, setIsStandby] = useState(false);
+  const [standbyAds, setStandbyAds] = useState<AdSpaceFeedDto[]>([]);
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const loadStandbyAds = useCallback(async () => {
+    const slug = conjuntoSlug?.trim() || "lasbrisasph";
+    try {
+      const data = await api.get<AdSpaceFeedDto[]>(`/public/kiosko/${encodeURIComponent(slug)}/ads`);
+      if (Array.isArray(data)) setStandbyAds(data);
+    } catch {
+      /* mantener ads previos o slides de capacitación */
+    }
+  }, [conjuntoSlug]);
+
+  useEffect(() => {
+    loadStandbyAds();
+    const interval = setInterval(loadStandbyAds, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [loadStandbyAds]);
+
+  const resetIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    // No activar reposo si está imprimiendo sticker o con el modal de PIN abierto
+    if (printedSticker || showExitModal) return;
+    idleTimerRef.current = setTimeout(() => {
+      setIsStandby(true);
+    }, 45000);
+  }, [printedSticker, showExitModal]);
+
+  useEffect(() => {
+    resetIdleTimer();
+    const events: Array<keyof WindowEventMap> = ["pointerdown", "touchstart", "keydown", "mousemove"];
+    const onActivity = () => {
+      setIsStandby(false);
+      resetIdleTimer();
+    };
+    events.forEach((ev) => window.addEventListener(ev, onActivity, { passive: true }));
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      events.forEach((ev) => window.removeEventListener(ev, onActivity));
+    };
+  }, [resetIdleTimer]);
 
   // Refs de GSAP
   const activePanelRef = useRef<HTMLDivElement | null>(null);
@@ -1221,6 +1267,17 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
       {/* ============================================================== */}
       {/* MODAL PIN DE SEGURIDAD (GUARDA)                                 */}
       {/* ============================================================== */}
+      {/* MODO REPOSO: PUBLICIDAD + CAPACITACIÓN (IMÁGENES Y VIDEOS MP4) */}
+      <KioskoStandbyOverlay
+        visible={isStandby && !printedSticker && !showExitModal}
+        ads={standbyAds}
+        conjuntoLabel={nomenclaturaSimple ? "LAS BRISAS PH · LA FELICIDAD" : "CONJUNTOS® · PORTERÍA"}
+        onWake={() => {
+          setIsStandby(false);
+          resetIdleTimer();
+        }}
+      />
+
       {showExitModal && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-[#121622] border border-white/15 rounded-3xl p-6 max-w-xs w-full flex flex-col gap-4 text-center shadow-2xl animate-in zoom-in-95 duration-200 text-white">

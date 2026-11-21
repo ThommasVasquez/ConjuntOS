@@ -44,6 +44,9 @@ pub fn router() -> Router<AppState> {
         )
         // Público (feed filtrado por conjunto, fechas, franja horaria y tope)
         .route("/ad-spaces/active", get(active_for_feed))
+        // Kiosko portería (modo reposo público por subdominio, sin sesión de residente)
+        .route("/public/kiosko/{subdominio}/ads", get(active_for_kiosko))
+        .route("/public/kiosko/ads/{id}/impress", post(kiosko_impression))
         // Tracking detallado (impresiones + clics con hora local y usuario)
         .route("/ad-spaces/{id}/impress", post(impression))
         .route("/ad-spaces/{id}/click", post(click))
@@ -463,5 +466,38 @@ async fn click(
 ) -> ApiResult<Json<serde_json::Value>> {
     let mut conn = state.pool.get().await?;
     repo::register_click(&mut conn, id, Some(user.id)).await?;
+    Ok(Json(serde_json::json!({"ok": true})))
+}
+
+/// GET /api/v1/public/kiosko/{subdominio}/ads — active ads for Kiosko standby screensaver.
+async fn active_for_kiosko(
+    State(state): State<AppState>,
+    Path(subdominio): Path<String>,
+) -> ApiResult<Json<Vec<AdSpaceFeedDto>>> {
+    let normalized = match subdominio.trim().to_lowercase().as_str() {
+        "las-brisas" | "lasbrisas" | "lasbrisasph" => "lasbrisasph".to_string(),
+        other => other.to_string(),
+    };
+    let mut conn = state.pool.get().await?;
+    let conjunto_id: Option<Uuid> = conjuntos::table
+        .filter(conjuntos::subdominio.eq(&normalized))
+        .select(conjuntos::id)
+        .first(&mut conn)
+        .await
+        .optional()?;
+    let Some(cid) = conjunto_id else {
+        return Ok(Json(Vec::new()));
+    };
+    let ads = repo::list_active_for_kiosko(&mut conn, cid).await?;
+    Ok(Json(ads))
+}
+
+/// POST /api/v1/public/kiosko/ads/{id}/impress — register standby impression from Kiosko tablet.
+async fn kiosko_impression(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let mut conn = state.pool.get().await?;
+    repo::register_impression(&mut conn, id, None).await?;
     Ok(Json(serde_json::json!({"ok": true})))
 }

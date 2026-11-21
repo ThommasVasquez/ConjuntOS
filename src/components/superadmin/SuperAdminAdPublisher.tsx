@@ -62,14 +62,22 @@ export default function SuperAdminAdPublisher({
   // Composer state
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
+  const [posicion, setPosicion] = useState<"FEED" | "KIOSKO" | "TODOS">("TODOS");
   const [imagenUrl, setImagenUrl] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  const isVideoUrl = (url: string) => {
+    const clean = url.split("?")[0].toLowerCase();
+    return clean.endsWith(".mp4") || clean.endsWith(".webm") || clean.endsWith(".mov");
+  };
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("La imagen supera el límite de 5MB");
+    const isVideo = file.type.startsWith("video/") || /\.(mp4|webm)$/i.test(file.name);
+    const maxBytes = isVideo ? 8 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error(isVideo ? "El video supera el límite de 8MB" : "La imagen supera el límite de 5MB");
       return;
     }
     setUploadingImage(true);
@@ -77,17 +85,26 @@ export default function SuperAdminAdPublisher({
       const dataUrl: string = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error("No se pudo leer la imagen"));
+        reader.onerror = () => reject(new Error("No se pudo leer el archivo"));
         reader.readAsDataURL(file);
       });
-      const res = await api.post<{ url: string }>("/uploads/imagen", {
-        data: dataUrl,
-        carpeta: "pauta",
-      });
-      setImagenUrl(res.url);
-      toast.success("Imagen subida correctamente");
+      if (isVideo) {
+        const res = await api.post<{ url: string }>("/uploads/archivo", {
+          data: dataUrl,
+          nombre: file.name,
+        });
+        setImagenUrl(res.url);
+        toast.success("Video MP4 subido correctamente");
+      } else {
+        const res = await api.post<{ url: string }>("/uploads/imagen", {
+          data: dataUrl,
+          carpeta: "pauta",
+        });
+        setImagenUrl(res.url);
+        toast.success("Imagen subida correctamente");
+      }
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.detail : "Error al subir la imagen");
+      toast.error(err instanceof ApiError ? err.detail : "Error al subir el archivo");
     } finally {
       setUploadingImage(false);
     }
@@ -166,6 +183,9 @@ export default function SuperAdminAdPublisher({
     setEditingCampanaId(c.campanaId);
     setNombre(c.nombre);
     setEmpresa(c.empresa || "");
+    setPosicion(
+      c.posicion === "KIOSKO" || c.posicion === "TODOS" ? c.posicion : "FEED"
+    );
     setImagenUrl(c.imagenUrl || "");
     if (c.linkUrl && c.linkUrl.startsWith("https://wa.me/")) {
       setLinkMode("WHATSAPP");
@@ -228,6 +248,7 @@ export default function SuperAdminAdPublisher({
         const updated = await api.put<AdCampaignSummaryDto>(`/superadmin/ad-spaces/${editingCampanaId}`, {
           nombre: nombre.trim(),
           empresa: empresa.trim(),
+          posicion,
           imagenUrl: imagenUrl.trim(),
           linkUrl: resolvedLink() || "",
           ctaTexto: ctaTexto.trim(),
@@ -249,7 +270,7 @@ export default function SuperAdminAdPublisher({
         const created = await api.post<AdCampaignSummaryDto>("/superadmin/ad-spaces", {
           nombre: nombre.trim(),
           empresa: empresa.trim() || undefined,
-          posicion: "FEED",
+          posicion,
           imagenUrl: imagenUrl.trim() || undefined,
           linkUrl: resolvedLink(),
           ctaTexto: ctaTexto.trim() || undefined,
@@ -648,20 +669,58 @@ export default function SuperAdminAdPublisher({
           />
         </div>
 
-        {/* Subir imagen del banner + Prioridad + Topes */}
+        {/* Subir imagen o video del banner + Posición + Prioridad + Topes */}
         <div className="flex flex-col gap-3">
+          {/* Posición (Feed móvil / Kiosko portería / Ambos) */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-text pl-1">
+              Dónde se muestra
+            </label>
+            <div className="grid grid-cols-3 gap-2 bg-surface-2 p-1.5 rounded-2xl border border-border">
+              {[
+                { id: "TODOS" as const, label: "App + Kiosko" },
+                { id: "FEED" as const, label: "Solo App Feed" },
+                { id: "KIOSKO" as const, label: "Solo Kiosko" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setPosicion(opt.id)}
+                  className={`py-2 px-2.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    posicion === opt.id
+                      ? "bg-amber-500 text-white shadow-sm"
+                      : "text-text/70 hover:text-text"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-text pl-1">
-              Imagen del banner (opcional · máx. 5MB)
+              Imagen (máx. 5MB) o Video MP4 para Kiosko (10–15s · máx. 8MB)
             </label>
             {imagenUrl ? (
-              <div className="relative rounded-2xl overflow-hidden border border-border h-40">
-                <img src={imagenUrl} alt="Banner" className="w-full h-full object-cover" />
+              <div className="relative rounded-2xl overflow-hidden border border-border h-44 bg-black">
+                {isVideoUrl(imagenUrl) ? (
+                  <video
+                    src={imagenUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img src={imagenUrl} alt="Banner" className="w-full h-full object-cover" />
+                )}
                 <div className="absolute top-2.5 right-2.5 flex gap-2">
                   <label className="bg-amber-500 hover:bg-amber-600 text-white rounded-full p-2 cursor-pointer shadow-md active:scale-90 transition-all">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,video/mp4,video/webm"
                       className="hidden"
                       onChange={handleBannerUpload}
                       disabled={uploadingImage}
@@ -678,7 +737,7 @@ export default function SuperAdminAdPublisher({
                 </div>
                 {uploadingImage && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs font-bold text-white">
-                    Subiendo imagen…
+                    Subiendo archivo…
                   </div>
                 )}
               </div>
@@ -686,12 +745,12 @@ export default function SuperAdminAdPublisher({
               <label className="border-2 border-dashed border-border hover:border-amber-500/50 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-surface-2/40 hover:bg-surface-2/70">
                 <Upload size={22} className="text-amber-500" />
                 <span className="text-xs font-bold text-text">
-                  {uploadingImage ? "Subiendo imagen…" : "Subir imagen del banner (PNG, JPG, WebP)"}
+                  {uploadingImage ? "Subiendo archivo…" : "Subir imagen (PNG/JPG/WebP) o Video (MP4)"}
                 </span>
-                <span className="text-[10px] text-text/50">Recomendado 1200×600 · máx. 5MB</span>
+                <span className="text-[10px] text-text/50">16:9 horizontal · Imagen ≤ 5MB · Video MP4 ≤ 8MB</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/mp4,video/webm"
                   className="hidden"
                   onChange={handleBannerUpload}
                   disabled={uploadingImage}

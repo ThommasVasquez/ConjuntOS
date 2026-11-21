@@ -78,6 +78,10 @@ pub async fn list_active_for_feed(
 
     let mut out = Vec::new();
     for ad in rows {
+        // Kiosko-only ads stay on the reception tablet, not the resident mobile feed.
+        if ad.posicion.eq_ignore_ascii_case("KIOSKO") {
+            continue;
+        }
         // 1. Dayparting: hour & weekday
         if !hour_in_window(cur_hour, ad.hora_inicio, ad.hora_fin) {
             continue;
@@ -111,6 +115,58 @@ pub async fn list_active_for_feed(
     }
 
     Ok(out)
+}
+
+/// Active ads for the reception Kiosko standby screensaver (no user auth required).
+/// Respects active status, date range, Colombia dayparting, and total impression cap.
+pub async fn list_active_for_kiosko(
+    conn: &mut DbConn,
+    conjunto_id: Uuid,
+) -> ApiResult<Vec<AdSpaceFeedDto>> {
+    let now_utc = Utc::now();
+    let now_co = colombia_now();
+    let cur_hour = now_co.hour() as i32;
+    let cur_weekday = now_co.weekday().number_from_monday();
+
+    let rows = ad_spaces::table
+        .filter(ad_spaces::conjunto_id.eq(conjunto_id))
+        .filter(ad_spaces::activo.eq(true))
+        .filter(ad_spaces::inicio_en.le(now_utc))
+        .filter(ad_spaces::fin_en.ge(now_utc))
+        .order((ad_spaces::prioridad.desc(), ad_spaces::inicio_en.desc()))
+        .select(AdSpace::as_select())
+        .load(conn)
+        .await?;
+
+    let mut kiosko_specific = Vec::new();
+    let mut fallback_all = Vec::new();
+
+    for ad in rows {
+        if !hour_in_window(cur_hour, ad.hora_inicio, ad.hora_fin) {
+            continue;
+        }
+        if !weekday_enabled(cur_weekday, &ad.dias_semana) {
+            continue;
+        }
+        if let Some(max_imp) = ad.max_impresiones {
+            if max_imp > 0 && ad.impresiones >= max_imp {
+                continue;
+            }
+        }
+        let pos = ad.posicion.to_uppercase();
+        let dto = AdSpaceFeedDto::from(ad);
+        if pos == "KIOSKO" || pos == "TODOS" {
+            kiosko_specific.push(dto);
+        } else {
+            fallback_all.push(dto);
+        }
+    }
+
+    if !kiosko_specific.is_empty() {
+        Ok(kiosko_specific)
+    } else {
+        Ok(fallback_all)
+    }
 }
 
 pub async fn find_by_id(
