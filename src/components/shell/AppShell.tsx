@@ -89,6 +89,23 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }
   }, [checkAuth, pathname, router]);
 
+  // Always start at the top when launching the app or switching routes.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+    const resetTop = () => {
+      const scroller = document.querySelector(".page-content") as HTMLElement | null;
+      if (scroller) scroller.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+      window.scrollTo(0, 0);
+    };
+    resetTop();
+    const raf = requestAnimationFrame(resetTop);
+    return () => cancelAnimationFrame(raf);
+  }, [pathname]);
+
   // Clear optimistic skeleton the instant the destination route lands
   useEffect(() => {
     setPendingPath(null);

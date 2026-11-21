@@ -15,7 +15,13 @@ gsap.registerPlugin(ScrollTrigger);
  */
 export default function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // ponytail: respect reduced-motion — no inertia for users who opt out.
+    // Always start at the very top when opening or refreshing the page.
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+    window.scrollTo(0, 0);
+
+    // Respect reduced-motion — no inertia for users who opt out.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const lenis = new Lenis({
@@ -24,6 +30,7 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       smoothWheel: true,
     });
 
+    lenis.scrollTo(0, { immediate: true });
     lenis.on("scroll", ScrollTrigger.update);
 
     const ticker = (time: number) => lenis.raf(time * 1000);

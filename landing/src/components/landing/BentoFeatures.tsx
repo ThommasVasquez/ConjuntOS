@@ -5,7 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 import {
   Vote,
-  Sparkles,
+  PhoneCall,
   Siren,
   KeyRound,
   MonitorSmartphone,
@@ -45,10 +45,10 @@ const features = [
     iconColor: "text-text/80",
   },
   {
-    title: "Capi, tu Asistente con IA",
+    title: "Citofonía Virtual sin Cables",
     description:
-      "Resuelve dudas fundamentado en la Ley 675 de 2001, redacta comunicados y te guía por cada módulo de la plataforma.",
-    icon: Sparkles,
+      "Recibe llamadas de portería por internet directo en tu celular y autoriza ingresos en un toque, sin citófonos físicos ni cableado.",
+    icon: PhoneCall,
     className: "bg-text/5 border-text/10 hover:border-accent/30",
     iconColor: "text-text/80",
   },
@@ -118,7 +118,7 @@ export default function BentoFeatures() {
           <p className="text-text/80 max-w-xl font-medium leading-relaxed">
             No es otra app de anuncios. Es el sistema operativo completo para tu
             copropiedad: asambleas en vivo, control de Airbnb, kiosko de
-            portería, cumplimiento de la Ley 675 e inteligencia artificial.
+            portería, citofonía virtual y cumplimiento de la Ley 675.
           </p>
         </div>
 
