@@ -1,15 +1,71 @@
 "use client";
 
 import { useViewTransition } from "@/components/providers/ViewTransitionContext";
-import { Search } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/components/providers/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
+
+/**
+ * High-Precision Vector Castle Emblem
+ * Light mode: Solid Black Castle (#111213) with transparent window cutout
+ * Dark mode: Solid White Castle (#FFFFFF) with transparent window cutout
+ */
+function CastleIcon({ isDark }: { isDark: boolean }) {
+  const fill = isDark ? "#FFFFFF" : "#111213";
+  return (
+    <svg
+      viewBox="170 0 160 250"
+      className="w-full h-full object-contain"
+      fill="none"
+      shapeRendering="geometricPrecision"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <g>
+        {/* Main Castle Body with fillRule="evenodd" cutout window */}
+        <path
+          fill={fill}
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M255.67,10.23c-2.57,5.03-7.5-.37-9.98-.01-3.32.48-5.3,12.87-19.48,12.92,6.21,5.4,13.88-.76,19.56-2.25,5.52,2.78,11.87,7.02,18.76,1.43l-.15,17.07-8.56,3.27-.12,21.36-11.04,3.7-.23-21.31-17.71,6.02-.17,21.95-12.6,4.09-.13-21.58-16.95,5.56.02,166.16,71.99-24.16.45-203.45c-6.29,1.76-10.97,3.98-13.65,9.23ZM221.01,129.56c-.14-11.98-1.51-24.65,6.8-29.98,3.7-2.37,8.53-2.95,12.73-.85,3.43,1.72,5.15,5.48,5.22,9.21l.23,14.08-24.98,7.53Z"
+        />
+
+        {/* Right Castle Side Piece */}
+        <path
+          fill={fill}
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M313.1,130.3l-21.73-10.58c-1.11-9.65-.78-21.44,6.47-24.03,3.79-1.35,7.48-.13,10.35,2.62,3.31,3.17,4.53,7.73,5.03,12.36l-.13,19.64Z"
+        />
+
+        {/* Castle Flags / Roof Points */}
+        <polygon
+          fill={fill}
+          points="301.46 72.67 285.82 65.36 300.66 52.78 301.46 72.67"
+        />
+        <polygon
+          fill={fill}
+          points="322.96 81.73 309.05 75.32 322.83 63.69 322.96 81.73"
+        />
+
+        {/* Right Small Window Cutout */}
+        <path
+          fill={fill}
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M199.28,232.71c-.09,3.34-2.03,5.23-4.68,5.26s-4.61-1.84-4.87-4.84,1.24-5.54,4.18-5.87,5.46,1.81,5.36,5.45Z"
+        />
+      </g>
+    </svg>
+  );
+}
 
 export default function Navbar() {
   const { navigate } = useViewTransition();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
@@ -28,6 +84,8 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const isDark = theme === "dark";
+
   return (
     <nav 
       ref={navRef}
@@ -37,38 +95,24 @@ export default function Navbar() {
           : "top-0 w-full max-w-7xl px-6"
       }`}
     >
-      <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center px-8 relative overflow-hidden ${
+      <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center px-8 relative overflow-visible ${
         scrolled 
           ? "liquid-glass rounded-full py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
           : "bg-transparent py-6 border-transparent rounded-none"
       }`}>
         {/* Specular Edge Highlight */}
         {scrolled && (
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none rounded-t-full" />
         )}
         
-        {/* 1. Logo Container (Fixed width to balance right side) */}
-        <div className={`transition-all duration-700 flex items-center ${scrolled ? "w-[120px]" : "w-[180px]"}`}>
+        {/* 1. Logo Container (Theme-Aware Icon Emblem: Attached Black Castle in Light Mode, Inverted White Castle in Dark Mode - 30% Larger) */}
+        <div className="transition-all duration-700 flex items-center w-12">
           <div 
             onClick={() => navigate("/")} 
-            className="flex items-center cursor-pointer group"
+            className="flex items-center justify-center cursor-pointer group"
           >
-            <div className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center ${
-              scrolled ? "h-10 w-10 text-text" : "h-10 w-[140px]"
-            }`}>
-              {scrolled ? (
-                <img 
-                  src="/solo-dark.svg" 
-                  alt="ConjuntOS" 
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <img 
-                  src="/SplashWHITE.png" 
-                  alt="ConjuntOS" 
-                  className="w-full h-full object-contain"
-                />
-              )}
+            <div className="h-12 w-12 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+              <CastleIcon isDark={isDark} />
             </div>
           </div>
         </div>
@@ -80,37 +124,69 @@ export default function Navbar() {
               <button 
                 key={item}
                 onClick={() => {
-                  if (item === "Asambleas") navigate("/asamblea");
+                  const sectionId = item.toLowerCase().replace(/á/g, 'a');
+                  const element = document.getElementById(sectionId);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
                 }}
-                className={`transition-all duration-500 text-[11px] font-bold tracking-widest uppercase hover:text-accent cursor-pointer ${
-                  scrolled ? "text-text" : "text-white"
-                }`}
+                className="text-sm font-medium text-text-muted hover:text-text transition-colors relative py-1 group"
               >
                 {item}
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full" />
               </button>
             ))}
           </div>
         </div>
 
-        {/* 3. Actions Container (Fixed width to balance left side) */}
-        <div className={`transition-all duration-700 flex items-center justify-end gap-6 ${scrolled ? "w-[120px]" : "w-[180px]"}`}>
-          <button className="text-white hover:text-accent transition-colors duration-300">
-            <Search size={16} strokeWidth={2.5} />
-          </button>
-          <ThemeToggle className="text-white" />
-          <div className="h-4 w-[1px] bg-text/10 mx-1" />
-          <a 
-            href={user ? "https://app.conjuntos.app/inicio" : "https://app.conjuntos.app/login"} 
-            className={`transition-all duration-300 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase whitespace-nowrap hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,0,0,0.3)] ${
-              scrolled 
-                ? "text-text bg-text/5 border border-text/10 hover:bg-accent hover:text-on-accent"
-                : "text-white border border-text/20 hover:bg-accent hover:border-accent hover:text-on-accent"
-            }`}
+        {/* 3. Action Controls Container (Right side) */}
+        <div className="flex items-center gap-4 justify-end">
+          {/* Quick Search Launcher */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('open-search-modal'))}
+            className="p-2.5 rounded-full text-text-muted hover:text-text hover:bg-surface/50 transition-all border border-transparent hover:border-white/10 group"
+            title="Buscar o consultar IA..."
           >
-            {user ? "Mi Panel" : "Ingresar"}
-          </a>
-        </div>
+            <Search className="w-4 h-4 transition-transform group-hover:scale-110" />
+          </button>
 
+          <ThemeToggle />
+
+          {/* "Ir a la App" / "Ingresar" Button with 360° Organic Orbiting Green/Aqua Conic Halo */}
+          <button
+            onClick={() => navigate(user ? "/inicio" : "/login")}
+            className="relative group rounded-full font-semibold text-xs transition-all duration-300 active:scale-95"
+          >
+            {/* 1. Orbiting Conic Organic Halo Glow (Unclipped Ambient Glow) */}
+            <div className="absolute -inset-2 rounded-full overflow-hidden opacity-80 group-hover:opacity-100 transition-opacity duration-500 blur-md group-hover:blur-lg pointer-events-none">
+              <div 
+                className="w-[250%] h-[250%] -translate-x-1/3 -translate-y-1/3 animate-[spin_4s_linear_infinite]"
+                style={{
+                  background: 'conic-gradient(from 0deg at 50% 50%, #009df1 0%, #57bf00 35%, #06b6d4 70%, #009df1 100%)',
+                }}
+              />
+            </div>
+
+            {/* 2. Organic Orbiting Conic Border Ring Container */}
+            <div className="relative rounded-full p-[1.5px] overflow-hidden shadow-[0_0_20px_rgba(0,157,241,0.4)]">
+              {/* Rotating Conic Light Beam for Border */}
+              <div 
+                className="absolute -inset-[150%] animate-[spin_4s_linear_infinite]"
+                style={{
+                  background: 'conic-gradient(from 0deg at 50% 50%, #009df1 0%, #57bf00 35%, #06b6d4 70%, #009df1 100%)',
+                }}
+              />
+
+              {/* Inner Dark Pill Content */}
+              <span className="relative block px-5 py-2.5 rounded-full bg-[#0a0f1d] group-hover:bg-[#070b16] transition-all duration-300">
+                <span className="relative text-white font-bold tracking-wide flex items-center gap-1.5 drop-shadow-[0_0_10px_rgba(0,157,241,0.9)]">
+                  {user ? "Ir a la App" : "Ingresar"}
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 text-[#57bf00]" />
+                </span>
+              </span>
+            </div>
+          </button>
+        </div>
       </div>
     </nav>
   );

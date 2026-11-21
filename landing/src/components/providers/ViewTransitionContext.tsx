@@ -15,6 +15,12 @@ export function ViewTransitionProvider({ children }: { children: React.ReactNode
   const [isPending, startTransition] = useTransition();
 
   const navigate = (url: string) => {
+    // App routes live on app.conjuntos.app, not on the static marketing site.
+    if (url.startsWith("/login") || url.startsWith("/inicio")) {
+      window.location.href = `https://app.conjuntos.app${url}`;
+      return;
+    }
+
     // Check if browser supports View Transitions API
     if (!document.startViewTransition) {
       router.push(url);

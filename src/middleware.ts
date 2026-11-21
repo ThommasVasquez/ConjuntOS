@@ -29,14 +29,19 @@ export function middleware(req: NextRequest) {
     return res;
   }
 
+  // Root "/" on app.conjuntos.app goes straight to the app or login.
+  // The public marketing landing lives exclusively on https://conjuntos.app (landing/).
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL(session ? "/inicio" : "/login", req.url));
+  }
+
   // Authenticated user on "/login" → redirect to dashboard.
-  // "/" stays the public landing page for everyone, logged in or not.
   if (pathname === "/login" && session) {
     return NextResponse.redirect(new URL("/inicio", req.url));
   }
 
-  // Allow public paths (landing, about, pricing, contact)
-  if (pathname === "/" || pathname === "/login" || PUBLIC_PATHS.some((p) => pathname === p)) {
+  // Allow public paths (login, about, pricing, contact)
+  if (pathname === "/login" || PUBLIC_PATHS.some((p) => pathname === p)) {
     return NextResponse.next();
   }
 
