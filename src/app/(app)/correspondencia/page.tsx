@@ -7,7 +7,7 @@ import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { usesTorre, formatUnidad } from "@/lib/unidad-format";
-import { api } from "@/lib/api/client";
+import { api, invalidateApiCache } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { CorrespondenciaDto } from "@/lib/api/types";
@@ -26,13 +26,18 @@ interface CorrespondenciaItem {
   descripcion: string | null;
   remitente: string;
   tipo: string;
+  estado?: string;
   fechaLlegada: string;
+  entregadoEn?: string | null;
   residente?: {
     nombre: string | null;
     torre: string | null;
     apto: string | null;
   } | null;
 }
+
+const isPendingCorrespondencia = (item: CorrespondenciaItem) =>
+  item.estado !== "ENTREGADO" && !item.entregadoEn;
 
 export default function CorrespondenciaPage() {
   const { user, loading: authLoading } = useAuth();
@@ -54,8 +59,9 @@ export default function CorrespondenciaPage() {
 
   const refetch = async () => {
     try {
+      invalidateApiCache();
       const data = await api.get<CorrespondenciaItem[]>('/vigilancia/correspondencia');
-      setItems(data);
+      setItems(data.filter(isPendingCorrespondencia));
     } catch {}
   };
 
@@ -81,7 +87,7 @@ export default function CorrespondenciaPage() {
            api.get<CorrespondenciaItem[]>('/vigilancia/correspondencia'),
            api.get<ResidenteDirectorio[]>('/directorio')
          ]);
-         setItems(corrData);
+         setItems(corrData.filter(isPendingCorrespondencia));
          setResidentes(dirData);
        } catch {
          toast.error("Error al cargar datos");
@@ -107,8 +113,9 @@ export default function CorrespondenciaPage() {
      try {
        await api.post('/vigilancia/correspondencia', formData);
        toast.success("Correspondencia registrada");
+       invalidateApiCache();
        const fresh = await api.get<CorrespondenciaItem[]>('/vigilancia/correspondencia');
-       setItems(fresh);
+       setItems(fresh.filter(isPendingCorrespondencia));
        setFormData({usuarioId: "", tipo: "CARTA", remitente: "", descripcion: ""});
      } catch {
        toast.error("Error de conexión");
@@ -120,8 +127,9 @@ export default function CorrespondenciaPage() {
   const markAsDelivered = async (id: string) => {
     try {
       await api.put(`/vigilancia/correspondencia/${id}/entregar`);
+      invalidateApiCache();
       toast.success("Entrega confirmada");
-      setItems(items.filter(p => p.id !== id));
+      setItems((prev) => prev.filter((p) => p.id !== id));
     } catch {
       toast.error("Error de red");
     }
