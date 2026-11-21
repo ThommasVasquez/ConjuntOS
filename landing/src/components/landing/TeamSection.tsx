@@ -18,21 +18,21 @@ export default function TeamSection() {
       title: "Control de Acceso",
       subtitle: "Seguridad y Citofonía Virtual",
       tag: "Seguridad 24/7",
-      img: "/img/lobby-entrance.webp",
+      img: "/img/app/app-citofonia.webp",
     },
     {
       num: "02",
       title: "Gestión Financiera",
       subtitle: "Pagos Nequi y Conciliación",
       tag: "Cero Mora",
-      img: "/img/hero-admin.webp",
+      img: "/img/app/app-pagos.webp",
     },
     {
       num: "03",
       title: "Reservas de Áreas",
       subtitle: "Piscinas, Salones y Gimnasio",
       tag: "Sin Filas",
-      img: "/img/community.webp",
+      img: "/img/app/app-reservas.webp",
     },
   ];
 
@@ -106,7 +106,8 @@ export default function TeamSection() {
                 sizes="(max-width: 768px) 100vw, 33vw"
                 src={mod.img}
                 alt={mod.title}
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                unoptimized
               />
 
               {/* Number Badge Top Left */}

@@ -85,13 +85,14 @@ export default function ShowcaseSection() {
             </RevealText>
           </div>
 
-          <div className="relative rounded-[36px] overflow-hidden border border-text/10 shadow-2xl h-[400px]">
+          <div className="relative rounded-[36px] overflow-hidden border border-text/10 shadow-2xl h-[400px] bg-[#050d0c]">
             <Image
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
-              src="/img/craft-tablet.webp"
-              alt="Pagos digitales con Nequi"
-              className="object-cover"
+              src="/img/app/app-pagos.webp"
+              alt="Pagos digitales en la app ConjuntOS"
+              className="object-cover object-top"
+              unoptimized
             />
             <div className="absolute bottom-0 inset-x-0 bg-black/90 backdrop-blur-md p-6 flex items-center justify-between border-t border-white/10">
               <div>
@@ -108,13 +109,14 @@ export default function ShowcaseSection() {
         </div>
 
         <div className="showcase-right flex-1 relative">
-          <div className="relative rounded-[36px] overflow-hidden h-full min-h-[600px] border border-text/10 shadow-2xl">
+          <div className="relative rounded-[36px] overflow-hidden h-full min-h-[600px] border border-text/10 shadow-2xl bg-[#050d0c]">
             <Image
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
-              src="/img/lobby-entrance.webp"
-              alt="Acceso inteligente al conjunto"
-              className="object-cover"
+              src="/img/app/app-visitantes.webp"
+              alt="Control de acceso y visitantes en la app ConjuntOS"
+              className="object-cover object-top"
+              unoptimized
             />
           </div>
 

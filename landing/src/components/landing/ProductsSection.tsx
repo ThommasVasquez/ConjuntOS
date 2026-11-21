@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { PhoneCall, CreditCard, Calendar, ShieldCheck, Smartphone } from "lucide-react";
+import { Smartphone } from "lucide-react";
 import RevealText from "./RevealText";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -14,109 +15,27 @@ export default function ProductsSection() {
   const products = [
     {
       name: "Citofonía Digital",
+      badge: "En vivo",
+      img: "/img/app/app-citofonia.webp",
       desc: "Recibe llamadas de portería directamente en tu celular, autoriza ingresos y abre puertas con un toque.",
-      component: (
-        <div className="w-full h-full flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(0,0,0,0.3)]">
-              <PhoneCall size={20} className="animate-pulse" />
-            </div>
-            <span className="text-[9px] bg-accent/20 text-accent font-bold uppercase px-2.5 py-1 rounded-full border border-accent/30 tracking-wider">
-              Llamando
-            </span>
-          </div>
-          <div>
-            <h5 className="text-[9px] text-accent font-black uppercase tracking-widest">
-              Citófono Virtual
-            </h5>
-            <p className="text-text text-lg font-bold truncate mt-1">
-              Lobby Portería
-            </p>
-            <div className="w-full h-[3px] bg-text/10 rounded-full overflow-hidden mt-3">
-              <div className="h-full bg-accent w-2/3 animate-pulse" />
-            </div>
-          </div>
-        </div>
-      ),
     },
     {
       name: "Pagos de Administración",
+      badge: "Al día",
+      img: "/img/app/app-pagos.webp",
       desc: "Consulta tu saldo, paga tu cuota con Nequi desde el celular y recibe el recibo digital al instante, conciliado en tiempo real.",
-      component: (
-        <div className="w-full h-full flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-text/10 border border-text/20 flex items-center justify-center text-text/70">
-              <CreditCard size={20} />
-            </div>
-            <span className="text-[9px] bg-text/20 text-text/70 font-bold uppercase px-2.5 py-1 rounded-full border border-text/30 tracking-wider">
-              Al día
-            </span>
-          </div>
-          <div>
-            <h5 className="text-[9px] text-text uppercase tracking-widest font-bold">
-              Tu Residencia
-            </h5>
-            <p className="text-text text-lg font-bold truncate mt-1">
-              $ 0 Pendiente
-            </p>
-            <p className="text-[9px] text-text mt-1">
-              Mes de Abril • Pago Exitoso
-            </p>
-          </div>
-        </div>
-      ),
     },
     {
       name: "Reservas de Áreas",
+      badge: "Sin filas",
+      img: "/img/app/app-reservas.webp",
       desc: "Agenda el salón comunal, gimnasio o zona de BBQ. Control de aforo y disponibilidad en tiempo real.",
-      component: (
-        <div className="w-full h-full flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-text/10 border border-text/20 flex items-center justify-center text-text/70">
-              <Calendar size={20} />
-            </div>
-            <span className="text-[9px] bg-text/20 text-text/70 font-bold uppercase px-2.5 py-1 rounded-full border border-text/30 tracking-wider">
-              Aprobado
-            </span>
-          </div>
-          <div>
-            <h5 className="text-[9px] text-text uppercase tracking-widest font-bold">
-              Zona Común
-            </h5>
-            <p className="text-text text-lg font-bold truncate mt-1">
-              Piscina & BBQ
-            </p>
-            <p className="text-[9px] text-text mt-1">Hoy, 18:00 - 20:00</p>
-          </div>
-        </div>
-      ),
     },
     {
       name: "Control de Acceso QR",
+      badge: "Autorizado",
+      img: "/img/app/app-visitantes.webp",
       desc: "Genera códigos QR de acceso para tus invitados, domicilios y familiares autorizados con alertas inmediatas.",
-      component: (
-        <div className="w-full h-full flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="w-12 h-12 rounded-2xl bg-text/10 border border-text/20 flex items-center justify-center text-text/70">
-              <ShieldCheck size={20} />
-            </div>
-            <span className="text-[9px] bg-text/20 text-text/70 font-bold uppercase px-2.5 py-1 rounded-full border border-text/30 tracking-wider">
-              Autorizado
-            </span>
-          </div>
-          <div>
-            <h5 className="text-[9px] text-text uppercase tracking-widest font-bold">
-              Invitado Activo
-            </h5>
-            <p className="text-text text-lg font-bold truncate mt-1">
-              Carlos Rodríguez
-            </p>
-            <p className="text-[9px] text-text mt-1">
-              Acceso Vehicular • Placa KJS-092
-            </p>
-          </div>
-        </div>
-      ),
     },
   ];
 
@@ -179,20 +98,29 @@ export default function ProductsSection() {
           {products.map((p, i) => (
             <div
               key={i}
-              className="product-card group cursor-pointer flex flex-col justify-between h-full bg-text/[0.03] border border-text/10 rounded-[36px] p-6 transition-all duration-500 hover:border-accent/40 hover:bg-text/[0.05] hover:shadow-[0_15px_35px_rgba(0,0,0,0.3)]"
+              className="product-card group cursor-pointer flex flex-col justify-between h-full bg-text/[0.03] border border-text/10 rounded-[36px] p-5 transition-all duration-500 hover:border-accent/40 hover:bg-text/[0.05] hover:shadow-[0_15px_35px_rgba(0,0,0,0.3)]"
             >
-              <div className="w-full h-60 bg-text/5 border border-text/10 rounded-[28px] overflow-hidden p-6 flex flex-col mb-6 relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-accent/5 to-transparent pointer-events-none" />
-                <div className="relative z-10 w-full h-full">
-                  {p.component}
-                </div>
+              <div className="w-full h-72 bg-[#050d0c] border border-text/10 rounded-[28px] overflow-hidden mb-5 relative">
+                <Image
+                  src={p.img}
+                  alt={p.name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  unoptimized
+                />
+                <span className="absolute top-3 right-3 text-[10px] bg-black/75 backdrop-blur-md text-accent font-bold uppercase px-2.5 py-1 rounded-full border border-accent/30 tracking-wider">
+                  {p.badge}
+                </span>
               </div>
-              <h4 className="font-bold text-text text-lg tracking-tight group-hover:text-accent transition-colors duration-300">
-                {p.name}
-              </h4>
-              <p className="text-sm text-text/70 mt-2 font-light leading-relaxed">
-                {p.desc}
-              </p>
+              <div>
+                <h4 className="font-bold text-text text-lg tracking-tight group-hover:text-accent transition-colors duration-300">
+                  {p.name}
+                </h4>
+                <p className="text-sm text-text/70 mt-2 font-light leading-relaxed">
+                  {p.desc}
+                </p>
+              </div>
             </div>
           ))}
         </div>

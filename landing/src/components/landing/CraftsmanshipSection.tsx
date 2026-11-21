@@ -100,23 +100,23 @@ export default function CraftsmanshipSection() {
         </div>
 
         <div className="flex-1 relative h-[500px] w-full">
-          <div className="craft-img-1 absolute top-0 left-0 w-3/5 h-64 rounded-[32px] border border-text/15 shadow-2xl z-10 overflow-hidden backdrop-blur-md">
+          <div className="craft-img-1 absolute top-0 left-0 w-3/5 h-64 rounded-[32px] border border-text/15 shadow-2xl z-10 overflow-hidden bg-[#050d0c]">
             <Image
               fill
               sizes="(max-width: 768px) 60vw, 360px"
-              src="/img/craft-tablet.webp"
-              alt="Tecnología de gestión residencial"
-              className="object-cover"
+              src="/img/app/kiosko-selector.webp"
+              alt="Kiosko digital de portería ConjuntOS"
+              className="object-cover object-center"
               unoptimized
             />
           </div>
-          <div className="craft-img-2 absolute bottom-0 right-0 w-3/5 h-[350px] rounded-[32px] border border-text/15 shadow-2xl overflow-hidden backdrop-blur-md">
+          <div className="craft-img-2 absolute bottom-0 right-0 w-3/5 h-[350px] rounded-[32px] border border-text/15 shadow-2xl overflow-hidden bg-[#050d0c]">
             <Image
               fill
               sizes="(max-width: 768px) 60vw, 360px"
-              src="/img/hero-admin.webp"
-              alt="Equipo de administración"
-              className="object-cover"
+              src="/img/app/app-inicio.webp"
+              alt="Panel principal de la app ConjuntOS"
+              className="object-cover object-top"
               unoptimized
             />
           </div>

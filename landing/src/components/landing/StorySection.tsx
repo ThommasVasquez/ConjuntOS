@@ -140,10 +140,10 @@ export default function StorySection() {
                 </div>
                 <div className="story-img relative w-full h-1/2 overflow-hidden rounded-[28px] border border-text/10 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-accent/40">
                   <Image
-                    src="/img/craft-tablet.webp"
-                    alt="Gestión desde una tablet"
+                    src="/img/app/kiosko-home.webp"
+                    alt="Kiosko digital de portería ConjuntOS"
                     fill
-                    className="object-cover"
+                    className="object-cover object-center"
                     unoptimized
                   />
                 </div>
