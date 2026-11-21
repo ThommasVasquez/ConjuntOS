@@ -8,7 +8,7 @@ import {
   Plus, Info, 
   ShieldCheck,
   X, Car, Bike, Search, Lock,
-  FileText, BellRing, Sun
+  FileText, Sun
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api/client";
@@ -159,7 +159,6 @@ export default function CitofoniaPage() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [adminLlamadasActivo, setAdminLlamadasActivo] = useState(true);
   const [wakeLockActive, setWakeLockActive] = useState(false);
-  const [testingRing, setTestingRing] = useState(false);
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
   // Screen Wake Lock (Modo Portería): keeps the screen awake on shift so
@@ -213,25 +212,6 @@ export default function CitofoniaPage() {
       wakeLockRef.current?.release().catch(() => {});
     };
   }, [wakeLockActive]);
-
-  const handleTestRing = async () => {
-    if (testingRing) return;
-    setTestingRing(true);
-    try {
-      const res = await api.post<{ scheduled: boolean; message?: string }>("/citofonia/test-push", {});
-      if (res.scheduled) {
-        toast.success(res.message || "Bloquea tu pantalla ahora — recibirás 3 pulsos de prueba en 4 segundos.", {
-          duration: 6000,
-        });
-      } else {
-        toast.warning(res.message || "Activa primero las notificaciones push desde Inicio.");
-      }
-    } catch {
-      toast.error("No se pudo enviar la prueba de timbre.");
-    } finally {
-      setTimeout(() => setTestingRing(false), 5000);
-    }
-  };
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -638,19 +618,9 @@ export default function CitofoniaPage() {
               </div>
              )}
 
-             {/* PWA CALL UTILITIES: TEST RING + PORTERÍA WAKE LOCK */}
-             <div className="flex items-center gap-2.5 flex-wrap">
-               <button
-                 type="button"
-                 onClick={handleTestRing}
-                 disabled={testingRing}
-                 className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-primary-light border border-border text-text text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-60"
-               >
-                 <BellRing size={15} className={testingRing ? "animate-bounce text-[#009df2]" : "text-[#009df2]"} />
-                 <span>{testingRing ? "Bloquea tu pantalla (4s)…" : "Probar timbre"}</span>
-               </button>
-
-               {canUseDialer && (
+             {/* PORTERÍA WAKE LOCK */}
+             {canUseDialer && (
+               <div className="flex items-center gap-2.5 flex-wrap">
                  <button
                    type="button"
                    onClick={toggleWakeLock}
@@ -663,8 +633,8 @@ export default function CitofoniaPage() {
                    <Sun size={15} className={wakeLockActive ? "animate-spin" : "text-amber-500"} style={wakeLockActive ? { animationDuration: "6s" } : undefined} />
                    <span>{wakeLockActive ? "Pantalla activa ON" : "Pantalla activa"}</span>
                  </button>
-               )}
-             </div>
+               </div>
+             )}
 
              {/* QUICK CONTACTS */}
              <div className="grid grid-cols-2 gap-4 text-text">
