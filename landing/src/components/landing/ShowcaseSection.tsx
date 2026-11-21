@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
-import { CheckCircle2, Network } from "lucide-react";
+import { CheckCircle2, Network, ShieldCheck } from "lucide-react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import RevealText from "./RevealText";
@@ -89,16 +89,16 @@ export default function ShowcaseSection() {
             <Image
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
-              src="/img/app/app-pagos.webp"
-              alt="Pagos digitales en la app ConjuntOS"
+              src="/img/app/app-documentos.webp"
+              alt="Biblioteca digital de documentos y actas en ConjuntOS"
               className="object-cover object-top"
               unoptimized
             />
             <div className="absolute bottom-0 inset-x-0 bg-black/90 backdrop-blur-md p-6 flex items-center justify-between border-t border-white/10">
               <div>
-                <p className="text-sm text-white/70 mb-1">Integración Directa</p>
+                <p className="text-sm text-white/70 mb-1">Transparencia Total</p>
                 <h4 className="font-bold text-white text-lg">
-                  Pagos Automatizados con Nequi
+                  Actas, Reglamento y Documentos
                 </h4>
               </div>
               <div className="w-12 h-12 bg-accent/20 border border-accent/30 rounded-full flex items-center justify-center">
@@ -113,26 +113,20 @@ export default function ShowcaseSection() {
             <Image
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
-              src="/img/app/app-visitantes.webp"
-              alt="Control de acceso y visitantes en la app ConjuntOS"
+              src="/img/app/app-perfil.webp"
+              alt="Perfil del residente y gestión de unidad en ConjuntOS"
               className="object-cover object-top"
               unoptimized
             />
           </div>
 
           <div className="showcase-float absolute bottom-8 right-8 bg-black/90 border border-white/15 backdrop-blur-xl p-5 rounded-3xl shadow-2xl flex items-center gap-4 w-72">
-            <div className="relative w-12 h-12 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center overflow-hidden">
-              <Image
-                fill
-                sizes="48px"
-                src="/img/support.webp"
-                alt="Soporte al residente"
-                className="object-cover opacity-80"
-              />
+            <div className="relative w-12 h-12 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-6 h-6 text-accent" />
             </div>
             <div>
-              <p className="font-bold text-white text-sm">Accesos, QR & Airbnb</p>
-              <p className="text-xs text-white/70">Visitas, domicilios y estancias cortas</p>
+              <p className="font-bold text-white text-sm">Perfil & Mi Unidad</p>
+              <p className="text-xs text-white/70">Mascotas, vehículos y núcleo familiar</p>
             </div>
           </div>
         </div>

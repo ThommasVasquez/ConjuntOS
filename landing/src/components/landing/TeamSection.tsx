@@ -15,24 +15,24 @@ export default function TeamSection() {
   const modules = [
     {
       num: "01",
-      title: "Control de Acceso",
-      subtitle: "Seguridad y Citofonía Virtual",
-      tag: "Seguridad 24/7",
-      img: "/img/app/app-citofonia.webp",
+      title: "Mudanzas Programadas",
+      subtitle: "Solicitudes, paz y salvo y autorización digital",
+      tag: "Cero Filas",
+      img: "/img/app/app-mudanzas.webp",
     },
     {
       num: "02",
-      title: "Gestión Financiera",
-      subtitle: "Pagos Nequi y Conciliación",
-      tag: "Cero Mora",
-      img: "/img/app/app-pagos.webp",
+      title: "Parqueadero Inteligente",
+      subtitle: "Cupos de visitantes, cortesía y control",
+      tag: "Sin Conflictos",
+      img: "/img/app/app-parqueadero.webp",
     },
     {
       num: "03",
-      title: "Reservas de Áreas",
-      subtitle: "Piscinas, Salones y Gimnasio",
-      tag: "Sin Filas",
-      img: "/img/app/app-reservas.webp",
+      title: "PQRS y Convivencia",
+      subtitle: "Peticiones, quejas y seguimiento en vivo",
+      tag: "Trazabilidad",
+      img: "/img/app/app-pqrs.webp",
     },
   ];
 

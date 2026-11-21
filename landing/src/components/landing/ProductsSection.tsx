@@ -28,11 +28,11 @@ export default function ProductsSection() {
       desc: "Controla huéspedes de rentas cortas con check-in y check-out exactos, QR con vencimiento automático y portal privado Mi Estancia para el huésped.",
     },
     {
-      name: "Kiosko de Portería Express",
-      badge: "Recepción",
-      img: "/img/app/kiosko-home.webp",
-      position: "object-center",
-      desc: "Tablet táctil para domicilios, comida caliente y paquetería con impresión de etiqueta oficial, aviso inmediato al residente y modo espera con pauta QR.",
+      name: "Encuestas y Participación",
+      badge: "Comunidad",
+      img: "/img/app/app-encuestas.webp",
+      position: "object-top",
+      desc: "Consulta la opinión de los residentes en segundos, toma decisiones transparentes y mide resultados en tiempo real desde la app.",
     },
     {
       name: "Pagos de Administración",
