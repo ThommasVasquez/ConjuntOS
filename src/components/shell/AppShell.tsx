@@ -106,20 +106,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }
   }, [pathname, mountedTabs]);
 
-  // Pre-warm the 4 core navbar tabs in the background once the user is authenticated
-  useEffect(() => {
-    if (!user) return;
-    const t = setTimeout(() => {
-      setMountedTabs((prev) => ({
-        ...prev,
-        "/inicio": true,
-        "/citofonia": true,
-        "/visitantes": true,
-        "/perfil": true,
-      }));
-    }, 250);
-    return () => clearTimeout(t);
-  }, [user]);
+  // Keep each core tab mounted once visited (lazy mount on first visit avoids
+  // firing ~18-20 simultaneous API calls per user on app open under load spikes).
 
   if (authOffline || !online) return <OfflineScreen online={online} />;
 

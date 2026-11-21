@@ -32,6 +32,9 @@ services:
   backend:
     environment:
       DATABASE_URL: postgresql://enconjunto:${POSTGRES_PASSWORD}@db:5432/enconjunto
+      # Acota el pool por debajo de max_connections=200 del Postgres compartido (evita
+      # heredar el 3000 de docker-compose.prod.yml y provocar "too many clients already").
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-50}
       # El frontend vive en Vercel (otro sitio): la cookie debe ser host-only
       # + SameSite=None; Secure. Un COOKIE_DOMAIN=.conjuntos.app aquí haría que el
       # navegador rechace la cookie (no coincide con api.conjuntos.app).

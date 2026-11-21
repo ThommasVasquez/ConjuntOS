@@ -34,15 +34,24 @@ fn establish_tls_connection(
     url: &str,
 ) -> BoxFuture<'_, Result<AsyncPgConnection, ConnectionError>> {
     async move {
-        let mut roots = rustls::RootCertStore::empty();
-        roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
-        let tls_config = rustls::ClientConfig::builder()
-            .with_root_certificates(roots)
-            .with_no_client_auth();
-        let tls = tokio_postgres_rustls::MakeRustlsConnect::new(tls_config);
+        // Fast path for local / internal Docker Compose Postgres (avoids a failing TLS
+        // handshake on every new pooled connection under load spikes).
+        let is_internal_plain = (url.contains("@db:")
+            || url.contains("@localhost:")
+            || url.contains("@127.0.0.1:"))
+            && !url.contains("sslmode=require");
 
-        if let Ok((client, connection)) = tokio_postgres::connect(url, tls).await {
-            return AsyncPgConnection::try_from_client_and_connection(client, connection).await;
+        if !is_internal_plain {
+            let mut roots = rustls::RootCertStore::empty();
+            roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+            let tls_config = rustls::ClientConfig::builder()
+                .with_root_certificates(roots)
+                .with_no_client_auth();
+            let tls = tokio_postgres_rustls::MakeRustlsConnect::new(tls_config);
+
+            if let Ok((client, connection)) = tokio_postgres::connect(url, tls).await {
+                return AsyncPgConnection::try_from_client_and_connection(client, connection).await;
+            }
         }
 
         match tokio_postgres::connect(url, tokio_postgres::NoTls).await {
