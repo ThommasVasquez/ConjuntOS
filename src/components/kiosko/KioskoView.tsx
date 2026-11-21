@@ -188,6 +188,7 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
   // 479 registros reales de Las Brisas PH
   const [directorio, setDirectorio] = useState<DirectorioItem[]>(RESIDENTES_REALES_LAS_BRISAS);
   const [casaSearch, setCasaSearch] = useState<string>("");
+  const [rangoPiso, setRangoPiso] = useState<string>("ALL");
 
   // Estados del flujo
   const [selectedBloque, setSelectedBloque] = useState<string>("");
@@ -248,16 +249,19 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
     return getCasasRealesDeBloque(selectedBloque);
   }, [nomenclaturaSimple, selectedBloque]);
 
-  // Filtro de casas por texto o número
+  // Filtro de casas por texto, número o rango rápido
   const casasFiltradas = useMemo(() => {
     const q = casaSearch.trim().toLowerCase();
-    if (!q) return casasDisponibles;
     return casasDisponibles.filter((c) => {
+      if (nomenclaturaSimple && !q && rangoPiso !== "ALL" && !c.startsWith(rangoPiso)) {
+        return false;
+      }
+      if (!q) return true;
       if (c.toLowerCase().includes(q)) return true;
       if (q.length === 2 && c.endsWith(q)) return true;
       return false;
     });
-  }, [casasDisponibles, casaSearch]);
+  }, [casasDisponibles, casaSearch, nomenclaturaSimple, rangoPiso]);
 
   // Animación GSAP al abrir o cambiar de columna
   useEffect(() => {
@@ -288,6 +292,7 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
     setDocumentoMensajero("");
     setPrintedSticker(null);
     setCasaSearch("");
+    setRangoPiso("ALL");
     setActiveColumn(null);
     setUbicacionSubStep(nomenclaturaSimple ? "casa" : "bloque");
   };
@@ -696,10 +701,10 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
               {/* Contenido Principal de la Columna Activa (Fondo Negro Puro) */}
               <div
                 ref={activePanelRef}
-                className="flex-1 h-full bg-[#08090d] text-white p-8 sm:p-12 lg:p-14 flex flex-col justify-between overflow-y-auto"
+                className="flex-1 h-full bg-[#08090d] text-white p-6 sm:p-8 lg:p-10 flex flex-col overflow-hidden"
               >
                 {/* Header Superior del Formulario Activo */}
-                <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
                   <button
                     type="button"
                     onClick={() => setActiveColumn(null)}
@@ -715,18 +720,18 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                 </div>
 
                 {/* ---------------------------------------------------- */}
-                {/* 01. UBICACIÓN (BLOQUE & CASA)                        */}
+                {/* 01. UBICACIÓN (BLOQUE & CASA / APARTAMENTO DESTINO)  */}
                 {/* ---------------------------------------------------- */}
                 {activeColumn === 1 && (
-                  <div className="my-auto py-6 flex flex-col gap-6 max-w-md w-full">
+                  <div className="flex-1 min-h-0 pt-5 flex flex-col gap-4 w-full">
                     {!nomenclaturaSimple && ubicacionSubStep === "bloque" ? (
-                      <>
+                      <div className="my-auto flex flex-col gap-6 max-w-xl w-full">
                         <div>
                           <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
-                            ¿A qué Bloque vas?
+                            Seleccione el Bloque
                           </h2>
                           <p className="text-xs font-mono text-white/50 mt-1">
-                            Selecciona el bloque de Las Brisas PH
+                            Toque el bloque para elegir la unidad
                           </p>
                         </div>
 
@@ -743,9 +748,9 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                                   setSelectedCasa("");
                                   setUbicacionSubStep("casa");
                                 }}
-                                className={`py-6 rounded-2xl border text-center transition-all cursor-pointer ${
+                                className={`py-7 rounded-2xl border text-center transition-all cursor-pointer active:scale-95 ${
                                   isSelected
-                                    ? "bg-white text-black border-white shadow-xl scale-105"
+                                    ? "bg-white text-black border-white shadow-xl scale-[1.02]"
                                     : "bg-white/[0.04] border-white/15 hover:border-white/50 text-white"
                                 }`}
                               >
@@ -759,17 +764,17 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                             );
                           })}
                         </div>
-                      </>
+                      </div>
                     ) : (
                       <>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-3 shrink-0">
                           <div>
                             <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
-                              {nomenclaturaSimple ? "¿A qué número vas?" : "Selecciona la Casa"}
+                              {nomenclaturaSimple ? "Seleccione apartamento destino" : "Seleccione la Casa"}
                             </h2>
                             <p className="text-xs font-mono text-white/50 mt-1">
                               {nomenclaturaSimple
-                                ? "Ingresa o selecciona el número (101 al 680)"
+                                ? "Toque el número (101 al 680) para continuar automáticamente"
                                 : `Bloque ${selectedBloque} • Casas ${parseInt(selectedBloque || "1") * 100 + 1} a ${parseInt(selectedBloque || "1") * 100 + 80}`}
                             </p>
                           </div>
@@ -777,64 +782,105 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                             <button
                               type="button"
                               onClick={() => setUbicacionSubStep("bloque")}
-                              className="text-xs font-mono text-white/50 hover:text-white underline"
+                              className="text-xs font-mono text-white/50 hover:text-white underline shrink-0 cursor-pointer"
                             >
                               Cambiar Bloque
                             </button>
                           )}
                         </div>
 
-                        {/* Buscador Underline */}
-                        <div className="relative py-2 border-b border-white/20 focus-within:border-white transition-colors">
-                          <Search size={15} className="absolute left-0 top-1/2 -translate-y-1/2 text-white/40" />
-                          <input
-                            type="text"
-                            inputMode={nomenclaturaSimple ? "numeric" : "text"}
-                            placeholder={
-                              nomenclaturaSimple
-                                ? "Buscar número (ej: 101, 437, 680)..."
-                                : "Buscar casa (ej: 15 o 315)..."
-                            }
-                            value={casaSearch}
-                            onChange={(e) => setCasaSearch(e.target.value)}
-                            className="w-full pl-6 bg-transparent text-white text-sm focus:outline-none font-mono placeholder-white/30"
-                          />
-                        </div>
-
-                        {/* Grid de 80 Casas */}
-                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[240px] overflow-y-auto p-1">
-                          {casasFiltradas.map((casa) => {
-                            const isSelected = selectedCasa === casa;
-                            return (
+                        {/* Buscador Underline + Filtros rápidos por centena en nomenclatura simple */}
+                        <div className="flex flex-col gap-3 shrink-0">
+                          <div className="relative py-2.5 border-b border-white/25 focus-within:border-white transition-colors">
+                            <Search size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-white/40" />
+                            <input
+                              type="text"
+                              inputMode={nomenclaturaSimple ? "numeric" : "text"}
+                              placeholder={
+                                nomenclaturaSimple
+                                  ? "Buscar apartamento (ej: 101, 437, 680)..."
+                                  : "Buscar casa (ej: 15 o 315)..."
+                              }
+                              value={casaSearch}
+                              onChange={(e) => setCasaSearch(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && casasFiltradas.length === 1) {
+                                  setSelectedCasa(casasFiltradas[0]);
+                                  setActiveColumn(2);
+                                }
+                              }}
+                              className="w-full pl-8 pr-8 bg-transparent text-white text-base sm:text-lg focus:outline-none font-mono placeholder-white/30"
+                            />
+                            {casaSearch && (
                               <button
-                                key={casa}
                                 type="button"
-                                onClick={() => setSelectedCasa(casa)}
-                                className={`py-2.5 rounded-xl font-mono text-xs font-bold border transition-all cursor-pointer ${
-                                  isSelected
-                                    ? "bg-white text-black border-white shadow-md scale-105"
-                                    : "bg-white/[0.04] border-white/10 hover:border-white/30 text-white"
-                                }`}
+                                onClick={() => setCasaSearch("")}
+                                className="absolute right-0 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer"
                               >
-                                {casa}
+                                <X size={16} />
                               </button>
-                            );
-                          })}
+                            )}
+                          </div>
+
+                          {nomenclaturaSimple && !casaSearch.trim() && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {[
+                                { id: "ALL", label: "Todos" },
+                                { id: "1", label: "101–180" },
+                                { id: "2", label: "201–280" },
+                                { id: "3", label: "301–380" },
+                                { id: "4", label: "401–480" },
+                                { id: "5", label: "501–580" },
+                                { id: "6", label: "601–680" },
+                              ].map((r) => (
+                                <button
+                                  key={r.id}
+                                  type="button"
+                                  onClick={() => setRangoPiso(r.id)}
+                                  className={`px-3 py-1.5 rounded-full text-xs font-mono font-bold border transition-all cursor-pointer ${
+                                    rangoPiso === r.id
+                                      ? "bg-white text-black border-white"
+                                      : "bg-white/[0.04] text-white/60 border-white/15 hover:border-white/40 hover:text-white"
+                                  }`}
+                                >
+                                  {r.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
-                        {/* Botón Elíptico estilo Dribbble */}
-                        <button
-                          type="button"
-                          disabled={!selectedCasa}
-                          onClick={() => setActiveColumn(2)}
-                          className={`mt-2 py-3 px-8 rounded-full border text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer ${
-                            selectedCasa
-                              ? "border-white bg-white text-black hover:bg-white/90 shadow-lg active:scale-95"
-                              : "border-white/20 text-white/30 cursor-not-allowed"
-                          }`}
-                        >
-                          Siguiente: Destinatario &rarr;
-                        </button>
+                        {/* Grid de selección aprovechando todo el alto y ancho disponible */}
+                        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                          {casasFiltradas.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-center py-10 text-white/40 font-mono text-sm">
+                              No se encontró ese apartamento
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2.5 pb-4">
+                              {casasFiltradas.map((casa) => {
+                                const isSelected = selectedCasa === casa;
+                                return (
+                                  <button
+                                    key={casa}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedCasa(casa);
+                                      setActiveColumn(2);
+                                    }}
+                                    className={`py-3.5 sm:py-4 rounded-2xl font-mono text-base sm:text-lg font-black border transition-all cursor-pointer active:scale-95 ${
+                                      isSelected
+                                        ? "bg-white text-black border-white shadow-lg scale-[1.03]"
+                                        : "bg-white/[0.05] border-white/15 hover:bg-white/15 hover:border-white/40 text-white"
+                                    }`}
+                                  >
+                                    {casa}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>
@@ -844,7 +890,7 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                 {/* 02. DESTINATARIO (UNDERLINE FORM DRIBBBLE EXACT)     */}
                 {/* ---------------------------------------------------- */}
                 {activeColumn === 2 && (
-                  <div className="my-auto py-6 flex flex-col gap-8 max-w-md w-full">
+                  <div className="my-auto py-6 flex flex-col gap-8 max-w-xl w-full">
                     <div>
                       <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
                         ¿Para quién es el paquete?
@@ -865,6 +911,11 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                         placeholder="Ej. Andrea Gómez, Carlos Rodríguez..."
                         value={destinatarioNombre}
                         onChange={(e) => setDestinatarioNombre(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && destinatarioNombre.trim()) {
+                            setActiveColumn(3);
+                          }
+                        }}
                         className="w-full py-3 bg-transparent border-b border-white/30 focus:border-white text-white text-xl placeholder-white/20 focus:outline-none transition-colors font-sans"
                       />
                     </div>
@@ -875,13 +926,13 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                         type="button"
                         disabled={!destinatarioNombre.trim()}
                         onClick={() => setActiveColumn(3)}
-                        className={`w-full py-3.5 rounded-full border text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer ${
+                        className={`w-full py-4 rounded-full border text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer ${
                           destinatarioNombre.trim()
                             ? "border-white bg-white text-black hover:bg-white/90 shadow-xl active:scale-95"
                             : "border-white/20 text-white/30 cursor-not-allowed"
                         }`}
                       >
-                        Siguiente: Categoría &rarr;
+                        Continuar &rarr;
                       </button>
 
                       <button
@@ -890,7 +941,7 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                           setDestinatarioNombre("Destinatario General");
                           setActiveColumn(3);
                         }}
-                        className="text-[11px] font-mono text-center text-white/40 hover:text-white underline decoration-white/20"
+                        className="text-xs font-mono text-center text-white/50 hover:text-white underline decoration-white/20 py-2 cursor-pointer"
                       >
                         ¿Sin nombre particular? Marcar como Destinatario General
                       </button>
@@ -899,53 +950,49 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                 )}
 
                 {/* ---------------------------------------------------- */}
-                {/* 03. CATEGORÍA DE ENTREGA                             */}
+                {/* 03. CATEGORÍA DE ENTREGA (AUTO-AVANCE AL TOCAR)      */}
                 {/* ---------------------------------------------------- */}
                 {activeColumn === 3 && (
-                  <div className="my-auto py-6 flex flex-col gap-6 max-w-md w-full">
-                    <div>
+                  <div className="flex-1 min-h-0 pt-5 flex flex-col gap-5 w-full">
+                    <div className="shrink-0">
                       <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
                         ¿Qué tipo de paquete es?
                       </h2>
                       <p className="text-xs font-mono text-white/50 mt-1">
-                        Determina la prioridad de aviso al residente
+                        Toque la categoría para continuar automáticamente
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2.5 max-h-[300px] overflow-y-auto p-1">
-                      {CATEGORIAS.map((cat) => {
-                        const isSelected = selectedCategoria.id === cat.id;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setSelectedCategoria(cat)}
-                            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                              isSelected
-                                ? "bg-white text-black border-white shadow-lg scale-[1.02]"
-                                : "bg-white/[0.04] border-white/10 hover:border-white/30 text-white"
-                            }`}
-                          >
-                            <span className="text-2xl mb-1">{cat.emoji}</span>
-                            <div>
-                              <h4 className="text-xs font-bold leading-tight">{cat.label}</h4>
-                              <p className={`text-[9px] mt-0.5 ${isSelected ? "text-black/60" : "text-white/40"}`}>
-                                {cat.sublabel}
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })}
+                    <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-4">
+                        {CATEGORIAS.map((cat) => {
+                          const isSelected = selectedCategoria.id === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCategoria(cat);
+                                setActiveColumn(4);
+                              }}
+                              className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[104px] active:scale-95 ${
+                                isSelected
+                                  ? "bg-white text-black border-white shadow-lg scale-[1.02]"
+                                  : "bg-white/[0.05] border-white/15 hover:bg-white/15 hover:border-white/40 text-white"
+                              }`}
+                            >
+                              <span className="text-3xl mb-2">{cat.emoji}</span>
+                              <div>
+                                <h4 className="text-sm font-bold leading-tight">{cat.label}</h4>
+                                <p className={`text-[10px] mt-0.5 ${isSelected ? "text-black/60" : "text-white/45"}`}>
+                                  {cat.sublabel}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-
-                    {/* Botón Elíptico */}
-                    <button
-                      type="button"
-                      onClick={() => setActiveColumn(4)}
-                      className="w-full py-3.5 rounded-full border border-white bg-white text-black hover:bg-white/90 text-xs font-mono uppercase tracking-[0.2em] shadow-xl active:scale-95 cursor-pointer"
-                    >
-                      Siguiente: Confirmar &rarr;
-                    </button>
                   </div>
                 )}
 
@@ -953,7 +1000,7 @@ export default function KioskoView({ conjuntoSlug }: { conjuntoSlug?: string }) 
                 {/* 04. CONFIRMAR & IMPRIMIR STICKER TÉRMICO             */}
                 {/* ---------------------------------------------------- */}
                 {activeColumn === 4 && (
-                  <div className="my-auto py-6 flex flex-col gap-6 max-w-md w-full">
+                  <div className="my-auto py-6 flex flex-col gap-6 max-w-xl w-full overflow-y-auto">
                     <div>
                       <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
                         ¿De qué empresa vienes?
