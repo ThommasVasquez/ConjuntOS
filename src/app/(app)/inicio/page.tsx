@@ -21,7 +21,6 @@ const CAT_STYLES = [
   { chip: "bg-orange-500/15 text-orange-500", bar: "bg-orange-500" },
 ];
 import ProfileHeader from "@/components/shell/ProfileHeader";
-import PullToRefreshLogo from "@/components/shell/PullToRefreshLogo";
 import RoleSwitcher from "@/components/shell/RoleSwitcher";
 import { isKeepAliveTab, switchKeepAliveTab } from "@/components/shell/AppShell";
 import { useNavFeedback } from "@/hooks/useNavFeedback";
@@ -442,30 +441,7 @@ function HomeResidente() {
     fetchCargosRetenidos,
   ]);
 
-  const handlePullRefresh = useCallback(async () => {
-    invalidateApiCache();
-    await Promise.allSettled([
-      fetchAnuncios(),
-      fetchAds(),
-      fetchNotificaciones(),
-      fetchComunicaciones(),
-      fetchActiveAsamblea(),
-      fetchActiveEncuestas(),
-      fetchSolicitudesParqueadero(),
-      fetchCargosRetenidos(),
-    ]);
-  }, [
-    fetchAnuncios,
-    fetchAds,
-    fetchNotificaciones,
-    fetchComunicaciones,
-    fetchActiveAsamblea,
-    fetchSolicitudesParqueadero,
-    fetchCargosRetenidos,
-  ]);
-
   return (
-    <PullToRefreshLogo onRefresh={handlePullRefresh}>
     <div ref={containerRef} className="flex flex-col gap-7 px-4 overflow-x-hidden pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-32">
       <RoleSwitcher />
       {showCelebration && (
@@ -1038,7 +1014,6 @@ function HomeResidente() {
           />
        )}
     </div>
-    </PullToRefreshLogo>
   );
 }
 

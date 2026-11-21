@@ -1,12 +1,14 @@
 "use client";
 
-import React, { ReactNode, Suspense, useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import React, { ReactNode, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import BottomNav from "./BottomNav";
 import PageSkeleton from "./PageSkeleton";
+import PullToRefreshLogo from "./PullToRefreshLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { useHasInternet } from "@/hooks/useHasInternet";
 import { useNavFeedback } from "@/hooks/useNavFeedback";
+import { invalidateApiCache } from "@/lib/api/client";
 import InicioDashboard from "@/app/(app)/inicio/page";
 import CitofoniaPage from "@/app/(app)/citofonia/page";
 import VisitantesPage from "@/app/(app)/visitantes/page";
@@ -65,11 +67,27 @@ function OfflineScreen({ online }: { online: boolean }) {
 export default function AppShell({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
   const user = useAuth((s) => s.user);
+  const checkAuth = useAuth((s) => s.checkAuth);
   const authOffline = useAuth((s) => s.authOffline);
   const online = useHasInternet();
   const pendingPath = useNavFeedback((s) => s.pendingPath);
   const setPendingPath = useNavFeedback((s) => s.setPendingPath);
+  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
+
+  const handleGlobalRefresh = useCallback(async () => {
+    invalidateApiCache();
+    await checkAuth();
+    setRefreshKeys((prev) => ({
+      ...prev,
+      [pathname]: (prev[pathname] ?? 0) + 1,
+    }));
+    router.refresh();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("conjuntos:refresh", { detail: { pathname } }));
+    }
+  }, [checkAuth, pathname, router]);
 
   // Clear optimistic skeleton the instant the destination route lands
   useEffect(() => {
@@ -122,43 +140,47 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {/* Contenido principal con Keep-Alive Tab Deck + Skeleton inmediato en transiciones */}
+      {/* Contenido principal con Keep-Alive Tab Deck + Pull-to-Refresh global + Skeleton inmediato */}
       <main 
         ref={containerRef}
         className="flex-1 overflow-y-auto page-content text-text mb-[80px] relative" 
       >
-        {isPending && <PageSkeleton path={pendingPath} />}
+        <PullToRefreshLogo onRefresh={handleGlobalRefresh}>
+          {isPending && <PageSkeleton path={pendingPath} />}
 
-        {mountedTabs["/inicio"] && (
-          <div className={!isPending && pathname === "/inicio" ? "block" : "hidden"}>
-            <Suspense fallback={<PageSkeleton path="/inicio" />}>
-              <InicioDashboard />
-            </Suspense>
-          </div>
-        )}
-        {mountedTabs["/citofonia"] && (
-          <div className={!isPending && pathname === "/citofonia" ? "block" : "hidden"}>
-            <Suspense fallback={<PageSkeleton path="/citofonia" />}>
-              <CitofoniaPage />
-            </Suspense>
-          </div>
-        )}
-        {mountedTabs["/visitantes"] && (
-          <div className={!isPending && pathname === "/visitantes" ? "block" : "hidden"}>
-            <Suspense fallback={<PageSkeleton path="/visitantes" />}>
-              <VisitantesPage />
-            </Suspense>
-          </div>
-        )}
-        {mountedTabs["/perfil"] && (
-          <div className={!isPending && pathname === "/perfil" ? "block" : "hidden"}>
-            <Suspense fallback={<PageSkeleton path="/perfil" />}>
-              <PerfilPage />
-            </Suspense>
-          </div>
-        )}
+          {mountedTabs["/inicio"] && (
+            <div className={!isPending && pathname === "/inicio" ? "block" : "hidden"}>
+              <Suspense fallback={<PageSkeleton path="/inicio" />}>
+                <InicioDashboard key={refreshKeys["/inicio"] ?? 0} />
+              </Suspense>
+            </div>
+          )}
+          {mountedTabs["/citofonia"] && (
+            <div className={!isPending && pathname === "/citofonia" ? "block" : "hidden"}>
+              <Suspense fallback={<PageSkeleton path="/citofonia" />}>
+                <CitofoniaPage key={refreshKeys["/citofonia"] ?? 0} />
+              </Suspense>
+            </div>
+          )}
+          {mountedTabs["/visitantes"] && (
+            <div className={!isPending && pathname === "/visitantes" ? "block" : "hidden"}>
+              <Suspense fallback={<PageSkeleton path="/visitantes" />}>
+                <VisitantesPage key={refreshKeys["/visitantes"] ?? 0} />
+              </Suspense>
+            </div>
+          )}
+          {mountedTabs["/perfil"] && (
+            <div className={!isPending && pathname === "/perfil" ? "block" : "hidden"}>
+              <Suspense fallback={<PageSkeleton path="/perfil" />}>
+                <PerfilPage key={refreshKeys["/perfil"] ?? 0} />
+              </Suspense>
+            </div>
+          )}
 
-        {!isPending && !activeIsKeepAlive && children}
+          {!isPending && !activeIsKeepAlive && (
+            <div key={refreshKeys[pathname] ?? 0}>{children}</div>
+          )}
+        </PullToRefreshLogo>
       </main>
 
       <BottomNav />
