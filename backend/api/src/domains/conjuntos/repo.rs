@@ -27,6 +27,16 @@ pub async fn find_by_id(conn: &mut DbConn, id: Uuid) -> ApiResult<Option<Conjunt
     Ok(row)
 }
 
+/// Returns whether the conjunto uses Torre/Bloque nomenclature (true by default).
+pub async fn usa_torre(conn: &mut DbConn, conjunto_id: Uuid) -> bool {
+    conjuntos::table
+        .find(conjunto_id)
+        .select(conjuntos::usa_torre)
+        .first::<bool>(conn)
+        .await
+        .unwrap_or(true)
+}
+
 #[derive(Insertable)]
 #[diesel(table_name = conjuntos)]
 pub struct NuevoConjunto {

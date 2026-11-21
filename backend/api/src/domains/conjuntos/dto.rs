@@ -26,6 +26,7 @@ pub struct ConjuntoDto {
     pub matricula_inmobiliaria: Option<String>,
     pub total_unidades: Option<i32>,
     pub creado_en: DateTime<Utc>,
+    pub usa_torre: bool,
 }
 
 impl From<Conjunto> for ConjuntoDto {
@@ -48,6 +49,7 @@ impl From<Conjunto> for ConjuntoDto {
             matricula_inmobiliaria: c.matricula_inmobiliaria,
             total_unidades: c.total_unidades,
             creado_en: c.created_at,
+            usa_torre: c.usa_torre,
         }
     }
 }

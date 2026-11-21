@@ -6,6 +6,7 @@ import { Mail, CheckCircle2, Clock, MapPin, FileText } from "lucide-react";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
@@ -35,6 +36,7 @@ interface CorrespondenciaItem {
 
 export default function CorrespondenciaPage() {
   const { user, loading: authLoading } = useAuth();
+  const usaTorre = usesTorre(user);
   const router = useRouter();
   const role = user?.rol;
 
@@ -168,7 +170,7 @@ export default function CorrespondenciaPage() {
                 >
                    <option value="" className="bg-primary text-text">Seleccione apartamento/residente...</option>
                    {residentes.map(r => (
-                     <option key={r.id} value={r.id} className="bg-primary text-text">{r.torre} - Apto {r.apto} ({r.nombre})</option>
+                     <option key={r.id} value={r.id} className="bg-primary text-text">{formatUnidad(r.torre, r.apto, usaTorre)} ({r.nombre})</option>
                    ))}
                 </select>
              </div>
@@ -250,7 +252,7 @@ export default function CorrespondenciaPage() {
                    </div>
                 </div>
                 <div className="flex items-center gap-2 text-text text-xs font-semibold relative z-10">
-                   <MapPin size={14} /> {p.residente?.torre} - Apto {p.residente?.apto} ({p.residente?.nombre})
+                   <MapPin size={14} /> {formatUnidad(p.residente?.torre, p.residente?.apto, usaTorre)} ({p.residente?.nombre})
                 </div>
                 <button onClick={() => markAsDelivered(p.id)} className="w-full mt-2 py-3 bg-surface-2 border border-border hover:bg-text/10 dark:hover:bg-text/20 hover:border-text/40 hover:text-text dark:hover:text-text transition-all rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest relative z-10 text-text">
                    <CheckCircle2 size={16} /> Marcar como Entregado

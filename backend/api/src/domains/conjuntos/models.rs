@@ -25,6 +25,7 @@ pub struct Conjunto {
     pub matricula_inmobiliaria: Option<String>,
     pub total_unidades: Option<i32>,
     pub created_at: DateTime<Utc>,
+    pub usa_torre: bool,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]

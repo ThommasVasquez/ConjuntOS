@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { usesTorre, formatUnidad } from '@/lib/unidad-format';
 import { api } from '@/lib/api/client';
 import ProfileHeader from '@/components/shell/ProfileHeader';
 import PazYSalvoModal, { MudanzaItem } from '@/components/mudanzas/PazYSalvoModal';
 
 export default function MudanzasPage() {
   const { user } = useAuth();
+  const usaTorre = usesTorre(user);
   const [mudanzas, setMudanzas] = useState<MudanzaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'solicitar' | 'mis_solicitudes' | 'gestion_admin' | 'vigilancia'>('mis_solicitudes');
@@ -281,22 +283,24 @@ export default function MudanzasPage() {
           </div>
 
           {/* Torre & Apto Inputs */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid ${usaTorre ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
+            {usaTorre && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Torre / Bloque</label>
+                <input
+                  type="text"
+                  placeholder="ej. Torre B"
+                  value={torre}
+                  onChange={(e) => setTorre(e.target.value)}
+                  className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
+                />
+              </div>
+            )}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Torre / Bloque</label>
+              <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">{usaTorre ? "Apartamento / Unidad" : "Número"}</label>
               <input
                 type="text"
-                placeholder="ej. Torre B"
-                value={torre}
-                onChange={(e) => setTorre(e.target.value)}
-                className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">Apartamento / Unidad</label>
-              <input
-                type="text"
-                placeholder="ej. 202"
+                placeholder={usaTorre ? "ej. 202" : "ej. 101 al 680"}
                 value={apto}
                 onChange={(e) => setApto(e.target.value)}
                 className="w-full bg-primary-light/50 border border-border rounded-[20px] p-3 text-xs text-text focus:outline-none focus:border-accent/40"
@@ -550,7 +554,7 @@ export default function MudanzasPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base font-bold text-text truncate">
-                      Torre {m.torre || user?.torre || 'A'} &middot; Apto {m.apto || user?.apto || 'N/A'}
+                      {formatUnidad(m.torre || user?.torre, m.apto || user?.apto, usaTorre, { emptyFallback: "N/A" })}
                     </h3>
                     <p className="text-xs text-text/70 truncate flex items-center gap-1 mt-0.5">
                       <User size={12} className="text-accent shrink-0" />

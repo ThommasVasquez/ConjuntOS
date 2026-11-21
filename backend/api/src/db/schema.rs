@@ -239,6 +239,7 @@ diesel::table! {
         matricula_inmobiliaria -> Nullable<Text>,
         total_unidades -> Nullable<Int4>,
         created_at -> Timestamptz,
+        usa_torre -> Bool,
     }
 }
 

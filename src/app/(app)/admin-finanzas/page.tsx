@@ -23,6 +23,7 @@ import {
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { api, ApiError } from "@/lib/api/client";
@@ -188,6 +189,7 @@ type TabFinanzas = "KPI" | "PAGOS" | "GASTOS" | "MOROSIDAD";
 
 export default function AdminFinanzasPage() {
   const { user, loading: authLoading } = useAuth();
+  const usaTorre = usesTorre(user);
   const router = useRouter();
   const role = user?.rol;
 
@@ -801,7 +803,7 @@ export default function AdminFinanzasPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-xs font-bold text-text">
                       {p.unidad
-                        ? `T${p.unidad.torre || "?"}-A${p.unidad.numero}`
+                        ? formatUnidad(p.unidad.torre, p.unidad.numero, usaTorre, { compact: true })
                         : "—"}
                     </span>
                   </div>
@@ -1041,9 +1043,7 @@ export default function AdminFinanzasPage() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-text">
-                          {m.torre
-                            ? `Torre ${m.torre} - Apto ${m.apto}`
-                            : `Unidad ${m.apto}`}
+                          {formatUnidad(m.torre, m.apto, usaTorre)}
                         </span>
                         <span className="text-[10px] text-text" style={{ opacity: 0.5 }}>
                           {m.recibosVencidos} recibo

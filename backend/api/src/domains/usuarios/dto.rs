@@ -27,6 +27,9 @@ pub struct UserDto {
     /// Set by handlers from the configured tester whitelist; defaults to false.
     #[serde(default)]
     pub is_tester: bool,
+    /// True when the user's conjunto uses Torre/Bloque + Apto nomenclature (default true).
+    /// False for simple single-number nomenclature (e.g. Las Brisas PH: 101..680).
+    pub usa_torre: bool,
 }
 
 impl From<Usuario> for UserDto {
@@ -47,6 +50,7 @@ impl From<Usuario> for UserDto {
             activo: u.activo,
             numero_interno: u.numero_interno,
             is_tester: false,
+            usa_torre: true,
         }
     }
 }

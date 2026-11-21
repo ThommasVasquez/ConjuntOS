@@ -29,6 +29,7 @@ import {
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
@@ -139,6 +140,7 @@ const ROL_FILTER_OPTIONS: { label: string; value: Rol | "TODOS" }[] = [
 
 export default function AdminResidentesPage() {
   const { user, loading: authLoading } = useAuth();
+  const usaTorre = usesTorre(user);
   const router = useRouter();
   const role = user?.rol;
 
@@ -802,9 +804,7 @@ export default function AdminResidentesPage() {
                 <div className="flex items-center gap-2">
                   <Building2 size={14} className="text-text" style={{ opacity: 0.5 }} />
                   <span className="text-xs text-text font-bold">
-                    {r.torre && r.apto
-                      ? `Torre ${r.torre} - Apto ${r.apto}`
-                      : "Sin unidad asignada"}
+                    {formatUnidad(r.torre, r.apto, usaTorre, { emptyFallback: "Sin unidad asignada" })}
                   </span>
                 </div>
                 {r.interno && (
@@ -1177,26 +1177,28 @@ export default function AdminResidentesPage() {
               </div>
 
               {/* Torre + Apto */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid ${usaTorre ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
+                {usaTorre && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
+                      Torre
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.torre || ""}
+                      onChange={(e) =>
+                        setEditForm((prev) => ({
+                          ...prev,
+                          torre: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
+                    />
+                  </div>
+                )}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
-                    Torre
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.torre || ""}
-                    onChange={(e) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        torre: e.target.value,
-                      }))
-                    }
-                    className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
-                    Apto
+                    {usaTorre ? "Apto" : "Número"}
                   </label>
                   <input
                     type="text"
@@ -1207,6 +1209,7 @@ export default function AdminResidentesPage() {
                         apto: e.target.value,
                       }))
                     }
+                    placeholder={usaTorre ? "" : "Ej: 101 al 680"}
                     className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                   />
                 </div>
@@ -1371,26 +1374,28 @@ export default function AdminResidentesPage() {
               </div>
 
               {/* Torre + Apto */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid ${usaTorre ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
+                {usaTorre && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
+                      Torre
+                    </label>
+                    <input
+                      type="text"
+                      value={inviteForm.torre || ""}
+                      onChange={(e) =>
+                        setInviteForm((prev) => ({
+                          ...prev,
+                          torre: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
+                    />
+                  </div>
+                )}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
-                    Torre
-                  </label>
-                  <input
-                    type="text"
-                    value={inviteForm.torre || ""}
-                    onChange={(e) =>
-                      setInviteForm((prev) => ({
-                        ...prev,
-                        torre: e.target.value,
-                      }))
-                    }
-                    className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-text uppercase tracking-[0.2em] font-black ml-1">
-                    Apto
+                    {usaTorre ? "Apto" : "Número"}
                   </label>
                   <input
                     type="text"
@@ -1401,6 +1406,7 @@ export default function AdminResidentesPage() {
                         apto: e.target.value,
                       }))
                     }
+                    placeholder={usaTorre ? "" : "Ej: 101 al 680"}
                     className="w-full bg-surface-2 border border-border rounded-xl py-3 px-4 text-sm text-text focus:outline-none focus:border-accent"
                   />
                 </div>

@@ -5,6 +5,7 @@ import { ArrowRight, Gavel } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 
 interface Residente {
   id: string;
@@ -17,7 +18,9 @@ const ADMIN_ROLES = ["ADMINISTRADOR", "CONCEJO", "SUPER_ADMIN"];
 
 /** Admin-only: issue a fine to a resident. Self-gates by role. */
 export default function ImponerMulta({ casoId }: { casoId?: string }) {
-  const role = useAuth((s) => s.user?.rol);
+  const user = useAuth((s) => s.user);
+  const role = user?.rol;
+  const usaTorre = usesTorre(user);
   const isAdmin = !!role && ADMIN_ROLES.includes(role);
   const [open, setOpen] = useState(false);
   const [residentes, setResidentes] = useState<Residente[]>([]);
@@ -77,7 +80,7 @@ export default function ImponerMulta({ casoId }: { casoId?: string }) {
         <option value="">Selecciona residente…</option>
         {residentes.map((r) => (
           <option key={r.id} value={r.id} className="bg-primary text-text">
-            {r.nombre}{r.torre && r.apto ? ` — Torre ${r.torre} Apto ${r.apto}` : ""}
+            {r.nombre}{r.apto || r.torre ? ` — ${formatUnidad(r.torre, r.apto, usaTorre)}` : ""}
           </option>
         ))}
       </select>

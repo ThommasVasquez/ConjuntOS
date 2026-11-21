@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import { api } from "@/lib/api/client";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import type { PaseTemporalDto, CrearPaseTemporalRequest, VehiculoTemporalInput } from "@/lib/api/types";
@@ -18,6 +19,7 @@ type FormData = Omit<CrearPaseTemporalRequest, "fecha_inicio" | "fecha_fin"> & {
 
 export default function PasesTemporalesPage() {
   const { user, loading: authLoading } = useAuth();
+  const usaTorre = usesTorre(user);
   const router = useRouter();
   const role = user?.rol;
 
@@ -253,7 +255,7 @@ export default function PasesTemporalesPage() {
             >
               <option value="">Seleccionar unidad...</option>
               {unidades.map(u => (
-                <option key={u.id} value={u.id}>{u.torre ? `Torre ${u.torre} - ` : ""}Apto {u.numero}</option>
+                <option key={u.id} value={u.id}>{formatUnidad(u.torre, u.numero, usaTorre)}</option>
               ))}
             </select>
           </div>

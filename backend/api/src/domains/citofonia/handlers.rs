@@ -293,6 +293,16 @@ async fn resolve_targets(
                         .await?;
                 }
             }
+            // 3. Fallback for simple-nomenclature conjuntos (usa_torre = false): match by numero only
+            if ids.is_empty() && !crate::domains::conjuntos::repo::usa_torre(conn, caller_conjunto_id).await {
+                ids = usuarios::table
+                    .filter(usuarios::conjunto_id.eq(caller_conjunto_id))
+                    .filter(usuarios::apto.eq(numero))
+                    .filter(usuarios::activo.eq(true))
+                    .select(usuarios::id)
+                    .load(conn)
+                    .await?;
+            }
             Ok(ids)
         }
         PeerTarget::AptoSinTorre(conjunto_id, numero) => {

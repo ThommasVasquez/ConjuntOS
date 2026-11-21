@@ -17,6 +17,8 @@ export interface StickerData {
   remitente: string;
   fecha?: string;
   documentoMensajero?: string | null;
+  /** True solo para conjuntos con nomenclatura simple (ej. Las Brisas PH: solo número 101..680). */
+  nomenclaturaSimple?: boolean;
 }
 
 export function formatTipoBadge(tipo: string): { label: string; emoji: string; color: string } {
@@ -163,11 +165,12 @@ export default function StickerEtiqueta({ data, onClose, autoPrint = false }: St
           </div>
         </div>
 
-        {/* Big Destination Label (Giant font: BLOQUE y CASA para Las Brisas PH) */}
+        {/* Big Destination Label */}
         <div className="my-1 text-center bg-black/5 py-1 rounded border border-black/10">
           <div className="text-[22px] font-black tracking-tight leading-none text-black uppercase font-mono">
-            {bloqueTexto ? `BLOQUE ${bloqueTexto} - ` : ""}
-            {casaTexto ? `CASA ${casaTexto}` : "PORTERÍA"}
+            {data.nomenclaturaSimple
+              ? casaTexto || "PORTERÍA"
+              : `${bloqueTexto ? `BLOQUE ${bloqueTexto} - ` : ""}${casaTexto ? `CASA ${casaTexto}` : "PORTERÍA"}`}
           </div>
         </div>
 

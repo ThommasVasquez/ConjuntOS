@@ -6,6 +6,7 @@ import { Users, Car, Eye, PlusCircle, Clock, ShieldCheck, X, Pencil, CheckCircle
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
@@ -38,6 +39,7 @@ interface VisitaItem {
 
 export default function ControlVisitas() {
   const { user, loading: authLoading } = useAuth();
+  const usaTorre = usesTorre(user);
   const router = useRouter();
   const role = user?.rol;
 
@@ -136,7 +138,7 @@ export default function ControlVisitas() {
        setPendingModal({
          nombre: formData.nombre,
          residente: residenteInfo?.nombre || "Residente",
-         unidad: residenteInfo?.torre && residenteInfo?.apto ? `Torre ${residenteInfo.torre} - Apto ${residenteInfo.apto}` : "",
+         unidad: formatUnidad(residenteInfo?.torre, residenteInfo?.apto, usaTorre, { emptyFallback: "" }),
        });
      } catch {
        toast.error("Error de conexión");
@@ -231,7 +233,7 @@ export default function ControlVisitas() {
                    <option value="">Seleccione residente...</option>
                    {residentes.map(r => (
                      <option key={r.id} value={r.id} className="bg-primary text-text">
-                       {r.torre && r.apto ? `Torre ${r.torre} - Apto ${r.apto}` : "Sin unidad"} ({r.nombre})
+                       {formatUnidad(r.torre, r.apto, usaTorre, { emptyFallback: "Sin unidad" })} ({r.nombre})
                      </option>
                    ))}
                 </select>
@@ -314,7 +316,7 @@ export default function ControlVisitas() {
                 <div className="flex justify-between items-start">
                    <div>
                      <p className="text-text font-bold">{v.nombre}{v.documento ? <span className="text-text/50 text-xs ml-2 font-mono">{v.documento}</span> : null}</p>
-                     <p className="text-text text-xs">Visita a: {v.residente?.torre} - {v.residente?.apto}</p>
+                     <p className="text-text text-xs">Visita a: {formatUnidad(v.residente?.torre, v.residente?.apto, usaTorre, { compact: true })}</p>
                    </div>
                    <div className="flex items-center gap-2">
                      {v.estado === 'PENDIENTE' && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f59e0b26', color: '#b45309' }}>PENDIENTE</span>}

@@ -11,6 +11,7 @@ import {
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import { api, ApiError } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
@@ -124,6 +125,7 @@ const ESTADO_OPTIONS: EstadoSolicitud[] = ["ABIERTA", "ASIGNADA", "EN_PROGRESO",
 
 export default function AdminPQRSPage() {
   const { user, loading: authLoading } = useAuth();
+  const usaTorre = usesTorre(user);
   const router = useRouter();
   const role = user?.rol;
 
@@ -535,7 +537,7 @@ export default function AdminPQRSPage() {
                       </span>
                       {(residente.torre || residente.apto) && (
                         <span className="text-[10px] text-text">
-                          T{residente.torre || "?"} - A{residente.apto || "?"}
+                          {formatUnidad(residente.torre, residente.apto, usaTorre, { compact: true })}
                         </span>
                       )}
                     </div>
@@ -632,7 +634,7 @@ export default function AdminPQRSPage() {
                     </span>
                     {(r.torre || r.apto) && (
                       <span className="text-[10px] text-text font-bold">
-                        Torre {r.torre || "?"} — Apto {r.apto || "?"}
+                        {formatUnidad(r.torre, r.apto, usaTorre)}
                       </span>
                     )}
                   </div>

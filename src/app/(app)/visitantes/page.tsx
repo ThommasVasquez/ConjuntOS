@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api, ApiError } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import type { VisitaDto, PaqueteDto, TipoVisita, TipoVehiculoVisita } from "@/lib/api/types";
 import { useWsSubscription } from "@/hooks/useWebSocket";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -145,8 +146,7 @@ export default function VisitantesPage() {
   // Construye el texto de la invitación a partir de la visita seleccionada.
   const buildInvitationText = (visita: VisitaDto): string => {
     const anfitrion = user?.nombre || "Tu anfitrión";
-    const unidad = [user?.torre && `Torre ${user.torre}`, user?.apto && `Apto ${user.apto}`]
-      .filter(Boolean).join(", ");
+    const unidad = formatUnidad(user?.torre, user?.apto, usesTorre(user), { emptyFallback: "" });
     const fecha = new Date(visita.fecha).toLocaleString("es-CO", {
       weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
     });

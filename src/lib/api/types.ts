@@ -121,6 +121,8 @@ export interface UserDto {
   activo: boolean;
   /** True when this account may switch its own role at runtime (tester). */
   isTester?: boolean;
+  /** True when the conjunto uses Torre/Bloque + Apto nomenclature (default true). False for Las Brisas PH. */
+  usaTorre?: boolean;
 }
 
 export interface UpdateProfileRequest {

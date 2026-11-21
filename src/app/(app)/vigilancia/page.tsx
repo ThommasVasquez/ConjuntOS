@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import { toast } from "sonner";
 import { gsap } from "gsap";
 import { api } from "@/lib/api/client";
@@ -126,6 +127,7 @@ const navCards = [
 export default function VigilanciaDashboard() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const usaTorre = usesTorre(user);
   const role = user?.rol;
 
   const [stats, setStats] = useState<VigilanciaStats>({
@@ -262,7 +264,7 @@ export default function VigilanciaDashboard() {
                       {m.usuario_nombre || 'Residente'}
                     </h4>
                     <p className="text-xs font-semibold text-[#57bf00]">
-                      Torre {m.torre || '?'} - Apto {m.apto || '?'}
+                      {formatUnidad(m.torre, m.apto, usaTorre, { emptyFallback: "?" })}
                     </p>
                   </div>
                   <div className="text-right">

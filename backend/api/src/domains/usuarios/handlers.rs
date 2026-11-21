@@ -147,8 +147,11 @@ pub async fn get_profile(
         .flatten();
     let conjunto_nombre = conjunto_opt.as_ref().map(|c| c.nombre.clone());
     let conjunto_subdominio = conjunto_opt.as_ref().map(|c| c.subdominio.clone());
+    let usa_torre = conjunto_opt.as_ref().map(|c| c.usa_torre).unwrap_or(true);
+    let mut user_dto = UserDto::from(usuario);
+    user_dto.usa_torre = usa_torre;
     Ok(Json(ProfileResponse {
-        user: UserDto::from(usuario),
+        user: user_dto,
         unidad,
         conjunto_nombre,
         conjunto_subdominio,
@@ -194,13 +197,16 @@ pub async fn update_profile(
         .await?
         .ok_or(ApiError::Unauthorized)?;
 
+    let conjunto_usa_torre = crate::domains::conjuntos::repo::usa_torre(&mut conn, user.conjunto_id).await;
+    let effective_torre = if conjunto_usa_torre { req.torre } else { None };
+
     // Resident filled in their unit before administration registered one.
     let bootstrapped_unidad = match (&req.apto, usuario.unidad_id) {
         (Some(apto), None) if !apto.trim().is_empty() => Some(
             repo::bootstrap_unidad(
                 &mut conn,
                 user.conjunto_id,
-                req.torre.as_deref(),
+                effective_torre.as_deref(),
                 apto.trim(),
             )
             .await?,
@@ -213,7 +219,7 @@ pub async fn update_profile(
         telefono: req.telefono,
         genero: req.genero,
         avatar: req.avatar,
-        torre: req.torre,
+        torre: effective_torre,
         apto: req.apto,
         unidad_id: bootstrapped_unidad.as_ref().map(|u| u.id),
     };
@@ -241,8 +247,10 @@ pub async fn update_profile(
     let conjunto_opt = crate::domains::conjuntos::repo::find_by_id(&mut conn, user.conjunto_id).await?;
     let conjunto_nombre = conjunto_opt.as_ref().map(|c| c.nombre.clone());
     let conjunto_subdominio = conjunto_opt.as_ref().map(|c| c.subdominio.clone());
+    let mut user_dto = UserDto::from(updated);
+    user_dto.usa_torre = conjunto_usa_torre;
     Ok(Json(ProfileResponse {
-        user: UserDto::from(updated),
+        user: user_dto,
         unidad,
         conjunto_nombre,
         conjunto_subdominio,

@@ -19,6 +19,7 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre } from "@/lib/unidad-format";
 import { api, ApiError } from "@/lib/api/client";
 import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_MSG } from "@/lib/flags";
 import { BrandedFooter } from "@/components/shell/BrandedFooter";
@@ -41,6 +42,7 @@ function ProfileContent() {
   const petPhotoInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { user, loading: authLoading, logout } = useAuth();
+  const usaTorre = usesTorre(user);
   const userId = user?.id;
   const { theme, toggleTheme } = useTheme();
   
@@ -719,13 +721,17 @@ function ProfileContent() {
  
         {/* PILLS */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+          {usaTorre && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-light border border-border shadow-sm">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-info)' }} />
+              <span className="text-[11px] font-bold text-text uppercase tracking-wider">Torre {userData.torre}</span>
+            </div>
+          )}
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-light border border-border shadow-sm">
             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-info)' }} />
-            <span className="text-[11px] font-bold text-text uppercase tracking-wider">Torre {userData.torre}</span>
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-light border border-border shadow-sm">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-info)' }} />
-            <span className="text-[11px] font-bold text-text uppercase tracking-wider">Apto {userData.apto}</span>
+            <span className="text-[11px] font-bold text-text uppercase tracking-wider">
+              {usaTorre ? `Apto ${userData.apto}` : userData.apto}
+            </span>
           </div>
           {userData.numeroInterno && (
             <div
@@ -1661,17 +1667,19 @@ function ProfileContent() {
                     />
                   </div>
 
+                    {usaTorre && (
+                      <div className="space-y-2 opacity-50">
+                         <label className="text-[10px] text-text uppercase tracking-[0.2em] font-bold ml-1">Torre</label>
+                         <input 
+                           type="text" 
+                           value={editForm.torre}
+                           disabled
+                           className="w-full bg-primary-light/20 border border-border rounded-[24px] p-5 text-text cursor-not-allowed transition-all"
+                         />
+                      </div>
+                    )}
                     <div className="space-y-2 opacity-50">
-                       <label className="text-[10px] text-text uppercase tracking-[0.2em] font-bold ml-1">Torre</label>
-                       <input 
-                         type="text" 
-                         value={editForm.torre}
-                         disabled
-                         className="w-full bg-primary-light/20 border border-border rounded-[24px] p-5 text-text cursor-not-allowed transition-all"
-                       />
-                    </div>
-                    <div className="space-y-2 opacity-50">
-                       <label className="text-[10px] text-text uppercase tracking-[0.2em] font-bold ml-1">Apto</label>
+                       <label className="text-[10px] text-text uppercase tracking-[0.2em] font-bold ml-1">{usaTorre ? "Apto" : "Número"}</label>
                        <input 
                          type="text" 
                          value={editForm.apto}

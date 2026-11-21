@@ -6,6 +6,7 @@ import { Package, CheckCircle2, ScanLine, Clock, MapPin, History, Printer, Arrow
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import { api } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useWsSubscription } from "@/hooks/useWebSocket";
@@ -37,6 +38,7 @@ type Tab = "pendientes" | "historial";
 
 export default function PaqueteriaPage() {
   const { user, loading: authLoading } = useAuth();
+  const usaTorre = usesTorre(user);
   const router = useRouter();
   const role = user?.rol;
 
@@ -191,7 +193,9 @@ export default function PaqueteriaPage() {
             >
               <option value="" className="bg-primary text-text">Seleccione casa / residente...</option>
               {residentes.map(r => (
-                <option key={r.id} value={r.id} className="bg-primary text-text">{r.torre ? `Bloque ${r.torre} - ` : ""}Casa {r.apto} ({r.nombre})</option>
+                <option key={r.id} value={r.id} className="bg-primary text-text">
+                  {usaTorre ? `${r.torre ? `Bloque ${r.torre} - ` : ""}Casa ${r.apto}` : (r.apto || "—")} ({r.nombre})
+                </option>
               ))}
             </select>
           </div>
@@ -265,17 +269,18 @@ export default function PaqueteriaPage() {
               </div>
               <div className="flex items-center justify-between pt-1 relative z-10">
                 <div className="flex items-center gap-2 text-text/70 text-xs font-semibold">
-                  <MapPin size={14} /> {p.residente?.torre ? `Bloque ${p.residente.torre} - ` : ""}Casa {p.residente?.apto} ({p.residente?.nombre})
+                  <MapPin size={14} /> {usaTorre ? `${p.residente?.torre ? `Bloque ${p.residente.torre} - ` : ""}Casa ${p.residente?.apto}` : (p.residente?.apto || "—")} ({p.residente?.nombre})
                 </div>
                 <button
                   type="button"
                   onClick={() =>
                     setSelectedSticker({
                       id: p.id,
-                      bloque: p.residente?.torre || null,
+                      bloque: usaTorre ? p.residente?.torre || null : null,
                       casa: p.residente?.apto || null,
-                      torre: p.residente?.torre || null,
+                      torre: usaTorre ? p.residente?.torre || null : null,
                       apto: p.residente?.apto || null,
+                      nomenclaturaSimple: !usaTorre,
                       destinatario: p.residente?.nombre || "Residente",
                       tipo: "PAQUETE",
                       remitente: p.remitente,
@@ -320,7 +325,7 @@ export default function PaqueteriaPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 text-text/70 text-xs font-semibold">
-                <MapPin size={14} /> {p.residente?.torre ? `Bloque ${p.residente.torre} - ` : ""}Casa {p.residente?.apto} ({p.residente?.nombre})
+                <MapPin size={14} /> {usaTorre ? `${p.residente?.torre ? `Bloque ${p.residente.torre} - ` : ""}Casa ${p.residente?.apto}` : (p.residente?.apto || "—")} ({p.residente?.nombre})
               </div>
               {p.entregadoEn && (
                 <span className="text-[9px] text-text/50 uppercase tracking-widest">

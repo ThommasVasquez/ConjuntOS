@@ -101,8 +101,10 @@ pub async fn login(
     )?;
     let cookie = session_cookie(token.clone(), &state.config);
     let tester = is_tester(&state.config, &user.email);
+    let usa_torre = crate::domains::conjuntos::repo::usa_torre(&mut conn, user.conjunto_id).await;
     let mut dto: UserDto = user.into();
     dto.is_tester = tester;
+    dto.usa_torre = usa_torre;
     Ok((
         jar.add(cookie),
         Json(LoginResponse { user: dto, token }),
@@ -124,8 +126,10 @@ pub async fn me(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json
         .await?
         .ok_or(ApiError::Unauthorized)?;
     let tester = is_tester(&state.config, &usuario.email);
+    let usa_torre = crate::domains::conjuntos::repo::usa_torre(&mut conn, usuario.conjunto_id).await;
     let mut dto: UserDto = usuario.into();
     dto.is_tester = tester;
+    dto.usa_torre = usa_torre;
     Ok(Json(dto))
 }
 
@@ -184,8 +188,10 @@ pub async fn switch_role(
         &state.config.jwt_secret,
     )?;
     let cookie = session_cookie(token.clone(), &state.config);
+    let usa_torre = crate::domains::conjuntos::repo::usa_torre(&mut conn, actualizado.conjunto_id).await;
     let mut dto: UserDto = actualizado.into();
     dto.is_tester = true;
+    dto.usa_torre = usa_torre;
     Ok((
         jar.add(cookie),
         Json(LoginResponse { user: dto, token }),

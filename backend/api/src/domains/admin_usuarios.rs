@@ -438,12 +438,14 @@ pub async fn editar_usuario(
     }
 
     let mut conn = state.pool.get().await?;
+    let usa_torre = crate::domains::conjuntos::repo::usa_torre(&mut conn, user.conjunto_id).await;
+    let effective_torre = if usa_torre { req.torre.clone() } else { None };
 
     // If apto or torre changed, synchronize or create the unidad
     let unidad_id_to_update = match req.apto.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         Some(apto) => {
-            let torre = req.torre.as_deref().map(str::trim).filter(|s| !s.is_empty());
-            Some(find_or_create_unidad(&mut conn, user.conjunto_id, torre, apto).await?)
+            let torre = effective_torre.as_deref().map(str::trim).filter(|s| !s.is_empty());
+            Some(find_or_create_unidad(&mut conn, user.conjunto_id, torre, apto, usa_torre).await?)
         }
         None => None,
     };
@@ -456,7 +458,7 @@ pub async fn editar_usuario(
         email_to_update,
         req.telefono,
         rol,
-        req.torre,
+        effective_torre,
         req.apto,
         unidad_id_to_update,
         req.activo,
@@ -641,12 +643,14 @@ pub async fn invitar_residente(
     let temp_password_hash = crate::auth::password::hash_password_blocking(temp_password.clone()).await?;
 
     let mut conn = state.pool.get().await?;
+    let usa_torre = crate::domains::conjuntos::repo::usa_torre(&mut conn, user.conjunto_id).await;
+    let effective_torre = if usa_torre { req.torre.as_deref() } else { None };
 
     // If apto is provided, find or bootstrap the unidad
     let unidad_id = match req.apto.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         Some(apto) => {
-            let torre = req.torre.as_deref().map(str::trim).filter(|s| !s.is_empty());
-            Some(find_or_create_unidad(&mut conn, user.conjunto_id, torre, apto).await?)
+            let torre = effective_torre.map(str::trim).filter(|s| !s.is_empty());
+            Some(find_or_create_unidad(&mut conn, user.conjunto_id, torre, apto, usa_torre).await?)
         }
         None => None,
     };
@@ -661,7 +665,7 @@ pub async fn invitar_residente(
         &email,
         &temp_password_hash,
         rol,
-        req.torre.as_deref(),
+        effective_torre,
         req.apto.as_deref(),
         unidad_id,
         &numero_interno,
@@ -793,16 +797,19 @@ async fn find_or_create_unidad(
     conjunto_id: Uuid,
     torre: Option<&str>,
     numero: &str,
+    usa_torre: bool,
 ) -> ApiResult<Uuid> {
     let mut q = unidades::table
         .filter(unidades::conjunto_id.eq(conjunto_id))
         .filter(unidades::numero.eq(numero))
         .into_boxed();
 
-    if let Some(t) = torre {
-        q = q.filter(unidades::torre.eq(t));
-    } else {
-        q = q.filter(unidades::torre.is_null());
+    if usa_torre {
+        if let Some(t) = torre {
+            q = q.filter(unidades::torre.eq(t));
+        } else {
+            q = q.filter(unidades::torre.is_null());
+        }
     }
 
     let existing: Option<Uuid> = q
@@ -819,7 +826,7 @@ async fn find_or_create_unidad(
         .values((
             unidades::conjunto_id.eq(conjunto_id),
             unidades::numero.eq(numero),
-            unidades::torre.eq(torre),
+            unidades::torre.eq(if usa_torre { torre } else { None }),
             unidades::tipo.eq(crate::db::enums::TipoUnidad::Apartamento),
             unidades::coeficiente.eq(BigDecimal::from(0)),
         ))

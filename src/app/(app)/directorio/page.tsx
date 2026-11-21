@@ -8,6 +8,7 @@ import { api } from "@/lib/api/client";
 import { gsap } from "gsap";
 import ProfileHeader from "@/components/shell/ProfileHeader";
 import { useAuth } from "@/hooks/useAuth";
+import { usesTorre, formatUnidad } from "@/lib/unidad-format";
 import { useCall } from "@/components/providers/CallContext";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -22,6 +23,7 @@ interface DirectorioUser {
 export default function DirectorioPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const usaTorre = usesTorre(user);
   const role = user?.rol;
   const { callState, startCall } = useCall();
 
@@ -113,7 +115,7 @@ export default function DirectorioPage() {
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar por nombre, torre o apartamento…"
+            placeholder={usaTorre ? "Buscar por nombre, torre o apartamento…" : "Buscar por nombre o número (101–680)…"}
             className="flex-1 bg-transparent outline-none text-sm text-text placeholder:text-text/40"
           />
           {searchLoading && (
@@ -142,13 +144,7 @@ export default function DirectorioPage() {
                     {u.nombre}
                   </span>
                   <span className="text-[11px] text-text/50">
-                    {u.torre && u.apto
-                      ? `${u.torre}-${u.apto}`
-                      : u.apto
-                        ? `Apto ${u.apto}`
-                        : u.torre
-                          ? `Torre ${u.torre}`
-                          : "Sin unidad"}
+                    {formatUnidad(u.torre, u.apto, usaTorre, { compact: true, emptyFallback: "Sin unidad" })}
                     {" · "}
                     {u.telefono
                       ? u.telefono
@@ -168,7 +164,7 @@ export default function DirectorioPage() {
                   </button>
                   <button
                     onClick={() =>
-                      toast.info(`${u.nombre} — ${u.torre && u.apto ? `${u.torre}-${u.apto}` : "Sin unidad"}`)
+                      toast.info(`${u.nombre} — ${formatUnidad(u.torre, u.apto, usaTorre, { compact: true, emptyFallback: "Sin unidad" })}`)
                     }
                     className="w-9 h-9 rounded-full bg-secondary/15 hover:bg-secondary/25 flex items-center justify-center text-secondary transition-colors cursor-pointer"
                     title="Ver información"
